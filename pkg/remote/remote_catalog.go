@@ -10,6 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -135,7 +136,7 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
 	if containsCRDNotFoundError(errs) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta2.ModuleTemplateKind.Plural()); err != nil {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, shared.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
 	}

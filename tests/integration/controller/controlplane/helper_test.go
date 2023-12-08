@@ -10,6 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -96,10 +97,10 @@ func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma,
 	if err != nil {
 		return err
 	}
-	if remoteKyma.Labels[v1beta2.WatchedByLabel] != v1beta2.OperatorName {
+	if remoteKyma.Labels[shared.WatchedByLabel] != shared.OperatorName {
 		return ErrWatcherLabelMissing
 	}
-	if remoteKyma.Annotations[v1beta2.OwnedByAnnotation] != fmt.Sprintf(v1beta2.OwnedByFormat,
+	if remoteKyma.Annotations[shared.OwnedByAnnotation] != fmt.Sprintf(shared.OwnedByFormat,
 		kyma.GetNamespace(), kyma.GetName()) {
 		return ErrWatcherAnnotationMissing
 	}
@@ -174,7 +175,7 @@ func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace
 }
 
 func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinition, error) {
-	crd, err := fetchCrd(clnt, v1beta2.KymaKind)
+	crd, err := fetchCrd(clnt, shared.KymaKind)
 	if err != nil {
 		return nil, err
 	}
@@ -195,11 +196,11 @@ func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinitio
 	if err := clnt.Patch(ctx, crd,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(v1beta2.OperatorName)); err != nil {
+		client.FieldOwner(shared.OperatorName)); err != nil {
 		return nil, err
 	}
-	crd, err = fetchCrd(clnt, v1beta2.KymaKind)
-	kymaCrdName := fmt.Sprintf("%s.%s", v1beta2.KymaKind.Plural(), v1beta2.GroupVersion.Group)
+	crd, err = fetchCrd(clnt, shared.KymaKind)
+	kymaCrdName := fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), v1beta2.GroupVersion.Group)
 
 	// Replace the cached CRD after updating the KCP CRD to validate that
 	// the Generation values are updated correctly
@@ -216,7 +217,7 @@ func getCrdSpec(crd *apiextensionsv1.CustomResourceDefinition) apiextensionsv1.J
 	return crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["spec"]
 }
 
-func fetchCrd(clnt client.Client, crdKind v1beta2.Kind) (*apiextensionsv1.CustomResourceDefinition, error) {
+func fetchCrd(clnt client.Client, crdKind shared.Kind) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := clnt.Get(
 		ctx, client.ObjectKey{

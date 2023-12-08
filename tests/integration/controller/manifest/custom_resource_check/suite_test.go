@@ -37,6 +37,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -102,7 +103,7 @@ var _ = BeforeSuite(
 		if !found {
 			metricsBindAddress = ":0"
 		}
-		cacheOpts := internal.GetCacheOptions(k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName})
+		cacheOpts := internal.GetCacheOptions(k8slabels.Set{shared.ManagedBy: shared.OperatorName})
 		syncPeriod := 2 * time.Second
 		cacheOpts.SyncPeriod = &syncPeriod
 

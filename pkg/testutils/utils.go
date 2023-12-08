@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -66,8 +67,8 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 			Name:      "test-issuer",
 			Namespace: namespace,
 			Labels: k8slabels.Set{
-				v1beta2.PurposeLabel: v1beta2.CertManager,
-				v1beta2.ManagedBy:    v1beta2.OperatorName,
+				shared.PurposeLabel: shared.CertManager,
+				shared.ManagedBy:    shared.OperatorName,
 			},
 		},
 		Spec: certmanagerv1.IssuerSpec{

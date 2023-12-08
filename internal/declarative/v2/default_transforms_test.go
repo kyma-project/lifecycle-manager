@@ -97,9 +97,9 @@ func Test_defaultTransforms(t *testing.T) {
 				unstruct := unstructs[0]
 				assert.NotEmpty(testingT, unstruct)
 				assert.NotNil(testingT, unstruct.GetLabels())
-				assert.Contains(testingT, unstruct.GetLabels(), declarativev2.ManagedByLabel)
+				assert.Contains(testingT, unstruct.GetLabels(), shared.ManagedBy)
 				assert.Equal(testingT, declarativev2.ManagedByLabelValue,
-					unstruct.GetLabels()[declarativev2.ManagedByLabel])
+					unstruct.GetLabels()[shared.ManagedBy])
 				return true
 			},
 		},

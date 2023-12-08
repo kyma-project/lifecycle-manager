@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -23,7 +24,7 @@ const (
 	// private key will only be generated if one does not already exist in the target `spec.secretName`.
 	privateKeyRotationPolicy = "Never"
 
-	DomainAnnotation = v1beta2.SKRDomainAnnotation
+	DomainAnnotation = shared.SKRDomainAnnotation
 
 	caCertKey        = "ca.crt"
 	tlsCertKey       = "tls.crt"
@@ -86,8 +87,8 @@ func NewCertificateManager(kcpClient client.Client, kymaName string,
 		config:          config,
 		caCertCache:     caCertCache,
 		labelSet: k8slabels.Set{
-			v1beta2.PurposeLabel: v1beta2.CertManager,
-			v1beta2.ManagedBy:    v1beta2.OperatorName,
+			shared.PurposeLabel: shared.CertManager,
+			shared.ManagedBy:    shared.OperatorName,
 		},
 	}
 }

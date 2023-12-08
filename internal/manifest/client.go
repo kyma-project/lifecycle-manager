@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -38,7 +39,8 @@ func (cc *ClusterClient) GetRESTConfig(
 	)
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to list resources by {LabelSelector: %v, Namespace: %v}: %w", labelSelector, namespace, err)
+			fmt.Errorf("failed to list resources by {LabelSelector: %v, Namespace: %v}: %w", labelSelector, namespace,
+				err)
 	}
 	kubeConfigSecret := &apicorev1.Secret{}
 	if len(kubeConfigSecretList.Items) < 1 {
@@ -70,7 +72,7 @@ func WithClientCacheKey() declarativev2.WithClientCacheKeyOption {
 			return nil, false
 		}
 
-		labelValue, err := internal.GetResourceLabel(resource, v1beta2.KymaName)
+		labelValue, err := internal.GetResourceLabel(resource, shared.KymaName)
 		objectKey := client.ObjectKeyFromObject(resource)
 		var labelErr *types.LabelNotFoundError
 		if errors.As(err, &labelErr) {

@@ -40,8 +40,7 @@ var (
 )
 
 const (
-	//nolint:gosec// OCI registry credits label used for testing, no confidential content
-	CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred"
+	OCIRegistryCredLabelKeyForTest = shared.OperatorPrefix + shared.Separator + "oci-registry-cred"
 )
 
 type mockLayer struct {
@@ -142,7 +141,7 @@ func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "operator.kyma-project.io/v1alpha1",
+				"apiVersion": shared.OperatorPrefix + shared.Separator + "v1alpha1",
 				"kind":       "Sample",
 				"metadata": map[string]interface{}{
 					"name":      "sample-cr-" + manifest.GetName(),
@@ -233,6 +232,6 @@ func DeleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 
 func CredSecretLabelSelector(labelValue string) *apimetav1.LabelSelector {
 	return &apimetav1.LabelSelector{
-		MatchLabels: map[string]string{CredSecretLabelKeyForTest: labelValue},
+		MatchLabels: map[string]string{OCIRegistryCredLabelKeyForTest: labelValue},
 	}
 }

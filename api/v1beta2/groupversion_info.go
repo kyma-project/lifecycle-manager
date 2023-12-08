@@ -22,28 +22,16 @@ limitations under the License.
 package v1beta2
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
-
-const (
-	KymaKind           Kind = "Kyma"
-	ModuleTemplateKind Kind = "ModuleTemplate"
-	WatcherKind        Kind = "Watcher"
-)
-
-type Kind string
-
-func (k Kind) Plural() string {
-	return strings.ToLower(string(k)) + "s"
-}
 
 var (
 	// GroupVersion is group version used to register these objects.
 	GroupVersion = schema.GroupVersion{
-		Group:   "operator.kyma-project.io",
+		Group:   shared.OperatorPrefix,
 		Version: "v1beta2",
 	}
 
@@ -54,5 +42,5 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 
 	// GroupVersionResource is group version resource.
-	GroupVersionResource = GroupVersion.WithResource(KymaKind.Plural())
+	GroupVersionResource = GroupVersion.WithResource(shared.KymaKind.Plural())
 )

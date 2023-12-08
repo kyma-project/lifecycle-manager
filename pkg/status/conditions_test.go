@@ -5,6 +5,7 @@ import (
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -78,7 +79,7 @@ func TestInitConditions(t *testing.T) {
 				if testcase.syncLabelValueEnabled {
 					labelValue = v1beta2.EnableLabelValue
 				}
-				kymaBuilder.WithLabel(v1beta2.SyncLabel, labelValue)
+				kymaBuilder.WithLabel(shared.SyncLabel, labelValue)
 			}
 			kyma := kymaBuilder.Build()
 

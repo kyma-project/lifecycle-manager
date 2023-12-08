@@ -192,7 +192,7 @@ func init() {
 
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
 	if m.Annotations != nil {
-		moduleVersion := m.Annotations[ModuleVersionAnnotation]
+		moduleVersion := m.Annotations[shared.ModuleVersionAnnotation]
 		_, err := semver.NewVersion(moduleVersion)
 		if moduleVersion != "" && err == nil {
 			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
@@ -219,21 +219,21 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 }
 
 func (m *ModuleTemplate) syncDisabled() bool {
-	if isSync, found := m.Labels[SyncLabel]; found {
+	if isSync, found := m.Labels[shared.SyncLabel]; found {
 		return strings.ToLower(isSync) == DisableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsInternal() bool {
-	if isInternal, found := m.Labels[InternalLabel]; found {
+	if isInternal, found := m.Labels[shared.InternalLabel]; found {
 		return strings.ToLower(isInternal) == EnableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsBeta() bool {
-	if isBeta, found := m.Labels[BetaLabel]; found {
+	if isBeta, found := m.Labels[shared.BetaLabel]; found {
 		return strings.ToLower(isBeta) == EnableLabelValue
 	}
 	return false

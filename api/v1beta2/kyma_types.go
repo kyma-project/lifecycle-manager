@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -376,24 +377,24 @@ const (
 )
 
 func (kyma *Kyma) HasSyncLabelEnabled() bool {
-	if sync, found := kyma.Labels[SyncLabel]; found {
+	if sync, found := kyma.Labels[shared.SyncLabel]; found {
 		return strings.ToLower(sync) == EnableLabelValue
 	}
 	return true // missing label defaults to enabled sync
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	skip, found := kyma.Labels[SkipReconcileLabel]
+	skip, found := kyma.Labels[shared.SkipReconcileLabel]
 	return found && strings.ToLower(skip) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsInternal() bool {
-	internal, found := kyma.Labels[InternalLabel]
+	internal, found := kyma.Labels[shared.InternalLabel]
 	return found && strings.ToLower(internal) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsBeta() bool {
-	beta, found := kyma.Labels[BetaLabel]
+	beta, found := kyma.Labels[shared.BetaLabel]
 	return found && strings.ToLower(beta) == EnableLabelValue
 }
 
@@ -424,4 +425,26 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 		})
 	}
 	return modules
+}
+
+func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
+	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
+		return false
+	}
+
+	updateRequired := false
+	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, shared.Finalizer) {
+		controllerutil.AddFinalizer(kyma, shared.Finalizer)
+		updateRequired = true
+	}
+
+	if kyma.ObjectMeta.Labels == nil {
+		kyma.ObjectMeta.Labels = make(map[string]string)
+	}
+
+	if _, ok := kyma.ObjectMeta.Labels[shared.ManagedBy]; !ok {
+		kyma.ObjectMeta.Labels[shared.ManagedBy] = shared.OperatorName
+		updateRequired = true
+	}
+	return updateRequired
 }

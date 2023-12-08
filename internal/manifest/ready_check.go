@@ -177,7 +177,7 @@ func requiredStateMissing(stateChecks []*v1beta2.CustomStateCheck) bool {
 }
 
 func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, bool, error) {
-	customStateCheckAnnotation, found := manifest.Annotations[v1beta2.CustomStateCheckAnnotation]
+	customStateCheckAnnotation, found := manifest.Annotations[shared.CustomStateCheckAnnotation]
 	if !found {
 		return []*v1beta2.CustomStateCheck{
 			{

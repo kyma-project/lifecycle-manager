@@ -17,17 +17,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 const (
-	podRestartLabelKey      = "operator.kyma-project.io/pod-restart-trigger"
+	podRestartLabelKey      = shared.OperatorPrefix + shared.Separator + "pod-restart-trigger"
 	kcpAddressEnvName       = "KCP_ADDR"
 	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
 	SkrTLSName              = "skr-webhook-tls"
 	SkrResourceName         = "skr-webhook"
-	skrChartFieldOwner      = client.FieldOwner(v1beta2.OperatorName)
+	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
 	version                 = "v1"
 	webhookTimeOutInSeconds = 15
 )
@@ -73,7 +74,7 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
 		moduleName := watcher.GetModuleName()
-		webhookName := fmt.Sprintf("%s.%s.operator.kyma-project.io", watcher.Namespace, watcher.Name)
+		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorPrefix)
 		svcPath := fmt.Sprintf("/validate/%s", moduleName)
 		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
 		sideEffects := admissionregistrationv1.SideEffectClassNoneOnDryRun

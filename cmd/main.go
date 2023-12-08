@@ -48,6 +48,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
@@ -235,7 +236,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 
 	if err := (&controller.KymaReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		EventRecorder:     mgr.GetEventRecorderFor(shared.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
@@ -300,7 +301,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		EventRecorder:         mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
@@ -370,12 +371,12 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 	}
 
 	crdsToPatch := []string{
-		string(v1beta2.ModuleTemplateKind), string(v1beta2.WatcherKind),
-		v1beta2.ManifestKind, string(v1beta2.KymaKind),
+		string(shared.ModuleTemplateKind), string(shared.WatcherKind),
+		string(shared.ManifestKind), string(shared.KymaKind),
 	}
 
 	for _, crdItem := range crdList.Items {
-		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
+		if crdItem.Spec.Group != shared.OperatorPrefix && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
 			continue
 		}
 		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))

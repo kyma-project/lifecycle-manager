@@ -126,10 +126,10 @@ func (r *PurgeReconciler) IsKymaManaged() bool {
 }
 
 func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
-	if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
+	if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
 		return nil
 	}
-	controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
+	controllerutil.AddFinalizer(kyma, shared.PurgeFinalizer)
 	if err := r.Update(ctx, kyma); err != nil {
 		err = fmt.Errorf("failed to add purge finalizer: %w", err)
 		logf.FromContext(ctx).V(log.DebugLevel).Info(
@@ -142,8 +142,8 @@ func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta
 }
 
 func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
-	if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
-		controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
+	if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
+		controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer)
 		if err := r.Update(ctx, kyma); err != nil {
 			err = fmt.Errorf("failed to remove purge finalizer: %w", err)
 			r.setFinalizerWarningEvent(kyma, err)
@@ -191,7 +191,7 @@ func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient clien
 }
 
 func shouldSkip(crd apiextensionsv1.CustomResourceDefinition, matcher matcher.CRDMatcherFunc) bool {
-	if crd.Spec.Group == v1beta2.GroupVersion.Group && crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
+	if crd.Spec.Group == v1beta2.GroupVersion.Group && crd.Spec.Names.Kind == string(shared.KymaKind) {
 		return true
 	}
 	return matcher(crd)

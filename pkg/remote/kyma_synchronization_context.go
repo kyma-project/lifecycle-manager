@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -37,7 +38,7 @@ type KymaSynchronizationContext struct {
 func InitializeKymaSynchronizationContext(ctx context.Context, kcp Client, cache *ClientCache,
 	kyma *v1beta2.Kyma, syncNamespace string,
 ) (*KymaSynchronizationContext, error) {
-	strategyValue, found := kyma.Annotations[v1beta2.SyncStrategyAnnotation]
+	strategyValue, found := kyma.Annotations[shared.SyncStrategyAnnotation]
 	syncStrategy := v1beta2.SyncStrategyLocalSecret
 	if found && strategyValue == v1beta2.SyncStrategyLocalClient {
 		syncStrategy = v1beta2.SyncStrategyLocalClient
@@ -64,7 +65,7 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 	ctx context.Context, remoteSyncNamespace string,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma := &v1beta2.Kyma{}
-	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Name = shared.DefaultRemoteKymaName
 	remoteKyma.Namespace = remoteSyncNamespace
 	if err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma); err != nil {
 		return remoteKyma, fmt.Errorf("failed to get remote kyma: %w", err)
@@ -86,7 +87,7 @@ func RemoveFinalizerFromRemoteKyma(
 		return err
 	}
 
-	controllerutil.RemoveFinalizer(remoteKyma, v1beta2.Finalizer)
+	controllerutil.RemoveFinalizer(remoteKyma, shared.Finalizer)
 
 	err = syncContext.RuntimeClient.Update(ctx, remoteKyma)
 	if err != nil {
@@ -119,7 +120,7 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:   syncNamespace,
-			Labels: map[string]string{v1beta2.ManagedBy: v1beta2.OperatorName},
+			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -185,7 +186,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural()); err != nil {
+		if err := c.CreateOrUpdateCRD(ctx, shared.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
 
@@ -252,11 +253,11 @@ func (c *KymaSynchronizationContext) SyncWatcherLabelsAnnotations(controlPlaneKy
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels[v1beta2.WatchedByLabel] = v1beta2.OperatorName
+	remoteKyma.Labels[shared.WatchedByLabel] = shared.OperatorName
 
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)
 	}
-	remoteKyma.Annotations[v1beta2.OwnedByAnnotation] = fmt.Sprintf(v1beta2.OwnedByFormat,
+	remoteKyma.Annotations[shared.OwnedByAnnotation] = fmt.Sprintf(shared.OwnedByFormat,
 		controlPlaneKyma.GetNamespace(), controlPlaneKyma.GetName())
 }
