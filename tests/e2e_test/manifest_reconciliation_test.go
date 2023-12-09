@@ -51,12 +51,11 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("When deleting the SKR Default CR")
-			/*err = SetFinalizer("sample-yaml", "kyma-system", "operator.kyma-project.io",
-				"v1alpha1", "Sample", []string{}, runtimeClient)
-			Expect(err).ToNot(HaveOccurred())*/
-			err = DeleteCRWithGVK(ctx, runtimeClient, "sample-yaml", "kyma-system",
-				"operator.kyma-project.io", "v1alpha1", "Sample")
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(DeleteCRWithGVK).
+				WithContext(ctx).
+				WithArguments(runtimeClient, "sample-yaml", "kyma-system",
+					"operator.kyma-project.io", "v1alpha1", "Sample").
+				Should(Succeed())
 			By("Then SKR Module Default CR is not recreated")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
