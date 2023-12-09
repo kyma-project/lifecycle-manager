@@ -53,9 +53,10 @@ var (
 type WatcherReconciler struct {
 	client.Client
 	record.EventRecorder
-	IstioClient *istio.Client
-	RestConfig  *rest.Config
-	Scheme      *machineryruntime.Scheme
+	IstioClient        *istio.Client
+	WatcherVSNamespace string
+	RestConfig         *rest.Config
+	Scheme             *machineryruntime.Scheme
 	queue.RequeueIntervals
 }
 
@@ -132,7 +133,7 @@ func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta
 }
 
 func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
-	err := r.IstioClient.RemoveVirtualServiceForCR(ctx, client.ObjectKeyFromObject(watcherCR))
+	err := r.IstioClient.RemoveVirtualServiceForCR(ctx, client.ObjectKeyFromObject(watcherCR), r.WatcherVSNamespace)
 	if err != nil {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsConfigDelErr)
@@ -147,13 +148,12 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-	// Create virtualService in Memory
-	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR)
+	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR, r.WatcherVSNamespace)
 	if err != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 
-	virtualSvcRemote, err := r.IstioClient.GetVirtualService(ctx, watcherCR.Name)
+	virtualSvcRemote, err := r.IstioClient.GetVirtualService(ctx, watcherCR.Name, r.WatcherVSNamespace)
 	if client.IgnoreNotFound(err) != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}

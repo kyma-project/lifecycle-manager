@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	metricKymaState   = "lifecycle_mgr_kyma_state"
-	metricModuleState = "lifecycle_mgr_module_state"
+	MetricKymaState   = "lifecycle_mgr_kyma_state"
+	MetricModuleState = "lifecycle_mgr_module_state"
 	stateLabel        = "state"
 	moduleNameLabel   = "module_name"
 )
@@ -25,14 +25,14 @@ type KymaMetrics struct {
 func NewKymaMetrics() *KymaMetrics {
 	kymaMetrics := &KymaMetrics{
 		kymaStateGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: metricKymaState,
+			Name: MetricKymaState,
 			Help: "Indicates the Status.state for a given Kyma object",
-		}, []string{kymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
+		}, []string{KymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
 
 		moduleStateGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: metricModuleState,
+			Name: MetricModuleState,
 			Help: "Indicates the Status.state for modules of Kyma",
-		}, []string{moduleNameLabel, kymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
+		}, []string{moduleNameLabel, KymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
 	}
 	ctrlmetrics.Registry.MustRegister(kymaMetrics.kymaStateGauge)
 	ctrlmetrics.Registry.MustRegister(kymaMetrics.moduleStateGauge)
@@ -59,12 +59,12 @@ func (k *KymaMetrics) UpdateAll(kyma *v1beta2.Kyma) error {
 
 // CleanupMetrics deletes all 'lifecycle_mgr_kyma_state',
 // 'lifecycle_mgr_module_state' metrics for the matching Kyma.
-func (k *KymaMetrics) CleanupMetrics(kyma *v1beta2.Kyma) {
+func (k *KymaMetrics) CleanupMetrics(kymaName string) {
 	k.kymaStateGauge.DeletePartialMatch(prometheus.Labels{
-		kymaNameLabel: kyma.Name,
+		KymaNameLabel: kymaName,
 	})
 	k.moduleStateGauge.DeletePartialMatch(prometheus.Labels{
-		kymaNameLabel: kyma.Name,
+		KymaNameLabel: kymaName,
 	})
 }
 
@@ -72,7 +72,7 @@ func (k *KymaMetrics) CleanupMetrics(kyma *v1beta2.Kyma) {
 func (k *KymaMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
 	k.moduleStateGauge.DeletePartialMatch(prometheus.Labels{
 		moduleNameLabel: moduleName,
-		kymaNameLabel:   kymaName,
+		KymaNameLabel:   kymaName,
 	})
 }
 
@@ -81,7 +81,7 @@ func (k *KymaMetrics) setKymaStateGauge(newState shared.State, kymaName, shootID
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
 		k.kymaStateGauge.With(prometheus.Labels{
-			kymaNameLabel:   kymaName,
+			KymaNameLabel:   kymaName,
 			shootIDLabel:    shootID,
 			instanceIDLabel: instanceID,
 			stateLabel:      string(state),
@@ -95,7 +95,7 @@ func (k *KymaMetrics) setModuleStateGauge(newState shared.State, moduleName, kym
 		newValue := calcStateValue(state, newState)
 		k.moduleStateGauge.With(prometheus.Labels{
 			moduleNameLabel: moduleName,
-			kymaNameLabel:   kymaName,
+			KymaNameLabel:   kymaName,
 			shootIDLabel:    shootID,
 			instanceIDLabel: instanceID,
 			stateLabel:      string(state),

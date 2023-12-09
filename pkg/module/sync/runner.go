@@ -23,6 +23,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+var ErrServerSideApplyFailed = errors.New("ServerSideApply failed")
+
 func New(clnt client.Client) *Runner {
 	return &Runner{
 		Client:    clnt,
@@ -78,7 +80,7 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	ssaFinish := time.Since(ssaStart)
 	if len(errs) != 0 {
-		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish)) //nolint:goerr113
+		errs = append(errs, fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish))
 		return errors.Join(errs...)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
@@ -107,16 +109,58 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	if !ok {
 		return commonerrs.ErrTypeAssert
 	}
-	if err := r.Patch(ctx, manifestObj,
-		client.Apply,
-		client.FieldOwner(kyma.Labels[v1beta2.ManagedBy]),
-		client.ForceOwnership,
-	); err != nil {
-		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
+
+	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[v1beta2.ManagedBy], module.Enabled,
+		manifestObj); err != nil {
+		return err
 	}
 	module.Manifest = manifestObj
-
 	return nil
+}
+
+func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
+	manifestObj *v1beta2.Manifest,
+) error {
+	if isEnabledModule {
+		return r.patchManifest(ctx, owner, manifestObj)
+	}
+	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
+	if err := r.updateAvailableManifestSpec(ctx, manifestObj); err != nil && !util.IsNotFound(err) {
+		return err
+	}
+	return nil
+}
+
+func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v1beta2.Manifest) error {
+	if err := r.Patch(ctx, manifestObj,
+		client.Apply,
+		client.FieldOwner(owner),
+		client.ForceOwnership,
+	); err != nil {
+		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+	}
+	return nil
+}
+
+func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v1beta2.Manifest) error {
+	manifestInCluster := &v1beta2.Manifest{}
+
+	if err := r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(), Name: manifestObj.GetName()},
+		manifestInCluster); err != nil {
+		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+	}
+	if !needToUpdate(manifestInCluster, manifestObj) {
+		return nil
+	}
+	manifestInCluster.Spec = manifestObj.Spec
+	if err := r.Update(ctx, manifestInCluster); err != nil {
+		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+	}
+	return nil
+}
+
+func needToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest) bool {
+	return manifestInCluster.Spec.Version != manifestObj.Spec.Version
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
@@ -203,7 +247,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		FQDN:    module.FQDN,
 		State:   manifestObject.Status.State,
 		Channel: module.Template.Spec.Channel,
-		Version: module.Version,
+		Version: manifestObject.Spec.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject),
 			TypeMeta:    apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},

@@ -4,39 +4,42 @@ import (
 	"flag"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 const (
-	defaultKymaRequeueSuccessInterval                    = 30 * time.Second
-	defaultKymaRequeueErrInterval                        = 2 * time.Second
-	defaultKymaRequeueWarningInterval                    = 30 * time.Second
-	defaultKymaRequeueBusyInterval                       = 5 * time.Second
-	defaultManifestRequeueSuccessInterval                = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval                 = 30 * time.Second
-	defaultClientQPS                                     = 300
-	defaultClientBurst                                   = 600
-	defaultPprofServerTimeout                            = 90 * time.Second
-	rateLimiterBurstDefault                              = 200
-	rateLimiterFrequencyDefault                          = 30
-	failureBaseDelayDefault                              = 100 * time.Millisecond
-	failureMaxDelayDefault                               = 5 * time.Second
-	defaultCacheSyncTimeout                              = 2 * time.Minute
-	defaultLogLevel                                      = log.WarnLevel
-	defaultPurgeFinalizerTimeout                         = 5 * time.Minute
-	defaultMaxConcurrentManifestReconciles               = 1
-	defaultMaxConcurrentKymaReconciles                   = 1
-	defaultMaxConcurrentWatcherReconciles                = 1
-	defaultIstioGatewayName                              = "klm-watcher-gateway"
-	defaultIstioGatewayNamespace                         = "kcp-system"
-	defaultIstioNamespace                                = "istio-system"
-	defaultCaCertName                                    = "klm-watcher-serving-cert"
-	defaultCaCertCacheTTL                  time.Duration = 1 * time.Hour
+	defaultKymaRequeueSuccessInterval                     = 30 * time.Second
+	defaultKymaRequeueErrInterval                         = 2 * time.Second
+	defaultKymaRequeueWarningInterval                     = 30 * time.Second
+	defaultKymaRequeueBusyInterval                        = 5 * time.Second
+	defaultManifestRequeueSuccessInterval                 = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval                  = 30 * time.Second
+	defaultClientQPS                                      = 300
+	defaultClientBurst                                    = 600
+	defaultPprofServerTimeout                             = 90 * time.Second
+	rateLimiterBurstDefault                               = 200
+	rateLimiterFrequencyDefault                           = 30
+	failureBaseDelayDefault                               = 100 * time.Millisecond
+	failureMaxDelayDefault                                = 5 * time.Second
+	defaultCacheSyncTimeout                               = 2 * time.Minute
+	defaultLogLevel                                       = log.WarnLevel
+	defaultPurgeFinalizerTimeout                          = 5 * time.Minute
+	defaultMaxConcurrentManifestReconciles                = 1
+	defaultMaxConcurrentKymaReconciles                    = 1
+	defaultMaxConcurrentWatcherReconciles                 = 1
+	defaultIstioGatewayName                               = "klm-watcher-gateway"
+	defaultIstioGatewayNamespace                          = "kcp-system"
+	defaultIstioNamespace                                 = "istio-system"
+	defaultCaCertName                                     = "klm-watcher-serving-cert"
+	defaultCaCertCacheTTL                   time.Duration = 1 * time.Hour
+	defaultSelfSignedCertDuration           time.Duration = 90 * 24 * time.Hour
+	defaultSelfSignedCertRenewBefore        time.Duration = 60 * 24 * time.Hour
+	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
+	DefaultRemoteSyncNamespace                            = "kyma-system"
 )
 
-//nolint:funlen
-func defineFlagVar() *FlagVar {
+//nolint:funlen // defines all program flags
+func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
@@ -61,22 +64,22 @@ func defineFlagVar() *FlagVar {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		defaultKymaRequeueSuccessInterval,
-		"determines the duration a Kyma in Ready state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
 		defaultKymaRequeueErrInterval,
-		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueWarningInterval, "kyma-requeue-warning-interval",
 		defaultKymaRequeueWarningInterval,
 		"determines the duration after which a Kyma in Warning state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
 		defaultKymaRequeueBusyInterval,
-		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
 		defaultManifestRequeueSuccessInterval,
-		"determines the duration a Manifest in Ready state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration a Manifest in Ready state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
 		defaultWatcherRequeueSuccessInterval,
-		"determines the duration a Watcher in Ready state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration a Watcher in Ready state is enqueued for reconciliation.")
 
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
@@ -135,13 +138,21 @@ func defineFlagVar() *FlagVar {
 		"Indicates the SKR Purge Finalizers execution delay in seconds")
 	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
-	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controller.DefaultRemoteSyncNamespace,
+	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
 	flag.StringVar(&flagVar.caCertName, "ca-cert-name", defaultCaCertName,
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
 	flag.DurationVar(&flagVar.caCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
 		"The ttl for the CA Certificate Cache")
-	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
+	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", defaultSelfSignedCertDuration,
+		"The lifetime duration of self-signed certificate, minimum accepted duration is 1 hour.")
+	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
+		defaultSelfSignedCertRenewBefore,
+		"How long before the currently issued self-signed certificate's expiry cert-manager should renew the certificate")
+	flag.DurationVar(&flagVar.SelfSignedCertRenewBuffer, "self-signed-cert-renew-buffer",
+		defaultSelfSignedCertificateRenewBuffer,
+		"The buffer duration to wait before confirm self-signed certificate not renewed")
+	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
 
@@ -192,5 +203,8 @@ type FlagVar struct {
 	caCertName                             string
 	caCertCacheTTL                         time.Duration
 	enableVerification                     bool
-	isKymaManaged                          bool
+	IsKymaManaged                          bool
+	SelfSignedCertDuration                 time.Duration
+	SelfSignedCertRenewBefore              time.Duration
+	SelfSignedCertRenewBuffer              time.Duration
 }

@@ -140,6 +140,9 @@ spec:
                 type: object
                 x-kubernetes-embedded-resource: true
                 x-kubernetes-preserve-unknown-fields: true
+              version:
+                description: Version specifies current Resource version
+                type: string
             required:
             - install
             - remote
@@ -398,6 +401,9 @@ spec:
                 type: object
                 x-kubernetes-embedded-resource: true
                 x-kubernetes-preserve-unknown-fields: true
+              version:
+                description: Version specifies current Resource version
+                type: string
             required:
             - install
             - remote

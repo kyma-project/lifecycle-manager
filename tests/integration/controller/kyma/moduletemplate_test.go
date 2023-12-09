@@ -21,10 +21,9 @@ var (
 	ErrNotContainsExpectedCredSecretSelector = errors.New("not contains expected credSecretSelector")
 )
 
+//nolint:gosec // secret label and value, no confidential content
 const (
-	//nolint:gosec
 	credSecretLabel = "operator.kyma-project.io/oci-registry-cred"
-	//nolint:gosec
 	credSecretValue = "operator-regcred"
 )
 

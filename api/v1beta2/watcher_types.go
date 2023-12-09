@@ -116,7 +116,7 @@ func (watcher *Watcher) GetModuleName() string {
 	return watcher.Labels[ManagedBy]
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // WatcherList contains a list of Watcher.
 type WatcherList struct {
@@ -125,7 +125,7 @@ type WatcherList struct {
 	Items              []Watcher `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Watcher CRD on startup
 func init() {
 	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
 }
@@ -163,13 +163,15 @@ const (
 )
 
 func (watcher *Watcher) InitializeConditions() {
-	watcher.Status.Conditions = []apimetav1.Condition{{
-		Type:               string(WatcherConditionTypeVirtualService),
-		Status:             apimetav1.ConditionUnknown,
-		Message:            string(VirtualServiceNotConfiguredConditionMessage),
-		Reason:             string(ReadyConditionReason),
-		LastTransitionTime: apimetav1.Now(),
-	}}
+	watcher.Status.Conditions = []apimetav1.Condition{
+		{
+			Type:               string(WatcherConditionTypeVirtualService),
+			Status:             apimetav1.ConditionUnknown,
+			Message:            string(VirtualServiceNotConfiguredConditionMessage),
+			Reason:             string(ReadyConditionReason),
+			LastTransitionTime: apimetav1.Now(),
+		},
+	}
 }
 
 func (watcher *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,

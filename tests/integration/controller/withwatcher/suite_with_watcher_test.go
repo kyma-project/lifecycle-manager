@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-//nolint:gochecknoglobals
 package withwatcher_test
 
 import (
@@ -178,21 +177,34 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &watcher.SkrWebhookManagerConfig{
+	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
-		IstioNamespace:         istioSystemNs,
-		IstioGatewayName:       gatewayName,
-		IstioGatewayNamespace:  kcpSystemNs,
 		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
-		CACertificateName:      caCertificateName,
 	}
 
-	caCertCache := watcher.NewCertificateCache(5 * time.Minute)
+	certificateConfig := watcher.CertificateConfig{
+		IstioNamespace:      istioSystemNs,
+		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
+		CACertificateName:   caCertificateName,
+		AdditionalDNSNames:  []string{},
+		Duration:            1 * time.Hour,
+		RenewBefore:         5 * time.Minute,
+	}
 
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, k8sclientscheme.Scheme, caCertCache,
-		skrChartCfg)
+	gatewayConfig := watcher.GatewayConfig{
+		IstioGatewayName:          gatewayName,
+		IstioGatewayNamespace:     kcpSystemNs,
+		LocalGatewayPortOverwrite: "",
+	}
+
+	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
+
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
+		restCfg, k8sclientscheme.Scheme,
+		caCertCache,
+		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controller.KymaReconciler{
 		Client:            k8sManager.GetClient(),
@@ -211,11 +223,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controller.WatcherReconciler{
-		Client:           k8sManager.GetClient(),
-		RestConfig:       k8sManager.GetConfig(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
-		Scheme:           k8sclientscheme.Scheme,
-		RequeueIntervals: intervals,
+		Client:             k8sManager.GetClient(),
+		WatcherVSNamespace: kcpSystemNs,
+		RestConfig:         k8sManager.GetConfig(),
+		EventRecorder:      k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
+		Scheme:             k8sclientscheme.Scheme,
+		RequeueIntervals:   intervals,
 	}).SetupWithManager(
 		k8sManager, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,

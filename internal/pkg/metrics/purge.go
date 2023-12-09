@@ -1,9 +1,9 @@
 package metrics
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
@@ -24,7 +24,7 @@ type PurgeError string
 type PurgeMetrics struct {
 	purgeTimeGauge       prometheus.Gauge
 	purgeRequestsCounter prometheus.Counter
-	purgeErrorGauge      prometheus.GaugeVec
+	purgeErrorGauge      *prometheus.GaugeVec
 }
 
 func NewPurgeMetrics() *PurgeMetrics {
@@ -37,10 +37,10 @@ func NewPurgeMetrics() *PurgeMetrics {
 			Name: metricPurgeRequests,
 			Help: "Indicates total purge count ",
 		}),
-		purgeErrorGauge: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		purgeErrorGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: metricPurgeError,
 			Help: "Indicates purge errors",
-		}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel}),
+		}, []string{KymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel}),
 	}
 	ctrlmetrics.Registry.MustRegister(purgeMetrics.purgeTimeGauge)
 	ctrlmetrics.Registry.MustRegister(purgeMetrics.purgeRequestsCounter)
@@ -56,25 +56,25 @@ func (p *PurgeMetrics) UpdatePurgeTime(duration time.Duration) {
 	p.purgeTimeGauge.Set(duration.Seconds())
 }
 
-func (p *PurgeMetrics) UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
+func (p *PurgeMetrics) UpdatePurgeError(logger logr.Logger, kyma *v1beta2.Kyma, purgeError PurgeError) {
 	shootID, err := ExtractShootID(kyma)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errMetric, err)
+		logger.Error(err, "Failed to update error metrics")
+		return
 	}
 	instanceID, err := ExtractInstanceID(kyma)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errMetric, err)
+		return
 	}
 	metric, err := p.purgeErrorGauge.GetMetricWith(prometheus.Labels{
-		kymaNameLabel:    kyma.Name,
+		KymaNameLabel:    kyma.Name,
 		shootIDLabel:     shootID,
 		instanceIDLabel:  instanceID,
 		errorReasonLabel: string(purgeError),
 	})
 	if err != nil {
-		return fmt.Errorf("%w: %w", errMetric, err)
+		logger.Error(err, "Failed to update error metrics")
+		return
 	}
 	metric.Set(1)
-
-	return nil
 }

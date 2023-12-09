@@ -1,4 +1,4 @@
-package v1beta2_test
+package api_test
 
 import (
 	"testing"
@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-//nolint:funlen
 func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 	t.Parallel()
 

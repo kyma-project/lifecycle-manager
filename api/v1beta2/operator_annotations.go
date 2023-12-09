@@ -11,5 +11,5 @@ const (
 	SyncStrategyAnnotation     = "sync-strategy"
 	IsClusterScopedAnnotation  = OperatorPrefix + Separator + "is-cluster-scoped"
 	CustomStateCheckAnnotation = OperatorPrefix + Separator + "custom-state-check"
-	ModuleVersionAnnotation    = OperatorPrefix + "module-version"
+	ModuleVersionAnnotation    = OperatorPrefix + Separator + "module-version"
 )

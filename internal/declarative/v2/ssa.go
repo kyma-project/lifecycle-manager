@@ -16,7 +16,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
-var ErrClientObjectConversionFailed = errors.New("client object conversion failed")
+var (
+	ErrClientObjectConversionFailed = errors.New("client object conversion failed")
+	ErrServerSideApplyFailed        = errors.New("ServerSideApply failed")
+)
 
 type SSA interface {
 	Run(ctx context.Context, resourceInfo []*resource.Info) error
@@ -59,7 +62,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	ssaFinish := time.Since(ssaStart)
 
 	if errs != nil {
-		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish)) //nolint:goerr113
+		errs = append(errs, fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish))
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)

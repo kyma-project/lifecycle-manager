@@ -89,7 +89,7 @@ This setup is deployed with the following security features enabled:
 
    ```shell
    kyma alpha create module -p ../template-operator --version 1.2.3 \
-   --registry k3d-registry.localhost:5111 --insecure --kubebuilder-project
+   --registry k3d-registry.localhost:5111 --insecure --module-config-file ../template-operator/module-config.yaml
    ```
 
 6. Verify images pushed to the local registry:

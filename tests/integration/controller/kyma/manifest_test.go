@@ -40,7 +40,11 @@ const (
 	updatedModuleTemplateVersion = "v3.1.0"
 )
 
-var ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
+var (
+	ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
+	ErrVersionMismatch         = errors.New("manifest spec.version mismatch with module template")
+	ErrInvalidManifest         = errors.New("invalid ManifestResource")
+)
 
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
@@ -81,7 +85,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -132,7 +137,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
 				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
-					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s", //nolint:goerr113
+					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s",
 						manifestImageSpec.Repo, updateRepositoryURL)
 				}
 				return nil
@@ -163,7 +168,8 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install),
+				moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -172,6 +178,20 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 			return validateManifestSpecResource(manifest.Spec.Resource, moduleTemplate.Spec.Data)
 		}
 		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
+
+		By("checking Spec.Version")
+		hasValidSpecVersion := func(manifest *v1beta2.Manifest) error {
+			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
+			if err != nil {
+				return err
+			}
+
+			if manifest.Spec.Version != moduleTemplateDescriptor.Version {
+				return ErrVersionMismatch
+			}
+			return nil
+		}
+		Eventually(expectManifest(hasValidSpecVersion), Timeout, Interval).Should(Succeed())
 	})
 })
 
@@ -217,7 +237,8 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install),
+				moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -250,7 +271,8 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -352,7 +374,6 @@ func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
 	return validateManifestSpecInstallSourceType(manifestImageSpec)
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *v1beta2.Descriptor,
 ) error {
@@ -365,7 +386,6 @@ func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
 	return nil
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *v1beta2.Descriptor,
 ) error {
@@ -384,7 +404,7 @@ func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	expectedSourceRef := concreteAccessSpec.LocalReference
 
 	if actualSourceRef != expectedSourceRef {
-		return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
+		return fmt.Errorf("invalid manifest spec.install.source.ref: %s, expected: %s",
 			actualSourceRef, expectedSourceRef)
 	}
 
@@ -397,7 +417,7 @@ func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(ma
 		actualSourceRef := manifestImageSpec.Ref
 
 		if actualSourceRef != expectedSourceRef {
-			return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
+			return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s",
 				actualSourceRef, expectedSourceRef)
 		}
 
@@ -405,7 +425,6 @@ func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(ma
 	}
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *v1beta2.Descriptor,
 ) error {
@@ -436,7 +455,6 @@ func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 	return nil
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceType(manifestImageSpec *v1beta2.ImageSpec) error {
 	actualSourceType := string(manifestImageSpec.Type)
 	expectedSourceType := string(v1beta2.OciRefType) // no corresponding value in the ModuleTemplate?
@@ -465,7 +483,8 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJSON, expectedJSON) //nolint:goerr113
+		return fmt.Errorf("%w: \nActual:\n%s\nExpected:\n%s", ErrInvalidManifest, actualJSON,
+			expectedJSON)
 	}
 	return nil
 }
@@ -564,7 +583,6 @@ func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
 	return nil
 }
 
-//nolint:goerr113
 func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate) error {
 	descriptor, err := moduleTemplate.GetDescriptor()
 	if err != nil {

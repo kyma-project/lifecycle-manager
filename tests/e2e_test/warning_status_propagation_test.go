@@ -143,11 +143,11 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		})
 
 		It("Then Module CR and Manifest CR are removed", func() {
-			Eventually(CheckIfNotExists).
+			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system",
 					"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
-				Should(Succeed())
+				Should(Equal(ErrNotFound))
 			Eventually(ManifestExists).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).

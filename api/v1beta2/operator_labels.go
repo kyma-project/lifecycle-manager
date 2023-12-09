@@ -18,7 +18,7 @@ const (
 	ModuleName             = OperatorPrefix + Separator + "module-name"
 	IsRemoteModuleTemplate = OperatorPrefix + Separator + "remote-template"
 
-	//nolint:gosec
+	//nolint:gosec // OCI registry credits label, no confidential content
 	OCIRegistryCredLabel = "oci-registry-cred"
 	OperatorName         = "lifecycle-manager"
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
