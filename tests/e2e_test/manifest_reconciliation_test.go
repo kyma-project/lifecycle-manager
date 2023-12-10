@@ -53,8 +53,8 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("When deleting the SKR Default CR")
 			Eventually(DeleteCRWithGVK).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "sample-yaml", "kyma-system",
-					"operator.kyma-project.io", "v1alpha1", "Sample").
+				WithArguments(runtimeClient, "sample-yaml", "kyma-system", "operator.kyma-project.io",
+					"v1alpha1", "Sample").
 				Should(Succeed())
 			By("Then SKR Module Default CR is not recreated")
 			Consistently(CheckIfExists).

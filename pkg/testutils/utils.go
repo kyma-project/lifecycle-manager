@@ -107,6 +107,9 @@ func DeleteCRWithGVK(ctx context.Context, clnt client.Client, name, namespace, g
 		Kind:    kind,
 	})
 	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, obj); err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 	return DeleteCR(ctx, clnt, obj)
