@@ -24,10 +24,8 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState       = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
-	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
-	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
+	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
+	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
 )
 
 const (
