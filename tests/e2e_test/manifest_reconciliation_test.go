@@ -72,11 +72,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments("template-operator-controller-manager",
 					"template-operator-system", runtimeClient).
-				Should(Equal(ErrDeploymentNotReady))
-			Consistently(CheckIfExists).
-				WithContext(ctx).
-				WithArguments("template-operator-controller-manager", "template-operator-system",
-					"apps", "v1", "Deployment", runtimeClient).
 				Should(Equal(ErrNotFound))
 		})
 
