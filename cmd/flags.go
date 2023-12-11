@@ -153,6 +153,8 @@ func DefineFlagVar() *FlagVar {
 		defaultSelfSignedCertificateRenewBuffer,
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
+	flag.StringVar(&flagVar.dropStoredVersion, "drop-stored-version", "v1alpha1",
+		"The API version to be dropped from the storage versions")
 	return flagVar
 }
 
@@ -207,4 +209,5 @@ type FlagVar struct {
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
+	dropStoredVersion                      string
 }

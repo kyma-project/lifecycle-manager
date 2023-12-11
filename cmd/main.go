@@ -183,7 +183,9 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 	}
 
 	go func() {
-		dropVersionFromStoredVersions(mgr, "v1alpha1")
+		if flagVar.dropStoredVersion != "" {
+			dropStoredVersion(mgr, flagVar.dropStoredVersion)
+		}
 	}()
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
@@ -355,7 +357,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	}
 }
 
-func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved string) {
+func dropStoredVersion(mgr manager.Manager, versionToBeRemoved string) {
 	cfg := mgr.GetConfig()
 	kcpClient, err := clientset.NewForConfig(cfg)
 	if err != nil {
