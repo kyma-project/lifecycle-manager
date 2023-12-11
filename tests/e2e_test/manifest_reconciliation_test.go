@@ -61,7 +61,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
 					"v1alpha1", "Sample", runtimeClient).
-				ShouldNot(Succeed())
+				Should(Equal(ErrNotFound))
 
 			By("When deleting the SKR Module Manager Deployment")
 			err = DeleteCRWithGVK(ctx, runtimeClient, "template-operator-controller-manager",
@@ -72,7 +72,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments("template-operator-controller-manager", "template-operator-system",
 					"apps", "v1", "Deployment", runtimeClient).
-				ShouldNot(Succeed())
+				Should(Equal(ErrNotFound))
 		})
 
 		It("When the Manifest skip reconciliation label removed", func() {
@@ -91,10 +91,10 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 					"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
 				Should(Succeed())
 			By("Then Module Deployment is recreated")
-			Eventually(CheckIfExists).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-controller-manager",
-					"template-operator-system", "apps", "v1", "Deployment", runtimeClient).
+					"template-operator-system", runtimeClient).
 				Should(Succeed())
 
 			By("And the KCP Kyma CR is in a \"Ready\" State")
