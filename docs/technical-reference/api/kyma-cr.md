@@ -168,9 +168,7 @@ In addition, we also regularly issue `Events` for important things happening at 
 
 ### `operator.kyma-project.io` labels
 
-Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific
-label key and value to the Kyma CR and its related resources. For better understanding, use the
-matching [API label reference](/api/shared/operator_labels.go).
+Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the Kyma CR and its related resources. For better understanding, use the matching [API label reference](/api/shared/operator_labels.go).
 
 The most important labels include, but are not limited to:
 
