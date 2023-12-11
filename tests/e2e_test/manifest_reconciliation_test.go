@@ -26,10 +26,10 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 			By("Then the Module Operator is deployed on the SKR cluster")
-			Eventually(CheckIfExists).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments("template-operator-controller-manager", "template-operator-system", "apps", "v1",
-					"Deployment", runtimeClient).
+				WithArguments("template-operator-controller-manager",
+					"template-operator-system", runtimeClient).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State")
 			Eventually(CheckSampleCRIsInState).
@@ -68,6 +68,11 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				"template-operator-system", "apps", "v1", "Deployment")
 			Expect(err).ToNot(HaveOccurred())
 			By("Then Module Manager Deployment is not recreated on the SKR cluster")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments("template-operator-controller-manager",
+					"template-operator-system", runtimeClient).
+				Should(Equal(ErrDeploymentNotReady))
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments("template-operator-controller-manager", "template-operator-system",
