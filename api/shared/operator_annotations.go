@@ -1,15 +1,15 @@
 package shared
 
 const (
-	FQDN = OperatorPrefix + Separator + "fqdn"
+	FQDN = OperatorGroup + Separator + "fqdn"
 
 	// OwnedByAnnotation defines the resource managing the resource. Differing from ManagedBy
 	// in that it does not reference controllers. Used by the runtime-watcher to determine the
 	// corresponding CR in KCP.
-	OwnedByAnnotation          = OperatorPrefix + Separator + "owned-by"
+	OwnedByAnnotation          = OperatorGroup + Separator + "owned-by"
 	OwnedByFormat              = "%s/%s"
 	SyncStrategyAnnotation     = "sync-strategy"
-	IsClusterScopedAnnotation  = OperatorPrefix + Separator + "is-cluster-scoped"
-	CustomStateCheckAnnotation = OperatorPrefix + Separator + "custom-state-check"
-	ModuleVersionAnnotation    = OperatorPrefix + Separator + "module-version"
+	IsClusterScopedAnnotation  = OperatorGroup + Separator + "is-cluster-scoped"
+	CustomStateCheckAnnotation = OperatorGroup + Separator + "custom-state-check"
+	ModuleVersionAnnotation    = OperatorGroup + Separator + "module-version"
 )

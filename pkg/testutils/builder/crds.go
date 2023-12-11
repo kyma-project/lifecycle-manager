@@ -27,10 +27,10 @@ func NewCRDBuilder() CRDBuilder {
 				APIVersion: "apiextensions.k8s.io/v1",
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
-				Name: fmt.Sprintf("%ss.%s", strings.ToLower(crdName), shared.OperatorPrefix),
+				Name: fmt.Sprintf("%ss.%s", strings.ToLower(crdName), shared.OperatorGroup),
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-				Group: shared.OperatorPrefix,
+				Group: shared.OperatorGroup,
 				Names: createCRDNamesFrom(crdName),
 				Scope: "Namespaced",
 			},
@@ -40,7 +40,7 @@ func NewCRDBuilder() CRDBuilder {
 
 // WithName sets ObjectMeta.Name and all apiextensions.CustomResourceDefinitionNames.
 func (cb CRDBuilder) WithName(name string) CRDBuilder {
-	cb.crd.Name = fmt.Sprintf("%ss.%s", strings.ToLower(name), shared.OperatorPrefix)
+	cb.crd.Name = fmt.Sprintf("%ss.%s", strings.ToLower(name), shared.OperatorGroup)
 	cb.crd.Spec.Names = createCRDNamesFrom(name)
 	return cb
 }

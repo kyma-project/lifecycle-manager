@@ -134,7 +134,7 @@ func init() {
 // for the Watcher.
 func DefaultIstioGatewaySelector() apimetav1.LabelSelector {
 	return apimetav1.LabelSelector{
-		MatchLabels: map[string]string{shared.OperatorPrefix + shared.Separator + "watcher-gateway": "default"},
+		MatchLabels: map[string]string{shared.OperatorGroup + shared.Separator + "watcher-gateway": "default"},
 	}
 }
 

@@ -40,7 +40,7 @@ var (
 )
 
 const (
-	OCIRegistryCredLabelKeyForTest = shared.OperatorPrefix + shared.Separator + "oci-registry-cred"
+	OCIRegistryCredLabelKeyForTest = shared.OperatorGroup + shared.Separator + "oci-registry-cred"
 )
 
 type mockLayer struct {
@@ -141,7 +141,7 @@ func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": shared.OperatorPrefix + shared.Separator + "v1alpha1",
+				"apiVersion": shared.OperatorGroup + shared.Separator + "v1alpha1",
 				"kind":       "Sample",
 				"metadata": map[string]interface{}{
 					"name":      "sample-cr-" + manifest.GetName(),

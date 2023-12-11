@@ -12,7 +12,7 @@ import (
 const (
 	OperatorName              = "module-manager"
 	ManagedByLabelValue       = "declarative-v2"
-	DisclaimerAnnotation      = shared.OperatorPrefix + shared.Separator + "managed-by-reconciler-disclaimer"
+	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
 	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
 	OwnedByFormat = "%s/%s"

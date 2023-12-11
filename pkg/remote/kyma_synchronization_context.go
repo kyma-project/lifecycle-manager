@@ -87,7 +87,7 @@ func RemoveFinalizerFromRemoteKyma(
 		return err
 	}
 
-	controllerutil.RemoveFinalizer(remoteKyma, shared.Finalizer)
+	controllerutil.RemoveFinalizer(remoteKyma, shared.KymaFinalizer)
 
 	err = syncContext.RuntimeClient.Update(ctx, remoteKyma)
 	if err != nil {

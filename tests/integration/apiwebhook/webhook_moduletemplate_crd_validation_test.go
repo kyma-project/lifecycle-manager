@@ -27,12 +27,12 @@ import (
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   shared.OperatorPrefix,
+		Group:   shared.OperatorGroup,
 		Version: v1beta2.GroupVersion.Version,
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-		crd := GetCRD(shared.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
@@ -49,7 +49,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
-		crd := GetNonCompliantCRD(shared.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetNonCompliantCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
@@ -66,7 +66,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should deny a version downgrade when updating", func() {
-		crd := GetCRD(shared.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())

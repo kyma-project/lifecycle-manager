@@ -18,7 +18,7 @@ var _ = Describe(
 		data := unstructured.Unstructured{}
 		data.SetGroupVersionKind(
 			schema.GroupVersionKind{
-				Group:   shared.OperatorPrefix,
+				Group:   shared.OperatorGroup,
 				Version: v1beta2.GroupVersion.Version,
 				Kind:    "SampleCRD",
 			},
@@ -26,7 +26,7 @@ var _ = Describe(
 		It(
 			"should successfully fetch accept a moduletemplate based on template with a v3alpha1 ocm descriptor",
 			func() {
-				crd := GetCRD(shared.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+				crd := GetCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 				Eventually(k8sClient.Create, Timeout, Interval).
 					WithContext(webhookServerContext).
 					WithArguments(crd).Should(Succeed())

@@ -376,7 +376,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 	}
 
 	for _, crdItem := range crdList.Items {
-		if crdItem.Spec.Group != shared.OperatorPrefix && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
+		if crdItem.Spec.Group != shared.OperatorGroup && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
 			continue
 		}
 		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))

@@ -31,7 +31,7 @@ import (
 var (
 	// GroupVersion is group version used to register these objects.
 	GroupVersion = schema.GroupVersion{
-		Group:   shared.OperatorPrefix,
+		Group:   shared.OperatorGroup,
 		Version: "v1beta1",
 	}
 

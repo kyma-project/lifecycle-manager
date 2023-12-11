@@ -31,7 +31,7 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 	}); err != nil {
 		return nil, fmt.Errorf("failed to list kubeconfig secrets: %w", err)
 	} else if len(kubeConfigSecretList.Items) < 1 {
-		return nil, fmt.Errorf("secret with label %s: %w", shared.KymaName, ErrAccessSecretNotFound)
+		return nil, fmt.Errorf("secret with label %s=%s %w", shared.KymaName, name, ErrAccessSecretNotFound)
 	}
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]

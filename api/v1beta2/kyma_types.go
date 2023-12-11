@@ -433,8 +433,8 @@ func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	}
 
 	updateRequired := false
-	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, shared.Finalizer) {
-		controllerutil.AddFinalizer(kyma, shared.Finalizer)
+	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, shared.KymaFinalizer) {
+		controllerutil.AddFinalizer(kyma, shared.KymaFinalizer)
 		updateRequired = true
 	}
 

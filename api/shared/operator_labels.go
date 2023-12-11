@@ -1,37 +1,36 @@
 package shared
 
 const (
-	OperatorPrefix = "operator.kyma-project.io"
+	OperatorGroup  = "operator.kyma-project.io"
 	Separator      = "/"
-	ControllerName = OperatorPrefix + Separator + "controller-name"
-	ChannelLabel   = OperatorPrefix + Separator + "channel"
+	ControllerName = OperatorGroup + Separator + "controller-name"
+	ChannelLabel   = OperatorGroup + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
-	ManagedBy              = OperatorPrefix + Separator + "managed-by"
-	Finalizer              = OperatorPrefix + Separator + string(KymaKind)
-	PurgeFinalizer         = OperatorPrefix + Separator + "purge-finalizer"
-	KymaName               = OperatorPrefix + Separator + "kyma-name"
-	Signature              = OperatorPrefix + Separator + "signature"
-	ModuleName             = OperatorPrefix + Separator + "module-name"
-	IsRemoteModuleTemplate = OperatorPrefix + Separator + "remote-template"
+	ManagedBy = OperatorGroup + Separator + "managed-by"
+
+	KymaName               = OperatorGroup + Separator + "kyma-name"
+	Signature              = OperatorGroup + Separator + "signature"
+	ModuleName             = OperatorGroup + Separator + "module-name"
+	IsRemoteModuleTemplate = OperatorGroup + Separator + "remote-template"
 
 	//nolint:gosec // OCI registry credits label, no confidential content
 	OCIRegistryCredLabel = "oci-registry-cred"
 	OperatorName         = "lifecycle-manager"
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
-	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
+	WatchedByLabel = OperatorGroup + Separator + "watched-by"
 	// PurposeLabel defines the purpose of the resource, i.e. Secrets which will be used to certificate management.
-	PurposeLabel = OperatorPrefix + Separator + "purpose"
+	PurposeLabel = OperatorGroup + Separator + "purpose"
 	CertManager  = "klm-watcher-cert-manager"
 	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
-	SkipReconcileLabel    = OperatorPrefix + Separator + "skip-reconciliation"
+	SkipReconcileLabel    = OperatorGroup + Separator + "skip-reconciliation"
 	UnmanagedKyma         = "unmanaged-kyma"
 	DefaultRemoteKymaName = "default"
-	InternalLabel         = OperatorPrefix + Separator + "internal"
-	BetaLabel             = OperatorPrefix + Separator + "beta"
+	InternalLabel         = OperatorGroup + Separator + "internal"
+	BetaLabel             = OperatorGroup + Separator + "beta"
 
 	// Controls ModuleTemplate sync logic.
 	// If put on the Kyma object, allows to disable sync for all ModuleTemplatesByLabel
 	// If put on a single ModuleTemplate, allows to disable sync just for this object.
-	SyncLabel = OperatorPrefix + Separator + "sync"
+	SyncLabel = OperatorGroup + Separator + "sync"
 )

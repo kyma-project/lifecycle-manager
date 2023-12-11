@@ -41,7 +41,7 @@ func NewTestModuleCR(namespace string) *unstructured.Unstructured {
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	exists, err := DeletionTimeStampExists(ctx, shared.OperatorPrefix, "v1alpha1",
+	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string,
 }
 
 func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	exists, err := DeletionTimeStampExists(ctx, shared.OperatorPrefix, "v1alpha1",
+	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err

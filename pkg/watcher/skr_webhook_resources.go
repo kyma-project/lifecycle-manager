@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	podRestartLabelKey      = shared.OperatorPrefix + shared.Separator + "pod-restart-trigger"
+	podRestartLabelKey      = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
 	kcpAddressEnvName       = "KCP_ADDR"
 	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
 	SkrTLSName              = "skr-webhook-tls"
@@ -74,7 +74,7 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
 		moduleName := watcher.GetModuleName()
-		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorPrefix)
+		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorGroup)
 		svcPath := fmt.Sprintf("/validate/%s", moduleName)
 		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
 		sideEffects := admissionregistrationv1.SideEffectClassNoneOnDryRun
