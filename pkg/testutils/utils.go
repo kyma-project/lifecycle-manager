@@ -99,6 +99,22 @@ func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 	return fmt.Errorf("%s/%s: %w", obj.GetNamespace(), obj.GetName(), ErrNotDeleted)
 }
 
+func DeleteCRWithGVK(ctx context.Context, clnt client.Client, name, namespace, group, version, kind string) error {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, obj); err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return DeleteCR(ctx, clnt, obj)
+}
+
 func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
 	err := clnt.Create(ctx, obj)
 	if !apierrors.IsAlreadyExists(err) {

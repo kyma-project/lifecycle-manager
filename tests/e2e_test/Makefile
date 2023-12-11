@@ -87,6 +87,9 @@ module-without-default-cr:
 non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
 
+skip-manifest-reconciliation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manifest Skip Reconciliation Label"
+
 upgrade-under-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
 
