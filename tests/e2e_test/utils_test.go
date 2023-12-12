@@ -24,10 +24,8 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState       = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
-	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
-	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
+	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
+	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
 )
 
 const (
@@ -84,39 +82,6 @@ func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 			Should(Succeed())
 	})
-}
-
-func CheckManifestIsInState(
-	ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-	expectedState shared.State,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return err
-	}
-
-	if manifest.Status.State != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s",
-			errManifestNotInExpectedState, expectedState, manifest.Status.State)
-	}
-	return nil
-}
-
-func ManifestNoDeletionTimeStampSet(ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return err
-	}
-
-	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
-		return errManifestDeletionTimestampSet
-	}
-	return nil
 }
 
 func CheckIfExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
