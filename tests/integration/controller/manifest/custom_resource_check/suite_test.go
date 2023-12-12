@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
-	k8slabels "k8s.io/apimachinery/pkg/labels"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,7 +36,6 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -103,7 +101,7 @@ var _ = BeforeSuite(
 		if !found {
 			metricsBindAddress = ":0"
 		}
-		cacheOpts := internal.GetCacheOptions(k8slabels.Set{shared.ManagedBy: shared.OperatorName})
+		cacheOpts := internal.DefaultCacheOptions()
 		syncPeriod := 2 * time.Second
 		cacheOpts.SyncPeriod = &syncPeriod
 
