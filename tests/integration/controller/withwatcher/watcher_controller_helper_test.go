@@ -142,7 +142,7 @@ func createCaCertificate() *certmanagerv1.Certificate {
 			SecretName: "klm-watcher-root-secret",
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: map[string]string{
-					shared.WatchedByLabel: "lifecycle-manager",
+					shared.ManagedBy: shared.OperatorName,
 				},
 			},
 			PrivateKey: &certmanagerv1.CertificatePrivateKey{
