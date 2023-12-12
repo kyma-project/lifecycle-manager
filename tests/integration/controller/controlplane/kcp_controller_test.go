@@ -2,7 +2,6 @@ package controlplane_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,7 +11,7 @@ import (
 
 var _ = Describe("Kyma with managed fields in kcp mode", Ordered, func() {
 	kyma := NewTestKyma("managed-kyma")
-	kyma.Labels[shared.SyncLabel] = v1beta2.DisableLabelValue
+	kyma.Labels[shared.SyncLabel] = shared.DisableLabelValue
 
 	registerControlPlaneLifecycleForKyma(kyma)
 

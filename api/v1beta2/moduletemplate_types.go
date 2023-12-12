@@ -220,21 +220,21 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 
 func (m *ModuleTemplate) syncDisabled() bool {
 	if isSync, found := m.Labels[shared.SyncLabel]; found {
-		return strings.ToLower(isSync) == DisableLabelValue
+		return strings.ToLower(isSync) == shared.DisableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsInternal() bool {
 	if isInternal, found := m.Labels[shared.InternalLabel]; found {
-		return strings.ToLower(isInternal) == EnableLabelValue
+		return strings.ToLower(isInternal) == shared.EnableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsBeta() bool {
 	if isBeta, found := m.Labels[shared.BetaLabel]; found {
-		return strings.ToLower(isBeta) == EnableLabelValue
+		return strings.ToLower(isBeta) == shared.EnableLabelValue
 	}
 	return false
 }

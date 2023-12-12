@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("Manifest.Spec.Remote in KCP mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
-	kyma.Labels[shared.SyncLabel] = v1beta2.DisableLabelValue
+	kyma.Labels[shared.SyncLabel] = shared.DisableLabelValue
 
 	module := NewTestModule("module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)

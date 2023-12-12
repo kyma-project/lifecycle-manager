@@ -90,10 +90,10 @@ func givenKymaAndModuleTemplateCondition(
 			kyma.Labels = map[string]string{}
 		}
 		if isKymaInternal {
-			kyma.Labels[shared.InternalLabel] = v1beta2.EnableLabelValue
+			kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
 		}
 		if isKymaBeta {
-			kyma.Labels[shared.BetaLabel] = v1beta2.EnableLabelValue
+			kyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
 		}
 		for _, module := range kyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
@@ -101,10 +101,10 @@ func givenKymaAndModuleTemplateCondition(
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion)
 			if isModuleTemplateInternal {
-				mtBuilder.WithLabel(shared.InternalLabel, v1beta2.EnableLabelValue)
+				mtBuilder.WithLabel(shared.InternalLabel, shared.EnableLabelValue)
 			}
 			if isModuleTemplateBeta {
-				mtBuilder.WithLabel(shared.BetaLabel, v1beta2.EnableLabelValue)
+				mtBuilder.WithLabel(shared.BetaLabel, shared.EnableLabelValue)
 			}
 			template := mtBuilder.Build()
 			Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).

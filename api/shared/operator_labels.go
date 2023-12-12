@@ -33,4 +33,7 @@ const (
 	// If put on the Kyma object, allows to disable sync for all ModuleTemplatesByLabel
 	// If put on a single ModuleTemplate, allows to disable sync just for this object.
 	SyncLabel = OperatorGroup + Separator + "sync"
+
+	EnableLabelValue  = "true"
+	DisableLabelValue = "false"
 )

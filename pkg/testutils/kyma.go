@@ -36,7 +36,7 @@ func NewKymaWithSyncLabel(name, namespace, channel, syncStrategy string) *v1beta
 		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
 		WithAnnotation(shared.SyncStrategyAnnotation, syncStrategy).
 		WithLabel(shared.InstanceIDLabel, "test-instance").
-		WithLabel(shared.SyncLabel, v1beta2.EnableLabelValue).
+		WithLabel(shared.SyncLabel, shared.EnableLabelValue).
 		WithChannel(channel).
 		Build()
 }

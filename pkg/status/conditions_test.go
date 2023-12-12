@@ -75,9 +75,9 @@ func TestInitConditions(t *testing.T) {
 				})
 
 			if testcase.hasSyncLabel {
-				labelValue := v1beta2.DisableLabelValue
+				labelValue := shared.DisableLabelValue
 				if testcase.syncLabelValueEnabled {
-					labelValue = v1beta2.EnableLabelValue
+					labelValue = shared.EnableLabelValue
 				}
 				kymaBuilder.WithLabel(shared.SyncLabel, labelValue)
 			}
