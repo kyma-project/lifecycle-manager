@@ -182,13 +182,11 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
-	go func() {
-		if flagVar.dropStoredVersion != "" {
-			dropStoredVersion(mgr, flagVar.dropStoredVersion)
-		}
-	}()
-
+	if flagVar.dropStoredVersion != "" {
+		go func(version string) {
+			dropStoredVersion(mgr, version)
+		}(flagVar.dropStoredVersion)
+	}
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
