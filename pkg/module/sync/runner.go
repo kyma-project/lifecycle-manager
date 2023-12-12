@@ -237,7 +237,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			TypeMeta:    apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
-		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
+		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == shared.EnableLabelValue {
 			moduleResource.PartialMeta.Namespace = ""
 		}
 	}

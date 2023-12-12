@@ -371,31 +371,26 @@ func (kyma *Kyma) AllModulesReady() bool {
 	return true
 }
 
-const (
-	EnableLabelValue  = "true"
-	DisableLabelValue = "false"
-)
-
 func (kyma *Kyma) HasSyncLabelEnabled() bool {
 	if sync, found := kyma.Labels[shared.SyncLabel]; found {
-		return strings.ToLower(sync) == EnableLabelValue
+		return strings.ToLower(sync) == shared.EnableLabelValue
 	}
 	return true // missing label defaults to enabled sync
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
 	skip, found := kyma.Labels[shared.SkipReconcileLabel]
-	return found && strings.ToLower(skip) == EnableLabelValue
+	return found && strings.ToLower(skip) == shared.EnableLabelValue
 }
 
 func (kyma *Kyma) IsInternal() bool {
 	internal, found := kyma.Labels[shared.InternalLabel]
-	return found && strings.ToLower(internal) == EnableLabelValue
+	return found && strings.ToLower(internal) == shared.EnableLabelValue
 }
 
 func (kyma *Kyma) IsBeta() bool {
 	beta, found := kyma.Labels[shared.BetaLabel]
-	return found && strings.ToLower(beta) == EnableLabelValue
+	return found && strings.ToLower(beta) == shared.EnableLabelValue
 }
 
 type AvailableModule struct {

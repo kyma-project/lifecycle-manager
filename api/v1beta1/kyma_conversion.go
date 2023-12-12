@@ -18,9 +18,9 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 		dst.ObjectMeta.Labels = make(map[string]string)
 	}
 	if !src.Spec.Sync.Enabled {
-		dst.ObjectMeta.Labels[shared.SyncLabel] = v1beta2.DisableLabelValue
+		dst.ObjectMeta.Labels[shared.SyncLabel] = shared.DisableLabelValue
 	} else {
-		dst.ObjectMeta.Labels[shared.SyncLabel] = v1beta2.EnableLabelValue
+		dst.ObjectMeta.Labels[shared.SyncLabel] = shared.EnableLabelValue
 	}
 	dst.Spec.Channel = src.Spec.Channel
 	dst.Spec.Modules = src.Spec.Modules

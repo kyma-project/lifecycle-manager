@@ -287,7 +287,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			WithChannel(module.Channel).
 			WithModuleCR(data).
 			WithOCM(compdescv2.SchemaVersion).
-			WithAnnotation(shared.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+			WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
 		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
@@ -372,7 +372,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 					WithModuleName(module.Name).
 					WithChannel(module.Channel).
 					WithOCM(compdescv2.SchemaVersion).
-					WithAnnotation(shared.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+					WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
 				Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
 					WithArguments(template).
 					Should(Succeed())
