@@ -25,7 +25,6 @@ import (
 )
 
 const (
-	ManifestKind         = "Manifest"
 	RawManifestLayerName = "raw-manifest"
 )
 

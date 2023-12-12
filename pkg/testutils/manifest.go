@@ -12,7 +12,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
@@ -29,7 +28,7 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 			Name:      fmt.Sprintf("%s-%s", prefix, builder.RandomName()),
 			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta2.KymaName: string(uuid.NewUUID()),
+				shared.KymaName: string(uuid.NewUUID()),
 			},
 			Annotations: map[string]string{},
 		},
@@ -154,7 +153,7 @@ func AddSkipLabelToManifest(
 		return fmt.Errorf("failed to get manifest, %w", err)
 	}
 
-	manifest.Labels[declarativev2.SkipReconcileLabel] = "true"
+	manifest.Labels[shared.SkipReconcileLabel] = "true"
 	err = clnt.Update(ctx, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to update manifest, %w", err)
@@ -174,7 +173,7 @@ func SkipLabelExistsInManifest(ctx context.Context,
 		return false
 	}
 
-	return manifest.Labels[declarativev2.SkipReconcileLabel] == "true"
+	return manifest.Labels[shared.SkipReconcileLabel] == "true"
 }
 
 func CheckManifestIsInState(

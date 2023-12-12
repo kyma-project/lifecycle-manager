@@ -15,6 +15,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
@@ -22,7 +23,6 @@ const (
 	FinalizerDefault        = "declarative.kyma-project.io/finalizer"
 	FieldOwnerDefault       = "declarative.kyma-project.io/applier"
 	EventRecorderDefault    = "declarative.kyma-project.io/events"
-	SkipReconcileLabel      = "operator.kyma-project.io/skip-reconciliation"
 	DefaultInMemoryParseTTL = 24 * time.Hour
 )
 
@@ -300,8 +300,8 @@ type SkipReconcile func(context.Context, Object) (skip bool)
 
 // SkipReconcileOnDefaultLabelPresentAndTrue determines SkipReconcile by checking if DefaultSkipReconcileLabel is true.
 func SkipReconcileOnDefaultLabelPresentAndTrue(ctx context.Context, object Object) bool {
-	if object.GetLabels() != nil && object.GetLabels()[SkipReconcileLabel] == "true" {
-		logf.FromContext(ctx, "skip-label", SkipReconcileLabel).
+	if object.GetLabels() != nil && object.GetLabels()[shared.SkipReconcileLabel] == "true" {
+		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
 			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
 		return true
 	}

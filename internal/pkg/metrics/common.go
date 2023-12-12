@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -15,16 +16,16 @@ const (
 )
 
 var (
-	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", v1beta2.SKRDomainAnnotation)
-	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", v1beta2.SKRDomainAnnotation)
-	errMissingInstanceLabel   = fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
-	errInstanceLabelNoValue   = fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
+	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", shared.SKRDomainAnnotation)
+	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", shared.SKRDomainAnnotation)
+	errMissingInstanceLabel   = fmt.Errorf("expected label '%s' not found", shared.InstanceIDLabel)
+	errInstanceLabelNoValue   = fmt.Errorf("label '%s' has empty value", shared.InstanceIDLabel)
 	errMetric                 = errors.New("failed to update metrics")
 )
 
 func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
 	shoot := ""
-	shootFQDN, keyExists := kyma.Annotations[v1beta2.SKRDomainAnnotation]
+	shootFQDN, keyExists := kyma.Annotations[shared.SKRDomainAnnotation]
 	if keyExists {
 		parts := strings.Split(shootFQDN, ".")
 		minFqdnParts := 2
@@ -42,7 +43,7 @@ func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
 }
 
 func ExtractInstanceID(kyma *v1beta2.Kyma) (string, error) {
-	instanceID, keyExists := kyma.Labels[v1beta2.InstanceIDLabel]
+	instanceID, keyExists := kyma.Labels[shared.InstanceIDLabel]
 	if !keyExists {
 		return "", errMissingInstanceLabel
 	}

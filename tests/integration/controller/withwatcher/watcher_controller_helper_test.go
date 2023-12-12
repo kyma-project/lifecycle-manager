@@ -15,6 +15,7 @@ import (
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -141,7 +142,7 @@ func createCaCertificate() *certmanagerv1.Certificate {
 			SecretName: "klm-watcher-root-secret",
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: map[string]string{
-					"operator.kyma-project.io/managed-by": "lifecycle-manager",
+					shared.ManagedBy: shared.OperatorName,
 				},
 			},
 			PrivateKey: &certmanagerv1.CertificatePrivateKey{
@@ -158,14 +159,14 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 	}
 	return &v1beta2.Watcher{
 		TypeMeta: apimetav1.TypeMeta{
-			Kind:       string(v1beta2.WatcherKind),
+			Kind:       string(shared.WatcherKind),
 			APIVersion: v1beta2.GroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
 			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta2.ManagedBy: managerInstanceName,
+				shared.ManagedBy: managerInstanceName,
 			},
 		},
 		Spec: v1beta2.WatcherSpec{
@@ -196,7 +197,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
-				v1beta2.ManagedBy: v1beta2.OperatorName,
+				shared.ManagedBy: shared.OperatorName,
 			},
 		},
 		Data: map[string][]byte{
@@ -263,7 +264,9 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, names
 	return errRouteNotFound
 }
 
-func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, namespace string, watcherObjKey client.ObjectKey) error {
+func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, namespace string,
+	watcherObjKey client.ObjectKey,
+) error {
 	virtualService, err := clt.GetVirtualService(ctx, watcherObjKey.Name, namespace)
 	if err != nil {
 		return err

@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -17,7 +18,7 @@ var _ = Describe(
 		data := unstructured.Unstructured{}
 		data.SetGroupVersionKind(
 			schema.GroupVersionKind{
-				Group:   v1beta2.OperatorPrefix,
+				Group:   shared.OperatorGroup,
 				Version: v1beta2.GroupVersion.Version,
 				Kind:    "SampleCRD",
 			},
@@ -25,7 +26,7 @@ var _ = Describe(
 		It(
 			"should successfully fetch accept a moduletemplate based on template with a v3alpha1 ocm descriptor",
 			func() {
-				crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+				crd := GetCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 				Eventually(k8sClient.Create, Timeout, Interval).
 					WithContext(webhookServerContext).
 					WithArguments(crd).Should(Succeed())

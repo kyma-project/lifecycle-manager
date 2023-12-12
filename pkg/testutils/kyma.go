@@ -34,9 +34,9 @@ func NewKymaWithSyncLabel(name, namespace, channel, syncStrategy string) *v1beta
 		WithNamePrefix(name).
 		WithNamespace(namespace).
 		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
-		WithAnnotation(v1beta2.SyncStrategyAnnotation, syncStrategy).
-		WithLabel(v1beta2.InstanceIDLabel, "test-instance").
-		WithLabel(v1beta2.SyncLabel, v1beta2.EnableLabelValue).
+		WithAnnotation(shared.SyncStrategyAnnotation, syncStrategy).
+		WithLabel(shared.InstanceIDLabel, "test-instance").
+		WithLabel(shared.SyncLabel, v1beta2.EnableLabelValue).
 		WithChannel(channel).
 		Build()
 }
@@ -80,8 +80,8 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Clie
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
-		if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
-			controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
+		if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
+			controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer)
 			if err := clnt.Update(ctx, kyma); err != nil {
 				return fmt.Errorf("can't remove purge finalizer %w", err)
 			}
@@ -223,7 +223,7 @@ func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*
 
 func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Client, state shared.State) error {
 	return CRIsInState(ctx,
-		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(v1beta2.KymaKind),
+		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(shared.KymaKind),
 		name, namespace,
 		[]string{"status", "state"},
 		clnt,

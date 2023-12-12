@@ -25,13 +25,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 var (
 	// GroupVersion is group version used to register these objects.
 	GroupVersion = schema.GroupVersion{
-		Group:   "operator.kyma-project.io",
+		Group:   shared.OperatorGroup,
 		Version: "v1beta1",
 	}
 
@@ -42,5 +42,5 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 
 	// GroupVersionResource is group version resource.
-	GroupVersionResource = GroupVersion.WithResource(v1beta2.KymaKind.Plural())
+	GroupVersionResource = GroupVersion.WithResource(shared.KymaKind.Plural())
 )

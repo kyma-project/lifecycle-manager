@@ -16,6 +16,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"github.com/open-component-model/ocm/pkg/runtime"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -124,7 +125,7 @@ func getOCIRef(
 	} else {
 		layerRef.Ref = ref
 	}
-	if registryCredValue, found := labels.Get(v1beta2.OCIRegistryCredLabel); found {
+	if registryCredValue, found := labels.Get(shared.OCIRegistryCredLabel); found {
 		credSecretSelector, err := ocmextensions.GenerateLabelSelector(registryCredValue)
 		if err != nil {
 			return nil, err

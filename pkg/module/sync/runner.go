@@ -110,7 +110,7 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		return commonerrs.ErrTypeAssert
 	}
 
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[v1beta2.ManagedBy], module.Enabled,
+	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled,
 		manifestObj); err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			TypeMeta:    apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
-		if module.Template.Annotations[v1beta2.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
+		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
 			moduleResource.PartialMeta.Namespace = ""
 		}
 	}

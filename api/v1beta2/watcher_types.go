@@ -113,7 +113,7 @@ func (watcher *Watcher) GetModuleName() string {
 	if watcher.Labels == nil {
 		return ""
 	}
-	return watcher.Labels[ManagedBy]
+	return watcher.Labels[shared.ManagedBy]
 }
 
 // +kubebuilder:object:root=true
@@ -134,7 +134,7 @@ func init() {
 // for the Watcher.
 func DefaultIstioGatewaySelector() apimetav1.LabelSelector {
 	return apimetav1.LabelSelector{
-		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
+		MatchLabels: map[string]string{shared.OperatorGroup + shared.Separator + "watcher-gateway": "default"},
 	}
 }
 

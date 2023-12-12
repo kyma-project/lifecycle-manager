@@ -10,6 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
@@ -18,7 +19,7 @@ func createKyma(kymaName string, annotations map[string]string) *v1beta2.Kyma {
 	return &v1beta2.Kyma{
 		TypeMeta: apimetav1.TypeMeta{
 			APIVersion: v1beta2.GroupVersion.String(),
-			Kind:       string(v1beta2.KymaKind),
+			Kind:       string(shared.KymaKind),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:        kymaName,

@@ -9,6 +9,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
@@ -192,7 +193,7 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 	if err != nil {
 		return fmt.Errorf("failed to marshal stateCheck: %w", err)
 	}
-	manifest.Annotations[v1beta2.CustomStateCheckAnnotation] = string(stateCheckByte)
+	manifest.Annotations[shared.CustomStateCheckAnnotation] = string(stateCheckByte)
 	return nil
 }
 

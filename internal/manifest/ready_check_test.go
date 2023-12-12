@@ -309,7 +309,7 @@ func TestHandleState(t *testing.T) {
 						t.Errorf("HandleState() error = %v", err)
 						return
 					}
-					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
+					manifestCR.Annotations[shared.CustomStateCheckAnnotation] = string(marshal)
 				}
 			}
 			manifestCR.CreationTimestamp = apimetav1.Now()
@@ -420,7 +420,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 						t.Errorf("HandleState() error = %v", err)
 						return
 					}
-					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
+					manifestCR.Annotations[shared.CustomStateCheckAnnotation] = string(marshal)
 				}
 			}
 			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
