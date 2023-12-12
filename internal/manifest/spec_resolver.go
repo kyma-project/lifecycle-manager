@@ -55,7 +55,7 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 	}
 
 	targetClient := m.KCP.Client
-	if manifest.Labels[shared.IsRemoteModuleTemplate] == v1beta2.EnableLabelValue {
+	if manifest.Labels[shared.IsRemoteModuleTemplate] == shared.EnableLabelValue {
 		targetClient = remoteClient
 	}
 	var imageSpec v1beta2.ImageSpec

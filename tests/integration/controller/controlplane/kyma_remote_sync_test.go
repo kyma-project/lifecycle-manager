@@ -252,7 +252,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 				return err
 			}
 
-			if manifest.Labels[shared.IsRemoteModuleTemplate] != v1beta2.EnableLabelValue {
+			if manifest.Labels[shared.IsRemoteModuleTemplate] != shared.EnableLabelValue {
 				return ErrRemoteTemplateLabelNotFound
 			}
 			return nil
