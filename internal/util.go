@@ -75,11 +75,7 @@ func DefaultCacheOptions() cache.Options {
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
 			&apicorev1.Secret{}: {
-				Namespaces: map[string]cache.Config{
-					cache.AllNamespaces: {
-						LabelSelector: k8slabels.Everything(),
-					},
-				},
+				Label: k8slabels.Everything(),
 			},
 		},
 	}
