@@ -28,7 +28,7 @@ require (
 )
 
 require (
-	istio.io/api v1.20.0
+	istio.io/api v1.20.1
 	istio.io/client-go v1.20.0
 )
 
