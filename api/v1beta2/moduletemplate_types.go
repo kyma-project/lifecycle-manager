@@ -38,6 +38,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:storageversion
 
 type ModuleTemplate struct {
 	apimetav1.TypeMeta   `json:",inline"`
