@@ -63,6 +63,8 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '^1.21'
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: Install Istio CLI
         run: |
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
