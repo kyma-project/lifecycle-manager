@@ -171,3 +171,29 @@ func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 
 	return nil
 }
+
+// SetupWithManager sets up the Purge controller with the Manager.
+func (r *MandatoryModulesReconciler) SetupWithManager(mgr ctrl.Manager,
+	options ctrlruntime.Options,
+) error {
+	predicates := predicate.Or(predicate.GenerationChangedPredicate{})
+
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		For(&v1beta2.Kyma{}).
+		WithOptions(options).
+		WithEventFilter(predicates).
+		// TODO: DO something like the following, but only requeue Kyma if a Mandatory module changed
+		// Watches(
+		// 	&v1beta2.ModuleTemplate{},
+		// 	handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
+		// 	builder.WithPredicates(predicates),
+		// ).
+		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
+		Watches(&apicorev1.Secret{}, handler.Funcs{})
+
+	if err := controllerBuilder.Complete(r); err != nil {
+		return fmt.Errorf("error occurred while building controller: %w", err)
+	}
+
+	return nil
+}

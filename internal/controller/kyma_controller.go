@@ -34,8 +34,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
@@ -497,7 +497,7 @@ func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta
 }
 
 func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1beta2.Kyma) (common.Modules, error) {
-	templates := channel.GetTemplates(ctx, r, kyma, r.SyncKymaEnabled(kyma))
+	templates := lookup.GetTemplates(ctx, r, kyma, r.SyncKymaEnabled(kyma))
 	for _, template := range templates {
 		if template.Err != nil {
 			r.enqueueWarningEvent(kyma, moduleReconciliationError, template.Err)

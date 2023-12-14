@@ -162,6 +162,7 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager)
 	setupManifestReconciler(mgr, flagVar, options)
+	setupMandatoryModulesReconciler(mgr, remoteClientCache, flagVar, options)
 
 	if flagVar.enablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
@@ -350,6 +351,37 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
+		os.Exit(1)
+	}
+}
+
+func setupMandatoryModulesReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *FlagVar,
+	options ctrlruntime.Options,
+) {
+	options.MaxConcurrentReconciles = flagVar.maxConcurrentMandatoryModulesReconciles
+	kcpRestConfig := mgr.GetConfig()
+
+	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
+		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
+		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
+	}
+
+	if err := (&controller.MandatoryModulesReconciler{
+		Client:              mgr.GetClient(),
+		EventRecorder:       mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		KcpRestConfig:       kcpRestConfig,
+		RemoteClientCache:   remoteClientCache,
+		ResolveRemoteClient: resolveRemoteClientFunc,
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.kymaRequeueSuccessInterval,
+			Busy:    flagVar.kymaRequeueBusyInterval,
+			Error:   flagVar.kymaRequeueErrInterval,
+			Warning: flagVar.kymaRequeueWarningInterval,
+		},
+		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+		InKCPMode:           flagVar.inKCPMode,
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModules")
 		os.Exit(1)
 	}
 }

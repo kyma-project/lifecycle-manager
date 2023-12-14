@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
 )
 
 type (
@@ -19,7 +19,7 @@ type (
 		ModuleName string
 		FQDN       string
 		Version    string
-		Template   *channel.ModuleTemplateTO
+		Template   *lookup.ModuleTemplateTO
 		*v1beta2.Manifest
 	}
 )

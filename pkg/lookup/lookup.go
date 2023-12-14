@@ -1,4 +1,4 @@
-package channel
+package lookup
 
 import (
 	"context"
@@ -76,6 +76,27 @@ func GetTemplates(
 	CheckValidTemplatesUpdate(logger, kyma, templates)
 
 	return templates
+}
+
+// GetMandatoryTemplates returns all ModuleTemplates for modules which are marked as mandatory with the given channel.
+func GetMandatoryTemplates(ctx context.Context, kymaClient client.Reader, channel string) (ModuleTemplatesByModuleName,
+	error) {
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	if err := kymaClient.List(ctx, moduleTemplateList); err != nil {
+		logf.FromContext(ctx).Error(err, "could not list ModuleTemplates")
+		return nil, err
+	}
+	var mandatoryModules ModuleTemplatesByModuleName
+	for _, moduleTemplate := range moduleTemplateList.Items {
+		if moduleTemplate.Spec.Mandatory && moduleTemplate.Spec.Channel == channel {
+			mandatoryModules[moduleTemplate.Name] = &ModuleTemplateTO{
+				ModuleTemplate: &moduleTemplate,
+				DesiredChannel: moduleTemplate.Spec.Channel,
+				Err:            nil,
+			}
+		}
+	}
+	return mandatoryModules, nil
 }
 
 func DetermineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {

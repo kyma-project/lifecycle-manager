@@ -8,34 +8,35 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval                     = 30 * time.Second
-	defaultKymaRequeueErrInterval                         = 2 * time.Second
-	defaultKymaRequeueWarningInterval                     = 30 * time.Second
-	defaultKymaRequeueBusyInterval                        = 5 * time.Second
-	defaultManifestRequeueSuccessInterval                 = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval                  = 30 * time.Second
-	defaultClientQPS                                      = 300
-	defaultClientBurst                                    = 600
-	defaultPprofServerTimeout                             = 90 * time.Second
-	rateLimiterBurstDefault                               = 200
-	rateLimiterFrequencyDefault                           = 30
-	failureBaseDelayDefault                               = 100 * time.Millisecond
-	failureMaxDelayDefault                                = 5 * time.Second
-	defaultCacheSyncTimeout                               = 2 * time.Minute
-	defaultLogLevel                                       = log.WarnLevel
-	defaultPurgeFinalizerTimeout                          = 5 * time.Minute
-	defaultMaxConcurrentManifestReconciles                = 1
-	defaultMaxConcurrentKymaReconciles                    = 1
-	defaultMaxConcurrentWatcherReconciles                 = 1
-	defaultIstioGatewayName                               = "klm-watcher-gateway"
-	defaultIstioGatewayNamespace                          = "kcp-system"
-	defaultIstioNamespace                                 = "istio-system"
-	defaultCaCertName                                     = "klm-watcher-serving-cert"
-	defaultCaCertCacheTTL                   time.Duration = 1 * time.Hour
-	defaultSelfSignedCertDuration           time.Duration = 90 * 24 * time.Hour
-	defaultSelfSignedCertRenewBefore        time.Duration = 60 * 24 * time.Hour
-	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
-	DefaultRemoteSyncNamespace                            = "kyma-system"
+	defaultKymaRequeueSuccessInterval                            = 30 * time.Second
+	defaultKymaRequeueErrInterval                                = 2 * time.Second
+	defaultKymaRequeueWarningInterval                            = 30 * time.Second
+	defaultKymaRequeueBusyInterval                               = 5 * time.Second
+	defaultManifestRequeueSuccessInterval                        = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval                         = 30 * time.Second
+	defaultClientQPS                                             = 300
+	defaultClientBurst                                           = 600
+	defaultPprofServerTimeout                                    = 90 * time.Second
+	rateLimiterBurstDefault                                      = 200
+	rateLimiterFrequencyDefault                                  = 30
+	failureBaseDelayDefault                                      = 100 * time.Millisecond
+	failureMaxDelayDefault                                       = 5 * time.Second
+	defaultCacheSyncTimeout                                      = 2 * time.Minute
+	defaultLogLevel                                              = log.WarnLevel
+	defaultPurgeFinalizerTimeout                                 = 5 * time.Minute
+	defaultMaxConcurrentManifestReconciles                       = 1
+	defaultMaxConcurrentKymaReconciles                           = 1
+	defaultMaxConcurrentWatcherReconciles                        = 1
+	defaultMaxConcurrentMandatoryModulesReconciles               = 1
+	defaultIstioGatewayName                                      = "klm-watcher-gateway"
+	defaultIstioGatewayNamespace                                 = "kcp-system"
+	defaultIstioNamespace                                        = "istio-system"
+	defaultCaCertName                                            = "klm-watcher-serving-cert"
+	defaultCaCertCacheTTL                          time.Duration = 1 * time.Hour
+	defaultSelfSignedCertDuration                  time.Duration = 90 * 24 * time.Hour
+	defaultSelfSignedCertRenewBefore               time.Duration = 60 * 24 * time.Hour
+	defaultSelfSignedCertificateRenewBuffer                      = 24 * time.Hour
+	DefaultRemoteSyncNamespace                                   = "kyma-system"
 )
 
 //nolint:funlen
@@ -59,6 +60,9 @@ func DefineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
 		defaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
+	flag.IntVar(&flagVar.maxConcurrentMandatoryModulesReconciles, "max-concurrent-mandatory-modules-reconciles",
+		defaultMaxConcurrentMandatoryModulesReconciles,
+		"The maximum number of concurrent Mandatory Modules Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -157,31 +161,32 @@ func DefineFlagVar() *FlagVar {
 }
 
 type FlagVar struct {
-	metricsAddr                            string
-	enableLeaderElection                   bool
-	probeAddr                              string
-	kymaListenerAddr, manifestListenerAddr string
-	maxConcurrentKymaReconciles            int
-	maxConcurrentManifestReconciles        int
-	maxConcurrentWatcherReconciles         int
-	kymaRequeueSuccessInterval             time.Duration
-	kymaRequeueErrInterval                 time.Duration
-	kymaRequeueBusyInterval                time.Duration
-	kymaRequeueWarningInterval             time.Duration
-	manifestRequeueSuccessInterval         time.Duration
-	watcherRequeueSuccessInterval          time.Duration
-	moduleVerificationKeyFilePath          string
-	clientQPS                              float64
-	clientBurst                            int
-	enableWebhooks                         bool
-	enableKcpWatcher                       bool
-	skrWatcherPath                         string
-	skrWebhookMemoryLimits                 string
-	skrWebhookCPULimits                    string
-	istioNamespace                         string
-	istioGatewayName                       string
-	istioGatewayNamespace                  string
-	additionalDNSNames                     string
+	metricsAddr                             string
+	enableLeaderElection                    bool
+	probeAddr                               string
+	kymaListenerAddr, manifestListenerAddr  string
+	maxConcurrentKymaReconciles             int
+	maxConcurrentManifestReconciles         int
+	maxConcurrentWatcherReconciles          int
+	maxConcurrentMandatoryModulesReconciles int
+	kymaRequeueSuccessInterval              time.Duration
+	kymaRequeueErrInterval                  time.Duration
+	kymaRequeueBusyInterval                 time.Duration
+	kymaRequeueWarningInterval              time.Duration
+	manifestRequeueSuccessInterval          time.Duration
+	watcherRequeueSuccessInterval           time.Duration
+	moduleVerificationKeyFilePath           string
+	clientQPS                               float64
+	clientBurst                             int
+	enableWebhooks                          bool
+	enableKcpWatcher                        bool
+	skrWatcherPath                          string
+	skrWebhookMemoryLimits                  string
+	skrWebhookCPULimits                     string
+	istioNamespace                          string
+	istioGatewayName                        string
+	istioGatewayNamespace                   string
+	additionalDNSNames                      string
 	// listenerPortOverwrite is used to enable the user to overwrite the port
 	// used to expose the KCP cluster for the watcher. By default, it will be
 	// fetched from the specified gateway.
