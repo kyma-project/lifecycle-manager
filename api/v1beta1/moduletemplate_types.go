@@ -32,7 +32,6 @@ import (
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 ModuleTemplate is deprecated. Use v1beta2 instead."
-// +kubebuilder:storageversion
 
 type ModuleTemplate struct {
 	apimetav1.TypeMeta   `json:",inline"`
