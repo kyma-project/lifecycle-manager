@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -142,19 +143,20 @@ func GetManifestResource(ctx context.Context,
 	return moduleInCluster.Spec.Resource, nil
 }
 
-func AddSkipLabelToManifest(
+func ConfigSkipLabelToManifest(
 	ctx context.Context,
 	clnt client.Client,
 	kymaName,
 	kymaNamespace,
 	moduleName string,
+	ifSkip bool,
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
 		return fmt.Errorf("failed to get manifest, %w", err)
 	}
 
-	manifest.Labels[shared.SkipReconcileLabel] = "true"
+	manifest.Labels[shared.SkipReconcileLabel] = strconv.FormatBool(ifSkip)
 	err = clnt.Update(ctx, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to update manifest, %w", err)

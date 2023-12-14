@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/meta"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -77,9 +76,6 @@ func (c *ConcurrentDefaultSSA) serverSideApply(
 	start := time.Now()
 	logger := logf.FromContext(ctx, "owner", c.owner)
 
-	// this converts unstructured to typed objects if possible, leveraging native APIs
-	// resource.Object = c.convertUnstructuredToTyped(resource.Object, resource.Mapping)
-
 	logger.V(internal.TraceLogLevel).Info(
 		fmt.Sprintf("apply %s", resource.ObjectName()),
 	)
@@ -111,19 +107,4 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	}
 
 	return nil
-}
-
-// convertWithMapper converts the given object with the optional provided
-// RESTMapping. If no mapping is provided, the default schema versioner is used.
-func (c *ConcurrentDefaultSSA) convertUnstructuredToTyped(
-	obj machineryruntime.Object, mapping *meta.RESTMapping,
-) machineryruntime.Object {
-	gv := c.versioner
-	if mapping != nil {
-		gv = mapping.GroupVersionKind.GroupVersion()
-	}
-	if obj, err := c.converter.ConvertToVersion(obj, gv); err == nil {
-		return obj
-	}
-	return obj
 }

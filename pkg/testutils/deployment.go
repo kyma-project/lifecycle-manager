@@ -16,7 +16,7 @@ var (
 	ErrDeploymentUpdating = errors.New("deployment is still updating")
 )
 
-func DeploymentIsReady(ctx context.Context, name, namespace string, clnt client.Client) error {
+func DeploymentIsReady(ctx context.Context, clnt client.Client, name, namespace string) error {
 	deploy, err := GetDeployment(ctx, clnt, name, namespace)
 	if err != nil {
 		if util.IsNotFound(err) {

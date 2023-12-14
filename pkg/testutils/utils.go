@@ -12,7 +12,6 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -27,7 +26,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
@@ -85,59 +83,6 @@ func NewTestNamespace(namespace string) *apicorev1.Namespace {
 			Name: namespace,
 		},
 	}
-}
-
-func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
-	if err := clnt.Delete(ctx, obj); util.IsNotFound(err) {
-		return nil
-	}
-	if err := clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
-		if util.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	return fmt.Errorf("%s/%s: %w", obj.GetNamespace(), obj.GetName(), ErrNotDeleted)
-}
-
-func DeleteCRWithGVK(ctx context.Context, clnt client.Client, name, namespace, group, version, kind string) error {
-	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   group,
-		Version: version,
-		Kind:    kind,
-	})
-	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, obj); err != nil {
-		if util.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	return DeleteCR(ctx, clnt, obj)
-}
-
-func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
-	err := clnt.Create(ctx, obj)
-	if !apierrors.IsAlreadyExists(err) {
-		return err
-	}
-	return nil
-}
-
-func CRExists(obj apimetav1.Object, clientError error) error {
-	if util.IsNotFound(clientError) {
-		return ErrNotFound
-	}
-	if clientError != nil {
-		return clientError
-	}
-	if obj != nil && obj.GetDeletionTimestamp() != nil {
-		return ErrDeletionTimestampFound
-	}
-	if obj == nil {
-		return ErrNotFound
-	}
-	return nil
 }
 
 func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Environment, error) {
@@ -220,31 +165,4 @@ func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, na
 	}
 
 	return deletionTimestampExists, err
-}
-
-func CRIsInState(ctx context.Context, group, version, kind, name, namespace string, statusPath []string,
-	clnt client.Client, expectedState string,
-) error {
-	resourceCR := &unstructured.Unstructured{}
-	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   group,
-		Version: version,
-		Kind:    kind,
-	})
-
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
-		return err
-	}
-
-	stateFromCR, stateExists, err := unstructured.NestedString(resourceCR.Object, statusPath...)
-	if err != nil || !stateExists {
-		return ErrFetchingStatus
-	}
-
-	if stateFromCR != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s",
-			ErrSampleCrNotInExpectedState, expectedState, stateFromCR)
-	}
-	return nil
 }
