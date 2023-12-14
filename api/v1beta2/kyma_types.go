@@ -429,9 +429,16 @@ func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	}
 
 	updateRequired := false
-	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, shared.KymaFinalizer) {
-		controllerutil.AddFinalizer(kyma, shared.KymaFinalizer)
-		updateRequired = true
+	if kyma.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(kyma, shared.KymaFinalizer) {
+			controllerutil.AddFinalizer(kyma, shared.KymaFinalizer)
+			updateRequired = true
+		}
+
+		if !controllerutil.ContainsFinalizer(kyma, shared.BlockingKymaDeletionFinalizer) {
+			controllerutil.AddFinalizer(kyma, shared.BlockingKymaDeletionFinalizer)
+			updateRequired = true
+		}
 	}
 
 	if kyma.ObjectMeta.Labels == nil {
