@@ -23,6 +23,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -405,19 +406,39 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		}
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
+		// TODO: Remove all finalizers from remote Kyma
+		if err := remote.RemoveFinalizersFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
 			return ctrl.Result{}, err
 		}
 
-		logger.Info("removed remote finalizer")
+		logger.Info("removed remote finalizers")
 	}
 
 	r.Metrics.CleanupMetrics(kyma.Name)
 
 	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
+	if r.relatedManifestCRsAreDeleted(ctx, kyma) {
+		controllerutil.RemoveFinalizer(kyma, shared.BlockingKymaDeletionFinalizer)
+	}
+
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
+}
+
+func (r *KymaReconciler) relatedManifestCRsAreDeleted(ctx context.Context, kyma *v1beta2.Kyma) bool {
+	manifestList := &v1beta2.ManifestList{}
+	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name})
+	if err := r.List(ctx, manifestList,
+		&client.ListOptions{LabelSelector: labelSelector}); util.IsNotFound(err) {
+		return true
+	}
+
+	if len(manifestList.Items) == 0 {
+		return true
+	}
+
+	return false
 }
 
 func (r *KymaReconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {

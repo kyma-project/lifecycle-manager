@@ -116,15 +116,18 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 
 func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
 	certificate := &certmanagerv1.Certificate{}
-	if err := c.kcpClient.Get(ctx, client.ObjectKey{
+	err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
 		Namespace: c.config.IstioNamespace,
-	}, certificate); err != nil && !util.IsNotFound(err) {
+	}, certificate)
+	if err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to get certificate: %w", err)
 	}
 
-	if err := c.kcpClient.Delete(ctx, certificate); err != nil {
-		return fmt.Errorf("failed to delete certificate: %w", err)
+	if !util.IsNotFound(err) {
+		if err = c.kcpClient.Delete(ctx, certificate); err != nil {
+			return fmt.Errorf("failed to delete certificate: %w", err)
+		}
 	}
 
 	return nil
@@ -132,17 +135,20 @@ func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
 
 func (c *CertificateManager) removeSecret(ctx context.Context) error {
 	certSecret := &apicorev1.Secret{}
-	if err := c.kcpClient.Get(ctx, client.ObjectKey{
+	err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
 		Namespace: c.config.IstioNamespace,
-	}, certSecret); err != nil && !util.IsNotFound(err) {
+	}, certSecret)
+	if err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to get certificate secret: %w", err)
 	}
 
-	err := c.kcpClient.Delete(ctx, certSecret)
-	if err != nil {
-		return fmt.Errorf("failed to delete certificate secret: %w", err)
+	if !util.IsNotFound(err) {
+		if err = c.kcpClient.Delete(ctx, certSecret); err != nil {
+			return fmt.Errorf("failed to delete certificate secret: %w", err)
+		}
 	}
+
 	return nil
 }
 
