@@ -78,7 +78,7 @@ func (c *ConcurrentDefaultSSA) serverSideApply(
 	logger := logf.FromContext(ctx, "owner", c.owner)
 
 	// this converts unstructured to typed objects if possible, leveraging native APIs
-	resource.Object = c.convertUnstructuredToTyped(resource.Object, resource.Mapping)
+	// resource.Object = c.convertUnstructuredToTyped(resource.Object, resource.Mapping)
 
 	logger.V(internal.TraceLogLevel).Info(
 		fmt.Sprintf("apply %s", resource.ObjectName()),
