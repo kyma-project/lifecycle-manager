@@ -23,9 +23,9 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient client.Client        //nolint:gochecknoglobals
-	testEnv   *envtest.Environment //nolint:gochecknoglobals
-	cfg       *rest.Config         //nolint:gochecknoglobals
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	cfg       *rest.Config
 )
 
 func TestAPIs(t *testing.T) {
@@ -53,7 +53,7 @@ var _ = BeforeSuite(func() {
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiappsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sclientscheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())

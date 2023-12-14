@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 const KubeConfigKey = "config"
@@ -27,11 +27,11 @@ var ErrAccessSecretNotFound = errors.New("access secret not found")
 func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, namespace string) (*rest.Config, error) {
 	kubeConfigSecretList := &apicorev1.SecretList{}
 	if err := cc.DefaultClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta2.KymaName: name}), Namespace: namespace,
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: name}), Namespace: namespace,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to list kubeconfig secrets: %w", err)
 	} else if len(kubeConfigSecretList.Items) < 1 {
-		return nil, fmt.Errorf("secret with label %s: %w", v1beta2.KymaName, ErrAccessSecretNotFound)
+		return nil, fmt.Errorf("secret with label %s=%s %w", shared.KymaName, name, ErrAccessSecretNotFound)
 	}
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]

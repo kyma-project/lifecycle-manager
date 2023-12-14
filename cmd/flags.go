@@ -39,7 +39,7 @@ const (
 	DefaultRemoteSyncNamespace                                   = "kyma-system"
 )
 
-//nolint:funlen
+//nolint:funlen // defines all program flags
 func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
@@ -68,22 +68,22 @@ func DefineFlagVar() *FlagVar {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		defaultKymaRequeueSuccessInterval,
-		"determines the duration a Kyma in Ready state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
 		defaultKymaRequeueErrInterval,
-		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueWarningInterval, "kyma-requeue-warning-interval",
 		defaultKymaRequeueWarningInterval,
 		"determines the duration after which a Kyma in Warning state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
 		defaultKymaRequeueBusyInterval,
-		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
 		defaultManifestRequeueSuccessInterval,
-		"determines the duration a Manifest in Ready state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration a Manifest in Ready state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
 		defaultWatcherRequeueSuccessInterval,
-		"determines the duration a Watcher in Ready state is enqueued for reconciliation.") //nolint:lll
+		"determines the duration a Watcher in Ready state is enqueued for reconciliation.")
 
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
@@ -157,6 +157,8 @@ func DefineFlagVar() *FlagVar {
 		defaultSelfSignedCertificateRenewBuffer,
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
+	flag.StringVar(&flagVar.dropStoredVersion, "drop-stored-version", "v1alpha1",
+		"The API version to be dropped from the storage versions")
 	return flagVar
 }
 
@@ -212,4 +214,5 @@ type FlagVar struct {
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
+	dropStoredVersion                      string
 }

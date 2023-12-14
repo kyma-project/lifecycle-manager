@@ -26,10 +26,10 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	ctx                context.Context      //nolint:gochecknoglobals
-	cancel             context.CancelFunc   //nolint:gochecknoglobals
+	controlPlaneClient client.Client
+	controlPlaneEnv    *envtest.Environment
+	ctx                context.Context
+	cancel             context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {
@@ -63,7 +63,7 @@ var _ = BeforeSuite(func() {
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: k8sclientscheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())

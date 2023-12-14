@@ -99,6 +99,7 @@ type WatcherStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
@@ -113,10 +114,10 @@ func (watcher *Watcher) GetModuleName() string {
 	if watcher.Labels == nil {
 		return ""
 	}
-	return watcher.Labels[ManagedBy]
+	return watcher.Labels[shared.ManagedBy]
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // WatcherList contains a list of Watcher.
 type WatcherList struct {
@@ -125,7 +126,7 @@ type WatcherList struct {
 	Items              []Watcher `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Watcher CRD on startup
 func init() {
 	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
 }
@@ -134,7 +135,7 @@ func init() {
 // for the Watcher.
 func DefaultIstioGatewaySelector() apimetav1.LabelSelector {
 	return apimetav1.LabelSelector{
-		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
+		MatchLabels: map[string]string{shared.OperatorGroup + shared.Separator + "watcher-gateway": "default"},
 	}
 }
 
@@ -163,13 +164,15 @@ const (
 )
 
 func (watcher *Watcher) InitializeConditions() {
-	watcher.Status.Conditions = []apimetav1.Condition{{
-		Type:               string(WatcherConditionTypeVirtualService),
-		Status:             apimetav1.ConditionUnknown,
-		Message:            string(VirtualServiceNotConfiguredConditionMessage),
-		Reason:             string(ReadyConditionReason),
-		LastTransitionTime: apimetav1.Now(),
-	}}
+	watcher.Status.Conditions = []apimetav1.Condition{
+		{
+			Type:               string(WatcherConditionTypeVirtualService),
+			Status:             apimetav1.ConditionUnknown,
+			Message:            string(VirtualServiceNotConfiguredConditionMessage),
+			Reason:             string(ReadyConditionReason),
+			LastTransitionTime: apimetav1.Now(),
+		},
+	}
 }
 
 func (watcher *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,

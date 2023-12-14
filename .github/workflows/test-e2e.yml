@@ -33,9 +33,11 @@ jobs:
                     "kyma-metrics",
                     "module-without-default-cr",
                     "non-blocking-deletion",
+                    "upgrade-under-deletion",
                     "purge-controller",
                     "purge-metrics",
                     "module-upgrade",
+                    "skip-manifest-reconciliation",
                     "ca-certificate-rotation",
                     "self-signed-certificate-rotation"
         ]
@@ -57,10 +59,15 @@ jobs:
           echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
           sudo apt update -y
           sudo apt install kubectl -y
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          path: lifecycle-manager
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '^1.21'
+          go-version-file: 'lifecycle-manager/go.mod'
+          cache-dependency-path: 'lifecycle-manager/go.sum'
       - name: Install Istio CLI
         run: |
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
@@ -68,7 +75,7 @@ jobs:
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
       - name: Install Kyma CLI
         run: |
-          wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+          wget https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
           chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-unstable
           echo "PATH=/usr/local/bin/kyma-unstable" >> $GITHUB_OUTPUT
       - run: ln -s /usr/local/bin/kyma-unstable /usr/local/bin/kyma
@@ -110,10 +117,6 @@ jobs:
         run: |
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CM_VERSION/cert-manager.yaml
           cmctl check api --wait=2m
-      - name: Checkout lifecycle-manager
-        uses: actions/checkout@v3
-        with:
-          path: lifecycle-manager
       - name: Override Kustomize Controller Image TAG and Image repository environment variables in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |
@@ -185,7 +188,7 @@ jobs:
             fi
           done
       - name: Checkout template-operator
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: kyma-project/template-operator
           path: template-operator
@@ -195,7 +198,8 @@ jobs:
           matrix.e2e-test == 'non-blocking-deletion' ||
           matrix.e2e-test == 'purge-controller' ||
           matrix.e2e-test == 'purge-metrics' ||
-          matrix.e2e-test == 'kyma-deletion'
+          matrix.e2e-test == 'kyma-deletion' ||
+          matrix.e2e-test == 'skip-manifest-reconciliation'
           }}
         run: |
           make build-manifests
@@ -206,7 +210,7 @@ jobs:
           kubectl apply -f template.yaml
       - name: Create Template Operator Module for regular and fast channels
         working-directory: lifecycle-manager
-        if: ${{ matrix.e2e-test == 'module-upgrade'}}
+        if: ${{ matrix.e2e-test == 'module-upgrade' || matrix.e2e-test == 'upgrade-under-deletion' }}
         run: |
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml

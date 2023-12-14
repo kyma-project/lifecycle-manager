@@ -28,7 +28,8 @@ var _ = Describe(
 				const repo = "test.registry.io"
 				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
 					"digest", CredSecretLabelValue)
-				keychain, err := ocmextensions.GetAuthnKeychain(manifesttest.Ctx, imageSpecWithCredSelect.CredSecretSelector, manifesttest.K8sClient)
+				keychain, err := ocmextensions.GetAuthnKeychain(manifesttest.Ctx,
+					imageSpecWithCredSelect.CredSecretSelector, manifesttest.K8sClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)
@@ -69,11 +70,12 @@ func (d TestRegistry) RegistryStr() string {
 func installCredSecret(secretLabelValue string) func() error {
 	return func() error {
 		secret := &apicorev1.Secret{}
-		secretFile, err := os.ReadFile(filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "auth_secret.yaml"))
+		secretFile, err := os.ReadFile(filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples",
+			"auth_secret.yaml"))
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
-		secret.Labels[manifesttest.CredSecretLabelKeyForTest] = secretLabelValue
+		secret.Labels[manifesttest.OCIRegistryCredLabelKeyForTest] = secretLabelValue
 		err = manifesttest.K8sClient.Create(manifesttest.Ctx, secret)
 		if apierrors.IsAlreadyExists(err) {
 			return nil

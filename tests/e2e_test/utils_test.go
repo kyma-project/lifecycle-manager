@@ -24,11 +24,8 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState       = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
-	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
-	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
-	errResourceExists               = errors.New("resource still exists")
+	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
+	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
 )
 
 const (
@@ -87,39 +84,6 @@ func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
 	})
 }
 
-func CheckManifestIsInState(
-	ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-	expectedState shared.State,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return err
-	}
-
-	if manifest.Status.State != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s",
-			errManifestNotInExpectedState, expectedState, manifest.Status.State)
-	}
-	return nil
-}
-
-func ManifestNoDeletionTimeStampSet(ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return err
-	}
-
-	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
-		return errManifestDeletionTimestampSet
-	}
-	return nil
-}
-
 func CheckIfExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
 	resourceCR := &unstructured.Unstructured{}
 	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
@@ -127,21 +91,9 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 		Version: version,
 		Kind:    kind,
 	})
-	return clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
-}
 
-func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
-	resourceCR := &unstructured.Unstructured{}
-	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   group,
-		Version: version,
-		Kind:    kind,
-	})
 	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return fmt.Errorf("%w: %s %s/%s should be deleted", errResourceExists, kind, namespace, name)
+	return CRExists(resourceCR, err)
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
@@ -151,8 +103,7 @@ func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 			Name:      kymaName,
 			Namespace: kymaNamespace,
 			Labels: map[string]string{
-				v1beta2.KymaName:  kymaName,
-				v1beta2.ManagedBy: v1beta2.OperatorName,
+				shared.KymaName: kymaName,
 			},
 		},
 		Data: map[string][]byte{"config": []byte(patchedRuntimeConfig)},

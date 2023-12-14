@@ -1,14 +1,14 @@
-package v1beta2_test
+package api_test
 
 import (
 	"testing"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-//nolint:funlen
 func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 	t.Parallel()
 
@@ -27,7 +27,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 			fields: fields{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
-						v1beta2.ModuleVersionAnnotation: "1.1.0",
+						shared.ModuleVersionAnnotation: "1.1.0",
 					},
 					Name:       "test-module-with-version",
 					Generation: 2,
@@ -58,7 +58,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 					Name:       "test-module-without-version",
 					Generation: 2,
 					Annotations: map[string]string{
-						v1beta2.IsClusterScopedAnnotation: "true",
+						shared.IsClusterScopedAnnotation: "true",
 					},
 				},
 				Spec: v1beta2.ModuleTemplateSpec{
@@ -74,8 +74,8 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 					Name:       "test-module-with-invalid-version",
 					Generation: 2,
 					Annotations: map[string]string{
-						v1beta2.IsClusterScopedAnnotation: "true",
-						v1beta2.ModuleVersionAnnotation:   "a",
+						shared.IsClusterScopedAnnotation: "true",
+						shared.ModuleVersionAnnotation:   "a",
 					},
 				},
 				Spec: v1beta2.ModuleTemplateSpec{

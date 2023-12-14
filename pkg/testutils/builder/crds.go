@@ -7,9 +7,9 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
 
-const group = "operator.kyma-project.io"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+)
 
 type CRDBuilder struct {
 	crd *apiextensionsv1.CustomResourceDefinition
@@ -27,10 +27,10 @@ func NewCRDBuilder() CRDBuilder {
 				APIVersion: "apiextensions.k8s.io/v1",
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
-				Name: fmt.Sprintf("%ss.%s", strings.ToLower(crdName), group),
+				Name: fmt.Sprintf("%ss.%s", strings.ToLower(crdName), shared.OperatorGroup),
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-				Group: group,
+				Group: shared.OperatorGroup,
 				Names: createCRDNamesFrom(crdName),
 				Scope: "Namespaced",
 			},
@@ -40,7 +40,7 @@ func NewCRDBuilder() CRDBuilder {
 
 // WithName sets ObjectMeta.Name and all apiextensions.CustomResourceDefinitionNames.
 func (cb CRDBuilder) WithName(name string) CRDBuilder {
-	cb.crd.Name = fmt.Sprintf("%ss.%s", strings.ToLower(name), group)
+	cb.crd.Name = fmt.Sprintf("%ss.%s", strings.ToLower(name), shared.OperatorGroup)
 	cb.crd.Spec.Names = createCRDNamesFrom(name)
 	return cb
 }

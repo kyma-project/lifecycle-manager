@@ -27,6 +27,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
@@ -103,7 +104,7 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// 2. Filter Moudles by Kyma channel; should take Kyma channel fomr KCP or SKR Kyma? -> needs to be clarified
 	// 3. Create Manifest for corresponding mandatory modules
 
-	mandatoryTemplates, err := lookup.GetMandatoryTemplates(ctx, r.Client, kyma.Spec.Channel)
+	mandatoryTemplates, err := lookup.GetMandatoryTemplates(ctx, r.Client)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -117,6 +118,7 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		// TODO
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

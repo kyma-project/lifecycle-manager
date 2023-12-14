@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -22,18 +24,18 @@ const (
 	// private key will only be generated if one does not already exist in the target `spec.secretName`.
 	privateKeyRotationPolicy = "Never"
 
-	DomainAnnotation = v1beta2.SKRDomainAnnotation
+	DomainAnnotation = shared.SKRDomainAnnotation
 
 	caCertKey        = "ca.crt"
 	tlsCertKey       = "tls.crt"
 	tlsPrivateKeyKey = "tls.key"
 )
 
-//nolint:gochecknoglobals
-var LabelSet = k8slabels.Set{
-	v1beta2.PurposeLabel: v1beta2.CertManager,
-	v1beta2.ManagedBy:    v1beta2.OperatorName,
-}
+var (
+	ErrDomainAnnotationEmpty   = errors.New("domain annotation is empty")
+	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
+	ErrIssuerNotFound          = errors.New("no certificate issuer found")
+)
 
 type SubjectAltName struct {
 	DNSNames       []string
@@ -47,6 +49,7 @@ type CertificateManager struct {
 	caCertCache     *CACertificateCache
 	certificateName string
 	secretName      string
+	labelSet        k8slabels.Set
 	config          CertificateConfig
 }
 
@@ -83,6 +86,10 @@ func NewCertificateManager(kcpClient client.Client, kymaName string,
 		secretName:      ResolveTLSCertName(kymaName),
 		config:          config,
 		caCertCache:     caCertCache,
+		labelSet: k8slabels.Set{
+			shared.PurposeLabel: shared.CertManager,
+			shared.ManagedBy:    shared.OperatorName,
+		},
 	}
 }
 
@@ -182,7 +189,7 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 			EmailAddresses: subjectAltName.EmailAddresses,
 			SecretName:     c.secretName,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: LabelSet,
+				Labels: c.labelSet,
 			},
 			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: issuer.Name,
@@ -210,7 +217,7 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 func (c *CertificateManager) getSubjectAltNames(kyma *v1beta2.Kyma) (*SubjectAltName, error) {
 	if domain, ok := kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
-			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", kyma.Name) //nolint:goerr113
+			return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationEmpty, kyma.Name)
 		}
 
 		svcSuffix := []string{"svc.cluster.local", "svc"}
@@ -226,22 +233,22 @@ func (c *CertificateManager) getSubjectAltNames(kyma *v1beta2.Kyma) (*SubjectAlt
 			DNSNames: dnsNames,
 		}, nil
 	}
-	return nil, fmt.Errorf("kymaCR %s does not contain annotation '%s' with specified domain", //nolint:goerr113
-		kyma.Name, DomainAnnotation)
+	return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationMissing, kyma.Name)
 }
 
 func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issuer, error) {
 	logger := logf.FromContext(ctx)
 	issuerList := &certmanagerv1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
+		LabelSelector: k8slabels.SelectorFromSet(c.labelSet),
 		Namespace:     c.config.IstioNamespace,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not list cert-manager issuer %w", err)
 	}
 	if len(issuerList.Items) == 0 {
-		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.config.IstioNamespace) //nolint:goerr113
+		return nil, fmt.Errorf("%w (Namespace: %s, Labels %s)",
+			ErrIssuerNotFound, c.config.IstioNamespace, c.labelSet.String())
 	} else if len(issuerList.Items) > 1 {
 		logger.Info("Found more than one issuer, will use by default first one in list",
 			"issuer", issuerList.Items)

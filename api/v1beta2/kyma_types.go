@@ -21,14 +21,16 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:storageversion
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
@@ -284,7 +286,7 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 	return notExistsModules
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma.
 type KymaList struct {
@@ -293,7 +295,7 @@ type KymaList struct {
 	Items              []Kyma `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
@@ -370,29 +372,75 @@ func (kyma *Kyma) AllModulesReady() bool {
 	return true
 }
 
-const (
-	EnableLabelValue  = "true"
-	DisableLabelValue = "false"
-)
-
 func (kyma *Kyma) HasSyncLabelEnabled() bool {
-	if sync, found := kyma.Labels[SyncLabel]; found {
-		return strings.ToLower(sync) == EnableLabelValue
+	if sync, found := kyma.Labels[shared.SyncLabel]; found {
+		return strings.ToLower(sync) == shared.EnableLabelValue
 	}
 	return true // missing label defaults to enabled sync
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	skip, found := kyma.Labels[SkipReconcileLabel]
-	return found && strings.ToLower(skip) == EnableLabelValue
+	skip, found := kyma.Labels[shared.SkipReconcileLabel]
+	return found && strings.ToLower(skip) == shared.EnableLabelValue
 }
 
 func (kyma *Kyma) IsInternal() bool {
-	internal, found := kyma.Labels[InternalLabel]
-	return found && strings.ToLower(internal) == EnableLabelValue
+	internal, found := kyma.Labels[shared.InternalLabel]
+	return found && strings.ToLower(internal) == shared.EnableLabelValue
 }
 
 func (kyma *Kyma) IsBeta() bool {
-	beta, found := kyma.Labels[BetaLabel]
-	return found && strings.ToLower(beta) == EnableLabelValue
+	beta, found := kyma.Labels[shared.BetaLabel]
+	return found && strings.ToLower(beta) == shared.EnableLabelValue
+}
+
+type AvailableModule struct {
+	Module
+	Enabled bool
+}
+
+func (kyma *Kyma) GetAvailableModules() []AvailableModule {
+	moduleMap := make(map[string]bool)
+	modules := make([]AvailableModule, 0)
+	for _, module := range kyma.Spec.Modules {
+		moduleMap[module.Name] = true
+		modules = append(modules, AvailableModule{Module: module, Enabled: true})
+	}
+
+	for _, module := range kyma.Status.Modules {
+		_, exist := moduleMap[module.Name]
+		if exist {
+			continue
+		}
+		modules = append(modules, AvailableModule{
+			Module: Module{
+				Name:    module.Name,
+				Channel: module.Channel,
+			},
+			Enabled: false,
+		})
+	}
+	return modules
+}
+
+func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
+	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
+		return false
+	}
+
+	updateRequired := false
+	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, shared.KymaFinalizer) {
+		controllerutil.AddFinalizer(kyma, shared.KymaFinalizer)
+		updateRequired = true
+	}
+
+	if kyma.ObjectMeta.Labels == nil {
+		kyma.ObjectMeta.Labels = make(map[string]string)
+	}
+
+	if _, ok := kyma.ObjectMeta.Labels[shared.ManagedBy]; !ok {
+		kyma.ObjectMeta.Labels[shared.ManagedBy] = shared.OperatorName
+		updateRequired = true
+	}
+	return updateRequired
 }

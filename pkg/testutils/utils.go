@@ -1,4 +1,3 @@
-//nolint:wrapcheck
 package testutils
 
 import (
@@ -16,6 +15,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -23,11 +23,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
@@ -66,7 +66,10 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "test-issuer",
 			Namespace: namespace,
-			Labels:    watcher.LabelSet,
+			Labels: k8slabels.Set{
+				shared.PurposeLabel: shared.CertManager,
+				shared.ManagedBy:    shared.OperatorName,
+			},
 		},
 		Spec: certmanagerv1.IssuerSpec{
 			IssuerConfig: certmanagerv1.IssuerConfig{
@@ -95,6 +98,22 @@ func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 		return err
 	}
 	return fmt.Errorf("%s/%s: %w", obj.GetNamespace(), obj.GetName(), ErrNotDeleted)
+}
+
+func DeleteCRWithGVK(ctx context.Context, clnt client.Client, name, namespace, group, version, kind string) error {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, obj); err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return DeleteCR(ctx, clnt, obj)
 }
 
 func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {

@@ -10,7 +10,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
@@ -57,12 +59,13 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	for _, module := range kyma.Spec.Modules {
+	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
 		if template.Err != nil && !errors.Is(template.Err, lookup.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
@@ -72,20 +75,21 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
 		fqdn := descriptor.GetName()
-		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 		setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 		var manifest *v1beta2.Manifest
-		if manifest, err = p.newManifestFromTemplate(ctx, module,
+		if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
 			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
@@ -96,9 +100,9 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		modules = append(modules, &common.Module{
 			ModuleName: module.Name,
 			FQDN:       fqdn,
-			Version:    version,
 			Template:   template,
 			Manifest:   manifest,
+			Enabled:    module.Enabled,
 		})
 	}
 
@@ -113,7 +117,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	modules := make(common.Modules, 0)
 	for _, template := range templates {
 
-		moduleName, ok := template.ObjectMeta.Labels[v1beta2.ModuleName]
+		moduleName, ok := template.ObjectMeta.Labels[shared.ModuleName]
 		if !ok {
 			logf.FromContext(ctx).V(log.InfoLevel).Info("ModuleTemplate does not contain Module Name as label, "+
 				"will fallback to use ModuleTemplate name as Module name",
@@ -139,7 +143,6 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			continue
 		}
 		fqdn := descriptor.GetName()
-		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, template.Name)
 		setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 		var manifest *v1beta2.Manifest
@@ -162,9 +165,9 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 		modules = append(modules, &common.Module{
 			ModuleName: moduleName,
 			FQDN:       fqdn,
-			Version:    version,
 			Template:   template,
 			Manifest:   manifest,
+			Enabled:    true,
 		})
 	}
 
@@ -243,7 +246,7 @@ func (p *Parser) newManifestFromTemplate(
 	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
 		return nil, fmt.Errorf("could not translate custom state check: %w", err)
 	}
-
+	manifest.Spec.Version = descriptor.Version
 	return manifest, nil
 }
 
@@ -258,7 +261,7 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 	if err != nil {
 		return fmt.Errorf("failed to marshal stateCheck: %w", err)
 	}
-	manifest.Annotations[v1beta2.CustomStateCheckAnnotation] = string(stateCheckByte)
+	manifest.Annotations[shared.CustomStateCheckAnnotation] = string(stateCheckByte)
 	return nil
 }
 

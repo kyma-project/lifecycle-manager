@@ -1,4 +1,4 @@
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // does not apply to unit and integration tests
 package manifest
 
 import (
@@ -35,11 +35,12 @@ var (
 	K8sClient                client.Client
 	Server                   *httptest.Server
 	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
-	ManifestFilePath         = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci", "rendered.yaml")
+	ManifestFilePath         = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
+		"rendered.yaml")
 )
 
 const (
-	CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred" //nolint:gosec
+	OCIRegistryCredLabelKeyForTest = shared.OperatorGroup + shared.Separator + "oci-registry-cred"
 )
 
 type mockLayer struct {
@@ -140,7 +141,7 @@ func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "operator.kyma-project.io/v1alpha1",
+				"apiVersion": shared.OperatorGroup + shared.Separator + "v1alpha1",
 				"kind":       "Sample",
 				"metadata": map[string]interface{}{
 					"name":      "sample-cr-" + manifest.GetName(),
@@ -222,13 +223,15 @@ func DeleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 		}
 		newManifest := v1beta2.Manifest{}
 		err := K8sClient.Get(Ctx, client.ObjectKeyFromObject(manifest), &newManifest)
-		//nolint:wrapcheck
-		return client.IgnoreNotFound(err)
+		if client.IgnoreNotFound(err) != nil {
+			return fmt.Errorf("failed to fetch manifest %w", err)
+		}
+		return nil
 	}
 }
 
 func CredSecretLabelSelector(labelValue string) *apimetav1.LabelSelector {
 	return &apimetav1.LabelSelector{
-		MatchLabels: map[string]string{CredSecretLabelKeyForTest: labelValue},
+		MatchLabels: map[string]string{OCIRegistryCredLabelKeyForTest: labelValue},
 	}
 }

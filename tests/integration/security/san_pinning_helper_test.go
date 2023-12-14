@@ -10,6 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
@@ -18,7 +19,7 @@ func createKyma(kymaName string, annotations map[string]string) *v1beta2.Kyma {
 	return &v1beta2.Kyma{
 		TypeMeta: apimetav1.TypeMeta{
 			APIVersion: v1beta2.GroupVersion.String(),
-			Kind:       string(v1beta2.KymaKind),
+			Kind:       string(shared.KymaKind),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:        kymaName,
@@ -69,11 +70,11 @@ func createWatcherCR(kymaName string) *types.WatchEvent {
 }
 
 var (
-	annotationsWithCorrectDomain = map[string]string{"skr-domain": "example.domain.com"} //nolint:gochecknoglobals
-	annotationsWithWrongDomain   = map[string]string{"skr-domain": "wrong.domain.com"}   //nolint:gochecknoglobals
-	emptyAnnotations             = map[string]string{}                                   //nolint:gochecknoglobals
+	annotationsWithCorrectDomain = map[string]string{"skr-domain": "example.domain.com"}
+	annotationsWithWrongDomain   = map[string]string{"skr-domain": "wrong.domain.com"}
+	emptyAnnotations             = map[string]string{}
 
-	headerWithSufficientCertificate = map[string][]string{ //nolint:gochecknoglobals
+	headerWithSufficientCertificate = map[string][]string{
 		security.XFCCHeader: {
 			"Hash=d54ce461112371914142ca640f0ff7edb5b47778e1e97185336b79f4590e2ce4;Cert=\"" +
 				"-----BEGIN%20CERTIFICATE-----%0AMIIDRzCCAi%2BgAwIBAgIBATANBgkqhkiG9w0BAQs" +
@@ -98,7 +99,7 @@ var (
 				"ple.domain.com;DNS=*.example.domain.com",
 		},
 	}
-	headerWithMalformedCertificate = map[string][]string{ //nolint:gochecknoglobals
+	headerWithMalformedCertificate = map[string][]string{
 		security.XFCCHeader: {
 			"Hash=d54ce461112371914142ca640f0ff7edb5b47778e1e97185336b79f4590e2ce4;Cert=\"" +
 				"-----BEGIN%20CERTIFICATE-----%0WRONGRzCCAi%2BgAwIBAgIBATANBgkqhkiG9w0BAQs" +

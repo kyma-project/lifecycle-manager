@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/validation"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
 )
@@ -18,9 +19,9 @@ type (
 	Module  struct {
 		ModuleName string
 		FQDN       string
-		Version    string
 		Template   *lookup.ModuleTemplateTO
 		*v1beta2.Manifest
+		Enabled bool
 	}
 )
 
@@ -40,15 +41,15 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
-	lbls[v1beta2.KymaName] = kyma.Name
+	lbls[shared.KymaName] = kyma.Name
 
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
-		lbls[v1beta2.ControllerName] = m.Template.GetLabels()[v1beta2.ControllerName]
+		lbls[shared.ControllerName] = m.Template.GetLabels()[shared.ControllerName]
 	}
-	lbls[v1beta2.ChannelLabel] = m.Template.Spec.Channel
-	lbls[v1beta2.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
-	lbls[v1beta2.ManagedBy] = v1beta2.OperatorName
+	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
+	lbls[shared.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
+	lbls[shared.ManagedBy] = shared.OperatorName
 
 	m.SetLabels(lbls)
 
@@ -56,7 +57,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if anns == nil {
 		anns = make(map[string]string)
 	}
-	anns[v1beta2.FQDN] = m.FQDN
+	anns[shared.FQDN] = m.FQDN
 	m.SetAnnotations(anns)
 }
 

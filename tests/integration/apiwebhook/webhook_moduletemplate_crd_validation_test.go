@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -23,17 +24,15 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var testFiles = filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests") //nolint:gochecknoglobals
-
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta2.OperatorPrefix,
+		Group:   shared.OperatorGroup,
 		Version: v1beta2.GroupVersion.Version,
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-		crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
@@ -50,7 +49,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
-		crd := GetNonCompliantCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetNonCompliantCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
@@ -67,7 +66,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should deny a version downgrade when updating", func() {
-		crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetCRD(shared.OperatorGroup, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
@@ -116,7 +115,7 @@ func GetCRD(group, version, sample string) *apiextensionsv1.CustomResourceDefini
 		version,
 		sample,
 	)
-	modulePath := filepath.Join(testFiles, "crds", crdFileName)
+	modulePath := filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds", crdFileName)
 	By(fmt.Sprintf("using %s as CRD", modulePath))
 
 	file, err := os.ReadFile(modulePath)

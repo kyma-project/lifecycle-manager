@@ -30,7 +30,6 @@ type BeInStateMatcher struct {
 func (matcher *BeInStateMatcher) Match(actual interface{}) (bool, error) {
 	status, ok := actual.(shared.Status)
 	if !ok {
-		//nolint:goerr113
 		return false, fmt.Errorf("Expected a Status. Got:\n%s", format.Object(actual, 1))
 	}
 
@@ -61,7 +60,6 @@ type HaveConditionMatcher struct {
 func (matcher *HaveConditionMatcher) Match(actual interface{}) (bool, error) {
 	status, ok := actual.(shared.Status)
 	if !ok {
-		//nolint:goerr113
 		return false, fmt.Errorf("Expected a Status. Got:\n%s", format.Object(actual, 1))
 	}
 
@@ -93,7 +91,9 @@ func EventuallyDeclarativeStatusShould(ctx context.Context, key client.ObjectKey
 		Should(And(matchers...))
 }
 
-func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *declarativetest.TestAPI, testClient client.Client) {
+func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *declarativetest.TestAPI,
+	testClient client.Client,
+) {
 	EventuallyWithOffset(1, testClient.Get).
 		WithContext(ctx).
 		WithArguments(client.ObjectKeyFromObject(obj), &declarativetest.TestAPI{}).
@@ -124,7 +124,6 @@ type SyncedResourcesExistingMatcher struct {
 func (matcher *SyncedResourcesExistingMatcher) Match(actual interface{}) (bool, error) {
 	status, ok := actual.(shared.Status)
 	if !ok {
-		//nolint:goerr113
 		return false, fmt.Errorf("Expected a Status. Got:\n%s", format.Object(actual, 1))
 	}
 

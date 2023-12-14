@@ -39,10 +39,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-const (
-	watcherFinalizer = "operator.kyma-project.io/watcher"
-)
-
 var (
 	errRestConfigIsNotSet = errors.New("reconciler rest config is not set")
 	errRemovingFinalizer  = errors.New("error removing finalizer")
@@ -90,8 +86,8 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// check finalizer on native object
-	if !controllerutil.ContainsFinalizer(watcherObj, watcherFinalizer) {
-		finalizerAdded := controllerutil.AddFinalizer(watcherObj, watcherFinalizer)
+	if !controllerutil.ContainsFinalizer(watcherObj, shared.WatcherFinalizer) {
+		finalizerAdded := controllerutil.AddFinalizer(watcherObj, shared.WatcherFinalizer)
 		if !finalizerAdded {
 			r.EventRecorder.Event(watcherObj, "Warning", "AddFinalizerErr",
 				errAddingFinalizer.Error())
@@ -138,7 +134,7 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsConfigDelErr)
 	}
-	finalizerRemoved := controllerutil.RemoveFinalizer(watcherCR, watcherFinalizer)
+	finalizerRemoved := controllerutil.RemoveFinalizer(watcherCR, shared.WatcherFinalizer)
 	if !finalizerRemoved {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, errRemovingFinalizer)
 	}
@@ -192,7 +188,7 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 
 func (r *WatcherReconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
 	watcher.ManagedFields = nil
-	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(v1beta2.OperatorName),
+	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
 		status.SubResourceOpts(client.ForceOwnership))
 	if err != nil {
 		reason := "WatcherStatusUpdate"

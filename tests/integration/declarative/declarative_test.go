@@ -33,14 +33,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	declarativetest "github.com/kyma-project/lifecycle-manager/tests/integration/declarative"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-//nolint:gochecknoglobals
 var (
 	// this is a unique base testing directory that will be used within a given run
 	// it is expected to be removed externally (e.g. by testing.T) to cleanup leftovers

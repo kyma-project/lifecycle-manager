@@ -6,6 +6,7 @@ import (
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -24,7 +25,7 @@ func NewKymaBuilder() KymaBuilder {
 		kyma: &v1beta2.Kyma{
 			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
-				Kind:       string(v1beta2.KymaKind),
+				Kind:       string(shared.KymaKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      RandomName(),
@@ -96,7 +97,7 @@ func (kb KymaBuilder) Build() *v1beta2.Kyma {
 func RandomName() string {
 	b := make([]byte, nameLength)
 	for i := range b {
-		//nolint:gosec
+		//nolint:gosec // random number generator sufficient for testing purposes
 		b[i] = charSet[rand.Intn(len(charSet))]
 	}
 	return string(b)

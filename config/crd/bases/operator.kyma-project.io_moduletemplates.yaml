@@ -101,6 +101,11 @@ spec:
                   referenced in the descriptor)"
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              mandatory:
+                description: Mandatory indicates whether the module is mandatory.
+                  It is used to enforce the installation of the module with its configuration
+                  in all runtime clusters.
+                type: boolean
               target:
                 description: Target describes where the Module should later on be
                   installed if parsed correctly. It is used as installation hint by
@@ -117,7 +122,7 @@ spec:
             type: object
         type: object
     served: true
-    storage: true
+    storage: false
     subresources: {}
   - additionalPrinterColumns:
     - jsonPath: .metadata.creationTimestamp
@@ -216,5 +221,5 @@ spec:
             type: object
         type: object
     served: true
-    storage: false
+    storage: true
     subresources: {}

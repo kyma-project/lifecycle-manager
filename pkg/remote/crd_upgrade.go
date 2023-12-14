@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 )
@@ -27,7 +28,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(v1beta2.OperatorName))
+		client.FieldOwner(shared.OperatorName))
 	if err != nil {
 		return fmt.Errorf("failed to patch CRD: %w", err)
 	}
@@ -85,7 +86,7 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	runtimeClient Client, controlPlaneClient Client,
 ) (bool, error) {
 	kymaCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
-		runtimeClient, kyma, v1beta2.KymaKind.Plural())
+		runtimeClient, kyma, shared.KymaKind.Plural())
 	if err != nil {
 		err = client.IgnoreNotFound(err)
 		if err != nil {
@@ -94,7 +95,7 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 
 	moduleTemplateCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
-		runtimeClient, kyma, v1beta2.ModuleTemplateKind.Plural())
+		runtimeClient, kyma, shared.ModuleTemplateKind.Plural())
 	if err != nil {
 		err = client.IgnoreNotFound(err)
 		if err != nil {

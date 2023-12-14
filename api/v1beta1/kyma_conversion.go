@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -17,9 +18,9 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 		dst.ObjectMeta.Labels = make(map[string]string)
 	}
 	if !src.Spec.Sync.Enabled {
-		dst.ObjectMeta.Labels[v1beta2.SyncLabel] = v1beta2.DisableLabelValue
+		dst.ObjectMeta.Labels[shared.SyncLabel] = shared.DisableLabelValue
 	} else {
-		dst.ObjectMeta.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
+		dst.ObjectMeta.Labels[shared.SyncLabel] = shared.EnableLabelValue
 	}
 	dst.Spec.Channel = src.Spec.Channel
 	dst.Spec.Modules = src.Spec.Modules
@@ -28,7 +29,7 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
-//nolint:stylecheck
+//nolint:stylecheck // stick to controller-runtime.conversion naming convention
 func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v1beta2.Kyma)
 	if !ok {

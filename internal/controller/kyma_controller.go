@@ -76,7 +76,6 @@ type KymaReconciler struct {
 	Metrics             *metrics.KymaMetrics
 }
 
-//nolint:lll
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
@@ -417,7 +416,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 	r.Metrics.CleanupMetrics(kyma.Name)
 
-	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
+	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 }
 
@@ -438,7 +437,6 @@ func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) err
 }
 
 func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
-	// these are the actual modules
 	modules, err := r.GenerateModulesFromTemplate(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("error while fetching modules during processing: %w", err)

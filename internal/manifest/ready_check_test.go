@@ -17,7 +17,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-//nolint:funlen,maintidx
 func TestHandleState(t *testing.T) {
 	t.Parallel()
 	type moduleCheck struct {
@@ -207,7 +206,8 @@ func TestHandleState(t *testing.T) {
 			false,
 		},
 		{
-			"custom module with multiple StateReady condition, expected mapped to StateProcessing when not all condition matched", //nolint:lll
+			"custom module with multiple StateReady condition, expected " +
+				"mapped to StateProcessing when not all condition matched",
 			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
@@ -309,7 +309,7 @@ func TestHandleState(t *testing.T) {
 						t.Errorf("HandleState() error = %v", err)
 						return
 					}
-					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
+					manifestCR.Annotations[shared.CustomStateCheckAnnotation] = string(marshal)
 				}
 			}
 			manifestCR.CreationTimestamp = apimetav1.Now()
@@ -333,7 +333,6 @@ func TestHandleState(t *testing.T) {
 	}
 }
 
-//nolint:funlen
 func TestHandleStateWithDuration(t *testing.T) {
 	t.Parallel()
 	type moduleCheck struct {
@@ -421,7 +420,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 						t.Errorf("HandleState() error = %v", err)
 						return
 					}
-					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
+					manifestCR.Annotations[shared.CustomStateCheckAnnotation] = string(marshal)
 				}
 			}
 			manifestCR.CreationTimestamp = testCase.manifestCreatedAt

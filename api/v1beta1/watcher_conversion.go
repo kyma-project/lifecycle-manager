@@ -19,7 +19,7 @@ func (src *Watcher) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
-//nolint:stylecheck
+//nolint:stylecheck // stick to controller-runtime.conversion naming convention
 func (dst *Watcher) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v1beta2.Watcher)
 	if !ok {

@@ -48,7 +48,9 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -66,13 +68,12 @@ import (
 )
 
 var (
-	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals
-	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals
+	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
+	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 	errMissingWatcherImage = errors.New("runtime watcher image is not provided")
 )
 
-//nolint:gochecknoinits
-func init() {
+func registerSchemas() {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
@@ -86,6 +87,8 @@ func init() {
 }
 
 func main() {
+	registerSchemas()
+
 	flagVar := DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.logLevel), zapcore.Lock(os.Stdout)))
@@ -93,7 +96,7 @@ func main() {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
-	setupManager(flagVar, controller.NewCacheOptions(), scheme)
+	setupManager(flagVar, internal.DefaultCacheOptions(), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
@@ -117,7 +120,7 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machineryruntime.Scheme) {
+func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -131,7 +134,7 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",
-			Cache:                  newCacheOptions,
+			Cache:                  cacheOptions,
 		},
 	)
 	if err != nil {
@@ -181,11 +184,11 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
-	go func() {
-		dropVersionFromStoredVersions(mgr, "v1alpha1")
-	}()
-
+	if flagVar.dropStoredVersion != "" {
+		go func(version string) {
+			dropStoredVersion(mgr, version)
+		}(flagVar.dropStoredVersion)
+	}
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
@@ -235,7 +238,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 
 	if err := (&controller.KymaReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		EventRecorder:     mgr.GetEventRecorderFor(shared.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
@@ -300,7 +303,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		EventRecorder:         mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
@@ -368,7 +371,7 @@ func setupMandatoryModulesReconciler(mgr ctrl.Manager, remoteClientCache *remote
 
 	if err := (&controller.MandatoryModulesReconciler{
 		Client:              mgr.GetClient(),
-		EventRecorder:       mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
 		KcpRestConfig:       kcpRestConfig,
 		RemoteClientCache:   remoteClientCache,
 		ResolveRemoteClient: resolveRemoteClientFunc,
@@ -386,7 +389,7 @@ func setupMandatoryModulesReconciler(mgr ctrl.Manager, remoteClientCache *remote
 	}
 }
 
-func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved string) {
+func dropStoredVersion(mgr manager.Manager, versionToBeRemoved string) {
 	cfg := mgr.GetConfig()
 	kcpClient, err := clientset.NewForConfig(cfg)
 	if err != nil {
@@ -401,12 +404,12 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 	}
 
 	crdsToPatch := []string{
-		string(v1beta2.ModuleTemplateKind), string(v1beta2.WatcherKind),
-		v1beta2.ManifestKind, string(v1beta2.KymaKind),
+		string(shared.ModuleTemplateKind), string(shared.WatcherKind),
+		string(shared.ManifestKind), string(shared.KymaKind),
 	}
 
 	for _, crdItem := range crdList.Items {
-		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
+		if crdItem.Spec.Group != shared.OperatorGroup && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
 			continue
 		}
 		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))
