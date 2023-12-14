@@ -95,7 +95,7 @@ func main() {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
-	setupManager(flagVar, controller.NewCacheOptions(), scheme)
+	setupManager(flagVar, internal.DefaultCacheOptions(), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
@@ -119,7 +119,7 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machineryruntime.Scheme) {
+func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -133,7 +133,7 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",
-			Cache:                  newCacheOptions,
+			Cache:                  cacheOptions,
 		},
 	)
 	if err != nil {

@@ -71,13 +71,11 @@ func GetResourceLabel(resource client.Object, labelName string) (string, error) 
 	return labelValue, nil
 }
 
-func GetCacheOptions(labelSelector k8slabels.Set) cache.Options {
+func DefaultCacheOptions() cache.Options {
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
 			&apicorev1.Secret{}: {
-				Label: k8slabels.SelectorFromSet(
-					labelSelector,
-				),
+				Label: k8slabels.Everything(),
 			},
 		},
 	}
