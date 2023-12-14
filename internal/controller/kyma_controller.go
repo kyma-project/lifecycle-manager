@@ -418,9 +418,8 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 	r.Metrics.CleanupMetrics(kyma.Name)
 
-	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 	if r.relatedManifestCRsAreDeleted(ctx, kyma) {
-		controllerutil.RemoveFinalizer(kyma, shared.BlockingKymaDeletionFinalizer)
+		controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 	}
 
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
