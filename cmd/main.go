@@ -165,7 +165,7 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager)
 	setupManifestReconciler(mgr, flagVar, options)
-	setupMandatoryModulesReconciler(mgr, remoteClientCache, flagVar, options)
+	setupMandatoryModulesReconciler(mgr, flagVar, options)
 
 	if flagVar.enablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
@@ -358,23 +358,14 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	}
 }
 
-func setupMandatoryModulesReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *FlagVar,
+func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *FlagVar,
 	options ctrlruntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentMandatoryModulesReconciles
-	kcpRestConfig := mgr.GetConfig()
-
-	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
-		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
-		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
-	}
 
 	if err := (&controller.MandatoryModulesReconciler{
-		Client:              mgr.GetClient(),
-		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
-		KcpRestConfig:       kcpRestConfig,
-		RemoteClientCache:   remoteClientCache,
-		ResolveRemoteClient: resolveRemoteClientFunc,
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,

@@ -21,6 +21,7 @@ var (
 	ErrTemplateNotIdentified            = errors.New("no unique template could be identified")
 	ErrNotDefaultChannelAllowed         = errors.New("specifying no default channel is not allowed")
 	ErrNoTemplatesInListResult          = errors.New("no templates were found")
+	ErrTemplateMarkedAsMandatory        = errors.New("template marked as mandatory")
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
 	ErrTemplateNotAllowed               = errors.New("module template not allowed")
 	ErrTemplateUpdateNotAllowed         = errors.New("module template update not allowed")
@@ -350,6 +351,10 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 	if len(filteredTemplates) == 0 {
 		return nil, fmt.Errorf("%w: in channel %s for module %s",
 			ErrNoTemplatesInListResult, desiredChannel, moduleIdentifier)
+	}
+	if filteredTemplates[0].Spec.Mandatory {
+		return nil, fmt.Errorf("%w: in channel %s for module %s",
+			ErrTemplateMarkedAsMandatory, desiredChannel, moduleIdentifier)
 	}
 	return &filteredTemplates[0], nil
 }

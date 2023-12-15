@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,7 +34,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -45,31 +43,13 @@ type MandatoryModulesReconciler struct {
 	record.EventRecorder
 	queue.RequeueIntervals
 	signature.VerificationSettings
-	KcpRestConfig       *rest.Config
-	RemoteClientCache   *remote.ClientCache
-	ResolveRemoteClient RemoteClientResolver
 	RemoteSyncNamespace string
 	InKCPMode           bool
 }
 
-//nolint:lll
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
-// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
-// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch
-// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;create;update;delete;patch;watch
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=update
-
 func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.V(log.DebugLevel).Info("reconciling")
+	logger.V(log.DebugLevel).Info("Mandatory Module Reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
@@ -78,7 +58,7 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if !util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
-			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
+			return ctrl.Result{}, fmt.Errorf("MandatoryModuleController: %w", err)
 		}
 		// if indeed not found, stop put this kyma in queue
 		return ctrl.Result{Requeue: false}, nil
@@ -89,36 +69,19 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
-	// remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
-	// if util.IsNotFound(err) {
-	// 	// TODO check what needs to be done here; Am I going to introduce any finalizers,
-	// 	// if yes, they need to be dropped here
-	// 	return ctrl.Result{Requeue: true}, nil
-	// }
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-
-	// TODO:
-	// 1. List all Mandatory Modules
-	// 2. Filter Moudles by Kyma channel; should take Kyma channel fomr KCP or SKR Kyma? -> needs to be clarified
-	// 3. Create Manifest for corresponding mandatory modules
-
 	mandatoryTemplates, err := lookup.GetMandatoryTemplates(ctx, r.Client)
 	if err != nil {
-		return ctrl.Result{}, err
+		return emptyResultWithErr(err)
 	}
 
 	modules, err := r.GenerateModulesFromTemplate(ctx, mandatoryTemplates, kyma)
 	if err != nil {
-		// TODO
+		return emptyResultWithErr(err)
 	}
 
 	runner := sync.New(r)
-
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
-		// TODO
-		return ctrl.Result{}, err
+		return emptyResultWithErr(err)
 	}
 
 	return ctrl.Result{}, nil
@@ -131,4 +94,8 @@ func (r *MandatoryModulesReconciler) GenerateModulesFromTemplate(ctx context.Con
 		r.RemoteSyncNamespace, r.EnableVerification, r.PublicKeyFilePath)
 
 	return parser.GenerateMandatoryModulesFromTemplates(ctx, kyma, templates), nil
+}
+
+func emptyResultWithErr(err error) (ctrl.Result, error) {
+	return ctrl.Result{}, fmt.Errorf("MandatoryModuleController: %w", err)
 }
