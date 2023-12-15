@@ -124,7 +124,7 @@ func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
 		return fmt.Errorf("failed to get certificate: %w", err)
 	}
 
-	if !util.IsNotFound(err) {
+	if err == nil {
 		if err = c.kcpClient.Delete(ctx, certificate); err != nil {
 			return fmt.Errorf("failed to delete certificate: %w", err)
 		}
@@ -143,7 +143,7 @@ func (c *CertificateManager) removeSecret(ctx context.Context) error {
 		return fmt.Errorf("failed to get certificate secret: %w", err)
 	}
 
-	if !util.IsNotFound(err) {
+	if err == nil {
 		if err = c.kcpClient.Delete(ctx, certSecret); err != nil {
 			return fmt.Errorf("failed to delete certificate secret: %w", err)
 		}
