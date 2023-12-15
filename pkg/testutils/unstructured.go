@@ -14,8 +14,12 @@ import (
 )
 
 func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
-	if err := clnt.Delete(ctx, obj); util.IsNotFound(err) {
+	err := clnt.Delete(ctx, obj)
+	if err != nil && util.IsNotFound(err) {
 		return nil
+	}
+	if err != nil {
+		return err
 	}
 	if err := clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
 		if util.IsNotFound(err) {
@@ -27,14 +31,14 @@ func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 }
 
 func DeleteCRWithGVK(ctx context.Context, clnt client.Client, name, namespace, group, version, kind string) error {
-	obj, err := GetCR(ctx, clnt, client.ObjectKey{Name: name, Namespace: namespace}, schema.GroupVersionKind{
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   group,
 		Version: version,
 		Kind:    kind,
 	})
-	if err != nil {
-		return err
-	}
+	obj.SetName(name)
+	obj.SetNamespace(namespace)
 	return DeleteCR(ctx, clnt, obj)
 }
 
@@ -45,9 +49,6 @@ func GetCR(ctx context.Context, clnt client.Client,
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(gvk)
 	if err := clnt.Get(ctx, objectKey, obj); err != nil {
-		if util.IsNotFound(err) {
-			return obj, nil
-		}
 		return nil, err
 	}
 	return obj, nil

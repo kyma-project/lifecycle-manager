@@ -19,6 +19,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given kyma deployed in KCP", func() {
+		deployName := "template-operator-controller-manager"
 		It("When enabling Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
@@ -27,7 +28,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("Then the Module Operator is deployed on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-controller-manager",
+				WithArguments(runtimeClient, deployName,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State")
@@ -62,13 +63,13 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				Should(Equal(ErrNotFound))
 
 			By("When deleting the SKR Module Manager Deployment")
-			err := DeleteCRWithGVK(ctx, runtimeClient, "template-operator-controller-manager",
+			err := DeleteCRWithGVK(ctx, runtimeClient, deployName,
 				TestModuleResourceNamespace, "apps", "v1", "Deployment")
 			Expect(err).ToNot(HaveOccurred())
 			By("Then Module Manager Deployment is not recreated on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-controller-manager",
+				WithArguments(runtimeClient, deployName,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 		})
@@ -88,7 +89,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("Then Module Deployment is recreated")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-controller-manager",
+				WithArguments(runtimeClient, deployName,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 
