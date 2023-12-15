@@ -416,27 +416,48 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	}
 
 	r.Metrics.CleanupMetrics(kyma.Name)
-
-	if r.relatedManifestCRsAreDeleted(ctx, kyma) {
-		controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
+	relatedManifests, err := r.getRelatedManifestCRs(ctx, kyma)
+	if err != nil {
+		err = fmt.Errorf("error while trying to get manifests: %w", err)
+		r.enqueueWarningEvent(kyma, deletionError, err)
+		return ctrl.Result{}, err
 	}
+
+	if !r.relatedManifestCRsAreDeleted(relatedManifests) {
+		if err = r.deleteManifests(ctx, relatedManifests); err != nil {
+			r.enqueueWarningEvent(kyma, deletionError, err)
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 }
 
-func (r *KymaReconciler) relatedManifestCRsAreDeleted(ctx context.Context, kyma *v1beta2.Kyma) bool {
+func (r *KymaReconciler) deleteManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
+	for _, manifest := range manifests {
+		if err := r.Delete(ctx, &manifest); err != nil {
+			return fmt.Errorf("error while trying to delete manifest: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *KymaReconciler) getRelatedManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) ([]v1beta2.Manifest, error) {
 	manifestList := &v1beta2.ManifestList{}
 	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name})
 	if err := r.List(ctx, manifestList,
-		&client.ListOptions{LabelSelector: labelSelector}); util.IsNotFound(err) {
-		return true
+		&client.ListOptions{LabelSelector: labelSelector}); client.IgnoreNotFound(err) != nil {
+		return nil, err
 	}
 
-	if len(manifestList.Items) == 0 {
-		return true
-	}
+	return manifestList.Items, nil
+}
 
-	return false
+func (r *KymaReconciler) relatedManifestCRsAreDeleted(manifests []v1beta2.Manifest) bool {
+	return len(manifests) == 0
 }
 
 func (r *KymaReconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
