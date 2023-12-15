@@ -406,7 +406,6 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		}
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		// TODO: Remove all finalizers from remote Kyma
 		if err := remote.RemoveFinalizersFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
