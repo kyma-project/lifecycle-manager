@@ -25,7 +25,7 @@ import (
 const (
 	podRestartLabelKey      = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
 	kcpAddressEnvName       = "KCP_ADDR"
-	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
+	watcherBaseImageAddress = " europe-docker.pkg.dev/kyma-project/dev/"
 	SkrTLSName              = "skr-webhook-tls"
 	SkrResourceName         = "skr-webhook"
 	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
