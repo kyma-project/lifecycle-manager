@@ -48,7 +48,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
-		It("And synced module resources remain consistent with the same resourceVersion", func() {
+		It("Then synced module resources remain consistent with the same resourceVersion", func() {
 			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
 				module.Name)
 			Expect(err).Should(Succeed())
@@ -66,26 +66,24 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 			}
 		})
 
-		It("Then synced module resources keep consistent by revert modification", func() {
-			By("Stop manifest reconciliation")
+		It("When Stop Module Operator", func() {
 			Eventually(SetSkipLabelToManifest).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 				Should(Succeed())
 
-			By("Stop module operator")
 			Eventually(StopDeployment).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, "template-operator-controller-manager", TestModuleResourceNamespace).
 				Should(Succeed())
 
-			By("Enable manifest reconciliation")
 			Eventually(SetSkipLabelToManifest).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
 				Should(Succeed())
+		})
 
-			By("Then Module Operator Deployment back to ready")
+		It("Then Module Operator has been reset", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(runtimeClient, "template-operator-controller-manager", TestModuleResourceNamespace).
