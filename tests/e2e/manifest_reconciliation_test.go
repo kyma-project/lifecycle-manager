@@ -43,7 +43,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 		})
 
 		It("When the Manifest is labelled to skip reconciliation", func() {
-			Eventually(ConfigSkipLabelToManifest).
+			Eventually(SetSkipLabelToManifest).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 				Should(Succeed())
@@ -74,7 +74,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 		})
 
 		It("When the Manifest skip reconciliation label removed", func() {
-			Eventually(ConfigSkipLabelToManifest).
+			Eventually(SetSkipLabelToManifest).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
 				Should(Succeed())

@@ -332,7 +332,7 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 	})
 
 	It("When a skip label is added to Manifest", func() {
-		Eventually(ConfigSkipLabelToManifest, Timeout, Interval).
+		Eventually(SetSkipLabelToManifest, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 			Should(Succeed())

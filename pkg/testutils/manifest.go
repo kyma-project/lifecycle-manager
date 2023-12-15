@@ -143,7 +143,7 @@ func GetManifestResource(ctx context.Context,
 	return moduleInCluster.Spec.Resource, nil
 }
 
-func ConfigSkipLabelToManifest(
+func SetSkipLabelToManifest(
 	ctx context.Context,
 	clnt client.Client,
 	kymaName,
