@@ -3,11 +3,15 @@ package mandatory_test
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -20,7 +24,8 @@ import (
 )
 
 var (
-	ErrWrongModulesStatus = errors.New("modules status not correct")
+	ErrWrongModulesStatus  = errors.New("modules status not correct")
+	ErrNoMandatoryManifest = errors.New("manifest for mandatory Module not found")
 )
 
 var _ = Describe("Mandatory Module Installation", Ordered, func() {
@@ -50,31 +55,37 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("And Manifest CR for the Mandatory Module should be created", func() {
-			// TODO
+		It("And Manifest CR for the Mandatory Module should be created with correct Owner Reference", func() {
+			Eventually(checkMandatoryManifestForKyma).
+				WithContext(ctx).
+				WithArguments(kyma, "kyma-project.io/template-operator").
+				Should(Succeed())
+		})
+	})
+
+	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
+		kyma := NewTestKyma("skip-reconciliation-kyma")
+		kyma.Labels[shared.SkipReconcileLabel] = "true"
+		registerControlPlaneLifecycleForKyma(kyma)
+
+		It("When Kyma has 'skip-reconciliation' label, then no Mandatory Module Manifest should be created", func() {
+			Eventually(checkMandatoryManifestForKyma).
+				WithContext(ctx).
+				WithArguments(kyma, "kyma-project.io/template-operator").
+				Should(Equal(ErrNoMandatoryManifest))
 		})
 
 	})
 })
 
-func DeployMandatoryModuleTemplateWithName(ctx context.Context, kcpClient client.Client, name string) {
-	template := builder.NewModuleTemplateBuilder().
-		WithModuleName(name).
-		WithChannel("mandatory").
-		WithMandatory(true).
-		WithOCM(compdescv2.SchemaVersion).Build()
+func DeployMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client, template *v1beta2.ModuleTemplate) {
 	Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 		WithArguments(template).
 		Should(Succeed())
 
 }
 
-func DeleteMandatoryModuleTemplateWithName(ctx context.Context, kcpClient client.Client, name string) {
-	template := builder.NewModuleTemplateBuilder().
-		WithModuleName(name).
-		WithChannel("mandatory").
-		WithMandatory(true).
-		WithOCM(compdescv2.SchemaVersion).Build()
+func DeleteMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client, template *v1beta2.ModuleTemplate) {
 	Eventually(kcpClient.Delete, Timeout, Interval).WithContext(ctx).
 		WithArguments(template).
 		Should(Succeed())
@@ -83,8 +94,14 @@ func DeleteMandatoryModuleTemplateWithName(ctx context.Context, kcpClient client
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
+	template := builder.NewModuleTemplateBuilder().
+		WithModuleName("mandatory-module").
+		WithChannel("mandatory").
+		WithMandatory(true).
+		WithOCM(compdescv2.SchemaVersion).Build()
+
 	BeforeAll(func() {
-		DeployMandatoryModuleTemplateWithName(ctx, controlPlaneClient, "mandatory-module")
+		DeployMandatoryModuleTemplate(ctx, controlPlaneClient, template)
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		Eventually(CreateCR, Timeout, Interval).
@@ -99,7 +116,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
-		DeleteMandatoryModuleTemplateWithName(ctx, controlPlaneClient, "mandatory-module")
+		DeleteMandatoryModuleTemplate(ctx, controlPlaneClient, template)
 	})
 
 	BeforeEach(func() {
@@ -110,7 +127,13 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 }
 
 func setKymaToReady(ctx context.Context, kyma *v1beta2.Kyma) error {
-	kyma.Status.State = shared.StateReady
+	kyma.Status = v1beta2.KymaStatus{
+		State:         shared.StateReady,
+		Conditions:    nil,
+		Modules:       nil,
+		ActiveChannel: "",
+		LastOperation: shared.LastOperation{LastUpdateTime: apimetav1.NewTime(time.Now())},
+	}
 	kyma.TypeMeta.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   v1beta2.GroupVersion.Group,
 		Version: v1beta2.GroupVersion.Version,
@@ -118,7 +141,24 @@ func setKymaToReady(ctx context.Context, kyma *v1beta2.Kyma) error {
 	})
 	kyma.ManagedFields = nil
 
-	err := mandatoryModulesReconciler.Patch(ctx, kyma, client.Apply, status.SubResourceOpts(client.ForceOwnership),
+	err := mandatoryModulesReconciler.Status().Patch(ctx, kyma, client.Apply,
+		status.SubResourceOpts(client.ForceOwnership),
 		client.FieldOwner(shared.OperatorName))
 	return err
+}
+
+func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
+	manifestList := v1beta2.ManifestList{}
+	if err := mandatoryModulesReconciler.List(ctx, &manifestList, &client.ListOptions{
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
+	}); err != nil {
+		return err
+	}
+	for _, manifest := range manifestList.Items {
+		if manifest.OwnerReferences[0].Name == kyma.Name &&
+			manifest.Annotations[shared.FQDN] == fqdn {
+			return nil
+		}
+	}
+	return ErrNoMandatoryManifest
 }
