@@ -17,10 +17,9 @@ import (
 )
 
 var (
-	ErrStatusModuleStateMismatch   = errors.New("status.modules.state not match")
-	ErrContainsUnexpectedModules   = errors.New("kyma CR contains unexpected modules")
-	ErrNotContainsExpectedModules  = errors.New("kyma CR not contains expected modules")
-	ErrKymaIsRemovedBeforeManifest = errors.New("kyma CR got removed before manifest CR")
+	ErrStatusModuleStateMismatch  = errors.New("status.modules.state not match")
+	ErrContainsUnexpectedModules  = errors.New("kyma CR contains unexpected modules")
+	ErrNotContainsExpectedModules = errors.New("kyma CR not contains expected modules")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -309,24 +308,4 @@ func ContainsModuleInSpec(ctx context.Context,
 	}
 
 	return ErrNotContainsExpectedModules
-}
-
-func ManifestCRIsRemovedBeforeKymaCR(ctx context.Context,
-	clnt client.Client,
-	kymaName,
-	kymaNamespace,
-	moduleName string) error {
-	manifestExistsError := ManifestExists(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	kymaExistsError := KymaExists(ctx, clnt, kymaName, kymaNamespace)
-
-	manifestExists := manifestExistsError == nil
-	kymaExists := kymaExistsError == nil
-
-	if manifestExists {
-		if !kymaExists {
-			return ErrKymaIsRemovedBeforeManifest
-		}
-	}
-
-	return nil
 }

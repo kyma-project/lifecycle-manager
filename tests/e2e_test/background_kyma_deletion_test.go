@@ -16,7 +16,7 @@ var _ = Describe("Background Kyma Deletion", Ordered, func() {
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
-
+	blockingFinalizer := "blocking-finalizer"
 	InitEmptyKymaBeforeAll(kyma)
 
 	Context("Given SKR Cluster", func() {
@@ -31,21 +31,45 @@ var _ = Describe("Background Kyma Deletion", Ordered, func() {
 				Should(Succeed())
 			Eventually(ManifestExists).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.Name, kyma.Namespace, module.Name).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 				Should(Succeed())
-		})
 
-		It("When KCP Kyma CR is deleted using Background propagation", func() {
+			By("And finalizer is added to Manifest CR")
+			Eventually(AddFinalizerToManifestCR).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, blockingFinalizer).
+				Should(Succeed())
+
+			By("And KCP Kyma CR is deleted using Background propagation")
 			Eventually(DeleteKyma).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma, apimetav1.DeletePropagationBackground).
 				Should(Succeed())
 		})
 
-		It("Then Manifest CR is removed before Kyma CR", func() {
-			Consistently(ManifestCRIsRemovedBeforeKymaCR).
+		It("Then KCP Kyma CR is not deleted with a deletion timestamp", func() {
+			Consistently(KymaHasDeletionTimestamp).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace()).
+				Should(BeTrue())
+		})
+
+		It("When finalizer is removed from Manifest CR", func() {
+			Eventually(RemoveFinalizerFromManifestCR).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, blockingFinalizer).
+				Should(Succeed())
+		})
+
+		It("Then KCP Kyma CR and Manifest are deleted", func() {
+			Eventually(ManifestExists).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Equal(ErrNotFound))
+
+			Eventually(KymaDeleted).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 		})
 	})

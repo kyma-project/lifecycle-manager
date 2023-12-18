@@ -450,7 +450,7 @@ func (r *KymaReconciler) getRelatedManifestCRs(ctx context.Context, kyma *v1beta
 	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name})
 	if err := r.List(ctx, manifestList,
 		&client.ListOptions{LabelSelector: labelSelector}); client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("Failed to get related manifests, %w", err)
+		return nil, fmt.Errorf("failed to get related manifests, %w", err)
 	}
 
 	return manifestList.Items, nil
