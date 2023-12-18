@@ -32,7 +32,8 @@ const (
 	localHostname         = "0.0.0.0"
 	k3dHostname           = "host.k3d.internal"
 	defaultRemoteKymaName = "default"
-	timeout               = 10 * time.Second
+	EventuallyTimeout     = 10 * time.Second
+	ConsistentDuration    = 20 * time.Second
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
 	controlPlaneNamespace = "kcp-system"

@@ -84,6 +84,9 @@ module-status-propagation:
 module-without-default-cr:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
+module-consistency:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Keep Consistent After Deploy"
+
 non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
 

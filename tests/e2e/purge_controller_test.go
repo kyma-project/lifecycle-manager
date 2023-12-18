@@ -38,7 +38,7 @@ var _ = Describe("Purge Controller", Ordered, func() {
 				Should(Succeed())
 
 			By("And KCP Kyma CR has deletion timestamp set")
-			Expect(DeleteKyma(ctx, controlPlaneClient, kyma, apimetav1.DeletePropagationForeground)).
+			Expect(DeleteKyma(ctx, controlPlaneClient, kyma, apimetav1.DeletePropagationBackground)).
 				Should(Succeed())
 
 			Expect(KymaHasDeletionTimestamp(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).

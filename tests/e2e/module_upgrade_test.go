@@ -32,10 +32,10 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 				Should(Succeed())
 
 			By("And Module Operator Deployment exists")
-			Eventually(ModuleDeploymentExists).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-system", "template-operator-v1-controller-manager").
-				Should(BeTrue())
+				WithArguments(runtimeClient, "template-operator-v1-controller-manager", TestModuleResourceNamespace).
+				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
@@ -58,16 +58,16 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 				Should(Succeed())
 
 			By("And new Module Operator Deployment exists")
-			Eventually(ModuleDeploymentExists).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-system", "template-operator-v2-controller-manager").
-				Should(BeTrue())
+				WithArguments(runtimeClient, "template-operator-v2-controller-manager", TestModuleResourceNamespace).
+				Should(Succeed())
 
 			By("And old Module Operator Deployment does not exist")
-			Eventually(ModuleDeploymentExists).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-system", "template-operator-v1-controller-manager").
-				Should(BeFalse())
+				WithArguments(runtimeClient, "template-operator-v1-controller-manager", TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
