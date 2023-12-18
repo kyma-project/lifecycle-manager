@@ -89,8 +89,8 @@ var _ = BeforeSuite(func() {
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	SetDefaultEventuallyPollingInterval(interval)
-	SetDefaultEventuallyTimeout(timeout)
-	SetDefaultConsistentlyDuration(timeout)
+	SetDefaultEventuallyTimeout(EventuallyTimeout)
+	SetDefaultConsistentlyDuration(ConsistentDuration)
 	SetDefaultConsistentlyPollingInterval(interval)
 	// +kubebuilder:scaffold:scheme
 

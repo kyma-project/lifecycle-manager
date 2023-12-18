@@ -32,6 +32,7 @@ jobs:
                     "module-status-propagation",
                     "kyma-metrics",
                     "module-without-default-cr",
+                    "module-consistency",
                     "non-blocking-deletion",
                     "upgrade-under-deletion",
                     "purge-controller",
@@ -199,6 +200,7 @@ jobs:
           matrix.e2e-test == 'purge-controller' ||
           matrix.e2e-test == 'purge-metrics' ||
           matrix.e2e-test == 'kyma-deletion' ||
+          matrix.e2e-test == 'module-consistency' ||
           matrix.e2e-test == 'skip-manifest-reconciliation'
           }}
         run: |
@@ -267,4 +269,4 @@ jobs:
       - name: Run ${{ matrix.e2e-test }}
         working-directory: lifecycle-manager
         run: |
-          make -C tests/e2e_test ${{ matrix.e2e-test }}
+          make -C tests/e2e ${{ matrix.e2e-test }}

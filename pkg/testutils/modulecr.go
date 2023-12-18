@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	apiappsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,7 +15,8 @@ import (
 )
 
 const (
-	TestModuleCRName = "sample-yaml"
+	TestModuleCRName            = "sample-yaml"
+	TestModuleResourceNamespace = "template-operator-system"
 )
 
 var (
@@ -127,18 +127,4 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 	return state == string(expectedState)
-}
-
-func ModuleDeploymentExists(ctx context.Context,
-	clnt client.Client,
-	namespace string,
-	deploymentName string,
-) bool {
-	var deployment apiappsv1.Deployment
-	err := clnt.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      deploymentName,
-	}, &deployment)
-
-	return err == nil && deployment.Status.AvailableReplicas != 0
 }
