@@ -77,7 +77,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -215,7 +215,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -315,7 +315,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -634,7 +634,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -748,7 +748,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "targets": [
         {
           "datasource": {
@@ -1102,7 +1102,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1212,7 +1212,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1322,7 +1322,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1435,7 +1435,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1515,6 +1515,117 @@
         "x": 0,
         "y": 69
       },
+      "id": 68,
+      "panels": [],
+      "title": "Certificate",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "description": "Indicates the self-signed Certificate of related Kyma is not renewed yet",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "hiddenSeries": false,
+      "id": 70,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.27",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "lifecycle_mgr_self_signed_cert_not_renew{service=\"klm-metrics-service\"}",
+          "interval": "",
+          "legendFormat": "{{kyma_name}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Self-signed Certificate Not Renew",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 78
+      },
       "id": 50,
       "panels": [],
       "title": "Listener",
@@ -1567,7 +1678,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 79
       },
       "id": 48,
       "options": {
@@ -1615,7 +1726,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 79
+        "y": 88
       },
       "hiddenSeries": false,
       "id": 52,
@@ -1635,7 +1746,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1723,7 +1834,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 79
+        "y": 88
       },
       "id": 54,
       "options": {
@@ -1738,7 +1849,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "targets": [
         {
           "exemplar": true,
@@ -1802,7 +1913,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 88
+        "y": 97
       },
       "id": 56,
       "options": {
@@ -1854,7 +1965,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 105
       },
       "id": 62,
       "panels": [],
@@ -1877,7 +1988,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 97
+        "y": 106
       },
       "hiddenSeries": false,
       "id": 58,
@@ -1897,7 +2008,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1915,7 +2026,9 @@
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "Purge Duration Seconds",
       "tooltip": {
         "shared": false,
@@ -1971,7 +2084,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 97
+        "y": 106
       },
       "hiddenSeries": false,
       "id": 64,
@@ -1991,7 +2104,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2065,7 +2178,7 @@
         "h": 11,
         "w": 24,
         "x": 0,
-        "y": 105
+        "y": 114
       },
       "hiddenSeries": false,
       "id": 66,
@@ -2085,7 +2198,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.26",
+      "pluginVersion": "7.5.27",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2103,7 +2216,9 @@
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "Purge Errors",
       "tooltip": {
         "shared": true,
@@ -2142,7 +2257,7 @@
       }
     }
   ],
-  "refresh": "",
+  "refresh": false,
   "schemaVersion": 27,
   "style": "dark",
   "tags": [],
@@ -2150,7 +2265,7 @@
     "list": []
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
