@@ -6,7 +6,7 @@ replace github.com/kyma-project/lifecycle-manager/api => ./api
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
-	github.com/cert-manager/cert-manager v1.13.2
+	github.com/cert-manager/cert-manager v1.13.3
 	github.com/go-logr/logr v1.3.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
@@ -29,7 +29,7 @@ require (
 
 require (
 	istio.io/api v1.20.1
-	istio.io/client-go v1.20.0
+	istio.io/client-go v1.20.1
 )
 
 require (
@@ -293,10 +293,10 @@ require (
 	github.com/zeebo/errs v1.3.0 // indirect
 	go.mongodb.org/mongo-driver v1.12.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/otel v1.19.0 // indirect
-	go.opentelemetry.io/otel/metric v1.19.0 // indirect
-	go.opentelemetry.io/otel/trace v1.19.0 // indirect
-	go.starlark.net v0.0.0-20231121155337-90ade8b19d09 // indirect
+	go.opentelemetry.io/otel v1.20.0 // indirect
+	go.opentelemetry.io/otel/metric v1.20.0 // indirect
+	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.step.sm/crypto v0.36.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

@@ -25,4 +25,4 @@ jobs:
         run: |
           chmod a+x $highlighter
       - name: Genarate a report
-        run: cd ${{ github.workspace }}/tests/e2e_test && make e2e-coverage | $highlighter $glossaryURL
+        run: cd ${{ github.workspace }}/tests/e2e && make e2e-coverage | $highlighter $glossaryURL

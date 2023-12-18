@@ -173,7 +173,7 @@ issues:
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils
         - goerr113 # Dynamic error creation in unit and integration test utils is sufficient
-    - path: tests/e2e_test/
+    - path: tests/e2e/
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - path: tests/integration/watcher/certificate_suite_test.go
       linters: [ gci ] # Disable gci due to the test utilities dot import.
