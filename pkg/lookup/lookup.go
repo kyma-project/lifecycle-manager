@@ -86,15 +86,16 @@ func GetTemplates(
 
 // GetMandatoryTemplates returns all ModuleTemplates for modules which are marked as mandatory with the given channel.
 func GetMandatoryTemplates(ctx context.Context, kymaClient client.Reader) (ModuleTemplatesByModuleName,
-	error) {
+	error,
+) {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
 	if err := kymaClient.List(ctx, moduleTemplateList); err != nil {
-		logf.FromContext(ctx).Error(err, "could not list ModuleTemplates")
-		return nil, err
+		return nil, fmt.Errorf("could not list ModuleTemplates: %w", err)
 	}
 
 	mandatoryModules := make(map[string]*ModuleTemplateTO)
 	for _, moduleTemplate := range moduleTemplateList.Items {
+		moduleTemplate := moduleTemplate
 		if moduleTemplate.Spec.Mandatory {
 			mandatoryModules[moduleTemplate.Name] = &ModuleTemplateTO{
 				ModuleTemplate: &moduleTemplate,

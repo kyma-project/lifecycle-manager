@@ -143,11 +143,7 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 	}
 
 	options := controllerOptionsFromFlagVar(flagVar)
-	if flagVar.enableKcpWatcher && flagVar.skrWatcherImage == "" {
-		setupLog.Error(errMissingWatcherImage, "unable to start manager")
-		os.Exit(1)
-	}
-	remoteClientCache := remote.NewClientCache()
+
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
@@ -163,6 +159,7 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
 
+	remoteClientCache := remote.NewClientCache()
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager)
 	setupManifestReconciler(mgr, flagVar, options)
 	setupMandatoryModulesReconciler(mgr, flagVar, options)
@@ -338,6 +335,11 @@ func setupManifestReconciler(
 }
 
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *FlagVar) {
+	if flagVar.skrWatcherImage == "" {
+		setupLog.Error(errMissingWatcherImage, "unable to start manager")
+		os.Exit(1)
+	}
+
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
 	if err := (&controller.WatcherReconciler{

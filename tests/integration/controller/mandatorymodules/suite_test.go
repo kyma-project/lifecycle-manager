@@ -43,8 +43,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -71,16 +69,9 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 	By("bootstrapping test environment")
-
-	// TODO: Maybe external CRDs are not needed
-	externalCRDs, err := AppendExternalCRDs(
-		filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds"),
-		"cert-manager-v1.10.1.crds.yaml",
-		"istio-v1.17.1.crds.yaml")
-	Expect(err).ToNot(HaveOccurred())
 	singleClusterEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
-		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{}, externalCRDs...),
+		CRDs:                  []*apiextensionsv1.CustomResourceDefinition{},
 		ErrorIfCRDPathMissing: true,
 	}
 

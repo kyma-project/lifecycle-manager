@@ -88,8 +88,8 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 func (r *MandatoryModulesReconciler) GenerateModulesFromTemplate(ctx context.Context,
-	templates lookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma) (common.Modules, error) {
-
+	templates lookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
+) (common.Modules, error) {
 	parser := parse.NewParser(r.Client, r.InKCPMode,
 		r.RemoteSyncNamespace, r.EnableVerification, r.PublicKeyFilePath)
 

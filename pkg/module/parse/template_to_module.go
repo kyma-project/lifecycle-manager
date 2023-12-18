@@ -59,7 +59,6 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	// TODO we dont need to call kyma.GetAvailableModules here, we can use the templates map since it already only contains the available modules -> better performance
 	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
 		if template.Err != nil && !errors.Is(template.Err, lookup.ErrTemplateNotAllowed) {
@@ -114,10 +113,8 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates lookup.ModuleTemplatesByModuleName,
 ) common.Modules {
-
 	modules := make(common.Modules, 0)
 	for _, template := range templates {
-
 		moduleName, ok := template.ObjectMeta.Labels[shared.ModuleName]
 		if !ok {
 			logf.FromContext(ctx).V(log.InfoLevel).Info("ModuleTemplate does not contain Module Name as label, "+
@@ -133,7 +130,6 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			})
 			continue
 		}
-		// TODO double check how this works and if we can reusue it for mandatory modules
 		descriptor, err := template.GetDescriptor()
 		if err != nil {
 			template.Err = err

@@ -179,7 +179,7 @@ issues:
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - path: tests/integration/declarative/declarative_test.go
       linters: [ gci ] # Disable gci due to the test utilities dot import.
-    - path: tests/integration/controller/(controlplane|eventfilters|kyma|withwatcher|purge)/(.*)_test.go
+    - path: tests/integration/controller/(controlplane|eventfilters|kyma|withwatcher|purge|mandatorymodules)/(.*)_test.go
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - linters:
       - importas

@@ -29,7 +29,6 @@ var (
 )
 
 var _ = Describe("Mandatory Module Installation", Ordered, func() {
-
 	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
 		kyma := NewTestKyma("no-module-kyma")
 		registerControlPlaneLifecycleForKyma(kyma)
@@ -74,12 +73,10 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 				WithArguments(kyma, "kyma-project.io/template-operator").
 				Should(Equal(ErrNoMandatoryManifest))
 		})
-
 	})
 })
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
-
 	template := builder.NewModuleTemplateBuilder().
 		WithModuleName("mandatory-module").
 		WithChannel("mandatory").
