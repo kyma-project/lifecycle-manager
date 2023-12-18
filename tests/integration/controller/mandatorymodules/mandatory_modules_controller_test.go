@@ -7,8 +7,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -48,7 +50,7 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		By("And Manifest CR for the Kyma should be created", func() {
+		It("And Manifest CR for the Mandatory Module should be created", func() {
 			// TODO
 		})
 
@@ -80,11 +82,17 @@ func DeleteMandatoryModuleTemplateWithName(ctx context.Context, kcpClient client
 }
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
+
 	BeforeAll(func() {
 		DeployMandatoryModuleTemplateWithName(ctx, controlPlaneClient, "mandatory-module")
+		// Set labels and state manual, since we do not start the Kyma Controller
+		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+		Eventually(setKymaToReady).
+			WithContext(ctx).
+			WithArguments(kyma).Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -99,4 +107,18 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(SyncKyma, Timeout, Interval).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
+}
+
+func setKymaToReady(ctx context.Context, kyma *v1beta2.Kyma) error {
+	kyma.Status.State = shared.StateReady
+	kyma.TypeMeta.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   v1beta2.GroupVersion.Group,
+		Version: v1beta2.GroupVersion.Version,
+		Kind:    string(shared.KymaKind),
+	})
+	kyma.ManagedFields = nil
+
+	err := mandatoryModulesReconciler.Patch(ctx, kyma, client.Apply, status.SubResourceOpts(client.ForceOwnership),
+		client.FieldOwner(shared.OperatorName))
+	return err
 }

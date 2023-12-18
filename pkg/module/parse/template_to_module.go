@@ -59,6 +59,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
+	// TODO we dont need to call kyma.GetAvailableModules here, we can use the templates map since it already only contains the available modules -> better performance
 	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
 		if template.Err != nil && !errors.Is(template.Err, lookup.ErrTemplateNotAllowed) {
