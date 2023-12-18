@@ -48,6 +48,7 @@ func GetManifest(ctx context.Context,
 
 	var manifestKey v1beta2.TrackingObject
 	for _, module := range kyma.Status.Modules {
+		module := module
 		if module.Name == moduleName {
 			manifestKey = *module.Manifest
 		}
