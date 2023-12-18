@@ -30,6 +30,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 				Should(Succeed())
 		})
 
+		moduleOperator := "template-operator-controller-manager"
 		It("Then Module Resources are deployed on SKR cluster", func() {
 			By("And Module CR exists")
 			Eventually(ModuleCRExists).
@@ -39,7 +40,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 			By("And Module Operator Deployment is ready")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-controller-manager", TestModuleResourceNamespace).
+				WithArguments(runtimeClient, moduleOperator, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -48,21 +49,28 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
+
 		It("Then synced module resources remain consistent with the same resourceVersion", func() {
 			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
 				module.Name)
 			Expect(err).Should(Succeed())
 			for _, resource := range manifest.Status.Synced {
-				objectKey := client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}
-				gvk := schema.GroupVersionKind{Group: resource.Group, Version: resource.Version, Kind: resource.Kind}
-				resourceInCluster, err := GetCR(ctx, runtimeClient,
-					objectKey,
-					gvk)
-				Expect(err).Should(Succeed())
-				Consistently(IsResourceVersionSame).
-					WithContext(ctx).
-					WithArguments(runtimeClient, objectKey, gvk,
-						resourceInCluster.GetResourceVersion()).Should(BeTrue())
+				go func(resource shared.Resource) {
+					objectKey := client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}
+					gvk := schema.GroupVersionKind{
+						Group:   resource.Group,
+						Version: resource.Version,
+						Kind:    resource.Kind,
+					}
+					resourceInCluster, err := GetCR(ctx, runtimeClient,
+						objectKey,
+						gvk)
+					Expect(err).Should(Succeed())
+					Consistently(IsResourceVersionSame).
+						WithContext(ctx).
+						WithArguments(runtimeClient, objectKey, gvk,
+							resourceInCluster.GetResourceVersion()).Should(BeTrue())
+				}(resource)
 			}
 		})
 
@@ -74,7 +82,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 
 			Eventually(StopDeployment).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, "template-operator-controller-manager", TestModuleResourceNamespace).
+				WithArguments(runtimeClient, moduleOperator, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			Eventually(SetSkipLabelToManifest).
@@ -86,7 +94,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 		It("Then Module Operator has been reset", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-controller-manager", TestModuleResourceNamespace).
+				WithArguments(runtimeClient, moduleOperator, TestModuleResourceNamespace).
 				Should(Succeed())
 		})
 	})

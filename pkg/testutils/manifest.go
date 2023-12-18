@@ -155,7 +155,9 @@ func SetSkipLabelToManifest(
 	if err != nil {
 		return fmt.Errorf("failed to get manifest, %w", err)
 	}
-
+	if manifest.Labels == nil {
+		manifest.Labels = make(map[string]string)
+	}
 	manifest.Labels[shared.SkipReconcileLabel] = strconv.FormatBool(ifSkip)
 	err = clnt.Update(ctx, manifest)
 	if err != nil {
