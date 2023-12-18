@@ -18,7 +18,7 @@ patches:
         value: --skr-watcher-path=/skr-webhook
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-watcher-image=runtime-watcher-skr:0.0.3
+        value: --skr-watcher-image=runtime-watcher-skr:0.0.4
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-domain-name-pinning=true
