@@ -55,22 +55,20 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 				module.Name)
 			Expect(err).Should(Succeed())
 			for _, resource := range manifest.Status.Synced {
-				go func(resource shared.Resource) {
-					objectKey := client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}
-					gvk := schema.GroupVersionKind{
-						Group:   resource.Group,
-						Version: resource.Version,
-						Kind:    resource.Kind,
-					}
-					resourceInCluster, err := GetCR(ctx, runtimeClient,
-						objectKey,
-						gvk)
-					Expect(err).Should(Succeed())
-					Consistently(IsResourceVersionSame).
-						WithContext(ctx).
-						WithArguments(runtimeClient, objectKey, gvk,
-							resourceInCluster.GetResourceVersion()).Should(BeTrue())
-				}(resource)
+				objectKey := client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}
+				gvk := schema.GroupVersionKind{
+					Group:   resource.Group,
+					Version: resource.Version,
+					Kind:    resource.Kind,
+				}
+				resourceInCluster, err := GetCR(ctx, runtimeClient,
+					objectKey,
+					gvk)
+				Expect(err).Should(Succeed())
+				Consistently(IsResourceVersionSame).
+					WithContext(ctx).
+					WithArguments(runtimeClient, objectKey, gvk,
+						resourceInCluster.GetResourceVersion()).Should(BeTrue())
 			}
 		})
 
