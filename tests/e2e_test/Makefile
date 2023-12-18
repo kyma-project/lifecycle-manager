@@ -107,3 +107,6 @@ ca-certificate-rotation:
 
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
+
+background-kyma-deletion:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Background Kyma Deletion"

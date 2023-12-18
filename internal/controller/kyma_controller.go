@@ -437,8 +437,8 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 }
 
 func (r *KymaReconciler) deleteManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
-	for _, manifest := range manifests {
-		if err := r.Delete(ctx, &manifest); err != nil {
+	for i := range manifests {
+		if err := r.Delete(ctx, &manifests[i]); err != nil {
 			return fmt.Errorf("error while trying to delete manifest: %w", err)
 		}
 	}
@@ -450,7 +450,7 @@ func (r *KymaReconciler) getRelatedManifestCRs(ctx context.Context, kyma *v1beta
 	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name})
 	if err := r.List(ctx, manifestList,
 		&client.ListOptions{LabelSelector: labelSelector}); client.IgnoreNotFound(err) != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to get related manifests, %w", err)
 	}
 
 	return manifestList.Items, nil

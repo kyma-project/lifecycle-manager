@@ -39,7 +39,8 @@ jobs:
                     "module-upgrade",
                     "skip-manifest-reconciliation",
                     "ca-certificate-rotation",
-                    "self-signed-certificate-rotation"
+                    "self-signed-certificate-rotation",
+                    "background-kyma-deletion"
         ]
     name: "E2E"
     needs: [wait-for-img]
@@ -199,7 +200,8 @@ jobs:
           matrix.e2e-test == 'purge-controller' ||
           matrix.e2e-test == 'purge-metrics' ||
           matrix.e2e-test == 'kyma-deletion' ||
-          matrix.e2e-test == 'skip-manifest-reconciliation'
+          matrix.e2e-test == 'skip-manifest-reconciliation' ||
+          matrix.e2e-test == 'background-kyma-deletion'
           }}
         run: |
           make build-manifests

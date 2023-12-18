@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"os/exec"
 
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
@@ -56,7 +58,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		It("When KCP Kyma CR is deleted", func() {
 			Eventually(DeleteKyma).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma).
+				WithArguments(controlPlaneClient, kyma, apimetav1.DeletePropagationForeground).
 				Should(Succeed())
 		})
 

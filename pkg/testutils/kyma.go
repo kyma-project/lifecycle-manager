@@ -17,9 +17,10 @@ import (
 )
 
 var (
-	ErrStatusModuleStateMismatch  = errors.New("status.modules.state not match")
-	ErrContainsUnexpectedModules  = errors.New("kyma CR contains unexpected modules")
-	ErrNotContainsExpectedModules = errors.New("kyma CR not contains expected modules")
+	ErrStatusModuleStateMismatch   = errors.New("status.modules.state not match")
+	ErrContainsUnexpectedModules   = errors.New("kyma CR contains unexpected modules")
+	ErrNotContainsExpectedModules  = errors.New("kyma CR not contains expected modules")
+	ErrKymaIsRemovedBeforeManifest = errors.New("kyma CR got removed before manifest CR")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -93,10 +94,9 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Clie
 func DeleteKyma(ctx context.Context,
 	clnt client.Client,
 	kyma *v1beta2.Kyma,
+	deletionPropagation apimetav1.DeletionPropagation,
 ) error {
-	// Foreground deletion is used to make sure the dependents (manifest CR) get deleted first before Kyma is deleted
-	propagation := apimetav1.DeletePropagationForeground
-	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation})
+	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &deletionPropagation})
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("updating kyma failed %w", err)
 	}
@@ -309,4 +309,24 @@ func ContainsModuleInSpec(ctx context.Context,
 	}
 
 	return ErrNotContainsExpectedModules
+}
+
+func ManifestCRIsRemovedBeforeKymaCR(ctx context.Context,
+	clnt client.Client,
+	kymaName,
+	kymaNamespace,
+	moduleName string) error {
+	manifestExistsError := ManifestExists(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	kymaExistsError := KymaExists(ctx, clnt, kymaName, kymaNamespace)
+
+	manifestExists := manifestExistsError == nil
+	kymaExists := kymaExistsError == nil
+
+	if manifestExists {
+		if !kymaExists {
+			return ErrKymaIsRemovedBeforeManifest
+		}
+	}
+
+	return nil
 }
