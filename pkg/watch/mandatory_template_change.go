@@ -51,7 +51,6 @@ func (h *MandatoryTemplateChangeHandler) Watch() handler.MapFunc {
 			Name:      template.GetName(),
 		}
 		for _, kyma := range kymas.Items {
-
 			kymaName := types.NamespacedName{
 				Namespace: kyma.GetNamespace(),
 				Name:      kyma.GetName(),
