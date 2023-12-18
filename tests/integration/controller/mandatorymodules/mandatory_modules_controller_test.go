@@ -78,20 +78,6 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 	})
 })
 
-func DeployMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client, template *v1beta2.ModuleTemplate) {
-	Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-		WithArguments(template).
-		Should(Succeed())
-
-}
-
-func DeleteMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client, template *v1beta2.ModuleTemplate) {
-	Eventually(kcpClient.Delete, Timeout, Interval).WithContext(ctx).
-		WithArguments(template).
-		Should(Succeed())
-
-}
-
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 	template := builder.NewModuleTemplateBuilder().
@@ -101,7 +87,9 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		WithOCM(compdescv2.SchemaVersion).Build()
 
 	BeforeAll(func() {
-		DeployMandatoryModuleTemplate(ctx, controlPlaneClient, template)
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		Eventually(CreateCR, Timeout, Interval).
@@ -116,7 +104,9 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
-		DeleteMandatoryModuleTemplate(ctx, controlPlaneClient, template)
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, template).Should(Succeed())
 	})
 
 	BeforeEach(func() {

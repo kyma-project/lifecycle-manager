@@ -10,6 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -173,6 +174,33 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			return nil
 		}, Timeout, Interval).
 			Should(Succeed())
+	})
+})
+
+var _ = Describe("Kyma enable one Mandatory Module", Ordered, func() {
+	kyma := NewTestKyma("mandatory-module-kyma")
+
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("should result Kyma in Error state", func() {
+		By("enabling one mandatory Module")
+		kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
+			Name:    "mandatory-template-operator",
+			Channel: "mandatory",
+		})
+		Eventually(controlPlaneClient.Update, Timeout, Interval).
+			WithContext(ctx).WithArguments(kyma).Should(Succeed())
+		By("checking the state to be Error")
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
+			Should(Succeed())
+
+		By("Kyma status contains expected condition")
+		kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionFalse)).To(BeTrue())
 	})
 })
 

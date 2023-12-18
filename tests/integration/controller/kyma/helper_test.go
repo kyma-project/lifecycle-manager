@@ -25,12 +25,24 @@ const (
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
+	mandatoryTemplate := builder.NewModuleTemplateBuilder().
+		WithModuleName("mandatory-template-operator").
+		WithChannel("mandatory").
+		WithMandatory(true).
+		WithOCM(compdescv2.SchemaVersion).Build()
+
 	BeforeAll(func() {
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, mandatoryTemplate).Should(Succeed())
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
 		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, mandatoryTemplate).Should(Succeed())
 	})
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 }
