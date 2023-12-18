@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-logr/logr"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -15,20 +16,18 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 const (
-	podRestartLabelKey      = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
+	podRestartLabelKey      = "operator.kyma-project.io/pod-restart-trigger"
 	kcpAddressEnvName       = "KCP_ADDR"
-	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/dev/"
+	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
 	SkrTLSName              = "skr-webhook-tls"
 	SkrResourceName         = "skr-webhook"
-	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
+	skrChartFieldOwner      = client.FieldOwner(v1beta2.OperatorName)
 	version                 = "v1"
 	webhookTimeOutInSeconds = 15
 )
@@ -74,7 +73,7 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
 		moduleName := watcher.GetModuleName()
-		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorGroup)
+		webhookName := fmt.Sprintf("%s.%s.operator.kyma-project.io", watcher.Namespace, watcher.Name)
 		svcPath := fmt.Sprintf("/validate/%s", moduleName)
 		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
 		sideEffects := admissionregistrationv1.SideEffectClassNoneOnDryRun
@@ -238,8 +237,7 @@ func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstr
 	return object.DeepCopy(), nil
 }
 
-func closeFileAndLogErr(ctx context.Context, closer io.Closer, path string) {
-	logger := logf.FromContext(ctx)
+func closeFileAndLogErr(closer io.Closer, logger logr.Logger, path string) {
 	err := closer.Close()
 	if err != nil {
 		logger.V(log.DebugLevel).Info("failed to close raw manifest file", "path", path)
