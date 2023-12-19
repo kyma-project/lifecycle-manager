@@ -415,7 +415,6 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizers")
 	}
 
-	r.Metrics.CleanupMetrics(kyma.Name)
 	relatedManifests, err := r.getRelatedManifestCRs(ctx, kyma)
 	if err != nil {
 		err = fmt.Errorf("error while trying to get manifests: %w", err)
@@ -431,6 +430,8 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	r.Metrics.CleanupMetrics(kyma.Name)
+
 	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
@@ -438,7 +439,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 func (r *KymaReconciler) deleteManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for i := range manifests {
-		if err := r.Delete(ctx, &manifests[i]); err != nil {
+		if err := r.Delete(ctx, &manifests[i]); client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("error while trying to delete manifest: %w", err)
 		}
 	}
