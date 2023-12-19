@@ -6,7 +6,6 @@ metadata:
   labels:
     "operator.kyma-project.io/module-name": "template-operator"
 spec:
-  mandatory: true
   channel: regular
   data:
     apiVersion: operator.kyma-project.io/v1alpha1
