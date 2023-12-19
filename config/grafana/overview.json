@@ -1646,7 +1646,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "",
+          "expr": "watcher_listener_request_duration",
           "format": "time_series",
           "instant": false,
           "interval": "",
