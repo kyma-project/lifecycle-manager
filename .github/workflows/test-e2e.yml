@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         e2e-test: [ "watcher-enqueue",
-                    "kyma-deletion",
+                    "foreground-kyma-deletion",
                     "module-status-propagation",
                     "kyma-metrics",
                     "module-without-default-cr",
@@ -200,7 +200,7 @@ jobs:
           matrix.e2e-test == 'non-blocking-deletion' ||
           matrix.e2e-test == 'purge-controller' ||
           matrix.e2e-test == 'purge-metrics' ||
-          matrix.e2e-test == 'kyma-deletion' ||
+          matrix.e2e-test == 'foreground-kyma-deletion' ||
           matrix.e2e-test == 'module-consistency' ||
           matrix.e2e-test == 'skip-manifest-reconciliation' ||
           matrix.e2e-test == 'background-kyma-deletion'

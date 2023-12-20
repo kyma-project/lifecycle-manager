@@ -87,7 +87,7 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Clie
 			}
 		}
 	}
-	return DeleteCR(ctx, clnt, kyma)
+	return DeleteKyma(ctx, clnt, kyma, apimetav1.DeletePropagationBackground)
 }
 
 func DeleteKyma(ctx context.Context,
