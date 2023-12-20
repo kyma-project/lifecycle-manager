@@ -40,7 +40,7 @@ patches:
       value: --listener-port-overwrite=9443
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --skr-watcher-image=runtime-watcher-skr:latest
+      value: --skr-watcher-image=runtime-watcher-skr:0.0.4
     - op: replace
       path: /spec/template/spec/containers/0/imagePullPolicy
       value: Always
