@@ -14,9 +14,10 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("KCP Kyma CR Deletion After SKR Cluster Removal", Ordered,
+var _ = Describe("KCP Kyma CR Deletion After SKR Cluster Removal",
+	Label("KCP Kyma CR Deletion After SKR Cluster Removal"), Ordered,
 	func() {
-		DescribeTable("KCP Kyma CR Deletion After SKR Cluster Removal",
+		DescribeTable("Test different deletion propagation types",
 			func(propagation apimetav1.DeletionPropagation) {
 				kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 					v1beta2.SyncStrategyLocalSecret)
@@ -61,7 +62,7 @@ var _ = Describe("KCP Kyma CR Deletion After SKR Cluster Removal", Ordered,
 					It("When KCP Kyma CR is deleted", func() {
 						Eventually(DeleteKyma).
 							WithContext(ctx).
-							WithArguments(controlPlaneClient, kyma, apimetav1.DeletePropagationForeground).
+							WithArguments(controlPlaneClient, kyma, propagation).
 							Should(Succeed())
 					})
 
