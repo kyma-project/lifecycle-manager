@@ -69,8 +69,8 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 
 test: watcher-enqueue kyma-deletion module-status-propagation
 
-foreground-kyma-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Foreground Kyma CR Deletion"
+kyma-deletion:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion After SKR Cluster Removal"
 
 kyma-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Metrics"
@@ -110,6 +110,3 @@ ca-certificate-rotation:
 
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
-
-background-kyma-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Background Kyma CR Deletion"
