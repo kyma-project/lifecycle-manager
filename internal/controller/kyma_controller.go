@@ -415,18 +415,11 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizers")
 	}
 
-	relatedManifests, err := r.getRelatedManifestCRs(ctx, kyma)
+	manifestsExist, err := r.cleanupManifestCRs(ctx, kyma)
 	if err != nil {
-		err = fmt.Errorf("error while trying to get manifests: %w", err)
-		r.enqueueWarningEvent(kyma, deletionError, err)
 		return ctrl.Result{}, err
 	}
-
-	if !r.relatedManifestCRsAreDeleted(relatedManifests) {
-		if err = r.deleteManifests(ctx, relatedManifests); err != nil {
-			r.enqueueWarningEvent(kyma, deletionError, err)
-			return ctrl.Result{}, err
-		}
+	if manifestsExist {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -435,6 +428,25 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
+}
+
+func (r *KymaReconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+	relatedManifests, err := r.getRelatedManifestCRs(ctx, kyma)
+	if err != nil {
+		err = fmt.Errorf("error while trying to get manifests: %w", err)
+		r.enqueueWarningEvent(kyma, deletionError, err)
+		return false, err
+	}
+
+	if !r.relatedManifestCRsAreDeleted(relatedManifests) {
+		if err = r.deleteManifests(ctx, relatedManifests); err != nil {
+			r.enqueueWarningEvent(kyma, deletionError, err)
+			return true, err
+		}
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (r *KymaReconciler) deleteManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
