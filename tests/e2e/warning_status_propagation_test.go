@@ -18,10 +18,10 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
 
-	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
-
 	Context("Given SKR Cluster", func() {
+		InitEmptyKymaBeforeAll(kyma)
+		CleanupKymaAfterAll(kyma)
+
 		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
