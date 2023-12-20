@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -200,38 +199,6 @@ func CheckManifestIsInState(
 	return nil
 }
 
-func GetManifestLabels(
-	ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-) (map[string]string, error) {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting manifest: %w", err)
-	}
-
-	return manifest.GetLabels(), nil
-}
-
-func SetManifestLabels(
-	ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-	labels map[string]string,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return fmt.Errorf("error getting manifest: %w", err)
-	}
-	manifest.SetLabels(labels)
-	err = clnt.Update(ctx, manifest)
-	if err != nil {
-		return fmt.Errorf("error updating manifest: %w", err)
-	}
-
-	return nil
-}
-
 func ManifestNoDeletionTimeStampSet(ctx context.Context,
 	kymaName, kymaNamespace, moduleName string,
 	clnt client.Client,
@@ -244,43 +211,5 @@ func ManifestNoDeletionTimeStampSet(ctx context.Context,
 	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
 		return errManifestDeletionTimestampSet
 	}
-	return nil
-}
-
-func AddFinalizerToManifestCR(ctx context.Context, clnt client.Client, kymaName, kymaNamespace, moduleName,
-	finalizer string,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return err
-	}
-
-	finalizers := manifest.GetFinalizers()
-	if finalizers == nil {
-		finalizers = []string{}
-	}
-	manifest.SetFinalizers(append(finalizers, finalizer))
-
-	if err = clnt.Update(ctx, manifest); err != nil {
-		return fmt.Errorf("updating manifest CR %w", err)
-	}
-
-	return nil
-}
-
-func RemoveFinalizerFromManifestCR(ctx context.Context, clnt client.Client, kymaName, kymaNamespace, moduleName,
-	finalizer string,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return err
-	}
-
-	if requireUpdate := controllerutil.RemoveFinalizer(manifest, finalizer); requireUpdate {
-		if err = clnt.Update(ctx, manifest); err != nil {
-			return fmt.Errorf("updating manifest CR %w", err)
-		}
-	}
-
 	return nil
 }

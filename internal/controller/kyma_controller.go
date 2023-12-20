@@ -438,15 +438,15 @@ func (r *KymaReconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.K
 		return false, err
 	}
 
-	if !r.relatedManifestCRsAreDeleted(relatedManifests) {
-		if err = r.deleteManifests(ctx, relatedManifests); err != nil {
-			r.enqueueWarningEvent(kyma, deletionError, err)
-			return true, err
-		}
-		return true, nil
+	if r.relatedManifestCRsAreDeleted(relatedManifests) {
+		return false, nil
 	}
 
-	return false, nil
+	if err = r.deleteManifests(ctx, relatedManifests); err != nil {
+		r.enqueueWarningEvent(kyma, deletionError, err)
+		return true, err
+	}
+	return true, nil
 }
 
 func (r *KymaReconciler) deleteManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
