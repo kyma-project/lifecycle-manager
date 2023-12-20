@@ -99,9 +99,9 @@ var _ = Describe("KCP Kyma CR Deletion After SKR Cluster Removal", Ordered,
 							WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 							Should(Succeed())
 					})
-				},
-					Entry("Test Background Propagation Deletion", apimetav1.DeletePropagationBackground),
-					Entry("Test Foreground Propagation Deletion", apimetav1.DeletePropagationForeground),
-				)
-			})
+				})
+			},
+			Entry("Test Background Propagation Deletion", apimetav1.DeletePropagationBackground),
+			Entry("Test Foreground Propagation Deletion", apimetav1.DeletePropagationForeground),
+		)
 	})
