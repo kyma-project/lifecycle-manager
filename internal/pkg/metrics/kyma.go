@@ -11,10 +11,11 @@ import (
 )
 
 const (
-	MetricKymaState   = "lifecycle_mgr_kyma_state"
-	MetricModuleState = "lifecycle_mgr_module_state"
-	stateLabel        = "state"
-	moduleNameLabel   = "module_name"
+	MetricKymaState     = "lifecycle_mgr_kyma_state"
+	MetricModuleState   = "lifecycle_mgr_module_state"
+	MetricRequeueReason = "lifecycle_mgr_requeue_reason"
+	stateLabel          = "state"
+	moduleNameLabel     = "module_name"
 )
 
 type KymaMetrics struct {
