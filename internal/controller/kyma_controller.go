@@ -53,6 +53,8 @@ type (
 	EventReasonInfo  string
 )
 
+var ErrManifestsStillExist = errors.New("manifests still exist")
+
 const (
 	moduleReconciliationError  EventReasonError = "ModuleReconciliationError"
 	syncContextError           EventReasonError = "SyncContextError"
@@ -415,12 +417,10 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizers")
 	}
 
-	manifestsExist, err := r.cleanupManifestCRs(ctx, kyma)
+	err := r.cleanupManifestCRs(ctx, kyma)
 	if err != nil {
+		r.enqueueWarningEvent(kyma, deletionError, err)
 		return ctrl.Result{}, err
-	}
-	if manifestsExist {
-		return ctrl.Result{Requeue: true}, nil
 	}
 
 	r.Metrics.CleanupMetrics(kyma.Name)
@@ -430,23 +430,20 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 }
 
-func (r *KymaReconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+func (r *KymaReconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) error {
 	relatedManifests, err := r.getRelatedManifestCRs(ctx, kyma)
 	if err != nil {
-		err = fmt.Errorf("error while trying to get manifests: %w", err)
-		r.enqueueWarningEvent(kyma, deletionError, err)
-		return false, err
+		return fmt.Errorf("error while trying to get manifests: %w", err)
 	}
 
 	if r.relatedManifestCRsAreDeleted(relatedManifests) {
-		return false, nil
+		return nil
 	}
 
 	if err = r.deleteManifests(ctx, relatedManifests); err != nil {
-		r.enqueueWarningEvent(kyma, deletionError, err)
-		return true, err
+		return fmt.Errorf("error while trying to delete manifests: %w", err)
 	}
-	return true, nil
+	return ErrManifestsStillExist
 }
 
 func (r *KymaReconciler) deleteManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
