@@ -14,7 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-var _ = Describe("Self Signed Certificate Rotation", Label("Self Signed Certificate Rotation"), Ordered, func() {
+var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	InitEmptyKymaBeforeAll(kyma)

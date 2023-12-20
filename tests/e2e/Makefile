@@ -70,43 +70,43 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 test: watcher-enqueue kyma-deletion module-status-propagation
 
 kyma-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "KCP Kyma CR Deletion After SKR Cluster Removal"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion After SKR Cluster Removal"
 
 kyma-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Kyma Metrics"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Metrics"
 
 watcher-enqueue:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Enqueue Event from Watcher"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 
 module-status-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Warning Status Propagation"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Warning Status Propagation"
 
 module-without-default-cr:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Module Without Default CR"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
 module-consistency:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Module Keep Consistent After Deploy"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Keep Consistent After Deploy"
 
 non-blocking-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Non Blocking Kyma Module Deletion"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
 
 skip-manifest-reconciliation:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Manifest Skip Reconciliation Label"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manifest Skip Reconciliation Label"
 
 upgrade-under-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Kyma Module Upgrade Under Deletion"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
 
 purge-controller:
-	go test  -timeout 20m -ginkgo.v -ginkgo.label-filter "Purge Controller"
+	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
 
 purge-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Purge Metrics"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
 
 module-upgrade:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Module Upgrade By Channel Switch"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
 
 ca-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "CA Certificate Rotation"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
 
 self-signed-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.label-filter "Self Signed Certificate Rotation"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
