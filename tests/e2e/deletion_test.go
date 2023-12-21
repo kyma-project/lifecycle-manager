@@ -3,16 +3,18 @@ package e2e_test
 import (
 	"os/exec"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
+func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
@@ -56,7 +58,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		It("When KCP Kyma CR is deleted", func() {
 			Eventually(DeleteKyma).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma).
+				WithArguments(controlPlaneClient, kyma, deletionPropagation).
 				Should(Succeed())
 		})
 
@@ -95,4 +97,4 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 				Should(Succeed())
 		})
 	})
-})
+}
