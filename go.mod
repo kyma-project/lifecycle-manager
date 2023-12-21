@@ -11,7 +11,7 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-containerregistry v0.17.0
-	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20230104193340-e797859b62b6
+	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.1.1
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e
