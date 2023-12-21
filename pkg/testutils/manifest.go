@@ -199,38 +199,6 @@ func CheckManifestIsInState(
 	return nil
 }
 
-func GetManifestLabels(
-	ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-) (map[string]string, error) {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting manifest: %w", err)
-	}
-
-	return manifest.GetLabels(), nil
-}
-
-func SetManifestLabels(
-	ctx context.Context,
-	kymaName, kymaNamespace, moduleName string,
-	clnt client.Client,
-	labels map[string]string,
-) error {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return fmt.Errorf("error getting manifest: %w", err)
-	}
-	manifest.SetLabels(labels)
-	err = clnt.Update(ctx, manifest)
-	if err != nil {
-		return fmt.Errorf("error updating manifest: %w", err)
-	}
-
-	return nil
-}
-
 func ManifestNoDeletionTimeStampSet(ctx context.Context,
 	kymaName, kymaNamespace, moduleName string,
 	clnt client.Client,

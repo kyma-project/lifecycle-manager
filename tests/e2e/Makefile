@@ -69,8 +69,11 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 
 test: watcher-enqueue kyma-deletion module-status-propagation
 
-kyma-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion"
+kyma-deletion-with-foreground-propagation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Foreground Propagation After SKR Cluster Removal"
+
+kyma-deletion-with-background-propagation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Background Propagation After SKR Cluster Removal"
 
 kyma-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Metrics"

@@ -23,6 +23,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -51,6 +52,8 @@ type (
 	EventReasonError string
 	EventReasonInfo  string
 )
+
+var ErrManifestsStillExist = errors.New("manifests still exist")
 
 const (
 	moduleReconciliationError  EventReasonError = "ModuleReconciliationError"
@@ -405,19 +408,66 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		}
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
+		if err := remote.RemoveFinalizersFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
 			return ctrl.Result{}, err
 		}
 
-		logger.Info("removed remote finalizer")
+		logger.Info("removed remote finalizers")
+	}
+
+	err := r.cleanupManifestCRs(ctx, kyma)
+	if err != nil {
+		r.enqueueWarningEvent(kyma, deletionError, err)
+		return ctrl.Result{}, err
 	}
 
 	r.Metrics.CleanupMetrics(kyma.Name)
 
 	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
+
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
+}
+
+func (r *KymaReconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) error {
+	relatedManifests, err := r.getRelatedManifestCRs(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("error while trying to get manifests: %w", err)
+	}
+
+	if r.relatedManifestCRsAreDeleted(relatedManifests) {
+		return nil
+	}
+
+	if err = r.deleteManifests(ctx, relatedManifests); err != nil {
+		return fmt.Errorf("error while trying to delete manifests: %w", err)
+	}
+	return ErrManifestsStillExist
+}
+
+func (r *KymaReconciler) deleteManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
+	for i := range manifests {
+		if err := r.Delete(ctx, &manifests[i]); client.IgnoreNotFound(err) != nil {
+			return fmt.Errorf("error while trying to delete manifest: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *KymaReconciler) getRelatedManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) ([]v1beta2.Manifest, error) {
+	manifestList := &v1beta2.ManifestList{}
+	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name})
+	if err := r.List(ctx, manifestList,
+		&client.ListOptions{LabelSelector: labelSelector}); client.IgnoreNotFound(err) != nil {
+		return nil, fmt.Errorf("failed to get related manifests, %w", err)
+	}
+
+	return manifestList.Items, nil
+}
+
+func (r *KymaReconciler) relatedManifestCRsAreDeleted(manifests []v1beta2.Manifest) bool {
+	return len(manifests) == 0
 }
 
 func (r *KymaReconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
