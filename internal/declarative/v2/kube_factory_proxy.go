@@ -5,13 +5,11 @@ import (
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/util/openapi"
-	"k8s.io/kubectl/pkg/validation"
 )
 
 // OpenAPISchema returns metadata and structural information about
@@ -113,24 +111,4 @@ func (s *SingletonClients) RESTClient() (*rest.RESTClient, error) {
 		return nil, fmt.Errorf("failed to initialize RestCliient for k8s api access: %w", err)
 	}
 	return restClient, nil
-}
-
-// Validator returns a schema that can validate objects stored on disk.
-func (s *SingletonClients) Validator(
-	validationDirective string,
-) (validation.Schema, error) {
-	if validationDirective == apimetav1.FieldValidationIgnore {
-		return validation.NullSchema{}, nil
-	}
-
-	resources, err := s.OpenAPISchema()
-	if err != nil {
-		return nil, err
-	}
-
-	conjSchema := validation.ConjunctiveSchema{
-		validation.NewSchemaValidation(resources),
-		validation.NoDoubleKeySchema{},
-	}
-	return validation.NewParamVerifyingSchema(conjSchema, nil, validationDirective), nil
 }
