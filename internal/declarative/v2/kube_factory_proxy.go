@@ -6,8 +6,6 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/util/openapi"
 )
@@ -87,21 +85,6 @@ func (s *SingletonClients) ClientForMapping(mapping *meta.RESTMapping) (resource
 
 	s.structuredRESTClientCache[key] = client
 	return client, nil
-}
-
-// KubernetesClientSet gives you back an external clientset.
-func (s *SingletonClients) KubernetesClientSet() (*kubernetes.Clientset, error) {
-	return s.kubernetesClient, nil
-}
-
-// DynamicClient returns a dynamic client ready for use.
-func (s *SingletonClients) DynamicClient() (*dynamic.DynamicClient, error) {
-	return s.dynamicClient, nil
-}
-
-// NewBuilder returns a new resource builder for structured api objects.
-func (s *SingletonClients) NewBuilder() *resource.Builder {
-	return resource.NewBuilder(s)
 }
 
 // RESTClient returns a RESTClient for accessing Kubernetes resources or an error.
