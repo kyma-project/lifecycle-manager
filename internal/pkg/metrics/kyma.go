@@ -13,7 +13,7 @@ import (
 const (
 	MetricKymaState     = "lifecycle_mgr_kyma_state"
 	MetricModuleState   = "lifecycle_mgr_module_state"
-	MetricRequeueReason = "lifecycle_mgr_requeue_reason"
+	MetricRequeueReason = "lifecycle_mgr_requeue_reason_total"
 	stateLabel          = "state"
 	moduleNameLabel     = "module_name"
 	requeueReasonLabel  = "requeue_reason"
@@ -28,7 +28,8 @@ type KymaMetrics struct {
 type RequeueReason string
 
 const (
-	KymaRetrievalError                       RequeueReason = "kyma_retrieval_error"
+	KymaRetrievalError RequeueReason = "kyma_retrieval_error"
+	//nolint:gosec // requeue reason label, no confidential content
 	KymaUnderDeletionAndAccessSecretNotFound RequeueReason = "kyma_under_deletion_with_no_access_secret"
 	StatusUpdateToDeleting                   RequeueReason = "kyma_status_update_to_deleting"
 	LabelsAndFinalizersUpdate                RequeueReason = "labels_and_finalizers_update"

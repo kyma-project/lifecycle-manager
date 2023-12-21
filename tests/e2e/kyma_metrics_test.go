@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -91,7 +92,13 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then count of all Kyma Metrics is 0", func() {
+		It("Then count of lifecycle_mgr_requeue_reason_total for kyma_deletion is 1", func() {
+			Eventually(GetKymaRequeueReasonMetricCount).
+				WithContext(ctx).
+				WithArguments(metrics.KymaDeletion).
+				Should(Equal(1))
+
+			By("And count of all Kyma Metrics is 0")
 			for _, state := range shared.AllStates() {
 				Eventually(GetKymaStateMetricCount).
 					WithContext(ctx).

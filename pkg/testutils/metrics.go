@@ -24,6 +24,16 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 	return parseCount(re, bodyString)
 }
 
+func GetKymaRequeueReasonMetricCount(ctx context.Context, label metrics.RequeueReason) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+	re := regexp.MustCompile(
+		metrics.MetricRequeueReason + `{requeue_reason="` + string(label) + `"}` + ` (\d+)`)
+	return parseCount(re, bodyString)
+}
+
 func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state string) (int, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
