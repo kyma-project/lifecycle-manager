@@ -45,8 +45,7 @@ func (s *SingletonClients) UnstructuredClientForMapping(mapping *meta.RESTMappin
 	cfg.ContentConfig = resource.UnstructuredPlusDefaultContentConfig()
 	cfg.GroupVersion = &gv
 
-	var err error
-	client, err = rest.RESTClientForConfigAndClient(cfg, s.httpClient)
+	client, err := rest.RESTClientForConfigAndClient(cfg, s.httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
@@ -77,21 +76,11 @@ func (s *SingletonClients) ClientForMapping(mapping *meta.RESTMapping) (resource
 	gv := gvk.GroupVersion()
 	cfg.GroupVersion = &gv
 
-	var err error
-	client, err = rest.RESTClientForConfigAndClient(cfg, s.httpClient)
+	client, err := rest.RESTClientForConfigAndClient(cfg, s.httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
 
 	s.structuredRESTClientCache[key] = client
 	return client, nil
-}
-
-// RESTClient returns a RESTClient for accessing Kubernetes resources or an error.
-func (s *SingletonClients) RESTClient() (*rest.RESTClient, error) {
-	restClient, err := rest.RESTClientForConfigAndClient(s.config, s.httpClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize RestCliient for k8s api access: %w", err)
-	}
-	return restClient, nil
 }
