@@ -34,11 +34,11 @@ require (
 
 require (
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
-	k8s.io/api v0.28.4
+	k8s.io/api v0.29.0
 	k8s.io/apiextensions-apiserver v0.28.4
 	k8s.io/apimachinery v0.29.0
 	k8s.io/cli-runtime v0.28.4
-	k8s.io/client-go v0.28.4
+	k8s.io/client-go v0.29.0
 	k8s.io/kubectl v0.28.4
 )
 
