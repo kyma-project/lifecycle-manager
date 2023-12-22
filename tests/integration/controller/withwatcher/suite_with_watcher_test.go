@@ -178,7 +178,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := watcher.SkrWebhookManagerConfig{
+	skrChartCfg := watcher.WatcherManagerConfig{
 		WatcherResourcesPath: skrWatcherPath,
 		WatcherMemoryLimits:  "200Mi",
 		WatcherCpuLimits:     "1",
@@ -202,7 +202,7 @@ var _ = BeforeSuite(func() {
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
 
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
+	skrWebhookChartManager, err := watcher.NewWatcherManifestManager(
 		restCfg, k8sclientscheme.Scheme,
 		caCertCache,
 		skrChartCfg, certificateConfig, gatewayConfig)

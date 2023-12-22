@@ -70,7 +70,7 @@ type KymaReconciler struct {
 	record.EventRecorder
 	queue.RequeueIntervals
 	signature.VerificationSettings
-	SKRWebhookManager   *watcher.SKRWebhookManifestManager
+	SKRWebhookManager   *watcher.WatcherManifestManager
 	KcpRestConfig       *rest.Config
 	RemoteClientCache   *remote.ClientCache
 	InKCPMode           bool
