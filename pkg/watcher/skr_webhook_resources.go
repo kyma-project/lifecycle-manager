@@ -22,10 +22,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
+type unstructuredResourcesConfig struct {
+	contractVersion          string
+	kcpAddress               string
+	secretResVer             string
+	cpuResLimit, memResLimit string
+	skrWatcherImage          string
+	caCert, tlsCert, tlsKey  []byte
+	remoteNs                 string
+}
+
 const (
 	podRestartLabelKey      = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
 	kcpAddressEnvName       = "KCP_ADDR"
-	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
 	SkrTLSName              = "skr-webhook-tls"
 	SkrResourceName         = "skr-webhook"
 	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
@@ -156,9 +165,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	deployment.Spec.Template.Labels[podRestartLabelKey] = cfg.secretResVer
 
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
-	if cfg.skrWatcherImage != "" {
-		serverContainer.Image = fmt.Sprintf("%s%s", watcherBaseImageAddress, cfg.skrWatcherImage)
-	}
+	serverContainer.Image = cfg.skrWatcherImage
 
 	for i := 0; i < len(serverContainer.Env); i++ {
 		if serverContainer.Env[i].Name == kcpAddressEnvName {
@@ -166,7 +173,6 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 		}
 	}
 
-	// configure resource limits for the webhook server container
 	cpuResQty, err := resource.ParseQuantity(cfg.cpuResLimit)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing CPU resource limit: %w", err)
@@ -215,16 +221,6 @@ func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watche
 	}
 
 	return watcherList.Items, nil
-}
-
-type unstructuredResourcesConfig struct {
-	contractVersion          string
-	kcpAddress               string
-	secretResVer             string
-	cpuResLimit, memResLimit string
-	skrWatcherImage          string
-	caCert, tlsCert, tlsKey  []byte
-	remoteNs                 string
 }
 
 func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,

@@ -179,10 +179,10 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:         skrWatcherPath,
-		SkrWebhookMemoryLimits: "200Mi",
-		SkrWebhookCPULimits:    "1",
-		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
+		WatcherResourcesPath: skrWatcherPath,
+		WatcherMemoryLimits:  "200Mi",
+		WatcherCpuLimits:     "1",
+		RemoteSyncNamespace:  controller.DefaultRemoteSyncNamespace,
 	}
 
 	certificateConfig := watcher.CertificateConfig{

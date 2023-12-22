@@ -35,17 +35,16 @@ type SKRWebhookManifestManager struct {
 }
 
 type SkrWebhookManagerConfig struct {
-	// SKRWatcherPath represents the path of the webhook resources
+	// WatcherResourcesPath represents the path of the webhook resources
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	SKRWatcherPath         string
-	SkrWatcherImage        string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
+	WatcherResourcesPath string
+	// WatcherImage contains the full registry URL of the runtime-watcher image to be used on the remote cluster.
+	WatcherImage        string
+	WatcherMemoryLimits string
+	WatcherCpuLimits    string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
 }
-
-const rawManifestFilePathTpl = "%s/resources.yaml"
 
 func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	schema *machineryruntime.Scheme,
@@ -56,7 +55,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 ) (*SKRWebhookManifestManager, error) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
-	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
+	manifestFilePath := fmt.Sprintf("%s/resources.yaml", managerConfig.WatcherResourcesPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open manifest file path: %w", err)
@@ -235,9 +234,9 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		contractVersion: version,
 		kcpAddress:      m.kcpAddr,
 		secretResVer:    tlsSecret.ResourceVersion,
-		cpuResLimit:     m.config.SkrWebhookCPULimits,
-		memResLimit:     m.config.SkrWebhookMemoryLimits,
-		skrWatcherImage: m.config.SkrWatcherImage,
+		cpuResLimit:     m.config.WatcherCpuLimits,
+		memResLimit:     m.config.WatcherMemoryLimits,
+		skrWatcherImage: m.config.WatcherImage,
 		caCert:          tlsSecret.Data[caCertKey],
 		tlsCert:         tlsSecret.Data[tlsCertKey],
 		tlsKey:          tlsSecret.Data[tlsPrivateKeyKey],

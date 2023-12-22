@@ -35,6 +35,7 @@ const (
 	defaultSelfSignedCertDuration           time.Duration = 90 * 24 * time.Hour
 	defaultSelfSignedCertRenewBefore        time.Duration = 60 * 24 * time.Hour
 	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
+	defaultWatcherRegistry                                = "europe-docker.pkg.dev/kyma-project/prod/"
 	DefaultRemoteSyncNamespace                            = "kyma-system"
 )
 
@@ -89,14 +90,8 @@ func DefineFlagVar() *FlagVar {
 		"Enabling verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
+	flag.BoolVar(&flagVar.enableWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./skr-webhook",
-		"The path to the skr watcher resources.")
-	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
-		"The resources.limits.memory for skr webhook.")
-	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
-		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.additionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
 			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
@@ -109,8 +104,6 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.listenerPortOverwrite, "listener-port-overwrite", "",
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when "+
 			"creating the KCP cluster")
-	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "",
-		`Image of the SKR watcher.`)
 	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
@@ -155,12 +148,26 @@ func DefineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	flag.StringVar(&flagVar.dropStoredVersion, "drop-stored-version", "v1alpha1",
 		"The API version to be dropped from the storage versions")
+	flag.StringVar(&flagVar.watcherImage, "skr-watcher-image", "",
+		`Image to be used for the SKR watcher.`)
+	flag.StringVar(&flagVar.watcherRegistry, "skr-watcher-registry", defaultWatcherRegistry,
+		`Registry where to get the SKR watcher image.`)
+	flag.StringVar(&flagVar.watcherResourceLimitsMemory, "skr-webhook-memory-limits", "200Mi",
+		"The resources.limits.memory for skr webhook.")
+	flag.StringVar(&flagVar.watcherResourceLimitsCpu, "skr-webhook-cpu-limits", "0.1",
+		"The resources.limits.cpu for skr webhook.")
+	flag.StringVar(&flagVar.watcherResourcesPath, "skr-watcher-path", "./skr-webhook",
+		"The path to the skr watcher resources.")
 	return flagVar
 }
 
 type FlagVar struct {
 	metricsAddr                            string
+	enableDomainNameVerification           bool
 	enableLeaderElection                   bool
+	enablePurgeFinalizer                   bool
+	enableWatcher                          bool
+	enableWebhooks                         bool
 	probeAddr                              string
 	kymaListenerAddr, manifestListenerAddr string
 	maxConcurrentKymaReconciles            int
@@ -175,11 +182,6 @@ type FlagVar struct {
 	moduleVerificationKeyFilePath          string
 	clientQPS                              float64
 	clientBurst                            int
-	enableWebhooks                         bool
-	enableKcpWatcher                       bool
-	skrWatcherPath                         string
-	skrWebhookMemoryLimits                 string
-	skrWebhookCPULimits                    string
 	istioNamespace                         string
 	istioGatewayName                       string
 	istioGatewayNamespace                  string
@@ -188,17 +190,14 @@ type FlagVar struct {
 	// used to expose the KCP cluster for the watcher. By default, it will be
 	// fetched from the specified gateway.
 	listenerPortOverwrite                  string
-	skrWatcherImage                        string
 	pprof                                  bool
 	pprofAddr                              string
 	pprofServerTimeout                     time.Duration
 	failureBaseDelay, failureMaxDelay      time.Duration
 	rateLimiterBurst, rateLimiterFrequency int
 	cacheSyncTimeout                       time.Duration
-	enableDomainNameVerification           bool
 	logLevel                               int
 	inKCPMode                              bool
-	enablePurgeFinalizer                   bool
 	purgeFinalizerTimeout                  time.Duration
 	skipPurgingFor                         string
 	remoteSyncNamespace                    string
@@ -210,4 +209,9 @@ type FlagVar struct {
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
 	dropStoredVersion                      string
+	watcherImage                           string
+	watcherRegistry                        string
+	watcherResourceLimitsMemory            string
+	watcherResourceLimitsCpu               string
+	watcherResourcesPath                   string
 }
