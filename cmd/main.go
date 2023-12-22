@@ -143,23 +143,22 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 	}
 
 	options := controllerOptionsFromFlagVar(flagVar)
-	if flagVar.enableWatcher && flagVar.watcherImage == "" {
-		setupLog.Error(errMissingWatcherImage, "unable to start manager")
-		os.Exit(1)
-	}
-	if flagVar.enableWatcher && flagVar.watcherRegistry == "" {
-		setupLog.Error(errMissingWatcherRegistry, "unable to start manager")
-		os.Exit(1)
-	}
-	remoteClientCache := remote.NewClientCache()
+
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	if flagVar.enableWatcher {
+		if flagVar.watcherImage == "" {
+			setupLog.Error(errMissingWatcherImage, "unable to start manager")
+			os.Exit(1)
+		}
+		if flagVar.watcherRegistry == "" {
+			setupLog.Error(errMissingWatcherRegistry, "unable to start manager")
+			os.Exit(1)
+		}
 		watcherChartDirInfo, err := os.Stat(flagVar.watcherResourcesPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 			os.Exit(1)
 		}
-
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 			os.Exit(1)
@@ -167,6 +166,7 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
 
+	remoteClientCache := remote.NewClientCache()
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager)
 	setupManifestReconciler(mgr, flagVar, options)
 
