@@ -11,16 +11,48 @@ import (
 )
 
 const (
-	MetricKymaState   = "lifecycle_mgr_kyma_state"
-	MetricModuleState = "lifecycle_mgr_module_state"
-	stateLabel        = "state"
-	moduleNameLabel   = "module_name"
+	MetricKymaState     = "lifecycle_mgr_kyma_state"
+	MetricModuleState   = "lifecycle_mgr_module_state"
+	MetricRequeueReason = "lifecycle_mgr_requeue_reason_total"
+	stateLabel          = "state"
+	moduleNameLabel     = "module_name"
+	requeueReasonLabel  = "requeue_reason"
 )
 
 type KymaMetrics struct {
-	kymaStateGauge   *prometheus.GaugeVec
-	moduleStateGauge *prometheus.GaugeVec
+	kymaStateGauge       *prometheus.GaugeVec
+	moduleStateGauge     *prometheus.GaugeVec
+	requeueReasonCounter *prometheus.CounterVec
 }
+
+type RequeueReason string
+
+const (
+	KymaRetrievalError RequeueReason = "kyma_retrieval_error"
+	//nolint:gosec // requeue reason label, no confidential content
+	KymaUnderDeletionAndAccessSecretNotFound RequeueReason = "kyma_under_deletion_with_no_access_secret"
+	StatusUpdateToDeleting                   RequeueReason = "kyma_status_update_to_deleting"
+	LabelsAndFinalizersUpdate                RequeueReason = "labels_and_finalizers_update"
+	LabelsAndFinalizersUpdateError           RequeueReason = "labels_and_finalizers_update_error"
+	CrdAnnotationsUpdate                     RequeueReason = "crd_annotations_update"
+	CrdAnnotationsUpdateError                RequeueReason = "crd_annotations_update_error"
+	CrdsSyncError                            RequeueReason = "crds_sync_error"
+	ManifestReconciliationError              RequeueReason = "manifest_reconciliation_error"
+	ModuleCatalogSyncError                   RequeueReason = "module_catalog_sync_error"
+	SkrWebhookResourcesInstallationError     RequeueReason = "skr_webhook_installation_error"
+	InitialStateHandling                     RequeueReason = "initial_state_handling"
+	InitialStateHandlingError                RequeueReason = "initial_state_handling_error"
+	SyncContextRetrievalError                RequeueReason = "sync_context_retrieval_error"
+	RemoteKymaDeletionError                  RequeueReason = "remote_kyma_deletion_error"
+	StatusUpdateToDeletingError              RequeueReason = "status_update_to_deleting_error"
+	SpecReplacementFromRemoteError           RequeueReason = "spec_replacement_from_remote_error"
+	StatusSyncToRemoteError                  RequeueReason = "status_sync_to_remote_error"
+	ProcessingKymaStateError                 RequeueReason = "processing_kyma_state_error"
+	FinalizersRemovalFromRemoteKymaError     RequeueReason = "finalizers_removal_from_remote_kyma_error"
+	RemoteModuleCatalogDeletionError         RequeueReason = "remote_module_catalog_deletion_error"
+	ManifestCrsCleanupError                  RequeueReason = "manifest_crs_cleanup_error"
+	KymaDeletion                             RequeueReason = "kyma_deletion"
+)
 
 func NewKymaMetrics() *KymaMetrics {
 	kymaMetrics := &KymaMetrics{
@@ -33,9 +65,15 @@ func NewKymaMetrics() *KymaMetrics {
 			Name: MetricModuleState,
 			Help: "Indicates the Status.state for modules of Kyma",
 		}, []string{moduleNameLabel, KymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
+
+		requeueReasonCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: MetricRequeueReason,
+			Help: "Indicates the reason for the Kyma reconciliation requeue",
+		}, []string{requeueReasonLabel}),
 	}
 	ctrlmetrics.Registry.MustRegister(kymaMetrics.kymaStateGauge)
 	ctrlmetrics.Registry.MustRegister(kymaMetrics.moduleStateGauge)
+	ctrlmetrics.Registry.MustRegister(kymaMetrics.requeueReasonCounter)
 	return kymaMetrics
 }
 
@@ -108,4 +146,8 @@ func calcStateValue(state, newState shared.State) float64 {
 		return 1
 	}
 	return 0
+}
+
+func (k *KymaMetrics) RecordRequeueReason(requeueReason RequeueReason) {
+	k.requeueReasonCounter.WithLabelValues(string(requeueReason)).Inc()
 }
