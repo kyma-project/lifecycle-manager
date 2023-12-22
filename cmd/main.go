@@ -152,7 +152,7 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 		os.Exit(1)
 	}
 	remoteClientCache := remote.NewClientCache()
-	var skrWebhookManager *watcher.WatcherManifestManager
+	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	if flagVar.enableWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.watcherResourcesPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
@@ -234,7 +234,7 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) ctrlruntime.Options {
 }
 
 func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *FlagVar,
-	options ctrlruntime.Options, skrWebhookManager *watcher.WatcherManifestManager,
+	options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
@@ -271,15 +271,15 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 	}
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.WatcherManifestManager, error) {
+func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.caCertCacheTTL)
-	return watcher.NewWatcherManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
-		watcher.WatcherManagerConfig{
-			WatcherResourcesPath: flagVar.watcherResourcesPath,
-			WatcherImage:         fmt.Sprintf("%s/%s", flagVar.watcherRegistry, flagVar.watcherImage),
-			WatcherCpuLimits:     flagVar.watcherResourceLimitsCpu,
-			WatcherMemoryLimits:  flagVar.watcherResourceLimitsMemory,
-			RemoteSyncNamespace:  flagVar.remoteSyncNamespace,
+	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
+		watcher.SkrWebhookManagerConfig{
+			SKRWatcherPath:         flagVar.watcherResourcesPath,
+			SkrWatcherImage:        fmt.Sprintf("%s/%s", flagVar.watcherRegistry, flagVar.watcherImage),
+			SkrWebhookCPULimits:    flagVar.watcherResourceLimitsCpu,
+			SkrWebhookMemoryLimits: flagVar.watcherResourceLimitsMemory,
+			RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
 		}, watcher.CertificateConfig{
 			IstioNamespace:      flagVar.istioNamespace,
 			RemoteSyncNamespace: flagVar.remoteSyncNamespace,
