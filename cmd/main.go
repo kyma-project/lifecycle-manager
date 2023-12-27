@@ -368,7 +368,7 @@ func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *FlagVar,
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals: queue.RequeueIntervals{
-			Success: flagVar.kymaRequeueSuccessInterval,
+			Success: flagVar.mandatoryModuleRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,
 			Error:   flagVar.kymaRequeueErrInterval,
 			Warning: flagVar.kymaRequeueWarningInterval,

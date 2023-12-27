@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/template_lookup"
 )
 
 type (
@@ -19,7 +19,7 @@ type (
 	Module  struct {
 		ModuleName string
 		FQDN       string
-		Template   *lookup.ModuleTemplateTO
+		Template   *template_lookup.ModuleTemplateTO
 		*v1beta2.Manifest
 		Enabled bool
 	}

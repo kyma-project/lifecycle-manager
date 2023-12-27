@@ -7,7 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/template_lookup"
 )
 
 func GetModuleTemplate(ctx context.Context,
@@ -15,7 +15,7 @@ func GetModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	defaultChannel string,
 ) (*v1beta2.ModuleTemplate, error) {
-	templateTO := lookup.NewTemplateLookup(clnt, module.Name, module.Channel, defaultChannel).WithContext(ctx)
+	templateTO := template_lookup.New(clnt, module.Name, module.Channel, defaultChannel).WithContext(ctx)
 	if templateTO.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateTO.Err)
 	}

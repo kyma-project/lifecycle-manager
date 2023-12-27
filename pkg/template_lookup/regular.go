@@ -1,4 +1,4 @@
-package lookup
+package template_lookup
 
 import (
 	"context"
@@ -35,7 +35,8 @@ type ModuleTemplateTO struct {
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
 
-func GetTemplates(
+// GetRegular returns Module Templates TOs (Transfer Objects) which are marked are non-mandatory modules.
+func GetRegular(
 	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma, syncEnabled bool,
 ) ModuleTemplatesByModuleName {
 	logger := logf.FromContext(ctx)
@@ -49,7 +50,7 @@ func GetTemplates(
 		}
 		switch {
 		case module.RemoteModuleTemplateRef == "":
-			template = NewTemplateLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
+			template = New(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			if template.Err != nil {
 				break
 			}
@@ -67,7 +68,7 @@ func GetTemplates(
 			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
-			template = NewTemplateLookup(runtimeClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
+			template = New(runtimeClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			module.Name = originalModuleName
 		default:
 			template.Err = fmt.Errorf("enable sync to use a remote module template for %s: %w", module.Name,
@@ -81,29 +82,6 @@ func GetTemplates(
 	checkValidTemplatesUpdate(logger, kyma, templates)
 
 	return templates
-}
-
-// GetMandatoryTemplates returns all ModuleTemplates for modules which are marked as mandatory with the given channel.
-func GetMandatoryTemplates(ctx context.Context, kymaClient client.Reader) (ModuleTemplatesByModuleName,
-	error,
-) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := kymaClient.List(ctx, moduleTemplateList); err != nil {
-		return nil, fmt.Errorf("could not list ModuleTemplates: %w", err)
-	}
-
-	mandatoryModules := make(map[string]*ModuleTemplateTO)
-	for _, moduleTemplate := range moduleTemplateList.Items {
-		moduleTemplate := moduleTemplate
-		if moduleTemplate.Spec.Mandatory {
-			mandatoryModules[moduleTemplate.Name] = &ModuleTemplateTO{
-				ModuleTemplate: &moduleTemplate,
-				DesiredChannel: moduleTemplate.Spec.Channel,
-				Err:            nil,
-			}
-		}
-	}
-	return mandatoryModules, nil
 }
 
 func determineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
@@ -227,7 +205,8 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*ModuleTemplateTO, error)
 }
 
-func NewTemplateLookup(client client.Reader,
+// New returns a new instance of TemplateLookup.
+func New(client client.Reader,
 	moduleName,
 	moduleChannel,
 	defaultChannel string,

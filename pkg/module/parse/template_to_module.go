@@ -14,10 +14,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/pkg/template_lookup"
 )
 
 type ModuleConversionSettings struct {
@@ -52,7 +52,7 @@ func NewParser(
 
 func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
-	templates lookup.ModuleTemplatesByModuleName,
+	templates template_lookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -60,7 +60,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 
 	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
-		if template.Err != nil && !errors.Is(template.Err, lookup.ErrTemplateNotAllowed) {
+		if template.Err != nil && !errors.Is(template.Err, template_lookup.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
@@ -110,7 +110,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 
 func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
-	templates lookup.ModuleTemplatesByModuleName,
+	templates template_lookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	modules := make(common.Modules, 0)
 	for _, template := range templates {
@@ -122,7 +122,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			moduleName = template.Name
 		}
 
-		if template.Err != nil && !errors.Is(template.Err, lookup.ErrTemplateNotAllowed) {
+		if template.Err != nil && !errors.Is(template.Err, template_lookup.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: moduleName,
 				Template:   template,
@@ -170,7 +170,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	return modules
 }
 
-func setNameAndNamespaceIfEmpty(template *lookup.ModuleTemplateTO, name, namespace string) {
+func setNameAndNamespaceIfEmpty(template *template_lookup.ModuleTemplateTO, name, namespace string) {
 	if template.ModuleTemplate.Spec.Data == nil {
 		return
 	}

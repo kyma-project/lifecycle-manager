@@ -18,8 +18,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/lookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/template_lookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -55,7 +55,7 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	for _, module := range modules {
 		go func(module *common.Module) {
 			// Due to module template visibility change, some module previously deployed should be removed.
-			if errors.Is(module.Template.Err, lookup.ErrTemplateNotAllowed) {
+			if errors.Is(module.Template.Err, template_lookup.ErrTemplateNotAllowed) {
 				results <- r.deleteManifest(ctx, module)
 				return
 			}
@@ -210,7 +210,7 @@ func updateModuleStatusFromExistingModules(
 }
 
 func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
-	if errors.Is(module.Template.Err, lookup.ErrTemplateUpdateNotAllowed) {
+	if errors.Is(module.Template.Err, template_lookup.ErrTemplateUpdateNotAllowed) {
 		newModuleStatus := existStatus.DeepCopy()
 		newModuleStatus.State = shared.StateWarning
 		newModuleStatus.Message = module.Template.Err.Error()

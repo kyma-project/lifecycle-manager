@@ -185,8 +185,7 @@ var _ = Describe("Kyma enable one Mandatory Module", Ordered, func() {
 	It("should result Kyma in Error state", func() {
 		By("enabling one mandatory Module")
 		kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
-			Name:    "mandatory-template-operator",
-			Channel: "mandatory",
+			Name: "mandatory-template-operator",
 		})
 		Eventually(controlPlaneClient.Update, Timeout, Interval).
 			WithContext(ctx).WithArguments(kyma).Should(Succeed())
