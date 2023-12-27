@@ -345,12 +345,11 @@ func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.K
 
 func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	var requeueReason metrics.RequeueReason
 	var errGroup errgroup.Group
 	errGroup.Go(func() error {
 		err := r.reconcileManifests(ctx, kyma)
 		if err != nil {
-			requeueReason = metrics.ManifestReconciliationError
+			r.Metrics.RecordRequeueReason(metrics.ManifestReconciliationError)
 			return fmt.Errorf("could not reconciling manifest: %w", err)
 		}
 		if kyma.AllModulesReady() {
@@ -363,7 +362,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
-				requeueReason = metrics.ModuleCatalogSyncError
+				r.Metrics.RecordRequeueReason(metrics.ModuleCatalogSyncError)
 				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionFalse)
 				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 			}
@@ -375,7 +374,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	if r.WatcherEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-				requeueReason = metrics.SkrWebhookResourcesInstallationError
+				r.Metrics.RecordRequeueReason(metrics.SkrWebhookResourcesInstallationError)
 				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
 					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 					return nil
@@ -388,7 +387,6 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	if err := errGroup.Wait(); err != nil {
-		r.Metrics.RecordRequeueReason(requeueReason)
 		return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
 	}
 
