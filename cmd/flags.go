@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"os"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -37,6 +39,12 @@ const (
 	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
 	defaultWatcherRegistry                                = "europe-docker.pkg.dev/kyma-project/prod/"
 	DefaultRemoteSyncNamespace                            = "kyma-system"
+)
+
+var (
+	errMissingWatcherImage    = errors.New("runtime watcher image is not provided")
+	errMissingWatcherRegistry = errors.New("runtime watcher image registry is not provided")
+	errWatcherDirNotExist     = errors.New("failed to locate watcher resource manifest folder")
 )
 
 //nolint:funlen // defines all program flags
@@ -154,7 +162,7 @@ func DefineFlagVar() *FlagVar {
 		`Registry where to get the SKR watcher image.`)
 	flag.StringVar(&flagVar.watcherResourceLimitsMemory, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
-	flag.StringVar(&flagVar.watcherResourceLimitsCpu, "skr-webhook-cpu-limits", "0.1",
+	flag.StringVar(&flagVar.watcherResourceLimitsCPU, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.watcherResourcesPath, "skr-watcher-path", "./skr-webhook",
 		"The path to the skr watcher resources.")
@@ -212,6 +220,23 @@ type FlagVar struct {
 	watcherImage                           string
 	watcherRegistry                        string
 	watcherResourceLimitsMemory            string
-	watcherResourceLimitsCpu               string
+	watcherResourceLimitsCPU               string
 	watcherResourcesPath                   string
+}
+
+func (f FlagVar) Validate() error {
+	if f.enableWatcher {
+		if f.watcherImage == "" {
+			return errMissingWatcherImage
+		}
+		if f.watcherRegistry == "" {
+			return errMissingWatcherRegistry
+		}
+		dirInfo, err := os.Stat(f.watcherResourcesPath)
+		if err != nil || !dirInfo.IsDir() {
+			return errWatcherDirNotExist
+		}
+	}
+
+	return nil
 }

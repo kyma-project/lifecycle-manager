@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -67,10 +66,8 @@ import (
 )
 
 var (
-	scheme                    = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
-	setupLog                  = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
-	errMissingWatcherImage    = errors.New("runtime watcher image is not provided")
-	errMissingWatcherRegistry = errors.New("runtime watcher image registry is not provided")
+	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
+	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 )
 
 func registerSchemas() {
@@ -141,26 +138,17 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	options := controllerOptionsFromFlagVar(flagVar)
+	err = flagVar.Validate()
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
 
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
+	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.enableWatcher {
-		if flagVar.watcherImage == "" {
-			setupLog.Error(errMissingWatcherImage, "unable to start manager")
-			os.Exit(1)
-		}
-		if flagVar.watcherRegistry == "" {
-			setupLog.Error(errMissingWatcherRegistry, "unable to start manager")
-			os.Exit(1)
-		}
-		watcherChartDirInfo, err := os.Stat(flagVar.watcherResourcesPath)
-		if err != nil || !watcherChartDirInfo.IsDir() {
-			setupLog.Error(err, "failed to read local skr chart")
-			os.Exit(1)
-		}
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
-			setupLog.Error(err, "failed to create webhook chart manager")
+			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(1)
 		}
 		setupKcpWatcherReconciler(mgr, options, flagVar)
@@ -277,7 +265,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWe
 		watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:         flagVar.watcherResourcesPath,
 			SkrWatcherImage:        fmt.Sprintf("%s/%s", flagVar.watcherRegistry, flagVar.watcherImage),
-			SkrWebhookCPULimits:    flagVar.watcherResourceLimitsCpu,
+			SkrWebhookCPULimits:    flagVar.watcherResourceLimitsCPU,
 			SkrWebhookMemoryLimits: flagVar.watcherResourceLimitsMemory,
 			RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
 		}, watcher.CertificateConfig{
