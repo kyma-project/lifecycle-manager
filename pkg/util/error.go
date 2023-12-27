@@ -42,21 +42,3 @@ func IsNotFound(err error) bool {
 	}
 	return false
 }
-
-func IsConnectionRefused(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	for _, msg := range []string{
-		"connection refused",
-		"no such host",
-		"connection reset by peer",
-	} {
-		if strings.Contains(err.Error(), msg) {
-			return true
-		}
-	}
-
-	return false
-}
