@@ -62,7 +62,9 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 				Should(Succeed())
 		})
 	})
+})
 
+var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
 		kyma := NewTestKyma("skip-reconciliation-kyma")
 		kyma.Labels[shared.SkipReconcileLabel] = "true"
