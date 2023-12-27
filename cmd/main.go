@@ -340,7 +340,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 
 	if err := (&controller.WatcherReconciler{
 		Client:             mgr.GetClient(),
-		EventRecorder:      mgr.GetEventRecorderFor(controller.WatcherControllerName),
+		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
 		WatcherVSNamespace: flagVar.istioGatewayNamespace,
 		Scheme:             mgr.GetScheme(),
 		RestConfig:         mgr.GetConfig(),

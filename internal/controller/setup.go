@@ -34,7 +34,10 @@ type SetupUpSetting struct {
 }
 
 const (
-	WatcherControllerName = "watcher"
+	WatcherControllerName  = "watcher"
+	PurgeControllerName    = "purge"
+	KymaControllerName     = "kyma"
+	ManifestControllerName = "manifest"
 )
 
 var (
@@ -50,6 +53,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+		Named(KymaControllerName).
 		WithOptions(options).
 		WithEventFilter(predicates).
 		Watches(
@@ -163,6 +167,7 @@ func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
+		Named(PurgeControllerName).
 		WithOptions(options).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}))
 
