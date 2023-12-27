@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	"github.com/kyma-project/lifecycle-manager/pkg/template_lookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
 type ModuleConversionSettings struct {
@@ -52,7 +52,7 @@ func NewParser(
 
 func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
-	templates template_lookup.ModuleTemplatesByModuleName,
+	templates templatelookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -69,7 +69,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 
 func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
-	templates template_lookup.ModuleTemplatesByModuleName,
+	templates templatelookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	modules := make(common.Modules, 0)
 
@@ -95,9 +95,9 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 }
 
 func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
-	template *template_lookup.ModuleTemplateTO,
+	template *templatelookup.ModuleTemplateTO,
 	modules common.Modules) common.Modules {
-	if template.Err != nil && !errors.Is(template.Err, template_lookup.ErrTemplateNotAllowed) {
+	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
 		modules = append(modules, &common.Module{
 			ModuleName: module.Name,
 			Template:   template,
@@ -143,7 +143,7 @@ func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2
 	return modules
 }
 
-func setNameAndNamespaceIfEmpty(template *template_lookup.ModuleTemplateTO, name, namespace string) {
+func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateTO, name, namespace string) {
 	if template.ModuleTemplate.Spec.Data == nil {
 		return
 	}

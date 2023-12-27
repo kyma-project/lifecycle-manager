@@ -14,7 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/pkg/template_lookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -229,7 +229,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, customModuleInSKR, kyma.Spec.Channel).
-			Should(MatchError(template_lookup.ErrNoTemplatesInListResult))
+			Should(MatchError(templatelookup.ErrNoTemplatesInListResult))
 	})
 
 	It("SKRCustomTemplate descriptor should not be saved in cache", func() {

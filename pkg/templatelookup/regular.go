@@ -1,4 +1,4 @@
-package template_lookup
+package templatelookup
 
 import (
 	"context"

@@ -33,7 +33,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	"github.com/kyma-project/lifecycle-manager/pkg/template_lookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -68,7 +68,7 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
-	mandatoryTemplates, err := template_lookup.GetMandatory(ctx, r.Client)
+	mandatoryTemplates, err := templatelookup.GetMandatory(ctx, r.Client)
 	if err != nil {
 		return emptyResultWithErr(err)
 	}
@@ -87,7 +87,7 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 func (r *MandatoryModulesReconciler) GenerateModulesFromTemplate(ctx context.Context,
-	templates template_lookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
+	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
 	parser := parse.NewParser(r.Client, r.InKCPMode,
 		r.RemoteSyncNamespace, r.EnableVerification, r.PublicKeyFilePath)
