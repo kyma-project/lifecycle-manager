@@ -129,10 +129,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if err != nil {
-		if util.IsConnectionRefused(err) {
-			r.deleteRemoteClientCache(ctx, kyma)
-			r.enqueueWarningEvent(kyma, syncContextError, err)
-		}
+		r.deleteRemoteClientCache(ctx, kyma)
+		r.enqueueWarningEvent(kyma, syncContextError, err)
 		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrievalError)
 		return r.requeueWithError(ctx, kyma, err)
 	}
