@@ -81,7 +81,7 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 	}
 	cachedDiscoveryClient := memory.NewMemCacheClient(discoveryClient)
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
-	discoveryShortcutExpander := restmapper.NewShortcutExpander(discoveryRESTMapper, cachedDiscoveryClient)
+	discoveryShortcutExpander := restmapper.NewShortcutExpander(discoveryRESTMapper, cachedDiscoveryClient, nil)
 
 	// Create target cluster client only if not passed.
 	// Clients should be passed only in two cases:

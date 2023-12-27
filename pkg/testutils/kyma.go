@@ -87,16 +87,15 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Clie
 			}
 		}
 	}
-	return DeleteCR(ctx, clnt, kyma)
+	return DeleteKyma(ctx, clnt, kyma, apimetav1.DeletePropagationBackground)
 }
 
 func DeleteKyma(ctx context.Context,
 	clnt client.Client,
 	kyma *v1beta2.Kyma,
+	deletionPropagation apimetav1.DeletionPropagation,
 ) error {
-	// Foreground deletion is used to make sure the dependents (manifest CR) get deleted first before Kyma is deleted
-	propagation := apimetav1.DeletePropagationForeground
-	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation})
+	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &deletionPropagation})
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("updating kyma failed %w", err)
 	}
