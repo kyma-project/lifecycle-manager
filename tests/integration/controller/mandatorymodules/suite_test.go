@@ -39,6 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -48,7 +49,9 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const useRandomPort = "0"
+const (
+	useRandomPort = "0"
+)
 
 var (
 	mandatoryModulesReconciler *controller.MandatoryModulesReconciler
@@ -113,6 +116,11 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
+
+	SetDefaultEventuallyPollingInterval(Interval)
+	SetDefaultEventuallyTimeout(Timeout)
+	SetDefaultConsistentlyDuration(ConsistentCheckTimeout)
+	SetDefaultConsistentlyPollingInterval(Interval)
 
 	go func() {
 		defer GinkgoRecover()

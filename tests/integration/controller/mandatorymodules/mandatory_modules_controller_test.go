@@ -5,12 +5,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -34,7 +35,7 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 		registerControlPlaneLifecycleForKyma(kyma)
 
 		It("Then Kyma CR should result in a ready state immediately as there are no modules", func() {
-			Eventually(KymaIsInState, Timeout, Interval).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
@@ -50,7 +51,7 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 					return ErrWrongModulesStatus
 				}
 				return nil
-			}, Timeout, Interval).
+			}).
 				Should(Succeed())
 		})
 
@@ -84,12 +85,12 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		WithOCM(compdescv2.SchemaVersion).Build()
 
 	BeforeAll(func() {
-		Eventually(CreateCR, Timeout, Interval).
+		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
-		Eventually(CreateCR, Timeout, Interval).
+		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 		Eventually(setKymaToReady).
@@ -98,17 +99,17 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 
 	AfterAll(func() {
-		Eventually(DeleteCR, Timeout, Interval).
+		Eventually(DeleteCR).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
-		Eventually(DeleteCR, Timeout, Interval).
+		Eventually(DeleteCR).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, template).Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Eventually(SyncKyma, Timeout, Interval).
+		Eventually(SyncKyma).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
 }
