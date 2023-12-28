@@ -28,7 +28,6 @@ type KymaMetrics struct {
 type RequeueReason string
 
 const (
-	KymaRetrievalError RequeueReason = "kyma_retrieval_error"
 	//nolint:gosec // requeue reason label, no confidential content
 	KymaUnderDeletionAndAccessSecretNotFound RequeueReason = "kyma_under_deletion_with_no_access_secret"
 	StatusUpdateToDeleting                   RequeueReason = "kyma_status_update_to_deleting"
@@ -52,6 +51,8 @@ const (
 	RemoteModuleCatalogDeletionError         RequeueReason = "remote_module_catalog_deletion_error"
 	ManifestCrsCleanupError                  RequeueReason = "manifest_crs_cleanup_error"
 	KymaDeletion                             RequeueReason = "kyma_deletion"
+
+	KymaRetrievalError RequeueReason = "kyma_retrieval_error"
 )
 
 func NewKymaMetrics() *KymaMetrics {
