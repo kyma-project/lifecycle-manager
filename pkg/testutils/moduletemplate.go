@@ -4,14 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-
-	. "github.com/onsi/gomega"
 )
 
 func GetModuleTemplate(ctx context.Context,
@@ -64,28 +60,4 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 		return fmt.Errorf("update module tempate: %w", err)
 	}
 	return nil
-}
-
-func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(module.Name).
-			WithChannel(module.Channel).
-			WithOCM(compdescv2.SchemaVersion).Build()
-		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(kcpClient, template).Should(Succeed())
-	}
-}
-
-func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(module.Name).
-			WithChannel(module.Channel).
-			WithOCM(compdescv2.SchemaVersion).Build()
-		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-			WithArguments(template).
-			Should(Succeed())
-	}
 }

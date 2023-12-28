@@ -48,7 +48,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
+	RegisterDefaultLifecycleForKyma(kyma)
 
 	DescribeTable("Test Manifests",
 		func(givenCondition func() error, expectedBehavior func() error) {

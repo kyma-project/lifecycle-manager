@@ -1,19 +1,22 @@
 package controlplane_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -50,6 +53,30 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(SyncKyma, Timeout, Interval).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
+}
+
+func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdescv2.SchemaVersion).Build()
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, template).Should(Succeed())
+	}
+}
+
+func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdescv2.SchemaVersion).Build()
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
+	}
 }
 
 func kymaChannelMatch(clnt client.Client, name, namespace, channel string) error {

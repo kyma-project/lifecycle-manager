@@ -60,7 +60,7 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 			if !templateUsed {
 				return nil
 			}
-
+			
 			kymaName := types.NamespacedName{
 				Namespace: kyma.GetNamespace(),
 				Name:      kyma.GetName(),

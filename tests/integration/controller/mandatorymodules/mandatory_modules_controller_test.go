@@ -32,8 +32,7 @@ var (
 var _ = Describe("Mandatory Module Installation", Ordered, func() {
 	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
 		kyma := NewTestKyma("no-module-kyma")
-		RegisterDefaultLifecycleForKymaWithoutTemplate(ctx, controlPlaneClient, kyma)
-		setupControlPlaneForKyma(kyma)
+		registerControlPlaneLifecycleForKyma(kyma)
 
 		It("Then Kyma CR should result in a ready state immediately as there are no modules", func() {
 			Eventually(KymaIsInState).
@@ -69,7 +68,7 @@ var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
 		kyma := NewTestKyma("skip-reconciliation-kyma")
 		kyma.Labels[shared.SkipReconcileLabel] = "true"
-		setupControlPlaneForKyma(kyma)
+		registerControlPlaneLifecycleForKyma(kyma)
 
 		It("When Kyma has 'skip-reconciliation' label, then no Mandatory Module Manifest should be created", func() {
 			Eventually(checkMandatoryManifestForKyma).
@@ -80,7 +79,7 @@ var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 	})
 })
 
-func setupControlPlaneForKyma(kyma *v1beta2.Kyma) {
+func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	template := builder.NewModuleTemplateBuilder().
 		WithModuleName("mandatory-module").
 		WithChannel("mandatory").
@@ -93,7 +92,7 @@ func setupControlPlaneForKyma(kyma *v1beta2.Kyma) {
 			WithArguments(controlPlaneClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
-		Eventually(UpdateCR).
+		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 		Eventually(setKymaToReady).
@@ -104,7 +103,16 @@ func setupControlPlaneForKyma(kyma *v1beta2.Kyma) {
 	AfterAll(func() {
 		Eventually(DeleteCR).
 			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+		Eventually(DeleteCR).
+			WithContext(ctx).
 			WithArguments(controlPlaneClient, template).Should(Succeed())
+	})
+
+	BeforeEach(func() {
+		By("get latest kyma CR")
+		Eventually(SyncKyma).
+			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
 }
 
