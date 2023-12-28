@@ -37,13 +37,11 @@ const (
 	defaultSelfSignedCertDuration           time.Duration = 90 * 24 * time.Hour
 	defaultSelfSignedCertRenewBefore        time.Duration = 60 * 24 * time.Hour
 	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
-	defaultWatcherRegistry                                = "europe-docker.pkg.dev/kyma-project/prod/"
 	DefaultRemoteSyncNamespace                            = "kyma-system"
 )
 
 var (
-	errMissingWatcherImage    = errors.New("runtime watcher image is not provided")
-	errMissingWatcherRegistry = errors.New("runtime watcher image registry is not provided")
+	errMissingWatcherImageTag = errors.New("runtime watcher image tag is not provided")
 	errWatcherDirNotExist     = errors.New("failed to locate watcher resource manifest folder")
 )
 
@@ -156,10 +154,10 @@ func DefineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	flag.StringVar(&flagVar.dropStoredVersion, "drop-stored-version", "v1alpha1",
 		"The API version to be dropped from the storage versions")
-	flag.StringVar(&flagVar.watcherImage, "skr-watcher-image", "",
-		`Image to be used for the SKR watcher.`)
-	flag.StringVar(&flagVar.watcherRegistry, "skr-watcher-registry", defaultWatcherRegistry,
-		`Registry where to get the SKR watcher image.`)
+	flag.StringVar(&flagVar.watcherImageTag, "skr-watcher-image-tag", "",
+		`Image tag to be used for the SKR watcher image.`)
+	flag.BoolVar(&flagVar.useWatcherDevRegistry, "watcher-dev-registry", false,
+		`Enable to use the dev registry for fetching the watcher image.`)
 	flag.StringVar(&flagVar.watcherResourceLimitsMemory, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.watcherResourceLimitsCPU, "skr-webhook-cpu-limits", "0.1",
@@ -217,8 +215,8 @@ type FlagVar struct {
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
 	dropStoredVersion                      string
-	watcherImage                           string
-	watcherRegistry                        string
+	useWatcherDevRegistry                  bool
+	watcherImageTag                        string
 	watcherResourceLimitsMemory            string
 	watcherResourceLimitsCPU               string
 	watcherResourcesPath                   string
@@ -226,11 +224,8 @@ type FlagVar struct {
 
 func (f FlagVar) Validate() error {
 	if f.enableWatcher {
-		if f.watcherImage == "" {
-			return errMissingWatcherImage
-		}
-		if f.watcherRegistry == "" {
-			return errMissingWatcherRegistry
+		if f.watcherImageTag == "" {
+			return errMissingWatcherImageTag
 		}
 		dirInfo, err := os.Stat(f.watcherResourcesPath)
 		if err != nil || !dirInfo.IsDir() {

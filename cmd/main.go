@@ -65,6 +65,11 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const (
+	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr"
+	watcherRegDev  = "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher"
+)
+
 var (
 	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
 	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
@@ -261,25 +266,37 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.caCertCacheTTL)
-	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
-		watcher.SkrWebhookManagerConfig{
-			SKRWatcherPath:         flagVar.watcherResourcesPath,
-			SkrWatcherImage:        fmt.Sprintf("%s/%s", flagVar.watcherRegistry, flagVar.watcherImage),
-			SkrWebhookCPULimits:    flagVar.watcherResourceLimitsCPU,
-			SkrWebhookMemoryLimits: flagVar.watcherResourceLimitsMemory,
-			RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
-		}, watcher.CertificateConfig{
-			IstioNamespace:      flagVar.istioNamespace,
-			RemoteSyncNamespace: flagVar.remoteSyncNamespace,
-			CACertificateName:   flagVar.caCertName,
-			AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
-			Duration:            flagVar.SelfSignedCertDuration,
-			RenewBefore:         flagVar.SelfSignedCertRenewBefore,
-		}, watcher.GatewayConfig{
-			IstioGatewayName:          flagVar.istioGatewayName,
-			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
-			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
-		})
+	watcherImg := fmt.Sprintf("%s:%s", watcherRegProd, flagVar.watcherImageTag)
+	if flagVar.useWatcherDevRegistry {
+		watcherImg = fmt.Sprintf("%s:%s", watcherRegDev, flagVar.watcherImageTag)
+	}
+	config := watcher.SkrWebhookManagerConfig{
+		SKRWatcherPath:         flagVar.watcherResourcesPath,
+		SkrWatcherImage:        watcherImg,
+		SkrWebhookCPULimits:    flagVar.watcherResourceLimitsCPU,
+		SkrWebhookMemoryLimits: flagVar.watcherResourceLimitsMemory,
+		RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
+	}
+	certConfig := watcher.CertificateConfig{
+		IstioNamespace:      flagVar.istioNamespace,
+		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+		CACertificateName:   flagVar.caCertName,
+		AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
+		Duration:            flagVar.SelfSignedCertDuration,
+		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
+	}
+	gatewayConfig := watcher.GatewayConfig{
+		IstioGatewayName:          flagVar.istioGatewayName,
+		IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
+		LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
+	}
+	return watcher.NewSKRWebhookManifestManager(
+		mgr.GetConfig(),
+		mgr.GetScheme(),
+		caCertificateCache,
+		config,
+		certConfig,
+		gatewayConfig)
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
