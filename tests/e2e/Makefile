@@ -76,7 +76,7 @@ kyma-deletion-with-background-propagation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Background Propagation After SKR Cluster Removal"
 
 kyma-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Metrics"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manage Module Metrics"
 
 watcher-enqueue:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"

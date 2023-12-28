@@ -11,7 +11,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Kyma Metrics", Ordered, func() {
+var _ = Describe("Manage Module Metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
@@ -52,7 +52,7 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 		It("Then Related Manifest Requeue Metrics Get Increased", func() {
 			Eventually(IsManifestRequeueReasonCountIncreased).
 				WithContext(ctx).
-				WithArguments(string(metrics.ManifestPruneDiffNotFinished), string(metrics.DesiredRequeue)).
+				WithArguments(string(metrics.ManifestAddFinalizer), string(metrics.DesiredRequeue)).
 				Should(BeTrue())
 			Eventually(IsManifestRequeueReasonCountIncreased).
 				WithContext(ctx).
