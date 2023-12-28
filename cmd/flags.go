@@ -202,9 +202,6 @@ type FlagVar struct {
 	istioGatewayName                        string
 	istioGatewayNamespace                   string
 	additionalDNSNames                      string
-	skrWatcherPath                          string
-	skrWebhookMemoryLimits                  string
-	skrWebhookCPULimits                     string
 	// listenerPortOverwrite is used to enable the user to overwrite the port
 	// used to expose the KCP cluster for the watcher. By default, it will be
 	// fetched from the specified gateway.
