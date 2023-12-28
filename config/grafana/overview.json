@@ -460,12 +460,12 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue\"}[$__rate_interval])) by (controller)",
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "requeue",
+          "legendFormat": "{{controller }} - {{result}}",
           "refId": "A"
         },
         {
@@ -474,11 +474,11 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue_after\"}[$__rate_interval])) by (controller)",
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue_after\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
-          "legendFormat": "requeue_after",
+          "legendFormat": "{{controller }} - {{result}}",
           "refId": "B"
         },
         {
@@ -487,11 +487,83 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"success\"}[$__rate_interval])) by (controller)",
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"success\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
-          "legendFormat": "success",
+          "legendFormat": "{{controller }} - {{result}}",
           "refId": "C"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"requeue\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "D"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"requeue_after\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "E"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"success\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "F"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "G"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue_after\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "H"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"success\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "I"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"requeue\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "J"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"success\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "K"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"requeue_after\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "L"
         }
       ],
       "title": "Lifecycle Manager Controller Runtime Reconcile Success",
@@ -818,10 +890,20 @@
           "interval": "",
           "legendFormat": "{{requeue_reason}}",
           "refId": "kyma_deletion"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_retrieval_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "kyma_retrieval_error"
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "Kyma Requeue Reason",
       "tooltip": {
         "shared": true,
@@ -3116,5 +3198,5 @@
   "timezone": "",
   "title": "Lifecycle Manager Overview",
   "uid": "O3DH7uunk",
-  "version": 4
+  "version": 6
 }

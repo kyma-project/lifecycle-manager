@@ -51,10 +51,13 @@ func SetupWithManager(
 
 	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
+		Named(ManifestControllerName).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		WatchesRawSource(
 			eventChannel, &handler.Funcs{
-				GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+				GenericFunc: func(ctx context.Context, event event.GenericEvent,
+					queue workqueue.RateLimitingInterface,
+				) {
 					ctrl.Log.WithName("listener").Info(
 						fmt.Sprintf(
 							"event coming from SKR, adding %s to queue",
