@@ -96,7 +96,7 @@ func DefineFlagVar() *FlagVar {
 		"Enabling verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.enableWatcher, "enable-kcp-watcher", false,
+	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.additionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
@@ -172,7 +172,7 @@ type FlagVar struct {
 	enableDomainNameVerification           bool
 	enableLeaderElection                   bool
 	enablePurgeFinalizer                   bool
-	enableWatcher                          bool
+	enableKcpWatcher                       bool
 	enableWebhooks                         bool
 	probeAddr                              string
 	kymaListenerAddr, manifestListenerAddr string
@@ -223,7 +223,7 @@ type FlagVar struct {
 }
 
 func (f FlagVar) Validate() error {
-	if f.enableWatcher {
+	if f.enableKcpWatcher {
 		if f.watcherImageTag == "" {
 			return errMissingWatcherImageTag
 		}

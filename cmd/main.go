@@ -65,11 +65,6 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const (
-	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr"
-	watcherRegDev  = "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher"
-)
-
 var (
 	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
 	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
@@ -151,7 +146,7 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
-	if flagVar.enableWatcher {
+	if flagVar.enableKcpWatcher {
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
 			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(1)
@@ -266,13 +261,9 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.caCertCacheTTL)
-	watcherImg := fmt.Sprintf("%s:%s", watcherRegProd, flagVar.watcherImageTag)
-	if flagVar.useWatcherDevRegistry {
-		watcherImg = fmt.Sprintf("%s:%s", watcherRegDev, flagVar.watcherImageTag)
-	}
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.watcherResourcesPath,
-		SkrWatcherImage:        watcherImg,
+		SkrWatcherImage:        getWatcherImg(flagVar),
 		SkrWebhookCPULimits:    flagVar.watcherResourceLimitsCPU,
 		SkrWebhookMemoryLimits: flagVar.watcherResourceLimitsMemory,
 		RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
@@ -297,6 +288,19 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWe
 		config,
 		certConfig,
 		gatewayConfig)
+}
+
+const (
+	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr"
+	watcherRegDev  = "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher"
+)
+
+func getWatcherImg(flagVar *FlagVar) string {
+	watcherImg := fmt.Sprintf("%s:%s", watcherRegProd, flagVar.watcherImageTag)
+	if flagVar.useWatcherDevRegistry {
+		watcherImg = fmt.Sprintf("%s:%s", watcherRegDev, flagVar.watcherImageTag)
+	}
+	return watcherImg
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
