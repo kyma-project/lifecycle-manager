@@ -96,7 +96,8 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 
 func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
 	template *templatelookup.ModuleTemplateTO,
-	modules common.Modules) common.Modules {
+	modules common.Modules,
+) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
 		modules = append(modules, &common.Module{
 			ModuleName: module.Name,
