@@ -29,6 +29,10 @@ var (
 	ErrNoMandatoryManifest = errors.New("manifest for mandatory Module not found")
 )
 
+const (
+	mandatoryChannel = "dummy-channel"
+)
+
 var _ = Describe("Mandatory Module Installation", Ordered, func() {
 	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
 		kyma := NewTestKyma("no-module-kyma")
@@ -82,7 +86,7 @@ var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	template := builder.NewModuleTemplateBuilder().
 		WithModuleName("mandatory-module").
-		WithChannel(v1beta2.DefaultChannel).
+		WithChannel(mandatoryChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()
 

@@ -20,14 +20,15 @@ import (
 )
 
 const (
-	InitSpecKey   = "initKey"
-	InitSpecValue = "initValue"
+	InitSpecKey      = "initKey"
+	InitSpecValue    = "initValue"
+	mandatoryChannel = "dummy-channel"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	mandatoryTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName("mandatory-template-operator").
-		WithChannel(v1beta2.DefaultChannel).
+		WithChannel(mandatoryChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()
 
