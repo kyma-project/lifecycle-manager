@@ -30,7 +30,7 @@ var (
 )
 
 const (
-	mandatoryChannel = "dummy-channel"
+	mandatoryChannel = "dummyChannel"
 )
 
 var _ = Describe("Mandatory Module Installation", Ordered, func() {

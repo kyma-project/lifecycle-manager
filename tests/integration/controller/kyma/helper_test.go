@@ -22,7 +22,7 @@ import (
 const (
 	InitSpecKey      = "initKey"
 	InitSpecValue    = "initValue"
-	mandatoryChannel = "dummy-channel"
+	mandatoryChannel = "dummyChannel"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
