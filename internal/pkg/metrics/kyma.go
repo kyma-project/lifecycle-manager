@@ -19,9 +19,9 @@ const (
 )
 
 type KymaMetrics struct {
-	kymaStateGauge       *prometheus.GaugeVec
-	moduleStateGauge     *prometheus.GaugeVec
-	requeueReasonCounter *prometheus.CounterVec
+	kymaStateGauge   *prometheus.GaugeVec
+	moduleStateGauge *prometheus.GaugeVec
+	*SharedMetrics
 }
 
 type KymaRequeueReason string
@@ -49,8 +49,9 @@ const (
 	KymaRetrieval                            KymaRequeueReason = "kyma_retrieval"
 )
 
-func NewKymaMetrics() *KymaMetrics {
+func NewKymaMetrics(sharedMetrics *SharedMetrics) *KymaMetrics {
 	kymaMetrics := &KymaMetrics{
+		SharedMetrics: sharedMetrics,
 		kymaStateGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: MetricKymaState,
 			Help: "Indicates the Status.state for a given Kyma object",
@@ -60,15 +61,9 @@ func NewKymaMetrics() *KymaMetrics {
 			Name: MetricModuleState,
 			Help: "Indicates the Status.state for modules of Kyma",
 		}, []string{moduleNameLabel, KymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
-
-		requeueReasonCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: MetricRequeueReason,
-			Help: "Indicates the reason for the Kyma reconciliation requeue",
-		}, []string{requeueReasonLabel, requeueTypeLabel}),
 	}
 	ctrlmetrics.Registry.MustRegister(kymaMetrics.kymaStateGauge)
 	ctrlmetrics.Registry.MustRegister(kymaMetrics.moduleStateGauge)
-	ctrlmetrics.Registry.MustRegister(kymaMetrics.requeueReasonCounter)
 	return kymaMetrics
 }
 
@@ -143,6 +138,6 @@ func calcStateValue(state, newState shared.State) float64 {
 	return 0
 }
 
-func (k *KymaMetrics) RecordRequeueReason(KymaRequeueReason KymaRequeueReason, requeueType RequeueType) {
-	k.requeueReasonCounter.WithLabelValues(string(KymaRequeueReason), string(requeueType)).Inc()
+func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, requeueType RequeueType) {
+	k.requeueReasonCounter.WithLabelValues(string(kymaRequeueReason), string(requeueType)).Inc()
 }

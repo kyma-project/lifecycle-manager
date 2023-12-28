@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
@@ -29,16 +28,11 @@ const (
 )
 
 type ManifestMetrics struct {
-	requeueReasonCounter *prometheus.CounterVec
+	*SharedMetrics
 }
 
-func NewManifestMetrics() *ManifestMetrics {
-	metrics := &ManifestMetrics{
-		requeueReasonCounter: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: MetricRequeueReason,
-			Help: "Indicates the reason for manifest reconciliation requeue",
-		}, []string{requeueReasonLabel, requeueTypeLabel}),
-	}
+func NewManifestMetrics(sharedMetrics *SharedMetrics) *ManifestMetrics {
+	metrics := &ManifestMetrics{SharedMetrics: sharedMetrics}
 	ctrlmetrics.Registry.MustRegister(metrics.requeueReasonCounter)
 	return metrics
 }

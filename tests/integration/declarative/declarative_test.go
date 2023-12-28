@@ -268,7 +268,7 @@ func StartDeclarativeReconcilerForRun(
 	)
 	Expect(err).ToNot(HaveOccurred())
 	reconciler = NewFromManager(
-		mgr, &declarativetest.TestAPI{}, metrics.NewManifestMetrics(),
+		mgr, &declarativetest.TestAPI{}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()),
 		append(
 			options,
 			WithNamespace(namespace, true),

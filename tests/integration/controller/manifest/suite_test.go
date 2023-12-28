@@ -126,7 +126,7 @@ var _ = BeforeSuite(
 
 		kcp := &declarativev2.ClusterInfo{Config: cfg, Client: manifesttest.K8sClient}
 		reconciler = declarativev2.NewFromManager(
-			k8sManager, &v1beta2.Manifest{}, metrics.NewManifestMetrics(),
+			k8sManager, &v1beta2.Manifest{}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()),
 			declarativev2.WithSpecResolver(
 				manifest.NewSpecResolver(kcp),
 			),
