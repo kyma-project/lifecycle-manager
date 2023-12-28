@@ -350,11 +350,6 @@ func setupManifestReconciler(
 }
 
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *FlagVar) {
-	if flagVar.skrWatcherImage == "" {
-		setupLog.Error(errMissingWatcherImage, "unable to start manager")
-		os.Exit(1)
-	}
-
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
 	if err := (&controller.WatcherReconciler{

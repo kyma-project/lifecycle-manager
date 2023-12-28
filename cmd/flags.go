@@ -176,32 +176,12 @@ func DefineFlagVar() *FlagVar {
 }
 
 type FlagVar struct {
-	metricsAddr                            string
-	enableDomainNameVerification           bool
-	enableLeaderElection                   bool
-	enablePurgeFinalizer                   bool
-	enableKcpWatcher                       bool
-	enableWebhooks                         bool
-	probeAddr                              string
-	kymaListenerAddr, manifestListenerAddr string
-	maxConcurrentKymaReconciles            int
-	maxConcurrentManifestReconciles        int
-	maxConcurrentWatcherReconciles         int
-	kymaRequeueSuccessInterval             time.Duration
-	kymaRequeueErrInterval                 time.Duration
-	kymaRequeueBusyInterval                time.Duration
-	kymaRequeueWarningInterval             time.Duration
-	manifestRequeueSuccessInterval         time.Duration
-	watcherRequeueSuccessInterval          time.Duration
-	moduleVerificationKeyFilePath          string
-	clientQPS                              float64
-	clientBurst                            int
-	istioNamespace                         string
-	istioGatewayName                       string
-	istioGatewayNamespace                  string
-	additionalDNSNames                     string
 	metricsAddr                             string
+	enableDomainNameVerification            bool
 	enableLeaderElection                    bool
+	enablePurgeFinalizer                    bool
+	enableKcpWatcher                        bool
+	enableWebhooks                          bool
 	probeAddr                               string
 	kymaListenerAddr, manifestListenerAddr  string
 	maxConcurrentKymaReconciles             int
@@ -213,20 +193,18 @@ type FlagVar struct {
 	kymaRequeueBusyInterval                 time.Duration
 	kymaRequeueWarningInterval              time.Duration
 	manifestRequeueSuccessInterval          time.Duration
-	mandatoryModuleRequeueSuccessInterval   time.Duration
 	watcherRequeueSuccessInterval           time.Duration
+	mandatoryModuleRequeueSuccessInterval   time.Duration
 	moduleVerificationKeyFilePath           string
 	clientQPS                               float64
 	clientBurst                             int
-	enableWebhooks                          bool
-	enableKcpWatcher                        bool
-	skrWatcherPath                          string
-	skrWebhookMemoryLimits                  string
-	skrWebhookCPULimits                     string
 	istioNamespace                          string
 	istioGatewayName                        string
 	istioGatewayNamespace                   string
 	additionalDNSNames                      string
+	skrWatcherPath                          string
+	skrWebhookMemoryLimits                  string
+	skrWebhookCPULimits                     string
 	// listenerPortOverwrite is used to enable the user to overwrite the port
 	// used to expose the KCP cluster for the watcher. By default, it will be
 	// fetched from the specified gateway.
