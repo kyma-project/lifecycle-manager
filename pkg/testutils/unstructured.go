@@ -76,6 +76,10 @@ func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 	return nil
 }
 
+func UpdateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
+	return clnt.Update(ctx, obj)
+}
+
 func CRExists(obj apimetav1.Object, clientError error) error {
 	if util.IsNotFound(clientError) {
 		return ErrNotFound

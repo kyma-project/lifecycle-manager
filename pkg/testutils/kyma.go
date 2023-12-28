@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -14,6 +15,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (
@@ -21,6 +25,52 @@ var (
 	ErrContainsUnexpectedModules  = errors.New("kyma CR contains unexpected modules")
 	ErrNotContainsExpectedModules = errors.New("kyma CR not contains expected modules")
 )
+
+func RegisterDefaultLifecycleForKyma(ctx context.Context, controlPlaneClient client.Client,
+	kyma *v1beta2.Kyma,
+) {
+	mandatoryTemplate := builder.NewModuleTemplateBuilder().
+		WithModuleName("mandatory-template-operator").
+		WithMandatory(true).
+		WithOCM(compdescv2.SchemaVersion).Build()
+
+	BeforeAll(func() {
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, mandatoryTemplate).Should(Succeed())
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
+	})
+
+	AfterAll(func() {
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, mandatoryTemplate).Should(Succeed())
+	})
+	RegisterDefaultLifecycleForKymaWithoutTemplate(ctx, controlPlaneClient, kyma)
+}
+
+func RegisterDefaultLifecycleForKymaWithoutTemplate(ctx context.Context, controlPlaneClient client.Client,
+	kyma *v1beta2.Kyma,
+) {
+	BeforeAll(func() {
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+	})
+
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+	})
+
+	BeforeEach(func() {
+		By("get latest kyma CR")
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+	})
+}
 
 func NewTestKyma(name string) *v1beta2.Kyma {
 	return NewKymaWithSyncLabel(name, apimetav1.NamespaceDefault, v1beta2.DefaultChannel,

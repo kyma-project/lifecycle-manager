@@ -51,7 +51,7 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("expect Manifest.Spec.Remote=false", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
@@ -70,7 +70,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
@@ -153,7 +153,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("validate Manifest", func() {
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
@@ -201,7 +201,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("update Manifest", func() {
 		// await for the manifest to be created
@@ -256,7 +256,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("Manifest CR should be updated after module template version has changed", func() {
 		By("CR created")
@@ -323,7 +323,7 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 	module := NewTestModule("skip-reconciliation-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 	It("Given a Manifest CR exists", func() {
 		Eventually(ManifestExists, Timeout, Interval).
 			WithContext(ctx).

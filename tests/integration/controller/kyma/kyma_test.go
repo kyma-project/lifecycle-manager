@@ -28,7 +28,7 @@ var (
 
 var _ = Describe("Kyma with no Module", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("Should result in a ready state immediately", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
@@ -90,7 +90,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
@@ -180,7 +180,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 var _ = Describe("Kyma enable one Mandatory Module", Ordered, func() {
 	kyma := NewTestKyma("mandatory-module-kyma")
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("should result Kyma in Error state", func() {
 		By("enabling one mandatory Module")
@@ -225,7 +225,7 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 	skrModule = NewTestModule("skr-module", v1beta2.DefaultChannel)
 	kcpModule = NewTestModule("kcp-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, skrModule, kcpModule)
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("CR should be created normally and then recreated after delete", func() {
 		By("CR created")
@@ -305,7 +305,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+	RegisterDefaultLifecycleForKymaWithoutTemplate(ctx, controlPlaneClient, kyma)
 
 	It("Should deploy ModuleTemplate", func() {
 		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
@@ -376,7 +376,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 
 var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 	kyma := NewTestKyma("unmanaged-kyma")
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKyma(ctx, controlPlaneClient, kyma)
 
 	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
 		Eventually(ContainsKymaManagerField, Timeout, Interval).
@@ -391,7 +391,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		module := NewTestModule("test-module", v1beta2.DefaultChannel)
 		kyma.Spec.Modules = append(
 			kyma.Spec.Modules, module)
-		RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+		RegisterDefaultLifecycleForKymaWithoutTemplate(ctx, controlPlaneClient, kyma)
 
 		It("Should deploy ModuleTemplate", func() {
 			for _, module := range kyma.Spec.Modules {
