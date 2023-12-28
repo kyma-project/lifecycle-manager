@@ -211,18 +211,18 @@ jobs:
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds
-          kubectl apply -f template.yaml
+          kubectl apply --timeout=2m -f template.yaml
       - name: Create Template Operator Module for regular and fast channels
         working-directory: lifecycle-manager
         if: ${{ matrix.e2e-test == 'module-upgrade' || matrix.e2e-test == 'upgrade-under-deletion' }}
         run: |
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+          kubectl apply --timeout=2m -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+          kubectl apply --timeout=2m -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
       - name: Apply Template Operator Module V2, fast channel
         working-directory: ./lifecycle-manager
         if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
         run: |
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+          kubectl apply --timeout=2m -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
       - name: Create Template Operator Module with final state `Warning` and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation'}}
@@ -238,7 +238,7 @@ jobs:
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds
-          kubectl apply -f template.yaml
+          kubectl apply --timeout=2m -f template.yaml
       - name: Create Template Operator Module without default CR and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
@@ -259,7 +259,7 @@ jobs:
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds
-          kubectl apply -f template.yaml
+          kubectl apply --timeout=2m -f template.yaml
       - name: Expose Metrics Endpoint
         working-directory: lifecycle-manager
         if: ${{ matrix.e2e-test == 'kyma-metrics' ||
