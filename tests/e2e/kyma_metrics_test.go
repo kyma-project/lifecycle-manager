@@ -49,6 +49,17 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				Should(Equal(1))
 		})
 
+		It("Then Related Manifest Requeue Metrics Get Increased", func() {
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestPruneDiffNotFinished), string(metrics.DesiredRequeue)).
+				Should(BeTrue())
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestSyncResourcesEnqueueRequired), string(metrics.DesiredRequeue)).
+				Should(BeTrue())
+		})
+
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
@@ -81,6 +92,17 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				Should(Equal(0))
 		})
 
+		It("Then Related Manifest Requeue Metrics Get Increased", func() {
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestPreDeleteEnqueueRequired), string(metrics.DesiredRequeue)).
+				Should(BeTrue())
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestRemoveFinalizerInDeleting), string(metrics.DesiredRequeue)).
+				Should(BeTrue())
+		})
+
 		It("When KCP Kyma CR is deleted", func() {
 			Eventually(DeleteKymaByForceRemovePurgeFinalizer).
 				WithContext(ctx).
@@ -93,9 +115,9 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 		})
 
 		It("Then count of lifecycle_mgr_requeue_reason_total for kyma_deletion is 1", func() {
-			Eventually(GetKymaRequeueReasonMetricCount).
+			Eventually(GetRequeueReasonCount).
 				WithContext(ctx).
-				WithArguments(metrics.KymaDeletion).
+				WithArguments(string(metrics.KymaDeletion), string(metrics.DesiredRequeue)).
 				Should(Equal(1))
 
 			By("And count of all Kyma Metrics is 0")

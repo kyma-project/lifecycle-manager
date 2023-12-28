@@ -38,7 +38,8 @@ const (
 )
 
 func NewFromManager(mgr manager.Manager, prototype Object, metrics *metrics.ManifestMetrics,
-	options ...Option) *Reconciler {
+	options ...Option,
+) *Reconciler {
 	r := &Reconciler{}
 	r.prototype = prototype
 	r.Metrics = metrics
@@ -123,7 +124,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec,
 				metrics.DesiredRequeue)
 		}
-		return r.ssaStatus(ctx, obj, metrics.ManifestParseSpec, metrics.DesiredRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestParseSpec, metrics.UnexpectedRequeue)
 	}
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
