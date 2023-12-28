@@ -15,7 +15,7 @@ func GetModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	defaultChannel string,
 ) (*v1beta2.ModuleTemplate, error) {
-	templateTO := templatelookup.New(clnt, module.Name, module.Channel, defaultChannel).WithContext(ctx)
+	templateTO := templatelookup.NewRegularLookup(clnt, module.Name, module.Channel, defaultChannel).WithContext(ctx)
 	if templateTO.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateTO.Err)
 	}

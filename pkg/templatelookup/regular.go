@@ -50,7 +50,7 @@ func GetRegular(
 		}
 		switch {
 		case module.RemoteModuleTemplateRef == "":
-			template = New(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
+			template = NewRegularLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			if template.Err != nil {
 				break
 			}
@@ -68,7 +68,7 @@ func GetRegular(
 			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
-			template = New(runtimeClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
+			template = NewRegularLookup(runtimeClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			module.Name = originalModuleName
 		default:
 			template.Err = fmt.Errorf("enable sync to use a remote module template for %s: %w", module.Name,
@@ -205,8 +205,8 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*ModuleTemplateTO, error)
 }
 
-// New returns a new instance of TemplateLookup.
-func New(client client.Reader,
+// NewRegularLookup returns a new instance of TemplateLookup.
+func NewRegularLookup(client client.Reader,
 	moduleName,
 	moduleChannel,
 	defaultChannel string,
@@ -219,6 +219,7 @@ func New(client client.Reader,
 	}
 }
 
+// TemplateLookup is used to fetch available ModuleTemplates from the cluster which are marked as non-mandatory.
 type TemplateLookup struct {
 	reader         client.Reader
 	moduleName     string
