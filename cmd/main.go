@@ -296,11 +296,10 @@ const (
 )
 
 func getWatcherImg(flagVar *FlagVar) string {
-	watcherImg := fmt.Sprintf("%s:%s", watcherRegProd, flagVar.watcherImageTag)
 	if flagVar.useWatcherDevRegistry {
-		watcherImg = fmt.Sprintf("%s:%s", watcherRegDev, flagVar.watcherImageTag)
+		return fmt.Sprintf("%s:%s", watcherRegDev, flagVar.watcherImageTag)
 	}
-	return watcherImg
+	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.watcherImageTag)
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
