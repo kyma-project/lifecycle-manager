@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
@@ -85,7 +86,7 @@ func ManifestReconciler(
 	}
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
-		mgr, &v1beta2.Manifest{},
+		mgr, &v1beta2.Manifest{}, metrics.NewManifestMetrics(),
 		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp),
 		),

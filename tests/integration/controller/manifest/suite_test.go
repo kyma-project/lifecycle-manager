@@ -40,6 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	manifesttest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest"
@@ -125,7 +126,7 @@ var _ = BeforeSuite(
 
 		kcp := &declarativev2.ClusterInfo{Config: cfg, Client: manifesttest.K8sClient}
 		reconciler = declarativev2.NewFromManager(
-			k8sManager, &v1beta2.Manifest{},
+			k8sManager, &v1beta2.Manifest{}, metrics.NewManifestMetrics(),
 			declarativev2.WithSpecResolver(
 				manifest.NewSpecResolver(kcp),
 			),

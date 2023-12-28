@@ -104,7 +104,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if !util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
-			r.Metrics.RecordRequeueReason(metrics.KymaRetrievalError)
+			r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, metrics.UnexpectedRequeue)
 			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 		}
 		// if indeed not found, stop put this kyma in queue
@@ -124,14 +124,19 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Info("access secret not found for kyma, assuming already deleted cluster")
 		r.Metrics.CleanupMetrics(kyma.Name)
 		r.removeAllFinalizers(kyma)
-		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound)
-		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
+
+		if err := r.updateKyma(ctx, kyma); err != nil {
+			r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, metrics.UnexpectedRequeue)
+			return ctrl.Result{}, err
+		}
+		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, metrics.DesiredRequeue)
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if err != nil {
 		r.deleteRemoteClientCache(ctx, kyma)
 		r.enqueueWarningEvent(kyma, syncContextError, err)
-		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrievalError)
+		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, metrics.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
@@ -165,44 +170,44 @@ func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kym
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.RemoteKymaDeletionError)
+			r.Metrics.RecordRequeueReason(metrics.RemoteKymaDeletion, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
 		if err := r.updateStatus(ctx, kyma, shared.StateDeleting, "waiting for modules to be deleted"); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeletingError)
+			r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma,
 				fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
-		r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting)
+		r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, metrics.DesiredRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdateError)
+			r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
-		r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate)
+		r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, metrics.DesiredRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if r.SyncKymaEnabled(kyma) {
 		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
 		if err != nil {
-			r.Metrics.RecordRequeueReason(metrics.CrdsSyncError)
+			r.Metrics.RecordRequeueReason(metrics.CrdsSync, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
 		}
 		if updateKymaRequired {
 			if err := r.Update(ctx, kyma); err != nil {
-				r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdateError)
+				r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, metrics.UnexpectedRequeue)
 				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 			}
-			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate)
+			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, metrics.DesiredRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		// update the control-plane kyma with the changes to the spec of the remote Kyma
 		if err := r.replaceSpecFromRemote(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemoteError)
+			r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
 				" with remote kyma spec: %w", err))
 		}
@@ -210,14 +215,14 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 
 	res, err := r.processKymaState(ctx, kyma)
 	if err != nil {
-		r.Metrics.RecordRequeueReason(metrics.ProcessingKymaStateError)
+		r.Metrics.RecordRequeueReason(metrics.ProcessingKymaState, metrics.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
 
 	if r.SyncKymaEnabled(kyma) {
 		// update the remote kyma with the state of the control plane
 		if err := r.syncStatusToRemote(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemoteError)
+			r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 		}
 	}
@@ -335,11 +340,11 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	const msg = "started processing"
 	if err := r.updateStatus(ctx, kyma, shared.StateProcessing, msg); err != nil {
-		r.Metrics.RecordRequeueReason(metrics.InitialStateHandlingError)
+		r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, metrics.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
 	r.enqueueNormalEvent(kyma, updateStatus, msg)
-	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling)
+	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, metrics.DesiredRequeue)
 	return ctrl.Result{Requeue: true}, nil
 }
 
@@ -349,7 +354,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	errGroup.Go(func() error {
 		err := r.reconcileManifests(ctx, kyma)
 		if err != nil {
-			r.Metrics.RecordRequeueReason(metrics.ManifestReconciliationError)
+			r.Metrics.RecordRequeueReason(metrics.ReconcileManifests, metrics.UnexpectedRequeue)
 			return fmt.Errorf("could not reconciling manifest: %w", err)
 		}
 		if kyma.AllModulesReady() {
@@ -362,7 +367,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
-				r.Metrics.RecordRequeueReason(metrics.ModuleCatalogSyncError)
+				r.Metrics.RecordRequeueReason(metrics.ModuleCatalogSync, metrics.UnexpectedRequeue)
 				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionFalse)
 				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 			}
@@ -374,7 +379,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	if r.WatcherEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-				r.Metrics.RecordRequeueReason(metrics.SkrWebhookResourcesInstallationError)
+				r.Metrics.RecordRequeueReason(metrics.SkrWebhookResourcesInstallation, metrics.UnexpectedRequeue)
 				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
 					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 					return nil
@@ -420,7 +425,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).Delete(ctx); err != nil {
 			err = fmt.Errorf("could not delete remote module catalog: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
-			r.Metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletionError)
+			r.Metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, metrics.UnexpectedRequeue)
 			return ctrl.Result{}, err
 		}
 
@@ -428,7 +433,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		if err := remote.RemoveFinalizersFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
-			r.Metrics.RecordRequeueReason(metrics.FinalizersRemovalFromRemoteKymaError)
+			r.Metrics.RecordRequeueReason(metrics.FinalizersRemovalFromRemoteKyma, metrics.UnexpectedRequeue)
 			return ctrl.Result{}, err
 		}
 
@@ -438,7 +443,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	err := r.cleanupManifestCRs(ctx, kyma)
 	if err != nil {
 		r.enqueueWarningEvent(kyma, deletionError, err)
-		r.Metrics.RecordRequeueReason(metrics.ManifestCrsCleanupError)
+		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, metrics.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
 
@@ -446,8 +451,12 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 
-	r.Metrics.RecordRequeueReason(metrics.KymaDeletion)
-	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
+	if err := r.updateKyma(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.KymaDeletion, metrics.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
+	r.Metrics.RecordRequeueReason(metrics.KymaDeletion, metrics.DesiredRequeue)
+	return ctrl.Result{Requeue: true}, nil
 }
 
 func (r *KymaReconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) error {

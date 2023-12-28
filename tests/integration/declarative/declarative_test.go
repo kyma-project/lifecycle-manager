@@ -29,14 +29,16 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	declarativetest "github.com/kyma-project/lifecycle-manager/tests/integration/declarative"
 
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -266,7 +268,7 @@ func StartDeclarativeReconcilerForRun(
 	)
 	Expect(err).ToNot(HaveOccurred())
 	reconciler = NewFromManager(
-		mgr, &declarativetest.TestAPI{},
+		mgr, &declarativetest.TestAPI{}, metrics.NewManifestMetrics(),
 		append(
 			options,
 			WithNamespace(namespace, true),

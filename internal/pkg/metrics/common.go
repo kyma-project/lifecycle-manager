@@ -15,6 +15,15 @@ const (
 	KymaNameLabel   = "kyma_name"
 )
 
+type RequeueType string
+
+const (
+	DesiredRequeue     RequeueType = "desired"
+	UnexpectedRequeue  RequeueType = "unexpected"
+	requeueReasonLabel             = "requeue_reason"
+	requeueTypeLabel               = "requeue_type"
+)
+
 var (
 	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", shared.SKRDomainAnnotation)
 	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", shared.SKRDomainAnnotation)
