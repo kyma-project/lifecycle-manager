@@ -27,6 +27,7 @@ const (
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	mandatoryTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName("mandatory-template-operator").
+		WithChannel(v1beta2.DefaultChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()
 

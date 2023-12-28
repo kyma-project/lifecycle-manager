@@ -82,7 +82,7 @@ var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	template := builder.NewModuleTemplateBuilder().
 		WithModuleName("mandatory-module").
-		WithChannel("mandatory").
+		WithChannel(v1beta2.DefaultChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()
 
