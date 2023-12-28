@@ -1,9 +1,5 @@
 package metrics
 
-import (
-	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-)
-
 type ManifestRequeueReason string
 
 const (
@@ -32,9 +28,7 @@ type ManifestMetrics struct {
 }
 
 func NewManifestMetrics(sharedMetrics *SharedMetrics) *ManifestMetrics {
-	metrics := &ManifestMetrics{SharedMetrics: sharedMetrics}
-	ctrlmetrics.Registry.MustRegister(metrics.requeueReasonCounter)
-	return metrics
+	return &ManifestMetrics{SharedMetrics: sharedMetrics}
 }
 
 func (k *ManifestMetrics) RecordRequeueReason(requeueReason ManifestRequeueReason, requeueType RequeueType) {

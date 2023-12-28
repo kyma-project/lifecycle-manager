@@ -179,6 +179,7 @@ jobs:
           for retry in $(seq 1 $maxRetry)
           do
             if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
+              kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=90s
               echo "KLM deployed successfully"
               exit 0
             elif [[ $retry -lt $maxRetry ]]; then

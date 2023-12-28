@@ -76,12 +76,3 @@ patches:
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-labels:
-- includeSelectors: true
-  pairs:
-    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
-    app.kubernetes.io/created-by: kustomize
-    app.kubernetes.io/instance: kcp-lifecycle-manager-main
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: kcp-lifecycle-manager
-    app.kubernetes.io/part-of: manual-deployment
