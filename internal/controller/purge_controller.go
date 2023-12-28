@@ -73,7 +73,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: false}, nil
 	}
 
 	requeueAfter := r.calculateRequeueAfterTime(ctx, kyma)

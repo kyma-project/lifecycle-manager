@@ -460,12 +460,12 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue\"}[$__rate_interval])) by (controller)",
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "requeue",
+          "legendFormat": "{{controller }} - {{result}}",
           "refId": "A"
         },
         {
@@ -474,11 +474,11 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue_after\"}[$__rate_interval])) by (controller)",
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue_after\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
-          "legendFormat": "requeue_after",
+          "legendFormat": "{{controller }} - {{result}}",
           "refId": "B"
         },
         {
@@ -487,11 +487,83 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"success\"}[$__rate_interval])) by (controller)",
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"success\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
-          "legendFormat": "success",
+          "legendFormat": "{{controller }} - {{result}}",
           "refId": "C"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"requeue\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "D"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"requeue_after\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "E"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"success\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "F"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "G"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue_after\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "H"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"success\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "I"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"requeue\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "J"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"success\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "K"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"requeue_after\"}[$__rate_interval])",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{controller }} - {{result}}",
+          "refId": "L"
         }
       ],
       "title": "Lifecycle Manager Controller Runtime Reconcile Success",
@@ -599,6 +671,284 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "decimals": null,
+      "description": "How many times Kyma was requeued due to specific reasons",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "hiddenSeries": false,
+      "id": 82,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.27",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_under_deletion_with_no_access_secret\"})",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "kyma_under_deletion_with_no_access_secret"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_status_update_to_deleting\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "kyma_status_update_to_deleting"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"labels_and_finalizers_update\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "labels_and_finalizers_update"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"labels_and_finalizers_update_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "labels_and_finalizers_update_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"crd_annotations_update\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "crd_annotations_update"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"crd_annotations_update_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "crd_annotations_update_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"crds_sync_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "crds_sync_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"manifest_reconciliation_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "manifest_reconciliation_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"module_catalog_sync_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "module_catalog_sync_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"skr_webhook_installation_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "skr_webhook_installation_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"initial_state_handling\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "initial_state_handling"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"initial_state_handling_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "initial_state_handling_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"sync_context_retrieval_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "sync_context_retrieval_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"remote_kyma_deletion_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "remote_kyma_deletion_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"status_update_to_deleting_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "status_update_to_deleting_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"spec_replacement_from_remote_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "spec_replacement_from_remote_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"status_sync_to_remote_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "status_sync_to_remote_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"processing_kyma_state_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "processing_kyma_state_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"finalizers_removal_from_remote_kyma_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "finalizers_removal_from_remote_kyma_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"remote_module_catalog_deletion_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "remote_module_catalog_deletion_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"manifest_crs_cleanup_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "manifest_crs_cleanup_error"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_deletion\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "kyma_deletion"
+        },
+        {
+          "exemplar": true,
+          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_retrieval_error\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}}",
+          "refId": "kyma_retrieval_error"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Kyma Requeue Reason",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:152",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:153",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
       "description": "How long in seconds processing an item from workqueue takes.",
       "fieldConfig": {
         "defaults": {},
@@ -610,7 +960,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 30
       },
       "hiddenSeries": false,
       "id": 43,
@@ -732,7 +1082,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 37
       },
       "id": 44,
       "options": {
@@ -831,7 +1181,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 37
       },
       "id": 45,
       "options": {
@@ -883,7 +1233,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 45
       },
       "id": 7,
       "panels": [],
@@ -944,7 +1294,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 46
       },
       "id": 5,
       "options": {
@@ -1028,7 +1378,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 46
       },
       "id": 20,
       "options": {
@@ -1078,7 +1428,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 54
       },
       "hiddenSeries": false,
       "id": 31,
@@ -1188,7 +1538,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 61
       },
       "hiddenSeries": false,
       "id": 46,
@@ -1298,7 +1648,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 29,
@@ -1411,7 +1761,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 75
       },
       "hiddenSeries": false,
       "id": 27,
@@ -1513,7 +1863,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 69
+        "y": 82
       },
       "id": 78,
       "panels": [],
@@ -1537,7 +1887,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 83
       },
       "hiddenSeries": false,
       "id": 80,
@@ -1622,7 +1972,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 77
+        "y": 90
       },
       "id": 50,
       "panels": [],
@@ -1676,7 +2026,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 78
+        "y": 91
       },
       "id": 48,
       "options": {
@@ -1724,7 +2074,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 87
+        "y": 100
       },
       "hiddenSeries": false,
       "id": 52,
@@ -1832,7 +2182,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 87
+        "y": 100
       },
       "id": 54,
       "options": {
@@ -1911,7 +2261,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 109
       },
       "id": 56,
       "options": {
@@ -1963,7 +2313,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 104
+        "y": 117
       },
       "id": 68,
       "panels": [],
@@ -1986,7 +2336,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 105
+        "y": 118
       },
       "hiddenSeries": false,
       "id": 70,
@@ -2080,7 +2430,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 105
+        "y": 118
       },
       "hiddenSeries": false,
       "id": 72,
@@ -2174,7 +2524,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 113
+        "y": 126
       },
       "hiddenSeries": false,
       "id": 73,
@@ -2268,7 +2618,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 113
+        "y": 126
       },
       "hiddenSeries": false,
       "id": 74,
@@ -2362,7 +2712,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 121
+        "y": 134
       },
       "hiddenSeries": false,
       "id": 75,
@@ -2456,7 +2806,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 121
+        "y": 134
       },
       "hiddenSeries": false,
       "id": 76,
@@ -2541,7 +2891,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 129
+        "y": 142
       },
       "id": 62,
       "panels": [],
@@ -2564,7 +2914,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 130
+        "y": 143
       },
       "hiddenSeries": false,
       "id": 58,
@@ -2660,7 +3010,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 130
+        "y": 143
       },
       "hiddenSeries": false,
       "id": 64,
@@ -2754,7 +3104,7 @@
         "h": 11,
         "w": 24,
         "x": 0,
-        "y": 138
+        "y": 151
       },
       "hiddenSeries": false,
       "id": 66,
@@ -2848,5 +3198,5 @@
   "timezone": "",
   "title": "Lifecycle Manager Overview",
   "uid": "O3DH7uunk",
-  "version": 3
+  "version": 6
 }

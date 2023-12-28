@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -67,9 +66,8 @@ import (
 )
 
 var (
-	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
-	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
-	errMissingWatcherImage = errors.New("runtime watcher image is not provided")
+	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
+	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 )
 
 func registerSchemas() {
@@ -140,19 +138,17 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	options := controllerOptionsFromFlagVar(flagVar)
+	err = flagVar.Validate()
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
 
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
+	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.enableKcpWatcher {
-		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
-		if err != nil || !watcherChartDirInfo.IsDir() {
-			setupLog.Error(err, "failed to read local skr chart")
-			os.Exit(1)
-		}
-
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
-			setupLog.Error(err, "failed to create webhook chart manager")
+			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(1)
 		}
 		setupKcpWatcherReconciler(mgr, options, flagVar)
@@ -266,25 +262,45 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.caCertCacheTTL)
-	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
-		watcher.SkrWebhookManagerConfig{
-			SKRWatcherPath:         flagVar.skrWatcherPath,
-			SkrWatcherImage:        flagVar.skrWatcherImage,
-			SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
-			SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-			RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
-		}, watcher.CertificateConfig{
-			IstioNamespace:      flagVar.istioNamespace,
-			RemoteSyncNamespace: flagVar.remoteSyncNamespace,
-			CACertificateName:   flagVar.caCertName,
-			AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
-			Duration:            flagVar.SelfSignedCertDuration,
-			RenewBefore:         flagVar.SelfSignedCertRenewBefore,
-		}, watcher.GatewayConfig{
-			IstioGatewayName:          flagVar.istioGatewayName,
-			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
-			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
-		})
+	config := watcher.SkrWebhookManagerConfig{
+		SKRWatcherPath:         flagVar.watcherResourcesPath,
+		SkrWatcherImage:        getWatcherImg(flagVar),
+		SkrWebhookCPULimits:    flagVar.watcherResourceLimitsCPU,
+		SkrWebhookMemoryLimits: flagVar.watcherResourceLimitsMemory,
+		RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
+	}
+	certConfig := watcher.CertificateConfig{
+		IstioNamespace:      flagVar.istioNamespace,
+		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+		CACertificateName:   flagVar.caCertName,
+		AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
+		Duration:            flagVar.SelfSignedCertDuration,
+		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
+	}
+	gatewayConfig := watcher.GatewayConfig{
+		IstioGatewayName:          flagVar.istioGatewayName,
+		IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
+		LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
+	}
+	return watcher.NewSKRWebhookManifestManager(
+		mgr.GetConfig(),
+		mgr.GetScheme(),
+		caCertificateCache,
+		config,
+		certConfig,
+		gatewayConfig)
+}
+
+const (
+	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr"
+	watcherRegDev  = "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher"
+)
+
+func getWatcherImg(flagVar *FlagVar) string {
+	if flagVar.useWatcherDevRegistry {
+		return fmt.Sprintf("%s:%s", watcherRegDev, flagVar.watcherImageTag)
+	}
+	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.watcherImageTag)
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
@@ -343,7 +359,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 
 	if err := (&controller.WatcherReconciler{
 		Client:             mgr.GetClient(),
-		EventRecorder:      mgr.GetEventRecorderFor(controller.WatcherControllerName),
+		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
 		WatcherVSNamespace: flagVar.istioGatewayNamespace,
 		Scheme:             mgr.GetScheme(),
 		RestConfig:         mgr.GetConfig(),
