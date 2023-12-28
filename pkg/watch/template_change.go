@@ -8,7 +8,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -46,8 +45,6 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 			return requests
 		}
 
-		logger := logf.FromContext(ctx)
-
 		for _, kyma := range kymas.Items {
 			templateUsed := false
 			for _, moduleStatus := range kyma.Status.Modules {
@@ -63,19 +60,11 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 			if !templateUsed {
 				return nil
 			}
-
-			templateName := types.NamespacedName{
-				Namespace: template.GetNamespace(),
-				Name:      template.GetName(),
-			}
+			
 			kymaName := types.NamespacedName{
 				Namespace: kyma.GetNamespace(),
 				Name:      kyma.GetName(),
 			}
-
-			logger.WithValues("template", templateName.String(), "kyma", kymaName.String()).Info(
-				"Kyma CR instance is scheduled for reconciliation because a relevant ModuleTemplate changed",
-			)
 
 			requests = append(requests, reconcile.Request{NamespacedName: kymaName})
 		}

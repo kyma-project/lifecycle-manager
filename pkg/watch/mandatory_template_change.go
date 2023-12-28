@@ -8,7 +8,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -46,19 +45,11 @@ func (h *MandatoryTemplateChangeHandler) Watch() handler.MapFunc {
 			return requests
 		}
 
-		templateName := types.NamespacedName{
-			Namespace: template.GetNamespace(),
-			Name:      template.GetName(),
-		}
 		for _, kyma := range kymas.Items {
 			kymaName := types.NamespacedName{
 				Namespace: kyma.GetNamespace(),
 				Name:      kyma.GetName(),
 			}
-
-			logf.FromContext(ctx).WithValues("template", templateName.String(), "kyma", kymaName.String()).Info(
-				"Kyma CR instance is scheduled for reconciliation because a mandatory ModuleTemplate changed",
-			)
 
 			requests = append(requests, reconcile.Request{NamespacedName: kymaName})
 		}
