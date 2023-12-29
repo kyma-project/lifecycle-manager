@@ -29,14 +29,16 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	declarativetest "github.com/kyma-project/lifecycle-manager/tests/integration/declarative"
 
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -55,6 +57,7 @@ var (
 	}
 	ErrOldResourcesStillDeployed = errors.New("old resources still exist in the cluster")
 	ErrOldResourcesStillInSynced = errors.New("old resources still exist in the status.synced")
+	manifestMetrics              = metrics.NewManifestMetrics(metrics.NewSharedMetrics())
 )
 
 func TestAPIs(t *testing.T) {
@@ -83,14 +86,14 @@ var _ = Describe(
 			Expect(env.Stop()).To(Succeed())
 		})
 		const ocirefSynced = "sha256:synced"
-
 		tableTest := func(
 			spec declarativetest.TestAPISpec,
 			source *CustomSpecFns,
 			opts []Option,
 			testCase func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns),
 		) {
-			StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
+			StartDeclarativeReconcilerForRun(ctx, runID, cfg, manifestMetrics,
+				append(opts, WithSpecResolver(source))...)
 			obj := &declarativetest.TestAPI{Spec: spec}
 			obj.SetLabels(k8slabels.Set{testRunLabel: runID})
 			// this namespace is different form the test-run and path as we may need to test namespace creation
@@ -182,7 +185,8 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 		env, cfg = StartEnv()
 		testClient = GetTestClient(cfg)
 		ctx, cancel = context.WithCancel(context.TODO())
-		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
+		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, manifestMetrics,
+			append(opts, WithSpecResolver(source))...)
 	})
 
 	It("Should create manifest resources", func() {
@@ -245,6 +249,7 @@ func StartDeclarativeReconcilerForRun(
 	ctx context.Context,
 	runID string,
 	cfg *rest.Config,
+	metrics *metrics.ManifestMetrics,
 	options ...Option,
 ) *Reconciler {
 	var (
@@ -266,7 +271,7 @@ func StartDeclarativeReconcilerForRun(
 	)
 	Expect(err).ToNot(HaveOccurred())
 	reconciler = NewFromManager(
-		mgr, &declarativetest.TestAPI{},
+		mgr, &declarativetest.TestAPI{}, metrics,
 		append(
 			options,
 			WithNamespace(namespace, true),

@@ -155,8 +155,9 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager)
-	setupManifestReconciler(mgr, flagVar, options)
+	sharedMetrics := metrics.NewSharedMetrics()
+	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager, sharedMetrics)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
 
 	if flagVar.enablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
@@ -223,6 +224,7 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) ctrlruntime.Options {
 
 func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *FlagVar,
 	options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
+	sharedMetrics *metrics.SharedMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
@@ -246,7 +248,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 		IsManagedKyma:       flagVar.IsKymaManaged,
-		Metrics:             metrics.NewKymaMetrics(),
+		Metrics:             metrics.NewKymaMetrics(sharedMetrics),
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -328,10 +330,8 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 	}
 }
 
-func setupManifestReconciler(
-	mgr ctrl.Manager,
-	flagVar *FlagVar,
-	options ctrlruntime.Options,
+func setupManifestReconciler(mgr ctrl.Manager, flagVar *FlagVar, options ctrlruntime.Options,
+	sharedMetrics *metrics.SharedMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.failureBaseDelay,
@@ -341,7 +341,7 @@ func setupManifestReconciler(
 		mgr, options, flagVar.manifestRequeueSuccessInterval, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.manifestListenerAddr,
 			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
-		},
+		}, metrics.NewManifestMetrics(sharedMetrics),
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(1)

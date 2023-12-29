@@ -219,7 +219,7 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
-		Metrics:             metrics.NewKymaMetrics(),
+		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

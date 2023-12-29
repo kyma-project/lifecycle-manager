@@ -460,110 +460,13 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue\"}[$__rate_interval])",
+          "expr": "increase(controller_runtime_reconcile_total[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{controller }} - {{result}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue_after\"}[$__rate_interval])",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"kyma\", result=\"success\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "C"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"requeue\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "D"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"requeue_after\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "E"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"purge\", result=\"success\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "F"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "G"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue_after\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "H"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"manifest\", result=\"success\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "I"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"requeue\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "J"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"success\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "K"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total{controller=\"watcher\", result=\"requeue_after\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller }} - {{result}}",
-          "refId": "L"
         }
       ],
       "title": "Lifecycle Manager Controller Runtime Reconcile Success",
@@ -644,22 +547,10 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_errors_total{controller=\"kyma\"}[$__rate_interval])",
+          "expr": "increase(controller_runtime_reconcile_errors_total[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_errors_total{controller=\"manifest\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller}}",
-          "refId": "B"
         }
       ],
       "title": "Operator Controller Runtime Reconcile Errors",
@@ -716,188 +607,12 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_under_deletion_with_no_access_secret\"})",
+          "expr": "increase(lifecycle_mgr_requeue_reason_total)[$__rate_interval]",
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{requeue_reason}}",
+          "legendFormat": "{{requeue_reason}} - {{requeue_type}}",
           "refId": "kyma_under_deletion_with_no_access_secret"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_status_update_to_deleting\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "kyma_status_update_to_deleting"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"labels_and_finalizers_update\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "labels_and_finalizers_update"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"labels_and_finalizers_update_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "labels_and_finalizers_update_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"crd_annotations_update\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "crd_annotations_update"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"crd_annotations_update_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "crd_annotations_update_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"crds_sync_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "crds_sync_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"manifest_reconciliation_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "manifest_reconciliation_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"module_catalog_sync_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "module_catalog_sync_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"skr_webhook_installation_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "skr_webhook_installation_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"initial_state_handling\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "initial_state_handling"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"initial_state_handling_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "initial_state_handling_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"sync_context_retrieval_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "sync_context_retrieval_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"remote_kyma_deletion_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "remote_kyma_deletion_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"status_update_to_deleting_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "status_update_to_deleting_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"spec_replacement_from_remote_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "spec_replacement_from_remote_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"status_sync_to_remote_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "status_sync_to_remote_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"processing_kyma_state_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "processing_kyma_state_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"finalizers_removal_from_remote_kyma_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "finalizers_removal_from_remote_kyma_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"remote_module_catalog_deletion_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "remote_module_catalog_deletion_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"manifest_crs_cleanup_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "manifest_crs_cleanup_error"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_deletion\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "kyma_deletion"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total{requeue_reason=\"kyma_retrieval_error\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{requeue_reason}}",
-          "refId": "kyma_retrieval_error"
         }
       ],
       "thresholds": [],
@@ -3198,5 +2913,5 @@
   "timezone": "",
   "title": "Lifecycle Manager Overview",
   "uid": "O3DH7uunk",
-  "version": 6
+  "version": 7
 }
