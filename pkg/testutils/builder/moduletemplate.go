@@ -59,6 +59,11 @@ func (m ModuleTemplateBuilder) WithChannel(channel string) ModuleTemplateBuilder
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithMandatory(mandatory bool) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.Mandatory = mandatory
+	return m
+}
+
 func (m ModuleTemplateBuilder) WithAnnotation(key string, value string) ModuleTemplateBuilder {
 	if m.moduleTemplate.Annotations == nil {
 		m.moduleTemplate.Annotations = map[string]string{}

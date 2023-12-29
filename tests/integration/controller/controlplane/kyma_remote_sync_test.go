@@ -14,7 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -106,11 +106,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(SKRTemplate).
 			Should(Succeed())
 		By("ModuleTemplate exists in KCP cluster")
-		Eventually(ModuleTemplateExists, Timeout, Interval).
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, moduleInKCP, kyma.Spec.Channel).
 			Should(Succeed())
 		By("ModuleTemplate exists in SKR cluster")
-		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, runtimeClient, moduleInKCP,
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).WithArguments(ctx, runtimeClient, moduleInKCP,
 			kyma.Spec.Channel).Should(Succeed())
 
 		By("No module synced to remote Kyma")
@@ -120,7 +120,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplateExists, Timeout, Interval).
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, moduleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
@@ -224,12 +224,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Should not sync the SKRCustomTemplate in KCP and keep it only in SKR", func() {
-		Eventually(ModuleTemplateExists, Timeout, Interval).
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
-		Consistently(ModuleTemplateExists, Timeout, Interval).
+		Consistently(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, customModuleInSKR, kyma.Spec.Channel).
-			Should(MatchError(channel.ErrNoTemplatesInListResult))
+			Should(MatchError(templatelookup.ErrNoTemplatesInListResult))
 	})
 
 	It("SKRCustomTemplate descriptor should not be saved in cache", func() {
@@ -279,7 +279,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("SKRCustomTemplate should still exists in SKR")
-		Consistently(ModuleTemplateExists, Timeout, Interval).
+		Consistently(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 	})

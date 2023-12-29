@@ -1,4 +1,4 @@
-package channel
+package templatelookup
 
 import (
 	"context"
@@ -20,6 +20,7 @@ var (
 	ErrTemplateNotIdentified            = errors.New("no unique template could be identified")
 	ErrNotDefaultChannelAllowed         = errors.New("specifying no default channel is not allowed")
 	ErrNoTemplatesInListResult          = errors.New("no templates were found")
+	ErrTemplateMarkedAsMandatory        = errors.New("template marked as mandatory")
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
 	ErrTemplateNotAllowed               = errors.New("module template not allowed")
 	ErrTemplateUpdateNotAllowed         = errors.New("module template update not allowed")
@@ -34,7 +35,8 @@ type ModuleTemplateTO struct {
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
 
-func GetTemplates(
+// GetRegular returns Module Templates TOs (Transfer Objects) which are marked are non-mandatory modules.
+func GetRegular(
 	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma, syncEnabled bool,
 ) ModuleTemplatesByModuleName {
 	logger := logf.FromContext(ctx)
@@ -48,7 +50,7 @@ func GetTemplates(
 		}
 		switch {
 		case module.RemoteModuleTemplateRef == "":
-			template = NewTemplateLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
+			template = NewRegularLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			if template.Err != nil {
 				break
 			}
@@ -66,7 +68,7 @@ func GetTemplates(
 			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
-			template = NewTemplateLookup(runtimeClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
+			template = NewRegularLookup(runtimeClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			module.Name = originalModuleName
 		default:
 			template.Err = fmt.Errorf("enable sync to use a remote module template for %s: %w", module.Name,
@@ -203,7 +205,8 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*ModuleTemplateTO, error)
 }
 
-func NewTemplateLookup(client client.Reader,
+// NewRegularLookup returns a new instance of TemplateLookup.
+func NewRegularLookup(client client.Reader,
 	moduleName,
 	moduleChannel,
 	defaultChannel string,
@@ -216,6 +219,7 @@ func NewTemplateLookup(client client.Reader,
 	}
 }
 
+// TemplateLookup is used to fetch available ModuleTemplates from the cluster which are marked as non-mandatory.
 type TemplateLookup struct {
 	reader         client.Reader
 	moduleName     string
@@ -327,6 +331,10 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 	if len(filteredTemplates) == 0 {
 		return nil, fmt.Errorf("%w: in channel %s for module %s",
 			ErrNoTemplatesInListResult, desiredChannel, moduleIdentifier)
+	}
+	if filteredTemplates[0].Spec.Mandatory {
+		return nil, fmt.Errorf("%w: in channel %s for module %s",
+			ErrTemplateMarkedAsMandatory, desiredChannel, moduleIdentifier)
 	}
 	return &filteredTemplates[0], nil
 }

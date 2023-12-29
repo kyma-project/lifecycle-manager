@@ -8,14 +8,16 @@ import (
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
 type ModuleConversionSettings struct {
@@ -50,7 +52,7 @@ func NewParser(
 
 func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
-	templates channel.ModuleTemplatesByModuleName,
+	templates templatelookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -58,55 +60,91 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 
 	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
-		if template.Err != nil && !errors.Is(template.Err, channel.ErrTemplateNotAllowed) {
-			modules = append(modules, &common.Module{
-				ModuleName: module.Name,
-				Template:   template,
-				Enabled:    module.Enabled,
-			})
-			continue
-		}
-		descriptor, err := template.GetDescriptor()
-		if err != nil {
-			template.Err = err
-			modules = append(modules, &common.Module{
-				ModuleName: module.Name,
-				Template:   template,
-				Enabled:    module.Enabled,
-			})
-			continue
-		}
-		fqdn := descriptor.GetName()
-		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
-		var manifest *v1beta2.Manifest
-		if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
-			template.ModuleTemplate); err != nil {
-			template.Err = err
-			modules = append(modules, &common.Module{
-				ModuleName: module.Name,
-				Template:   template,
-				Enabled:    module.Enabled,
-			})
-			continue
-		}
-		// we name the manifest after the module name
-		manifest.SetName(name)
-		// to have correct owner references, the manifest must always have the same namespace as kyma
-		manifest.SetNamespace(kyma.GetNamespace())
-		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			FQDN:       fqdn,
-			Template:   template,
-			Manifest:   manifest,
-			Enabled:    module.Enabled,
-		})
+
+		modules = p.appendModuleWithInformation(ctx, module, kyma, template, modules)
 	}
 
 	return modules
 }
 
-func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespace string) {
+func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
+	kyma *v1beta2.Kyma,
+	templates templatelookup.ModuleTemplatesByModuleName,
+) common.Modules {
+	modules := make(common.Modules, 0)
+
+	for _, template := range templates {
+		moduleName, ok := template.ObjectMeta.Labels[shared.ModuleName]
+		if !ok {
+			logf.FromContext(ctx).V(log.InfoLevel).Info("ModuleTemplate does not contain Module Name as label, "+
+				"will fallback to use ModuleTemplate name as Module name",
+				"template", template.Name)
+			moduleName = template.Name
+		}
+
+		modules = p.appendModuleWithInformation(ctx, v1beta2.AvailableModule{
+			Module: v1beta2.Module{
+				Name:                 moduleName,
+				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
+			},
+			Enabled: true,
+		}, kyma, template, modules)
+	}
+
+	return modules
+}
+
+func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
+	template *templatelookup.ModuleTemplateTO,
+	modules common.Modules,
+) common.Modules {
+	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
+		modules = append(modules, &common.Module{
+			ModuleName: module.Name,
+			Template:   template,
+			Enabled:    module.Enabled,
+		})
+		return modules
+	}
+	descriptor, err := template.GetDescriptor()
+	if err != nil {
+		template.Err = err
+		modules = append(modules, &common.Module{
+			ModuleName: module.Name,
+			Template:   template,
+			Enabled:    module.Enabled,
+		})
+		return modules
+	}
+	fqdn := descriptor.GetName()
+	name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
+	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
+	var manifest *v1beta2.Manifest
+	if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
+		template.ModuleTemplate); err != nil {
+		template.Err = err
+		modules = append(modules, &common.Module{
+			ModuleName: module.Name,
+			Template:   template,
+			Enabled:    module.Enabled,
+		})
+		return modules
+	}
+	// we name the manifest after the module name
+	manifest.SetName(name)
+	// to have correct owner references, the manifest must always have the same namespace as kyma
+	manifest.SetNamespace(kyma.GetNamespace())
+	modules = append(modules, &common.Module{
+		ModuleName: module.Name,
+		FQDN:       fqdn,
+		Template:   template,
+		Manifest:   manifest,
+		Enabled:    module.Enabled,
+	})
+	return modules
+}
+
+func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateTO, name, namespace string) {
 	if template.ModuleTemplate.Spec.Data == nil {
 		return
 	}

@@ -177,3 +177,27 @@ func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 
 	return nil
 }
+
+// SetupWithManager sets up the Purge controller with the Manager.
+func (r *MandatoryModulesReconciler) SetupWithManager(mgr ctrl.Manager,
+	options ctrlruntime.Options,
+) error {
+	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
+
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		For(&v1beta2.Kyma{}).
+		WithOptions(options).
+		WithEventFilter(predicates).
+		Watches(
+			&v1beta2.ModuleTemplate{},
+			handler.EnqueueRequestsFromMapFunc(watch.NewMandatoryTemplateChangeHandler(r).Watch()),
+			builder.WithPredicates(predicates),
+		).
+		Watches(&apicorev1.Secret{}, handler.Funcs{})
+
+	if err := controllerBuilder.Complete(r); err != nil {
+		return fmt.Errorf("error occurred while building controller: %w", err)
+	}
+
+	return nil
+}
