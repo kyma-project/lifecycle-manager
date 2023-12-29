@@ -27,7 +27,6 @@ const (
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
-
 	BeforeAll(func() {
 		DeployMandatoryModuleTemplate(ctx, controlPlaneClient)
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
@@ -116,6 +115,7 @@ func newMandatoryModuleTemplate() *v1beta2.ModuleTemplate {
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()
 }
+
 func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) string {
 	moduleInCluster, err := GetManifest(ctx, controlPlaneClient,
 		kyma.GetName(), kyma.GetNamespace(), module.Name)

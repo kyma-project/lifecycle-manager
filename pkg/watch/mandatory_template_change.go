@@ -2,6 +2,7 @@ package watch
 
 import (
 	"context"
+	"fmt"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -52,7 +53,7 @@ func getKymaList(ctx context.Context, clnt client.Reader) (*v1beta2.KymaList, er
 	}
 	err := clnt.List(ctx, kymas, listOptions)
 	if err != nil {
-		return kymas, err
+		return kymas, fmt.Errorf("error in listing Kymas %w", err)
 	}
 	return kymas, nil
 }
