@@ -118,7 +118,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 				}
 				repositoryContext["baseUrl"] = updateRepositoryURL
 
-				newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+				newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
 				Expect(err).ToNot(HaveOccurred())
 				moduleTemplate.Spec.Descriptor.Raw = newDescriptorRaw
 
@@ -576,7 +576,7 @@ func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
 	updateComponentResources(descriptor)
 	updateComponentSources(descriptor)
 
-	newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+	newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
 	Expect(err).ToNot(HaveOccurred())
 	moduleTemplate.Spec.Descriptor.Raw = newDescriptorRaw
 
