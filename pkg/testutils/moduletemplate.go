@@ -22,7 +22,7 @@ func GetModuleTemplate(ctx context.Context,
 	return templateTO.ModuleTemplate, nil
 }
 
-func ModuleTemplateExists(ctx context.Context,
+func RegularModuleTemplateExists(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	defaultChannel string,
@@ -33,7 +33,7 @@ func ModuleTemplateExists(ctx context.Context,
 
 func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
 	for _, module := range kyma.Spec.Modules {
-		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel); err != nil {
+		if err := RegularModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel); err != nil {
 			return err
 		}
 	}

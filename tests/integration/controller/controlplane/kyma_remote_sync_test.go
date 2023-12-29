@@ -106,11 +106,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(SKRTemplate).
 			Should(Succeed())
 		By("ModuleTemplate exists in KCP cluster")
-		Eventually(ModuleTemplateExists, Timeout, Interval).
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, moduleInKCP, kyma.Spec.Channel).
 			Should(Succeed())
 		By("ModuleTemplate exists in SKR cluster")
-		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, runtimeClient, moduleInKCP,
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).WithArguments(ctx, runtimeClient, moduleInKCP,
 			kyma.Spec.Channel).Should(Succeed())
 
 		By("No module synced to remote Kyma")
@@ -120,7 +120,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplateExists, Timeout, Interval).
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, moduleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
@@ -224,10 +224,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Should not sync the SKRCustomTemplate in KCP and keep it only in SKR", func() {
-		Eventually(ModuleTemplateExists, Timeout, Interval).
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
-		Consistently(ModuleTemplateExists, Timeout, Interval).
+		Consistently(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, customModuleInSKR, kyma.Spec.Channel).
 			Should(MatchError(templatelookup.ErrNoTemplatesInListResult))
 	})
@@ -279,7 +279,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("SKRCustomTemplate should still exists in SKR")
-		Consistently(ModuleTemplateExists, Timeout, Interval).
+		Consistently(RegularModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 	})

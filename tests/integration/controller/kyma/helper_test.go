@@ -3,6 +3,7 @@ package kyma_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,24 +27,15 @@ const (
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
-	mandatoryTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("mandatory-template-operator").
-		WithChannel(mandatoryChannel).
-		WithMandatory(true).
-		WithOCM(compdescv2.SchemaVersion).Build()
 
 	BeforeAll(func() {
-		Eventually(CreateCR, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(controlPlaneClient, mandatoryTemplate).Should(Succeed())
+		DeployMandatoryModuleTemplate(ctx, controlPlaneClient)
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
 		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
-		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(controlPlaneClient, mandatoryTemplate).Should(Succeed())
+		DeleteMandatoryModuleTemplate(ctx, controlPlaneClient)
 	})
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 }
@@ -71,9 +63,14 @@ func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
+			WithName(createModuleTemplateName(module)).
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
+		Eventually(RegularModuleTemplateExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, module, v1beta2.DefaultChannel).
+			Should(Succeed())
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
@@ -83,6 +80,7 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
+			WithName(createModuleTemplateName(module)).
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
@@ -92,6 +90,32 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 	}
 }
 
+func DeployMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client) {
+	mandatoryTemplate := newMandatoryModuleTemplate()
+	Eventually(CreateCR, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, mandatoryTemplate).Should(Succeed())
+}
+
+func DeleteMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client) {
+	mandatoryTemplate := newMandatoryModuleTemplate()
+	Eventually(DeleteCR, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, mandatoryTemplate).Should(Succeed())
+}
+
+func createModuleTemplateName(module v1beta2.Module) string {
+	return fmt.Sprintf("%s-%s", module.Name, module.Channel)
+}
+
+func newMandatoryModuleTemplate() *v1beta2.ModuleTemplate {
+	return builder.NewModuleTemplateBuilder().
+		WithName("mandatory-template").
+		WithModuleName("mandatory-template-operator").
+		WithChannel(mandatoryChannel).
+		WithMandatory(true).
+		WithOCM(compdescv2.SchemaVersion).Build()
+}
 func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) string {
 	moduleInCluster, err := GetManifest(ctx, controlPlaneClient,
 		kyma.GetName(), kyma.GetNamespace(), module.Name)

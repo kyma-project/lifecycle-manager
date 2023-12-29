@@ -25,35 +25,47 @@ func NewMandatoryTemplateChangeHandler(handlerClient ChangeHandlerClient) *Manda
 
 func (h *MandatoryTemplateChangeHandler) Watch() handler.MapFunc {
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
-		requests := make([]reconcile.Request, 0)
+		emptyRequest := make([]reconcile.Request, 0)
 		template := &v1beta2.ModuleTemplate{}
 
 		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
-			return requests
+			return emptyRequest
 		}
 
 		if !template.Spec.Mandatory {
 			return nil
 		}
 
-		kymas := &v1beta2.KymaList{}
-		listOptions := &client.ListOptions{
-			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.ManagedBy: shared.OperatorName}),
-		}
-		err := h.List(ctx, kymas, listOptions)
+		kymas, err := getKymaList(ctx, h)
 		if err != nil {
-			return requests
+			return emptyRequest
 		}
 
-		for _, kyma := range kymas.Items {
-			kymaName := types.NamespacedName{
-				Namespace: kyma.GetNamespace(),
-				Name:      kyma.GetName(),
-			}
-
-			requests = append(requests, reconcile.Request{NamespacedName: kymaName})
-		}
-
-		return requests
+		return getRequestItems(kymas.Items)
 	}
+}
+
+func getKymaList(ctx context.Context, clnt client.Reader) (*v1beta2.KymaList, error) {
+	kymas := &v1beta2.KymaList{}
+	listOptions := &client.ListOptions{
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.ManagedBy: shared.OperatorName}),
+	}
+	err := clnt.List(ctx, kymas, listOptions)
+	if err != nil {
+		return kymas, err
+	}
+	return kymas, nil
+}
+
+func getRequestItems(items []v1beta2.Kyma) []reconcile.Request {
+	requests := make([]reconcile.Request, 0)
+	for _, kyma := range items {
+		kymaName := types.NamespacedName{
+			Namespace: kyma.GetNamespace(),
+			Name:      kyma.GetName(),
+		}
+
+		requests = append(requests, reconcile.Request{NamespacedName: kymaName})
+	}
+	return requests
 }
