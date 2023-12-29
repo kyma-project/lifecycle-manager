@@ -147,6 +147,10 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				Should(Succeed())
 
 			By("And new Module CR is in \"Ready\" State")
+			Eventually(CheckSampleCRIsInState).
+				WithContext(ctx).
+				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Ready").
+				Should(Succeed())
 			Consistently(CheckSampleCRIsInState).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Ready").
