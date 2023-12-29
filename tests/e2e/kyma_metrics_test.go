@@ -11,7 +11,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Kyma Metrics", Ordered, func() {
+var _ = Describe("Manage Module Metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
@@ -49,6 +49,17 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				Should(Equal(1))
 		})
 
+		It("Then Related Manifest Requeue Metrics Get Increased", func() {
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestAddFinalizer), string(metrics.IntendedRequeue)).
+				Should(BeTrue())
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestSyncResourcesEnqueueRequired), string(metrics.IntendedRequeue)).
+				Should(BeTrue())
+		})
+
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
@@ -81,6 +92,17 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				Should(Equal(0))
 		})
 
+		It("Then Related Manifest Requeue Metrics Get Increased", func() {
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestPreDeleteEnqueueRequired), string(metrics.IntendedRequeue)).
+				Should(BeTrue())
+			Eventually(IsManifestRequeueReasonCountIncreased).
+				WithContext(ctx).
+				WithArguments(string(metrics.ManifestRemoveFinalizerInDeleting), string(metrics.IntendedRequeue)).
+				Should(BeTrue())
+		})
+
 		It("When KCP Kyma CR is deleted", func() {
 			Eventually(DeleteKymaByForceRemovePurgeFinalizer).
 				WithContext(ctx).
@@ -93,9 +115,9 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 		})
 
 		It("Then count of lifecycle_mgr_requeue_reason_total for kyma_deletion is 1", func() {
-			Eventually(GetKymaRequeueReasonMetricCount).
+			Eventually(GetRequeueReasonCount).
 				WithContext(ctx).
-				WithArguments(metrics.KymaDeletion).
+				WithArguments(string(metrics.KymaDeletion), string(metrics.IntendedRequeue)).
 				Should(Equal(1))
 
 			By("And count of all Kyma Metrics is 0")

@@ -132,7 +132,6 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-
 	err = (&controller.KymaReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(shared.OperatorName),
@@ -144,7 +143,7 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
-		Metrics:             metrics.NewKymaMetrics(),
+		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
 		controller.SetupUpSetting{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())

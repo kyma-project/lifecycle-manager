@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
@@ -29,6 +30,7 @@ func SetupWithManager(
 	options ctrlruntime.Options,
 	checkInterval time.Duration,
 	settings SetupUpSetting,
+	manifestMetrics *metrics.ManifestMetrics,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -69,7 +71,7 @@ func SetupWithManager(
 			},
 		).WithOptions(options)
 
-	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, checkInterval)); err != nil {
+	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, checkInterval, manifestMetrics)); err != nil {
 		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
 	}
 	return nil
@@ -78,6 +80,7 @@ func SetupWithManager(
 func ManifestReconciler(
 	mgr manager.Manager,
 	checkInterval time.Duration,
+	manifestMetrics *metrics.ManifestMetrics,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
@@ -85,7 +88,7 @@ func ManifestReconciler(
 	}
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
-		mgr, &v1beta2.Manifest{},
+		mgr, &v1beta2.Manifest{}, manifestMetrics,
 		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp),
 		),
