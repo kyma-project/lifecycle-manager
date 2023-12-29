@@ -113,8 +113,6 @@ func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) 
 		readComponentDescriptorFromYaml(template, &moduleTemplate)
 	case v3alpha1.GroupVersion:
 		fallthrough
-	case v3alpha1.SchemaVersion:
-		fallthrough
 	default:
 		template := "operator_v1beta2_moduletemplate_ocm.software.v3alpha1.yaml"
 		readComponentDescriptorFromYaml(template, &moduleTemplate)

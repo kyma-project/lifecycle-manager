@@ -389,7 +389,7 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 			return err
 		}
 		descriptor.Version = modifiedVersion
-		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
 		if err != nil {
 			return err
 		}

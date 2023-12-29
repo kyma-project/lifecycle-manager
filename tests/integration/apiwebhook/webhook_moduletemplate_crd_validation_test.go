@@ -85,7 +85,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		for i := range descriptor.Resources {
 			descriptor.Resources[i].SetVersion(descriptor.Version)
 		}
-		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
 		Expect(err).ToNot(HaveOccurred())
 		template.Spec.Descriptor.Raw = newDescriptor
 
