@@ -55,7 +55,7 @@ func filterKymasWithTemplate(kymas *v1beta2.KymaList, template *v1beta2.ModuleTe
 			}
 		}
 		if !templateUsed {
-			return nil
+			continue
 		}
 		items = append(items, kyma)
 	}
