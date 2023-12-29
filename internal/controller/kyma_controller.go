@@ -129,7 +129,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, metrics.UnexpectedRequeue)
 			return ctrl.Result{}, err
 		}
-		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, metrics.DesiredRequeue)
+		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, metrics.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -178,7 +178,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			return r.requeueWithError(ctx, kyma,
 				fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
-		r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, metrics.DesiredRequeue)
+		r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, metrics.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -187,7 +187,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
-		r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, metrics.DesiredRequeue)
+		r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, metrics.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -202,7 +202,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 				r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, metrics.UnexpectedRequeue)
 				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 			}
-			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, metrics.DesiredRequeue)
+			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, metrics.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		// update the control-plane kyma with the changes to the spec of the remote Kyma
@@ -344,7 +344,7 @@ func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.K
 		return ctrl.Result{}, err
 	}
 	r.enqueueNormalEvent(kyma, updateStatus, msg)
-	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, metrics.DesiredRequeue)
+	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, metrics.IntendedRequeue)
 	return ctrl.Result{Requeue: true}, nil
 }
 
@@ -455,7 +455,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		r.Metrics.RecordRequeueReason(metrics.KymaDeletion, metrics.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
-	r.Metrics.RecordRequeueReason(metrics.KymaDeletion, metrics.DesiredRequeue)
+	r.Metrics.RecordRequeueReason(metrics.KymaDeletion, metrics.IntendedRequeue)
 	return ctrl.Result{Requeue: true}, nil
 }
 

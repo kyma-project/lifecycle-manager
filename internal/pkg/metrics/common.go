@@ -18,7 +18,7 @@ const (
 type RequeueType string
 
 const (
-	DesiredRequeue     RequeueType = "desired"
+	IntendedRequeue    RequeueType = "intended"
 	UnexpectedRequeue  RequeueType = "unexpected"
 	requeueReasonLabel             = "requeue_reason"
 	requeueTypeLabel               = "requeue_type"

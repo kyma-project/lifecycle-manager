@@ -114,7 +114,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if obj.GetDeletionTimestamp().IsZero() {
 		objMeta := r.partialObjectMetadata(obj)
 		if controllerutil.AddFinalizer(objMeta, r.Finalizer) {
-			return r.ssaSpec(ctx, objMeta, metrics.ManifestAddFinalizer, metrics.DesiredRequeue)
+			return r.ssaSpec(ctx, objMeta, metrics.ManifestAddFinalizer, metrics.IntendedRequeue)
 		}
 	}
 
@@ -122,21 +122,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec,
-				metrics.DesiredRequeue)
+				metrics.IntendedRequeue)
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestParseSpec, metrics.UnexpectedRequeue)
 	}
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return r.updateObject(ctx, obj, metrics.ManifestInitSyncedOCIRef, metrics.DesiredRequeue)
+		return r.updateObject(ctx, obj, metrics.ManifestInitSyncedOCIRef, metrics.IntendedRequeue)
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrKubeconfigFetchFailed) {
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
-				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.DesiredRequeue)
+				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
 		}
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -150,7 +150,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	diff := ResourceList(current).Difference(target)
 	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
-		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, metrics.DesiredRequeue)
+		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, metrics.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff, metrics.UnexpectedRequeue)
@@ -158,7 +158,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, metrics.DesiredRequeue)
+			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, metrics.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete, metrics.UnexpectedRequeue)
@@ -166,7 +166,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, metrics.DesiredRequeue)
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, metrics.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestSyncResources, metrics.UnexpectedRequeue)
@@ -176,12 +176,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return r.updateObject(ctx, obj, metrics.ManifestUpdateSyncedOCIRef, metrics.DesiredRequeue)
+		return r.updateObject(ctx, obj, metrics.ManifestUpdateSyncedOCIRef, metrics.IntendedRequeue)
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting,
-			metrics.DesiredRequeue)
+			metrics.IntendedRequeue)
 	}
 	return r.CtrlOnSuccess, nil
 }
