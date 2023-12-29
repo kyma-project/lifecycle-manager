@@ -66,10 +66,6 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
-		Eventually(RegularModuleTemplateExists, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(kcpClient, module, v1beta2.DefaultChannel).
-			Should(Succeed())
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
