@@ -85,7 +85,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
 	if util.IsNotFound(err) {
 		if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
-			r.Metrics.UpdatePurgeError(logger, kyma, metrics.ErrPurgeFinalizerRemoval)
+			r.Metrics.UpdatePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
@@ -97,12 +97,12 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	r.Metrics.UpdatePurgeCount()
 	if err := r.performCleanup(ctx, remoteClient); err != nil {
 		logger.Error(err, "Purge Cleanup failed")
-		r.Metrics.UpdatePurgeError(logger, kyma, metrics.ErrCleanup)
+		r.Metrics.UpdatePurgeError(ctx, kyma, metrics.ErrCleanup)
 		return ctrl.Result{}, err
 	}
 
 	if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
-		r.Metrics.UpdatePurgeError(logger, kyma, metrics.ErrPurgeFinalizerRemoval)
+		r.Metrics.UpdatePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 		return ctrl.Result{}, err
 	}
 	duration := time.Since(start)
