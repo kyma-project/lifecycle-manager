@@ -32,7 +32,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -42,16 +41,13 @@ const (
 	deletingManifestError = "DeletingMandatoryModuleManifestError"
 )
 
-type MandatoryModulesDeletionReconciler struct {
+type MandatoryModuleDeletionReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
-	signature.VerificationSettings
-	RemoteSyncNamespace string
-	InKCPMode           bool
 }
 
-func (r *MandatoryModulesDeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *MandatoryModuleDeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Deletion  Reconciliation started")
 
@@ -101,7 +97,7 @@ func (r *MandatoryModulesDeletionReconciler) Reconcile(ctx context.Context, req 
 	return ctrl.Result{}, nil
 }
 
-func (r *MandatoryModulesDeletionReconciler) updateTemplateFinalizer(ctx context.Context,
+func (r *MandatoryModuleDeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 	template *v1beta2.ModuleTemplate,
 ) (ctrl.Result, error) {
 	if err := r.Update(ctx, template); err != nil {
@@ -111,7 +107,7 @@ func (r *MandatoryModulesDeletionReconciler) updateTemplateFinalizer(ctx context
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *MandatoryModulesDeletionReconciler) getCorrespondingManifests(ctx context.Context,
+func (r *MandatoryModuleDeletionReconciler) getCorrespondingManifests(ctx context.Context,
 	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
 	error,
 ) {
@@ -130,7 +126,7 @@ func (r *MandatoryModulesDeletionReconciler) getCorrespondingManifests(ctx conte
 	return manifests.Items, nil
 }
 
-func (r *MandatoryModulesDeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
+func (r *MandatoryModuleDeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for _, manifest := range manifests {
 		manifest := manifest
 		if err := r.Delete(ctx, &manifest); err != nil {

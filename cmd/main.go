@@ -158,7 +158,8 @@ func setupManager(flagVar *FlagVar, cacheOptions cache.Options, scheme *machiner
 	sharedMetrics := metrics.NewSharedMetrics()
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager, sharedMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
-	setupMandatoryModulesReconciler(mgr, flagVar, options)
+	setupMandatoryModuleReconciler(mgr, flagVar, options)
+	setupMandatoryModuleDeletionReconciler(mgr, flagVar, options)
 
 	if flagVar.enablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
@@ -370,12 +371,12 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	}
 }
 
-func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *FlagVar,
+func setupMandatoryModuleReconciler(mgr ctrl.Manager, flagVar *FlagVar,
 	options ctrlruntime.Options,
 ) {
-	options.MaxConcurrentReconciles = flagVar.maxConcurrentMandatoryModulesReconciles
+	options.MaxConcurrentReconciles = flagVar.maxConcurrentMandatoryModuleReconciles
 
-	if err := (&controller.MandatoryModulesReconciler{
+	if err := (&controller.MandatoryModuleReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals: queue.RequeueIntervals{
@@ -387,7 +388,27 @@ func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *FlagVar,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 		InKCPMode:           flagVar.inKCPMode,
 	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModules")
+		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
+		os.Exit(1)
+	}
+}
+
+func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, flagVar *FlagVar,
+	options ctrlruntime.Options,
+) {
+	options.MaxConcurrentReconciles = flagVar.maxConcurrentMandatoryModuleDeletionReconciles
+
+	if err := (&controller.MandatoryModuleDeletionReconciler{
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.mandatoryModuleDeletionRequeueSuccessInterval,
+			Busy:    flagVar.kymaRequeueBusyInterval,
+			Error:   flagVar.kymaRequeueErrInterval,
+			Warning: flagVar.kymaRequeueWarningInterval,
+		},
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(1)
 	}
 }

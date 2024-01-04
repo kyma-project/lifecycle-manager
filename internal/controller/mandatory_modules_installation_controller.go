@@ -37,7 +37,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type MandatoryModulesReconciler struct {
+type MandatoryModuleReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
@@ -46,7 +46,7 @@ type MandatoryModulesReconciler struct {
 	InKCPMode           bool
 }
 
-func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Reconciliation started")
 
@@ -85,7 +85,7 @@ func (r *MandatoryModulesReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-func (r *MandatoryModulesReconciler) GenerateModulesFromTemplate(ctx context.Context,
+func (r *MandatoryModuleReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
 	parser := parse.NewParser(r.Client, r.InKCPMode,

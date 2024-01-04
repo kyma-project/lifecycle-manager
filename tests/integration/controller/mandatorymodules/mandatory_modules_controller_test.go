@@ -135,7 +135,7 @@ func setKymaToReady(ctx context.Context, kyma *v1beta2.Kyma) error {
 	})
 	kyma.ManagedFields = nil
 
-	err := mandatoryModulesReconciler.Status().Patch(ctx, kyma, client.Apply,
+	err := mandatoryModuleReconciler.Status().Patch(ctx, kyma, client.Apply,
 		status.SubResourceOpts(client.ForceOwnership),
 		client.FieldOwner(shared.OperatorName))
 	return err
@@ -143,7 +143,7 @@ func setKymaToReady(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := mandatoryModulesReconciler.List(ctx, &manifestList, &client.ListOptions{
+	if err := mandatoryModuleReconciler.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
 	}); err != nil {
 		return err

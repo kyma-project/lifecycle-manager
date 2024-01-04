@@ -54,11 +54,11 @@ const (
 )
 
 var (
-	mandatoryModulesReconciler *controller.MandatoryModulesReconciler
-	controlPlaneClient         client.Client
-	singleClusterEnv           *envtest.Environment
-	ctx                        context.Context
-	cancel                     context.CancelFunc
+	mandatoryModuleReconciler *controller.MandatoryModuleReconciler
+	controlPlaneClient        client.Client
+	singleClusterEnv          *envtest.Environment
+	ctx                       context.Context
+	cancel                    context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {
@@ -104,7 +104,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	mandatoryModulesReconciler = &controller.MandatoryModulesReconciler{
+	mandatoryModuleReconciler = &controller.MandatoryModuleReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
@@ -112,7 +112,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 	}
 
-	err = mandatoryModulesReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
+	err = mandatoryModuleReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
