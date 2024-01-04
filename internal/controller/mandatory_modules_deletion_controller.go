@@ -102,7 +102,8 @@ func (r *MandatoryModulesDeletionReconciler) Reconcile(ctx context.Context, req 
 }
 
 func (r *MandatoryModulesDeletionReconciler) updateTemplateFinalizer(ctx context.Context,
-	template *v1beta2.ModuleTemplate) (ctrl.Result, error) {
+	template *v1beta2.ModuleTemplate,
+) (ctrl.Result, error) {
 	if err := r.Update(ctx, template); err != nil {
 		r.Event(template, warningEvent, settingFinalizerError, err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to update MandatoryModuleTemplate finalizer: %w", err)
@@ -112,11 +113,12 @@ func (r *MandatoryModulesDeletionReconciler) updateTemplateFinalizer(ctx context
 
 func (r *MandatoryModulesDeletionReconciler) getCorrespondingManifests(ctx context.Context,
 	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
-	error) {
+	error,
+) {
 	manifests := &v1beta2.ManifestList{}
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
 	}
 	fqdn := descriptor.GetName()
 	if err := r.List(ctx, manifests, &client.ListOptions{
@@ -130,6 +132,7 @@ func (r *MandatoryModulesDeletionReconciler) getCorrespondingManifests(ctx conte
 
 func (r *MandatoryModulesDeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for _, manifest := range manifests {
+		manifest := manifest
 		if err := r.Delete(ctx, &manifest); err != nil {
 			return fmt.Errorf("not able to delete manifest %s/%s: %w", manifest.Namespace, manifest.Name, err)
 		}
