@@ -206,7 +206,6 @@ func (r *MandatoryModuleReconciler) SetupWithManager(mgr ctrl.Manager,
 func (r *MandatoryModuleDeletionReconciler) SetupWithManager(mgr ctrl.Manager,
 	options ctrlruntime.Options,
 ) error {
-
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.ModuleTemplate{}).
 		WithOptions(options).

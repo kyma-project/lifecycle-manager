@@ -34,14 +34,13 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -54,11 +53,11 @@ const (
 )
 
 var (
-	mandatoryModuleReconciler *controller.MandatoryModuleReconciler
-	controlPlaneClient        client.Client
-	singleClusterEnv          *envtest.Environment
-	ctx                       context.Context
-	cancel                    context.CancelFunc
+	mandatoryModuleDeletionReconciler *controller.MandatoryModuleDeletionReconciler
+	controlPlaneClient                client.Client
+	singleClusterEnv                  *envtest.Environment
+	ctx                               context.Context
+	cancel                            context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {
@@ -104,15 +103,13 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	mandatoryModuleReconciler = &controller.MandatoryModuleReconciler{
-		Client:              k8sManager.GetClient(),
-		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
-		RequeueIntervals:    intervals,
-		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
-		InKCPMode:           false,
+	mandatoryModuleDeletionReconciler = &controller.MandatoryModuleDeletionReconciler{
+		Client:           k8sManager.GetClient(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(shared.OperatorName),
+		RequeueIntervals: intervals,
 	}
 
-	err = mandatoryModuleReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
+	err = mandatoryModuleDeletionReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
