@@ -1,11 +1,13 @@
-package metrics
+package metrics_test
 
 import (
 	"fmt"
+	. "github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"testing"
 )
 
 func Test_ConstantMetricNames(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		constName     string
 		constValue    string
@@ -22,18 +24,18 @@ func Test_ConstantMetricNames(t *testing.T) {
 			expectedValue: "lifecycle_mgr_module_state",
 		},
 		{
-			constName:     "metricPurgeTime",
-			constValue:    metricPurgeTime,
+			constName:     "MetricPurgeTime",
+			constValue:    MetricPurgeTime,
 			expectedValue: "lifecycle_mgr_purgectrl_time",
 		},
 		{
-			constName:     "metricPurgeRequests",
-			constValue:    metricPurgeRequests,
+			constName:     "MetricPurgeRequests",
+			constValue:    MetricPurgeRequests,
 			expectedValue: "lifecycle_mgr_purgectrl_requests_total",
 		},
 		{
-			constName:     "metricPurgeError",
-			constValue:    metricPurgeError,
+			constName:     "MetricPurgeError",
+			constValue:    MetricPurgeError,
 			expectedValue: "lifecycle_mgr_purgectrl_error",
 		},
 		{
@@ -45,6 +47,7 @@ func Test_ConstantMetricNames(t *testing.T) {
 	for _, tt := range tests {
 		testName := fmt.Sprintf("const %s has default value", tt.constName)
 		t.Run(testName, func(t *testing.T) {
+			t.Parallel()
 			if tt.constValue != tt.expectedValue {
 				t.Errorf("const %s does not have default value: expected = %s, got = %s",
 					tt.constName, tt.expectedValue, tt.constValue)
