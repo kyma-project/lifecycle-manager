@@ -9,7 +9,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = FDescribe("Module Upgrade By New Version", Ordered, func() {
+var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system",
 		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
