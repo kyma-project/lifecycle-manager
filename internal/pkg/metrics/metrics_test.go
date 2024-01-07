@@ -2,8 +2,9 @@ package metrics_test
 
 import (
 	"fmt"
-	. "github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"testing"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
 func Test_ConstantMetricNames(t *testing.T) {
@@ -45,6 +46,7 @@ func Test_ConstantMetricNames(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		testName := fmt.Sprintf("const %s has default value", tt.constName)
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
