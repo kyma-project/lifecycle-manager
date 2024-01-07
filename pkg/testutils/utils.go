@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"io"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"os"
@@ -194,10 +195,16 @@ func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) err
 	}
 
 	for _, object := range resources {
-		err = ModuleCRExists(ctx, clnt, object)
-		if errors.Is(err, ErrNotFound) {
+		objectInCluster := &unstructured.Unstructured{}
+		err := clnt.Get(ctx, client.ObjectKey{
+			Namespace: object.GetNamespace(),
+			Name:      object.GetName(),
+		}, objectInCluster)
+
+		if util.IsNotFound(err) {
 			err = clnt.Create(ctx, object)
 		} else {
+			object.SetResourceVersion(objectInCluster.GetResourceVersion())
 			err = clnt.Update(ctx, object)
 		}
 		if err != nil {
