@@ -1,10 +1,12 @@
 package testutils
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"os"
 	"path/filepath"
 	"time"
@@ -165,4 +167,43 @@ func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, na
 	}
 
 	return deletionTimestampExists, err
+}
+
+func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) error {
+	fileContent, err := os.ReadFile(yamlFilePath)
+	if err != nil {
+		return err
+	}
+
+	decoder := serializer.NewCodecFactory(clnt.Scheme()).UniversalDeserializer()
+	var resources []*unstructured.Unstructured
+
+	yamlDocs := bytes.Split(fileContent, []byte("---"))
+	for _, doc := range yamlDocs {
+		if len(doc) == 0 {
+			continue
+		}
+
+		obj := &unstructured.Unstructured{}
+		_, _, err := decoder.Decode(doc, nil, obj)
+		if err != nil {
+			return err
+		}
+
+		resources = append(resources, obj)
+	}
+
+	for _, object := range resources {
+		err = ModuleCRExists(ctx, clnt, object)
+		if errors.Is(err, ErrNotFound) {
+			err = clnt.Create(ctx, object)
+		} else {
+			err = clnt.Update(ctx, object)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
