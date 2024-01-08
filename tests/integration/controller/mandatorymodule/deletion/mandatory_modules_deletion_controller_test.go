@@ -1,18 +1,14 @@
 package mandatory_test
 
 import (
-	"context"
 	"errors"
-
-	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8slabels "k8s.io/apimachinery/pkg/labels"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -98,21 +94,4 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(SyncKyma).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
-}
-
-// todo rewrite to check weather there are no instead.
-func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
-	manifestList := v1beta2.ManifestList{}
-	if err := mandatoryModuleDeletionReconciler.List(ctx, &manifestList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
-	}); err != nil {
-		return err
-	}
-	for _, manifest := range manifestList.Items {
-		if manifest.OwnerReferences[0].Name == kyma.Name &&
-			manifest.Annotations[shared.FQDN] == fqdn {
-			return nil
-		}
-	}
-	return ErrNoMandatoryManifest
 }
