@@ -133,7 +133,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	return nil
 }
 
-// suppressUnauthorized replaces client-go error with our own in order to supress it's very long Error() payload.
+// suppressUnauthorized replaces client-go error with our own in order to suppress it's very long Error() payload.
 func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) error {
 	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), ": Unauthorized") {
 		return ErrClientUnauthorized
