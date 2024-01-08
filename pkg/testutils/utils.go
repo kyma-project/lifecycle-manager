@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"io"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"os"
 	"path/filepath"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -171,9 +171,26 @@ func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, na
 }
 
 func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) error {
-	fileContent, err := os.ReadFile(yamlFilePath)
+	resources, err := parseResourcesFromYAML(yamlFilePath, clnt)
 	if err != nil {
 		return err
+	}
+
+	for _, object := range resources {
+		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, client.FieldOwner(shared.OperatorName))
+		if err != nil {
+			return fmt.Errorf("error applying patch to resource %s/%s: %w",
+				object.GetNamespace(), object.GetName(), err)
+		}
+	}
+
+	return nil
+}
+
+func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstructured.Unstructured, error) {
+	fileContent, err := os.ReadFile(yamlFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading YAML file '%s': %w", yamlFilePath, err)
 	}
 
 	decoder := serializer.NewCodecFactory(clnt.Scheme()).UniversalDeserializer()
@@ -188,29 +205,10 @@ func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) err
 		obj := &unstructured.Unstructured{}
 		_, _, err := decoder.Decode(doc, nil, obj)
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("error decoding YAML document: %w", err)
 		}
 
 		resources = append(resources, obj)
 	}
-
-	for _, object := range resources {
-		objectInCluster := &unstructured.Unstructured{}
-		err := clnt.Get(ctx, client.ObjectKey{
-			Namespace: object.GetNamespace(),
-			Name:      object.GetName(),
-		}, objectInCluster)
-
-		if util.IsNotFound(err) {
-			err = clnt.Create(ctx, object)
-		} else {
-			object.SetResourceVersion(objectInCluster.GetResourceVersion())
-			err = clnt.Update(ctx, object)
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return resources, nil
 }
