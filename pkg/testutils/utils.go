@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -20,6 +18,7 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -192,11 +191,11 @@ func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstruc
 	if err != nil {
 		return nil, fmt.Errorf("error reading YAML file '%s': %w", yamlFilePath, err)
 	}
+	yamlDocs := bytes.Split(fileContent, []byte("---"))
 
 	decoder := serializer.NewCodecFactory(clnt.Scheme()).UniversalDeserializer()
-	var resources []*unstructured.Unstructured
+	resources := make([]*unstructured.Unstructured, 0, len(yamlDocs))
 
-	yamlDocs := bytes.Split(fileContent, []byte("---"))
 	for _, doc := range yamlDocs {
 		if len(doc) == 0 {
 			continue
