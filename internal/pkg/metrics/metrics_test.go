@@ -45,14 +45,14 @@ func Test_ConstantMetricNames(t *testing.T) {
 			expectedValue: "lifecycle_mgr_self_signed_cert_not_renew",
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		testName := fmt.Sprintf("const %s has default value", tt.constName)
+	for _, testcase := range tests {
+		testcase := testcase
+		testName := fmt.Sprintf("const %s has default value", testcase.constName)
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			if tt.constValue != tt.expectedValue {
+			if testcase.constValue != testcase.expectedValue {
 				t.Errorf("const %s does not have default value: expected = %s, got = %s",
-					tt.constName, tt.expectedValue, tt.constValue)
+					testcase.constName, testcase.expectedValue, testcase.constValue)
 			}
 		})
 	}
