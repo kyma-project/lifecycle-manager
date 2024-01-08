@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -18,6 +19,7 @@ import (
 var (
 	ErrClientObjectConversionFailed = errors.New("client object conversion failed")
 	ErrServerSideApplyFailed        = errors.New("ServerSideApply failed")
+	ErrClientUnauthorized           = errors.New("Unauthorized")
 )
 
 type SSA interface {
@@ -52,6 +54,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	}
 
 	var errs []error
+
 	for i := 0; i < len(resources); i++ {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
@@ -61,11 +64,32 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	ssaFinish := time.Since(ssaStart)
 
 	if errs != nil {
-		errs = append(errs, fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish))
+		summaryErr := fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish)
+		if allUnauthorized(errs) {
+			return errors.Join(ErrClientUnauthorized, summaryErr)
+		}
+		errs = append(errs, summaryErr)
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil
+}
+
+func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
+	errCnt = len(errs)
+
+	if errCnt == 0 {
+		return false
+	}
+
+	unauthorizedFound := 0
+	for i := 0; i < len(errs); i++ {
+		if errors.Is(err, ErrClientUnauthorized) {
+			unauthorizedFound++
+		}
+	}
+
+	return unauthorizedFound == errCnt
 }
 
 func (c *ConcurrentDefaultSSA) serverSideApply(
@@ -102,9 +126,17 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(
-			"patch for %s failed: %w", info.ObjectName(), err,
+			"patch for %s failed: %w", info.ObjectName(), suppressUnauthorized(err),
 		)
 	}
 
 	return nil
+}
+
+// suppressUnauthorized replaces client-go error with our own in order to supress it's very long Error() payload
+func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) error {
+	if strings.HasSuffix(": Unauthorized", strings.TrimRight(src.Error(), " \n")) {
+		return ErrClientUnauthorized
+	}
+	return src
 }
