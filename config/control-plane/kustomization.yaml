@@ -64,6 +64,9 @@ patches:
         value: --failure-max-delay=30s
       - op: add
         path: /spec/template/spec/containers/0/args/-
+        value: --failure-base-delay=5s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
     target:
       kind: Deployment
