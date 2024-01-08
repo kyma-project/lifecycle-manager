@@ -1,11 +1,11 @@
 package testutils
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"k8s.io/cli-runtime/pkg/resource"
 	"os"
 	"path/filepath"
 	"time"
@@ -18,7 +18,6 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -170,7 +169,7 @@ func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, na
 }
 
 func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) error {
-	resources, err := parseResourcesFromYAML(yamlFilePath, clnt)
+	resources, err := parseResourcesFromYAML(yamlFilePath)
 	if err != nil {
 		return err
 	}
@@ -186,28 +185,31 @@ func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) err
 	return nil
 }
 
-func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstructured.Unstructured, error) {
-	fileContent, err := os.ReadFile(yamlFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading YAML file '%s': %w", yamlFilePath, err)
+func parseResourcesFromYAML(yamlFilePath string) ([]*unstructured.Unstructured, error) {
+	var resources []*unstructured.Unstructured
+
+	resourceBuilder := resource.NewLocalBuilder().
+		Unstructured().
+		Path(false, yamlFilePath).
+		Flatten().
+		ContinueOnError()
+	result := resourceBuilder.Do()
+
+	if err := result.Err(); err != nil {
+		return resources, fmt.Errorf("parse YAML: %w", err)
 	}
-	yamlDocs := bytes.Split(fileContent, []byte("---"))
+	items, err := result.Infos()
+	if err != nil {
+		return resources, fmt.Errorf("parse YAML to resource infos: %w", err)
+	}
 
-	decoder := serializer.NewCodecFactory(clnt.Scheme()).UniversalDeserializer()
-	resources := make([]*unstructured.Unstructured, 0, len(yamlDocs))
-
-	for _, doc := range yamlDocs {
-		if len(doc) == 0 {
+	for _, item := range items {
+		unstructuredItem, ok := item.Object.(*unstructured.Unstructured)
+		if !ok {
 			continue
 		}
-
-		obj := &unstructured.Unstructured{}
-		_, _, err := decoder.Decode(doc, nil, obj)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding YAML document: %w", err)
-		}
-
-		resources = append(resources, obj)
+		resources = append(resources, unstructuredItem)
 	}
+
 	return resources, nil
 }
