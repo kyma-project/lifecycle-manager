@@ -126,7 +126,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(
-			"patch for %s failed: %w", info.ObjectName(), suppressUnauthorized(err),
+			"patch for %s failed: %w", info.ObjectName(), c.suppressUnauthorized(err),
 		)
 	}
 
