@@ -65,7 +65,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 
 	if errs != nil {
 		summaryErr := fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish)
-		if allUnauthorized(errs) {
+		if c.allUnauthorized(errs) {
 			return errors.Join(ErrClientUnauthorized, summaryErr)
 		}
 		errs = append(errs, summaryErr)
@@ -76,7 +76,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 }
 
 func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
-	errCnt = len(errs)
+	errCnt := len(errs)
 
 	if errCnt == 0 {
 		return false
@@ -84,7 +84,7 @@ func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
 
 	unauthorizedFound := 0
 	for i := 0; i < len(errs); i++ {
-		if errors.Is(err, ErrClientUnauthorized) {
+		if errors.Is(errs[i], ErrClientUnauthorized) {
 			unauthorizedFound++
 		}
 	}
