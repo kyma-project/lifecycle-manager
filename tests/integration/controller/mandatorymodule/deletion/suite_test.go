@@ -18,10 +18,12 @@ package mandatory_test
 
 import (
 	"context"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -58,6 +60,8 @@ var (
 	singleClusterEnv                  *envtest.Environment
 	ctx                               context.Context
 	cancel                            context.CancelFunc
+	manifestFilePath                  string
+	server                            *httptest.Server
 )
 
 func TestAPIs(t *testing.T) {
@@ -76,6 +80,11 @@ var _ = BeforeSuite(func() {
 		CRDs:                  []*apiextensionsv1.CustomResourceDefinition{},
 		ErrorIfCRDPathMissing: true,
 	}
+
+	manifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci", "rendered.yaml")
+
+	newReg := registry.New()
+	server = httptest.NewServer(newReg)
 
 	cfg, err := singleClusterEnv.Start()
 	Expect(err).NotTo(HaveOccurred())

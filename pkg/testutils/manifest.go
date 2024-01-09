@@ -70,17 +70,36 @@ func GetManifest(ctx context.Context,
 		}
 	}
 
+	return GetManifestWithObjectKey(ctx, clnt, client.ObjectKey{
+		Namespace: manifestKey.Namespace,
+		Name:      manifestKey.Name,
+	})
+}
+
+func GetManifestWithObjectKey(ctx context.Context,
+	clnt client.Client, obj client.ObjectKey,
+) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	err = clnt.Get(
-		ctx, client.ObjectKey{
-			Namespace: manifestKey.Namespace,
-			Name:      manifestKey.Name,
-		}, manifest,
-	)
-	if err != nil {
+	if err := clnt.Get(ctx, obj, manifest); err != nil {
 		return nil, fmt.Errorf("get manifest: %w", err)
 	}
 	return manifest, nil
+}
+
+func ManifestExistsWithAnnotation(ctx context.Context, clnt client.Client,
+	annotationKey, annotationValue string,
+) error {
+	manifests := v1beta2.ManifestList{}
+	if err := clnt.List(ctx, &manifests); err != nil {
+		return fmt.Errorf("failed listing manifests: %w", err)
+	}
+
+	for _, manifest := range manifests.Items {
+		if manifest.Annotations[annotationKey] == annotationValue {
+			return nil
+		}
+	}
+	return fmt.Errorf("manifest with annotation `%s: %s` does not exist", annotationKey, annotationValue)
 }
 
 func GetManifestSpecRemote(

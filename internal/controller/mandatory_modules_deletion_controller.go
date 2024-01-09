@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,7 +93,7 @@ func (r *MandatoryModuleDeletionReconciler) Reconcile(ctx context.Context, req c
 		return ctrl.Result{}, fmt.Errorf("failed to remove MandatoryModule Manifest: %w", err)
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{Requeue: true}, nil
 }
 
 func (r *MandatoryModuleDeletionReconciler) updateTemplateFinalizer(ctx context.Context,
@@ -116,14 +115,15 @@ func (r *MandatoryModuleDeletionReconciler) getCorrespondingManifests(ctx contex
 	if err != nil {
 		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
 	}
-	fqdn := descriptor.GetName()
 	if err := r.List(ctx, manifests, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.FQDN: fqdn}),
-		Namespace:     template.Namespace,
+		Namespace: template.Namespace,
 	}); err != nil {
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
-	return manifests.Items, nil
+
+	filtered := filterManifestsByAnnotation(manifests.Items, shared.FQDN, descriptor.GetName())
+
+	return filtered, nil
 }
 
 func (r *MandatoryModuleDeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
@@ -135,4 +135,16 @@ func (r *MandatoryModuleDeletionReconciler) removeManifests(ctx context.Context,
 	}
 	logf.FromContext(ctx).V(log.DebugLevel).Info("Marked all MandatoryModule Manifests for deletion")
 	return nil
+}
+
+func filterManifestsByAnnotation(manifests []v1beta2.Manifest,
+	annotationKey, annotationValue string,
+) []v1beta2.Manifest {
+	filteredManifests := make([]v1beta2.Manifest, 0)
+	for _, manifest := range manifests {
+		if manifest.Annotations[annotationKey] == annotationValue {
+			filteredManifests = append(filteredManifests, manifest)
+		}
+	}
+	return filteredManifests
 }
