@@ -10,6 +10,7 @@ import (
 	ocmmetav1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"github.com/open-component-model/ocm/pkg/signing"
 	"github.com/open-component-model/ocm/pkg/signing/handlers/rsa"
+	"github.com/open-component-model/ocm/pkg/signing/signutils"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -131,7 +132,7 @@ func CreateRSAVerifierFromSecrets(
 	registry := signing.NewKeyRegistry()
 	for _, item := range secretList.Items {
 		publicKey := item.Data["key"]
-		key, err := signing.ParsePublicKey(publicKey)
+		key, err := signutils.ParsePublicKey(publicKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse public key: %w", err)
 		}
@@ -147,7 +148,7 @@ func CreateRSAVerifierFromPublicKeyFile(file string) (*MultiVerifier, error) {
 		return nil, fmt.Errorf("failed to read public key file: %w", err)
 	}
 	registry := signing.NewKeyRegistry()
-	key, err := signing.ParsePublicKey(data)
+	key, err := signutils.ParsePublicKey(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
