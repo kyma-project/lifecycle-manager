@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	metricPurgeTime                     = "lifecycle_mgr_purgectrl_time"
-	metricPurgeRequests                 = "lifecycle_mgr_purgectrl_requests_total"
-	metricPurgeError                    = "lifecycle_mgr_purgectrl_error"
+	MetricPurgeTime                     = "lifecycle_mgr_purgectrl_time"
+	MetricPurgeRequests                 = "lifecycle_mgr_purgectrl_requests_total"
+	MetricPurgeError                    = "lifecycle_mgr_purgectrl_error"
 	errorReasonLabel                    = "err_reason"
 	ErrPurgeFinalizerRemoval PurgeError = "PurgeFinalizerRemovalError"
 	ErrCleanup               PurgeError = "CleanupError"
@@ -31,15 +31,15 @@ type PurgeMetrics struct {
 func NewPurgeMetrics() *PurgeMetrics {
 	purgeMetrics := &PurgeMetrics{
 		purgeTimeGauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: metricPurgeTime,
+			Name: MetricPurgeTime,
 			Help: "Indicates average purge duration",
 		}),
 		purgeRequestsCounter: prometheus.NewCounter(prometheus.CounterOpts{
-			Name: metricPurgeRequests,
+			Name: MetricPurgeRequests,
 			Help: "Indicates total purge count ",
 		}),
 		purgeErrorGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: metricPurgeError,
+			Name: MetricPurgeError,
 			Help: "Indicates purge errors",
 		}, []string{KymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel}),
 	}
