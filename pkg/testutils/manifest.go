@@ -16,7 +16,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/onsi/gomega"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -272,36 +271,52 @@ func (m mockLayer) DiffID() (containerregistryv1.Hash, error) {
 	return containerregistryv1.Hash{Algorithm: "fake", Hex: "diff id"}, nil
 }
 
-func CreateImageSpecLayer(manifestFilePath string) containerregistryv1.Layer {
-	layer, err := partial.UncompressedToLayer(mockLayer{filePath: manifestFilePath})
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
-	return layer
+func CreateImageSpecLayer(manifestFilePath string) (containerregistryv1.Layer, error) {
+	return partial.UncompressedToLayer(mockLayer{filePath: manifestFilePath})
 }
 
-func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerName string) {
-	layer := CreateImageSpecLayer(manifestFilePath)
+func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerName string) error {
+	layer, err := CreateImageSpecLayer(manifestFilePath)
+	if err != nil {
+		return err
+	}
 	digest, err := layer.Digest()
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	if err != nil {
+		return err
+	}
 
 	// Set up a fake registry and write what we pulled to it.
 	u, err := url.Parse(server.URL)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	if err != nil {
+		return err
+	}
 
 	dst := fmt.Sprintf("%s/%s@%s", u.Host, layerName, digest)
 	ref, err := name.NewDigest(dst)
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	if err != nil {
+		return err
+	}
 
 	err = remote.WriteLayer(ref.Context(), layer)
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	if err != nil {
+		return err
+	}
 
 	got, err := remote.Layer(ref)
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	if err != nil {
+		return err
+	}
 	gotHash, err := got.Digest()
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
-	gomega.Expect(gotHash).To(gomega.Equal(digest))
+	if err != nil {
+		return err
+	}
+	if gotHash != digest {
+		return fmt.Errorf("has not equal to digest")
+	}
+	return nil
 }
 
-func CreateOCIImageSpec(name, repo, manifestFilePath string, enableCredSecretSelector bool) v1beta2.ImageSpec {
+func CreateOCIImageSpec(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec, error) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
@@ -310,20 +325,30 @@ func CreateOCIImageSpec(name, repo, manifestFilePath string, enableCredSecretSel
 	if enableCredSecretSelector {
 		imageSpec.CredSecretSelector = CredSecretLabelSelector("test-secret-label")
 	}
-	layer := CreateImageSpecLayer(manifestFilePath)
+	layer, err := CreateImageSpecLayer(manifestFilePath)
+	if err != nil {
+		return imageSpec, err
+	}
 	digest, err := layer.Digest()
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	if err != nil {
+		return imageSpec, err
+	}
 	imageSpec.Ref = digest.String()
-	return imageSpec
+	return imageSpec, nil
 }
 
 func WithInvalidInstallImageSpec(ctx context.Context, clnt client.Client,
 	enableResource bool, manifestFilePath string,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		invalidImageSpec := CreateOCIImageSpec("invalid-image-spec", "domain.invalid", manifestFilePath, false)
+		invalidImageSpec, err := CreateOCIImageSpec("invalid-image-spec", "domain.invalid", manifestFilePath, false)
+		if err != nil {
+			return err
+		}
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
-		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+		if err != nil {
+			return err
+		}
 		return InstallManifest(ctx, clnt, manifest, imageSpecByte, enableResource)
 	}
 }
@@ -332,9 +357,14 @@ func WithValidInstallImageSpec(ctx context.Context, clnt client.Client, name, ma
 	enableResource, enableCredSecretSelector bool,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		validImageSpec := CreateOCIImageSpec(name, serverURL, manifestFilePath, enableCredSecretSelector)
+		validImageSpec, err := CreateOCIImageSpec(name, serverURL, manifestFilePath, enableCredSecretSelector)
+		if err != nil {
+			return err
+		}
 		imageSpecByte, err := json.Marshal(validImageSpec)
-		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+		if err != nil {
+			return err
+		}
 		return InstallManifest(ctx, clnt, manifest, imageSpecByte, enableResource)
 	}
 }

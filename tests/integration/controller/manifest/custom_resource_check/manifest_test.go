@@ -28,7 +28,8 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 
 	It(
 		"setup OCI", func() {
-			testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			Expect(err).NotTo(HaveOccurred())
 		},
 	)
 	BeforeEach(
@@ -40,8 +41,10 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		By("Install test Manifest CR")
 		testManifest := testutils.NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
-		validImageSpec := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(), manifestFilePath,
+		validImageSpec, err := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(),
+			manifestFilePath,
 			false)
+		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 

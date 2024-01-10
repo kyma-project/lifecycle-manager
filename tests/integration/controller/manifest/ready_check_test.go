@@ -29,7 +29,8 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	installName := filepath.Join(customDir, "installs")
 	It(
 		"setup OCI", func() {
-			testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			Expect(err).NotTo(HaveOccurred())
 		},
 	)
 	BeforeEach(
@@ -40,8 +41,10 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	It("Install OCI specs including an nginx deployment", func() {
 		testManifest := testutils.NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
-		validImageSpec := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(), manifestFilePath,
+		validImageSpec, err := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(),
+			manifestFilePath,
 			false)
+		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(testutils.InstallManifest(ctx, controlPlaneClient, testManifest, imageSpecByte, false)).To(Succeed())

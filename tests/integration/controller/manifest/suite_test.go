@@ -61,6 +61,7 @@ var (
 	cancel             context.CancelFunc
 	controlPlaneClient client.Client
 	server             *httptest.Server
+	serverAddress      string
 	manifestFilePath   string
 )
 
@@ -85,6 +86,7 @@ var _ = BeforeSuite(func() {
 	// create registry and server
 	newReg := registry.New()
 	server = httptest.NewServer(newReg)
+	serverAddress = server.Listener.Addr().String()
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{

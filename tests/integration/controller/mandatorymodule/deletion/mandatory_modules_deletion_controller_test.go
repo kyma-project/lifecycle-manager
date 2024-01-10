@@ -103,9 +103,11 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 		installName := filepath.Join("main-dir", "installs")
 		mandatoryManifest.Annotations = map[string]string{shared.FQDN: "kyma-project.io/template-operator"}
-		validImageSpec := CreateOCIImageSpec(installName, server.Listener.Addr().String(), manifestFilePath,
+		validImageSpec, err := CreateOCIImageSpec(installName, server.Listener.Addr().String(), manifestFilePath,
 			false)
-		imageSpecByte, _ := json.Marshal(validImageSpec)
+		Expect(err).NotTo(HaveOccurred())
+		imageSpecByte, err := json.Marshal(validImageSpec)
+		Expect(err).NotTo(HaveOccurred())
 		Eventually(InstallManifest).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, mandatoryManifest, imageSpecByte, false).
