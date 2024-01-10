@@ -51,7 +51,7 @@ func Test_ConstantMetricNames(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			if testcase.constValue != testcase.expectedValue {
-				t.Errorf("const %s does not have default value: expected = %s, got = %s",
+				t.Errorf("const %s value is incorrect: expected = %s, got = %s",
 					testcase.constName, testcase.expectedValue, testcase.constValue)
 			}
 		})
