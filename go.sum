@@ -2407,8 +2407,8 @@ honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 inet.af/netaddr v0.0.0-20230525184311-b8eac61e914a h1:1XCVEdxrvL6c0TGOhecLuB7U9zYNdxZEjvOqJreKZiM=
 inet.af/netaddr v0.0.0-20230525184311-b8eac61e914a/go.mod h1:e83i32mAQOW1LAqEIweALsuK2Uw4mhQadA5r7b0Wobo=
-istio.io/api v1.20.2-0.20231213020515-8655fab91d5d h1:Yz1kAzxwyJtzI6FmXiWl95I6KaCKVLXS1leQpv4o/pY=
-istio.io/api v1.20.2-0.20231213020515-8655fab91d5d/go.mod h1:hm1PE/mGdIAsjCDkTIAplP53H7TjO5LUQCiVvF26SVg=
+istio.io/api v1.20.2 h1:VjkJB1EfrZt77bcavr1P/3PrO8AP3lOSQsYiYOnGGBU=
+istio.io/api v1.20.2/go.mod h1:hm1PE/mGdIAsjCDkTIAplP53H7TjO5LUQCiVvF26SVg=
 istio.io/client-go v1.20.2 h1:FL99qw5f5W+QFPHutLpGOoPmoKgLwNFrGCEemAvLm00=
 istio.io/client-go v1.20.2/go.mod h1:mub0nwPDAj98cjns7KYLzbvDk0Fg9rx0k2o+KZ4UIUY=
 k8s.io/api v0.20.1/go.mod h1:KqwcCVogGxQY3nBlRpwt+wpAMF/KjaCc7RpywacvqUo=
