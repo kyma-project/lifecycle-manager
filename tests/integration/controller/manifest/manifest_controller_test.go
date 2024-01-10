@@ -115,7 +115,7 @@ var _ = Describe(
 	},
 )
 
-var _ = FDescribe(
+var _ = Describe(
 	"Given manifest with private registry", func() {
 		mainOciTempDir := "private-oci"
 		installName := filepath.Join(mainOciTempDir, "crs")

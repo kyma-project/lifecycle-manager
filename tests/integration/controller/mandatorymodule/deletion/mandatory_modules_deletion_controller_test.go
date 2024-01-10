@@ -27,7 +27,7 @@ const (
 	mandatoryChannel = "dummychannel"
 )
 
-var _ = FDescribe("Mandatory Module Deletion", Ordered, func() {
+var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 	Context("Given Kyma with one mandatory Module Manifest CR on Control-Plane", func() {
 		kyma := NewTestKyma("no-module-kyma")
 		registerControlPlaneLifecycleForKyma(kyma)
