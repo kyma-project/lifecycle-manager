@@ -18,6 +18,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -197,6 +198,25 @@ func SetSkipLabelToManifest(
 		return fmt.Errorf("failed to update manifest, %w", err)
 	}
 
+	return nil
+}
+
+func SetSkipLabelToMandatoryManifests(ctx context.Context, clnt client.Client, ifSkip bool,
+) error {
+	manifestList := v1beta2.ManifestList{}
+	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+	}); err != nil {
+		return fmt.Errorf("failed to list manifests: %w", err)
+	}
+	for _, manifest := range manifestList.Items {
+		manifest := manifest
+		manifest.Labels[shared.SkipReconcileLabel] = strconv.FormatBool(ifSkip)
+		err := clnt.Update(ctx, &manifest)
+		if err != nil {
+			return fmt.Errorf("failed to update manifest, %w", err)
+		}
+	}
 	return nil
 }
 

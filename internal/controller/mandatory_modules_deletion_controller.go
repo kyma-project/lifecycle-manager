@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -116,7 +117,8 @@ func (r *MandatoryModuleDeletionReconciler) getCorrespondingManifests(ctx contex
 		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
 	}
 	if err := r.List(ctx, manifests, &client.ListOptions{
-		Namespace: template.Namespace,
+		Namespace:     template.Namespace,
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
 	}); err != nil {
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
