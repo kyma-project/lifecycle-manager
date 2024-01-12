@@ -87,6 +87,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()
 	mandatoryManifest := NewTestManifest("mandatory-module")
+	mandatoryManifest.Labels[shared.IsMandatoryModule] = "true"
 
 	BeforeAll(func() {
 		Eventually(CreateCR).
