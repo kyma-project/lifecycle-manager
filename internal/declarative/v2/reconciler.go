@@ -87,7 +87,7 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 	}
 }
 
-//nolint:funlen,cyclop // Declarative pkg will be removed soon
+//nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
@@ -164,10 +164,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete, metrics.UnexpectedRequeue)
 	}
 
+	//nolint:nestif // Declarative pkg will be removed soon
 	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, metrics.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
+		}
+		if errors.Is(err, ErrClientUnauthorized) {
+			logf.FromContext(ctx).Info("Detected \"unauthorized\" error for: " + req.NamespacedName.String())
+			if r.ClientCacheKeyFn != nil {
+				clientsCacheKey, ok := r.ClientCacheKeyFn(ctx, obj)
+				if ok {
+					logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v", clientsCacheKey))
+					r.ClientCache.Delete(clientsCacheKey)
+				}
+			}
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestSyncResources, metrics.UnexpectedRequeue)
 	}

@@ -7,6 +7,7 @@ import (
 type ClientCache interface {
 	GetClientFromCache(key any) Client
 	SetClientInCache(key any, client Client)
+	Delete(key any)
 }
 
 type MemoryClientCache struct {
@@ -34,4 +35,8 @@ func (r *MemoryClientCache) GetClientFromCache(key any) Client {
 
 func (r *MemoryClientCache) SetClientInCache(key any, client Client) {
 	r.cache.Store(key, client)
+}
+
+func (r *MemoryClientCache) Delete(key any) {
+	r.cache.Delete(key)
 }

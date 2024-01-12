@@ -73,9 +73,9 @@ func WithClientCacheKey() declarativev2.WithClientCacheKeyOption {
 		}
 
 		labelValue, err := internal.GetResourceLabel(resource, shared.KymaName)
-		objectKey := client.ObjectKeyFromObject(resource)
 		var labelErr *types.LabelNotFoundError
 		if errors.As(err, &labelErr) {
+			objectKey := client.ObjectKeyFromObject(resource)
 			logger.V(internal.DebugLogLevel).Info(
 				"client can not been cached due to lack of expected label",
 				"resource", objectKey)
