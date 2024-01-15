@@ -111,6 +111,34 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			})
 		})
 
+		It("When mandatory Module is enabled on SKR Kyma CR", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, v1beta2.Module{
+					Name:    "template-operator",
+					Channel: "regular",
+				}).
+				Should(Succeed())
+			By("Then Kyma is in a \"Error\" State", func() {
+				Consistently(KymaIsInState).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
+					Should(Succeed())
+			})
+			By("When mandatory Module is disabled on SKR Kyma CR", func() {
+				Eventually(DisableModule).
+					WithContext(ctx).
+					WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "template-operator").
+					Should(Succeed())
+			})
+			By("Then Kyma is back in a \"Ready\" State", func() {
+				Consistently(KymaIsInState).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					Should(Succeed())
+			})
+		})
+
 		It("When new version of ModuleTemplate is applied", func() {
 			cmd := exec.Command("kubectl", "apply", "-f",
 				"../moduletemplates/mandatory_moduletemplate_template_operator_v2.yaml")
