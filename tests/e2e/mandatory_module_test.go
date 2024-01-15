@@ -120,7 +120,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				}).
 				Should(Succeed())
 			By("Then Kyma is in a \"Error\" State", func() {
-				Consistently(KymaIsInState).
+				Eventually(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
 					Should(Succeed())
@@ -132,7 +132,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					Should(Succeed())
 			})
 			By("Then Kyma is back in a \"Ready\" State", func() {
-				Consistently(KymaIsInState).
+				Eventually(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 					Should(Succeed())
