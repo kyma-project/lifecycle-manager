@@ -145,7 +145,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			out, _ := cmd.CombinedOutput()
 			//			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
-			By("Then Kyma Module is updated on SKR Cluster", func() {
+			By("Then Kyma mandatory Module is updated on SKR Cluster", func() {
 				Eventually(DeploymentIsReady).
 					WithContext(ctx).
 					WithArguments(runtimeClient, "template-operator-v2-controller-manager",
@@ -158,6 +158,12 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments(runtimeClient, deployName,
 						TestModuleResourceNamespace).
 					Should(Equal(ErrNotFound))
+			})
+			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
+				Consistently(KymaIsInState).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					Should(Succeed())
 			})
 		})
 
@@ -187,7 +193,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					Should(Equal(ErrNotFound))
 			})
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
-				Consistently(KymaIsInState).
+				Eventually(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 					Should(Succeed())
