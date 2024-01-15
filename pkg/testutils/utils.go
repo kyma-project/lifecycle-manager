@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -165,4 +167,47 @@ func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, na
 	}
 
 	return deletionTimestampExists, err
+}
+
+func ApplyYAML(ctx context.Context, clnt client.Client, yamlFilePath string) error {
+	resources, err := parseResourcesFromYAML(yamlFilePath, clnt)
+	if err != nil {
+		return err
+	}
+
+	for _, object := range resources {
+		err := clnt.Patch(ctx, object, client.Apply, client.ForceOwnership, client.FieldOwner(shared.OperatorName))
+		if err != nil {
+			return fmt.Errorf("error applying patch to resource %s/%s: %w",
+				object.GetNamespace(), object.GetName(), err)
+		}
+	}
+
+	return nil
+}
+
+func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstructured.Unstructured, error) {
+	fileContent, err := os.ReadFile(yamlFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading YAML file '%s': %w", yamlFilePath, err)
+	}
+	yamlDocs := bytes.Split(fileContent, []byte("---"))
+
+	decoder := serializer.NewCodecFactory(clnt.Scheme()).UniversalDeserializer()
+	resources := make([]*unstructured.Unstructured, 0, len(yamlDocs))
+
+	for _, doc := range yamlDocs {
+		if len(doc) == 0 {
+			continue
+		}
+
+		obj := &unstructured.Unstructured{}
+		_, _, err := decoder.Decode(doc, nil, obj)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding YAML document: %w", err)
+		}
+
+		resources = append(resources, obj)
+	}
+	return resources, nil
 }

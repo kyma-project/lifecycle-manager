@@ -38,7 +38,8 @@ jobs:
                     "upgrade-under-deletion",
                     "purge-controller",
                     "purge-metrics",
-                    "module-upgrade",
+                    "module-upgrade-channel-switch",
+                    "module-upgrade-new-version",
                     "skip-manifest-reconciliation",
                     "ca-certificate-rotation",
                     "self-signed-certificate-rotation",
@@ -216,7 +217,10 @@ jobs:
           kubectl apply -f template.yaml
       - name: Create Template Operator Module for regular and fast channels
         working-directory: lifecycle-manager
-        if: ${{ matrix.e2e-test == 'module-upgrade' || matrix.e2e-test == 'upgrade-under-deletion' }}
+        if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' || 
+          matrix.e2e-test == 'module-upgrade-new-version' || 
+          matrix.e2e-test == 'upgrade-under-deletion' 
+          }}
         run: |
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml

@@ -31,6 +31,13 @@ These are not only able to synchronize the Kyma resource in the remote,
 but they also replace the specification for all further parts of the reconciliation as a _virtual_ Kyma.
 For more information, checkout the `ReplaceWithVirtualKyma` function.
 
+## Mandatory Modules Controller
+
+[Mandatory Modules Controller](../../internal/controller/mandatory_modules_controller.go) deals with the reconciliation of mandatory modules.
+
+Since the channel concept does not apply to mandatory modules, the Mandatory Modules Controller fetches all the Mandatory ModuleTemplate CRs without any channel filtering. It then translates the ModuleTemplate CR for the mandatory module to a [Manifest CR](/api/v1beta2/manifest_types.go) with an OwnerReference to the Kyma CR. Similarly to the [Kyma Controller](/internal/controller/kyma_controller.go), 
+it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandatory ModuleTemplate CR is not synchronized to the remote cluster and the module status does not appear in the Kyma CR status.
+
 ## Manifest Controller
 
 [Manifest Controller](../../internal/controller/manifest_controller.go) deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
