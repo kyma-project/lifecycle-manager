@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"os/exec"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -109,6 +111,28 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			})
 		})
 
+		It("When new version of ModuleTemplate is applied", func() {
+			cmd := exec.Command("kubectl", "apply", "-f",
+				"../moduletemplates/mandatory_moduletemplate_template_operator_v2.yaml")
+			out, _ := cmd.CombinedOutput()
+			//			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+			By("Then Kyma Module is updated on SKR Cluster", func() {
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, "template-operator-v2-controller-manager",
+						TestModuleResourceNamespace).
+					Should(Succeed())
+			})
+			By("And old Module Operator Deployment is removed", func() {
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, deployName,
+						TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			})
+		})
+
 		It("When the mandatory ModuleTemplate is removed", func() {
 			Eventually(DeleteCR).
 				WithContext(ctx).
@@ -123,7 +147,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			By("Then mandatory SKR module is removed", func() {
 				Eventually(DeploymentIsReady).
 					WithContext(ctx).
-					WithArguments(runtimeClient, deployName,
+					WithArguments(runtimeClient, "template-operator-v2-controller-manager",
 						TestModuleResourceNamespace).
 					Should(Equal(ErrNotFound))
 			})
