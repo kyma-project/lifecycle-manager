@@ -8,6 +8,9 @@ configMapGenerator:
   - name: status
     files:
       - status.json
+  - name: watcher
+    files:
+      - watcher.json
 
 generatorOptions:
   disableNameSuffixHash: true
