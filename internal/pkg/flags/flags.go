@@ -31,10 +31,10 @@ const (
 	defaultMaxConcurrentKymaReconciles                           = 1
 	defaultMaxConcurrentWatcherReconciles                        = 1
 	defaultMaxConcurrentMandatoryModulesReconciles               = 1
-	defaultIstioGatewayName                                      = "klm-watcher-gateway"
-	defaultIstioGatewayNamespace                                 = "kcp-system"
-	defaultIstioNamespace                                        = "istio-system"
-	defaultCaCertName                                            = "klm-watcher-serving-cert"
+	DefaultIstioGatewayName                                      = "klm-watcher-gateway"
+	DefaultIstioGatewayNamespace                                 = "kcp-system"
+	DefaultIstioNamespace                                        = "istio-system"
+	DefaultCaCertName                                            = "klm-watcher-serving-cert"
 	defaultCaCertCacheTTL                          time.Duration = 1 * time.Hour
 	defaultSelfSignedCertDuration                  time.Duration = 90 * 24 * time.Hour
 	defaultSelfSignedCertRenewBefore               time.Duration = 60 * 24 * time.Hour
@@ -109,11 +109,11 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
 			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
-	flag.StringVar(&flagVar.IstioNamespace, "istio-namespace", defaultIstioNamespace,
+	flag.StringVar(&flagVar.IstioNamespace, "istio-namespace", DefaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
-	flag.StringVar(&flagVar.IstioGatewayName, "istio-gateway-name", defaultIstioGatewayName,
+	flag.StringVar(&flagVar.IstioGatewayName, "istio-gateway-name", DefaultIstioGatewayName,
 		"Cluster Resource Name of Istio Gateway")
-	flag.StringVar(&flagVar.IstioGatewayNamespace, "istio-gateway-namespace", defaultIstioGatewayNamespace,
+	flag.StringVar(&flagVar.IstioGatewayNamespace, "istio-gateway-namespace", DefaultIstioGatewayNamespace,
 		"Cluster Resource Namespace of Istio Gateway")
 	flag.StringVar(&flagVar.ListenerPortOverwrite, "listener-port-overwrite", "",
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when "+
@@ -147,7 +147,7 @@ func DefineFlagVar() *FlagVar {
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.RemoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
-	flag.StringVar(&flagVar.CaCertName, "ca-cert-name", defaultCaCertName,
+	flag.StringVar(&flagVar.CaCertName, "ca-cert-name", DefaultCaCertName,
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
 	flag.DurationVar(&flagVar.CaCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
 		"The ttl for the CA Certificate Cache")
