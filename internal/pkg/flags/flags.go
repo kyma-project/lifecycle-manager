@@ -1,4 +1,4 @@
-package main
+package flags
 
 import (
 	"errors"
@@ -11,9 +11,9 @@ import (
 
 const (
 	defaultKymaRequeueSuccessInterval                            = 30 * time.Second
-	defaultKymaRequeueErrInterval                                = 2 * time.Second
-	defaultKymaRequeueWarningInterval                            = 30 * time.Second
-	defaultKymaRequeueBusyInterval                               = 5 * time.Second
+	DefaultKymaRequeueErrInterval                                = 2 * time.Second
+	DefaultKymaRequeueWarningInterval                            = 30 * time.Second
+	DefaultKymaRequeueBusyInterval                               = 5 * time.Second
 	defaultManifestRequeueSuccessInterval                        = 30 * time.Second
 	defaultMandatoryModuleRequeueSuccessInterval                 = 30 * time.Second
 	defaultWatcherRequeueSuccessInterval                         = 30 * time.Second
@@ -50,106 +50,106 @@ var (
 //nolint:funlen // defines all program flags
 func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
-	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
+	flag.StringVar(&flagVar.MetricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
-	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
+	flag.StringVar(&flagVar.ProbeAddr, "health-probe-bind-address", ":8081",
 		"The address the probe endpoint binds to.")
-	flag.StringVar(&flagVar.kymaListenerAddr, "kyma-skr-listener-bind-address", ":8082",
+	flag.StringVar(&flagVar.KymaListenerAddr, "kyma-skr-listener-bind-address", ":8082",
 		"The address the skr listener endpoint binds to.")
-	flag.StringVar(&flagVar.manifestListenerAddr, "manifest-skr-listener-bind-address", ":8083",
+	flag.StringVar(&flagVar.ManifestListenerAddr, "manifest-skr-listener-bind-address", ":8083",
 		"The address the skr listener endpoint binds to.")
-	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
+	flag.StringVar(&flagVar.PprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
+	flag.IntVar(&flagVar.MaxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
 		defaultMaxConcurrentKymaReconciles, "The maximum number of concurrent Kyma Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
+	flag.IntVar(&flagVar.MaxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
 		defaultMaxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
+	flag.IntVar(&flagVar.MaxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
 		defaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentMandatoryModulesReconciles, "max-concurrent-mandatory-modules-reconciles",
+	flag.IntVar(&flagVar.MaxConcurrentMandatoryModulesReconciles, "max-concurrent-mandatory-modules-reconciles",
 		defaultMaxConcurrentMandatoryModulesReconciles,
 		"The maximum number of concurrent Mandatory Modules Reconciles which can be run.")
-	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
+	flag.BoolVar(&flagVar.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
+	flag.DurationVar(&flagVar.KymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		defaultKymaRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
-	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
-		defaultKymaRequeueErrInterval,
+	flag.DurationVar(&flagVar.KymaRequeueErrInterval, "kyma-requeue-error-interval",
+		DefaultKymaRequeueErrInterval,
 		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.")
-	flag.DurationVar(&flagVar.kymaRequeueWarningInterval, "kyma-requeue-warning-interval",
-		defaultKymaRequeueWarningInterval,
+	flag.DurationVar(&flagVar.KymaRequeueWarningInterval, "kyma-requeue-warning-interval",
+		DefaultKymaRequeueWarningInterval,
 		"determines the duration after which a Kyma in Warning state is enqueued for reconciliation.")
-	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
-		defaultKymaRequeueBusyInterval,
+	flag.DurationVar(&flagVar.KymaRequeueBusyInterval, "kyma-requeue-busy-interval",
+		DefaultKymaRequeueBusyInterval,
 		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.")
-	flag.DurationVar(&flagVar.mandatoryModuleRequeueSuccessInterval, "mandatory-module-requeue-success-interval",
+	flag.DurationVar(&flagVar.MandatoryModuleRequeueSuccessInterval, "mandatory-module-requeue-success-interval",
 		defaultMandatoryModuleRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
-	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
+	flag.DurationVar(&flagVar.ManifestRequeueSuccessInterval, "manifest-requeue-success-interval",
 		defaultManifestRequeueSuccessInterval,
 		"determines the duration a Manifest in Ready state is enqueued for reconciliation.")
-	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
+	flag.DurationVar(&flagVar.WatcherRequeueSuccessInterval, "watcher-requeue-success-interval",
 		defaultWatcherRequeueSuccessInterval,
 		"determines the duration a Watcher in Ready state is enqueued for reconciliation.")
 
-	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
-	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
-	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
+	flag.Float64Var(&flagVar.ClientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
+	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
+	flag.StringVar(&flagVar.ModuleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
-	flag.BoolVar(&flagVar.enableVerification, "enable-verification", false,
+	flag.BoolVar(&flagVar.EnableVerification, "enable-verification", false,
 		"Enabling verify modules against their signature")
-	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
+	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
+	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.additionalDNSNames, "additional-dns-names", "",
+	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
 			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
-	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", defaultIstioNamespace,
+	flag.StringVar(&flagVar.IstioNamespace, "istio-namespace", defaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
-	flag.StringVar(&flagVar.istioGatewayName, "istio-gateway-name", defaultIstioGatewayName,
+	flag.StringVar(&flagVar.IstioGatewayName, "istio-gateway-name", defaultIstioGatewayName,
 		"Cluster Resource Name of Istio Gateway")
-	flag.StringVar(&flagVar.istioGatewayNamespace, "istio-gateway-namespace", defaultIstioGatewayNamespace,
+	flag.StringVar(&flagVar.IstioGatewayNamespace, "istio-gateway-namespace", defaultIstioGatewayNamespace,
 		"Cluster Resource Namespace of Istio Gateway")
-	flag.StringVar(&flagVar.listenerPortOverwrite, "listener-port-overwrite", "",
+	flag.StringVar(&flagVar.ListenerPortOverwrite, "listener-port-overwrite", "",
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when "+
 			"creating the KCP cluster")
-	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
-	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
+	flag.BoolVar(&flagVar.Pprof, "pprof", false, "Whether to start up a pprof server.")
+	flag.DurationVar(&flagVar.PprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
-	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
+	flag.IntVar(&flagVar.RateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
 		"Indicates the rateLimiterBurstDefault value for the bucket rate limiter.")
-	flag.IntVar(&flagVar.rateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
+	flag.IntVar(&flagVar.RateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
 		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
-	flag.DurationVar(&flagVar.failureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
+	flag.DurationVar(&flagVar.FailureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
 		"Indicates the failure base delay in seconds for rate limiter.")
-	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
+	flag.DurationVar(&flagVar.FailureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
 		"Indicates the failure max delay in seconds")
-	flag.DurationVar(&flagVar.cacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
+	flag.DurationVar(&flagVar.CacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
 		"Indicates the cache sync timeout in seconds")
-	flag.BoolVar(&flagVar.enableDomainNameVerification, "enable-domain-name-pinning", true,
+	flag.BoolVar(&flagVar.EnableDomainNameVerification, "enable-domain-name-pinning", true,
 		"Enabling verification of incoming listener request by comparing SAN with KymaCR-SKR-domain")
 	flag.IntVar(
-		&flagVar.logLevel, "log-level", defaultLogLevel,
+		&flagVar.LogLevel, "log-level", defaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
-	flag.BoolVar(&flagVar.inKCPMode, "in-kcp-mode", false,
+	flag.BoolVar(&flagVar.InKCPMode, "in-kcp-mode", false,
 		"Indicates lifecycle manager is deployed in control-plane mode (multiple clusters mode)")
-	flag.BoolVar(&flagVar.enablePurgeFinalizer, "enable-purge-finalizer", false,
+	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enabling purge finalizer")
-	flag.DurationVar(&flagVar.purgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
+	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
 		"Indicates the SKR Purge Finalizers execution delay in seconds")
-	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
+	flag.StringVar(&flagVar.SkipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
-	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
+	flag.StringVar(&flagVar.RemoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
-	flag.StringVar(&flagVar.caCertName, "ca-cert-name", defaultCaCertName,
+	flag.StringVar(&flagVar.CaCertName, "ca-cert-name", defaultCaCertName,
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
-	flag.DurationVar(&flagVar.caCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
+	flag.DurationVar(&flagVar.CaCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
 		"The ttl for the CA Certificate Cache")
 	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", defaultSelfSignedCertDuration,
 		"The lifetime duration of self-signed certificate, minimum accepted duration is 1 hour.")
@@ -160,84 +160,84 @@ func DefineFlagVar() *FlagVar {
 		defaultSelfSignedCertificateRenewBuffer,
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
-	flag.StringVar(&flagVar.dropStoredVersion, "drop-stored-version", "v1alpha1",
+	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", "v1alpha1",
 		"The API version to be dropped from the storage versions")
-	flag.StringVar(&flagVar.watcherImageTag, "skr-watcher-image-tag", "",
+	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
-	flag.BoolVar(&flagVar.useWatcherDevRegistry, "watcher-dev-registry", false,
+	flag.BoolVar(&flagVar.UseWatcherDevRegistry, "watcher-dev-registry", false,
 		`Enable to use the dev registry for fetching the watcher image.`)
-	flag.StringVar(&flagVar.watcherResourceLimitsMemory, "skr-webhook-memory-limits", "200Mi",
+	flag.StringVar(&flagVar.WatcherResourceLimitsMemory, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
-	flag.StringVar(&flagVar.watcherResourceLimitsCPU, "skr-webhook-cpu-limits", "0.1",
+	flag.StringVar(&flagVar.WatcherResourceLimitsCPU, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
-	flag.StringVar(&flagVar.watcherResourcesPath, "skr-watcher-path", "./skr-webhook",
+	flag.StringVar(&flagVar.WatcherResourcesPath, "skr-watcher-path", "./skr-webhook",
 		"The path to the skr watcher resources.")
 	return flagVar
 }
 
 type FlagVar struct {
-	metricsAddr                             string
-	enableDomainNameVerification            bool
-	enableLeaderElection                    bool
-	enablePurgeFinalizer                    bool
-	enableKcpWatcher                        bool
-	enableWebhooks                          bool
-	probeAddr                               string
-	kymaListenerAddr, manifestListenerAddr  string
-	maxConcurrentKymaReconciles             int
-	maxConcurrentManifestReconciles         int
-	maxConcurrentWatcherReconciles          int
-	maxConcurrentMandatoryModulesReconciles int
-	kymaRequeueSuccessInterval              time.Duration
-	kymaRequeueErrInterval                  time.Duration
-	kymaRequeueBusyInterval                 time.Duration
-	kymaRequeueWarningInterval              time.Duration
-	manifestRequeueSuccessInterval          time.Duration
-	watcherRequeueSuccessInterval           time.Duration
-	mandatoryModuleRequeueSuccessInterval   time.Duration
-	moduleVerificationKeyFilePath           string
-	clientQPS                               float64
-	clientBurst                             int
-	istioNamespace                          string
-	istioGatewayName                        string
-	istioGatewayNamespace                   string
-	additionalDNSNames                      string
-	// listenerPortOverwrite is used to enable the user to overwrite the port
+	MetricsAddr                             string
+	EnableDomainNameVerification            bool
+	EnableLeaderElection                    bool
+	EnablePurgeFinalizer                    bool
+	EnableKcpWatcher                        bool
+	EnableWebhooks                          bool
+	ProbeAddr                               string
+	KymaListenerAddr, ManifestListenerAddr  string
+	MaxConcurrentKymaReconciles             int
+	MaxConcurrentManifestReconciles         int
+	MaxConcurrentWatcherReconciles          int
+	MaxConcurrentMandatoryModulesReconciles int
+	KymaRequeueSuccessInterval              time.Duration
+	KymaRequeueErrInterval                  time.Duration
+	KymaRequeueBusyInterval                 time.Duration
+	KymaRequeueWarningInterval              time.Duration
+	ManifestRequeueSuccessInterval          time.Duration
+	WatcherRequeueSuccessInterval           time.Duration
+	MandatoryModuleRequeueSuccessInterval   time.Duration
+	ModuleVerificationKeyFilePath           string
+	ClientQPS                               float64
+	ClientBurst                             int
+	IstioNamespace                          string
+	IstioGatewayName                        string
+	IstioGatewayNamespace                   string
+	AdditionalDNSNames                      string
+	// ListenerPortOverwrite is used to enable the user to overwrite the port
 	// used to expose the KCP cluster for the watcher. By default, it will be
 	// fetched from the specified gateway.
-	listenerPortOverwrite                  string
-	pprof                                  bool
-	pprofAddr                              string
-	pprofServerTimeout                     time.Duration
-	failureBaseDelay, failureMaxDelay      time.Duration
-	rateLimiterBurst, rateLimiterFrequency int
-	cacheSyncTimeout                       time.Duration
-	logLevel                               int
-	inKCPMode                              bool
-	purgeFinalizerTimeout                  time.Duration
-	skipPurgingFor                         string
-	remoteSyncNamespace                    string
-	caCertName                             string
-	caCertCacheTTL                         time.Duration
-	enableVerification                     bool
+	ListenerPortOverwrite                  string
+	Pprof                                  bool
+	PprofAddr                              string
+	PprofServerTimeout                     time.Duration
+	FailureBaseDelay, FailureMaxDelay      time.Duration
+	RateLimiterBurst, RateLimiterFrequency int
+	CacheSyncTimeout                       time.Duration
+	LogLevel                               int
+	InKCPMode                              bool
+	PurgeFinalizerTimeout                  time.Duration
+	SkipPurgingFor                         string
+	RemoteSyncNamespace                    string
+	CaCertName                             string
+	CaCertCacheTTL                         time.Duration
+	EnableVerification                     bool
 	IsKymaManaged                          bool
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
-	dropStoredVersion                      string
-	useWatcherDevRegistry                  bool
-	watcherImageTag                        string
-	watcherResourceLimitsMemory            string
-	watcherResourceLimitsCPU               string
-	watcherResourcesPath                   string
+	DropStoredVersion                      string
+	UseWatcherDevRegistry                  bool
+	WatcherImageTag                        string
+	WatcherResourceLimitsMemory            string
+	WatcherResourceLimitsCPU               string
+	WatcherResourcesPath                   string
 }
 
 func (f FlagVar) Validate() error {
-	if f.enableKcpWatcher {
-		if f.watcherImageTag == "" {
+	if f.EnableKcpWatcher {
+		if f.WatcherImageTag == "" {
 			return errMissingWatcherImageTag
 		}
-		dirInfo, err := os.Stat(f.watcherResourcesPath)
+		dirInfo, err := os.Stat(f.WatcherResourcesPath)
 		if err != nil || !dirInfo.IsDir() {
 			return errWatcherDirNotExist
 		}

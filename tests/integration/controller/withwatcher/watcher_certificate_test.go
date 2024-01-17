@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
@@ -70,14 +70,14 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
-	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: controller.DefaultRemoteSyncNamespace}
+	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: flags.DefaultRemoteSyncNamespace}
 	caCertificate := createCaCertificate()
 
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(runtimeClient, shared.DefaultRemoteKymaName, controller.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, shared.DefaultRemoteKymaName, flags.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
 
