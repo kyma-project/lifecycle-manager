@@ -33,9 +33,9 @@ For more information, checkout the `ReplaceWithVirtualKyma` function.
 
 ## Mandatory Modules Controllers
 
-[Mandatory Modules Installation Controller](../../internal/controller/mandatory_modules_installation_controller.go) deals with the reconciliation of mandatory modules.
-
-[Mandatory Modules Deletion Controller](../../internal/controller/mandatory_modules_deletion_controller.go) deals with the deletion of mandatory modules.
+Lifecycle Manager uses two Mandatory Modules Controllers:
+- [Mandatory Modules Installation Controller](../../internal/controller/mandatory_modules_installation_controller.go) deals with the reconciliation of mandatory modules
+- [Mandatory Modules Deletion Controller](../../internal/controller/mandatory_modules_deletion_controller.go) deals with the deletion of mandatory modules
 
 Since the channel concept does not apply to mandatory modules, the Mandatory Modules Installation Controller fetches all the Mandatory ModuleTemplate CRs without any channel filtering. It then translates the ModuleTemplate CR for the mandatory module to a [Manifest CR](/api/v1beta2/manifest_types.go) with an OwnerReference to the Kyma CR. Similarly to the [Kyma Controller](/internal/controller/kyma_controller.go),
 it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandatory ModuleTemplate CR is not synchronized to the remote cluster and the module status does not appear in the Kyma CR status. If a mandatory module needs to be removed from all clusters, the corresponding ModuleTemplate needs to be deleted, the mandatory module deletion controller picks this event up and marks all associated Manifests for deletion.
