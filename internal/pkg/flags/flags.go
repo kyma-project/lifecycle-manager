@@ -10,35 +10,35 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval                            = 30 * time.Second
+	DefaultKymaRequeueSuccessInterval                            = 30 * time.Second
 	DefaultKymaRequeueErrInterval                                = 2 * time.Second
 	DefaultKymaRequeueWarningInterval                            = 30 * time.Second
 	DefaultKymaRequeueBusyInterval                               = 5 * time.Second
-	defaultManifestRequeueSuccessInterval                        = 30 * time.Second
-	defaultMandatoryModuleRequeueSuccessInterval                 = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval                         = 30 * time.Second
-	defaultClientQPS                                             = 300
-	defaultClientBurst                                           = 600
-	defaultPprofServerTimeout                                    = 90 * time.Second
-	rateLimiterBurstDefault                                      = 200
-	rateLimiterFrequencyDefault                                  = 30
-	failureBaseDelayDefault                                      = 100 * time.Millisecond
-	failureMaxDelayDefault                                       = 5 * time.Second
-	defaultCacheSyncTimeout                                      = 2 * time.Minute
-	defaultLogLevel                                              = log.WarnLevel
-	defaultPurgeFinalizerTimeout                                 = 5 * time.Minute
-	defaultMaxConcurrentManifestReconciles                       = 1
-	defaultMaxConcurrentKymaReconciles                           = 1
-	defaultMaxConcurrentWatcherReconciles                        = 1
-	defaultMaxConcurrentMandatoryModulesReconciles               = 1
+	DefaultManifestRequeueSuccessInterval                        = 30 * time.Second
+	DefaultMandatoryModuleRequeueSuccessInterval                 = 30 * time.Second
+	DefaultWatcherRequeueSuccessInterval                         = 30 * time.Second
+	DefaultClientQPS                                             = 300
+	DefaultClientBurst                                           = 600
+	DefaultPprofServerTimeout                                    = 90 * time.Second
+	RateLimiterBurstDefault                                      = 200
+	RateLimiterFrequencyDefault                                  = 30
+	FailureBaseDelayDefault                                      = 100 * time.Millisecond
+	FailureMaxDelayDefault                                       = 5 * time.Second
+	DefaultCacheSyncTimeout                                      = 2 * time.Minute
+	DefaultLogLevel                                              = log.WarnLevel
+	DefaultPurgeFinalizerTimeout                                 = 5 * time.Minute
+	DefaultMaxConcurrentManifestReconciles                       = 1
+	DefaultMaxConcurrentKymaReconciles                           = 1
+	DefaultMaxConcurrentWatcherReconciles                        = 1
+	DefaultMaxConcurrentMandatoryModulesReconciles               = 1
 	DefaultIstioGatewayName                                      = "klm-watcher-gateway"
 	DefaultIstioGatewayNamespace                                 = "kcp-system"
 	DefaultIstioNamespace                                        = "istio-system"
 	DefaultCaCertName                                            = "klm-watcher-serving-cert"
-	defaultCaCertCacheTTL                          time.Duration = 1 * time.Hour
-	defaultSelfSignedCertDuration                  time.Duration = 90 * 24 * time.Hour
-	defaultSelfSignedCertRenewBefore               time.Duration = 60 * 24 * time.Hour
-	defaultSelfSignedCertificateRenewBuffer                      = 24 * time.Hour
+	DefaultCaCertCacheTTL                          time.Duration = 1 * time.Hour
+	DefaultSelfSignedCertDuration                  time.Duration = 90 * 24 * time.Hour
+	DefaultSelfSignedCertRenewBefore               time.Duration = 60 * 24 * time.Hour
+	DefaultSelfSignedCertificateRenewBuffer                      = 24 * time.Hour
 	DefaultRemoteSyncNamespace                                   = "kyma-system"
 )
 
@@ -61,21 +61,21 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.PprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.MaxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
-		defaultMaxConcurrentKymaReconciles, "The maximum number of concurrent Kyma Reconciles which can be run.")
+		DefaultMaxConcurrentKymaReconciles, "The maximum number of concurrent Kyma Reconciles which can be run.")
 	flag.IntVar(&flagVar.MaxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
-		defaultMaxConcurrentManifestReconciles,
+		DefaultMaxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
 	flag.IntVar(&flagVar.MaxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
-		defaultMaxConcurrentWatcherReconciles,
+		DefaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.IntVar(&flagVar.MaxConcurrentMandatoryModulesReconciles, "max-concurrent-mandatory-modules-reconciles",
-		defaultMaxConcurrentMandatoryModulesReconciles,
+		DefaultMaxConcurrentMandatoryModulesReconciles,
 		"The maximum number of concurrent Mandatory Modules Reconciles which can be run.")
 	flag.BoolVar(&flagVar.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.KymaRequeueSuccessInterval, "kyma-requeue-success-interval",
-		defaultKymaRequeueSuccessInterval,
+		DefaultKymaRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.KymaRequeueErrInterval, "kyma-requeue-error-interval",
 		DefaultKymaRequeueErrInterval,
@@ -87,17 +87,17 @@ func DefineFlagVar() *FlagVar {
 		DefaultKymaRequeueBusyInterval,
 		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.MandatoryModuleRequeueSuccessInterval, "mandatory-module-requeue-success-interval",
-		defaultMandatoryModuleRequeueSuccessInterval,
+		DefaultMandatoryModuleRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.ManifestRequeueSuccessInterval, "manifest-requeue-success-interval",
-		defaultManifestRequeueSuccessInterval,
+		DefaultManifestRequeueSuccessInterval,
 		"determines the duration a Manifest in Ready state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.WatcherRequeueSuccessInterval, "watcher-requeue-success-interval",
-		defaultWatcherRequeueSuccessInterval,
+		DefaultWatcherRequeueSuccessInterval,
 		"determines the duration a Watcher in Ready state is enqueued for reconciliation.")
 
-	flag.Float64Var(&flagVar.ClientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
-	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
+	flag.Float64Var(&flagVar.ClientQPS, "k8s-client-qps", DefaultClientQPS, "kubernetes client QPS")
+	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", DefaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.ModuleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
 	flag.BoolVar(&flagVar.EnableVerification, "enable-verification", false,
@@ -119,29 +119,29 @@ func DefineFlagVar() *FlagVar {
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when "+
 			"creating the KCP cluster")
 	flag.BoolVar(&flagVar.Pprof, "pprof", false, "Whether to start up a pprof server.")
-	flag.DurationVar(&flagVar.PprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
+	flag.DurationVar(&flagVar.PprofServerTimeout, "pprof-server-timeout", DefaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
-	flag.IntVar(&flagVar.RateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
+	flag.IntVar(&flagVar.RateLimiterBurst, "rate-limiter-burst", RateLimiterBurstDefault,
 		"Indicates the rateLimiterBurstDefault value for the bucket rate limiter.")
-	flag.IntVar(&flagVar.RateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
+	flag.IntVar(&flagVar.RateLimiterFrequency, "rate-limiter-frequency", RateLimiterFrequencyDefault,
 		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
-	flag.DurationVar(&flagVar.FailureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
+	flag.DurationVar(&flagVar.FailureBaseDelay, "failure-base-delay", FailureBaseDelayDefault,
 		"Indicates the failure base delay in seconds for rate limiter.")
-	flag.DurationVar(&flagVar.FailureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
+	flag.DurationVar(&flagVar.FailureMaxDelay, "failure-max-delay", FailureMaxDelayDefault,
 		"Indicates the failure max delay in seconds")
-	flag.DurationVar(&flagVar.CacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
+	flag.DurationVar(&flagVar.CacheSyncTimeout, "cache-sync-timeout", DefaultCacheSyncTimeout,
 		"Indicates the cache sync timeout in seconds")
 	flag.BoolVar(&flagVar.EnableDomainNameVerification, "enable-domain-name-pinning", true,
 		"Enabling verification of incoming listener request by comparing SAN with KymaCR-SKR-domain")
 	flag.IntVar(
-		&flagVar.LogLevel, "log-level", defaultLogLevel,
+		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
 	flag.BoolVar(&flagVar.InKCPMode, "in-kcp-mode", false,
 		"Indicates lifecycle manager is deployed in control-plane mode (multiple clusters mode)")
 	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enabling purge finalizer")
-	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
+	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", DefaultPurgeFinalizerTimeout,
 		"Indicates the SKR Purge Finalizers execution delay in seconds")
 	flag.StringVar(&flagVar.SkipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
@@ -149,15 +149,15 @@ func DefineFlagVar() *FlagVar {
 		"Name of the namespace for syncing remote Kyma and module catalog")
 	flag.StringVar(&flagVar.CaCertName, "ca-cert-name", DefaultCaCertName,
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
-	flag.DurationVar(&flagVar.CaCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
+	flag.DurationVar(&flagVar.CaCertCacheTTL, "ca-cert-cache-ttl", DefaultCaCertCacheTTL,
 		"The ttl for the CA Certificate Cache")
-	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", defaultSelfSignedCertDuration,
+	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", DefaultSelfSignedCertDuration,
 		"The lifetime duration of self-signed certificate, minimum accepted duration is 1 hour.")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
-		defaultSelfSignedCertRenewBefore,
+		DefaultSelfSignedCertRenewBefore,
 		"How long before the currently issued self-signed certificate's expiry cert-manager should renew the certificate")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBuffer, "self-signed-cert-renew-buffer",
-		defaultSelfSignedCertificateRenewBuffer,
+		DefaultSelfSignedCertificateRenewBuffer,
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", "v1alpha1",
