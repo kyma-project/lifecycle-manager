@@ -29,11 +29,8 @@ const (
 
 var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 	Context("Given Kyma with one mandatory Module Manifest CR on Control-Plane", func() {
-		kyma := &v1beta2.Kyma{}
-		It("When the Kyma CR is created", func() {
-			kyma = NewTestKyma("no-module-kyma")
-			registerControlPlaneLifecycleForKyma(kyma)
-		})
+		kyma := NewTestKyma("no-module-kyma")
+		registerControlPlaneLifecycleForKyma(kyma)
 		It("Then Kyma CR should result in a ready state and mandatory manifest is created with IsMandatory label",
 			func() {
 				Eventually(KymaIsInState).
