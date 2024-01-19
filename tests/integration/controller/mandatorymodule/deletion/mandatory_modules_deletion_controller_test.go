@@ -43,16 +43,15 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
 				Should(Succeed())
-		})
-
-		It("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
-			Eventually(mandatoryModuleTemplateFinalizerExists).
-				WithContext(ctx).
-				WithArguments(controlPlaneClient, client.ObjectKey{
-					Namespace: apimetav1.NamespaceDefault,
-					Name:      "mandatory-module",
-				}).
-				Should(Succeed())
+			By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
+				Eventually(mandatoryModuleTemplateFinalizerExists).
+					WithContext(ctx).
+					WithArguments(controlPlaneClient, client.ObjectKey{
+						Namespace: apimetav1.NamespaceDefault,
+						Name:      "mandatory-module",
+					}).
+					Should(Succeed())
+			})
 		})
 
 		It("When mandatory ModuleTemplate marked for deletion", func() {
@@ -60,24 +59,23 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(controlPlaneClient).
 				Should(Succeed())
+			By("Then mandatory Manifest is deleted", func() {
+				Eventually(ManifestExistsWithAnnotation).
+					WithContext(ctx).
+					WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
+					Should(Not(Succeed()))
+			})
+			By("And finalizer is removed from mandatory ModuleTemplate", func() {
+				Eventually(mandatoryModuleTemplateFinalizerExists).
+					WithContext(ctx).
+					WithArguments(controlPlaneClient, client.ObjectKey{
+						Namespace: apimetav1.NamespaceDefault,
+						Name:      "mandatory-module",
+					}).
+					Should(Not(Succeed()))
+			})
 		})
 
-		It("Then mandatory Manifest is deleted", func() {
-			Eventually(ManifestExistsWithAnnotation).
-				WithContext(ctx).
-				WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
-				Should(Not(Succeed()))
-		})
-
-		It("And finalizer is removed from mandatory ModuleTemplate", func() {
-			Eventually(mandatoryModuleTemplateFinalizerExists).
-				WithContext(ctx).
-				WithArguments(controlPlaneClient, client.ObjectKey{
-					Namespace: apimetav1.NamespaceDefault,
-					Name:      "mandatory-module",
-				}).
-				Should(Not(Succeed()))
-		})
 	})
 })
 
