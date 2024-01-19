@@ -75,7 +75,6 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					Should(Not(Succeed()))
 			})
 		})
-
 	})
 })
 
