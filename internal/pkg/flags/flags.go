@@ -40,6 +40,15 @@ const (
 	DefaultSelfSignedCertRenewBefore               time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                      = 24 * time.Hour
 	DefaultRemoteSyncNamespace                                   = "kyma-system"
+	DefaultMetricsAddress                                        = ":8080"
+	DefaultProbeAddress                                          = ":8081"
+	DefaultKymaListenerAddress                                   = ":8082"
+	DefaultManifestListenerAddress                               = ":8083"
+	DefaultPprofAddress                                          = ":8084"
+	DefaultWatcherResourcesPath                                  = "./skr-webhook"
+	DefaultWatcherResourceLimitsCPU                              = "0.1"
+	DefaultWatcherResourceLimitsMemory                           = "200Mi"
+	DefaultDropStoredVersion                                     = "v1alpha1"
 )
 
 var (
@@ -50,15 +59,15 @@ var (
 //nolint:funlen // defines all program flags
 func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
-	flag.StringVar(&flagVar.MetricsAddr, "metrics-bind-address", ":8080",
+	flag.StringVar(&flagVar.MetricsAddr, "metrics-bind-address", DefaultMetricsAddress,
 		"The address the metric endpoint binds to.")
-	flag.StringVar(&flagVar.ProbeAddr, "health-probe-bind-address", ":8081",
+	flag.StringVar(&flagVar.ProbeAddr, "health-probe-bind-address", DefaultProbeAddress,
 		"The address the probe endpoint binds to.")
-	flag.StringVar(&flagVar.KymaListenerAddr, "kyma-skr-listener-bind-address", ":8082",
+	flag.StringVar(&flagVar.KymaListenerAddr, "kyma-skr-listener-bind-address", DefaultKymaListenerAddress,
 		"The address the skr listener endpoint binds to.")
-	flag.StringVar(&flagVar.ManifestListenerAddr, "manifest-skr-listener-bind-address", ":8083",
+	flag.StringVar(&flagVar.ManifestListenerAddr, "manifest-skr-listener-bind-address", DefaultManifestListenerAddress,
 		"The address the skr listener endpoint binds to.")
-	flag.StringVar(&flagVar.PprofAddr, "pprof-bind-address", ":8084",
+	flag.StringVar(&flagVar.PprofAddr, "pprof-bind-address", DefaultPprofAddress,
 		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.MaxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
 		DefaultMaxConcurrentKymaReconciles, "The maximum number of concurrent Kyma Reconciles which can be run.")
@@ -160,17 +169,18 @@ func DefineFlagVar() *FlagVar {
 		DefaultSelfSignedCertificateRenewBuffer,
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
-	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", "v1alpha1",
+	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", DefaultDropStoredVersion,
 		"The API version to be dropped from the storage versions")
 	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
 	flag.BoolVar(&flagVar.UseWatcherDevRegistry, "watcher-dev-registry", false,
 		`Enable to use the dev registry for fetching the watcher image.`)
-	flag.StringVar(&flagVar.WatcherResourceLimitsMemory, "skr-webhook-memory-limits", "200Mi",
+	flag.StringVar(&flagVar.WatcherResourceLimitsMemory, "skr-webhook-memory-limits",
+		DefaultWatcherResourceLimitsMemory,
 		"The resources.limits.memory for skr webhook.")
-	flag.StringVar(&flagVar.WatcherResourceLimitsCPU, "skr-webhook-cpu-limits", "0.1",
+	flag.StringVar(&flagVar.WatcherResourceLimitsCPU, "skr-webhook-cpu-limits", DefaultWatcherResourceLimitsCPU,
 		"The resources.limits.cpu for skr webhook.")
-	flag.StringVar(&flagVar.WatcherResourcesPath, "skr-watcher-path", "./skr-webhook",
+	flag.StringVar(&flagVar.WatcherResourcesPath, "skr-watcher-path", DefaultWatcherResourcesPath,
 		"The path to the skr watcher resources.")
 	return flagVar
 }

@@ -2,11 +2,13 @@ package flags_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
-	. "github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 )
 
 func Test_ConstantFlags(t *testing.T) {
@@ -18,106 +20,107 @@ func Test_ConstantFlags(t *testing.T) {
 	}{
 		{
 			constName:     "DefaultKymaRequeueSuccessInterval",
-			constValue:    string(DefaultKymaRequeueSuccessInterval),
-			expectedValue: string(30 * time.Second),
+			constValue:    DefaultKymaRequeueSuccessInterval.String(),
+			expectedValue: (30 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultKymaRequeueErrInterval",
-			constValue:    string(DefaultKymaRequeueErrInterval),
-			expectedValue: string(2 * time.Second),
+			constValue:    DefaultKymaRequeueErrInterval.String(),
+			expectedValue: (2 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultKymaRequeueWarningInterval",
-			constValue:    string(DefaultKymaRequeueWarningInterval),
-			expectedValue: string(30 * time.Second),
+			constValue:    DefaultKymaRequeueWarningInterval.String(),
+			expectedValue: (30 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultKymaRequeueBusyInterval",
-			constValue:    string(DefaultKymaRequeueBusyInterval),
-			expectedValue: string(5 * time.Second),
+			constValue:    DefaultKymaRequeueBusyInterval.String(),
+			expectedValue: (5 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultManifestRequeueSuccessInterval",
-			constValue:    string(DefaultManifestRequeueSuccessInterval),
-			expectedValue: string(30 * time.Second),
-		}, {
+			constValue:    DefaultManifestRequeueSuccessInterval.String(),
+			expectedValue: (30 * time.Second).String(),
+		},
+		{
 			constName:     "DefaultMandatoryModuleRequeueSuccessInterval",
-			constValue:    string(DefaultMandatoryModuleRequeueSuccessInterval),
-			expectedValue: string(30 * time.Second),
+			constValue:    DefaultMandatoryModuleRequeueSuccessInterval.String(),
+			expectedValue: (30 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultWatcherRequeueSuccessInterval",
-			constValue:    string(DefaultWatcherRequeueSuccessInterval),
-			expectedValue: string(30 * time.Second),
+			constValue:    DefaultWatcherRequeueSuccessInterval.String(),
+			expectedValue: (30 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultClientQPS",
-			constValue:    string(DefaultClientQPS),
+			constValue:    strconv.Itoa(DefaultClientQPS),
 			expectedValue: "300",
 		},
 		{
 			constName:     "DefaultClientBurst",
-			constValue:    string(DefaultClientBurst),
+			constValue:    strconv.Itoa(DefaultClientBurst),
 			expectedValue: "600",
 		},
 		{
 			constName:     "DefaultPprofServerTimeout",
-			constValue:    string(DefaultPprofServerTimeout),
-			expectedValue: string(90 * time.Second),
+			constValue:    DefaultPprofServerTimeout.String(),
+			expectedValue: (90 * time.Second).String(),
 		},
 		{
 			constName:     "RateLimiterBurstDefault",
-			constValue:    string(RateLimiterBurstDefault),
+			constValue:    strconv.Itoa(RateLimiterBurstDefault),
 			expectedValue: "200",
 		},
 		{
 			constName:     "RateLimiterFrequencyDefault",
-			constValue:    string(RateLimiterFrequencyDefault),
+			constValue:    strconv.Itoa(RateLimiterFrequencyDefault),
 			expectedValue: "30",
 		},
 		{
 			constName:     "FailureBaseDelayDefault",
-			constValue:    string(FailureBaseDelayDefault),
-			expectedValue: string(100 * time.Millisecond),
+			constValue:    FailureBaseDelayDefault.String(),
+			expectedValue: (100 * time.Millisecond).String(),
 		},
 		{
 			constName:     "FailureMaxDelayDefault",
-			constValue:    string(FailureMaxDelayDefault),
-			expectedValue: string(5 * time.Second),
+			constValue:    FailureMaxDelayDefault.String(),
+			expectedValue: (5 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultCacheSyncTimeout",
-			constValue:    string(DefaultCacheSyncTimeout),
-			expectedValue: string(2 * time.Minute),
+			constValue:    DefaultCacheSyncTimeout.String(),
+			expectedValue: (2 * time.Minute).String(),
 		},
 		{
 			constName:     "DefaultLogLevel",
-			constValue:    string(DefaultLogLevel),
-			expectedValue: string(log.WarnLevel),
+			constValue:    strconv.Itoa(DefaultLogLevel),
+			expectedValue: strconv.Itoa(log.WarnLevel),
 		},
 		{
 			constName:     "DefaultPurgeFinalizerTimeout",
-			constValue:    string(DefaultPurgeFinalizerTimeout),
-			expectedValue: string(5 * time.Minute),
+			constValue:    DefaultPurgeFinalizerTimeout.String(),
+			expectedValue: (5 * time.Minute).String(),
 		},
 		{
 			constName:     "DefaultMaxConcurrentManifestReconciles",
-			constValue:    string(DefaultMaxConcurrentManifestReconciles),
+			constValue:    strconv.Itoa(DefaultMaxConcurrentManifestReconciles),
 			expectedValue: "1",
 		},
 		{
 			constName:     "DefaultMaxConcurrentKymaReconciles",
-			constValue:    string(DefaultMaxConcurrentKymaReconciles),
+			constValue:    strconv.Itoa(DefaultMaxConcurrentKymaReconciles),
 			expectedValue: "1",
 		},
 		{
 			constName:     "DefaultMaxConcurrentWatcherReconciles",
-			constValue:    string(DefaultMaxConcurrentWatcherReconciles),
+			constValue:    strconv.Itoa(DefaultMaxConcurrentWatcherReconciles),
 			expectedValue: "1",
 		},
 		{
 			constName:     "DefaultMaxConcurrentMandatoryModulesReconciles",
-			constValue:    string(DefaultMaxConcurrentMandatoryModulesReconciles),
+			constValue:    strconv.Itoa(DefaultMaxConcurrentMandatoryModulesReconciles),
 			expectedValue: "1",
 		},
 		{
@@ -147,23 +150,68 @@ func Test_ConstantFlags(t *testing.T) {
 		},
 		{
 			constName:     "DefaultCaCertCacheTTL",
-			constValue:    string(DefaultCaCertCacheTTL),
-			expectedValue: string(1 * time.Hour),
+			constValue:    DefaultCaCertCacheTTL.String(),
+			expectedValue: (1 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultSelfSignedCertDuration",
-			constValue:    string(DefaultSelfSignedCertDuration),
-			expectedValue: string(90 * 24 * time.Hour),
+			constValue:    DefaultSelfSignedCertDuration.String(),
+			expectedValue: (90 * 24 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultSelfSignedCertRenewBefore",
-			constValue:    string(DefaultSelfSignedCertRenewBefore),
-			expectedValue: string(90 * 24 * time.Hour),
+			constValue:    DefaultSelfSignedCertRenewBefore.String(),
+			expectedValue: (60 * 24 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultSelfSignedCertificateRenewBuffer",
-			constValue:    string(DefaultSelfSignedCertificateRenewBuffer),
-			expectedValue: string(24 * time.Hour),
+			constValue:    DefaultSelfSignedCertificateRenewBuffer.String(),
+			expectedValue: (24 * time.Hour).String(),
+		},
+		{
+			constName:     "DefaultMetricsAddress",
+			constValue:    DefaultMetricsAddress,
+			expectedValue: ":8080",
+		},
+		{
+			constName:     "DefaultProbeAddress",
+			constValue:    DefaultProbeAddress,
+			expectedValue: ":8081",
+		},
+		{
+			constName:     "DefaultKymaListenerAddress",
+			constValue:    DefaultKymaListenerAddress,
+			expectedValue: ":8082",
+		},
+		{
+			constName:     "DefaultManifestListenerAddr",
+			constValue:    DefaultManifestListenerAddress,
+			expectedValue: ":8083",
+		},
+		{
+			constName:     "DefaultPprofAddress",
+			constValue:    DefaultPprofAddress,
+			expectedValue: ":8084",
+		},
+		{
+			constName:     "DefaultWatcherResourcesPath",
+			constValue:    DefaultWatcherResourcesPath,
+			expectedValue: "./skr-webhook",
+		},
+		{
+			constName:     "DefaultWatcherResourceLimitsCPU",
+			constValue:    DefaultWatcherResourceLimitsCPU,
+			expectedValue: "0.1",
+		},
+		{
+			constName:     "DefaultWatcherResourceLimitsMemory",
+			constValue:    DefaultWatcherResourceLimitsMemory,
+			expectedValue: "200Mi",
+		},
+		{
+			constName:     "DefaultDropStoredVersion",
+			constValue:    DefaultDropStoredVersion,
+			expectedValue: "v1alpha1",
 		},
 	}
 	for _, testcase := range tests {
