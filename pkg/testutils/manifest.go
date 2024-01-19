@@ -86,11 +86,13 @@ func GetManifestWithObjectKey(ctx context.Context,
 	return manifest, nil
 }
 
-func ManifestExistsWithAnnotation(ctx context.Context, clnt client.Client,
+func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt client.Client,
 	annotationKey, annotationValue string,
 ) error {
 	manifests := v1beta2.ManifestList{}
-	if err := clnt.List(ctx, &manifests); err != nil {
+	if err := clnt.List(ctx, &manifests, &client.ListOptions{
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+	}); err != nil {
 		return fmt.Errorf("failed listing manifests: %w", err)
 	}
 

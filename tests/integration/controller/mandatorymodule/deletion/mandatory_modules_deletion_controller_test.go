@@ -34,37 +34,39 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 			kyma = NewTestKyma("no-module-kyma")
 			registerControlPlaneLifecycleForKyma(kyma)
 		})
-		It("Then Kyma CR should result in a ready state and mandatory manifest is created", func() {
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
-				Should(Succeed())
-			Eventually(ManifestExistsWithAnnotation).
-				WithContext(ctx).
-				WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
-				Should(Succeed())
-			By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
-				Eventually(mandatoryModuleTemplateFinalizerExists).
+		It("Then Kyma CR should result in a ready state and mandatory manifest is created with IsMandatory label",
+			func() {
+				Eventually(KymaIsInState).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, client.ObjectKey{
-						Namespace: apimetav1.NamespaceDefault,
-						Name:      "mandatory-module",
-					}).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 					Should(Succeed())
+				Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
+					WithContext(ctx).
+					WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
+					Should(Succeed())
+				By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
+					Eventually(mandatoryModuleTemplateFinalizerExists).
+						WithContext(ctx).
+						WithArguments(controlPlaneClient, client.ObjectKey{
+							Namespace: apimetav1.NamespaceDefault,
+							Name:      "mandatory-module",
+						}).
+						Should(Succeed())
+				})
+				By("And mandatory Module label is add ")
 			})
-		})
 
 		It("When mandatory ModuleTemplate marked for deletion", func() {
 			Eventually(deleteMandatoryModuleTemplates).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient).
 				Should(Succeed())
-			By("Then mandatory Manifest is deleted", func() {
-				Eventually(ManifestExistsWithAnnotation).
-					WithContext(ctx).
-					WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
-					Should(Not(Succeed()))
-			})
+		})
+		It("Then mandatory Manifest is deleted", func() {
+			Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
+				Should(Not(Succeed()))
 			By("And finalizer is removed from mandatory ModuleTemplate", func() {
 				Eventually(mandatoryModuleTemplateFinalizerExists).
 					WithContext(ctx).
