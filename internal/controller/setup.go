@@ -209,8 +209,7 @@ func (r *MandatoryModuleDeletionReconciler) SetupWithManager(mgr ctrl.Manager,
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.ModuleTemplate{}).
 		WithOptions(options).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		Watches(&apicorev1.Secret{}, handler.Funcs{})
+		WithEventFilter(predicate.GenerationChangedPredicate{})
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)

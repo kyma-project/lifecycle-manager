@@ -49,18 +49,18 @@ type MandatoryModuleDeletionReconciler struct {
 
 func (r *MandatoryModuleDeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.V(log.DebugLevel).Info("Mandatory Module Deletion  Reconciliation started")
+	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	template := &v1beta2.ModuleTemplate{}
 	if err := r.Get(ctx, req.NamespacedName, template); err != nil {
-		if !util.IsNotFound(err) {
-			return ctrl.Result{}, fmt.Errorf("MandatoryModuleDeletionController: %w", err)
+		if util.IsNotFound(err) {
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("ModuleTemplate %s not found, probably already deleted",
+				req.NamespacedName))
+			return ctrl.Result{Requeue: false}, nil
 		}
-		logger.V(log.DebugLevel).Info(fmt.Sprintf("ModuleTemplate %s not found, probably already deleted",
-			req.NamespacedName))
-		return ctrl.Result{Requeue: false}, nil
+		return ctrl.Result{}, fmt.Errorf("MandatoryModuleDeletionController: %w", err)
 	}
 
 	if !template.Spec.Mandatory {

@@ -54,12 +54,12 @@ func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if !util.IsNotFound(err) {
-			return ctrl.Result{}, fmt.Errorf("MandatoryModuleController: %w", err)
+		if util.IsNotFound(err) {
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
+				req.NamespacedName))
+			return ctrl.Result{Requeue: false}, nil
 		}
-		logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
-			req.NamespacedName))
-		return ctrl.Result{Requeue: false}, nil
+		return ctrl.Result{}, fmt.Errorf("MandatoryModuleController: %w", err)
 	}
 
 	if kyma.SkipReconciliation() {

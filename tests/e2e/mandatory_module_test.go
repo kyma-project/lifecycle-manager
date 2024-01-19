@@ -54,26 +54,26 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						"v1alpha1", "Sample").
 					Should(Succeed())
 			})
-			By("Then mandatory SKR Module Default CR is not recreated", func() {
-				Consistently(CheckIfExists).
-					WithContext(ctx).
-					WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
-						"v1alpha1", "Sample", runtimeClient).
-					Should(Equal(ErrNotFound))
-			})
+		})
+		It("Then mandatory SKR Module Default CR is not recreated", func() {
+			Consistently(CheckIfExists).
+				WithContext(ctx).
+				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
+					"v1alpha1", "Sample", runtimeClient).
+				Should(Equal(ErrNotFound))
+		})
 
-			By("When deleting the mandatory SKR Module Manager Deployment", func() {
-				err := DeleteCRWithGVK(ctx, runtimeClient, deployName,
-					TestModuleResourceNamespace, "apps", "v1", "Deployment")
-				Expect(err).ToNot(HaveOccurred())
-			})
-			By("Then Module Manager Deployment is not recreated on the SKR cluster", func() {
-				Eventually(DeploymentIsReady).
-					WithContext(ctx).
-					WithArguments(runtimeClient, deployName,
-						TestModuleResourceNamespace).
-					Should(Equal(ErrNotFound))
-			})
+		It("When deleting the mandatory SKR Module Manager Deployment", func() {
+			err := DeleteCRWithGVK(ctx, runtimeClient, deployName,
+				TestModuleResourceNamespace, "apps", "v1", "Deployment")
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("Then Module Manager Deployment is not recreated on the SKR cluster", func() {
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(runtimeClient, deployName,
+					TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
 				Consistently(KymaIsInState).
 					WithContext(ctx).
@@ -87,15 +87,15 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, false).
 				Should(Succeed())
+		})
+		It("Then mandatory SKR Module Default CR is recreated", func() {
+			Eventually(CheckIfExists).
+				WithContext(ctx).
+				WithArguments("sample-yaml", "kyma-system",
+					"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
+				Should(Succeed())
 
-			By("Then mandatory SKR Module Default CR is recreated", func() {
-				Eventually(CheckIfExists).
-					WithContext(ctx).
-					WithArguments("sample-yaml", "kyma-system",
-						"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
-					Should(Succeed())
-			})
-			By("Then mandatory SKR Module Deployment is recreated", func() {
+			By("And mandatory SKR Module Deployment is recreated", func() {
 				Eventually(DeploymentIsReady).
 					WithContext(ctx).
 					WithArguments(runtimeClient, deployName,
@@ -119,18 +119,20 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					Channel: "regular",
 				}).
 				Should(Succeed())
-			By("Then Kyma is in a \"Error\" State", func() {
-				Eventually(KymaIsInState).
-					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
-					Should(Succeed())
-			})
-			By("When mandatory Module is disabled on SKR Kyma CR", func() {
-				Eventually(DisableModule).
-					WithContext(ctx).
-					WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "template-operator").
-					Should(Succeed())
-			})
+		})
+		It("Then Kyma is in a \"Error\" State", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
+				Should(Succeed())
+		})
+
+		It("When mandatory Module is disabled on SKR Kyma CR", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "template-operator").
+				Should(Succeed())
+
 			By("Then Kyma is back in a \"Ready\" State", func() {
 				Eventually(KymaIsInState).
 					WithContext(ctx).
@@ -142,16 +144,16 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 		It("When new version of ModuleTemplate is applied", func() {
 			cmd := exec.Command("kubectl", "apply", "-f",
 				"../moduletemplates/mandatory_moduletemplate_template_operator_v2.yaml")
-			out, _ := cmd.CombinedOutput()
-			//			Expect(err).NotTo(HaveOccurred())
-			GinkgoWriter.Printf(string(out))
-			By("Then Kyma mandatory Module is updated on SKR Cluster", func() {
-				Eventually(DeploymentIsReady).
-					WithContext(ctx).
-					WithArguments(runtimeClient, "template-operator-v2-controller-manager",
-						TestModuleResourceNamespace).
-					Should(Succeed())
-			})
+			_, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("Then Kyma mandatory Module is updated on SKR Cluster", func() {
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(runtimeClient, "template-operator-v2-controller-manager",
+					TestModuleResourceNamespace).
+				Should(Succeed())
+
 			By("And old Module Operator Deployment is removed", func() {
 				Eventually(DeploymentIsReady).
 					WithContext(ctx).
@@ -178,13 +180,14 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						},
 					}).
 				Should(Succeed())
-			By("Then mandatory SKR module is removed", func() {
-				Eventually(DeploymentIsReady).
-					WithContext(ctx).
-					WithArguments(runtimeClient, "template-operator-v2-controller-manager",
-						TestModuleResourceNamespace).
-					Should(Equal(ErrNotFound))
-			})
+		})
+		It("Then mandatory SKR module is removed", func() {
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(runtimeClient, "template-operator-v2-controller-manager",
+					TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+
 			By("And the mandatory SKR Module Default CR is removed", func() {
 				Eventually(CheckIfExists).
 					WithContext(ctx).
