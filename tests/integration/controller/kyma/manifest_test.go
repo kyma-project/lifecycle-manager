@@ -17,12 +17,12 @@ import (
 	"github.com/open-component-model/ocm/pkg/runtime"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -472,7 +472,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 	actualManifestResource := manifestResource
 	expectedManifestResource := moduleTemplateData.DeepCopy()
 	expectedManifestResource.
-		SetNamespace(controller.DefaultRemoteSyncNamespace) // the namespace is set in the "actual" object
+		SetNamespace(flags.DefaultRemoteSyncNamespace) // the namespace is set in the "actual" object
 	expectedManifestResource.SetName(actualManifestResource.GetName())
 	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
 		actualJSON, err := json.MarshalIndent(actualManifestResource, "", "  ")

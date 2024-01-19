@@ -34,6 +34,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
@@ -108,7 +109,7 @@ var _ = BeforeSuite(func() {
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
-		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           false,
 	}
 
