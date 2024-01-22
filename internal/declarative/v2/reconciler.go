@@ -134,9 +134,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
-		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrKubeconfigFetchFailed) {
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
-				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
+		if !obj.GetDeletionTimestamp().IsZero() {
+			if errors.Is(err, ErrKubeconfigFetchFailed) {
+				return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
+					metrics.ManifestRemoveFinalizerWhenKubeconfigGone, metrics.IntendedRequeue)
+			}
+
+			// TODO: Loop up secret
+			// TODO: if secret is not found
+			// TODO: remove finalizers
 		}
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -175,7 +181,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if r.ClientCacheKeyFn != nil {
 				clientsCacheKey, ok := r.ClientCacheKeyFn(ctx, obj)
 				if ok {
-					logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v", clientsCacheKey))
+					logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
+						clientsCacheKey))
 					r.ClientCache.Delete(clientsCacheKey)
 				}
 			}
