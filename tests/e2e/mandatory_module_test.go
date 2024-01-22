@@ -39,6 +39,14 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 					Should(Succeed())
 			})
+			By("And the mandatory ModuleTemplate is not synchronised to the SKR cluster", func() {
+				Consistently(CheckIfExists).
+					WithContext(ctx).
+					WithArguments("template-operator-mandatory", "kyma-system",
+						"operator.kyma-project.io", "v1beta2", "ModuleTemplate", runtimeClient).
+					Should(Not(Succeed()))
+			})
+
 		})
 
 		It("When the mandatory Manifest is labelled to skip reconciliation", func() {
