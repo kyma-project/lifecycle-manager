@@ -56,13 +56,12 @@ type (
 var ErrManifestsStillExist = errors.New("manifests still exist")
 
 const (
-	moduleReconciliationError  EventReasonError = "ModuleReconciliationError"
-	syncContextError           EventReasonError = "SyncContextError"
-	metricsError               EventReasonError = "MetricsError"
-	deletionError              EventReasonError = "DeletionError"
-	updateStatus               EventReasonInfo  = "StatusUpdate"
-	webhookChartRemoval        EventReasonInfo  = "WebhookChartRemoval"
-	DefaultRemoteSyncNamespace string           = "kyma-system"
+	moduleReconciliationError EventReasonError = "ModuleReconciliationError"
+	syncContextError          EventReasonError = "SyncContextError"
+	metricsError              EventReasonError = "MetricsError"
+	deletionError             EventReasonError = "DeletionError"
+	updateStatus              EventReasonInfo  = "StatusUpdate"
+	webhookChartRemoval       EventReasonInfo  = "WebhookChartRemoval"
 )
 
 type KymaReconciler struct {

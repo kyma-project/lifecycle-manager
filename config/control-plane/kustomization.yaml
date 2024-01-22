@@ -94,21 +94,31 @@ transformers:
   apiVersion: builtin
   kind: PatchTransformer
   metadata:
-    name: fix-overview-cm
+    name: fix-dashboard-overview-cm
   patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
   target:
     kind: ConfigMap
-    name: klm-overview
+    name: klm-dashboard-overview
     version: v1
 - |-
   apiVersion: builtin
   kind: PatchTransformer
   metadata:
-    name: fix-status-cm
+    name: fix-dashboard-status-cm
   patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
   target:
     kind: ConfigMap
-    name: klm-status
+    name: klm-dashboard-status
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-dashboard-watcher-cm
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
+  target:
+    kind: ConfigMap
+    name: klm-dashboard-watcher
     version: v1
 - |-
   apiVersion: builtin

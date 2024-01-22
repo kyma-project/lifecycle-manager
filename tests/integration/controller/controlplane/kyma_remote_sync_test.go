@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -13,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -37,7 +37,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	remoteKyma := &v1beta2.Kyma{}
 
 	remoteKyma.Name = shared.DefaultRemoteKymaName
-	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
+	remoteKyma.Namespace = flags.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	var err error
@@ -124,7 +124,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(ctx, runtimeClient, moduleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace()).
@@ -204,7 +204,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Expect SKR Kyma get recreated with no deletionTimestamp")
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
 
@@ -269,13 +269,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Expect SKR Kyma get deleted")
 		Eventually(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace, runtimeClient).
+			WithArguments(remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace, runtimeClient).
 			Should(Succeed())
 
 		By("Make sure SKR Kyma not recreated")
 		Consistently(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace, runtimeClient).
+			WithArguments(remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace, runtimeClient).
 			Should(Succeed())
 
 		By("SKRCustomTemplate should still exists in SKR")
@@ -299,7 +299,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	var err error
 	remoteKyma := &v1beta2.Kyma{}
 	remoteKyma.Name = shared.DefaultRemoteKymaName
-	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
+	remoteKyma.Namespace = flags.DefaultRemoteSyncNamespace
 
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
@@ -371,7 +371,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	remoteKyma := &v1beta2.Kyma{}
 
 	remoteKyma.Name = shared.DefaultRemoteKymaName
-	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
+	remoteKyma.Namespace = flags.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	var err error
@@ -417,7 +417,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
 		Eventually(func() error {
-			skrKyma, err := GetKyma(ctx, runtimeClient, remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace)
+			skrKyma, err := GetKyma(ctx, runtimeClient, remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace)
 			if err != nil {
 				return err
 			}

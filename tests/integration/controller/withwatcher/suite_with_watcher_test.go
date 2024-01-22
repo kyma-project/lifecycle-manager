@@ -48,6 +48,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -182,12 +183,12 @@ var _ = BeforeSuite(func() {
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
-		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
+		RemoteSyncNamespace:    flags.DefaultRemoteSyncNamespace,
 	}
 
 	certificateConfig := watcher.CertificateConfig{
 		IstioNamespace:      istioSystemNs,
-		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		CACertificateName:   caCertificateName,
 		AdditionalDNSNames:  []string{},
 		Duration:            1 * time.Hour,
@@ -217,7 +218,7 @@ var _ = BeforeSuite(func() {
 		},
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
-		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
