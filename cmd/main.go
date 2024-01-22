@@ -372,7 +372,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	}
 }
 
-func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
+func setupMandatoryModuleReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
 	options ctrlruntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
@@ -394,19 +394,19 @@ func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
 	}
 }
 
-func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, flagVar *FlagVar,
+func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
 	options ctrlruntime.Options,
 ) {
-	options.MaxConcurrentReconciles = flagVar.maxConcurrentMandatoryModuleDeletionReconciles
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
 	if err := (&controller.MandatoryModuleDeletionReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals: queue.RequeueIntervals{
-			Success: flagVar.mandatoryModuleDeletionRequeueSuccessInterval,
-			Busy:    flagVar.kymaRequeueBusyInterval,
-			Error:   flagVar.kymaRequeueErrInterval,
-			Warning: flagVar.kymaRequeueWarningInterval,
+			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+			Error:   flagVar.KymaRequeueErrInterval,
+			Warning: flagVar.KymaRequeueWarningInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
