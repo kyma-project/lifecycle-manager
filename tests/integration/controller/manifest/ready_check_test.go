@@ -1,6 +1,7 @@
 package manifest_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -18,7 +19,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	manifesttest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,7 +29,8 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	installName := filepath.Join(customDir, "installs")
 	It(
 		"setup OCI", func() {
-			manifesttest.PushToRemoteOCIRegistry(installName)
+			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			Expect(err).NotTo(HaveOccurred())
 		},
 	)
 	BeforeEach(
@@ -40,22 +41,26 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	It("Install OCI specs including an nginx deployment", func() {
 		testManifest := testutils.NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
-		validImageSpec := manifesttest.CreateOCIImageSpec(installName, manifesttest.Server.Listener.Addr().String(), false)
+		validImageSpec, err := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(),
+			manifestFilePath,
+			false)
+		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(manifesttest.InstallManifest(testManifest, imageSpecByte, false)).To(Succeed())
+		Expect(testutils.InstallManifest(ctx, controlPlaneClient, testManifest, imageSpecByte, false)).To(Succeed())
 
-		Eventually(manifesttest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
+		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady), standardTimeout,
+			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
-		testClient, err := declarativeTestClient()
+		testClient, err := declarativeTestClient(controlPlaneClient)
 		Expect(err).ToNot(HaveOccurred())
 		By("Verifying that deployment is deployed and ready")
 		deploy := &apiappsv1.Deployment{}
-		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
+		Expect(verifyDeploymentInstallation(ctx, controlPlaneClient, deploy)).To(Succeed())
 
 		By("Verifying manifest status contains all resources")
-		status, err := manifesttest.GetManifestStatus(manifestName)
+		status, err := testutils.GetManifestStatus(ctx, controlPlaneClient, manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 
@@ -72,27 +77,32 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 
 		By("Executing the CR readiness check")
 		customReadyCheck := manifest.NewCustomResourceReadyCheck()
-		stateInfo, err := customReadyCheck.Run(manifesttest.Ctx, testClient, testManifest, resources)
+		stateInfo, err := customReadyCheck.Run(ctx, testClient, testManifest, resources)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(stateInfo.State).To(Equal(shared.StateReady))
 
 		By("cleaning up the manifest")
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+			standardInterval).
 			Should(BeTrue())
-		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+			standardInterval).Should(BeTrue())
 
-		Eventually(manifesttest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, testManifest), standardTimeout,
+			standardInterval).Should(Succeed())
 
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+			standardInterval).
 			Should(BeFalse())
-		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+			standardInterval).
 			Should(BeFalse())
 	})
 })
 
-func verifyDeploymentInstallation(deploy *apiappsv1.Deployment) error {
-	err := manifesttest.K8sClient.Get(
-		manifesttest.Ctx, client.ObjectKey{
+func verifyDeploymentInstallation(ctx context.Context, clnt client.Client, deploy *apiappsv1.Deployment) error {
+	err := clnt.Get(
+		ctx, client.ObjectKey{
 			Namespace: apimetav1.NamespaceDefault,
 			Name:      "nginx-deployment",
 		}, deploy,
@@ -108,14 +118,16 @@ func verifyDeploymentInstallation(deploy *apiappsv1.Deployment) error {
 			Type:   apiappsv1.DeploymentAvailable,
 			Status: apicorev1.ConditionTrue,
 		})
-	err = manifesttest.K8sClient.Status().Update(manifesttest.Ctx, deploy)
+	err = clnt.Status().Update(ctx, deploy)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiappsv1.Deployment) ([]*resource.Info, error) {
+func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiappsv1.Deployment) ([]*resource.Info,
+	error,
+) {
 	deployUnstructuredObj, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(deploy)
 	if err != nil {
 		return nil, err
@@ -130,10 +142,10 @@ func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiapp
 	return []*resource.Info{deployInfo}, nil
 }
 
-func declarativeTestClient() (declarativev2.Client, error) {
+func declarativeTestClient(clnt client.Client) (declarativev2.Client, error) {
 	cluster := &declarativev2.ClusterInfo{
 		Config: cfg,
-		Client: manifesttest.K8sClient,
+		Client: clnt,
 	}
 
 	return declarativev2.NewSingletonClients(cluster)
@@ -148,10 +160,10 @@ func asResource(name, namespace, group, version, kind string) shared.Resource {
 	}
 }
 
-func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
+func verifyObjectExists(ctx context.Context, clnt client.Client, obj *unstructured.Unstructured) func() (bool, error) {
 	return func() (bool, error) {
-		err := manifesttest.K8sClient.Get(
-			manifesttest.Ctx, client.ObjectKeyFromObject(obj),
+		err := clnt.Get(
+			ctx, client.ObjectKeyFromObject(obj),
 			obj,
 		)
 

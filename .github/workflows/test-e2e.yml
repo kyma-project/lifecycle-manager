@@ -42,7 +42,8 @@ jobs:
                     "module-upgrade-new-version",
                     "skip-manifest-reconciliation",
                     "ca-certificate-rotation",
-                    "self-signed-certificate-rotation"
+                    "self-signed-certificate-rotation",
+                    "mandatory-module",
         ]
     name: "E2E"
     needs: [wait-for-img]
@@ -223,6 +224,11 @@ jobs:
         run: |
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+      - name: Create Template Operator Module as Mandatory Module
+        working-directory: lifecycle-manager
+        if: ${{ matrix.e2e-test == 'mandatory-module' }}
+        run: |
+          kubectl apply -f tests/moduletemplates/mandatory_moduletemplate_template_operator_v1.yaml
       - name: Apply Template Operator Module V2, fast channel
         working-directory: ./lifecycle-manager
         if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}

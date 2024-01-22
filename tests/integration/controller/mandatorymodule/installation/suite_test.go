@@ -34,15 +34,14 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -55,11 +54,11 @@ const (
 )
 
 var (
-	mandatoryModulesReconciler *controller.MandatoryModulesReconciler
-	controlPlaneClient         client.Client
-	singleClusterEnv           *envtest.Environment
-	ctx                        context.Context
-	cancel                     context.CancelFunc
+	mandatoryModuleReconciler *controller.MandatoryModuleReconciler
+	controlPlaneClient        client.Client
+	singleClusterEnv          *envtest.Environment
+	ctx                       context.Context
+	cancel                    context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {
@@ -105,7 +104,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	mandatoryModulesReconciler = &controller.MandatoryModulesReconciler{
+	mandatoryModuleReconciler = &controller.MandatoryModuleReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
@@ -113,7 +112,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 	}
 
-	err = mandatoryModulesReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
+	err = mandatoryModuleReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
@@ -133,7 +132,6 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
-
 	err := singleClusterEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

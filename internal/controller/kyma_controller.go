@@ -100,14 +100,13 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if !util.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
-			r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, metrics.UnexpectedRequeue)
-			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
+			return ctrl.Result{Requeue: false}, nil
 		}
-		// if indeed not found, stop put this kyma in queue
-		return ctrl.Result{Requeue: false}, nil
+		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, metrics.UnexpectedRequeue)
+		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 	}
 
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
