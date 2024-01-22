@@ -12,7 +12,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
+var _ = FDescribe("Mandatory Module Installation and Deletion", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 
@@ -46,7 +46,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						"operator.kyma-project.io", "v1beta2", "ModuleTemplate", runtimeClient).
 					Should(Not(Succeed()))
 			})
-
 		})
 
 		It("When the mandatory Manifest is labelled to skip reconciliation", func() {
