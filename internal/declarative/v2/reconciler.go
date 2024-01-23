@@ -32,11 +32,11 @@ var (
 	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
 	ErrRequeueRequired                     = errors.New("requeue required")
 	ErrAccessSecretNotFound                = errors.New("access secret not found")
+	ErrKymaNameFetchFailed                 = errors.New("failed to fetch kyma name")
 )
 
 const (
 	namespaceNotBeRemoved  = "kyma-system"
-	secretNamespace        = "kcp-system"
 	CustomResourceManager  = "resource.kyma-project.io/finalizer"
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
@@ -212,12 +212,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 func (r *Reconciler) getAccessSecret(ctx context.Context, obj Object) (*apicorev1.SecretList, error) {
 	kymaName, err := internal.GetResourceLabel(obj, shared.KymaName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kyma name")
+		return nil, ErrKymaNameFetchFailed
 	}
 	kubeConfigSecretList := &apicorev1.SecretList{}
 	if err := r.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kymaName}),
-		Namespace:     secretNamespace,
+		Namespace:     obj.GetNamespace(),
 	}); err != nil {
 		return nil, fmt.Errorf("failed to list kubeconfig secrets: %w", err)
 	} else if len(kubeConfigSecretList.Items) < 1 {
