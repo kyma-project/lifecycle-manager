@@ -8,6 +8,7 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -29,10 +31,12 @@ var (
 	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
 	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
 	ErrRequeueRequired                     = errors.New("requeue required")
+	ErrAccessSecretNotFound                = errors.New("access secret not found")
 )
 
 const (
 	namespaceNotBeRemoved  = "kyma-system"
+	secretNamespace        = "kcp-system"
 	CustomResourceManager  = "resource.kyma-project.io/finalizer"
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
@@ -133,16 +137,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj)
+	if !obj.GetDeletionTimestamp().IsZero() {
+		_, err := r.getAccessSecret(ctx, clnt, obj)
+		if errors.Is(err, ErrAccessSecretNotFound) {
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
+				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
+		}
+	}
 	if err != nil {
-		if !obj.GetDeletionTimestamp().IsZero() {
-			if errors.Is(err, ErrKubeconfigFetchFailed) {
-				return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
-					metrics.ManifestRemoveFinalizerWhenKubeconfigGone, metrics.IntendedRequeue)
-			}
-
-			// TODO: Loop up secret
-			// TODO: if secret is not found
-			// TODO: remove finalizers
+		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrKubeconfigFetchFailed) {
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
+				metrics.ManifestRemoveFinalizerWhenKubeconfigGone, metrics.IntendedRequeue)
 		}
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -202,6 +207,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			metrics.IntendedRequeue)
 	}
 	return r.CtrlOnSuccess, nil
+}
+
+func (r *Reconciler) getAccessSecret(ctx context.Context, clnt Client, obj Object) (*apicorev1.SecretList, error) {
+	kymaName, err := internal.GetResourceLabel(obj, shared.KymaName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kyma name")
+	}
+	kubeConfigSecretList := &apicorev1.SecretList{}
+	if err := clnt.List(ctx, kubeConfigSecretList, &client.ListOptions{
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kymaName}),
+		Namespace:     secretNamespace,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to list kubeconfig secrets: %w", err)
+	} else if len(kubeConfigSecretList.Items) < 1 {
+		return nil, fmt.Errorf("secret with label %s=%s %w", shared.KymaName, kymaName, ErrAccessSecretNotFound)
+	}
+
+	return kubeConfigSecretList, nil
 }
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string,
