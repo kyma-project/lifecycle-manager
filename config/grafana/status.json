@@ -37,7 +37,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -68,7 +68,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.28",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -107,6 +107,14 @@
           "interval": "",
           "legendFormat": "Error",
           "refId": "D"
+        },
+        {
+          "exemplar": true,
+          "expr": "sum(lifecycle_mgr_kyma_state{state=\"Warning\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Warning",
+          "refId": "E"
         }
       ],
       "thresholds": [],
@@ -157,7 +165,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -188,7 +196,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.28",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -227,6 +235,14 @@
           "interval": "",
           "legendFormat": "Error",
           "refId": "D"
+        },
+        {
+          "exemplar": true,
+          "expr": "sum(lifecycle_mgr_module_state{state=\"Warning\"})",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Warning",
+          "refId": "E"
         }
       ],
       "thresholds": [],
