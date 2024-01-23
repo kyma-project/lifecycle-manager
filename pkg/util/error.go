@@ -2,6 +2,8 @@ package util
 
 import (
 	"errors"
+	"fmt"
+	"net"
 	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -9,6 +11,20 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 )
+
+const (
+	NoSuchHostMsg = "no such host"
+)
+
+func IsNoSuchHost(err error) bool {
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return dnsErr.Err == NoSuchHostMsg
+	}
+	fmt.Println("----------------------------------------")
+	fmt.Printf("this error is not a net.DNSError but: %T", err)
+	return false
+}
 
 func IsNotFound(err error) bool {
 	if err == nil {

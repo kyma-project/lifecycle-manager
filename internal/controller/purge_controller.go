@@ -83,7 +83,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	start := time.Now()
 	remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
-	if util.IsNotFound(err) {
+	if util.IsNotFound(err) || util.IsNoSuchHost(err) {
 		if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
 			r.Metrics.UpdatePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 			return ctrl.Result{}, err
