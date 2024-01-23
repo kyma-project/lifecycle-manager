@@ -16,13 +16,18 @@ const (
 	NoSuchHostMsg = "no such host"
 )
 
-func IsNoSuchHost(err error) bool {
+func IsNoSuchHost(err error, lgr func(string)) bool {
+	if err == nil {
+		return false
+	}
+
 	var dnsErr *net.DNSError
+
 	if errors.As(err, &dnsErr) {
+		lgr(fmt.Sprintf("this error is a net.DNSError: %s", dnsErr.Err))
 		return dnsErr.Err == NoSuchHostMsg
 	}
-	fmt.Println("----------------------------------------")
-	fmt.Printf("this error is not a net.DNSError but: %T", err)
+	lgr(fmt.Sprintf("this error is not a net.DNSError but: %T", err))
 	return false
 }
 
