@@ -110,6 +110,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if r.ShouldSkip(ctx, obj) {
 		return r.CtrlOnSuccess, nil
 	}
+	if !obj.GetDeletionTimestamp().IsZero() {
+		_, err := r.getAccessSecret(ctx, obj)
+		if errors.Is(err, ErrAccessSecretNotFound) {
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
+				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
+		}
+	}
 
 	if err := r.initialize(obj); err != nil {
 		return r.ssaStatus(ctx, obj, metrics.ManifestInit, metrics.UnexpectedRequeue)
@@ -137,13 +144,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj)
-	if !obj.GetDeletionTimestamp().IsZero() {
-		_, err := r.getAccessSecret(ctx, clnt, obj)
-		if errors.Is(err, ErrAccessSecretNotFound) {
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
-				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
-		}
-	}
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrKubeconfigFetchFailed) {
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
@@ -209,13 +209,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.CtrlOnSuccess, nil
 }
 
-func (r *Reconciler) getAccessSecret(ctx context.Context, clnt Client, obj Object) (*apicorev1.SecretList, error) {
+func (r *Reconciler) getAccessSecret(ctx context.Context, obj Object) (*apicorev1.SecretList, error) {
 	kymaName, err := internal.GetResourceLabel(obj, shared.KymaName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kyma name")
 	}
 	kubeConfigSecretList := &apicorev1.SecretList{}
-	if err := clnt.List(ctx, kubeConfigSecretList, &client.ListOptions{
+	if err := r.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kymaName}),
 		Namespace:     secretNamespace,
 	}); err != nil {
