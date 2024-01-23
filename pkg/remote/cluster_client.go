@@ -36,7 +36,8 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 		return nil, fmt.Errorf("secret with label %s=%s %w", shared.KymaName, name, ErrAccessSecretNotFound)
 	}
 
-	logf.FromContext(ctx).V(log.InfoLevel).Info("Retrieved kubeconfig secret.")
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Retrieved kubeconfig secret for name: %s,"+
+		" namespace: %s.", name, namespace))
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 

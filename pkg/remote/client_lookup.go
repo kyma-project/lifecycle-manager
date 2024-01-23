@@ -42,7 +42,7 @@ func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client
 
 	skr := NewClientWithConfig(clnt, cfg)
 
-	logf.FromContext(ctx).V(log.InfoLevel).Info("Setting remote client in cache.")
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Setting remote client in cache for %s.", key))
 	l.cache.Set(key, skr)
 
 	return skr, nil
