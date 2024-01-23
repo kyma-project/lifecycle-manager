@@ -110,13 +110,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if r.ShouldSkip(ctx, obj) {
 		return r.CtrlOnSuccess, nil
 	}
-	if !obj.GetDeletionTimestamp().IsZero() {
-		_, err := r.getAccessSecret(ctx, obj)
-		if errors.Is(err, ErrAccessSecretNotFound) {
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager},
-				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
-		}
-	}
 
 	if err := r.initialize(obj); err != nil {
 		return r.ssaStatus(ctx, obj, metrics.ManifestInit, metrics.UnexpectedRequeue)
@@ -175,6 +168,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete, metrics.UnexpectedRequeue)
 	}
 
+	if !obj.GetDeletionTimestamp().IsZero() {
+		_, err := r.getAccessSecret(ctx, obj) // && spec.rempte
+		if errors.Is(err, ErrAccessSecretNotFound) {
+			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(),
+				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
+		}
+	}
+
 	//nolint:nestif // Declarative pkg will be removed soon
 	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
@@ -229,7 +230,7 @@ func (r *Reconciler) getAccessSecret(ctx context.Context, obj Object) (*apicorev
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string,
 	requeueReason metrics.ManifestRequeueReason,
-	requeueType metrics.RequeueType, //nolint:unparam
+	requeueType metrics.RequeueType, //nolint:unparam // could receive different requeue types
 ) (ctrl.Result, error) {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
