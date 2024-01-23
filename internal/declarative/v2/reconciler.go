@@ -229,7 +229,7 @@ func (r *Reconciler) getAccessSecret(ctx context.Context, obj Object) (*apicorev
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string,
 	requeueReason metrics.ManifestRequeueReason,
-	requeueType metrics.RequeueType,
+	requeueType metrics.RequeueType, //nolint:unparam
 ) (ctrl.Result, error) {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
