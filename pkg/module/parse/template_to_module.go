@@ -34,13 +34,7 @@ type Parser struct {
 	PublicKeyFilePath   string
 }
 
-func NewParser(
-	clnt client.Client,
-	inKCPMode bool,
-	remoteSyncNamespace string,
-	enableVerification bool,
-	publicKeyFilePath string,
-) *Parser {
+func NewParser(clnt client.Client, inKCPMode bool, remoteSyncNamespace string) *Parser {
 	return &Parser{
 		Client:              clnt,
 		InKCPMode:           inKCPMode,
