@@ -57,7 +57,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
-	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+	logf.SetLogger(log.ConfigLogger(-1, zapcore.AddSync(GinkgoWriter)))
 
 	By("bootstrapping test environment")
 
