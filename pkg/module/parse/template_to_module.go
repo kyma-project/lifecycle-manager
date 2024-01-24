@@ -15,14 +15,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
-
-type ModuleConversionSettings struct {
-	signature.Verification
-}
 
 var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
@@ -39,8 +33,6 @@ func NewParser(clnt client.Client, inKCPMode bool, remoteSyncNamespace string) *
 		Client:              clnt,
 		InKCPMode:           inKCPMode,
 		remoteSyncNamespace: remoteSyncNamespace,
-		EnableVerification:  enableVerification,
-		PublicKeyFilePath:   publicKeyFilePath,
 	}
 }
 
@@ -171,32 +163,11 @@ func (p *Parser) newManifestFromTemplate(
 		}
 	}
 
-	clusterClient := p.Client
-	if module.RemoteModuleTemplateRef != "" {
-		syncContext, err := remote.SyncContextFromContext(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get syncContext: %w", err)
-		}
-		clusterClient = syncContext.RuntimeClient
-	}
-
 	var layers img.Layers
 	var err error
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
-	}
-	verification, err := signature.NewVerification(ctx,
-		clusterClient,
-		p.EnableVerification,
-		p.PublicKeyFilePath,
-		module.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
-		return nil, fmt.Errorf("could not verify signature: %w", err)
 	}
 
 	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
