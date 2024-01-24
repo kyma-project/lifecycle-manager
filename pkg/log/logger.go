@@ -9,9 +9,13 @@ import (
 )
 
 func ConfigLogger(level int8, syncer zapcore.WriteSyncer) logr.Logger {
-	if level > 0 {
-		level = -level
+	if zapcore.Level(level) < zapcore.DebugLevel {
+		level = int8(zapcore.DebugLevel)
 	}
+	if zapcore.Level(level) > zapcore.FatalLevel {
+		level = int8(zapcore.FatalLevel)
+	}
+
 	// The following settings is based on kyma community Improvement of log messages usability
 	// https://github.com/kyma-project/community/blob/main/concepts/observability-consistent-logging/improvement-of-log-messages-usability.md#log-structure
 	atomicLevel := zap.NewAtomicLevelAt(zapcore.Level(level))
