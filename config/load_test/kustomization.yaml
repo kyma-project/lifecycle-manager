@@ -112,7 +112,7 @@ patches:
         value: --in-kcp-mode
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --log-level=9
+        value: --log-level=-1
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always

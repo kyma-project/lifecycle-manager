@@ -31,7 +31,7 @@ patches:
       value: --manifest-requeue-success-interval=5s
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --log-level=9
+      value: --log-level=-1
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --additional-dns-names=localhost,127.0.0.1,host.k3d.internal
