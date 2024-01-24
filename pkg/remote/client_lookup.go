@@ -26,10 +26,11 @@ func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta2.SyncStrate
 func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client, error) {
 	remoteClient := l.cache.Get(key)
 	if remoteClient != nil {
-		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Client is not found in cache for %s", key))
+		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Client found in the cache for %s", key))
 		return remoteClient, nil
 	}
 
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Client not found in the cache for %s", key))
 	cfg, err := l.restConfigFromStrategy(ctx, key)
 	if err != nil {
 		return nil, err
