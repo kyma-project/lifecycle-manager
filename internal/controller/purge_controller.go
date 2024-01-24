@@ -55,7 +55,7 @@ type PurgeReconciler struct {
 
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.V(log.InfoLevel).Info("Purge Reconciliation started")
+	logger.V(log.InfoLevel).Info("Purge reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
@@ -94,6 +94,8 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	logger.V(log.InfoLevel).Info("purge reconciler got remote client without an error!")
 
 	r.Metrics.UpdatePurgeCount()
 	if err := r.performCleanup(ctx, remoteClient); err != nil {
