@@ -24,8 +24,6 @@ type Parser struct {
 	client.Client
 	InKCPMode           bool
 	remoteSyncNamespace string
-	EnableVerification  bool
-	PublicKeyFilePath   string
 }
 
 func NewParser(clnt client.Client, inKCPMode bool, remoteSyncNamespace string) *Parser {
@@ -36,9 +34,7 @@ func NewParser(clnt client.Client, inKCPMode bool, remoteSyncNamespace string) *
 	}
 }
 
-func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
-	kyma *v1beta2.Kyma,
-	templates templatelookup.ModuleTemplatesByModuleName,
+func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates templatelookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -46,10 +42,8 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 
 	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
-
-		modules = p.appendModuleWithInformation(ctx, module, kyma, template, modules)
+		modules = p.appendModuleWithInformation(module, kyma, template, modules)
 	}
-
 	return modules
 }
 
@@ -68,7 +62,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			moduleName = template.Name
 		}
 
-		modules = p.appendModuleWithInformation(ctx, v1beta2.AvailableModule{
+		modules = p.appendModuleWithInformation(v1beta2.AvailableModule{
 			Module: v1beta2.Module{
 				Name:                 moduleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
@@ -80,7 +74,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	return modules
 }
 
-func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
+func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
 	template *templatelookup.ModuleTemplateTO,
 	modules common.Modules,
 ) common.Modules {
@@ -106,7 +100,7 @@ func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2
 	name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
-	if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
+	if manifest, err = p.newManifestFromTemplate(module.Module,
 		template.ModuleTemplate); err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
@@ -145,7 +139,6 @@ func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateTO, name,
 }
 
 func (p *Parser) newManifestFromTemplate(
-	ctx context.Context,
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.Manifest, error) {
