@@ -45,9 +45,9 @@ func CheckKLMLogs(ctx context.Context,
 	if strings.Contains(logs, logMsg) {
 		return nil
 	}
-	fmt.Println("----------------------------------------")
-	fmt.Println(logs)
-	fmt.Println("----------------------------------------")
+	fmt.Println("----------------------------------------") //nolint:forbidigo //debug
+	fmt.Println(logs)                                       //nolint:forbidigo //debug
+	fmt.Println("----------------------------------------") //nolint:forbidigo //debug
 
 	_, err = getPodLogs(ctx, runtimeConfig,
 		runtimeClient, remoteNamespace, watcher.SkrResourceName, watcherPodContainer, logsSince)
