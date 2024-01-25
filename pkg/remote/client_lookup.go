@@ -9,7 +9,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 type ClientLookup struct {
@@ -26,7 +25,7 @@ func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta2.SyncStrate
 func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client, error) {
 	remoteClient := l.cache.Get(key)
 	if remoteClient != nil {
-		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Client is not found in cache for %s", key))
+		logf.FromContext(ctx).Info(fmt.Sprintf("Client is found in cache for %s", key))
 		return remoteClient, nil
 	}
 
@@ -42,7 +41,7 @@ func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client
 
 	skr := NewClientWithConfig(clnt, cfg)
 
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Setting remote client in cache for %s.", key))
+	logf.FromContext(ctx).Info(fmt.Sprintf("Setting remote client in cache for %s.", key))
 	l.cache.Set(key, skr)
 
 	return skr, nil
@@ -57,7 +56,7 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 		Logger:        logf.FromContext(ctx),
 	}
 
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Sync strategy: , %s", l.strategy))
+	logf.FromContext(ctx).Info(fmt.Sprintf("Sync strategy: , %s", l.strategy))
 
 	switch l.strategy {
 	case v1beta2.SyncStrategyLocalClient:
@@ -69,7 +68,7 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 	case v1beta2.SyncStrategyLocalSecret:
 		fallthrough
 	default:
-		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Getting rest config from secret for name: %s, namespace: %s.",
+		logf.FromContext(ctx).Info(fmt.Sprintf("Getting rest config from secret for name: %s, namespace: %s.",
 			key.Name, key.Namespace))
 		restConfig, err = clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
 	}

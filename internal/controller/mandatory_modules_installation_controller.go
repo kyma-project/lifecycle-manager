@@ -90,7 +90,6 @@ func (r *MandatoryModuleReconciler) GenerateModulesFromTemplate(ctx context.Cont
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
 	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
-
 	return parser.GenerateMandatoryModulesFromTemplates(ctx, kyma, templates), nil
 }
 

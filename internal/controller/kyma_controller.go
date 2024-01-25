@@ -95,7 +95,7 @@ type KymaReconciler struct {
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.V(log.DebugLevel).Info("reconciling")
+	logger.V(log.InfoLevel).Info("Kyma reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
@@ -580,7 +580,6 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 		}
 	}
 	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
-
 	return parser.GenerateModulesFromTemplates(kyma, templates), nil
 }
 
