@@ -63,3 +63,17 @@ func IsNotFound(err error) bool {
 	}
 	return false
 }
+
+func IsConnectionRefusedOrUnauthorized(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if strings.Contains(strings.ToLower(err.Error()),
+		"connection refused") || strings.Contains(strings.ToLower(err.Error()),
+		"unauthorized") {
+		return true
+	}
+
+	return false
+}
