@@ -201,7 +201,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string,
 	requeueReason metrics.ManifestRequeueReason,
-	requeueType metrics.RequeueType, //nolint:unparam // could receive different requeue types
+	requeueType metrics.RequeueType,
 ) (ctrl.Result, error) {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
