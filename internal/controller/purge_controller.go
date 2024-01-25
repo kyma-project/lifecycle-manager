@@ -93,8 +93,6 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("purge reconciler got remote client without an error!")
-
 	r.Metrics.UpdatePurgeCount()
 	if err := r.performCleanup(ctx, remoteClient); err != nil {
 		logger.Error(err, "Purge Cleanup failed")
