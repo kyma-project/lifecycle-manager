@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+
 	"golang.org/x/sync/errgroup"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -67,6 +69,7 @@ type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
+	DescriptorProvider  *provider.CachedDescriptorProvider
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
 	KcpRestConfig       *rest.Config
 	RemoteClientCache   *remote.ClientCache
@@ -569,13 +572,14 @@ func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta
 }
 
 func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1beta2.Kyma) (common.Modules, error) {
-	templates := templatelookup.GetRegular(ctx, r, kyma, r.SyncKymaEnabled(kyma))
+	lookup := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider, r.SyncKymaEnabled(kyma))
+	templates := lookup.GetRegularTemplates(ctx, kyma)
 	for _, template := range templates {
 		if template.Err != nil {
 			r.enqueueWarningEvent(kyma, moduleReconciliationError, template.Err)
 		}
 	}
-	parser := parse.NewParser(r.Client, r.InKCPMode, r.RemoteSyncNamespace)
+	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
 
 	return parser.GenerateModulesFromTemplates(kyma, templates), nil
 }
