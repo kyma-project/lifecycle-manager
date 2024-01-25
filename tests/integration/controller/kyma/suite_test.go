@@ -17,6 +17,7 @@ package kyma_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"os"
 	"path/filepath"
 	"testing"
@@ -127,10 +128,11 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	err = (&controller.KymaReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		DescriptorProvider:  descriptorProvider,
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
