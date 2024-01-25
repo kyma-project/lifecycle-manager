@@ -171,6 +171,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			r.Metrics.RecordRequeueReason(metrics.RemoteKymaDeletion, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
+		// TODO hier wird der status auf deleting gesetzt
 		if err := r.updateStatus(ctx, kyma, shared.StateDeleting, "waiting for modules to be deleted"); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.StatusUpdateToDeleting, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma,
@@ -180,6 +181,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	// TODO Wenn der status auf deleting ist, dann wird hier fortgefahren
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, metrics.UnexpectedRequeue)

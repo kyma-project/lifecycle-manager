@@ -175,7 +175,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if r.ClientCacheKeyFn != nil {
 				clientsCacheKey, ok := r.ClientCacheKeyFn(ctx, obj)
 				if ok {
-					logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v", clientsCacheKey))
+					logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
+						clientsCacheKey))
 					r.ClientCache.Delete(clientsCacheKey)
 				}
 			}
@@ -315,7 +316,8 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	if hasDiff(oldSynced, newSynced) {
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		} else {
+		} else if status.State != shared.StateWarning {
+			// TODO hier wird status.State auf shared.StateDeleting gesetzt, aber wenn es im warning state ist sollte es nicht auf deleting gesetzte werden
 			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
 		}
 		return ErrWarningResourceSyncStateDiff
@@ -379,6 +381,7 @@ func (r *Reconciler) checkTargetReadiness(
 		r.Event(manifest, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
+		// TODO Hier wird status gestezt
 		manifest.SetStatus(status.WithState(crStateInfo.State).
 			WithOperation(generateOperationMessage(installationCondition, crStateInfo)))
 		return ErrInstallationConditionRequiresUpdate
