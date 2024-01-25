@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -83,7 +82,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	start := time.Now()
 	remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
-	if util.IsNotFound(err) || noSuchHostCheck(err, logger) {
+	if util.IsNotFound(err) {
 		if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
 			r.Metrics.UpdatePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 			return ctrl.Result{}, err
@@ -112,13 +111,6 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	logger.Info("Purge reconciliation done")
 	return ctrl.Result{}, nil
-}
-
-func noSuchHostCheck(err error, logger logr.Logger) bool {
-	lgr := func(msg string) {
-		logger.Info(msg)
-	}
-	return util.IsNoSuchHost(err, lgr)
 }
 
 func (r *PurgeReconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state shared.State, message string,
