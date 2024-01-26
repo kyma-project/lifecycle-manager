@@ -90,6 +90,11 @@ func main() {
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
+	err := flagVar.Validate()
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
 	if flagVar.Pprof {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
@@ -135,11 +140,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			Cache:                  cacheOptions,
 		},
 	)
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-	err = flagVar.Validate()
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)

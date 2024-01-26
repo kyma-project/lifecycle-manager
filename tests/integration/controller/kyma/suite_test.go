@@ -68,6 +68,7 @@ var (
 	ctx                context.Context
 	cancel             context.CancelFunc
 	cfg                *rest.Config
+	descriptorProvider *provider.CachedDescriptorProvider
 )
 
 func TestAPIs(t *testing.T) {
@@ -129,7 +130,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+	descriptorProvider = provider.NewCachedDescriptorProvider()
 	err = (&controller.KymaReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),

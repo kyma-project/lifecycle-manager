@@ -152,7 +152,6 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
-	descriptorProvider := provider.NewCachedDescriptorProvider()
 
 	It("validate Manifest", func() {
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
@@ -201,7 +200,6 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
-	descriptorProvider := provider.NewCachedDescriptorProvider()
 
 	It("update Manifest", func() {
 		// await for the manifest to be created

@@ -12,6 +12,8 @@ import (
 )
 
 func TestDescriptorCache(t *testing.T) {
+	t.Parallel()
+
 	sut := cache.NewDescriptorCache()
 	key1 := cache.DescriptorCacheKey("key 1")
 	ocmDesc1 := &compdesc.ComponentDescriptor{
