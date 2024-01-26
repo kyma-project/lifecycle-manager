@@ -53,7 +53,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -209,13 +208,10 @@ var _ = BeforeSuite(func() {
 		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controller.KymaReconciler{
-		Client:            k8sManager.GetClient(),
-		EventRecorder:     k8sManager.GetEventRecorderFor(shared.OperatorName),
-		RequeueIntervals:  intervals,
-		SKRWebhookManager: skrWebhookChartManager,
-		VerificationSettings: signature.VerificationSettings{
-			EnableVerification: false,
-		},
+		Client:              k8sManager.GetClient(),
+		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		RequeueIntervals:    intervals,
+		SKRWebhookManager:   skrWebhookChartManager,
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,

@@ -117,10 +117,6 @@ func DefineFlagVar() *FlagVar {
 
 	flag.Float64Var(&flagVar.ClientQPS, "k8s-client-qps", DefaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", DefaultClientBurst, "kubernetes client Burst")
-	flag.StringVar(&flagVar.ModuleVerificationKeyFilePath, "module-verification-key-file", "",
-		"This verification key is used to verify modules against their signature")
-	flag.BoolVar(&flagVar.EnableVerification, "enable-verification", false,
-		"Enabling verify modules against their signature")
 	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", false,
@@ -217,7 +213,6 @@ type FlagVar struct {
 	WatcherRequeueSuccessInterval                  time.Duration
 	MandatoryModuleRequeueSuccessInterval          time.Duration
 	MandatoryModuleDeletionRequeueSuccessInterval  time.Duration
-	ModuleVerificationKeyFilePath                  string
 	ClientQPS                                      float64
 	ClientBurst                                    int
 	IstioNamespace                                 string
@@ -241,7 +236,6 @@ type FlagVar struct {
 	RemoteSyncNamespace                    string
 	CaCertName                             string
 	CaCertCacheTTL                         time.Duration
-	EnableVerification                     bool
 	IsKymaManaged                          bool
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration

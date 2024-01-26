@@ -32,7 +32,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -41,7 +40,6 @@ type MandatoryModuleReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
-	signature.VerificationSettings
 	RemoteSyncNamespace string
 	InKCPMode           bool
 }
@@ -88,8 +86,7 @@ func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *MandatoryModuleReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
-	parser := parse.NewParser(r.Client, r.InKCPMode,
-		r.RemoteSyncNamespace, r.EnableVerification, r.PublicKeyFilePath)
+	parser := parse.NewParser(r.Client, r.InKCPMode, r.RemoteSyncNamespace)
 
 	return parser.GenerateMandatoryModulesFromTemplates(ctx, kyma, templates), nil
 }
