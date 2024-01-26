@@ -298,6 +298,7 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, clnt client.Reader, na
 
 	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
+		template := template // capture unique address
 		if template.Labels[shared.ModuleName] == name && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
