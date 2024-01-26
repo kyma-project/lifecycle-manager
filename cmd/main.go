@@ -57,7 +57,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -243,10 +242,6 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-		VerificationSettings: signature.VerificationSettings{
-			EnableVerification: flagVar.EnableVerification,
-			PublicKeyFilePath:  flagVar.ModuleVerificationKeyFilePath,
 		},
 		InKCPMode:           flagVar.InKCPMode,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,

@@ -15,14 +15,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
-
-type ModuleConversionSettings struct {
-	signature.Verification
-}
 
 var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
@@ -30,29 +24,17 @@ type Parser struct {
 	client.Client
 	InKCPMode           bool
 	remoteSyncNamespace string
-	EnableVerification  bool
-	PublicKeyFilePath   string
 }
 
-func NewParser(
-	clnt client.Client,
-	inKCPMode bool,
-	remoteSyncNamespace string,
-	enableVerification bool,
-	publicKeyFilePath string,
-) *Parser {
+func NewParser(clnt client.Client, inKCPMode bool, remoteSyncNamespace string) *Parser {
 	return &Parser{
 		Client:              clnt,
 		InKCPMode:           inKCPMode,
 		remoteSyncNamespace: remoteSyncNamespace,
-		EnableVerification:  enableVerification,
-		PublicKeyFilePath:   publicKeyFilePath,
 	}
 }
 
-func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
-	kyma *v1beta2.Kyma,
-	templates templatelookup.ModuleTemplatesByModuleName,
+func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates templatelookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -60,10 +42,8 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 
 	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
-
-		modules = p.appendModuleWithInformation(ctx, module, kyma, template, modules)
+		modules = p.appendModuleWithInformation(module, kyma, template, modules)
 	}
-
 	return modules
 }
 
@@ -82,7 +62,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			moduleName = template.Name
 		}
 
-		modules = p.appendModuleWithInformation(ctx, v1beta2.AvailableModule{
+		modules = p.appendModuleWithInformation(v1beta2.AvailableModule{
 			Module: v1beta2.Module{
 				Name:                 moduleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
@@ -94,7 +74,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	return modules
 }
 
-func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
+func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
 	template *templatelookup.ModuleTemplateTO,
 	modules common.Modules,
 ) common.Modules {
@@ -120,7 +100,7 @@ func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2
 	name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
-	if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
+	if manifest, err = p.newManifestFromTemplate(module.Module,
 		template.ModuleTemplate); err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
@@ -159,7 +139,6 @@ func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateTO, name,
 }
 
 func (p *Parser) newManifestFromTemplate(
-	ctx context.Context,
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.Manifest, error) {
@@ -177,32 +156,11 @@ func (p *Parser) newManifestFromTemplate(
 		}
 	}
 
-	clusterClient := p.Client
-	if module.RemoteModuleTemplateRef != "" {
-		syncContext, err := remote.SyncContextFromContext(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get syncContext: %w", err)
-		}
-		clusterClient = syncContext.RuntimeClient
-	}
-
 	var layers img.Layers
 	var err error
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
-	}
-	verification, err := signature.NewVerification(ctx,
-		clusterClient,
-		p.EnableVerification,
-		p.PublicKeyFilePath,
-		module.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
-		return nil, fmt.Errorf("could not verify signature: %w", err)
 	}
 
 	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {

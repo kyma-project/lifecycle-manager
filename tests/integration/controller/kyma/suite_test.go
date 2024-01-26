@@ -44,7 +44,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -130,12 +129,9 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 
 	err = (&controller.KymaReconciler{
-		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(shared.OperatorName),
-		RequeueIntervals: intervals,
-		VerificationSettings: signature.VerificationSettings{
-			EnableVerification: false,
-		},
+		Client:              k8sManager.GetClient(),
+		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
