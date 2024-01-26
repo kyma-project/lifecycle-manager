@@ -34,6 +34,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -53,14 +54,14 @@ type PurgeReconciler struct {
 
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.Info("Purge reconciliation started")
+	logger.V(log.DebugLevel).Info("Purge reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		if util.IsNotFound(err) {
-			logger.Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
 			return ctrl.Result{Requeue: false}, nil
 		}
@@ -107,7 +108,6 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	duration := time.Since(start)
 	r.Metrics.UpdatePurgeTime(duration)
 
-	logger.Info("Purge reconciliation done")
 	return ctrl.Result{}, nil
 }
 
@@ -132,7 +132,7 @@ func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta
 	controllerutil.AddFinalizer(kyma, shared.PurgeFinalizer)
 	if err := r.Update(ctx, kyma); err != nil {
 		err = fmt.Errorf("failed to add purge finalizer: %w", err)
-		logf.FromContext(ctx).Info(
+		logf.FromContext(ctx).V(log.DebugLevel).Info(
 			fmt.Sprintf("Updating purge finalizers for Kyma  %s/%s failed with err %s",
 				kyma.Namespace, kyma.Name, err))
 		r.setFinalizerWarningEvent(kyma, err)
@@ -158,7 +158,8 @@ func (r *PurgeReconciler) calculateRequeueAfterTime(ctx context.Context, kyma *v
 	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
 	if time.Now().Before(deletionDeadline) {
 		requeueAfter := time.Until(deletionDeadline.Add(time.Second))
-		logf.FromContext(ctx).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s/%s will be requeued after %s",
+		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s/%s will be "+
+			"requeued after %s",
 			kyma.Namespace, kyma.Namespace, requeueAfter))
 		return requeueAfter
 	}
