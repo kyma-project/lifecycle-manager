@@ -82,6 +82,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 	}
 
 	for i := range testCases {
+		i := i
 		t.Run(testCases[i].name, func(t *testing.T) {
 			t.Parallel()
 			got := cache.GenerateDescriptorCacheKey(testCases[i].template)

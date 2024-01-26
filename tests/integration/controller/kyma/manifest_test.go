@@ -564,7 +564,10 @@ func updateComponentSources(descriptor *v1beta2.Descriptor) {
 }
 
 func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor := moduleTemplate.Spec.Descriptor.Object.(*v1beta2.Descriptor)
+	descriptor, ok := moduleTemplate.Spec.Descriptor.Object.(*v1beta2.Descriptor)
+	if !ok {
+		return fmt.Errorf("Invalid descriptor type: %s, type assertion not ok", moduleTemplate.Spec.Descriptor.Object)
+	}
 	updateComponentVersion(descriptor)
 	updateComponentResources(descriptor)
 	updateComponentSources(descriptor)
@@ -577,7 +580,10 @@ func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
 }
 
 func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor := moduleTemplate.Spec.Descriptor.Object.(*v1beta2.Descriptor)
+	descriptor, ok := moduleTemplate.Spec.Descriptor.Object.(*v1beta2.Descriptor)
+	if !ok {
+		return fmt.Errorf("Invalid descriptor type: %s, type assertion not ok", moduleTemplate.Spec.Descriptor.Object)
+	}
 
 	expectedVersion := updatedModuleTemplateVersion
 
