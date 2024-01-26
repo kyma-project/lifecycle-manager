@@ -51,6 +51,7 @@ const (
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
 	DefaultDropStoredVersion                                            = "v1alpha1"
+	DefaultMetricsCleanupInterval                                       = 15
 )
 
 var (
@@ -188,6 +189,8 @@ func DefineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.WatcherResourcesPath, "skr-watcher-path", DefaultWatcherResourcesPath,
 		"The path to the skr watcher resources.")
+	flag.IntVar(&flagVar.MetricsCleanupIntervalInMinutes, "metrics-cleanup-interval", DefaultMetricsCleanupInterval,
+		"The interval at which the cleanup of non-existing kyma CRs metrics runs.")
 	return flagVar
 }
 
@@ -246,6 +249,7 @@ type FlagVar struct {
 	WatcherResourceLimitsMemory            string
 	WatcherResourceLimitsCPU               string
 	WatcherResourcesPath                   string
+	MetricsCleanupIntervalInMinutes        int
 }
 
 func (f FlagVar) Validate() error {

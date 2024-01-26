@@ -27,6 +27,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/go-co-op/gocron"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -183,10 +184,26 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			dropStoredVersion(mgr, version)
 		}(flagVar.DropStoredVersion)
 	}
+
+	go runMetricsCleanup(flagVar.MetricsCleanupIntervalInMinutes)
+
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func runMetricsCleanup(cleanupInterval int) {
+	scheduler := gocron.NewScheduler(time.UTC)
+	_, scheduleErr := scheduler.Every(cleanupInterval).Minutes().Do(func() {
+		if err := metrics.CleanupNonExistingKymaCrsMetrics(); err != nil {
+			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
+		}
+	})
+	if scheduleErr != nil {
+		setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", scheduleErr))
+	}
+	scheduler.StartAsync()
 }
 
 func enableWebhooks(mgr manager.Manager) {
