@@ -3,12 +3,13 @@ package provider_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/stretchr/testify/assert"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 )
 
 func TestCachedDescriptorProvider(t *testing.T) {
@@ -31,13 +32,13 @@ func TestCachedDescriptorProvider(t *testing.T) {
 
 	// manually add a descriptor from template
 	err := sut.Add(template)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// now the internal cache should not be empty
 	assert.True(t, sut.IsCached(template))
 
 	// getting the descriptor from provider as expected
 	actual, err := sut.GetDescriptor(template)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected.Name, actual.Name)
 }

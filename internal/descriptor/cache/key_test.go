@@ -81,11 +81,12 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for i := range testCases {
+		t.Run(testCases[i].name, func(t *testing.T) {
 			t.Parallel()
-			got := cache.GenerateDescriptorCacheKey(tc.template)
-			assert.Equal(t, tc.want, got)
+			got := cache.GenerateDescriptorCacheKey(testCases[i].template)
+			assert.Equalf(t, testCases[i].want, got,
+				"GetComponentDescriptorCacheKey() = %v, want %v", got, testCases[i].want)
 		})
 	}
 }

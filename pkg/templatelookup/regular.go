@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-
 	"github.com/Masterminds/semver/v3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
@@ -297,19 +296,19 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, clnt client.Reader, na
 		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}
 
-	var filteredTemplates []v1beta2.ModuleTemplate
+	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
 		if template.Labels[shared.ModuleName] == name && template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, template)
+			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
 		if fmt.Sprintf("%s/%s", template.Namespace, template.Name) == name &&
 			template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, template)
+			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
 		if template.ObjectMeta.Name == name && template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, template)
+			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
 		descriptor, err := t.descriptorProvider.GetDescriptor(&template)
@@ -317,7 +316,7 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, clnt client.Reader, na
 			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
 		}
 		if descriptor.Name == name && template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, template)
+			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
 	}
@@ -333,7 +332,7 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, clnt client.Reader, na
 		return nil, fmt.Errorf("%w: in channel %s for module %s",
 			ErrTemplateMarkedAsMandatory, desiredChannel, name)
 	}
-	return &filteredTemplates[0], nil
+	return filteredTemplates[0], nil
 }
 
 func NewMoreThanOneTemplateCandidateErr(moduleName string,

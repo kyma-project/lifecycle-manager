@@ -72,7 +72,7 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 			return nil
 		}
 	}
-	
+
 	ocmDesc, err := compdesc.Decode(
 		template.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 	)
