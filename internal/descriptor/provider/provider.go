@@ -3,9 +3,10 @@ package provider
 import (
 	"errors"
 
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 )
 
 var (
@@ -17,8 +18,6 @@ var (
 type CachedDescriptorProvider struct {
 	descriptorCache *cache.DescriptorCache
 }
-
-// TODO inject decoder to abstract away OCM dep
 
 func NewCachedDescriptorProvider() *CachedDescriptorProvider {
 	return &CachedDescriptorProvider{
@@ -40,7 +39,6 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 		return descriptor, nil
 	}
 
-	// TODO use injected decoder
 	ocmDesc, err := compdesc.Decode(
 		template.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 	)
@@ -74,8 +72,7 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 			return nil
 		}
 	}
-
-	// TODO use injected decoder
+	
 	ocmDesc, err := compdesc.Decode(
 		template.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 	)

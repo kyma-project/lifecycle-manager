@@ -12,6 +12,8 @@ import (
 )
 
 func TestCachedDescriptorProvider(t *testing.T) {
+	t.Parallel()
+
 	sut := provider.NewCachedDescriptorProvider()
 	expected := &v1beta2.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{},

@@ -12,6 +12,8 @@ import (
 )
 
 func TestGenerateDescriptorCacheKey(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name     string
 		template *v1beta2.ModuleTemplate
@@ -81,6 +83,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			got := cache.GenerateDescriptorCacheKey(tc.template)
 			assert.Equal(t, tc.want, got)
 		})
