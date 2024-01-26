@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -34,9 +33,6 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 	} else if len(kubeConfigSecretList.Items) < 1 {
 		return nil, fmt.Errorf("secret with label %s=%s %w", shared.KymaName, name, ErrAccessSecretNotFound)
 	}
-
-	logf.FromContext(ctx).Info(fmt.Sprintf("Retrieved kubeconfig secret for name: %s,"+
-		" namespace: %s.", name, namespace))
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 
