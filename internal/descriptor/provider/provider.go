@@ -92,3 +92,12 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	c.descriptorCache.Set(key, descriptor)
 	return nil
 }
+
+func (c *CachedDescriptorProvider) IsCached(template *v1beta2.ModuleTemplate) bool {
+	if template == nil {
+		return false
+	}
+	key := cache.GenerateDescriptorCacheKey(template)
+	descriptor := c.descriptorCache.Get(key)
+	return descriptor != nil
+}

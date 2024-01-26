@@ -50,7 +50,7 @@ func TestDescriptorCache(t *testing.T) {
 	sut.Set(key2, desc2)
 	assertDescriptorEqual(t, desc2, sut.Get(key2))
 
-	// Overwriting key with another value should return new value
+	// Overwriting key with another value, should return new value
 	sut.Set(key1, desc2)
 	assertDescriptorEqual(t, desc2, sut.Get(key2))
 }

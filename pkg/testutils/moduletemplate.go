@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -15,11 +16,13 @@ func GetModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	defaultChannel string,
 ) (*v1beta2.ModuleTemplate, error) {
-	templateTO := templatelookup.NewRegularLookup(clnt, module.Name, module.Channel, defaultChannel).WithContext(ctx)
-	if templateTO.Err != nil {
-		return nil, fmt.Errorf("get module template: %w", templateTO.Err)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
+	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider, true)
+	templateInfo := templateLookup.GetAndValidate(ctx, module.Name, module.Channel, defaultChannel)
+	if templateInfo.Err != nil {
+		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
 	}
-	return templateTO.ModuleTemplate, nil
+	return templateInfo.ModuleTemplate, nil
 }
 
 func RegularModuleTemplateExists(ctx context.Context,

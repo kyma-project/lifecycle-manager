@@ -59,7 +59,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		}
 		switch {
 		case module.RemoteModuleTemplateRef == "":
-			template = t.getAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
+			template = t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
 			if template.Err != nil {
 				break
 			}
@@ -109,7 +109,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 	return templates
 }
 
-func (t *TemplateLookup) getAndValidate(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
+func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
 	desiredChannel := getDesiredChannel(channel, defaultChannel)
 	info := ModuleTemplateInfo{
 		DesiredChannel: desiredChannel,

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"reflect"
 	"strings"
 
@@ -62,15 +63,11 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 
 var _ = Describe("Update Manifest CR", Ordered, func() {
 	const updateRepositoryURL = "registry.docker.io/kyma-project"
-
 	kyma := NewTestKyma("kyma-test-update")
-
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
-
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, module)
-
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
@@ -106,7 +103,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		By("Update Module Template spec.descriptor.component values")
 		{
 			newComponentDescriptorRepositoryURL := func(moduleTemplate *v1beta2.ModuleTemplate) error {
-				descriptor, err := moduleTemplate.GetDescriptor()
+				descriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
 				if err != nil {
 					return err
 				}
@@ -154,6 +151,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 
 	It("validate Manifest", func() {
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
@@ -163,7 +161,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
 			if err != nil {
 				return err
 			}
@@ -181,7 +179,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Version")
 		hasValidSpecVersion := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
 			if err != nil {
 				return err
 			}
@@ -202,6 +200,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 
 	It("update Manifest", func() {
 		// await for the manifest to be created
@@ -232,7 +231,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
 			if err != nil {
 				return err
 			}
@@ -566,12 +565,7 @@ func updateComponentSources(descriptor *v1beta2.Descriptor) {
 }
 
 func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor, err := moduleTemplate.GetDescriptor()
-	// return error here (insted of using Expect) to allow for re-trying with "Eventually"
-	if err != nil {
-		return err
-	}
-
+	descriptor := moduleTemplate.Spec.Descriptor.Object.(*v1beta2.Descriptor)
 	updateComponentVersion(descriptor)
 	updateComponentResources(descriptor)
 	updateComponentSources(descriptor)
@@ -584,10 +578,7 @@ func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
 }
 
 func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor, err := moduleTemplate.GetDescriptor()
-	if err != nil {
-		return err
-	}
+	descriptor := moduleTemplate.Spec.Descriptor.Object.(*v1beta2.Descriptor)
 
 	expectedVersion := updatedModuleTemplateVersion
 

@@ -35,7 +35,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	remoteKyma := &v1beta2.Kyma{}
-
 	remoteKyma.Name = shared.DefaultRemoteKymaName
 	remoteKyma.Namespace = flags.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
@@ -171,7 +170,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("ModuleTemplate descriptor should be saved in cache")
-		Expect(DescriptorExistsInCache(SKRTemplate)).Should(BeTrue())
+		Expect(descriptorProvider.IsCached(SKRTemplate)).Should(BeTrue())
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
@@ -233,7 +232,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("SKRCustomTemplate descriptor should not be saved in cache", func() {
-		Expect(DescriptorExistsInCache(SKRCustomTemplate)).Should(BeFalse())
+		Expect(descriptorProvider.IsCached(SKRCustomTemplate)).Should(BeFalse())
 	})
 
 	It("Should reconcile Manifest in KCP using remote SKRCustomTemplate", func() {
