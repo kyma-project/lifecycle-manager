@@ -24,7 +24,8 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 					Name: "name",
 					Annotations: map[string]string{
 						shared.ModuleVersionAnnotation: "1.0.0",
-					}},
+					},
+				},
 				Spec: v1beta2.ModuleTemplateSpec{
 					Channel: "channel",
 				},
@@ -39,7 +40,8 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 					Generation: 1,
 					Annotations: map[string]string{
 						shared.ModuleVersionAnnotation: "not-semver",
-					}},
+					},
+				},
 				Spec: v1beta2.ModuleTemplateSpec{
 					Channel: "channel",
 				},
@@ -54,7 +56,8 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 					Generation: 2,
 					Annotations: map[string]string{
 						shared.ModuleVersionAnnotation: "",
-					}},
+					},
+				},
 				Spec: v1beta2.ModuleTemplateSpec{
 					Channel: "channel",
 				},

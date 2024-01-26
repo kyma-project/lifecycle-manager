@@ -17,11 +17,12 @@ package kyma_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"

@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"

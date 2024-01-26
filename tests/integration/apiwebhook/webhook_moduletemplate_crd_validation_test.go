@@ -3,9 +3,10 @@ package apiwebhook_test
 import (
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"os"
 	"path/filepath"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"

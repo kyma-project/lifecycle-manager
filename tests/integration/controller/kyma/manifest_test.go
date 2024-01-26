@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"reflect"
 	"strings"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
