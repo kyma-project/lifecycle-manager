@@ -57,7 +57,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -159,7 +158,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	sharedMetrics := metrics.NewSharedMetrics()
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager, sharedMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
-	setupMandatoryModulesReconciler(mgr, flagVar, options)
+	setupMandatoryModuleReconciler(mgr, flagVar, options)
+	setupMandatoryModuleDeletionReconciler(mgr, flagVar, options)
 
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
@@ -242,10 +242,6 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-		VerificationSettings: signature.VerificationSettings{
-			EnableVerification: flagVar.EnableVerification,
-			PublicKeyFilePath:  flagVar.ModuleVerificationKeyFilePath,
 		},
 		InKCPMode:           flagVar.InKCPMode,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
@@ -371,12 +367,12 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	}
 }
 
-func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
+func setupMandatoryModuleReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
 	options ctrlruntime.Options,
 ) {
-	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModulesReconciles
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	if err := (&controller.MandatoryModulesReconciler{
+	if err := (&controller.MandatoryModuleReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals: queue.RequeueIntervals{
@@ -388,7 +384,27 @@ func setupMandatoryModulesReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		InKCPMode:           flagVar.InKCPMode,
 	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModules")
+		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
+		os.Exit(1)
+	}
+}
+
+func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+) {
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
+
+	if err := (&controller.MandatoryModuleDeletionReconciler{
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+			Error:   flagVar.KymaRequeueErrInterval,
+			Warning: flagVar.KymaRequeueWarningInterval,
+		},
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(1)
 	}
 }

@@ -49,6 +49,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: (30 * time.Second).String(),
 		},
 		{
+			constName:     "DefaultMandatoryModuleDeletionRequeueSuccessInterval",
+			constValue:    DefaultMandatoryModuleDeletionRequeueSuccessInterval.String(),
+			expectedValue: (30 * time.Second).String(),
+		},
+		{
 			constName:     "DefaultWatcherRequeueSuccessInterval",
 			constValue:    DefaultWatcherRequeueSuccessInterval.String(),
 			expectedValue: (30 * time.Second).String(),
@@ -119,8 +124,13 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "1",
 		},
 		{
-			constName:     "DefaultMaxConcurrentMandatoryModulesReconciles",
-			constValue:    strconv.Itoa(DefaultMaxConcurrentMandatoryModulesReconciles),
+			constName:     "DefaultMaxConcurrentMandatoryModuleDeletionReconciles",
+			constValue:    strconv.Itoa(DefaultMaxConcurrentMandatoryModuleDeletionReconciles),
+			expectedValue: "1",
+		},
+		{
+			constName:     "DefaultMaxConcurrentMandatoryModuleReconciles",
+			constValue:    strconv.Itoa(DefaultMaxConcurrentMandatoryModuleReconciles),
 			expectedValue: "1",
 		},
 		{

@@ -41,7 +41,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -68,7 +67,6 @@ type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
-	signature.VerificationSettings
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
 	KcpRestConfig       *rest.Config
 	RemoteClientCache   *remote.ClientCache
@@ -94,20 +92,19 @@ type KymaReconciler struct {
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.V(log.DebugLevel).Info("reconciling")
+	logger.V(log.DebugLevel).Info("Kyma reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if !util.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
-			r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, metrics.UnexpectedRequeue)
-			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
+			return ctrl.Result{Requeue: false}, nil
 		}
-		// if indeed not found, stop put this kyma in queue
-		return ctrl.Result{Requeue: false}, nil
+		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, metrics.UnexpectedRequeue)
+		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 	}
 
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
@@ -528,7 +525,6 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.K
 
 	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
 	// If module get removed from kyma, the module deletion happens here.
-
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)
 	}
@@ -579,10 +575,9 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 			r.enqueueWarningEvent(kyma, moduleReconciliationError, template.Err)
 		}
 	}
-	parser := parse.NewParser(r.Client, r.InKCPMode,
-		r.RemoteSyncNamespace, r.EnableVerification, r.PublicKeyFilePath)
+	parser := parse.NewParser(r.Client, r.InKCPMode, r.RemoteSyncNamespace)
 
-	return parser.GenerateModulesFromTemplates(ctx, kyma, templates), nil
+	return parser.GenerateModulesFromTemplates(kyma, templates), nil
 }
 
 func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {

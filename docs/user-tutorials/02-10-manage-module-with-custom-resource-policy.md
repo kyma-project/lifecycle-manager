@@ -13,7 +13,7 @@ To address this issue, we propose a CustomResourcePolicy feature that allows use
 
 ## Procedure
 
-With Kyma CLI, enable a module with the [`kyma alpha add`](https://github.com/kyma-project/cli/blob/main/docs/gen-docs/kyma_alpha_add.md) command. Using the CLI, you can manage the CustomResourcePolicy for each module individually.
+With Kyma CLI, enable a module with the [`kyma alpha enable`](https://github.com/kyma-project/cli/blob/main/docs/gen-docs/kyma_alpha_add.md) command. Using the CLI, you can manage the CustomResourcePolicy for each module individually.
 
 By default, the CustomResourcePolicy of the enabled module is `CreateAndDelete`. With the default, you let the Lifecycle Manager take full control over the module enablement.
 

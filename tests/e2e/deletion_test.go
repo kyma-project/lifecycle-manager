@@ -53,6 +53,13 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR, shared.StateDeleting).
 				Should(BeTrue())
+
+			By("And Manifest CR is in \"Deleting\" State")
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+					shared.StateDeleting).
+				Should(Succeed())
 		})
 
 		It("When KCP Kyma CR is deleted", func() {
@@ -90,7 +97,13 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma CR is deleted", func() {
+		It("Then Manifest CR is deleted", func() {
+			Eventually(ManifestExists).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Equal(ErrNotFound))
+
+			By("And KCP Kyma CR is deleted")
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).

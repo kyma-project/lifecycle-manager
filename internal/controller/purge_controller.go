@@ -54,18 +54,18 @@ type PurgeReconciler struct {
 
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.V(log.InfoLevel).Info("Purge Reconciliation started")
+	logger.V(log.DebugLevel).Info("Purge reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if !util.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
-			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
+			return ctrl.Result{Requeue: false}, nil
 		}
-		return ctrl.Result{Requeue: false}, nil
+		return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
 	}
 
 	if kyma.DeletionTimestamp.IsZero() {
@@ -158,7 +158,8 @@ func (r *PurgeReconciler) calculateRequeueAfterTime(ctx context.Context, kyma *v
 	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
 	if time.Now().Before(deletionDeadline) {
 		requeueAfter := time.Until(deletionDeadline.Add(time.Second))
-		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s/%s will be requeued after %s",
+		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s/%s will be "+
+			"requeued after %s",
 			kyma.Namespace, kyma.Namespace, requeueAfter))
 		return requeueAfter
 	}

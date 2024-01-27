@@ -90,6 +90,9 @@ module-without-default-cr:
 module-consistency:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Keep Consistent After Deploy"
 
+mandatory-module:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
+
 non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
 

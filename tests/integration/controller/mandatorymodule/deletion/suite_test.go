@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-	http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,65 +13,61 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package controlplane_test
+
+package mandatory_test
 
 import (
 	"context"
-	"os"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
-
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const UseRandomPort = "0"
+const (
+	useRandomPort = "0"
+)
 
 var (
-	controlPlaneClient client.Client
-	k8sManager         manager.Manager
-	controlPlaneEnv    *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
-	cfg                *rest.Config
+	mandatoryModuleDeletionReconciler *controller.MandatoryModuleDeletionReconciler
+	controlPlaneClient                client.Client
+	singleClusterEnv                  *envtest.Environment
+	ctx                               context.Context
+	cancel                            context.CancelFunc
+	manifestFilePath                  string
+	server                            *httptest.Server
 )
 
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Controller Suite")
+	RunSpecs(t, "Purge Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -79,28 +75,18 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 	By("bootstrapping test environment")
-
-	externalCRDs, err := AppendExternalCRDs(
-		filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds"),
-		"cert-manager-v1.10.1.crds.yaml",
-		"istio-v1.17.1.crds.yaml")
-	Expect(err).ToNot(HaveOccurred())
-
-	kcpModuleCRD := &apiextensionsv1.CustomResourceDefinition{}
-	modulePath := filepath.Join(integration.GetProjectRoot(), "config", "samples", "component-integration-installed",
-		"crd", "operator.kyma-project.io_kcpmodules.yaml")
-	moduleFile, err := os.ReadFile(modulePath)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
-
-	controlPlaneEnv = &envtest.Environment{
+	singleClusterEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
-		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
+		CRDs:                  []*apiextensionsv1.CustomResourceDefinition{},
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = controlPlaneEnv.Start()
+	manifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci", "rendered.yaml")
+
+	newReg := registry.New()
+	server = httptest.NewServer(newReg)
+
+	cfg, err := singleClusterEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -109,10 +95,10 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sManager, err = ctrl.NewManager(
+	k8sManager, err := ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
-				BindAddress: UseRandomPort,
+				BindAddress: useRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
 			Cache:  internal.DefaultCacheOptions(),
@@ -126,22 +112,21 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	remoteClientCache := remote.NewClientCache()
-	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
-		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
-		RequeueIntervals:    intervals,
-		RemoteClientCache:   remoteClientCache,
-		KcpRestConfig:       k8sManager.GetConfig(),
-		InKCPMode:           true,
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:       true,
-		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		controller.SetupUpSetting{ListenerAddr: UseRandomPort})
+	mandatoryModuleDeletionReconciler = &controller.MandatoryModuleDeletionReconciler{
+		Client:           k8sManager.GetClient(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(shared.OperatorName),
+		RequeueIntervals: intervals,
+	}
+
+	err = mandatoryModuleDeletionReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
+
+	SetDefaultEventuallyPollingInterval(Interval)
+	SetDefaultEventuallyTimeout(Timeout)
+	SetDefaultConsistentlyDuration(ConsistentCheckTimeout)
+	SetDefaultConsistentlyPollingInterval(Interval)
 
 	go func() {
 		defer GinkgoRecover()
@@ -154,6 +139,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := controlPlaneEnv.Stop()
+	err := singleClusterEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

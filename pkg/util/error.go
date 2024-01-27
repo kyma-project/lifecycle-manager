@@ -42,3 +42,16 @@ func IsNotFound(err error) bool {
 	}
 	return false
 }
+
+func IsConnectionRefusedOrUnauthorized(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "connection refused") || strings.Contains(msg, "unauthorized") {
+		return true
+	}
+
+	return false
+}

@@ -3,25 +3,18 @@ package mandatory_test
 import (
 	"context"
 	"errors"
-	"time"
 
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -99,9 +92,9 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
-		Eventually(setKymaToReady).
+		Eventually(SetKymaState).
 			WithContext(ctx).
-			WithArguments(kyma).Should(Succeed())
+			WithArguments(kyma, mandatoryModuleReconciler, shared.StateReady).Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -120,30 +113,9 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 }
 
-func setKymaToReady(ctx context.Context, kyma *v1beta2.Kyma) error {
-	kyma.Status = v1beta2.KymaStatus{
-		State:         shared.StateReady,
-		Conditions:    nil,
-		Modules:       nil,
-		ActiveChannel: "",
-		LastOperation: shared.LastOperation{LastUpdateTime: apimetav1.NewTime(time.Now())},
-	}
-	kyma.TypeMeta.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta2.GroupVersion.Group,
-		Version: v1beta2.GroupVersion.Version,
-		Kind:    string(shared.KymaKind),
-	})
-	kyma.ManagedFields = nil
-
-	err := mandatoryModulesReconciler.Status().Patch(ctx, kyma, client.Apply,
-		status.SubResourceOpts(client.ForceOwnership),
-		client.FieldOwner(shared.OperatorName))
-	return err
-}
-
 func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := mandatoryModulesReconciler.List(ctx, &manifestList, &client.ListOptions{
+	if err := mandatoryModuleReconciler.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
 	}); err != nil {
 		return err

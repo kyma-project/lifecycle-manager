@@ -1,6 +1,7 @@
 package custom_resource_check_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -15,7 +16,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	manifesttest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,7 +28,8 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 
 	It(
 		"setup OCI", func() {
-			manifesttest.PushToRemoteOCIRegistry(installName)
+			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			Expect(err).NotTo(HaveOccurred())
 		},
 	)
 	BeforeEach(
@@ -40,24 +41,30 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		By("Install test Manifest CR")
 		testManifest := testutils.NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
-		validImageSpec := manifesttest.CreateOCIImageSpec(installName, manifesttest.Server.Listener.Addr().String(), false)
+		validImageSpec, err := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(),
+			manifestFilePath,
+			false)
+		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(manifesttest.InstallManifest(testManifest, imageSpecByte, true)).To(Succeed())
+		Expect(testutils.InstallManifest(ctx, controlPlaneClient, testManifest, imageSpecByte, true)).To(Succeed())
 
 		By("Ensure that deployment and Sample CR are deployed and ready")
 		deploy := &apiappsv1.Deployment{}
-		Eventually(setDeploymentStatus(deploymentName, deploy), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(setDeploymentStatus(ctx, controlPlaneClient, deploymentName, deploy), standardTimeout,
+			standardInterval).Should(Succeed())
 		sampleCR := emptySampleCR(manifestName)
-		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(setCRStatus(ctx, controlPlaneClient, sampleCR, shared.StateReady), standardTimeout,
+			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR is in the \"Ready\" state")
-		Eventually(manifesttest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
+		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady), standardTimeout,
+			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("Verify manifest status list all resources correctly")
-		status, err := manifesttest.GetManifestStatus(manifestName)
+		status, err := testutils.GetManifestStatus(ctx, controlPlaneClient, manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 		expectedDeployment := asResource(deploymentName, "default", "apps", "v1", "Deployment")
@@ -67,31 +74,42 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Expect(status.Synced).To(ContainElement(expectedCRD))
 
 		By("When the Module CR state is changed to \"Warning\"")
-		Eventually(setCRStatus(sampleCR, shared.StateWarning), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(setCRStatus(ctx, controlPlaneClient, sampleCR, shared.StateWarning), standardTimeout,
+			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state also changes to \"Warning\"")
-		Eventually(manifesttest.ExpectManifestStateIn(shared.StateWarning), standardTimeout, standardInterval).
+		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateWarning), standardTimeout,
+			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("When the Module CR state is changed back to \"Ready\"")
-		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(setCRStatus(ctx, controlPlaneClient, sampleCR, shared.StateReady), standardTimeout,
+			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state changes back to \"Ready\"")
-		Eventually(manifesttest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
+		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady), standardTimeout,
+			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("cleaning up the manifest")
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+			standardInterval).
 			Should(BeTrue())
-		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
-		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeTrue())
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+			standardInterval).Should(BeTrue())
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, sampleCR), standardTimeout,
+			standardInterval).Should(BeTrue())
 
-		Eventually(manifesttest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, testManifest), standardTimeout,
+			standardInterval).Should(Succeed())
 
 		By("verify target resources got deleted")
-		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, sampleCR), standardTimeout,
+			standardInterval).Should(BeFalse())
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+			standardInterval).Should(BeFalse())
+		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+			standardInterval).
 			Should(BeFalse())
 	})
 })
@@ -105,10 +123,10 @@ func asResource(name, namespace, group, version, kind string) shared.Resource {
 	}
 }
 
-func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
+func verifyObjectExists(ctx context.Context, clnt client.Client, obj *unstructured.Unstructured) func() (bool, error) {
 	return func() (bool, error) {
-		err := manifesttest.K8sClient.Get(
-			manifesttest.Ctx, client.ObjectKeyFromObject(obj),
+		err := clnt.Get(
+			ctx, client.ObjectKeyFromObject(obj),
 			obj,
 		)
 
@@ -131,10 +149,12 @@ func emptySampleCR(manifestName string) *unstructured.Unstructured {
 	return res
 }
 
-func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) func() error {
+func setCRStatus(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured,
+	statusValue shared.State,
+) func() error {
 	return func() error {
-		err := manifesttest.K8sClient.Get(
-			manifesttest.Ctx, client.ObjectKeyFromObject(moduleCR),
+		err := clnt.Get(
+			ctx, client.ObjectKeyFromObject(moduleCR),
 			moduleCR,
 		)
 		if err != nil {
@@ -146,14 +166,16 @@ func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) 
 		if err = unstructured.SetNestedField(moduleCR.Object, string(statusValue), "status", "state"); err != nil {
 			return err
 		}
-		return manifesttest.K8sClient.Status().Update(manifesttest.Ctx, moduleCR)
+		return clnt.Status().Update(ctx, moduleCR)
 	}
 }
 
-func setDeploymentStatus(name string, deploy *apiappsv1.Deployment) func() error {
+func setDeploymentStatus(ctx context.Context, clnt client.Client, name string,
+	deploy *apiappsv1.Deployment,
+) func() error {
 	return func() error {
-		err := manifesttest.K8sClient.Get(
-			manifesttest.Ctx, client.ObjectKey{
+		err := clnt.Get(
+			ctx, client.ObjectKey{
 				Namespace: apimetav1.NamespaceDefault,
 				Name:      name,
 			}, deploy,
@@ -169,7 +191,7 @@ func setDeploymentStatus(name string, deploy *apiappsv1.Deployment) func() error
 				Type:   apiappsv1.DeploymentAvailable,
 				Status: apicorev1.ConditionTrue,
 			})
-		err = manifesttest.K8sClient.Status().Update(manifesttest.Ctx, deploy)
+		err = clnt.Status().Update(ctx, deploy)
 		if err != nil {
 			return err
 		}

@@ -216,6 +216,10 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 		return false
 	}
 
+	if m.IsMandatory() {
+		return false
+	}
+
 	return true
 }
 
@@ -238,4 +242,8 @@ func (m *ModuleTemplate) IsBeta() bool {
 		return strings.ToLower(isBeta) == shared.EnableLabelValue
 	}
 	return false
+}
+
+func (m *ModuleTemplate) IsMandatory() bool {
+	return m.Spec.Mandatory
 }

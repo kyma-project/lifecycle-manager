@@ -11,8 +11,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
-	manifesttest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,12 +24,13 @@ var _ = Describe(
 			"should fetch authnKeyChain from secret correctly", FlakeAttempts(5), func() {
 				By("install secret")
 				const CredSecretLabelValue = "test-operator"
-				Eventually(installCredSecret(CredSecretLabelValue), standardTimeout, standardInterval).Should(Succeed())
+				Eventually(installCredSecret(controlPlaneClient, CredSecretLabelValue), standardTimeout,
+					standardInterval).Should(Succeed())
 				const repo = "test.registry.io"
 				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
 					"digest", CredSecretLabelValue)
-				keychain, err := ocmextensions.GetAuthnKeychain(manifesttest.Ctx,
-					imageSpecWithCredSelect.CredSecretSelector, manifesttest.K8sClient)
+				keychain, err := ocmextensions.GetAuthnKeychain(ctx,
+					imageSpecWithCredSelect.CredSecretSelector, controlPlaneClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)
@@ -49,7 +50,7 @@ func CreateOCIImageSpecWithCredSelect(name, repo, digest, secretLabelValue strin
 		Repo:               repo,
 		Type:               "oci-ref",
 		Ref:                digest,
-		CredSecretSelector: manifesttest.CredSecretLabelSelector(secretLabelValue),
+		CredSecretSelector: testutils.CredSecretLabelSelector(secretLabelValue),
 	}
 	return imageSpec
 }
@@ -67,7 +68,7 @@ func (d TestRegistry) RegistryStr() string {
 	return d.registry
 }
 
-func installCredSecret(secretLabelValue string) func() error {
+func installCredSecret(clnt client.Client, secretLabelValue string) func() error {
 	return func() error {
 		secret := &apicorev1.Secret{}
 		secretFile, err := os.ReadFile(filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples",
@@ -75,12 +76,12 @@ func installCredSecret(secretLabelValue string) func() error {
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
-		secret.Labels[manifesttest.OCIRegistryCredLabelKeyForTest] = secretLabelValue
-		err = manifesttest.K8sClient.Create(manifesttest.Ctx, secret)
+		secret.Labels[testutils.OCIRegistryCredLabelKeyForTest] = secretLabelValue
+		err = clnt.Create(ctx, secret)
 		if apierrors.IsAlreadyExists(err) {
 			return nil
 		}
 		Expect(err).ToNot(HaveOccurred())
-		return manifesttest.K8sClient.Get(manifesttest.Ctx, client.ObjectKeyFromObject(secret), &apicorev1.Secret{})
+		return clnt.Get(ctx, client.ObjectKeyFromObject(secret), &apicorev1.Secret{})
 	}
 }

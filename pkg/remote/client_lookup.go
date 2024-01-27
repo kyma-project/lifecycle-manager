@@ -53,6 +53,7 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 		DefaultClient: l.kcp,
 		Logger:        logf.FromContext(ctx),
 	}
+
 	switch l.strategy {
 	case v1beta2.SyncStrategyLocalClient:
 		if LocalClient != nil {

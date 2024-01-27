@@ -50,6 +50,9 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
 	lbls[shared.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
 	lbls[shared.ManagedBy] = shared.OperatorName
+	if m.Template.Spec.Mandatory {
+		lbls[shared.IsMandatoryModule] = "true"
+	}
 
 	m.SetLabels(lbls)
 
