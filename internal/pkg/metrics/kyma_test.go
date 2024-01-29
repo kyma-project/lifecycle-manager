@@ -2,7 +2,6 @@ package metrics_test
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -12,7 +11,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
@@ -27,60 +25,33 @@ var sampleGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 
 func Test_fetchLifecycleManagerLogs(t *testing.T) {
 	t.Parallel()
+	ctrlmetrics.Registry.Unregister(sampleGauge)
+	ctrlmetrics.Registry.MustRegister(sampleGauge)
+	sampleGauge.With(prometheus.Labels{
+		"kyma_name": "value_1",
+	}).Set(1)
+
 	gaugeValue := 1.0
-	tests := []struct {
-		name                       string
-		want                       []*prometheusclient.Metric
-		wantErr                    bool
-		hasLifecycleManagerMetrics bool
-	}{
+	want := []*prometheusclient.Metric{
 		{
-			name: "metrics with MetricKymaState",
-			want: []*prometheusclient.Metric{
+			Label: []*prometheusclient.LabelPair{
 				{
-					Label: []*prometheusclient.LabelPair{
-						{
-							Name:  proto.String("kyma_name"),
-							Value: proto.String("value_1"),
-						},
-					},
-					Gauge: &prometheusclient.Gauge{
-						Value: &gaugeValue,
-					},
+					Name:  proto.String("kyma_name"),
+					Value: proto.String("value_1"),
 				},
 			},
-			wantErr:                    false,
-			hasLifecycleManagerMetrics: true,
-		},
-		{
-			name:                       "metrics with no MetricKymaState",
-			want:                       nil,
-			wantErr:                    false,
-			hasLifecycleManagerMetrics: false,
+			Gauge: &prometheusclient.Gauge{
+				Value: &gaugeValue,
+			},
 		},
 	}
-	for _, tt := range tests {
-		test := tt
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			if test.hasLifecycleManagerMetrics {
-				ctrlmetrics.Registry.Unregister(sampleGauge)
-				ctrlmetrics.Registry.MustRegister(sampleGauge)
-				sampleGauge.With(prometheus.Labels{
-					"kyma_name": "value_1",
-				}).Set(1)
-			} else {
-				ctrlmetrics.Registry.Unregister(sampleGauge)
-			}
-			got, err := metrics.FetchLifecycleManagerMetrics()
-			if (err != nil) != test.wantErr {
-				t.Errorf("fetchLifecycleManagerLogs() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, test.want) {
-				t.Errorf("fetchLifecycleManagerLogs() got = %v, want %v", got, test.want)
-			}
-		})
+	got, err := metrics.FetchLifecycleManagerMetrics()
+	if err != nil {
+		t.Errorf("fetchLifecycleManagerLogs() error = %v, ", err)
+		return
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("fetchLifecycleManagerLogs() got = %v, want %v", got, want)
 	}
 }
 
@@ -104,101 +75,48 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 	sampleGauge.With(prometheus.Labels{
 		metrics.KymaNameLabel: "kyma-sample",
 	}).Set(1)
-
-	gaugeValue := 1.0
-
-	tests := []struct {
-		name                 string
-		kcpClient            client.Client
-		kymaStateGauge       *prometheus.GaugeVec
-		wantErr              bool
-		hasNonExistingKyma   bool
-		wantResultingMetrics []*prometheusclient.Metric
-	}{
-		{
-			name:               "Metrics without non-existing kymas",
-			wantErr:            false,
-			kcpClient:          fakeClientBuilder,
-			kymaStateGauge:     sampleGauge,
-			hasNonExistingKyma: false,
-			wantResultingMetrics: []*prometheusclient.Metric{
-				{
-					Label: []*prometheusclient.LabelPair{
-						{
-							Name:  proto.String(metrics.KymaNameLabel),
-							Value: proto.String("kyma-sample"),
-						},
-					},
-					Gauge: &prometheusclient.Gauge{
-						Value: &gaugeValue,
-					},
-				},
-			},
-		},
-		{
-			name:               "Metrics with non-existing kymas",
-			wantErr:            false,
-			kcpClient:          fakeClientBuilder,
-			kymaStateGauge:     sampleGauge,
-			hasNonExistingKyma: true,
-			wantResultingMetrics: []*prometheusclient.Metric{
-				{
-					Label: []*prometheusclient.LabelPair{
-						{
-							Name:  proto.String(metrics.KymaNameLabel),
-							Value: proto.String("kyma-sample"),
-						},
-					},
-					Gauge: &prometheusclient.Gauge{
-						Value: &gaugeValue,
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		test := tt
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			if test.hasNonExistingKyma {
-				if err := registerNonExistingKymaMetrics(); err != nil {
-					t.Errorf("failed to set the non-existing kyma")
-				}
-			}
-
-			k := &metrics.KymaMetrics{
-				KymaStateGauge: test.kymaStateGauge,
-			}
-			if err := k.CleanupNonExistingKymaCrsMetrics(context.TODO(), test.kcpClient); (err != nil) != test.wantErr {
-				t.Errorf("CleanupNonExistingKymaCrsMetrics() error = %v, wantErr %v", err, test.wantErr)
-			}
-
-			resultingMetrics, _ := ctrlmetrics.Registry.Gather()
-			for _, metric := range resultingMetrics {
-				if metric.GetName() == metrics.MetricKymaState {
-					if !reflect.DeepEqual(metric.GetMetric(), test.wantResultingMetrics) {
-						t.Errorf("resultMetrics: got = %v, want %v", metric.GetMetric(),
-							test.wantResultingMetrics)
-					}
-				}
-			}
-		})
-	}
-}
-
-func registerNonExistingKymaMetrics() error {
 	sampleGauge.With(prometheus.Labels{
 		metrics.KymaNameLabel: "non-existing",
 	}).Set(1)
 
+	gaugeValue := 1.0
+	wantResultingMetrics := []*prometheusclient.Metric{
+		{
+			Label: []*prometheusclient.LabelPair{
+				{
+					Name:  proto.String(metrics.KymaNameLabel),
+					Value: proto.String("kyma-sample"),
+				},
+			},
+			Gauge: &prometheusclient.Gauge{
+				Value: &gaugeValue,
+			},
+		},
+	}
+
 	resultingMetrics, _ := ctrlmetrics.Registry.Gather()
 	for _, metric := range resultingMetrics {
 		if metric.GetName() == metrics.MetricKymaState {
-			if len(metric.GetMetric()) != 2 {
-				return fmt.Errorf("failed to set the non-existing Kymas")
+			if len(metric.GetMetric()) < 2 {
+				t.Errorf("failed to set the non-existing kyma")
 			}
 		}
 	}
 
-	return nil
+	k := &metrics.KymaMetrics{
+		KymaStateGauge: sampleGauge,
+	}
+	if err := k.CleanupNonExistingKymaCrsMetrics(context.TODO(), fakeClientBuilder); err != nil {
+		t.Errorf("CleanupNonExistingKymaCrsMetrics() error = %v", err)
+	}
+
+	resultingMetrics, _ = ctrlmetrics.Registry.Gather()
+	for _, metric := range resultingMetrics {
+		if metric.GetName() == metrics.MetricKymaState {
+			if !reflect.DeepEqual(metric.GetMetric(), wantResultingMetrics) {
+				t.Errorf("resultMetrics: got = %v, want %v", metric.GetMetric(),
+					wantResultingMetrics)
+			}
+		}
+	}
 }

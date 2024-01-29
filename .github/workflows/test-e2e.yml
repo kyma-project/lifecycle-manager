@@ -149,7 +149,7 @@ jobs:
           echo \
           "- op: add
             path: /spec/template/spec/containers/0/args/-
-            value: --metrics-cleanup-interval=1 >> metrics_cleanup.yaml
+            value: --metrics-cleanup-interval=1" >> metrics_cleanup.yaml
           cat metrics_cleanup.yaml
           kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment
           popd
