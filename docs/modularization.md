@@ -4,7 +4,7 @@ Modules are the next generation of components in Kyma that are available for loc
 
 Modules are no longer represented by a single helm-chart, but instead are bundled and released within channels through a [ModuleTemplate custom resource (CR)](/api/v1beta2/moduletemplate_types.go), a unique link of a module, and its desired state of resources and configuration, and a channel.
 
-Lifecycle Manager manages clusters using the [Kyma CR](/api/v1beta2/kyma_types.go). The CR defines the desired state of modules in a cluster. With the CR you can enable and disable modules with domain-specific functionality with additional configuration.
+Lifecycle Manager manages clusters using the [Kyma CR](/api/v1beta2/kyma_types.go). The CR defines the desired state of modules in a cluster. With the CR you can add and delete modules with domain-specific functionality with additional configuration.
 
 The modules themselves are built and distributed as OCI artifacts. The internal structure of the artifact conforms to the [Open Component Model](https://ocm.software/) scheme version 3. Modules contain an immutable layer set of a module operator deployment description and its configuration.
 

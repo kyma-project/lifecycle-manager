@@ -21,7 +21,7 @@ For the worklow details, read the [Architecture](docs/technical-reference/archit
 
 ## Quick Start
 
-Follow this quick start guide to set up the environment and use Lifecycle Manager to enable modules.
+Follow this quick start guide to set up the environment and use Lifecycle Manager to add modules.
 
 ### Prerequisites
 
@@ -51,7 +51,7 @@ To use Lifecycle Manager in a local setup, install the following:
 3. Enable a module. Run:
 
   ```bash
-  kyma alpha enable module {MODULE_NAME}
+  kyma alpha add module {MODULE_NAME}
   ```
 
 **TIP:** Check the [modular Kyma interactive tutorial](https://killercoda.com/kyma-project/scenario/modular-kyma) to play with enabling and disabling Kyma modules in both terminal and Busola.

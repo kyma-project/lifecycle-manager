@@ -20,7 +20,7 @@ By default, the CustomResourcePolicy of the enabled module is `CreateAndDelete`.
 For example, to enable the Keda module with the default policy for the `default-kyma` Kyma CR, run:
 
 ```bash
-kyma alpha enable module keda -n kyma-system -k default-kyma
+kyma alpha add module keda -n kyma-system -k default-kyma
 ```
 
 This will result in the `default-kyma` Kyma CR spec like this:
