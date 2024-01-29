@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
@@ -24,6 +22,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
