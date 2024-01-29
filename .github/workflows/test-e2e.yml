@@ -141,6 +141,18 @@ jobs:
           cat purge_finalizer.yaml
           kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
           popd
+      - name: Patch metrics cleanup interval
+        if : ${{ matrix.e2e-test == 'kyma-metrics' }}
+        working-directory: lifecycle-manager
+        run: |
+          pushd config/watcher_local_test
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --metrics-cleanup-interval=1 >> metrics_cleanup.yaml
+          cat metrics_cleanup.yaml
+          kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment
+          popd
       - name: Patch self signed certificate lifetime
         if: ${{matrix.e2e-test == 'self-signed-certificate-rotation'}}
         working-directory: lifecycle-manager

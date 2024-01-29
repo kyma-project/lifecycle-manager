@@ -1,26 +1,33 @@
-package metrics
+package metrics_test
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusclient "github.com/prometheus/client_model/go"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
+var sampleGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	Name: metrics.MetricKymaState,
+	Help: "Indicates the Status.state for a given Kyma object",
+}, []string{"kyma_name"})
+
 func Test_fetchLifecycleManagerLogs(t *testing.T) {
-	var gaugeValue float64
-	gaugeValue = 1
+	t.Parallel()
+	gaugeValue := 1.0
 	tests := []struct {
 		name                       string
 		want                       []*prometheusclient.Metric
@@ -33,7 +40,7 @@ func Test_fetchLifecycleManagerLogs(t *testing.T) {
 				{
 					Label: []*prometheusclient.LabelPair{
 						{
-							Name:  proto.String("label_1"),
+							Name:  proto.String("kyma_name"),
 							Value: proto.String("value_1"),
 						},
 					},
@@ -53,88 +60,72 @@ func Test_fetchLifecycleManagerLogs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sampleGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-				Name: MetricKymaState,
-				Help: "Indicates the Status.state for a given Kyma object",
-			}, []string{"label_1"})
-			if tt.hasLifecycleManagerMetrics {
+		test := tt
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if test.hasLifecycleManagerMetrics {
+				ctrlmetrics.Registry.Unregister(sampleGauge)
 				ctrlmetrics.Registry.MustRegister(sampleGauge)
 				sampleGauge.With(prometheus.Labels{
-					"label_1": "value_1",
+					"kyma_name": "value_1",
 				}).Set(1)
 			} else {
 				ctrlmetrics.Registry.Unregister(sampleGauge)
 			}
-			got, err := fetchLifecycleManagerMetrics()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("fetchLifecycleManagerLogs() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := metrics.FetchLifecycleManagerMetrics()
+			if (err != nil) != test.wantErr {
+				t.Errorf("fetchLifecycleManagerLogs() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fetchLifecycleManagerLogs() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("fetchLifecycleManagerLogs() got = %v, want %v", got, test.want)
 			}
 		})
 	}
 }
 
 func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
+	t.Parallel()
 	deployedKymas := &v1beta2.KymaList{
 		Items: []v1beta2.Kyma{
 			{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name: "kyma-sample",
 				},
 			},
 		},
 	}
-	sc := runtime.NewScheme()
+	sc := machineryruntime.NewScheme()
 	machineryutilruntime.Must(v1beta2.AddToScheme(sc))
 
 	fakeClientBuilder := fake.NewClientBuilder().WithScheme(sc).WithRuntimeObjects(deployedKymas).Build()
-	sampleGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: MetricKymaState,
-		Help: "Indicates the Status.state for a given Kyma object",
-	}, []string{KymaNameLabel})
+	ctrlmetrics.Registry.Unregister(sampleGauge)
 	ctrlmetrics.Registry.MustRegister(sampleGauge)
 	sampleGauge.With(prometheus.Labels{
-		KymaNameLabel: "kyma-sample",
+		metrics.KymaNameLabel: "kyma-sample",
 	}).Set(1)
 
-	var gaugeValue float64
-	gaugeValue = 1
+	gaugeValue := 1.0
 
-	type fields struct {
-		kymaStateGauge *prometheus.GaugeVec
-		SharedMetrics  *SharedMetrics
-	}
-	type args struct {
-		ctx       context.Context
-		kcpClient client.Client
-	}
 	tests := []struct {
 		name                 string
-		args                 args
-		fields               fields
+		kcpClient            client.Client
+		kymaStateGauge       *prometheus.GaugeVec
 		wantErr              bool
 		hasNonExistingKyma   bool
 		wantResultingMetrics []*prometheusclient.Metric
 	}{
-
 		{
-			name:    "Metrics without non-existing kymas",
-			wantErr: false,
-			args: args{
-				ctx:       context.TODO(),
-				kcpClient: fakeClientBuilder,
-			},
-			fields:             fields{kymaStateGauge: sampleGauge},
+			name:               "Metrics without non-existing kymas",
+			wantErr:            false,
+			kcpClient:          fakeClientBuilder,
+			kymaStateGauge:     sampleGauge,
 			hasNonExistingKyma: false,
 			wantResultingMetrics: []*prometheusclient.Metric{
 				{
 					Label: []*prometheusclient.LabelPair{
 						{
-							Name:  proto.String(KymaNameLabel),
+							Name:  proto.String(metrics.KymaNameLabel),
 							Value: proto.String("kyma-sample"),
 						},
 					},
@@ -145,19 +136,16 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:    "Metrics with non-existing kymas",
-			wantErr: false,
-			args: args{
-				ctx:       context.TODO(),
-				kcpClient: fakeClientBuilder,
-			},
-			fields:             fields{kymaStateGauge: sampleGauge},
+			name:               "Metrics with non-existing kymas",
+			wantErr:            false,
+			kcpClient:          fakeClientBuilder,
+			kymaStateGauge:     sampleGauge,
 			hasNonExistingKyma: true,
 			wantResultingMetrics: []*prometheusclient.Metric{
 				{
 					Label: []*prometheusclient.LabelPair{
 						{
-							Name:  proto.String(KymaNameLabel),
+							Name:  proto.String(metrics.KymaNameLabel),
 							Value: proto.String("kyma-sample"),
 						},
 					},
@@ -169,38 +157,48 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.hasNonExistingKyma {
-				sampleGauge.With(prometheus.Labels{
-					KymaNameLabel: "non-existing",
-				}).Set(1)
-
-				resultingMetrics, _ := ctrlmetrics.Registry.Gather()
-				for _, metric := range resultingMetrics {
-					if metric.GetName() == MetricKymaState {
-						if len(metric.Metric) != 2 {
-							t.Errorf("failed to set the non-existing kyma")
-						}
-					}
+		test := tt
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if test.hasNonExistingKyma {
+				if err := registerNonExistingKymaMetrics(); err != nil {
+					t.Errorf("failed to set the non-existing kyma")
 				}
 			}
 
-			k := &KymaMetrics{
-				kymaStateGauge: tt.fields.kymaStateGauge,
+			k := &metrics.KymaMetrics{
+				KymaStateGauge: test.kymaStateGauge,
 			}
-			if err := k.CleanupNonExistingKymaCrsMetrics(tt.args.ctx, tt.args.kcpClient); (err != nil) != tt.wantErr {
-				t.Errorf("CleanupNonExistingKymaCrsMetrics() error = %v, wantErr %v", err, tt.wantErr)
+			if err := k.CleanupNonExistingKymaCrsMetrics(context.TODO(), test.kcpClient); (err != nil) != test.wantErr {
+				t.Errorf("CleanupNonExistingKymaCrsMetrics() error = %v, wantErr %v", err, test.wantErr)
 			}
 
 			resultingMetrics, _ := ctrlmetrics.Registry.Gather()
 			for _, metric := range resultingMetrics {
-				if metric.GetName() == MetricKymaState {
-					if !reflect.DeepEqual(metric.Metric, tt.wantResultingMetrics) {
-						t.Errorf("resultMetrics: got = %v, want %v", metric.Metric,
-							tt.wantResultingMetrics)
+				if metric.GetName() == metrics.MetricKymaState {
+					if !reflect.DeepEqual(metric.GetMetric(), test.wantResultingMetrics) {
+						t.Errorf("resultMetrics: got = %v, want %v", metric.GetMetric(),
+							test.wantResultingMetrics)
 					}
 				}
 			}
 		})
 	}
+}
+
+func registerNonExistingKymaMetrics() error {
+	sampleGauge.With(prometheus.Labels{
+		metrics.KymaNameLabel: "non-existing",
+	}).Set(1)
+
+	resultingMetrics, _ := ctrlmetrics.Registry.Gather()
+	for _, metric := range resultingMetrics {
+		if metric.GetName() == metrics.MetricKymaState {
+			if len(metric.GetMetric()) != 2 {
+				return fmt.Errorf("failed to set the non-existing Kymas")
+			}
+		}
+	}
+
+	return nil
 }

@@ -23,7 +23,7 @@ const (
 )
 
 type KymaMetrics struct {
-	kymaStateGauge   *prometheus.GaugeVec
+	KymaStateGauge   *prometheus.GaugeVec
 	moduleStateGauge *prometheus.GaugeVec
 	*SharedMetrics
 }
@@ -56,7 +56,7 @@ const (
 func NewKymaMetrics(sharedMetrics *SharedMetrics) *KymaMetrics {
 	kymaMetrics := &KymaMetrics{
 		SharedMetrics: sharedMetrics,
-		kymaStateGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		KymaStateGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: MetricKymaState,
 			Help: "Indicates the Status.state for a given Kyma object",
 		}, []string{KymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
@@ -66,7 +66,7 @@ func NewKymaMetrics(sharedMetrics *SharedMetrics) *KymaMetrics {
 			Help: "Indicates the Status.state for modules of Kyma",
 		}, []string{moduleNameLabel, KymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel}),
 	}
-	ctrlmetrics.Registry.MustRegister(kymaMetrics.kymaStateGauge)
+	ctrlmetrics.Registry.MustRegister(kymaMetrics.KymaStateGauge)
 	ctrlmetrics.Registry.MustRegister(kymaMetrics.moduleStateGauge)
 	return kymaMetrics
 }
@@ -93,7 +93,7 @@ func (k *KymaMetrics) UpdateAll(kyma *v1beta2.Kyma) error {
 // CleanupMetrics deletes all 'lifecycle_mgr_kyma_state',
 // 'lifecycle_mgr_module_state' metrics for the matching Kyma.
 func (k *KymaMetrics) CleanupMetrics(kymaName string) {
-	k.kymaStateGauge.DeletePartialMatch(prometheus.Labels{
+	k.KymaStateGauge.DeletePartialMatch(prometheus.Labels{
 		KymaNameLabel: kymaName,
 	})
 	k.moduleStateGauge.DeletePartialMatch(prometheus.Labels{
@@ -113,7 +113,7 @@ func (k *KymaMetrics) setKymaStateGauge(newState shared.State, kymaName, shootID
 	states := shared.AllStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
-		k.kymaStateGauge.With(prometheus.Labels{
+		k.KymaStateGauge.With(prometheus.Labels{
 			KymaNameLabel:   kymaName,
 			shootIDLabel:    shootID,
 			instanceIDLabel: instanceID,
@@ -148,7 +148,7 @@ func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, r
 }
 
 func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpClient client.Client) error {
-	currentLifecycleManagerLogs, err := fetchLifecycleManagerMetrics()
+	currentLifecycleManagerLogs, err := FetchLifecycleManagerMetrics()
 	if err != nil {
 		return fmt.Errorf("failed to fetch current kyma metrics, %w", err)
 	}
@@ -166,7 +166,7 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 	for _, m := range currentLifecycleManagerLogs {
 		currentKymaName := getKymaNameFromLabels(m)
 		if !slices.Contains(kymaNames, currentKymaName) {
-			k.kymaStateGauge.DeletePartialMatch(prometheus.Labels{
+			k.KymaStateGauge.DeletePartialMatch(prometheus.Labels{
 				KymaNameLabel: currentKymaName,
 			})
 		}
@@ -175,7 +175,7 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 	return nil
 }
 
-func fetchLifecycleManagerMetrics() ([]*prometheusclient.Metric, error) {
+func FetchLifecycleManagerMetrics() ([]*prometheusclient.Metric, error) {
 	currentMetrics, err := ctrlmetrics.Registry.Gather()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch current kyma metrics, %w", err)
@@ -183,7 +183,7 @@ func fetchLifecycleManagerMetrics() ([]*prometheusclient.Metric, error) {
 
 	for _, metric := range currentMetrics {
 		if metric.GetName() == MetricKymaState {
-			return metric.Metric, nil
+			return metric.GetMetric(), nil
 		}
 	}
 
@@ -205,7 +205,7 @@ func getKymaNames(kymaCrs *v1beta2.KymaList) []string {
 		return nil
 	}
 
-	var names []string
+	names := make([]string, 0)
 	for _, kyma := range kymaCrs.Items {
 		names = append(names, kyma.GetName())
 	}

@@ -139,8 +139,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	err = flagVar.Validate()
-	if err != nil {
+
+	if err = flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
@@ -166,11 +166,25 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
 	}
-
 	if flagVar.EnableWebhooks {
 		enableWebhooks(mgr)
 	}
 
+	addHealthChecks(mgr)
+	if flagVar.DropStoredVersion != "" {
+		go func(version string) {
+			dropStoredVersion(mgr, version)
+		}(flagVar.DropStoredVersion)
+	}
+	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
+
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func addHealthChecks(mgr manager.Manager) {
 	// +kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -178,18 +192,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-	if flagVar.DropStoredVersion != "" {
-		go func(version string) {
-			dropStoredVersion(mgr, version)
-		}(flagVar.DropStoredVersion)
-	}
-
-	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
-
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }
