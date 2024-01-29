@@ -1,9 +1,13 @@
 package metrics
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	io_prometheus_client "github.com/prometheus/client_model/go"
+	"k8s.io/utils/strings/slices"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -79,6 +83,7 @@ func (k *KymaMetrics) UpdateAll(kyma *v1beta2.Kyma) error {
 	}
 
 	k.setKymaStateGauge(kyma.Status.State, kyma.Name, shootID, instanceID)
+
 	for _, moduleStatus := range kyma.Status.Modules {
 		k.setModuleStateGauge(moduleStatus.State, moduleStatus.Name, kyma.Name, shootID, instanceID)
 	}
@@ -140,4 +145,69 @@ func calcStateValue(state, newState shared.State) float64 {
 
 func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, requeueType RequeueType) {
 	k.requeueReasonCounter.WithLabelValues(string(kymaRequeueReason), string(requeueType)).Inc()
+}
+
+func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpClient client.Client) error {
+	currentLifecycleManagerLogs, err := fetchLifecycleManagerLogs()
+	if err != nil {
+		return fmt.Errorf("failed to fetch current kyma metrics, %w", err)
+	}
+
+	if len(currentLifecycleManagerLogs) == 0 {
+		return nil
+	}
+
+	kymaCrsList := &v1beta2.KymaList{}
+	err = kcpClient.List(ctx, kymaCrsList)
+	if err != nil {
+		return fmt.Errorf("failed to fetch Kyma CRs, %w", err)
+	}
+	kymaNames := getKymaNames(kymaCrsList)
+	for _, m := range currentLifecycleManagerLogs {
+		currentKymaName := getKymaNameFromLabels(m)
+		if !slices.Contains(kymaNames, currentKymaName) {
+			k.kymaStateGauge.DeletePartialMatch(prometheus.Labels{
+				KymaNameLabel: currentKymaName,
+			})
+		}
+	}
+
+	return nil
+}
+
+func fetchLifecycleManagerLogs() ([]*io_prometheus_client.Metric, error) {
+	currentMetrics, err := ctrlmetrics.Registry.Gather()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch current kyma metrics, %w", err)
+	}
+
+	for _, metric := range currentMetrics {
+		if metric.GetName() == MetricKymaState {
+			return metric.Metric, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func getKymaNameFromLabels(metric *io_prometheus_client.Metric) string {
+	for _, label := range metric.GetLabel() {
+		if label.GetName() == KymaNameLabel {
+			return label.GetValue()
+		}
+	}
+
+	return ""
+}
+
+func getKymaNames(kymaCrs *v1beta2.KymaList) []string {
+	if len(kymaCrs.Items) == 0 {
+		return nil
+	}
+
+	var names []string
+	for _, kyma := range kymaCrs.Items {
+		names = append(names, kyma.GetName())
+	}
+	return names
 }

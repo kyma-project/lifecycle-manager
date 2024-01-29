@@ -61,8 +61,9 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		client.FieldOwner(fieldOwner)); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
-
-	if k.isManagedKyma && k.recordKymaStatusMetrics != nil {
+	// TODO: Revert
+	// if k.isManagedKyma
+	if k.recordKymaStatusMetrics != nil {
 		k.recordKymaStatusMetrics(ctx, kyma)
 	}
 

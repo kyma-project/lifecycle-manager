@@ -157,7 +157,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	remoteClientCache := remote.NewClientCache()
 	sharedMetrics := metrics.NewSharedMetrics()
-	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager, sharedMetrics)
+	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
+	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager, kymaMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
 	setupMandatoryModuleReconciler(mgr, flagVar, options)
 	setupMandatoryModuleDeletionReconciler(mgr, flagVar, options)
@@ -185,7 +186,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		}(flagVar.DropStoredVersion)
 	}
 
-	go runMetricsCleanup(flagVar.MetricsCleanupIntervalInMinutes)
+	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -193,10 +194,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 }
 
-func runMetricsCleanup(cleanupInterval int) {
+func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client, cleanupIntervalInMinutes int) {
 	scheduler := gocron.NewScheduler(time.UTC)
-	_, scheduleErr := scheduler.Every(cleanupInterval).Minutes().Do(func() {
-		if err := metrics.CleanupNonExistingKymaCrsMetrics(); err != nil {
+	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
+		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(context.TODO(), kcpClient); err != nil {
 			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
 		}
 	})
@@ -243,7 +244,7 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 
 func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *flags.FlagVar,
 	options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
-	sharedMetrics *metrics.SharedMetrics,
+	kymaMetrics *metrics.KymaMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
@@ -263,7 +264,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		InKCPMode:           flagVar.InKCPMode,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		IsManagedKyma:       flagVar.IsKymaManaged,
-		Metrics:             metrics.NewKymaMetrics(sharedMetrics),
+		Metrics:             kymaMetrics,
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
