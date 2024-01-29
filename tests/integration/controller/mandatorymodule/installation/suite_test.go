@@ -18,6 +18,7 @@ package mandatory_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"path/filepath"
 	"testing"
 	"time"
@@ -104,9 +105,11 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	mandatoryModuleReconciler = &controller.MandatoryModuleReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		DescriptorProvider:  descriptorProvider,
 		RequeueIntervals:    intervals,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           false,

@@ -18,6 +18,7 @@ package mandatory_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
@@ -112,10 +113,12 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	mandatoryModuleDeletionReconciler = &controller.MandatoryModuleDeletionReconciler{
-		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(shared.OperatorName),
-		RequeueIntervals: intervals,
+		Client:             k8sManager.GetClient(),
+		EventRecorder:      k8sManager.GetEventRecorderFor(shared.OperatorName),
+		DescriptorProvider: descriptorProvider,
+		RequeueIntervals:   intervals,
 	}
 
 	err = mandatoryModuleDeletionReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
