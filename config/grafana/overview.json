@@ -821,7 +821,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{controller=\"kyma\"})",
+          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{container=\"manager\",controller=\"kyma\" })",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -832,7 +832,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{controller=\"manifest\"})",
+          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{container=\"manager\",controller=\"manifest\" })",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
