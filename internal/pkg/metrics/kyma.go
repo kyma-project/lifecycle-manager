@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	prometheusclient "github.com/prometheus/client_model/go"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -148,7 +148,7 @@ func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, r
 }
 
 func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpClient client.Client) error {
-	currentLifecycleManagerLogs, err := fetchLifecycleManagerLogs()
+	currentLifecycleManagerLogs, err := fetchLifecycleManagerMetrics()
 	if err != nil {
 		return fmt.Errorf("failed to fetch current kyma metrics, %w", err)
 	}
@@ -175,7 +175,7 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 	return nil
 }
 
-func fetchLifecycleManagerLogs() ([]*io_prometheus_client.Metric, error) {
+func fetchLifecycleManagerMetrics() ([]*prometheusclient.Metric, error) {
 	currentMetrics, err := ctrlmetrics.Registry.Gather()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch current kyma metrics, %w", err)
@@ -190,7 +190,7 @@ func fetchLifecycleManagerLogs() ([]*io_prometheus_client.Metric, error) {
 	return nil, nil
 }
 
-func getKymaNameFromLabels(metric *io_prometheus_client.Metric) string {
+func getKymaNameFromLabels(metric *prometheusclient.Metric) string {
 	for _, label := range metric.GetLabel() {
 		if label.GetName() == KymaNameLabel {
 			return label.GetValue()
