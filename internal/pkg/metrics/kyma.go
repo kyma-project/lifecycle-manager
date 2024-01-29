@@ -47,6 +47,7 @@ const (
 	CleanupManifestCrs                       KymaRequeueReason = "manifest_crs_cleanup"
 	KymaDeletion                             KymaRequeueReason = "kyma_deletion"
 	KymaRetrieval                            KymaRequeueReason = "kyma_retrieval"
+	KymaSyncUnauthorized                     KymaRequeueReason = "kyma_sync_unauthorized"
 )
 
 func NewKymaMetrics(sharedMetrics *SharedMetrics) *KymaMetrics {

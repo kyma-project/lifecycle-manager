@@ -132,9 +132,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if err != nil {
-		r.deleteRemoteClientCache(ctx, kyma)
-		r.enqueueWarningEvent(kyma, syncContextError, err)
-		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, metrics.UnexpectedRequeue)
+		if util.IsUnauthorized(err) {
+			r.deleteRemoteClientCache(ctx, kyma)
+			r.enqueueWarningEvent(kyma, syncContextError, err)
+		}
+		r.recordMetricFilteredByUnauthorized(ctx, kyma, err, metrics.SyncContextRetrieval, metrics.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
@@ -168,7 +170,7 @@ func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kym
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.RemoteKymaDeletion, metrics.UnexpectedRequeue)
+			r.recordMetricFilteredByUnauthorized(ctx, kyma, err, metrics.RemoteKymaDeletion, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
 		if err := r.updateStatus(ctx, kyma, shared.StateDeleting, "waiting for modules to be deleted"); err != nil {
@@ -192,7 +194,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	if r.SyncKymaEnabled(kyma) {
 		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
 		if err != nil {
-			r.Metrics.RecordRequeueReason(metrics.CrdsSync, metrics.UnexpectedRequeue)
+			r.recordMetricFilteredByUnauthorized(ctx, kyma, err, metrics.CrdsSync, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
 		}
 		if updateKymaRequired {
@@ -205,7 +207,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		}
 		// update the control-plane kyma with the changes to the spec of the remote Kyma
 		if err := r.replaceSpecFromRemote(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, metrics.UnexpectedRequeue)
+			r.recordMetricFilteredByUnauthorized(ctx, kyma, err, metrics.SpecReplacementFromRemote, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
 				" with remote kyma spec: %w", err))
 		}
@@ -213,14 +215,14 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 
 	res, err := r.processKymaState(ctx, kyma)
 	if err != nil {
-		r.Metrics.RecordRequeueReason(metrics.ProcessingKymaState, metrics.UnexpectedRequeue)
+		r.recordMetricFilteredByUnauthorized(ctx, kyma, err, metrics.ProcessingKymaState, metrics.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
 
 	if r.SyncKymaEnabled(kyma) {
 		// update the remote kyma with the state of the control plane
 		if err := r.syncStatusToRemote(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, metrics.UnexpectedRequeue)
+			r.recordMetricFilteredByUnauthorized(ctx, kyma, err, metrics.StatusSyncToRemote, metrics.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 		}
 	}
@@ -641,4 +643,16 @@ func (r *KymaReconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 
 func (r *KymaReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
+}
+
+// recordMetricFilteredByUnauthorized records a metric with the given kymaRequeueReason and requeueType unless
+// the given error is related to an "Unauthorized" condition. In this case, it will record an unauthorized metric.
+// It returns a bool indicating whether the filtering has occurred or not.
+func (r *KymaReconciler) recordMetricFilteredByUnauthorized(ctx context.Context, kyma *v1beta2.Kyma, err error, kymaRequeueReason metrics.KymaRequeueReason, requeueType metrics.RequeueType) {
+	if util.IsUnauthorized(err) {
+		r.Metrics.RecordRequeueReason(metrics.KymaSyncUnauthorized, metrics.UnexpectedRequeue)
+		return
+	}
+
+	r.Metrics.RecordRequeueReason(kymaRequeueReason, requeueType)
 }

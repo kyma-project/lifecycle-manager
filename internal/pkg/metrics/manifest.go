@@ -21,6 +21,7 @@ const (
 	ManifestPreDelete                     ManifestRequeueReason = "manifest_pre_delete"
 	ManifestSyncResourcesEnqueueRequired  ManifestRequeueReason = "manifest_sync_resources_enqueue_required"
 	ManifestSyncResources                 ManifestRequeueReason = "manifest_sync_resources"
+	ManifestSyncUnauthorized              ManifestRequeueReason = "manifest_sync_unauthorized"
 )
 
 type ManifestMetrics struct {

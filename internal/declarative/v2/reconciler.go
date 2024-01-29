@@ -139,7 +139,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
 		}
 
-		r.Event(obj, "Warning", "ClientInitialization", err.Error())
+		if util.IsUnauthorized(err) {
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncUnauthorized, metrics.UnexpectedRequeue)
+		} else {
+			r.Event(obj, "Warning", "ClientInitialization", err.Error())
+		}
+
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
 		return r.ssaStatus(ctx, obj, metrics.ManifestClientInit, metrics.UnexpectedRequeue)
 	}
@@ -147,6 +152,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
 		if util.IsConnectionRefusedOrUnauthorized(err) {
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncUnauthorized, metrics.UnexpectedRequeue)
 			r.invalidateClientCache(ctx, obj)
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestRenderResources, metrics.UnexpectedRequeue)
@@ -157,6 +163,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, metrics.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
+
+		if util.IsUnauthorized(err) {
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, metrics.IntendedRequeue)
+		}
+
 		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff, metrics.UnexpectedRequeue)
 	}
 
@@ -165,6 +176,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, metrics.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
+
+		if util.IsUnauthorized(err) {
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, metrics.IntendedRequeue)
+		}
+
 		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete, metrics.UnexpectedRequeue)
 	}
 
@@ -173,9 +189,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, metrics.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
-		if errors.Is(err, ErrClientUnauthorized) {
+
+		if util.IsUnauthorized(err) {
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncUnauthorized, metrics.UnexpectedRequeue)
 			r.invalidateClientCache(ctx, obj)
 		}
+
 		return r.ssaStatus(ctx, obj, metrics.ManifestSyncResources, metrics.UnexpectedRequeue)
 	}
 
