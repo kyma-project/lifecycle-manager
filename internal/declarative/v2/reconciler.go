@@ -139,7 +139,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
 		}
 
-		r.Event(obj, "Warning", "ClientInitialization", err.Error())
+		// Suppress the creation of events based on an "unauthorized against the SKR cluster" condition
+		// to not put burst loads onto ETCD when doing credential rotation
+		if util.IsUnauthorized(err) {
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncUnauthorized, metrics.UnexpectedRequeue)
+		} else {
+			r.Event(obj, "Warning", "ClientInitialization", err.Error())
+		}
+
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
 		return r.ssaStatus(ctx, obj, metrics.ManifestClientInit, metrics.UnexpectedRequeue)
 	}
