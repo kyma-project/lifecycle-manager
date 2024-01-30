@@ -128,6 +128,10 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Eventually(GetKymaStateMetricCount).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), string(state)).
+					Should(Succeed())
+				Eventually(GetKymaStateMetricCount).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), string(state)).
 					Should(Equal(0))
 				Eventually(GetModuleStateMetricCount).
 					WithContext(ctx).
