@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -121,6 +123,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(Equal(1))
 
 			By("And count of all Kyma Metrics is 0")
+			time.Sleep(3 * time.Minute)
 			for _, state := range shared.AllStates() {
 				Eventually(GetKymaStateMetricCount).
 					WithContext(ctx).
