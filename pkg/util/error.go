@@ -55,7 +55,3 @@ func IsConnectionRefusedOrUnauthorized(err error) bool {
 
 	return false
 }
-
-func IsUnauthorized(err error) bool {
-	return strings.Contains(strings.ToLower(err.Error()), "unauthorized")
-}
