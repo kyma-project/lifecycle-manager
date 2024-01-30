@@ -18,45 +18,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
-var sampleGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-	Name: metrics.MetricKymaState,
-	Help: "Indicates the Status.state for a given Kyma object",
-}, []string{"kyma_name"})
-
-func Test_fetchLifecycleManagerLogs(t *testing.T) {
-	t.Parallel()
-	ctrlmetrics.Registry.Unregister(sampleGauge)
-	ctrlmetrics.Registry.MustRegister(sampleGauge)
-	sampleGauge.With(prometheus.Labels{
-		"kyma_name": "value_1",
-	}).Set(1)
-
-	gaugeValue := 1.0
-	want := []*prometheusclient.Metric{
-		{
-			Label: []*prometheusclient.LabelPair{
-				{
-					Name:  proto.String("kyma_name"),
-					Value: proto.String("value_1"),
-				},
-			},
-			Gauge: &prometheusclient.Gauge{
-				Value: &gaugeValue,
-			},
-		},
-	}
-	got, err := metrics.FetchLifecycleManagerMetrics()
-	if err != nil {
-		t.Errorf("fetchLifecycleManagerLogs() error = %v, ", err)
-		return
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("fetchLifecycleManagerLogs() got = %v, want %v", got, want)
-	}
-}
-
 func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 	t.Parallel()
+	sampleGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: metrics.MetricKymaState,
+		Help: "Indicates the Status.state for a given Kyma object",
+	}, []string{"kyma_name"})
 	deployedKymas := &v1beta2.KymaList{
 		Items: []v1beta2.Kyma{
 			{

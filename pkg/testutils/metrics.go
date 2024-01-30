@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,17 +12,38 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
+var ErrMetricNotFound = errors.New("metric was not found")
+
 func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	re := regexp.MustCompile(
+	re := getKymaStateMetricRegex(kymaName, state)
+	return parseCount(re, bodyString)
+}
+
+func getKymaStateMetricRegex(kymaName, state string) *regexp.Regexp {
+	return regexp.MustCompile(
 		metrics.MetricKymaState + `{instance_id="[^"]+",kyma_name="` + kymaName +
 			`",shoot="[^"]+",state="` + state +
 			`"} (\d+)`)
-	return parseCount(re, bodyString)
+}
+
+func AssertKymaStateMetricNotFound(ctx context.Context, kymaName, state string) error {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return err
+	}
+
+	re := getKymaStateMetricRegex(kymaName, state)
+	match := re.FindStringSubmatch(bodyString)
+	if len(match) < 1 {
+		return ErrMetricNotFound
+	}
+
+	return nil
 }
 
 func GetRequeueReasonCount(ctx context.Context,
