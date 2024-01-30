@@ -131,6 +131,13 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	// Suppress the creation of events based on an "unauthorized against the SKR cluster" condition
+	// to not put burst loads onto ETCD when doing credential rotation
+	if util.IsUnauthorized(err) {
+		r.Metrics.RecordRequeueReason(metrics.KymaSyncUnauthorized, metrics.UnexpectedRequeue)
+		return r.requeueWithError(ctx, kyma, err)
+	}
+
 	if err != nil {
 		r.deleteRemoteClientCache(ctx, kyma)
 		r.enqueueWarningEvent(kyma, syncContextError, err)
