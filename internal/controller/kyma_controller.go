@@ -135,7 +135,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// to not put burst loads onto ETCD when doing credential rotation
 	if util.IsUnauthorized(err) {
 		r.Metrics.RecordRequeueReason(metrics.KymaSyncUnauthorized, metrics.UnexpectedRequeue)
-		return r.requeueWithError(ctx, kyma, err)
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if err != nil {
