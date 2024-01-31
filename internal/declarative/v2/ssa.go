@@ -19,7 +19,7 @@ import (
 var (
 	ErrClientObjectConversionFailed = errors.New("client object conversion failed")
 	ErrServerSideApplyFailed        = errors.New("ServerSideApply failed")
-	ErrClientUnauthorized           = errors.New("ServerSideApply is unauthorised")
+	ErrClientUnauthorized           = errors.New("ServerSideApply is unauthorized")
 )
 
 type SSA interface {
