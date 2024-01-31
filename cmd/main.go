@@ -90,8 +90,7 @@ func main() {
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
-	err := flagVar.Validate()
-	if err != nil {
+	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
@@ -157,7 +156,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	remoteClientCache := remote.NewClientCache()
 	sharedMetrics := metrics.NewSharedMetrics()
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, sharedMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options)

@@ -39,6 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -67,6 +68,7 @@ var (
 	ctx                context.Context
 	cancel             context.CancelFunc
 	cfg                *rest.Config
+	descriptorCache    *cache.DescriptorCache
 	descriptorProvider *provider.CachedDescriptorProvider
 )
 
@@ -129,7 +131,10 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	descriptorProvider = provider.NewCachedDescriptorProvider()
+
+	descriptorCache = cache.NewDescriptorCache()
+	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)
+
 	err = (&controller.KymaReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),

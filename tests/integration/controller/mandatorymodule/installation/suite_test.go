@@ -18,10 +18,11 @@ package mandatory_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -105,7 +106,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	mandatoryModuleReconciler = &controller.MandatoryModuleReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),

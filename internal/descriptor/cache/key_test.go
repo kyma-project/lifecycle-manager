@@ -4,79 +4,57 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 func TestGenerateDescriptorCacheKey(t *testing.T) {
-	t.Parallel()
+	templateBuilder := builder.NewModuleTemplateBuilder()
 
 	testCases := []struct {
 		name     string
 		template *v1beta2.ModuleTemplate
-		want     cache.DescriptorCacheKey
+		want     cache.DescriptorKey
 	}{
 		{
 			name: "Annotations is not nil and valid semver",
-			template: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name: "name",
-					Annotations: map[string]string{
-						shared.ModuleVersionAnnotation: "1.0.0",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					Channel: "channel",
-				},
-			},
+			template: templateBuilder.
+				WithName("name").
+				WithAnnotation(shared.ModuleVersionAnnotation, "1.0.0").
+				WithChannel("channel").
+				Build(),
 			want: "name:channel:1.0.0",
 		},
 		{
 			name: "Annotations is not nil but invalid semver",
-			template: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:       "name",
-					Generation: 1,
-					Annotations: map[string]string{
-						shared.ModuleVersionAnnotation: "not-semver",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					Channel: "channel",
-				},
-			},
+			template: templateBuilder.
+				WithName("name").
+				WithGeneration(1).
+				WithAnnotation(shared.ModuleVersionAnnotation, "not-semver").
+				WithChannel("channel").
+				Build(),
 			want: "name:channel:1",
 		},
 		{
 			name: "Annotations is not nil but module version is empty",
-			template: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:       "name",
-					Generation: 2,
-					Annotations: map[string]string{
-						shared.ModuleVersionAnnotation: "",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					Channel: "channel",
-				},
-			},
+			template: templateBuilder.
+				WithName("name").
+				WithGeneration(2).
+				WithAnnotation(shared.ModuleVersionAnnotation, "").
+				WithChannel("channel").
+				Build(),
 			want: "name:channel:2",
 		},
 		{
 			name: "Annotations is nil",
-			template: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:       "name",
-					Generation: 3,
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					Channel: "channel",
-				},
-			},
+			template: templateBuilder.
+				WithName("name").
+				WithGeneration(3).
+				WithChannel("channel").
+				Build(),
 			want: "name:channel:3",
 		},
 	}
@@ -84,8 +62,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 	for i := range testCases {
 		i := i
 		t.Run(testCases[i].name, func(t *testing.T) {
-			t.Parallel()
-			got := cache.GenerateDescriptorCacheKey(testCases[i].template)
+			got := cache.GenerateDescriptorKey(testCases[i].template)
 			assert.Equalf(t, testCases[i].want, got,
 				"GetComponentDescriptorCacheKey() = %v, want %v", got, testCases[i].want)
 		})

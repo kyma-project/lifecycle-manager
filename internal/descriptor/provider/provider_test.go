@@ -6,39 +6,45 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-func TestCachedDescriptorProvider(t *testing.T) {
-	t.Parallel()
+func TestGetDescriptor_OnEmptyCache_ReturnsParsedDescriptor(t *testing.T) {
+	descriptorCache := cache.NewDescriptorCache()
+	sut := provider.NewCachedDescriptorProvider(descriptorCache)
+	template := builder.NewModuleTemplateBuilder().Build()
+	_, err := sut.GetDescriptor(template)
 
-	sut := provider.NewCachedDescriptorProvider()
+	require.NoError(t, err)
+}
+
+func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
+	descriptorCache := cache.NewDescriptorCache()
+	sut := provider.NewCachedDescriptorProvider(descriptorCache)
+
 	expected := &v1beta2.Descriptor{
-		ComponentDescriptor: &compdesc.ComponentDescriptor{},
+		ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{
+			ConfiguredVersion: "v2",
+		}},
 	}
-	template := &v1beta2.ModuleTemplate{
-		Spec: v1beta2.ModuleTemplateSpec{
-			Descriptor: machineryruntime.RawExtension{
-				Object: expected,
-			},
-		},
-	}
+	template := builder.NewModuleTemplateBuilder().WithDescriptor(expected).Build()
 
-	// ensure the internal cache is initially empty
-	assert.False(t, sut.IsCached(template))
+	key := cache.GenerateDescriptorKey(template)
+	entry := descriptorCache.Get(key)
+	assert.Nil(t, entry)
 
-	// manually add a descriptor from template
 	err := sut.Add(template)
 	require.NoError(t, err)
 
-	// now the internal cache should not be empty
-	assert.True(t, sut.IsCached(template))
-
-	// getting the descriptor from provider as expected
-	actual, err := sut.GetDescriptor(template)
+	result, err := sut.GetDescriptor(template)
 	require.NoError(t, err)
-	assert.Equal(t, expected.Name, actual.Name)
+	assert.Equal(t, expected.Name, result.Name)
+
+	entry = descriptorCache.Get(key)
+	assert.NotNil(t, entry)
+	assert.Equal(t, expected.Name, entry.Name)
 }

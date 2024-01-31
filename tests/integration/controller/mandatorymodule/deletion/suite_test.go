@@ -18,11 +18,12 @@ package mandatory_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"

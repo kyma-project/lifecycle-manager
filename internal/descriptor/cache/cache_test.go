@@ -11,11 +11,18 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 )
 
-func TestDescriptorCache(t *testing.T) {
-	t.Parallel()
-
+func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
 	sut := cache.NewDescriptorCache()
-	key1 := cache.DescriptorCacheKey("key 1")
+	key := cache.DescriptorKey("key 1")
+
+	actual := sut.Get(key)
+
+	assert.Nil(t, actual)
+}
+
+func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
+	sut := cache.NewDescriptorCache()
+	key1 := cache.DescriptorKey("key 1")
 	ocmDesc1 := &compdesc.ComponentDescriptor{
 		ComponentSpec: compdesc.ComponentSpec{
 			ObjectMeta: ocmmetav1.ObjectMeta{
@@ -24,13 +31,22 @@ func TestDescriptorCache(t *testing.T) {
 		},
 	}
 	desc1 := &v1beta2.Descriptor{ComponentDescriptor: ocmDesc1}
-
-	// Empty cache, should return nil
-	assert.Nil(t, sut.Get(key1))
-
-	// After Set, should return the value
 	sut.Set(key1, desc1)
 	assertDescriptorEqual(t, desc1, sut.Get(key1))
+}
+
+func TestGet_ForCacheWithOverwrittenEntry_ReturnsCorrectEntry(t *testing.T) {
+	sut := cache.NewDescriptorCache()
+	key1 := cache.DescriptorKey("key 1")
+	ocmDesc1 := &compdesc.ComponentDescriptor{
+		ComponentSpec: compdesc.ComponentSpec{
+			ObjectMeta: ocmmetav1.ObjectMeta{
+				Name: "descriptor 1",
+			},
+		},
+	}
+	desc1 := &v1beta2.Descriptor{ComponentDescriptor: ocmDesc1}
+	sut.Set(key1, desc1)
 
 	ocmDesc2 := &compdesc.ComponentDescriptor{
 		ComponentSpec: compdesc.ComponentSpec{
@@ -41,18 +57,12 @@ func TestDescriptorCache(t *testing.T) {
 	}
 	desc2 := &v1beta2.Descriptor{ComponentDescriptor: ocmDesc2}
 
-	// After Set, should return correct value
 	assertDescriptorNotEqual(t, desc2, sut.Get(key1))
-
-	key2 := cache.DescriptorCacheKey("key 2")
-	// Another key, should return nil
+	key2 := cache.DescriptorKey("key 2")
 	assert.Nil(t, sut.Get(key2))
-
-	// After Set another key, should return the value
 	sut.Set(key2, desc2)
 	assertDescriptorEqual(t, desc2, sut.Get(key2))
 
-	// Overwriting key with another value, should return new value
 	sut.Set(key1, desc2)
 	assertDescriptorEqual(t, desc2, sut.Get(key2))
 }

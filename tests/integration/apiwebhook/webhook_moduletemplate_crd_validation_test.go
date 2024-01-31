@@ -77,7 +77,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithChannel(v1beta2.DefaultChannel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
-		descriptorProvider := provider.NewCachedDescriptorProvider()
+		descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 		descriptor, err := descriptorProvider.GetDescriptor(template)
 		Expect(err).ToNot(HaveOccurred())
 		version, err := semver.NewVersion(descriptor.Version)

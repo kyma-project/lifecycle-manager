@@ -16,6 +16,7 @@ linters:
     - scopelint # deprecated (since v1.39.0) and replaced by 'exportloopref'
     - structcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - sqlclosecheck # not needed for this project
+    - paralleltest # should be enabled consciously for long running tests
     - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - wsl # too strict and mostly code is not more readable
 linters-settings:

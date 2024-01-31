@@ -50,7 +50,7 @@ var _ webhook.Validator = &ModuleTemplate{}
 func (m *ModuleTemplate) ValidateCreate() (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate create", "name", m.Name)
-	newDescriptor, err := m.getDescriptor()
+	newDescriptor, err := m.descriptor()
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (m *ModuleTemplate) ValidateCreate() (admission.Warnings, error) {
 func (m *ModuleTemplate) ValidateUpdate(old machineryruntime.Object) (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate update", "name", m.Name)
-	newDescriptor, err := m.getDescriptor()
+	newDescriptor, err := m.descriptor()
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (m *ModuleTemplate) ValidateUpdate(old machineryruntime.Object) (admission.
 	if !ok {
 		return nil, ErrTypeAssertModuleTemplate
 	}
-	oldDescriptor, err := oldTemplate.getDescriptor()
+	oldDescriptor, err := oldTemplate.descriptor()
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (m *ModuleTemplate) ValidateDelete() (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (m *ModuleTemplate) getDescriptor() (*Descriptor, error) {
+func (m *ModuleTemplate) descriptor() (*Descriptor, error) {
 	obj := m.Spec.Descriptor.Object
 	if obj != nil {
 		desc, ok := obj.(*Descriptor)
