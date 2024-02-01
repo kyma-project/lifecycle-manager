@@ -114,7 +114,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	mandatoryModuleDeletionReconciler = &controller.MandatoryModuleDeletionReconciler{
 		Client:             k8sManager.GetClient(),
 		EventRecorder:      k8sManager.GetEventRecorderFor(shared.OperatorName),

@@ -22,7 +22,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -67,7 +66,6 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
-	descriptorProvider := provider.NewCachedDescriptorProvider()
 
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
