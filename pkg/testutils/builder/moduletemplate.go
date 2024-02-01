@@ -28,7 +28,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
-				Kind:       string(shared.KymaKind),
+				Kind:       string(shared.ModuleTemplateKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      RandomName(),
