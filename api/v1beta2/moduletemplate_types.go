@@ -17,11 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
-	"fmt"
 	"strings"
-	"sync"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -126,57 +123,6 @@ type CustomStateCheck struct {
 	MappedState shared.State `json:"mappedState" yaml:"mappedState"`
 }
 
-func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
-	if m.Spec.Descriptor.Object != nil {
-		desc, ok := m.Spec.Descriptor.Object.(*Descriptor)
-		if !ok {
-			return nil, ErrTypeAssertDescriptor
-		}
-		return desc, nil
-	}
-
-	descriptor := m.GetDescFromCache()
-	if descriptor != nil {
-		return descriptor, nil
-	}
-
-	desc, err := compdesc.Decode(
-		m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode to descriptor target: %w", err)
-	}
-	m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
-	mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)
-	if !ok {
-		return nil, ErrTypeAssertDescriptor
-	}
-
-	return mDesc, nil
-}
-
-//nolint:gochecknoglobals // in-memory cache used for descriptors
-var descriptorCache = sync.Map{}
-
-func (m *ModuleTemplate) GetDescFromCache() *Descriptor {
-	key := m.GetComponentDescriptorCacheKey()
-	value, ok := descriptorCache.Load(key)
-	if !ok {
-		return nil
-	}
-	desc, ok := value.(*Descriptor)
-	if !ok {
-		return nil
-	}
-
-	return &Descriptor{ComponentDescriptor: desc.Copy()}
-}
-
-func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
-	key := m.GetComponentDescriptorCacheKey()
-	descriptorCache.Store(key, descriptor)
-}
-
 // +kubebuilder:object:root=true
 
 // ModuleTemplateList contains a list of ModuleTemplate.
@@ -189,18 +135,6 @@ type ModuleTemplateList struct {
 //nolint:gochecknoinits // registers ModuleTemplate CRD on startup
 func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
-}
-
-func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
-	if m.Annotations != nil {
-		moduleVersion := m.Annotations[shared.ModuleVersionAnnotation]
-		_, err := semver.NewVersion(moduleVersion)
-		if moduleVersion != "" && err == nil {
-			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
-		}
-	}
-
-	return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
 }
 
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {

@@ -140,12 +140,6 @@ func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.Custom
 	return crds, nil
 }
 
-func DescriptorExistsInCache(moduleTemplate *v1beta2.ModuleTemplate) bool {
-	moduleTemplateFromCache := moduleTemplate.GetDescFromCache()
-
-	return moduleTemplateFromCache != nil
-}
-
 func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, namespace string,
 	clnt client.Client,
 ) (bool, error) {

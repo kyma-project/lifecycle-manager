@@ -150,7 +150,7 @@ func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, r
 func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpClient client.Client) error {
 	currentLifecycleManagerMetrics, err := FetchLifecycleManagerMetrics()
 	if err != nil {
-		return fmt.Errorf("failed to fetch current kyma metrics, %w", err)
+		return err
 	}
 
 	if len(currentLifecycleManagerMetrics) == 0 {
@@ -165,6 +165,9 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 	kymaNames := getKymaNames(kymaCrsList)
 	for _, m := range currentLifecycleManagerMetrics {
 		currentKymaName := getKymaNameFromLabels(m)
+		if currentKymaName == "" {
+			continue
+		}
 		if _, exists := kymaNames[currentKymaName]; !exists {
 			logs.FromContext(ctx).Info(fmt.Sprintf("Deleting a metric for non-existing Kyma: %s", currentKymaName))
 			k.KymaStateGauge.DeletePartialMatch(prometheus.Labels{

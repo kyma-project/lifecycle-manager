@@ -384,7 +384,7 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 
-		descriptor, err := template.GetDescriptor()
+		descriptor, err := descriptorProvider.GetDescriptor(template)
 		if err != nil {
 			return err
 		}

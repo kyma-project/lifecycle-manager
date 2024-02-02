@@ -52,6 +52,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -92,6 +93,10 @@ func main() {
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
+	if err := flagVar.Validate(); err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
 	if flagVar.Pprof {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
@@ -142,11 +147,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(1)
 	}
 
-	if err = flagVar.Validate(); err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.EnableKcpWatcher {
@@ -159,11 +159,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	remoteClientCache := remote.NewClientCache()
 	sharedMetrics := metrics.NewSharedMetrics()
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
-	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager, kymaMetrics)
+	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
-	setupMandatoryModuleReconciler(mgr, flagVar, options)
-	setupMandatoryModuleDeletionReconciler(mgr, flagVar, options)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options)
+	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
 
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
@@ -199,13 +200,12 @@ func addHealthChecks(mgr manager.Manager) {
 }
 
 func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client,
-	cleanupIntervalInMinutes time.Duration,
+	cleanupIntervalInMinutes int,
 ) {
-	ctx, cancel := context.WithTimeout(context.Background(), metricCleanupTimeout)
-	defer cancel()
-
 	scheduler := gocron.NewScheduler(time.UTC)
 	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), metricCleanupTimeout)
+		defer cancel()
 		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, kcpClient); err != nil {
 			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
 		}
@@ -252,19 +252,21 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *flags.FlagVar,
-	options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
+func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	flagVar *flags.FlagVar, options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
 	kymaMetrics *metrics.KymaMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
 
 	if err := (&controller.KymaReconciler{
-		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(shared.OperatorName),
-		KcpRestConfig:     kcpRestConfig,
-		RemoteClientCache: remoteClientCache,
-		SKRWebhookManager: skrWebhookManager,
+		Client:             mgr.GetClient(),
+		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
+		KcpRestConfig:      kcpRestConfig,
+		RemoteClientCache:  remoteClientCache,
+		DescriptorProvider: descriptorProvider,
+		SKRWebhookManager:  skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
@@ -395,8 +397,8 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	}
 }
 
-func setupMandatoryModuleReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
-	options ctrlruntime.Options,
+func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
+	flagVar *flags.FlagVar, options ctrlruntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
@@ -411,20 +413,22 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
 		},
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		InKCPMode:           flagVar.InKCPMode,
+		DescriptorProvider:  descriptorProvider,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(1)
 	}
 }
 
-func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar,
-	options ctrlruntime.Options,
+func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
+	flagVar *flags.FlagVar, options ctrlruntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
 	if err := (&controller.MandatoryModuleDeletionReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
+		Client:             mgr.GetClient(),
+		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
+		DescriptorProvider: descriptorProvider,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,

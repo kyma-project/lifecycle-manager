@@ -36,6 +36,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -104,9 +105,11 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	mandatoryModuleReconciler = &controller.MandatoryModuleReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		DescriptorProvider:  descriptorProvider,
 		RequeueIntervals:    intervals,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           false,

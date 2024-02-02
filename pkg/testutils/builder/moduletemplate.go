@@ -36,6 +36,13 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 			},
 			Spec: v1beta2.ModuleTemplateSpec{
 				Data: data,
+				Descriptor: machineryruntime.RawExtension{
+					Object: &v1beta2.Descriptor{
+						ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{
+							ConfiguredVersion: compdescv2.SchemaVersion,
+						}},
+					},
+				},
 			},
 		},
 	}
@@ -43,6 +50,11 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 
 func (m ModuleTemplateBuilder) WithName(name string) ModuleTemplateBuilder {
 	m.moduleTemplate.ObjectMeta.Name = name
+	return m
+}
+
+func (m ModuleTemplateBuilder) WithGeneration(generation int) ModuleTemplateBuilder {
+	m.moduleTemplate.ObjectMeta.Generation = int64(generation)
 	return m
 }
 
@@ -82,6 +94,11 @@ func (m ModuleTemplateBuilder) WithLabel(key string, value string) ModuleTemplat
 
 func (m ModuleTemplateBuilder) WithModuleCR(data *unstructured.Unstructured) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Data = data
+	return m
+}
+
+func (m ModuleTemplateBuilder) WithDescriptor(descriptor *v1beta2.Descriptor) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.Descriptor.Object = descriptor
 	return m
 }
 
