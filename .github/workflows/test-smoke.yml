@@ -111,7 +111,7 @@ jobs:
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-47.0.0/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
       - name: Deploy lifecycle manager with Kyma CLI
         run: kyma --ci alpha deploy -k config/${{ matrix.target }}
-      - name: Deploy template operator module template and enable module
+      - name: Deploy template operator module template and add module
         if: ${{ matrix.target == 'default' }}
         run: |
           cat << EOF | kubectl apply -f - 
@@ -138,4 +138,4 @@ jobs:
               namespace: kcp-system
           EOF
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
-          kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
+          kyma alpha add module template-operator -c regular -n kyma-system -k default-kyma

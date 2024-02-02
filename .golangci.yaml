@@ -5,7 +5,7 @@ linters:
     - deadcode # deprecated (since v1.49.0) and replaced by 'unused'
     - depguard # checks if package imports are whitelisted
     - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
-    - exhaustruct # TODO enable and fix, use regex to exclude certain cases
+    - exhaustruct # too subjective and harms code readability
     - golint # deprecated (since v1.41.0) and replaced by 'revive'
     - ifshort # deprecated (since v1.48.0)
     - interfacer # deprecated (since v1.38.0)
@@ -162,6 +162,9 @@ linters-settings:
     ignore-map-index-ok: true
     # Ignore "ok" variables that hold the bool return value of a channel receive. (defaults to false)
     ignore-chan-recv-ok: true
+  exhaustruct:
+    exclude:
+      - gdfs
 issues:
   exclude-rules:
     - path: "_test\\.go"

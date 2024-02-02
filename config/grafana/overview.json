@@ -21,6 +21,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
+  "id": 21,
   "links": [],
   "panels": [
     {
@@ -77,7 +78,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -215,7 +216,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -315,7 +316,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -596,7 +597,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -699,7 +700,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -813,7 +814,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "targets": [
         {
           "datasource": {
@@ -821,7 +822,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{controller=\"kyma\"})",
+          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{container=\"manager\",controller=\"kyma\"})",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -832,7 +833,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{controller=\"manifest\"})",
+          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{container=\"manager\",controller=\"manifest\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
@@ -1167,7 +1168,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1277,7 +1278,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1387,7 +1388,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1500,7 +1501,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1622,7 +1623,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1687,7 +1688,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 142
+        "y": 90
       },
       "id": 62,
       "panels": [],
@@ -1710,7 +1711,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 143
+        "y": 91
       },
       "hiddenSeries": false,
       "id": 58,
@@ -1730,7 +1731,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1806,7 +1807,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 143
+        "y": 91
       },
       "hiddenSeries": false,
       "id": 64,
@@ -1826,7 +1827,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1900,7 +1901,7 @@
         "h": 11,
         "w": 24,
         "x": 0,
-        "y": 151
+        "y": 99
       },
       "hiddenSeries": false,
       "id": 66,
@@ -1920,7 +1921,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.27",
+      "pluginVersion": "7.5.28",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1994,5 +1995,5 @@
   "timezone": "",
   "title": "Lifecycle Manager Overview",
   "uid": "O3DH7uunk",
-  "version": 7
+  "version": 1
 }

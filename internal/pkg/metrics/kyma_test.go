@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusclient "github.com/prometheus/client_model/go"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +19,7 @@ import (
 
 func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 	t.Parallel()
+	kymaName := "kyma-sample"
 	sampleGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: metrics.MetricKymaState,
 		Help: "Indicates the Status.state for a given Kyma object",
@@ -28,7 +28,7 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 		Items: []v1beta2.Kyma{
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name: "kyma-sample",
+					Name: kymaName,
 				},
 			},
 		},
@@ -40,19 +40,21 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 	ctrlmetrics.Registry.Unregister(sampleGauge)
 	ctrlmetrics.Registry.MustRegister(sampleGauge)
 	sampleGauge.With(prometheus.Labels{
-		metrics.KymaNameLabel: "kyma-sample",
+		metrics.KymaNameLabel: kymaName,
 	}).Set(1)
 	sampleGauge.With(prometheus.Labels{
 		metrics.KymaNameLabel: "non-existing",
 	}).Set(1)
+
+	kymaNameLabel := metrics.KymaNameLabel
 
 	gaugeValue := 1.0
 	wantResultingMetrics := []*prometheusclient.Metric{
 		{
 			Label: []*prometheusclient.LabelPair{
 				{
-					Name:  proto.String(metrics.KymaNameLabel),
-					Value: proto.String("kyma-sample"),
+					Name:  &kymaNameLabel,
+					Value: &kymaName,
 				},
 			},
 			Gauge: &prometheusclient.Gauge{

@@ -66,6 +66,8 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const metricCleanupTimeout = 5 * time.Minute
+
 var (
 	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
 	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
@@ -197,10 +199,14 @@ func addHealthChecks(mgr manager.Manager) {
 }
 
 func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client,
-	cleanupIntervalInMinutes time.Duration) {
+	cleanupIntervalInMinutes time.Duration,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), metricCleanupTimeout)
+	defer cancel()
+
 	scheduler := gocron.NewScheduler(time.UTC)
 	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
-		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(context.TODO(), kcpClient); err != nil {
+		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, kcpClient); err != nil {
 			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
 		}
 	})
