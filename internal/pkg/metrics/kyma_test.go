@@ -77,13 +77,19 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 		t.Errorf("CleanupNonExistingKymaCrsMetrics() error = %v", err)
 	}
 
+	foundKymaStateMetric := false
 	resultingMetrics, _ = ctrlmetrics.Registry.Gather()
 	for _, metric := range resultingMetrics {
 		if metric.GetName() == metrics.MetricKymaState {
+			foundKymaStateMetric = true
 			if !reflect.DeepEqual(metric.GetMetric(), wantResultingMetrics) {
 				t.Errorf("resultMetrics: got = %v, want %v", metric.GetMetric(),
 					wantResultingMetrics)
 			}
 		}
+	}
+
+	if !foundKymaStateMetric {
+		t.Errorf("expected to have lifecycle_mgr_kyma_state but no kyma metric was found")
 	}
 }

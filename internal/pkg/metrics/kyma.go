@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cert-manager/cert-manager/pkg/logs"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusclient "github.com/prometheus/client_model/go"
-	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
@@ -148,12 +148,12 @@ func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, r
 }
 
 func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpClient client.Client) error {
-	currentLifecycleManagerLogs, err := FetchLifecycleManagerMetrics()
+	currentLifecycleManagerMetrics, err := FetchLifecycleManagerMetrics()
 	if err != nil {
 		return fmt.Errorf("failed to fetch current kyma metrics, %w", err)
 	}
 
-	if len(currentLifecycleManagerLogs) == 0 {
+	if len(currentLifecycleManagerMetrics) == 0 {
 		return nil
 	}
 
@@ -163,9 +163,10 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 		return fmt.Errorf("failed to fetch Kyma CRs, %w", err)
 	}
 	kymaNames := getKymaNames(kymaCrsList)
-	for _, m := range currentLifecycleManagerLogs {
+	for _, m := range currentLifecycleManagerMetrics {
 		currentKymaName := getKymaNameFromLabels(m)
-		if !slices.Contains(kymaNames, currentKymaName) {
+		if _, exists := kymaNames[currentKymaName]; !exists {
+			logs.FromContext(ctx).Info(fmt.Sprintf("Deleting a metric for non-existing Kyma: %s", currentKymaName))
 			k.KymaStateGauge.DeletePartialMatch(prometheus.Labels{
 				KymaNameLabel: currentKymaName,
 			})
@@ -200,14 +201,14 @@ func getKymaNameFromLabels(metric *prometheusclient.Metric) string {
 	return ""
 }
 
-func getKymaNames(kymaCrs *v1beta2.KymaList) []string {
+func getKymaNames(kymaCrs *v1beta2.KymaList) map[string]bool {
 	if len(kymaCrs.Items) == 0 {
 		return nil
 	}
 
-	names := make([]string, 0)
+	names := make(map[string]bool)
 	for _, kyma := range kymaCrs.Items {
-		names = append(names, kyma.GetName())
+		names[kyma.GetName()] = true
 	}
 	return names
 }

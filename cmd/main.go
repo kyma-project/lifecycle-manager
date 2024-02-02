@@ -196,7 +196,8 @@ func addHealthChecks(mgr manager.Manager) {
 	}
 }
 
-func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client, cleanupIntervalInMinutes int) {
+func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client,
+	cleanupIntervalInMinutes time.Duration) {
 	scheduler := gocron.NewScheduler(time.UTC)
 	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
 		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(context.TODO(), kcpClient); err != nil {
@@ -204,7 +205,8 @@ func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Cl
 		}
 	})
 	if scheduleErr != nil {
-		setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", scheduleErr))
+		setupLog.Info(fmt.Sprintf("failed to setup cleanup routine for non existing kyma crs metrics, err: %s",
+			scheduleErr))
 	}
 	scheduler.StartAsync()
 }
