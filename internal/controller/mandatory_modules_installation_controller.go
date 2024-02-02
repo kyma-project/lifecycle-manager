@@ -26,6 +26,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -40,6 +41,7 @@ type MandatoryModuleReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
+	DescriptorProvider  *provider.CachedDescriptorProvider
 	RemoteSyncNamespace string
 	InKCPMode           bool
 }
@@ -86,8 +88,7 @@ func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *MandatoryModuleReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
-	parser := parse.NewParser(r.Client, r.InKCPMode, r.RemoteSyncNamespace)
-
+	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
 	return parser.GenerateMandatoryModulesFromTemplates(ctx, kyma, templates), nil
 }
 

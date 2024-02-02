@@ -19,7 +19,7 @@ type (
 	Module  struct {
 		ModuleName string
 		FQDN       string
-		Template   *templatelookup.ModuleTemplateTO
+		Template   *templatelookup.ModuleTemplateInfo
 		*v1beta2.Manifest
 		Enabled bool
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Masterminds/semver/v3"
@@ -49,18 +50,18 @@ var _ webhook.Validator = &ModuleTemplate{}
 func (m *ModuleTemplate) ValidateCreate() (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate create", "name", m.Name)
-	newDescriptor, err := m.GetDescriptor()
+	newDescriptor, err := m.descriptor()
 	if err != nil {
 		return nil, err
 	}
-	return nil, Validate(nil, newDescriptor, m.Name)
+	return nil, validate(nil, newDescriptor, m.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (m *ModuleTemplate) ValidateUpdate(old machineryruntime.Object) (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate update", "name", m.Name)
-	newDescriptor, err := m.GetDescriptor()
+	newDescriptor, err := m.descriptor()
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +69,11 @@ func (m *ModuleTemplate) ValidateUpdate(old machineryruntime.Object) (admission.
 	if !ok {
 		return nil, ErrTypeAssertModuleTemplate
 	}
-	oldDescriptor, err := oldTemplate.GetDescriptor()
+	oldDescriptor, err := oldTemplate.descriptor()
 	if err != nil {
 		return nil, err
 	}
-	return nil, Validate(oldDescriptor, newDescriptor, m.Name)
+	return nil, validate(oldDescriptor, newDescriptor, m.Name)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
@@ -80,7 +81,26 @@ func (m *ModuleTemplate) ValidateDelete() (admission.Warnings, error) {
 	return nil, nil
 }
 
-func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {
+func (m *ModuleTemplate) descriptor() (*Descriptor, error) {
+	obj := m.Spec.Descriptor.Object
+	if obj != nil {
+		desc, ok := obj.(*Descriptor)
+		if !ok {
+			return nil, errors.New("provided Spec.Descriptor.Object is not a v1beta2.Descriptor")
+		}
+		return desc, nil
+	}
+
+	raw := m.Spec.Descriptor.Raw
+	desc, err := compdesc.Decode(raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Descriptor{ComponentDescriptor: desc}, nil
+}
+
+func validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {
 	if err := compdesc.Validate(newDescriptor.ComponentDescriptor); err != nil {
 		return fmt.Errorf("failed to validate componentDescriptor; %w", err)
 	}

@@ -157,7 +157,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 				return err
 			}
 			moduleStatus := modulesStatus[0]
-			descriptor, err := template.GetDescriptor()
+			descriptor, err := descriptorProvider.GetDescriptor(template)
 			if err != nil {
 				return err
 			}

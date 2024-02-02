@@ -4,16 +4,16 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -35,7 +35,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	remoteKyma := &v1beta2.Kyma{}
-
 	remoteKyma.Name = shared.DefaultRemoteKymaName
 	remoteKyma.Namespace = flags.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
@@ -171,7 +170,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("ModuleTemplate descriptor should be saved in cache")
-		Expect(DescriptorExistsInCache(SKRTemplate)).Should(BeTrue())
+		Expect(IsDescriptorCached(SKRTemplate)).Should(BeTrue())
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
@@ -233,7 +232,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("SKRCustomTemplate descriptor should not be saved in cache", func() {
-		Expect(DescriptorExistsInCache(SKRCustomTemplate)).Should(BeFalse())
+		Expect(IsDescriptorCached(SKRCustomTemplate)).Should(BeFalse())
 	})
 
 	It("Should reconcile Manifest in KCP using remote SKRCustomTemplate", func() {
@@ -288,6 +287,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Expect(runtimeEnv.Stop()).Should(Succeed())
 	})
 })
+
+func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
+	key := cache.GenerateDescriptorKey(template)
+	result := descriptorCache.Get(key)
+	return result != nil
+}
 
 var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma")

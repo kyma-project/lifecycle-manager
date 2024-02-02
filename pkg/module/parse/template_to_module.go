@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -22,14 +23,20 @@ var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
 type Parser struct {
 	client.Client
-	InKCPMode           bool
+	descriptorProvider  *provider.CachedDescriptorProvider
+	inKCPMode           bool
 	remoteSyncNamespace string
 }
 
-func NewParser(clnt client.Client, inKCPMode bool, remoteSyncNamespace string) *Parser {
+func NewParser(clnt client.Client,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	inKCPMode bool,
+	remoteSyncNamespace string,
+) *Parser {
 	return &Parser{
 		Client:              clnt,
-		InKCPMode:           inKCPMode,
+		descriptorProvider:  descriptorProvider,
+		inKCPMode:           inKCPMode,
 		remoteSyncNamespace: remoteSyncNamespace,
 	}
 }
@@ -75,8 +82,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 }
 
 func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
-	template *templatelookup.ModuleTemplateTO,
-	modules common.Modules,
+	template *templatelookup.ModuleTemplateInfo, modules common.Modules,
 ) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
 		modules = append(modules, &common.Module{
@@ -86,7 +92,7 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 		})
 		return modules
 	}
-	descriptor, err := template.GetDescriptor()
+	descriptor, err := p.descriptorProvider.GetDescriptor(template.ModuleTemplate)
 	if err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
@@ -124,7 +130,7 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 	return modules
 }
 
-func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateTO, name, namespace string) {
+func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateInfo, name, namespace string) {
 	if template.ModuleTemplate.Spec.Data == nil {
 		return
 	}
@@ -143,7 +149,7 @@ func (p *Parser) newManifestFromTemplate(
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	manifest.Spec.Remote = p.InKCPMode
+	manifest.Spec.Remote = p.inKCPMode
 
 	switch module.CustomResourcePolicy {
 	case v1beta2.CustomResourcePolicyIgnore:
@@ -158,7 +164,7 @@ func (p *Parser) newManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-	descriptor, err := template.GetDescriptor()
+	descriptor, err := p.descriptorProvider.GetDescriptor(template)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
 	}
