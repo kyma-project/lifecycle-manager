@@ -469,9 +469,7 @@ func (r *Reconciler) renderTargetResources(
 
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
-		// Suppress the creation of events based on an "unauthorized against the SKR cluster" condition
-		// to not put burst loads onto ETCD when doing credential rotation.
-		// This is observed to be the first place where such condition appears in the manifest reconcile loop.
+		// Prevent ETCD load bursts during secret rotation
 		if !util.IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err) {
 			r.Event(obj, "Warning", "TargetResourceParsing", err.Error())
 		}
