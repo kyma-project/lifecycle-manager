@@ -18,9 +18,7 @@ done
 git clone https://github.com/kubernetes-sigs/kube-storage-version-migrator.git
 cd kube-storage-version-migrator
 
-if [[ -n "$context" ]]; then
-  kubectl config use-context $context
-fi
+test -n ${context} && kubectl config use-context $context
 
 make local-manifests REGISTRY=eu.gcr.io/k8s-artifacts-prod/storage-migrator VERSION=v0.0.5
 pushd manifests.local

@@ -8,9 +8,7 @@ do
         esac
 done
 
-if [[ -n "$context" ]]; then
-  kubectl config use-context $context
-fi
+test -n ${context} && kubectl config use-context $context
 
 kubectl delete clusterrolebinding storage-version-migration-migrator
 kubectl delete clusterrolebinding storage-version-migration-trigger
