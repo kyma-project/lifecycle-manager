@@ -43,15 +43,23 @@ func IsNotFound(err error) bool {
 	return false
 }
 
-func IsConnectionRefusedOrUnauthorized(err error) bool {
+func IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err error) bool {
 	if err == nil {
 		return false
 	}
 
 	msg := strings.ToLower(err.Error())
-	if strings.Contains(msg, "connection refused") || strings.Contains(msg, "unauthorized") {
+	if strings.Contains(msg, "connection refused") || strings.Contains(msg, "unauthorized") || strings.Contains(msg, "the server has asked for the client to provide credentials") {
 		return true
 	}
 
 	return false
+}
+
+func IsUnauthorized(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return strings.Contains(strings.ToLower(err.Error()), "unauthorized")
 }
