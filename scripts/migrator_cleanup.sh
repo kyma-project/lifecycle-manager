@@ -10,7 +10,6 @@ done
 
 kubectl config use-context $context
 
-
 kubectl delete clusterrolebinding storage-version-migration-migrator
 kubectl delete clusterrolebinding storage-version-migration-trigger
 kubectl delete clusterrolebinding storage-version-migration-crd-creator
@@ -25,5 +24,3 @@ kubectl delete deployment trigger -n kube-system
 
 kubectl delete crd storageversionmigrations.migration.k8s.io
 kubectl delete crd storagestates.migration.k8s.io
-
-

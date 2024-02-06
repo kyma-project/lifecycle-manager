@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# This script deploys the storage version migrator. The migrator deploys its resources in the `kube-system` namespace
+# and it gets triggered every 10 minutes to migrate all resources stored in the etcd to the latest storage version.
+
+# To run the script, use the following command:
+# `sh ./scripts/storage_version_migrator.sh -c ${CONTEXT}`
+# where CONTEXT is the context for the cluster where you want to do the API migration
+
 while getopts c: flag
 
 do
@@ -15,12 +23,3 @@ make local-manifests REGISTRY=eu.gcr.io/k8s-artifacts-prod/storage-migrator VERS
 pushd manifests.local
 kubectl apply -k ./
 popd
-
-# This script deploys the storage version migrator. The migrator deploys its resources in the `kube-system` namespace
-# and it gets triggered every 10 minutes to migrate all resources stored in the etcd to the latest storage version.
-
-# To run the script, use the following command:
-
-# `sh ./scripts/storage_version_migrator.sh -c ${CONTEXT}`
-
-#where CONTEXT is the context for the cluster where you want to do the API migration
