@@ -27,6 +27,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/go-co-op/gocron"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -65,6 +66,8 @@ import (
 	//nolint:gci // kubebuilder's scaffold imports must be appended here.
 	// +kubebuilder:scaffold:imports
 )
+
+const metricCleanupTimeout = 5 * time.Minute
 
 var (
 	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
@@ -157,7 +160,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	remoteClientCache := remote.NewClientCache()
 	sharedMetrics := metrics.NewSharedMetrics()
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, sharedMetrics)
+	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
+	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
@@ -165,11 +169,25 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
 	}
-
 	if flagVar.EnableWebhooks {
 		enableWebhooks(mgr)
 	}
 
+	addHealthChecks(mgr)
+	if flagVar.DropStoredVersion != "" {
+		go func(version string) {
+			dropStoredVersion(mgr, version)
+		}(flagVar.DropStoredVersion)
+	}
+	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
+
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func addHealthChecks(mgr manager.Manager) {
 	// +kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -179,15 +197,24 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-	if flagVar.DropStoredVersion != "" {
-		go func(version string) {
-			dropStoredVersion(mgr, version)
-		}(flagVar.DropStoredVersion)
+}
+
+func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client,
+	cleanupIntervalInMinutes int,
+) {
+	scheduler := gocron.NewScheduler(time.UTC)
+	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), metricCleanupTimeout)
+		defer cancel()
+		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, kcpClient); err != nil {
+			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
+		}
+	})
+	if scheduleErr != nil {
+		setupLog.Info(fmt.Sprintf("failed to setup cleanup routine for non existing kyma crs metrics, err: %s",
+			scheduleErr))
 	}
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	scheduler.StartAsync()
 }
 
 func enableWebhooks(mgr manager.Manager) {
@@ -225,9 +252,10 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, descriptorProvider *provider.CachedDescriptorProvider,
+func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
+	descriptorProvider *provider.CachedDescriptorProvider,
 	flagVar *flags.FlagVar, options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
-	sharedMetrics *metrics.SharedMetrics,
+	kymaMetrics *metrics.KymaMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
@@ -248,7 +276,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		InKCPMode:           flagVar.InKCPMode,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		IsManagedKyma:       flagVar.IsKymaManaged,
-		Metrics:             metrics.NewKymaMetrics(sharedMetrics),
+		Metrics:             kymaMetrics,
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.KymaListenerAddr,

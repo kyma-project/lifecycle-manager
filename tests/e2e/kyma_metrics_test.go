@@ -120,12 +120,12 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				WithArguments(string(metrics.KymaDeletion), string(metrics.IntendedRequeue)).
 				Should(Equal(1))
 
-			By("And count of all Kyma Metrics is 0")
+			By("And Kyma Metrics are removed")
 			for _, state := range shared.AllStates() {
-				Eventually(GetKymaStateMetricCount).
+				Eventually(AssertKymaStateMetricNotFound).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), string(state)).
-					Should(Equal(0))
+					Should(Equal(ErrMetricNotFound))
 				Eventually(GetModuleStateMetricCount).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), module.Name, string(state)).
