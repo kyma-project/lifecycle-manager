@@ -1,0 +1,35 @@
+name: Verify Unit Test Coverage
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  coverage_guard: ${{ github.workspace }}/scripts/coverage-metrics/bin/utils/unit-test-coverage/coverage_guard.py
+  pip_requirements: ${{ github.workspace }}/scripts/coverage-metrics/bin/utils/unit-test-coverage/requirements.txt
+
+jobs:
+  assess-unit-test-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out reporting tools
+        uses: actions/checkout@v4
+        with:
+          repository: kyma-project/qa-toolkit
+          path: scripts
+      - name: Adjust the reporting tools
+        run: |
+          chmod a+x $coverage_guard
+          python -m pip install --upgrade pip
+          pip install -r $pip_requirements
+      - name: Check out the sourcecode
+        uses: actions/checkout@v4
+        with:
+          path: codebase
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ${{ github.workspace }}/codebase/go.mod
+      - name: Run the quality gate verification
+        run: |
+          $coverage_guard --repo ${{ github.workspace }}/codebase --module github.com/kyma-project/lifecycle-manager --config unit-test-coverage.yaml
