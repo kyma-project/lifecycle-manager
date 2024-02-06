@@ -262,7 +262,12 @@ func (r *KymaReconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kym
 }
 
 func (r *KymaReconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
-	return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
+	updateErr := r.updateStatusWithError(ctx, kyma, err)
+	if updateErr == nil {
+		r.enqueueWarningEvent(kyma, moduleReconciliationError, err)
+	}
+
+	return ctrl.Result{Requeue: true}, updateErr
 }
 
 func (r *KymaReconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReasonError, err error) {
@@ -397,7 +402,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	if err := errGroup.Wait(); err != nil {
-		return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
+		return r.requeueWithError(ctx, kyma, err)
 	}
 
 	state := kyma.DetermineState()
@@ -573,7 +578,7 @@ func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, shared.StateError, err.Error()); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, err)
 	}
-	r.enqueueWarningEvent(kyma, moduleReconciliationError, err)
+
 	return nil
 }
 
