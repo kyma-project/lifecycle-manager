@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/bin/sh
 # This script deploys the storage version migrator. The migrator deploys its resources in the `kube-system` namespace
 # and it gets triggered every 10 minutes to migrate all resources stored in the etcd to the latest storage version.
 
@@ -18,7 +17,11 @@ done
 
 git clone https://github.com/kubernetes-sigs/kube-storage-version-migrator.git
 cd kube-storage-version-migrator
-kubectl config use-context $context
+
+if [[ -n "$context" ]]; then
+  kubectl config use-context $context
+fi
+
 make local-manifests REGISTRY=eu.gcr.io/k8s-artifacts-prod/storage-migrator VERSION=v0.0.5
 pushd manifests.local
 kubectl apply -k ./
