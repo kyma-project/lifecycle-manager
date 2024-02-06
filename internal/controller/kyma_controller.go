@@ -135,7 +135,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if util.IsUnauthorized(err) {
 		r.deleteRemoteClientCache(ctx, kyma)
 		r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, metrics.UnexpectedRequeue)
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
 	}
 
 	if err != nil {
