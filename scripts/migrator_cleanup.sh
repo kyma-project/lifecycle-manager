@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 while getopts c: flag
 
 do
@@ -8,7 +8,7 @@ do
         esac
 done
 
-kubectl config use-context $context
+test -n ${context} && kubectl config use-context $context
 
 kubectl delete clusterrolebinding storage-version-migration-migrator
 kubectl delete clusterrolebinding storage-version-migration-trigger
