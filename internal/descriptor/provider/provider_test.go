@@ -15,16 +15,16 @@ import (
 
 func TestGetDescriptor_OnEmptyCache_ReturnsParsedDescriptor(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache()
-	sut := provider.NewCachedDescriptorProvider(descriptorCache)
+	descriptorProvider := provider.NewCachedDescriptorProvider(descriptorCache)
 	template := builder.NewModuleTemplateBuilder().Build()
-	_, err := sut.GetDescriptor(template)
+	_, err := descriptorProvider.GetDescriptor(template)
 
 	require.NoError(t, err)
 }
 
 func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache()
-	sut := provider.NewCachedDescriptorProvider(descriptorCache)
+	descriptorProvider := provider.NewCachedDescriptorProvider(descriptorCache)
 
 	expected := &v1beta2.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{
@@ -37,10 +37,10 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 	entry := descriptorCache.Get(key)
 	assert.Nil(t, entry)
 
-	err := sut.Add(template)
+	err := descriptorProvider.Add(template)
 	require.NoError(t, err)
 
-	result, err := sut.GetDescriptor(template)
+	result, err := descriptorProvider.GetDescriptor(template)
 	require.NoError(t, err)
 	assert.Equal(t, expected.Name, result.Name)
 
