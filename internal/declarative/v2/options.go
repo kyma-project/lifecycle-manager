@@ -10,7 +10,6 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -37,7 +36,6 @@ func DefaultOptions() *Options {
 			KymaComponentTransform,
 			DisclaimerTransform,
 		),
-		WithPermanentConsistencyCheck(false),
 		WithSingletonClientCache(NewMemorySingletonClientCache()),
 		WithManifestCache(os.TempDir()),
 		WithSkipReconcileOn(SkipReconcileOnDefaultLabelPresentAndTrue),
@@ -77,8 +75,6 @@ type Options struct {
 	DeletePrerequisites bool
 
 	ShouldSkip SkipReconcile
-
-	CtrlOnSuccess ctrl.Result
 }
 
 type Option interface {
@@ -220,18 +216,6 @@ type WithModuleCRDeletionCheckOption struct {
 
 func (o WithModuleCRDeletionCheckOption) Apply(options *Options) {
 	options.DeletionCheck = o
-}
-
-type WithPeriodicConsistencyCheck time.Duration
-
-func (o WithPeriodicConsistencyCheck) Apply(options *Options) {
-	options.CtrlOnSuccess.RequeueAfter = time.Duration(o)
-}
-
-type WithPermanentConsistencyCheck bool
-
-func (o WithPermanentConsistencyCheck) Apply(options *Options) {
-	options.CtrlOnSuccess = ctrl.Result{Requeue: bool(o)}
 }
 
 type WithSingletonClientCacheOption struct {

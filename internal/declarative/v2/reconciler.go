@@ -18,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -37,18 +38,19 @@ const (
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
-func NewFromManager(mgr manager.Manager, prototype Object, metrics *metrics.ManifestMetrics,
-	options ...Option,
-) *Reconciler {
+func NewFromManager(mgr manager.Manager, prototype Object, requeueIntervals queue.RequeueIntervals,
+	metrics *metrics.ManifestMetrics, options ...Option) *Reconciler {
 	r := &Reconciler{}
 	r.prototype = prototype
 	r.Metrics = metrics
+	r.RequeueIntervals = requeueIntervals
 	r.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return r
 }
 
 type Reconciler struct {
 	prototype Object
+	queue.RequeueIntervals
 	*Options
 	Metrics *metrics.ManifestMetrics
 }
@@ -104,7 +106,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if r.ShouldSkip(ctx, obj) {
-		return r.CtrlOnSuccess, nil
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	if err := r.initialize(obj); err != nil {
@@ -192,7 +194,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting,
 			metrics.IntendedRequeue)
 	}
-	return r.CtrlOnSuccess, nil
+	return ctrl.Result{RequeueAfter: r.Success}, nil
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
@@ -622,6 +624,9 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
 	if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
 		r.Event(obj, "Warning", "PatchStatus", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
+	}
+	if requeueType == metrics.UnexpectedRequeue {
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 	}
 	return ctrl.Result{Requeue: true}, nil
 }
