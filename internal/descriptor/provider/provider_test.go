@@ -20,7 +20,7 @@ func TestGetDescriptor_OnEmptySpec_ReturnsErrDecode(t *testing.T) {
 	_, err := descriptorProvider.GetDescriptor(template)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, provider.ErrDecode)
+	require.ErrorIs(t, err, provider.ErrDecode)
 }
 
 func TestAdd_OnNilTemplate_ReturnsErrTemplateNil(t *testing.T) {
@@ -29,7 +29,7 @@ func TestAdd_OnNilTemplate_ReturnsErrTemplateNil(t *testing.T) {
 	err := descriptorProvider.Add(nil)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, provider.ErrTemplateNil)
+	require.ErrorIs(t, err, provider.ErrTemplateNil)
 }
 
 func TestGetDescriptor_OnNilTemplate_ReturnsErrTemplateNil(t *testing.T) {
@@ -38,17 +38,17 @@ func TestGetDescriptor_OnNilTemplate_ReturnsErrTemplateNil(t *testing.T) {
 	_, err := descriptorProvider.GetDescriptor(nil)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, provider.ErrTemplateNil)
+	require.ErrorIs(t, err, provider.ErrTemplateNil)
 }
 
 func TestGetDescriptor_DecodeError(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	template := builder.NewModuleTemplateBuilder().WithRawDescriptor([]byte{}).WithDescriptor(nil).Build()
+	template := builder.NewModuleTemplateBuilder().WithRawDescriptor([]byte("invalid descriptor")).WithDescriptor(nil).Build()
 
 	_, err := descriptorProvider.GetDescriptor(template)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, provider.ErrDescriptorNil)
+	require.ErrorIs(t, err, provider.ErrDescriptorNil)
 }
 
 func TestGetDescriptor_OnEmptyCache_ReturnsParsedDescriptor(t *testing.T) {
@@ -63,7 +63,7 @@ func TestGetDescriptor_OnEmptyCache_ReturnsParsedDescriptor(t *testing.T) {
 
 func TestAdd_DecodeError(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	template := builder.NewModuleTemplateBuilder().WithRawDescriptor([]byte{}).WithDescriptor(nil).Build()
+	template := builder.NewModuleTemplateBuilder().WithRawDescriptor([]byte("invalid descriptor")).WithDescriptor(nil).Build()
 
 	err := descriptorProvider.Add(template)
 
