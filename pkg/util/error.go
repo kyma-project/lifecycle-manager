@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"strings"
+	"syscall"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -43,17 +44,16 @@ func IsNotFound(err error) bool {
 	return false
 }
 
-func IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err error) bool {
+func IsConnectionRefusedOrUnauthorized(err error) bool {
 	if err == nil {
 		return false
 	}
 
-	msg := strings.ToLower(err.Error())
-	if strings.Contains(msg, "connection refused") || strings.Contains(msg, "unauthorized") || strings.Contains(msg, "the server has asked for the client to provide credentials") {
+	if errors.Is(err, syscall.ECONNREFUSED) {
 		return true
 	}
 
-	return false
+	return apierrors.IsUnauthorized(err)
 }
 
 func IsUnauthorized(err error) bool {
@@ -61,5 +61,5 @@ func IsUnauthorized(err error) bool {
 		return false
 	}
 
-	return strings.Contains(strings.ToLower(err.Error()), "unauthorized")
+	return apierrors.IsUnauthorized(err)
 }
