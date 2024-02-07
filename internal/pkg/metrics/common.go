@@ -15,13 +15,9 @@ const (
 	KymaNameLabel   = "kyma_name"
 )
 
-type RequeueType string
-
 const (
-	IntendedRequeue    RequeueType = "intended"
-	UnexpectedRequeue  RequeueType = "unexpected"
-	requeueReasonLabel             = "requeue_reason"
-	requeueTypeLabel               = "requeue_type"
+	requeueReasonLabel = "requeue_reason"
+	requeueTypeLabel   = "requeue_type"
 )
 
 var (

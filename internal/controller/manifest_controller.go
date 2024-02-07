@@ -28,7 +28,8 @@ import (
 func SetupWithManager(mgr manager.Manager,
 	options ctrlruntime.Options,
 	requeueIntervals queue.RequeueIntervals,
-	settings SetupUpSetting, manifestMetrics *metrics.ManifestMetrics) error {
+	settings SetupUpSetting, manifestMetrics *metrics.ManifestMetrics,
+) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
 		// Verifier used to verify incoming listener requests
@@ -76,7 +77,8 @@ func SetupWithManager(mgr manager.Manager,
 }
 
 func ManifestReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
-	manifestMetrics *metrics.ManifestMetrics) *declarativev2.Reconciler {
+	manifestMetrics *metrics.ManifestMetrics,
+) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),

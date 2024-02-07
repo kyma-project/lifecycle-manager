@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
 const (
@@ -144,7 +145,7 @@ func calcStateValue(state, newState shared.State) float64 {
 	return 0
 }
 
-func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, requeueType RequeueType) {
+func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, requeueType queue.RequeueType) {
 	k.requeueReasonCounter.WithLabelValues(string(kymaRequeueReason), string(requeueType)).Inc()
 }
 

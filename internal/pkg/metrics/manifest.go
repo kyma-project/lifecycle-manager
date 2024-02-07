@@ -1,5 +1,7 @@
 package metrics
 
+import "github.com/kyma-project/lifecycle-manager/pkg/queue"
+
 type ManifestRequeueReason string
 
 const (
@@ -32,6 +34,6 @@ func NewManifestMetrics(sharedMetrics *SharedMetrics) *ManifestMetrics {
 	return &ManifestMetrics{SharedMetrics: sharedMetrics}
 }
 
-func (k *ManifestMetrics) RecordRequeueReason(requeueReason ManifestRequeueReason, requeueType RequeueType) {
+func (k *ManifestMetrics) RecordRequeueReason(requeueReason ManifestRequeueReason, requeueType queue.RequeueType) {
 	k.requeueReasonCounter.WithLabelValues(string(requeueReason), string(requeueType)).Inc()
 }
