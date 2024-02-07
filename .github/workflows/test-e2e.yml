@@ -52,7 +52,7 @@ jobs:
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1
-      CM_VERSION: v1.12.3
+      CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
       GOSUMDB: off
