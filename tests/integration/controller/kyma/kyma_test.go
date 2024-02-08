@@ -177,7 +177,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 	})
 })
 
-var _ = FDescribe("Kyma enable one Mandatory Module", Ordered, func() {
+var _ = Describe("Kyma enable one Mandatory Module", Ordered, func() {
 	kyma := NewTestKyma("mandatory-module-kyma")
 
 	RegisterDefaultLifecycleForKyma(kyma)
