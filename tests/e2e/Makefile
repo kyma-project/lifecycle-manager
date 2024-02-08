@@ -28,7 +28,7 @@ SHELL = /usr/bin/env bash -o pipefail
 
 # Ginkgo binary metadata.
 GINKGO ?= $(LOCALBIN)/ginkgo
-GINKGO_VERSION ?= v2.12.0
+GINKGO_VERSION ?= v2.15.0
 
 ##@ General
 

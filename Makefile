@@ -151,9 +151,9 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.1.1
-CONTROLLER_TOOLS_VERSION ?= v0.13.0
-GOLANG_CI_LINT_VERSION ?= v1.55.0
+KUSTOMIZE_VERSION ?= v5.3.0
+CONTROLLER_TOOLS_VERSION ?= v0.14.0
+GOLANG_CI_LINT_VERSION ?= v1.56.0
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
