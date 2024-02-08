@@ -177,6 +177,8 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 		}
 	}
 
+	logs.FromContext(ctx).Info("Finished running the metrics cleanup job")
+
 	return nil
 }
 
