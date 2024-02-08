@@ -216,6 +216,15 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		newModuleStatus.Message = module.Template.Err.Error()
 		return *newModuleStatus
 	}
+	if errors.Is(module.Template.Err, templatelookup.ErrNoTemplatesInListResult) {
+		return v1beta2.ModuleStatus{
+			Name:    module.ModuleName,
+			Channel: module.Template.DesiredChannel,
+			FQDN:    module.FQDN,
+			State:   shared.StateWarning,
+			Message: module.Template.Err.Error(),
+		}
+	}
 	if module.Template.Err != nil {
 		return v1beta2.ModuleStatus{
 			Name:    module.ModuleName,
