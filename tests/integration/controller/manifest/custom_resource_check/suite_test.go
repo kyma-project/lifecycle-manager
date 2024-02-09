@@ -43,6 +43,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -134,22 +135,19 @@ var _ = BeforeSuite(func() {
 	controlPlaneClient = k8sManager.GetClient()
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: controlPlaneClient}
-	reconciler = declarativev2.NewFromManager(
-		k8sManager, &v1beta2.Manifest{}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()),
-		declarativev2.WithSpecResolver(
+	reconciler = declarativev2.NewFromManager(k8sManager, &v1beta2.Manifest{}, queue.RequeueIntervals{
+		Success: 1 * time.Second,
+		Error:   1 * time.Second,
+	},
+		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp),
-		),
-		declarativev2.WithPermanentConsistencyCheck(true),
-		declarativev2.WithRemoteTargetCluster(
+		), declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
-		),
-		manifest.WithClientCacheKey(),
-		declarativev2.WithPostRun{manifest.PostRunCreateCR},
+		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
-	)
+		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()))
 
 	err = ctrl.NewControllerManagedBy(k8sManager).
 		For(&v1beta2.Manifest{}).
