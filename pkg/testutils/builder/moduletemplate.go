@@ -102,6 +102,11 @@ func (m ModuleTemplateBuilder) WithDescriptor(descriptor *v1beta2.Descriptor) Mo
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithRawDescriptor(rawDescriptor []byte) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.Descriptor.Raw = rawDescriptor
+	return m
+}
+
 func (m ModuleTemplateBuilder) WithOCM(schemaVersion compdesc.SchemaVersion) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Descriptor = ComponentDescriptorFactoryFromSchema(schemaVersion)
 	return m

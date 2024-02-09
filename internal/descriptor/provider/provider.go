@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	errTypeAssert  = errors.New("failed to convert to v1beta2.Descriptor")
-	errDecode      = errors.New("failed to decode to descriptor target")
-	errTemplateNil = errors.New("module template is nil")
+	ErrTypeAssert    = errors.New("failed to convert to v1beta2.Descriptor")
+	ErrDecode        = errors.New("failed to decode to descriptor target")
+	ErrTemplateNil   = errors.New("module template is nil")
+	ErrDescriptorNil = errors.New("module template contains nil descriptor")
 )
 
 type CachedDescriptorProvider struct {
@@ -31,11 +32,20 @@ func NewCachedDescriptorProvider(descriptorCache *cache.DescriptorCache) *Cached
 }
 
 func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplate) (*v1beta2.Descriptor, error) {
+	if template == nil {
+		return nil, ErrTemplateNil
+	}
+
 	if template.Spec.Descriptor.Object != nil {
 		desc, ok := template.Spec.Descriptor.Object.(*v1beta2.Descriptor)
 		if !ok {
-			return nil, errTypeAssert
+			return nil, ErrTypeAssert
 		}
+
+		if desc == nil {
+			return nil, ErrDescriptorNil
+		}
+
 		return desc, nil
 	}
 	key := cache.GenerateDescriptorKey(template)
@@ -48,13 +58,13 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 		template.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 	)
 	if err != nil {
-		return nil, errors.Join(errDecode, err)
+		return nil, errors.Join(ErrDecode, err)
 	}
 
 	template.Spec.Descriptor.Object = &v1beta2.Descriptor{ComponentDescriptor: ocmDesc}
 	descriptor, ok := template.Spec.Descriptor.Object.(*v1beta2.Descriptor)
 	if !ok {
-		return nil, errTypeAssert
+		return nil, ErrTypeAssert
 	}
 
 	return descriptor, nil
@@ -62,7 +72,7 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 
 func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	if template == nil {
-		return errTemplateNil
+		return ErrTemplateNil
 	}
 	key := cache.GenerateDescriptorKey(template)
 	descriptor := c.descriptorCache.Get(key)
@@ -82,13 +92,13 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 		template.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 	)
 	if err != nil {
-		return errors.Join(errDecode, err)
+		return errors.Join(ErrDecode, err)
 	}
 
 	template.Spec.Descriptor.Object = &v1beta2.Descriptor{ComponentDescriptor: ocmDesc}
 	descriptor, ok := template.Spec.Descriptor.Object.(*v1beta2.Descriptor)
 	if !ok {
-		return errTypeAssert
+		return ErrTypeAssert
 	}
 
 	c.descriptorCache.Set(key, descriptor)
