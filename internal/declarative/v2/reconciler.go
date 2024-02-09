@@ -324,7 +324,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	if hasDiff(oldSynced, newSynced) {
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		} else {
+		} else if status.State != shared.StateWarning {
 			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
 		}
 		return ErrWarningResourceSyncStateDiff
