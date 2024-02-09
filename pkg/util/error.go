@@ -49,11 +49,7 @@ func IsConnectionRefusedOrUnauthorized(err error) bool {
 		return false
 	}
 
-	if errors.Is(err, syscall.ECONNREFUSED) {
-		return true
-	}
-
-	return apierrors.IsUnauthorized(err)
+	return errors.Is(err, syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err)
 }
 
 func IsUnauthorized(err error) bool {
