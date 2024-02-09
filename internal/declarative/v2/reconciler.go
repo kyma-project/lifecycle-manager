@@ -147,7 +147,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
-		if util.IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err) {
+		if util.IsConnectionRefusedOrUnauthorized(err) {
 			r.invalidateClientCache(ctx, obj)
 			return r.ssaStatus(ctx, obj, metrics.ManifestUnauthorized)
 		}
@@ -469,7 +469,7 @@ func (r *Reconciler) renderTargetResources(
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
 		// Prevent ETCD load bursts during secret rotation
-		if !util.IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err) {
+		if !util.IsConnectionRefusedOrUnauthorized(err) {
 			r.Event(obj, "Warning", "TargetResourceParsing", err.Error())
 		}
 
