@@ -208,14 +208,14 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 			moduleName:       "non-existent-module",
 		},
 	}
-	for _, t := range testCases {
-		kyma := NewTestKyma(t.kymaName)
+	for _, testCase := range testCases {
+		kyma := NewTestKyma(testCase.kymaName)
 		RegisterDefaultLifecycleForKyma(kyma)
 
 		It("should result Kyma in Warning state", func() {
-			By(t.enableStatement, func() {
+			By(testCase.enableStatement, func() {
 				kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
-					Name: t.moduleName,
+					Name: testCase.moduleName,
 				})
 				Eventually(controlPlaneClient.Update, Timeout, Interval).
 					WithContext(ctx).WithArguments(kyma).Should(Succeed())
@@ -236,7 +236,7 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 			})
 		})
 		It("should result Kyma in Ready state", func() {
-			By(t.disableStatement, func() {
+			By(testCase.disableStatement, func() {
 				kyma.Spec.Modules = []v1beta2.Module{}
 				Eventually(controlPlaneClient.Update, Timeout, Interval).
 					WithContext(ctx).WithArguments(kyma).Should(Succeed())
