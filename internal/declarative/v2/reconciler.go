@@ -18,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -37,18 +38,20 @@ const (
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
-func NewFromManager(mgr manager.Manager, prototype Object, metrics *metrics.ManifestMetrics,
-	options ...Option,
+func NewFromManager(mgr manager.Manager, prototype Object, requeueIntervals queue.RequeueIntervals,
+	metrics *metrics.ManifestMetrics, options ...Option,
 ) *Reconciler {
 	r := &Reconciler{}
 	r.prototype = prototype
 	r.Metrics = metrics
+	r.RequeueIntervals = requeueIntervals
 	r.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return r
 }
 
 type Reconciler struct {
 	prototype Object
+	queue.RequeueIntervals
 	*Options
 	Metrics *metrics.ManifestMetrics
 }
@@ -91,108 +94,105 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
-		r.Metrics.RecordRequeueReason(metrics.ManifestTypeCast, metrics.UnexpectedRequeue)
+		r.Metrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
 		return ctrl.Result{}, common.ErrTypeAssert
 	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		logf.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
 		if !util.IsNotFound(err) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestRetrieval, metrics.UnexpectedRequeue)
+			r.Metrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
 		return ctrl.Result{Requeue: false}, nil
 	}
 
 	if r.ShouldSkip(ctx, obj) {
-		return r.CtrlOnSuccess, nil
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	if err := r.initialize(obj); err != nil {
-		return r.ssaStatus(ctx, obj, metrics.ManifestInit, metrics.UnexpectedRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestInit)
 	}
 
 	if obj.GetDeletionTimestamp().IsZero() {
 		objMeta := r.partialObjectMetadata(obj)
 		if controllerutil.AddFinalizer(objMeta, r.Finalizer) {
-			return r.ssaSpec(ctx, objMeta, metrics.ManifestAddFinalizer, metrics.IntendedRequeue)
+			return r.ssaSpec(ctx, objMeta, metrics.ManifestAddFinalizer)
 		}
 	}
 
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec,
-				metrics.IntendedRequeue)
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec)
 		}
-		return r.ssaStatus(ctx, obj, metrics.ManifestParseSpec, metrics.UnexpectedRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestParseSpec)
 	}
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return r.updateObject(ctx, obj, metrics.ManifestInitSyncedOCIRef, metrics.IntendedRequeue)
+		return r.updateObject(ctx, obj, metrics.ManifestInitSyncedOCIRef, queue.IntendedRequeue)
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
-			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(),
-				metrics.ManifestRemoveFinalizerWhenSecretGone, metrics.IntendedRequeue)
+			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone)
 		}
 
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.ssaStatus(ctx, obj, metrics.ManifestClientInit, metrics.UnexpectedRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestClientInit)
 	}
 
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
 		if util.IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err) {
 			r.invalidateClientCache(ctx, obj)
-			return r.ssaStatus(ctx, obj, metrics.ManifestUnauthorized, metrics.UnexpectedRequeue)
+			return r.ssaStatus(ctx, obj, metrics.ManifestUnauthorized)
 		}
 
-		return r.ssaStatus(ctx, obj, metrics.ManifestRenderResources, metrics.UnexpectedRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestRenderResources)
 	}
 
 	diff := ResourceList(current).Difference(target)
 	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
-		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, metrics.IntendedRequeue)
+		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
-		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff, metrics.UnexpectedRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff)
 	}
 
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, metrics.IntendedRequeue)
+			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
-		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete, metrics.UnexpectedRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete)
 	}
 
 	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, metrics.IntendedRequeue)
+			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		if errors.Is(err, ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, obj)
 		}
-		return r.ssaStatus(ctx, obj, metrics.ManifestSyncResources, metrics.UnexpectedRequeue)
+		return r.ssaStatus(ctx, obj, metrics.ManifestSyncResources)
 	}
 
 	// This situation happens when manifest get new installation layer to update resources,
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return r.updateObject(ctx, obj, metrics.ManifestUpdateSyncedOCIRef, metrics.IntendedRequeue)
+		return r.updateObject(ctx, obj, metrics.ManifestUpdateSyncedOCIRef, queue.IntendedRequeue)
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting,
-			metrics.IntendedRequeue)
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting)
 	}
-	return r.CtrlOnSuccess, nil
+	return ctrl.Result{RequeueAfter: r.Success}, nil
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
@@ -208,7 +208,6 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string,
 	requeueReason metrics.ManifestRequeueReason,
-	requeueType metrics.RequeueType,
 ) (ctrl.Result, error) {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
@@ -217,12 +216,12 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 		}
 	}
 	if finalizerRemoved {
-		return r.updateObject(ctx, obj, requeueReason, requeueType)
+		return r.updateObject(ctx, obj, requeueReason, queue.IntendedRequeue)
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)
 	obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
-	return r.ssaStatus(ctx, obj, requeueReason, requeueType)
+	return r.ssaStatus(ctx, obj, requeueReason)
 }
 
 func (r *Reconciler) partialObjectMetadata(obj Object) *apimetav1.PartialObjectMetadata {
@@ -615,23 +614,22 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 
 func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
 	requeueReason metrics.ManifestRequeueReason,
-	requeueType metrics.RequeueType,
 ) (ctrl.Result, error) {
 	resetNonPatchableField(obj)
-	r.Metrics.RecordRequeueReason(requeueReason, requeueType)
+	r.Metrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 	if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
 		r.Event(obj, "Warning", "PatchStatus", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
-	return ctrl.Result{Requeue: true}, nil
+
+	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 }
 
 func (r *Reconciler) ssaSpec(ctx context.Context, obj client.Object,
 	requeueReason metrics.ManifestRequeueReason,
-	requeueType metrics.RequeueType,
 ) (ctrl.Result, error) {
 	resetNonPatchableField(obj)
-	r.Metrics.RecordRequeueReason(requeueReason, requeueType)
+	r.Metrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
 	if err := r.Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
 		r.Event(obj, "Warning", "PatchObject", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch object: %w", err)
@@ -647,7 +645,7 @@ func resetNonPatchableField(obj client.Object) {
 
 func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
 	requeueReason metrics.ManifestRequeueReason,
-	requeueType metrics.RequeueType,
+	requeueType queue.RequeueType,
 ) (ctrl.Result, error) {
 	r.Metrics.RecordRequeueReason(requeueReason, requeueType)
 	if err := r.Update(ctx, obj); err != nil {

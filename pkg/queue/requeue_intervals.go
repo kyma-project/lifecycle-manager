@@ -29,3 +29,10 @@ func DetermineRequeueInterval(state shared.State, intervals RequeueIntervals) ti
 		return intervals.Success
 	}
 }
+
+type RequeueType string
+
+const (
+	IntendedRequeue   RequeueType = "intended"
+	UnexpectedRequeue RequeueType = "unexpected"
+)
