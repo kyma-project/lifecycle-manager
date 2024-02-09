@@ -188,102 +188,74 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma enable one non-existing Module", Ordered, func() {
-	kyma := NewTestKyma("non-existing-module-kyma")
+var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
+	testCases := []struct {
+		enableStatement  string
+		disableStatement string
+		kymaName         string
+		moduleName       string
+	}{
+		{
+			enableStatement:  "enabling one mandatory Module",
+			disableStatement: "disabling mandatory Module",
+			kymaName:         "mandatory-module-kyma",
+			moduleName:       "mandatory-template-operator",
+		},
+		{
+			enableStatement:  "enabling one non-existing Module",
+			disableStatement: "disabling non-existent Module",
+			kymaName:         "non-existing-module-kyma",
+			moduleName:       "non-existent-module",
+		},
+	}
+	for _, t := range testCases {
+		kyma := NewTestKyma(t.kymaName)
+		RegisterDefaultLifecycleForKyma(kyma)
 
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	It("should result Kyma in Warning state", func() {
-		By("enabling one non-existing Module", func() {
-			kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
-				Name: "non-existing-module",
+		It("should result Kyma in Warning state", func() {
+			By(t.enableStatement, func() {
+				kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
+					Name: t.moduleName,
+				})
+				Eventually(controlPlaneClient.Update, Timeout, Interval).
+					WithContext(ctx).WithArguments(kyma).Should(Succeed())
 			})
-			Eventually(controlPlaneClient.Update, Timeout, Interval).
-				WithContext(ctx).WithArguments(kyma).Should(Succeed())
-		})
-		By("checking the state to be Warning", func() {
-			Eventually(KymaIsInState, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
-				Should(Succeed())
-		})
-
-		By("Kyma status contains expected condition", func() {
-			kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(
-				kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionFalse)).To(BeTrue())
-		})
-	})
-	It("should result Kyma in Ready state", func() {
-		By("disabling non-existent Module", func() {
-			kyma.Spec.Modules = []v1beta2.Module{}
-			Eventually(controlPlaneClient.Update, Timeout, Interval).
-				WithContext(ctx).WithArguments(kyma).Should(Succeed())
-		})
-		By("checking the state to be Ready", func() {
-			Eventually(KymaIsInState, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
-				Should(Succeed())
-		})
-
-		By("Kyma status contains expected condition", func() {
-			kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(
-				kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
-		})
-	})
-})
-
-var _ = Describe("Kyma enable one Mandatory Module", Ordered, func() {
-	kyma := NewTestKyma("mandatory-module-kyma")
-
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	It("should result Kyma in Warning state", func() {
-		By("enabling one mandatory Module", func() {
-			kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
-				Name: "mandatory-template-operator",
+			By("checking the state to be Warning", func() {
+				Eventually(KymaIsInState, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
+					Should(Succeed())
 			})
-			Eventually(controlPlaneClient.Update, Timeout, Interval).
-				WithContext(ctx).WithArguments(kyma).Should(Succeed())
-		})
-		By("checking the state to be Warning", func() {
-			Eventually(KymaIsInState, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
-				Should(Succeed())
-		})
 
-		By("Kyma status contains expected condition", func() {
-			kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(
-				kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionFalse)).To(BeTrue())
+			By("Kyma status contains expected condition", func() {
+				kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(
+					kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules,
+						apimetav1.ConditionFalse)).To(BeTrue())
+			})
 		})
-	})
-	It("should result Kyma in Ready state", func() {
-		By("disabling one mandatory Module", func() {
-			kyma.Spec.Modules = []v1beta2.Module{}
-			Eventually(controlPlaneClient.Update, Timeout, Interval).
-				WithContext(ctx).WithArguments(kyma).Should(Succeed())
-		})
-		By("checking the state to be Ready", func() {
-			Eventually(KymaIsInState, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
-				Should(Succeed())
-		})
+		It("should result Kyma in Ready state", func() {
+			By(t.disableStatement, func() {
+				kyma.Spec.Modules = []v1beta2.Module{}
+				Eventually(controlPlaneClient.Update, Timeout, Interval).
+					WithContext(ctx).WithArguments(kyma).Should(Succeed())
+			})
+			By("checking the state to be Ready", func() {
+				Eventually(KymaIsInState, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					Should(Succeed())
+			})
 
-		By("Kyma status contains expected condition", func() {
-			kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(
-				kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
+			By("Kyma status contains expected condition", func() {
+				kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(
+					kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
+			})
 		})
-	})
+	}
 })
 
 func containsCondition(kyma *v1beta2.Kyma) error {
