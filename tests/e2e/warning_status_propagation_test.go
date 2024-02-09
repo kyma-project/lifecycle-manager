@@ -125,9 +125,19 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 				Should(Succeed())
+			Consistently(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
+				Should(Succeed())
 
 			By("And Module Manifest CR is in a \"Warning\" State")
 			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+					shared.StateWarning).
+				Should(Succeed())
+
+			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
 					shared.StateWarning).
