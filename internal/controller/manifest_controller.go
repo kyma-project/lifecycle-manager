@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
@@ -22,15 +21,14 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
-func SetupWithManager(
-	mgr manager.Manager,
+func SetupWithManager(mgr manager.Manager,
 	options ctrlruntime.Options,
-	checkInterval time.Duration,
-	settings SetupUpSetting,
-	manifestMetrics *metrics.ManifestMetrics,
+	requeueIntervals queue.RequeueIntervals,
+	settings SetupUpSetting, manifestMetrics *metrics.ManifestMetrics,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -71,15 +69,14 @@ func SetupWithManager(
 			},
 		).WithOptions(options)
 
-	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, checkInterval, manifestMetrics)); err != nil {
+	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, requeueIntervals,
+		manifestMetrics)); err != nil {
 		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
 	}
 	return nil
 }
 
-func ManifestReconciler(
-	mgr manager.Manager,
-	checkInterval time.Duration,
+func ManifestReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
 	manifestMetrics *metrics.ManifestMetrics,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
@@ -88,7 +85,7 @@ func ManifestReconciler(
 	}
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
-		mgr, &v1beta2.Manifest{}, manifestMetrics,
+		mgr, &v1beta2.Manifest{}, requeueIntervals, manifestMetrics,
 		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp),
 		),
@@ -97,7 +94,6 @@ func ManifestReconciler(
 		manifest.WithClientCacheKey(),
 		declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithPeriodicConsistencyCheck(checkInterval),
 		declarativev2.WithModuleCRDeletionCheck(manifest.NewModuleCRDeletionCheck()),
 	)
 }

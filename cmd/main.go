@@ -366,7 +366,10 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 
 	if err := controller.SetupWithManager(
-		mgr, options, flagVar.ManifestRequeueSuccessInterval, controller.SetupUpSetting{
+		mgr, options, queue.RequeueIntervals{
+			Success: flagVar.ManifestRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+		}, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics),

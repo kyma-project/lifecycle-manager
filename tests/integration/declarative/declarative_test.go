@@ -30,6 +30,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	declarativetest "github.com/kyma-project/lifecycle-manager/tests/integration/declarative"
@@ -270,9 +271,8 @@ func StartDeclarativeReconcilerForRun(
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
-	reconciler = NewFromManager(
-		mgr, &declarativetest.TestAPI{}, metrics,
-		append(
+	reconciler = NewFromManager(mgr, &declarativetest.TestAPI{},
+		queue.RequeueIntervals{Success: 1 * time.Second, Busy: 1 * time.Second}, metrics, append(
 			options,
 			WithNamespace(namespace, true),
 			WithFinalizer(finalizer),
@@ -285,9 +285,7 @@ func StartDeclarativeReconcilerForRun(
 			WithClientCacheKey(),
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(k8slabels.Set{testRunLabel: runID}),
-			WithPeriodicConsistencyCheck(2*time.Second),
-		)...,
-	)
+		)...)
 	// in case there is any leak of CRs from another test run, but this is most likely never necessary
 	testWatchPredicate, err := predicate.LabelSelectorPredicate(
 		apimetav1.LabelSelector{MatchLabels: k8slabels.Set{testRunLabel: runID}},
