@@ -260,11 +260,7 @@ func (r *Reconciler) initialize(obj Object) error {
 }
 
 func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
-	targetClient, err := r.getTargetClient(ctx, obj)
-	if err != nil {
-		return nil, err
-	}
-	spec, err := r.SpecResolver.Spec(ctx, obj, targetClient)
+	spec, err := r.SpecResolver.Spec(ctx, obj)
 	if err != nil {
 		r.Event(obj, "Warning", "Spec", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))

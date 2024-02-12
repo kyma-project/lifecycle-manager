@@ -2,12 +2,10 @@ package v2
 
 import (
 	"context"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type SpecResolver interface {
-	Spec(ctx context.Context, object Object, remoteClient client.Client) (*Spec, error)
+	Spec(ctx context.Context, object Object) (*Spec, error)
 }
 
 type RenderMode string
@@ -40,9 +38,7 @@ type CustomSpecFns struct {
 	ModeFn         func(ctx context.Context, obj Object) RenderMode
 }
 
-func (s *CustomSpecFns) Spec(
-	ctx context.Context, obj Object, _ client.Client,
-) (*Spec, error) {
+func (s *CustomSpecFns) Spec(ctx context.Context, obj Object) (*Spec, error) {
 	return &Spec{
 		ManifestName: s.ManifestNameFn(ctx, obj),
 		Path:         s.PathFn(ctx, obj),

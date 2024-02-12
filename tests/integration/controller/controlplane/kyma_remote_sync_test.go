@@ -14,7 +14,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -28,7 +27,6 @@ var (
 	ErrNotContainsExpectedAnnotation = errors.New("kyma CR not contains expected CRD annotation")
 	ErrContainsUnexpectedAnnotation  = errors.New("kyma CR contains unexpected CRD annotation")
 	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
-	ErrRemoteTemplateLabelNotFound   = errors.New("manifest does not contain remote template label")
 )
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
@@ -43,7 +41,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
-	customModuleInSKR.RemoteModuleTemplateRef = customModuleInSKR.Name
 
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 
@@ -56,10 +53,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		WithModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
 		WithModuleCR(defaultCR).
-		WithOCM(compdescv2.SchemaVersion).Build()
-	SKRCustomTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName(customModuleInSKR.Name).
-		WithChannel(customModuleInSKR.Channel).
 		WithOCM(compdescv2.SchemaVersion).Build()
 
 	BeforeAll(func() {
@@ -204,58 +197,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(runtimeClient, remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace).
-			Should(Succeed())
-	})
-
-	It("Enable Custom ModuleTemplate in SKR", func() {
-		By("Create SKRCustomTemplate in SKR")
-		SKRCustomTemplate.Namespace = kyma.Namespace
-		Eventually(runtimeClient.Create, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(SKRCustomTemplate).
-			Should(Succeed())
-
-		By("add module to remote Kyma")
-		Eventually(EnableModule, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(runtimeClient, remoteKyma.GetName(), remoteKyma.GetNamespace(), customModuleInSKR).
-			Should(Succeed())
-	})
-
-	It("Should not sync the SKRCustomTemplate in KCP and keep it only in SKR", func() {
-		Eventually(RegularModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
-			Should(Succeed())
-		Consistently(RegularModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, customModuleInSKR, kyma.Spec.Channel).
-			Should(MatchError(templatelookup.ErrNoTemplatesInListResult))
-	})
-
-	It("SKRCustomTemplate descriptor should not be saved in cache", func() {
-		Expect(IsDescriptorCached(SKRCustomTemplate)).Should(BeFalse())
-	})
-
-	It("Should reconcile Manifest in KCP using remote SKRCustomTemplate", func() {
-		Eventually(ManifestExists, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), customModuleInSKR.Name).
-			Should(Succeed())
-	})
-
-	It("Manifest should contain remoteModuleTemplate label", func() {
-		Eventually(func() error {
-			manifest, err := GetManifest(ctx, controlPlaneClient,
-				kyma.GetName(), kyma.GetNamespace(),
-				customModuleInSKR.Name)
-			if err != nil {
-				return err
-			}
-
-			if manifest.Labels[shared.IsRemoteModuleTemplate] != shared.EnableLabelValue {
-				return ErrRemoteTemplateLabelNotFound
-			}
-			return nil
-		}, Timeout, Interval).
 			Should(Succeed())
 	})
 

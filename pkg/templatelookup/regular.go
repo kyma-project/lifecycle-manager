@@ -13,17 +13,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
 
 var (
-	ErrTemplateNotIdentified            = errors.New("no unique template could be identified")
-	ErrNotDefaultChannelAllowed         = errors.New("specifying no default channel is not allowed")
-	ErrNoTemplatesInListResult          = errors.New("no templates were found")
-	ErrTemplateMarkedAsMandatory        = errors.New("template marked as mandatory")
-	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
-	ErrTemplateNotAllowed               = errors.New("module template not allowed")
-	ErrTemplateUpdateNotAllowed         = errors.New("module template update not allowed")
+	ErrTemplateNotIdentified     = errors.New("no unique template could be identified")
+	ErrNotDefaultChannelAllowed  = errors.New("specifying no default channel is not allowed")
+	ErrNoTemplatesInListResult   = errors.New("no templates were found")
+	ErrTemplateMarkedAsMandatory = errors.New("template marked as mandatory")
+	ErrTemplateNotAllowed        = errors.New("module template not allowed")
+	ErrTemplateUpdateNotAllowed  = errors.New("module template update not allowed")
 )
 
 type ModuleTemplateInfo struct {
@@ -32,7 +30,9 @@ type ModuleTemplateInfo struct {
 	DesiredChannel string
 }
 
-func NewTemplateLookup(reader client.Reader, descriptorProvider *provider.CachedDescriptorProvider, syncEnabled bool) *TemplateLookup {
+func NewTemplateLookup(reader client.Reader, descriptorProvider *provider.CachedDescriptorProvider,
+	syncEnabled bool,
+) *TemplateLookup {
 	return &TemplateLookup{
 		Reader:             reader,
 		descriptorProvider: descriptorProvider,
@@ -56,24 +56,12 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		if found {
 			continue
 		}
-		switch {
-		case module.RemoteModuleTemplateRef == "":
-			template = t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
-			if template.Err != nil {
-				break
-			}
-			if err := t.descriptorProvider.Add(template.ModuleTemplate); err != nil {
-				template.Err = fmt.Errorf("failed to get descriptor: %w", err)
-			}
-
-		case t.syncEnabled:
-			originalModuleName := module.Name
-			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
-			template = t.remoteGetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
-			module.Name = originalModuleName
-		default:
-			template.Err = fmt.Errorf("enable sync to use a remote module template for %s: %w", module.Name,
-				ErrInvalidRemoteModuleConfiguration)
+		template = t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
+		if template.Err != nil {
+			break
+		}
+		if err := t.descriptorProvider.Add(template.ModuleTemplate); err != nil {
+			template.Err = fmt.Errorf("failed to get descriptor: %w", err)
 		}
 
 		templates[module.Name] = &template
@@ -130,40 +118,6 @@ func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defa
 	}
 
 	logUsedChannel(ctx, name, actualChannel, defaultChannel)
-	info.ModuleTemplate = template
-	return info
-}
-
-func (t *TemplateLookup) remoteGetAndValidate(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
-	desiredChannel := getDesiredChannel(channel, defaultChannel)
-	info := ModuleTemplateInfo{
-		DesiredChannel: desiredChannel,
-	}
-	syncContext, err := remote.SyncContextFromContext(ctx)
-	if err != nil {
-		info.Err = fmt.Errorf("failed to get syncContext: %w", err)
-		return info
-	}
-	runtimeClient := syncContext.RuntimeClient
-
-	template, err := t.getTemplate(ctx, runtimeClient, name, desiredChannel)
-	if err != nil {
-		info.Err = err
-		return info
-	}
-
-	actualChannel := template.Spec.Channel
-	// ModuleTemplates without a Channel are not allowed
-	if actualChannel == "" {
-		info.Err = fmt.Errorf(
-			"no channel found on template for module: %s: %w",
-			name, ErrNotDefaultChannelAllowed,
-		)
-		return info
-	}
-
-	logUsedChannel(ctx, name, actualChannel, defaultChannel)
-
 	info.ModuleTemplate = template
 	return info
 }

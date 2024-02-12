@@ -78,9 +78,8 @@ type Module struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel,omitempty"`
 
-	// RemoteModuleTemplateRef is the reference (FQDN, Namespace/Name, Module Name Label)
-	// to the module template on the remote cluster.
-	// If specified, the module template will be fetched from the SKR and reconciled.
+	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
+	// It will be removed in the upcoming API version.
 	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef,omitempty"`
 
 	// +kubebuilder:default:=CreateAndDelete
