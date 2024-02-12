@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"context"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
@@ -99,6 +101,11 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		})
 
 		It("When blocking finalizers from Module CR get removed", func() {
+			Expect(runtimeClient.Get(ctx, client.ObjectKey{
+				Namespace: moduleCR.GetNamespace(),
+				Name:      moduleCR.GetName(),
+			}, moduleCR)).To(Succeed())
+
 			Eventually(SetFinalizer).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
