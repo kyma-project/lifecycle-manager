@@ -54,7 +54,7 @@ This setup is deployed with the following security features enabled:
    2. `cert-manager` by Jetstack:
 
        ```shell
-       kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.3/cert-manager.yaml
+       kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
        ```
 
 4. Deploy Lifecycle Manager on the cluster:
