@@ -70,8 +70,9 @@ import (
 const metricCleanupTimeout = 5 * time.Minute
 
 var (
-	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
-	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
+	scheme       = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
+	setupLog     = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
+	buildVersion = "not_provided"
 )
 
 func registerSchemas() {
@@ -92,7 +93,9 @@ func main() {
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
+
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
+	setupLog.Info("Starting Lifecycle-Manager", "Version:", buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
