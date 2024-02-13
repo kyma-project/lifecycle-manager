@@ -95,7 +95,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
-	setupLog.Info("Starting Lifecycle-Manager", "Version:", buildVersion)
+	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
