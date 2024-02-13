@@ -90,10 +90,9 @@ spec:
                         as located in .spec.descriptor.component.name"
                       type: string
                     remoteModuleTemplateRef:
-                      description: RemoteModuleTemplateRef is the reference (FQDN,
-                        Namespace/Name, Module Name Label) to the module template
-                        on the remote cluster. If specified, the module template will
-                        be fetched from the SKR and reconciled.
+                      description: RemoteModuleTemplateRef is deprecated and will
+                        no longer have any functionality. It will be removed in the
+                        upcoming API version.
                       type: string
                   required:
                   - name
@@ -499,10 +498,9 @@ spec:
                         as located in .spec.descriptor.component.name"
                       type: string
                     remoteModuleTemplateRef:
-                      description: RemoteModuleTemplateRef is the reference (FQDN,
-                        Namespace/Name, Module Name Label) to the module template
-                        on the remote cluster. If specified, the module template will
-                        be fetched from the SKR and reconciled.
+                      description: RemoteModuleTemplateRef is deprecated and will
+                        no longer have any functionality. It will be removed in the
+                        upcoming API version.
                       type: string
                   required:
                   - name
