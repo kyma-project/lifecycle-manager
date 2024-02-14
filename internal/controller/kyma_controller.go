@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"golang.org/x/sync/errgroup"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
@@ -132,7 +133,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// Prevent ETCD load bursts during secret rotation
-	if util.IsUnauthorized(err) {
+	if apierrors.IsUnauthorized(err) {
 		r.deleteRemoteClientCache(ctx, kyma)
 		r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, queue.UnexpectedRequeue)
 		return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)

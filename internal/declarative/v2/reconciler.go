@@ -220,7 +220,11 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)
-	obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
+
+	if obj.GetStatus().State != shared.StateWarning {
+		obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
+	}
+
 	return r.ssaStatus(ctx, obj, requeueReason)
 }
 
@@ -319,7 +323,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	if hasDiff(oldSynced, newSynced) {
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		} else {
+		} else if status.State != shared.StateWarning {
 			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
 		}
 		return ErrWarningResourceSyncStateDiff
