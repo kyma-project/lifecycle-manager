@@ -216,7 +216,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace, runtimeClient).
 			Should(Succeed())
-
 	})
 
 	AfterAll(func() {
