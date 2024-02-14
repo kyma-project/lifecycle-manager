@@ -72,7 +72,7 @@ const metricCleanupTimeout = 5 * time.Minute
 var (
 	scheme       = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
 	setupLog     = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
-	buildVersion = "not_provided"
+	buildVersion = "not_provided"               //nolint:gochecknoglobals // used to embed static binary version during release builds
 )
 
 func registerSchemas() {
