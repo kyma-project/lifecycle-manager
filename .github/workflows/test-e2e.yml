@@ -5,6 +5,11 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      k8s_version:
+        description: "Run with specific Kubernetes version"
+        required: false
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -51,16 +56,20 @@ jobs:
     timeout-minutes: 20
     env:
       K3D_VERSION: v5.4.7
+      K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.27.10' }}
       ISTIO_VERSION: 1.17.1
       CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
       GOSUMDB: off
     steps:
+      - name: Print k8s version
+        run: | 
+          echo "Running e2e with Kubernetes and kubectl version: $K8S_VERSION"
       - name: Install prerequisites
         run: |
           curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-          echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+          echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v$K8S_VERSION/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
           sudo apt update -y
           sudo apt install kubectl -y
       - name: Checkout lifecycle-manager
@@ -89,10 +98,12 @@ jobs:
           tar xzf cmctl.tar.gz
           sudo mv cmctl /usr/local/bin
       - name: Install k3d
-        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
+        run: |
+          wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
         run: |
-          k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --k3s-arg '--disable=traefik@server:0'
+          k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --image rancher/k3s:v$K8S_VERSION-k3s2 --k3s-arg '--disable=traefik@server:0'
+          echo k3d --version
       - name: Provision KCP cluster
         run: |
           kyma provision k3d --name=kcp -p 9443:443@loadbalancer -p 9080:80@loadbalancer -p 9081:8080@loadbalancer --ci --registry-port 5111
