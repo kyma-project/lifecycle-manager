@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       k8s_version:
-        description: "Run with specific Kubernetes version"
+        description: "With Kubernetes version"
         required: false
 jobs:
   wait-for-img:
@@ -56,16 +56,13 @@ jobs:
     timeout-minutes: 20
     env:
       K3D_VERSION: v5.4.7
-      K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.28.6' }}
+      K8S_VERSION: ${{ github.event.inputs.k8s_version || 1.28.6 }}
       ISTIO_VERSION: 1.17.1
       CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
       GOSUMDB: off
     steps:
-      - name: Print k8s version
-        run: | 
-          echo "Running e2e with Kubernetes and kubectl version: ${K8S_VERSION}"
       - name: Install prerequisites
         run: |
           curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
@@ -100,9 +97,7 @@ jobs:
       - name: Install k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
-        run: |
-          k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --image rancher/k3s:v$K8S_VERSION-k3s2 --k3s-arg '--disable=traefik@server:0'
-          echo k3d --version
+        run: k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --image rancher/k3s:v$K8S_VERSION-k3s2 --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
           kyma provision k3d --name=kcp -p 9443:443@loadbalancer -p 9080:80@loadbalancer -p 9081:8080@loadbalancer --ci --registry-port 5111
