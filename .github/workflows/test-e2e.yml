@@ -97,9 +97,19 @@ jobs:
       - name: Install k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
-        run: k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --image rancher/k3s:v$K8S_VERSION-k3s2 --k3s-arg '--disable=traefik@server:0'
+        run: |
+          k3d cluster create skr \
+            -p 10080:80@loadbalancer \
+            -p 10443:443@loadbalancer \
+            --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
-        run: k3d cluster create kcp -p 9443:443@loadbalancer -p 9080:80@loadbalancer -p 9081:8080@loadbalancer --image rancher/k3s:v$K8S_VERSION-k3s2 --k3s-arg '--disable=traefik@server:0' --registry-create k3d-registry.localhost:0.0.0.0:5111
+        run: |
+          k3d cluster create kcp \
+            -p 9443:443@loadbalancer \
+            -p 9080:80@loadbalancer \
+            -p 9081:8080@loadbalancer \
+            --registry-create k3d-kcp-registry:5111 \
+            --k3s-arg '--disable=traefik@server:0'
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
