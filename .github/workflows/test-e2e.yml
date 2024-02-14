@@ -56,7 +56,7 @@ jobs:
     timeout-minutes: 20
     env:
       K3D_VERSION: v5.4.7
-      K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.27.10' }}
+      K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.27' }}
       ISTIO_VERSION: 1.17.1
       CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
