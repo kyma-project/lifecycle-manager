@@ -147,7 +147,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
-		if util.IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err) {
+		if util.IsConnectionRefusedOrUnauthorized(err) {
 			r.invalidateClientCache(ctx, obj)
 			return r.ssaStatus(ctx, obj, metrics.ManifestUnauthorized)
 		}
@@ -220,7 +220,11 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)
-	obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
+
+	if obj.GetStatus().State != shared.StateWarning {
+		obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
+	}
+
 	return r.ssaStatus(ctx, obj, requeueReason)
 }
 
@@ -323,7 +327,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	if hasDiff(oldSynced, newSynced) {
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		} else {
+		} else if status.State != shared.StateWarning {
 			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
 		}
 		return ErrWarningResourceSyncStateDiff
@@ -469,7 +473,7 @@ func (r *Reconciler) renderTargetResources(
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
 		// Prevent ETCD load bursts during secret rotation
-		if !util.IsConnectionRefusedOrUnauthorizedOrAskingForCredentials(err) {
+		if !util.IsConnectionRefusedOrUnauthorized(err) {
 			r.Event(obj, "Warning", "TargetResourceParsing", err.Error())
 		}
 

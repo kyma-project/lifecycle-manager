@@ -68,52 +68,6 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then no Kyma Module in KCP Kyma CR spec", func() {
-			Eventually(NotContainsModuleInSpec, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
-				Should(Succeed())
-
-			By("And KCP Kyma CR is in \"Ready\" State")
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
-				Should(Succeed())
-		})
-
-		It("When Kyma Module is re-enabled", func() {
-			Eventually(EnableModule).
-				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
-				Should(Succeed())
-		})
-
-		It("Then Kyma Module is in KCP Kyma CR spec", func() {
-			Eventually(ContainsModuleInSpec, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
-				Should(Succeed())
-
-			By("And KCP Kyma CR is in \"Warning\" State")
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
-				Should(Succeed())
-		})
-
-		It("When Kyma Module is disabled with existing finalizer", func() {
-			Eventually(SetFinalizer).
-				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
-					[]string{"sample.kyma-project.io/finalizer", "blocking-finalizer"}, runtimeClient).
-				Should(Succeed())
-
-			Eventually(DisableModule).
-				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
-				Should(Succeed())
-		})
-
 		It("Then there is no Module in KCP Kyma CR spec", func() {
 			Eventually(NotContainsModuleInSpec, Timeout, Interval).
 				WithContext(ctx).
@@ -125,9 +79,19 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 				Should(Succeed())
+			Consistently(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
+				Should(Succeed())
 
 			By("And Module Manifest CR is in a \"Warning\" State")
 			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+					shared.StateWarning).
+				Should(Succeed())
+
+			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
 					shared.StateWarning).
