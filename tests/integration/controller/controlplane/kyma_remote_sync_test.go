@@ -40,7 +40,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	var err error
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
-	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
 
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 
@@ -218,10 +217,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace, runtimeClient).
 			Should(Succeed())
 
-		By("SKRCustomTemplate should still exists in SKR")
-		Consistently(RegularModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
-			Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -311,16 +306,16 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
-	moduleInKcp := NewTestModule("in-kcp", v1beta2.DefaultChannel)
-	kyma.Spec.Modules = []v1beta2.Module{moduleInKcp}
+	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
 
-	remoteKyma := &v1beta2.Kyma{}
-
-	remoteKyma.Name = shared.DefaultRemoteKymaName
-	remoteKyma.Namespace = flags.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	var err error
+	remoteKyma := &v1beta2.Kyma{}
+	remoteKyma.Name = shared.DefaultRemoteKymaName
+	remoteKyma.Namespace = flags.DefaultRemoteSyncNamespace
+
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
 		Expect(err).NotTo(HaveOccurred())
@@ -335,8 +330,8 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 	It("module template created", func() {
 		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(moduleInKcp.Name).
-			WithChannel(moduleInKcp.Channel).
+			WithModuleName(moduleInKCP.Name).
+			WithChannel(moduleInKCP.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).

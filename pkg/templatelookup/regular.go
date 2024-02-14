@@ -51,14 +51,14 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
 	for _, module := range kyma.GetAvailableModules() {
-		var template ModuleTemplateInfo
 		_, found := templates[module.Name]
 		if found {
 			continue
 		}
-		template = t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
+		template := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
 		if template.Err != nil {
-			break
+			templates[module.Name] = &template
+			continue
 		}
 		if err := t.descriptorProvider.Add(template.ModuleTemplate); err != nil {
 			template.Err = fmt.Errorf("failed to get descriptor: %w", err)
