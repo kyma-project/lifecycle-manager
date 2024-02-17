@@ -1,10 +1,12 @@
 package metrics
 
 import (
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
 type ManifestRequeueReason string
@@ -48,7 +50,8 @@ func NewManifestMetrics(sharedMetrics *SharedMetrics) *ManifestMetrics {
 				Buckets: prometheus.DefBuckets,
 			},
 			[]string{metricLabelModule},
-		)}
+		),
+	}
 	ctrlmetrics.Registry.MustRegister(metrics.reconcileDurationHistogram)
 	return metrics
 }
