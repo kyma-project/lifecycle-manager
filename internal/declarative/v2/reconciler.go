@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -92,6 +92,9 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	reconcileStart := time.Now()
+	defer r.Metrics.ObserveReconcileDuration(reconcileStart, req.NamespacedName.Name)
+
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
 		r.Metrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
@@ -103,6 +106,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.Metrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
+		r.Metrics.ObserveReconcileDuration(reconcileStart, obj.GetName())
 		return ctrl.Result{Requeue: false}, nil
 	}
 
@@ -625,7 +629,6 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
 		r.Event(obj, "Warning", "PatchStatus", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
-
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 }
 
