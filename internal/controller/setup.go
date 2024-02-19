@@ -148,6 +148,8 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options ctrlrunti
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 
+	r.IstioService = &istio.Service{GatewayLookup: r.IstioClient}
+
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
