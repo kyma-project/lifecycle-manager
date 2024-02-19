@@ -6,7 +6,7 @@ replace github.com/kyma-project/lifecycle-manager/api => ./api
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
-	github.com/cert-manager/cert-manager v1.14.1
+	github.com/cert-manager/cert-manager v1.14.2
 	github.com/go-logr/logr v1.4.1
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
