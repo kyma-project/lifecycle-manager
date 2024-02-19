@@ -10,6 +10,8 @@ import (
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	apimachinerytypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -23,6 +25,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/ownerlookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 )
@@ -44,6 +47,16 @@ var (
 	errConvertingWatched      = errors.New("error converting watched to object key")
 	errParsingWatched         = errors.New("error getting watched object from unstructured event")
 	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
+
+	virtualServiceOwnerNamespacedName = apimachinerytypes.NamespacedName{
+		Namespace: "kcp-system",
+		Name:      "klm-controller-manager",
+	}
+	virtualServiceOwnerGroupVersionKind = schema.GroupVersionKind{
+		Group:   "apps",
+		Kind:    "Deployment",
+		Version: "v1",
+	}
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
@@ -147,8 +160,15 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options ctrlrunti
 	if err != nil {
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
-
-	r.IstioService = &istio.Service{GatewayLookup: r.IstioClient}
+	r.IstioService = &istio.Service{
+		GatewayLookup: r.IstioClient,
+		OwnerLookup: &ownerlookup.OwnerLookup{
+			Client:           r.Client,
+			Name:             virtualServiceOwnerNamespacedName,
+			GroupVersionKind: virtualServiceOwnerGroupVersionKind,
+		},
+		Scheme: r.Scheme,
+	}
 
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
