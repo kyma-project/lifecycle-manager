@@ -6,7 +6,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -27,12 +27,12 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	caCertName := "klm-watcher-serving-cert"
 
 	Context("Given KCP Cluster and rotated CA certificate", func() {
-		kcpNamespacedSecretName := types.NamespacedName{
+		kcpNamespacedSecretName := k8stypes.NamespacedName{
 			Name:      fmt.Sprintf("%s-webhook-tls", kyma.Name),
 			Namespace: "istio-system",
 		}
 
-		skrNamespacedSecretName := types.NamespacedName{
+		skrNamespacedSecretName := k8stypes.NamespacedName{
 			Name:      watcher.SkrTLSName,
 			Namespace: remoteNamespace,
 		}
@@ -48,7 +48,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 
 			By("And new TLS Certificate is created")
 			var err error
-			namespacedCertName := types.NamespacedName{
+			namespacedCertName := k8stypes.NamespacedName{
 				Name:      caCertName,
 				Namespace: "istio-system",
 			}

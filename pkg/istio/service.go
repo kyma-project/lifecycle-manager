@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	istioapiv1beta1 "istio.io/api/networking/v1beta1"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type (
@@ -59,17 +60,16 @@ func (s Service) NewVirtualServiceForWatcher(ctx context.Context, watcher *v1bet
 	}
 
 	return virtualSvc, nil
-
 }
 
 func (s Service) addOwnerReference(ctx context.Context, virtualSvc *istioclientapiv1beta1.VirtualService) error {
 	owner, err := s.OwnerLookup.GetOwner(ctx)
 	if err != nil {
-		return fmt.Errorf("%w for %v/%v in %v: %v", ErrAddingOwnerReference, virtualSvc.GetName(), virtualSvc.Kind, virtualSvc.GetNamespace(), err)
+		return fmt.Errorf("%w for %v/%v in %v: %w", ErrAddingOwnerReference, virtualSvc.GetName(), virtualSvc.Kind, virtualSvc.GetNamespace(), err)
 	}
 
 	if err := controllerutil.SetOwnerReference(owner, virtualSvc, s.Scheme); err != nil {
-		return fmt.Errorf("%w for %v/%v in %v: %v", ErrAddingOwnerReference, virtualSvc.GetName(), virtualSvc.Kind, virtualSvc.GetNamespace(), err)
+		return fmt.Errorf("%w for %v/%v in %v: %w", ErrAddingOwnerReference, virtualSvc.GetName(), virtualSvc.Kind, virtualSvc.GetNamespace(), err)
 	}
 
 	return nil

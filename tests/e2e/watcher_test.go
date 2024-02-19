@@ -8,7 +8,7 @@ import (
 
 	apiappsv1 "k8s.io/api/apps/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -36,7 +36,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
-	skrNamespacedSecretName := types.NamespacedName{
+	skrNamespacedSecretName := k8stypes.NamespacedName{
 		Name:      watcher.SkrTLSName,
 		Namespace: remoteNamespace,
 	}

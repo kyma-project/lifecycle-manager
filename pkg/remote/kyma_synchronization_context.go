@@ -10,7 +10,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -133,7 +133,7 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 		return fmt.Errorf("failed to encode namespace: %w", err)
 	}
 
-	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
+	patch := client.RawPatch(k8stypes.ApplyPatchType, buf.Bytes())
 	force := true
 	fieldManager := "kyma-sync-context"
 
@@ -157,7 +157,6 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crd,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
 	}

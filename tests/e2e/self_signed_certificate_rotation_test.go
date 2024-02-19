@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -22,7 +22,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 
 	Context("Given Kyma deployed in KCP", func() {
 		It("When self signed certificate exists", func() {
-			namespacedCertName := types.NamespacedName{
+			namespacedCertName := k8stypes.NamespacedName{
 				Name:      watcher.ResolveTLSCertName(kyma.Name),
 				Namespace: "istio-system",
 			}

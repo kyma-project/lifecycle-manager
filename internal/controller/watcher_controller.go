@@ -146,7 +146,6 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-
 	virtualSvc, err := r.IstioService.NewVirtualServiceForWatcher(ctx, watcherCR, r.WatcherVSNamespace)
 	if err != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)

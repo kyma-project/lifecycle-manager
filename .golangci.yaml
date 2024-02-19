@@ -112,6 +112,8 @@ linters-settings:
         alias: k8slabels
       - pkg: k8s.io/apimachinery/pkg/runtime
         alias: machineryruntime
+      - pkg: k8s.io/apimachinery/pkg/types
+        alias: k8stypes
       - pkg: k8s.io/apimachinery/pkg/util/runtime
         alias: machineryutilruntime
       - pkg: k8s.io/apimachinery/pkg/util/yaml

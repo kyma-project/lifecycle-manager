@@ -9,7 +9,7 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -19,7 +19,7 @@ var (
 )
 
 func CertificateSecretExists(ctx context.Context,
-	namespacedSecretName types.NamespacedName, k8sClient client.Client,
+	namespacedSecretName k8stypes.NamespacedName, k8sClient client.Client,
 ) error {
 	certificateSecret := &apicorev1.Secret{}
 	err := k8sClient.Get(ctx, namespacedSecretName, certificateSecret)
@@ -31,7 +31,7 @@ func CertificateSecretExists(ctx context.Context,
 }
 
 func CertificateSecretIsCreatedAfter(ctx context.Context,
-	namespacedSecretName types.NamespacedName, k8sClient client.Client, notBeforeTime *apimetav1.Time,
+	namespacedSecretName k8stypes.NamespacedName, k8sClient client.Client, notBeforeTime *apimetav1.Time,
 ) error {
 	certificateSecret, err := fetchCertificateSecret(ctx, namespacedSecretName, k8sClient)
 	if err != nil {
@@ -46,8 +46,8 @@ func CertificateSecretIsCreatedAfter(ctx context.Context,
 }
 
 func CertificateSecretIsSyncedToSkrCluster(ctx context.Context,
-	kcpNamespacedSecretName types.NamespacedName, controlPlaneClient client.Client,
-	skrNamespacedSecretName types.NamespacedName, runtimeClient client.Client,
+	kcpNamespacedSecretName k8stypes.NamespacedName, controlPlaneClient client.Client,
+	skrNamespacedSecretName k8stypes.NamespacedName, runtimeClient client.Client,
 ) error {
 	kcpCertificateSecret, err := fetchCertificateSecret(ctx, kcpNamespacedSecretName, controlPlaneClient)
 	if err != nil {
@@ -68,7 +68,7 @@ func CertificateSecretIsSyncedToSkrCluster(ctx context.Context,
 	return nil
 }
 
-func fetchCertificateSecret(ctx context.Context, namespacedSecretName types.NamespacedName, k8sClient client.Client,
+func fetchCertificateSecret(ctx context.Context, namespacedSecretName k8stypes.NamespacedName, k8sClient client.Client,
 ) (*apicorev1.Secret, error) {
 	certificateSecret := &apicorev1.Secret{}
 	if err := k8sClient.Get(ctx,
@@ -81,7 +81,7 @@ func fetchCertificateSecret(ctx context.Context, namespacedSecretName types.Name
 	return certificateSecret, nil
 }
 
-func DeleteCertificateSecret(ctx context.Context, namespacedSecretName types.NamespacedName, k8sClient client.Client,
+func DeleteCertificateSecret(ctx context.Context, namespacedSecretName k8stypes.NamespacedName, k8sClient client.Client,
 ) error {
 	certificateSecret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -97,7 +97,7 @@ func DeleteCertificateSecret(ctx context.Context, namespacedSecretName types.Nam
 	return nil
 }
 
-func GetCACertificate(ctx context.Context, namespacedCertName types.NamespacedName, k8sClient client.Client,
+func GetCACertificate(ctx context.Context, namespacedCertName k8stypes.NamespacedName, k8sClient client.Client,
 ) (*certmanagerv1.Certificate, error) {
 	caCert := &certmanagerv1.Certificate{}
 	if err := k8sClient.Get(ctx, namespacedCertName, caCert); err != nil {
