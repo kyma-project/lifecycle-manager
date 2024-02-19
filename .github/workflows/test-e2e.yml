@@ -5,6 +5,11 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      k8s_version:
+        description: "With Kubernetes version"
+        required: false
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -51,6 +56,7 @@ jobs:
     timeout-minutes: 20
     env:
       K3D_VERSION: v5.4.7
+      K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.27.10' }}
       ISTIO_VERSION: 1.17.1
       CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
@@ -92,10 +98,20 @@ jobs:
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
         run: |
-          k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --k3s-arg '--disable=traefik@server:0'
+          k3d cluster create skr \
+            -p 10080:80@loadbalancer \
+            -p 10443:443@loadbalancer \
+            --image rancher/k3s:v$K8S_VERSION-k3s2 \
+            --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          kyma provision k3d --name=kcp -p 9443:443@loadbalancer -p 9080:80@loadbalancer -p 9081:8080@loadbalancer --ci --registry-port 5111
+          k3d cluster create kcp \
+            -p 9443:443@loadbalancer \
+            -p 9080:80@loadbalancer \
+            -p 9081:8080@loadbalancer \
+            --image rancher/k3s:v$K8S_VERSION-k3s2 \
+            --registry-create k3d-kcp-registry:5111 \
+            --k3s-arg '--disable=traefik@server:0'
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
