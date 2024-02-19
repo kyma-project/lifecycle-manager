@@ -107,7 +107,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.Metrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
-		r.Metrics.ObserveReconcileDuration(reconcileStart, obj.GetName())
 		return ctrl.Result{Requeue: false}, nil
 	}
 
@@ -630,6 +629,7 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
 		r.Event(obj, "Warning", "PatchStatus", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
+
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 }
 
