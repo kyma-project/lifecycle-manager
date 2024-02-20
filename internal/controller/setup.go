@@ -34,10 +34,12 @@ type SetupUpSetting struct {
 }
 
 const (
-	WatcherControllerName  = "watcher"
-	PurgeControllerName    = "purge"
-	KymaControllerName     = "kyma"
-	ManifestControllerName = "manifest"
+	WatcherControllerName                     = "watcher"
+	PurgeControllerName                       = "purge"
+	KymaControllerName                        = "kyma"
+	ManifestControllerName                    = "manifest"
+	MandatoryModuleInstallationControllerName = "mandatory-module-installation"
+	MandatoryModuleDeletionControllerName     = "mandatory-module-deletion"
 )
 
 var (
@@ -186,6 +188,7 @@ func (r *MandatoryModuleReconciler) SetupWithManager(mgr ctrl.Manager,
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
+		Named(MandatoryModuleInstallationControllerName).
 		WithOptions(options).
 		WithEventFilter(predicates).
 		Watches(
@@ -208,6 +211,7 @@ func (r *MandatoryModuleDeletionReconciler) SetupWithManager(mgr ctrl.Manager,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.ModuleTemplate{}).
+		Named(MandatoryModuleDeletionControllerName).
 		WithOptions(options).
 		WithEventFilter(predicate.GenerationChangedPredicate{})
 
