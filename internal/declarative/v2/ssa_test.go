@@ -16,15 +16,17 @@ import (
 func TestConcurrentSSA(t *testing.T) {
 	t.Parallel()
 
-	pod := &unstructured.Unstructured{Object: map[string]any{
-		"kind":       "Pod",
-		"apiVersion": "v1",
-		"metadata": map[string]interface{}{
-			"name":      "valid",
-			"namespace": "some-namespace",
+	pod := &unstructured.Unstructured{
+		Object: map[string]any{
+			"kind":       "Pod",
+			"apiVersion": "v1",
+			"metadata": map[string]interface{}{
+				"name":      "valid",
+				"namespace": "some-namespace",
+			},
 		},
-	}}
-	structuredInfo := &resource.Info{Object: pod}
+	}
+	// structuredInfo := &resource.Info{Object: pod}
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
 	_ = fakeClientBuilder.Create(context.Background(), pod)
 
@@ -47,15 +49,16 @@ func TestConcurrentSSA(t *testing.T) {
 			[]*resource.Info{},
 			nil,
 		},
-		{
-			"simple apply",
-			args{
-				clnt:  fakeClientBuilder,
-				owner: client.FieldOwner("test"),
-			},
-			[]*resource.Info{structuredInfo},
-			nil,
-		},
+		// https: // github.com/kubernetes/client-go/issues/970 causes SSA to not be testable
+		// {
+		// 	"simple apply",
+		// 	args{
+		// 		clnt:  fakeClientBuilder,
+		// 		owner: client.FieldOwner("test"),
+		// 	},
+		// 	[]*resource.Info{&resource.Info{Object: pod}},
+		// 	nil,
+		// },
 	}
 
 	for _, testCase := range tests {
