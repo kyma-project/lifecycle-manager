@@ -1,12 +1,14 @@
 # Kyma Custom Resource
 
-The [Kyma custom resource (CR)](/api/v1beta2/kyma_types.go) contains 3 fields that are together used to declare the desired state of a cluster:
+The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to declare the desired state of a cluster. **.spec.channel**, **.spec.modules[].channel**, and **.spec.modules** are the basic fields that are used together to define the cluster state.
 
-1. **.spec.channel** and **.spec.modules[].channel**: The Release Channel that should be used by default for all modules that are to be installed in the cluster.
-2. **.spec.modules**: The modules that should be installed into the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
-Additionally, you can add a specific channel (if `.spec.channel`) should not be used.
-On top of that, you can specify a `controller`, which serves as a Multi-Tenant Enabler.
-It can be used to only listen to ModuleTemplate CRs provided under the same controller name. Last but not least, it includes a `customResourcePolicy` which can be used for specifying defaulting behavior when initializing modules in a cluster.
+1. **.spec.channel** and **.spec.modules[].channel** - define a release channel that should be used by default for all modules that are to be installed in the cluster.
+2. **.spec.modules** - specifies modules that should be added to the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
+Additionally, you can add a specific channel (if **.spec.channel**) should not be used.
+On top of that, you can specify a **controller**, which serves as a Multi-Tenant Enabler.
+It can be used to only listen to ModuleTemplate CRs provided under the same controller name. Last but not least, it includes a **customResourcePolicy** which can be used for specifying defaulting behavior when initializing modules in a cluster.
+
+## Configuration
 
 ### **.spec.channel** and **.spec.modules[].channel**
 
@@ -22,7 +24,7 @@ spec:
   - name: serverless
 ```
 
-will attempt to look up the modules `keda` and `serverless` in the `alpha` release channel.
+will attempt to look up the Keda and Serverless modules in the `alpha` release channel.
 
 However, if you specify channels using the **.spec.modules[].channel** attribute, the latter one is used instead.
 
@@ -35,11 +37,11 @@ spec:
   - name: serverless
 ```
 
-In this case, the relevant channel will be `regular` for `keda`, but not for `serverless`.
+In this case, `regular` is the relevant channel for Keda, but not for Serverless.
 
 ### **.spec.modules**
 
-The module list is used to define the desired set of all modules. This is mainly derived from the  **.spec.modules[].name** attribute which is resolved in one of 3 ways.
+The module list is used to define the desired set of all modules. This is mainly derived from the **.spec.modules[].name** attribute which is resolved in one of 3 ways.
 
 Let's take a look at this simplified ModuleTemplate CR:
 
@@ -70,7 +72,7 @@ The module mentioned above can be referenced in one of the following ways:
       - name: module-name-from-label
     ```
 
-2. The Name or Namespace/Name of a ModuleTemplate CR:
+2. The name or namespace/name of a ModuleTemplate CR:
 
     ```yaml
     spec:
@@ -100,11 +102,12 @@ The module mentioned above can be referenced in one of the following ways:
 ### **.spec.modules[].customResourcePolicy**
 
 In addition to this very flexible way of referencing modules, there is also another flag that can be important for users requiring more flexibility during module initialization. The `customResourcePolicy` flag is used to define one of `CreateAndDelete` and `Ignore`.
-While `CreateAndDelete` will cause the ModuleTemplate's **.spec.data** to be created and deleted to initialize a module with preconfigured defaults, `Ignore` can be used to only initialize the operator without initializing any default data.
+While `CreateAndDelete` will cause the ModuleTemplate CR's **.spec.data** to be created and deleted to initialize a module with preconfigured defaults, `Ignore` can be used to only initialize the operator without initializing any default data.
 This allows users to be fully flexible in regard to when and how to initialize their module.
 
 ### **.spec.modules[].remoteModuleTemplateRef**
-The `remoteModuleTemplateRef` flag allows the users to have their ModuleTemplate CR fetched from the SKR cluster instead of Kyma Control Plane (KCP). It should be the reference (FQDN,
+
+The **remoteModuleTemplateRef** flag allows the users to have their ModuleTemplate CR fetched from the SKR cluster instead of Kyma Control Plane (KCP). It should be the reference (FQDN,
 Namespace/Name, or module name label) to the ModuleTemplate CR. If not specified, the ModuleTemplate CR is fetched from the KCP cluster.
 
 ### **.status.state**
@@ -115,7 +118,7 @@ The **state** will always be reported based on the last reconciliation loop of t
 
 ### **.status.conditions**
 
-The conditions represent individual elements of the reconciliation that can either be `true` or `false`, for example representing the readiness of all modules (Manifest CR). For more details on how conditions are aggregated and built, take a look at [KEP-1623: Standardize Conditions](https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1623-standardize-conditions), which is our reference documentation for conditions.
+The conditions represent individual elements of the reconciliation that can either be `true` or `false`, for example, representing the readiness of all modules (Manifest CRs). For more details on how conditions are aggregated and built, take a look at [KEP-1623: Standardize Conditions](https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1623-standardize-conditions), which is our reference documentation for conditions.
 
 Currently, we maintain conditions for:
 
@@ -123,7 +126,7 @@ Currently, we maintain conditions for:
 - Module Catalog (ModuleTemplate CR) synchronization
 - Watcher Installation Consistency
 
-We also calculate **.status.state** readiness based on all the conditions available.
+We also calculate the **.status.state** readiness based on all the conditions available.
 
 ### **.status.modules**
 
@@ -164,9 +167,9 @@ The same is done for the ModuleTemplate CR. The actual one that is used as a tem
 
 To observe not only how the state of the `synchronization` but the entire reconciliation is working, as well as to check on latency and the last observed change, we also introduce the **lastOperation** field. This contains not only a timestamp of the last change (which allows you to view the time since the module was last reconciled by Lifecycle Manager), but also a message that either contains a process message or an error message in case of an `Error` state. Thus, to get more details of any potential issues, it is recommended to check **lastOperation**.
 
-In addition, we also regularly issue `Events` for important things happening at specific time intervals, e.g. critical errors that ease observability.
+In addition, we also regularly issue Events for important things happening at specific time intervals, e.g. critical errors that ease observability.
 
-### `operator.kyma-project.io` labels
+## `operator.kyma-project.io` labels
 
 Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the Kyma CR and its related resources. For better understanding, use the matching [API label reference](/api/shared/operator_labels.go).
 
@@ -177,7 +180,7 @@ The most important labels include, but are not limited to:
 - `operator.kyma-project.io/signature`: An identifier that can be set on a Secret to identify correct signature X.509 Secrets that contain a key called `key` which contains a X.509 PKIX PublicKey or an PKCS1 Public Key. Used in conjunction with the label-value for templates signed with a signature in the descriptor.
 - `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to completely disable reconciliation for a Kyma CR. Can also be used on the Manifest CR to disable a specific module. This will avoid all reconciliations for the entire Kyma or Manifest CRs. Note that even though reconciliation for the Kyma CR might be disabled, the Manifest CR in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
 - `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
-- `operator.kyma-project.io/purpose`: Can be used to identify resources by their intended purpose inside Lifecycle Manager. Useful meta information for cluster managers.
+- `operator.kyma-project.io/purpose`: Can be used to identify resources by their intended purpose inside Lifecycle Manager. Useful meta-information for cluster managers.
 - `operator.kyma-project.io/sync`: A boolean value. If set to `false`, the Module Catalog synchronization is disabled for a given Kyma CR, and for the related remote cluster (Managed Kyma Runtime). The default value is `true`.
 - `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
 - `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules are also synchronized with the remote cluster. The default value is `false`.

@@ -1,12 +1,14 @@
 # Manifest Custom Resource
 
-The [Manifest](/api/v1beta1/manifest_types.go) is our internal representation of what results from the resolution of a `ModuleTemplate` in the context of a single cluster represented through `Kyma`. Thus, a lot of configuration elements are similar or entirely equivalent to the layer data found in the `ModuleTemplate` and it is currently being considered for specification rework.
+The [Manifest custom resource (CR)](../../../api/v1beta2/manifest_types.go) is our internal representation of what results from the resolution of a ModuleTemplate CR in the context of a single cluster represented by a Kyma CR. Thus, a lot of configuration elements are similar or entirely equivalent to the data layer found in a ModuleTemplate CR.
 
-### `.spec.remote`
+## Configuration
 
-This flag determines wether the given module should be installed in the remote cluster target or not. If it should, then it will attempt a lookup of the cluster by searching for a secret with a label `operator.kyma-project.io/kyma-name` having the same value as the `operator.kyma-project.io/kyma-name` label on the `Manifest`.
+### **.spec.remote**
 
-Thus a Manifest like
+This parameter determines whether the given module should be installed in a remote cluster or not. If it should, then in the cluster it will attempt to search for a Secret with the `operator.kyma-project.io/kyma-name` label having the same value as the `operator.kyma-project.io/kyma-name` label in the Manifest CR.
+
+Thus a Manifest CR like
 
 ```yaml
 apiVersion: operator.kyma-project.io/v1beta2
@@ -20,13 +22,13 @@ spec:
   remote: true
 ```
 
-will use the value `kyma-sample` to lookup a secret with the same value `kyma-sample`.
+will use the `kyma-sample` value to look for a Secret with the same `kyma-sample` value.
 
-### `.spec.config`
+## **.spec.config**
 
-The config reference uses an image layer reference that contains configuration data that can be used to further influence any potential rendering process while the resources are processed by the [declarative library](/internal/declarative/README.md#resource-rendering). It is resolved through a translation of the `ModuleTemplate` to the `Manifest` during the [resolution of the modules](/pkg/module/parse/template_to_module.go) in the `Kyma` control loop.
+The config reference uses an image layer reference that contains configuration data that can be used to further influence any potential rendering process while the resources are processed by the [declarative library](../../../internal/declarative/README.md#resource-rendering). It is resolved through a translation of the ModuleTemplate CR to the Manifest CR during the [resolution of the modules](../../../pkg/module/parse/template_to_module.go) in the Kyma CR control loop.
 
-There can be at most one config layer, and it is referenced by the name `config` with type `yaml` as `localOciBlob` or `OCIBlob`:
+There can be at most one config layer, and it is referenced by the **name** `config` with **type** `yaml` as `localOciBlob` or `OCIBlob`:
 
 ```yaml
 spec:
@@ -49,9 +51,9 @@ spec:
         version: 0.0.1-6cd5086
 ```
 
-### `.spec.install`
+### **.spec.install**
 
-The install layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](/internal/declarative/README.md#resource-rendering).
+The installation layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../../../internal/declarative/README.md#resource-rendering).
 
 It is mapped from an access type layer in the descriptor:
 
@@ -77,17 +79,16 @@ install:
       type: oci-ref
 ```
 
-The [internal spec resolver](/internal/manifest/spec_resolver.go) will use this layer to resolve the correct specification style and renderer type from the layer data.
+The [internal spec resolver](../../../internal/manifest/spec_resolver.go) uses this layer to resolve the correct specification style and renderer type from the data layer.
 
-### `.spec.resource`
+### **.spec.resource**
 
-The resource is the default data that should be initialized for the module and is directly copied from `.spec.data` of the `ModuleTemplate` after normalizing it with the `namespace` for the synchronized module.
+The resource is the default data that should be initialized for the module and is directly copied from **.spec.data** of the ModuleTemplate CR after normalizing it with the **namespace** for the synchronized module.
 
-### `.status`
+### **.status**
 
-The Manifest status is an unmodified version of the [declarative status](/internal/declarative/README.md#resource-tracking), so the tracking process of the library applies. There is no custom API for this.
+The Manifest CR status is an unmodified version of the [declarative status](../../../internal/declarative/README.md#resource-tracking), so the tracking process of the library applies. There is no custom API for this.
 
-### `.metadata.labels`
+### **.metadata.labels**
 
 * `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to disable reconciliation for a module. This will avoid all reconciliations for the Manifest CR.
-
