@@ -20,7 +20,7 @@ type (
 	}
 
 	ownerLookup interface {
-		GetOwner(ctx context.Context) (*unstructured.Unstructured, error)
+		Get(ctx context.Context) (*unstructured.Unstructured, error)
 	}
 	Service struct {
 		GatewayLookup gatewayLookup
@@ -63,7 +63,7 @@ func (s Service) NewVirtualServiceForWatcher(ctx context.Context, watcher *v1bet
 }
 
 func (s Service) addOwnerReference(ctx context.Context, virtualSvc *istioclientapiv1beta1.VirtualService) error {
-	owner, err := s.OwnerLookup.GetOwner(ctx)
+	owner, err := s.OwnerLookup.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("%w for %v/%v in %v: %w", ErrAddingOwnerReference, virtualSvc.GetName(), virtualSvc.Kind, virtualSvc.GetNamespace(), err)
 	}
