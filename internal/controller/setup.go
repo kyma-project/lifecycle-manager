@@ -24,6 +24,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/ownerlookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -155,8 +156,8 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options ctrlrunti
 		OwnerLookup: &ownerlookup.OwnerLookup{
 			Client: r.Client,
 			Name: k8stypes.NamespacedName{
-				Namespace: "kcp-system",
-				Name:      "klm-controller-manager",
+				Namespace: flags.DefaultKlmControllerManagerNamespace,
+				Name:      flags.DefaultKlmControllerManagerName,
 			},
 			GroupVersionKind: schema.GroupVersionKind{
 				Group:   "apps",

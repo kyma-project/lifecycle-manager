@@ -223,6 +223,16 @@ func Test_ConstantFlags(t *testing.T) {
 			constValue:    DefaultDropStoredVersion,
 			expectedValue: "v1alpha1",
 		},
+		{
+			constName:     "DefaultKlmControllerManagerName",
+			constValue:    DefaultKlmControllerManagerName,
+			expectedValue: "klm-controller-manager",
+		},
+		{
+			constName:     "DefaultKlmControllerManagerNamespace",
+			constValue:    DefaultKlmControllerManagerNamespace,
+			expectedValue: "kcp-system",
+		},
 	}
 	for _, testcase := range tests {
 		testcase := testcase

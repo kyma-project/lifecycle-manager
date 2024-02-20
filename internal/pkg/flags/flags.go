@@ -52,6 +52,8 @@ const (
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
 	DefaultDropStoredVersion                                            = "v1alpha1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
+	DefaultKlmControllerManagerName                                     = "klm-controller-manager"
+	DefaultKlmControllerManagerNamespace                                = "kcp-system"
 )
 
 var (
