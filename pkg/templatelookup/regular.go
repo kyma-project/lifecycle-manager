@@ -30,20 +30,16 @@ type ModuleTemplateInfo struct {
 	DesiredChannel string
 }
 
-func NewTemplateLookup(reader client.Reader, descriptorProvider *provider.CachedDescriptorProvider,
-	syncEnabled bool,
-) *TemplateLookup {
+func NewTemplateLookup(reader client.Reader, descriptorProvider *provider.CachedDescriptorProvider) *TemplateLookup {
 	return &TemplateLookup{
 		Reader:             reader,
 		descriptorProvider: descriptorProvider,
-		syncEnabled:        syncEnabled,
 	}
 }
 
 type TemplateLookup struct {
 	client.Reader
 	descriptorProvider *provider.CachedDescriptorProvider
-	syncEnabled        bool
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo

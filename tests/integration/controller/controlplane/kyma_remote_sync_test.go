@@ -327,17 +327,6 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		"kyma-kcp-crd-generation",
 	}
 
-	It("module template created", func() {
-		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(moduleInKCP.Name).
-			WithChannel(moduleInKCP.Channel).
-			WithOCM(compdescv2.SchemaVersion).Build()
-		Eventually(CreateCR, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(controlPlaneClient, template).
-			Should(Succeed())
-	})
-
 	It("CRDs generation annotation should exist in KCP kyma", func() {
 		Eventually(func() error {
 			kcpKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())

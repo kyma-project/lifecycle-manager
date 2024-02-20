@@ -584,7 +584,7 @@ func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta
 }
 
 func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1beta2.Kyma) (common.Modules, error) {
-	lookup := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider, r.SyncKymaEnabled(kyma))
+	lookup := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider)
 	templates := lookup.GetRegularTemplates(ctx, kyma)
 	for _, template := range templates {
 		if template.Err != nil {
