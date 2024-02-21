@@ -1,6 +1,6 @@
 # Manifest Custom Resource
 
-The [Manifest](/api/v1beta1/manifest_types.go) is our internal representation of what results from the resolution of a `ModuleTemplate` in the context of a single cluster represented through `Kyma`. Thus, a lot of configuration elements are similar or entirely equivalent to the layer data found in the `ModuleTemplate` and it is currently being considered for specification rework.
+The [Manifest](/api/v1beta2/manifest_types.go) is our internal representation of what results from the resolution of a `ModuleTemplate` in the context of a single cluster represented through `Kyma`. Thus, a lot of configuration elements are similar or entirely equivalent to the layer data found in the `ModuleTemplate` and it is currently being considered for specification rework.
 
 ### `.spec.remote`
 

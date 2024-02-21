@@ -189,7 +189,7 @@ k3d cluster create skr-local
       data:
          config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
       ---
-      apiVersion: operator.kyma-project.io/v1beta1
+      apiVersion: operator.kyma-project.io/v1beta2
       kind: Kyma
       metadata:
          annotations:
@@ -229,7 +229,7 @@ status:
       - channel: regular
         fqdn: kyma-project.io/template-operator
         manifest:
-           apiVersion: operator.kyma-project.io/v1beta1
+           apiVersion: operator.kyma-project.io/v1beta2
            kind: Manifest
            metadata:
               generation: 1
@@ -238,7 +238,7 @@ status:
         name: template-operator
         state: Ready
         template:
-           apiVersion: operator.kyma-project.io/v1beta1
+           apiVersion: operator.kyma-project.io/v1beta2
            kind: ModuleTemplate
            metadata:
               generation: 1
