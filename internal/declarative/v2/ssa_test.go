@@ -26,7 +26,6 @@ func TestConcurrentSSA(t *testing.T) {
 			},
 		},
 	}
-	// structuredInfo := &resource.Info{Object: pod}
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
 	_ = fakeClientBuilder.Create(context.Background(), pod)
 
@@ -49,16 +48,6 @@ func TestConcurrentSSA(t *testing.T) {
 			[]*resource.Info{},
 			nil,
 		},
-		// https: // github.com/kubernetes/client-go/issues/970 causes SSA to not be testable
-		// {
-		// 	"simple apply",
-		// 	args{
-		// 		clnt:  fakeClientBuilder,
-		// 		owner: client.FieldOwner("test"),
-		// 	},
-		// 	[]*resource.Info{&resource.Info{Object: pod}},
-		// 	nil,
-		// },
 	}
 
 	for _, testCase := range tests {
