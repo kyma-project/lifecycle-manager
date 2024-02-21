@@ -31,6 +31,7 @@ resources:
 configurations:
 - kustomizeconfig.yaml
 patches:
+- path: patches/webhook_in_moduletemplates.yaml
 - path: patches/cainjection_in_kymas.yaml
 - path: patches/cainjection_in_moduletemplates.yaml
 - path: patches/cainjection_in_watchers.yaml
