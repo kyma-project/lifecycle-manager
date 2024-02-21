@@ -20,7 +20,7 @@ require (
 	github.com/open-component-model/ocm v0.6.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/stretchr/testify v1.8.4
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
