@@ -16,7 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -155,8 +157,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestRenderResources)
 	}
 
-	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
 		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
@@ -311,7 +312,9 @@ func (r *Reconciler) renderResources(
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object, target []*resource.Info) error {
+func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
+	target []*resource.Info,
+) error {
 	status := obj.GetStatus()
 
 	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
@@ -406,23 +409,6 @@ func generateOperationMessage(installationCondition apimetav1.Condition, stateIn
 	return installationCondition.Message
 }
 
-func (r *Reconciler) deleteDiffResources(
-	ctx context.Context, clnt Client, obj Object, diff []*resource.Info,
-) error {
-	status := obj.GetStatus()
-
-	if err := NewConcurrentCleanup(clnt).Run(ctx, diff); errors.Is(err, ErrDeletionNotFinished) {
-		r.Event(obj, "Normal", "Deletion", err.Error())
-		return err
-	} else if err != nil {
-		r.Event(obj, "Warning", "Deletion", err.Error())
-		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
-		return err
-	}
-
-	return nil
-}
-
 func (r *Reconciler) doPreDelete(ctx context.Context, clnt Client, obj Object) error {
 	if !obj.GetDeletionTimestamp().IsZero() {
 		for _, preDelete := range r.PreDeletes {
@@ -488,11 +474,10 @@ func (r *Reconciler) pruneDiff(
 	ctx context.Context,
 	clnt Client,
 	obj Object,
-	diff []*resource.Info,
+	current, target []*resource.Info,
 	spec *Spec,
 ) error {
-	var err error
-	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
 	if err != nil {
 		return err
 	}
@@ -507,14 +492,21 @@ func (r *Reconciler) pruneDiff(
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 
-	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
+	// Remove this type casting while in progress this issue: https://github.com/kyma-project/lifecycle-manager/issues/1006
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return v1beta2.ErrTypeAssertManifest
+	}
+	if err := resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
+func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object,
+	spec *Spec,
+) bool {
 	return len(diff) > 0 && ociRefNotChanged(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
 }
 
