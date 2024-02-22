@@ -18,7 +18,7 @@ To use Lifecycle Manager in a local setup, you need the following prerequisites:
 
 ## Procedure
 
-### Provision a KCP cluster
+### Provision a KCP Cluster
 
 1. Provision a local k3d cluster as KCP. By default, a cluster named `k3d-kyma` is created. Run:
 
@@ -35,7 +35,7 @@ To use Lifecycle Manager in a local setup, you need the following prerequisites:
 3. Lifecycle Manager exposes metrics that are collected by Prometheus Operator in KCP to provide better observability. To simplify the local setup, you only need to deploy the ServiceMonitor CRD using the following command:
 
    ```bash
-   kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
+   kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml
    ```
 
 You can also follow the official [Prometheus Operator quick start](https://prometheus-operator.dev/docs/prologue/quick-start/) guide to deploy a full set of Prometheus Operator features into your cluster.
@@ -50,12 +50,15 @@ We recommend deploying Lifecycle Manager with the KCP kustomize profile. You mus
    kyma alpha deploy -k https://github.com/kyma-project/lifecycle-manager/config/control-plane
    ```
 
+   > [!NOTE]
+   > The link to the `kustomization.yaml` file works fine with the command but returns 404 when called directly.
+
 If the deployment was successful, you should see all the required resources. For example:
 
 - The `klm-controller-manager` Pod in the `kcp-system` Namespace
 - A Kyma CR that uses the `regular` channel but without any module configured, sync disabled, named `default-kyma` under `kyma-system` Namespace
 
-### Manage modules in the control-plane mode
+### Manage Modules in the Control-Plane Mode
 
 To manage Kyma modules in the control-plane mode, Lifecycle Manager requires:
 
