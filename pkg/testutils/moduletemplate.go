@@ -17,7 +17,7 @@ func GetModuleTemplate(ctx context.Context,
 	defaultChannel string,
 ) (*v1beta2.ModuleTemplate, error) {
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider, true)
+	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider)
 	templateInfo := templateLookup.GetAndValidate(ctx, module.Name, module.Channel, defaultChannel)
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
