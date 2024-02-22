@@ -2,6 +2,10 @@ package e2e_test
 
 import (
 	"context"
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -99,11 +103,29 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		})
 
 		It("When blocking finalizers from Module CR get removed", func() {
+			crBefore := &unstructured.Unstructured{}
+			runtimeClient.Get(ctx, client.ObjectKey{
+				Namespace: "kyma-system",
+				Name:      "sample-yaml",
+			}, crBefore)
+			GinkgoWriter.Println(fmt.Sprintf("Finalizers Before: %s", crBefore.GetFinalizers()))
+			GinkgoWriter.Println(fmt.Sprintf("Deletiontimestamp Before: %s", crBefore.GetDeletionTimestamp()))
+
 			Eventually(SetFinalizer).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
 					[]string{}, runtimeClient).
 				Should(Succeed())
+
+			crAfter := &unstructured.Unstructured{}
+
+			runtimeClient.Get(ctx, client.ObjectKey{
+				Namespace: "kyma-system",
+				Name:      "sample-yaml",
+			}, crAfter)
+			GinkgoWriter.Println("==============================")
+			GinkgoWriter.Println(fmt.Sprintf("Finalizers After: %s", crAfter.GetFinalizers()))
+			GinkgoWriter.Println(fmt.Sprintf("Deletiontimestamp After: %s", crAfter.GetDeletionTimestamp()))
 		})
 
 		It("Then Module CR and Manifest CR are removed", func() {
