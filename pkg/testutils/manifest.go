@@ -81,6 +81,9 @@ func GetManifestWithObjectKey(ctx context.Context,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	if err := clnt.Get(ctx, obj, manifest); err != nil {
+		if util.IsNotFound(err) {
+			return nil, ErrNotFound
+		}
 		return nil, fmt.Errorf("get manifest: %w", err)
 	}
 	return manifest, nil
@@ -126,6 +129,7 @@ func ManifestExists(
 	moduleName string,
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+
 	return CRExists(manifest, err)
 }
 

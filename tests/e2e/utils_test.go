@@ -11,7 +11,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -165,21 +164,7 @@ func SetFinalizer(name, namespace, group, version, kind string, finalizers []str
 	}
 
 	resourceCR.SetFinalizers(finalizers)
-	if err := clnt.Update(ctx, resourceCR); err != nil {
-		return fmt.Errorf("update resourceCR: %w", err)
-	}
-
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil && !util.IsNotFound(err) {
-		return err
-	}
-	GinkgoWriter.Println(resourceCR.GetDeletionTimestamp())
-	GinkgoWriter.Println(resourceCR.GetFinalizers())
-	if !slices.Equal(resourceCR.GetFinalizers(), finalizers) {
-		return fmt.Errorf("finalizers not updated")
-	}
-
-	return nil
+	return clnt.Update(ctx, resourceCR)
 }
 
 func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
