@@ -101,15 +101,16 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		It("When blocking finalizers from Module CR get removed", func() {
 			Eventually(SetFinalizer).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
-					[]string{}, runtimeClient).
+				WithArguments(moduleCR.GetName(), moduleCR.GetNamespace(), "operator.kyma-project.io", "v1alpha1",
+					"Sample",
+					nil, runtimeClient).
 				Should(Succeed())
 		})
 
 		It("Then Module CR and Manifest CR are removed", func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system",
+				WithArguments(moduleCR.GetName(), moduleCR.GetNamespace(),
 					"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
 				Should(Equal(ErrNotFound))
 			Eventually(ManifestExists).
