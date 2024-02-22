@@ -85,7 +85,7 @@ jobs:
           LAST_RELEASE_TAG: ${{ needs.validate-release.outputs.last_release_tag }}
           DOCKER_IMAGE_URL: ${{ env.IMAGE_REPO }}:${{ github.event.inputs.tagName }}
         run: |
-          echo "Generating changelog for version: ${{ needs.validate-release.outputs.current_release_tag }}" 
+          echo "Generating changelog for version: $CURRENT_RELEASE_TAG" 
           CHANGELOG_FILE_NAME=$(./scripts/release/create_changelog.sh $CURRENT_RELEASE_TAG $LAST_RELEASE_TAG $DOCKER_IMAGE_URL)
           echo "changelog_file_name=$CHANGELOG_FILE_NAME" >> $GITHUB_OUTPUT
       - name: Create draft release
