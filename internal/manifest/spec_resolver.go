@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -43,9 +42,7 @@ var (
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
 )
 
-func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
-	remoteClient client.Client,
-) (*declarativev2.Spec, error) {
+func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object) (*declarativev2.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
@@ -54,10 +51,6 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 		)
 	}
 
-	targetClient := m.KCP.Client
-	if manifest.Labels[shared.IsRemoteModuleTemplate] == shared.EnableLabelValue {
-		targetClient = remoteClient
-	}
 	var imageSpec v1beta2.ImageSpec
 	if err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
@@ -72,7 +65,7 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
-	rawManifestInfo, err := m.getRawManifestForInstall(ctx, imageSpec, targetClient)
+	rawManifestInfo, err := m.getRawManifestForInstall(ctx, imageSpec, m.KCP.Client)
 	if err != nil {
 		return nil, err
 	}
