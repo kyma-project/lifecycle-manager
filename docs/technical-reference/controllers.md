@@ -8,7 +8,7 @@ This document describes the controllers used by Lifecycle Manager.
 
 Its main responsibilities are:
 
-1. Interpret the `.spec.modules` list and use the correct [ModuleTemplate CR](../../api/v1beta2/moduletemplate_types.go) for a module.
+1. Interpret the **.spec.modules** list and use the correct [ModuleTemplate CR](../../api/v1beta2/moduletemplate_types.go) for a module.
 2. Translate the ModuleTemplate CR into a [Manifest CR](../../api/v1beta2/manifest_types.go) and create it with an OwnerReference to the Kyma CR where the module was listed.
 3. Propagate changes from ModuleTemplate CR updates (e.g. updates to the Module Layers contained in the OCI Descriptor) into the correct Manifest CR and process upgrades, but prohibit downgrades.
 4. Track all created Manifest CRs and aggregate the status into a `State`, that reflects the integrity of the Kyma installation managed by Lifecycle Manager.

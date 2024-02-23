@@ -6,7 +6,7 @@ The [Manifest custom resource (CR)](../../../api/v1beta2/manifest_types.go) is o
 
 ### **.spec.remote**
 
-This parameter determines whether or not the given module should be installed in a remote clustert. If it should, then in the cluster, it attempts to search for a Secret with the `operator.kyma-project.io/kyma-name` label having the same value as the `operator.kyma-project.io/kyma-name` label in the Manifest CR.
+This parameter determines whether or not the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR.
 
 Thus a Manifest CR like
 
@@ -22,7 +22,7 @@ spec:
   remote: true
 ```
 
-uses the `kyma-sample` value to look for a Secret with the same `kyma-sample` value.
+looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and value `kyma-sample`.
 
 ### **.spec.config**
 

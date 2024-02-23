@@ -2,7 +2,8 @@
 
 The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to declare the desired state of a cluster. **.spec.channel**, **.spec.modules[].channel**, and **.spec.modules** are the basic fields that are used together to define the cluster state.
 
-- **.spec.channel** and **.spec.modules[].channel** - define a release channel that should be used by default for all modules that are to be installed in the cluster.
+- **.spec.channel** - defines a release channel that should be used by default for all modules that are to be installed in the cluster.
+- **.spec.modules[].channel** - defines a release channel other than the default channel (**.spec.channel**) for a given module that is to be installed in the cluster.
 - **.spec.modules** - specifies modules that should be added to the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
 Additionally, you can add a specific channel if **.spec.channel** should not be used.
 On top of that, you can specify a **controller**, which serves as a Multi-Tenant Enabler.
