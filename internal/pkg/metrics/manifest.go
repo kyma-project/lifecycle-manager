@@ -12,8 +12,8 @@ import (
 type ManifestRequeueReason string
 
 const (
-	metricReconcileDuration               string                = "reconcile_duration_seconds"
-	metricLabelModule                     string                = "module_name"
+	MetricReconcileDuration               string                = "reconcile_duration_seconds"
+	MetricLabelModule                     string                = "module_name"
 	ManifestTypeCast                      ManifestRequeueReason = "manifest_type_cast"
 	ManifestRetrieval                     ManifestRequeueReason = "manifest_retrieval"
 	ManifestInit                          ManifestRequeueReason = "manifest_initialize"
@@ -45,11 +45,11 @@ func NewManifestMetrics(sharedMetrics *SharedMetrics) *ManifestMetrics {
 		SharedMetrics: sharedMetrics,
 		reconcileDurationHistogram: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name:    metricReconcileDuration,
+				Name:    MetricReconcileDuration,
 				Help:    "Histogram of reconcile duration for manifest reconciliation in seconds",
 				Buckets: prometheus.DefBuckets,
 			},
-			[]string{metricLabelModule},
+			[]string{MetricLabelModule},
 		),
 	}
 	ctrlmetrics.Registry.MustRegister(metrics.reconcileDurationHistogram)

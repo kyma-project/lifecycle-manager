@@ -75,6 +75,20 @@ func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, r
 	return count >= 1, err
 }
 
+func IsManifestReconcileDurationCountNonZero(ctx context.Context, manifestName string) (bool,
+	error,
+) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return false, err
+	}
+	re := regexp.MustCompile(
+		metrics.MetricReconcileDuration + `_count{` + metrics.MetricLabelModule +
+			`="` + manifestName + `"}` + ` (\d+)`)
+	count, err := parseCount(re, bodyString)
+	return count >= 0, err
+}
+
 func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state string) (int, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
