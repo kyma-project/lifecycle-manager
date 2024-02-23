@@ -29,6 +29,7 @@ func NewMandatoryModulesMetrics() *MandatoryModulesMetrics {
 		}, []string{moduleNameLabel, KymaNameLabel, stateLabel}),
 	}
 	ctrlmetrics.Registry.MustRegister(metrics.mandatoryModuleTemplatesCounter)
+	ctrlmetrics.Registry.MustRegister(metrics.moduleStateGauge)
 	return metrics
 }
 
