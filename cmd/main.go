@@ -166,7 +166,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
 
@@ -363,7 +363,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 }
 
 func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	sharedMetrics *metrics.SharedMetrics,
+	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
@@ -376,7 +376,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 		}, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-		}, metrics.NewManifestMetrics(sharedMetrics),
+		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(1)

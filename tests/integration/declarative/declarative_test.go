@@ -59,6 +59,7 @@ var (
 	ErrOldResourcesStillDeployed = errors.New("old resources still exist in the cluster")
 	ErrOldResourcesStillInSynced = errors.New("old resources still exist in the status.synced")
 	manifestMetrics              = metrics.NewManifestMetrics(metrics.NewSharedMetrics())
+	mandatoryModuleMetrics       = metrics.NewMandatoryModulesMetrics()
 )
 
 func TestAPIs(t *testing.T) {
@@ -93,7 +94,7 @@ var _ = Describe(
 			opts []Option,
 			testCase func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns),
 		) {
-			StartDeclarativeReconcilerForRun(ctx, runID, cfg, manifestMetrics,
+			StartDeclarativeReconcilerForRun(ctx, runID, cfg, manifestMetrics, mandatoryModuleMetrics,
 				append(opts, WithSpecResolver(source))...)
 			obj := &declarativetest.TestAPI{Spec: spec}
 			obj.SetLabels(k8slabels.Set{testRunLabel: runID})
@@ -186,7 +187,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 		env, cfg = StartEnv()
 		testClient = GetTestClient(cfg)
 		ctx, cancel = context.WithCancel(context.TODO())
-		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, manifestMetrics,
+		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, manifestMetrics, mandatoryModuleMetrics,
 			append(opts, WithSpecResolver(source))...)
 	})
 
@@ -251,6 +252,7 @@ func StartDeclarativeReconcilerForRun(
 	runID string,
 	cfg *rest.Config,
 	metrics *metrics.ManifestMetrics,
+	mandatoryMetrics *metrics.MandatoryModulesMetrics,
 	options ...Option,
 ) *Reconciler {
 	var (
@@ -272,7 +274,7 @@ func StartDeclarativeReconcilerForRun(
 	)
 	Expect(err).ToNot(HaveOccurred())
 	reconciler = NewFromManager(mgr, &declarativetest.TestAPI{},
-		queue.RequeueIntervals{Success: 1 * time.Second, Busy: 1 * time.Second}, metrics, append(
+		queue.RequeueIntervals{Success: 1 * time.Second, Busy: 1 * time.Second}, metrics, mandatoryMetrics, append(
 			options,
 			WithNamespace(namespace, true),
 			WithFinalizer(finalizer),

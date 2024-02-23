@@ -39,21 +39,23 @@ const (
 )
 
 func NewFromManager(mgr manager.Manager, prototype Object, requeueIntervals queue.RequeueIntervals,
-	metrics *metrics.ManifestMetrics, options ...Option,
+	metrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, options ...Option,
 ) *Reconciler {
-	r := &Reconciler{}
-	r.prototype = prototype
-	r.Metrics = metrics
-	r.RequeueIntervals = requeueIntervals
-	r.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
-	return r
+	reconciler := &Reconciler{}
+	reconciler.prototype = prototype
+	reconciler.ManifestMetrics = metrics
+	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
+	reconciler.RequeueIntervals = requeueIntervals
+	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
+	return reconciler
 }
 
 type Reconciler struct {
 	prototype Object
 	queue.RequeueIntervals
 	*Options
-	Metrics *metrics.ManifestMetrics
+	ManifestMetrics        *metrics.ManifestMetrics
+	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
 }
 
 type ConditionType string
@@ -94,13 +96,13 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
-		r.Metrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
+		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
 		return ctrl.Result{}, common.ErrTypeAssert
 	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		logf.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
 		if !util.IsNotFound(err) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
+			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
 		return ctrl.Result{Requeue: false}, nil
@@ -112,6 +114,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := r.initialize(obj); err != nil {
 		return r.ssaStatus(ctx, obj, metrics.ManifestInit)
+	}
+
+	logf.FromContext(ctx).Info("Before setting the Mandatory Module Metrics")
+	if obj.GetLabels()[shared.IsMandatoryModule] == "true" {
+		state := obj.GetStatus().State
+		kymaName := obj.GetLabels()[shared.KymaName]
+		moduleName := obj.GetLabels()[shared.ModuleName]
+		logf.FromContext(ctx).Info(fmt.Sprintf("Setting the Mandatory Module Metrics with State: %s for Kyma: %s and Module: %s",
+			state, kymaName, moduleName))
+		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
 	}
 
 	if obj.GetDeletionTimestamp().IsZero() {
@@ -157,7 +169,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	diff := ResourceList(current).Difference(target)
 	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
-		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
+		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff)
@@ -165,7 +177,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
+			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete)
@@ -173,7 +185,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Metrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
+			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		if errors.Is(err, ErrClientUnauthorized) {
@@ -620,7 +632,7 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
 	resetNonPatchableField(obj)
-	r.Metrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
+	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 	if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
 		r.Event(obj, "Warning", "PatchStatus", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
@@ -633,7 +645,7 @@ func (r *Reconciler) ssaSpec(ctx context.Context, obj client.Object,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
 	resetNonPatchableField(obj)
-	r.Metrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
+	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
 	if err := r.Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
 		r.Event(obj, "Warning", "PatchObject", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch object: %w", err)
@@ -651,7 +663,7 @@ func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
 	requeueReason metrics.ManifestRequeueReason,
 	requeueType queue.RequeueType,
 ) (ctrl.Result, error) {
-	r.Metrics.RecordRequeueReason(requeueReason, requeueType)
+	r.ManifestMetrics.RecordRequeueReason(requeueReason, requeueType)
 	if err := r.Update(ctx, obj); err != nil {
 		r.Event(obj, "Warning", "UpdateObject", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to update object: %w", err)

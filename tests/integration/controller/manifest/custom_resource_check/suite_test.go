@@ -139,7 +139,8 @@ var _ = BeforeSuite(func() {
 		Success: 1 * time.Second,
 		Error:   1 * time.Second,
 	},
-		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), declarativev2.WithSpecResolver(
+		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
+		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp),
 		), declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {

@@ -47,6 +47,8 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if templateLabels != nil {
 		lbls[shared.ControllerName] = m.Template.GetLabels()[shared.ControllerName]
 	}
+
+	lbls[shared.ModuleName] = m.ModuleName
 	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
 	lbls[shared.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
 	lbls[shared.ManagedBy] = shared.OperatorName
