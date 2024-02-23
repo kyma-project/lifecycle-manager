@@ -32,7 +32,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/internal/istio"
+	"github.com/kyma-project/lifecycle-manager/internal/istio/resource"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -144,7 +145,12 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR, r.WatcherVSNamespace)
+	gateways, err := r.IstioClient.LookupGateways(ctx, watcherCR)
+	if err != nil {
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
+	}
+
+	virtualSvc, err := resource.NewVirtualService(r.WatcherVSNamespace, watcherCR, gateways)
 	if err != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
