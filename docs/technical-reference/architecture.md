@@ -6,10 +6,9 @@ You can compare it with [Operator Lifecycle Manager](https://olm.operatorframewo
 
 Lifecycle Manager:
 
-- manages operators free of dependency trees
-- reconciles many clusters in Kyma Control Plane (KCP) at a time
-- centralizes the effort on managed Runtimes by providing the reconciliation mechanism
-- uses the release channels concept to manage operators delivery
+- manages a set of independent operators
+- reconciles many remote clusters at a time while operating in Kyma Control Plane (KCP)
+- uses the release channels concept to manage operators' delivery
 
 The diagram shows a sample deployment of KCP in interaction with a Kyma runtime.
 
@@ -19,15 +18,17 @@ To run, Lifecycle Manager uses the following workflow:
 
 1. Each module consists of its manager and custom resource. For example, Keda Manager and a Keda CR represent Keda module.
 
-2. A runtime Admin adds and/or removes modules using a Kyma CR. The Kyma CR repersents Kyma installation on a cluster. It includes a list of installed modules and their statuses. Lifecycle Manager watches the CR and uses the synchronization mechanism to update it on a cluster. Together with the Kyma CR, Lifecycle Manager reads also the kubeconfig Secret to access the Kyma Runtime.
+2. A runtime Admin adds and/or removes modules using a Kyma CR. The Kyma CR represents Kyma installation on a cluster. It includes a list of installed modules and their statuses. Lifecycle Manager watches the CR and uses the synchronization mechanism to update it on a cluster. Together with the Kyma CR, Lifecycle Manager reads also the kubeconfig Secret to access the Kyma runtime.
 
-3. To manage a module, Lifecycle Manager requires a ModuleTemplate CR. ModuleTemplate CR contains module's metadata. It represents a module in a particular version. All ModuleTemplate CRs exist in Kyma Control Plane which is the central cluster with Kyma infrastructure. Lifecycle Manager uses those ModuleTemplate CRs to create a Module Catalog with ModuleTemplate CRs available for a particluar Kyma rutime. Lifecycle Manager creates the Module Catalog based on labels, such as `internal`, or `beta`, and uses the synchronization mechanism to update the the Module Catalog porfolio.
+3. To manage a module, Lifecycle Manager requires a ModuleTemplate CR. ModuleTemplate CR contains the module's metadata. It represents a module in a particular version. All ModuleTemplate CRs exist in Kyma Control Plane which is the central cluster with Kyma infrastructure. Lifecycle Manager uses those ModuleTemplate CRs to create a Module Catalog with ModuleTemplate CRs available for a particular Kyma runtime. Lifecycle Manager creates the Module Catalog based on labels, such as `internal`, or `beta`, and uses the synchronization mechanism to update the Module Catalog portfolio.
 
-4. Lifecycle Manager reads a ModuleTemplate CR and creates a Manifest CR. The Manifest CR represents resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module installed on a particular cluster.
+4. Lifecycle Manager reads a ModuleTemplate CR and creates a Manifest CR. The Manifest CR represents resources that make up a module and are to be installed on a remote cluster by Lifecycle Manager.
+
+5. Lifecycle Manager reconciles, namely watches and updates, a set of resources that make up a module. This process lasts until a module is listed in the remote cluster Kyma CR.
 
 ## Controllers
 
-Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest and Watcher controllers:
+Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest, and Watcher controllers:
 
 - [Kyma controller](../../internal/controller/kyma_controller.go) - reconciles the Kyma CR which means creating Manifest CRs for each Kyma module enabled in the Kyma CR and deleting them when modules are disabled in the Kyma CR. It is also responsible for synchronising ModuleTemplate CRs between KCP and Kyma runtimes.
 - [Manifest controller](../../internal/controller/manifest_controller.go) - reconciles the Manifest CRs created by the Kyma controller, which means, installing components specified in the Manifest CR on the target SKR cluster and removing them when the Manifest CRs are flagged for deletion.
@@ -35,7 +36,7 @@ Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest and 
 
 For more details about Lifecycle Manager controllers, read the [Controllers](controllers.md) document.
 
-## Read more
+## Read More
 
 The architecture is based on Kubernetes API and resources, and on best practices for building Kubernetes operators. To learn more, read the following:
 
