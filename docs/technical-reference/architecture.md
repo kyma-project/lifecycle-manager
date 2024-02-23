@@ -7,7 +7,7 @@ You can compare it with [Operator Lifecycle Manager](https://olm.operatorframewo
 Lifecycle Manager:
 
 - manages a set of independent operators
-- operating in Kyma Control Plane (KCP), reconciles many remote clusters at a time
+- reconciles many remote clusters at a time while operating in Kyma Control Plane (KCP)
 - uses the release channels concept to manage operators' delivery
 
 The diagram shows a sample deployment of KCP in interaction with a Kyma runtime.
@@ -18,7 +18,7 @@ To run, Lifecycle Manager uses the following workflow:
 
 1. Each module consists of its manager and custom resource. For example, Keda Manager and a Keda CR represent Keda module.
 
-2. A runtime Admin adds and/or removes modules using a Kyma CR. The Kyma CR represents Kyma installation on a cluster. It includes a list of installed modules and their statuses. Lifecycle Manager watches the CR and uses the synchronization mechanism to update it on a cluster. Together with the Kyma CR, Lifecycle Manager reads also the kubeconfig Secret to access the Kyma Runtime.
+2. A runtime Admin adds and/or removes modules using a Kyma CR. The Kyma CR represents Kyma installation on a cluster. It includes a list of installed modules and their statuses. Lifecycle Manager watches the CR and uses the synchronization mechanism to update it on a cluster. Together with the Kyma CR, Lifecycle Manager reads also the kubeconfig Secret to access the Kyma runtime.
 
 3. To manage a module, Lifecycle Manager requires a ModuleTemplate CR. ModuleTemplate CR contains the module's metadata. It represents a module in a particular version. All ModuleTemplate CRs exist in Kyma Control Plane which is the central cluster with Kyma infrastructure. Lifecycle Manager uses those ModuleTemplate CRs to create a Module Catalog with ModuleTemplate CRs available for a particular Kyma runtime. Lifecycle Manager creates the Module Catalog based on labels, such as `internal`, or `beta`, and uses the synchronization mechanism to update the Module Catalog portfolio.
 

@@ -2,11 +2,11 @@
 
 The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to declare the desired state of a cluster. **.spec.channel**, **.spec.modules[].channel**, and **.spec.modules** are the basic fields that are used together to define the cluster state.
 
-1. **.spec.channel** and **.spec.modules[].channel** - define a release channel that should be used by default for all modules that are to be installed in the cluster.
-2. **.spec.modules** - specifies modules that should be added to the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
-Additionally, you can add a specific channel (if **.spec.channel**) should not be used.
+- **.spec.channel** and **.spec.modules[].channel** - define a release channel that should be used by default for all modules that are to be installed in the cluster.
+- **.spec.modules** - specifies modules that should be added to the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
+Additionally, you can add a specific channel if **.spec.channel** should not be used.
 On top of that, you can specify a **controller**, which serves as a Multi-Tenant Enabler.
-It can be used to only listen to ModuleTemplate CRs provided under the same controller name. Last but not least, it includes a **customResourcePolicy** which can be used for specifying defaulting behavior when initializing modules in a cluster.
+It can be used to only listen to ModuleTemplate CRs provided under the same controller name. Last but not least, it includes a **customResourcePolicy** which can be used for specifying default behavior when initializing modules in a cluster.
 
 ## Configuration
 
@@ -24,7 +24,7 @@ spec:
   - name: serverless
 ```
 
-will attempt to look up the Keda and Serverless modules in the `alpha` release channel.
+attempts to look up the Keda and Serverless modules in the `alpha` release channel.
 
 However, if you specify channels using the **.spec.modules[].channel** attribute, the latter one is used instead.
 
@@ -63,7 +63,7 @@ spec:
 
 The module mentioned above can be referenced in one of the following ways:
 
-1. The label value of `operator.kyma-project.io/module-name`:
+- The label value of `operator.kyma-project.io/module-name`:
 
     ```yaml
     spec:
@@ -72,7 +72,7 @@ The module mentioned above can be referenced in one of the following ways:
       - name: module-name-from-label
     ```
 
-2. The name or namespace/name of a ModuleTemplate CR:
+- The name or namespace/name of a ModuleTemplate CR:
 
     ```yaml
     spec:
@@ -90,7 +90,7 @@ The module mentioned above can be referenced in one of the following ways:
       - name: default/moduletemplate-sample
     ```
 
-3. The fully qualified name of the descriptor as located in **.spec.descriptor.component.name**:
+- The fully qualified name of the descriptor as located in **.spec.descriptor.component.name**:
 
     ```yaml
     spec:
@@ -102,7 +102,7 @@ The module mentioned above can be referenced in one of the following ways:
 ### **.spec.modules[].customResourcePolicy**
 
 In addition to this very flexible way of referencing modules, there is also another flag that can be important for users requiring more flexibility during module initialization. The `customResourcePolicy` flag is used to define one of `CreateAndDelete` and `Ignore`.
-While `CreateAndDelete` will cause the ModuleTemplate CR's **.spec.data** to be created and deleted to initialize a module with preconfigured defaults, `Ignore` can be used to only initialize the operator without initializing any default data.
+While `CreateAndDelete` causes the ModuleTemplate CR's **.spec.data** to be created and deleted to initialize a module with preconfigured defaults, `Ignore` can be used to only initialize the operator without initializing any default data.
 This allows users to be fully flexible in regard to when and how to initialize their module.
 
 ### **.spec.modules[].remoteModuleTemplateRef**
@@ -114,7 +114,7 @@ Namespace/Name, or module name label) to the ModuleTemplate CR. If not specified
 
 The **state** attribute is a simple representation of the state of the entire Kyma CR installation. It is defined as an aggregated status that is either `Ready`, `Processing`, `Warning`, `Error`, or `Deleting`, based on the status of all Manifest CRs on top of the validity/integrity of the synchronization to a remote cluster if enabled.
 
-The **state** will always be reported based on the last reconciliation loop of the [Kyma controller](../../../internal/controller/kyma_controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
+The **state** is always reported based on the last reconciliation loop of the [Kyma controller](../../../internal/controller/kyma_controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
 
 ### **.status.conditions**
 
