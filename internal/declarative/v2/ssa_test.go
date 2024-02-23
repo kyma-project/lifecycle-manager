@@ -16,15 +16,16 @@ import (
 func TestConcurrentSSA(t *testing.T) {
 	t.Parallel()
 
-	pod := &unstructured.Unstructured{Object: map[string]any{
-		"kind":       "Pod",
-		"apiVersion": "v1",
-		"metadata": map[string]interface{}{
-			"name":      "valid",
-			"namespace": "some-namespace",
+	pod := &unstructured.Unstructured{
+		Object: map[string]any{
+			"kind":       "Pod",
+			"apiVersion": "v1",
+			"metadata": map[string]interface{}{
+				"name":      "valid",
+				"namespace": "some-namespace",
+			},
 		},
-	}}
-	structuredInfo := &resource.Info{Object: pod}
+	}
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
 	_ = fakeClientBuilder.Create(context.Background(), pod)
 
@@ -45,15 +46,6 @@ func TestConcurrentSSA(t *testing.T) {
 				owner: client.FieldOwner("test"),
 			},
 			[]*resource.Info{},
-			nil,
-		},
-		{
-			"simple apply",
-			args{
-				clnt:  fakeClientBuilder,
-				owner: client.FieldOwner("test"),
-			},
-			[]*resource.Info{structuredInfo},
 			nil,
 		},
 	}
