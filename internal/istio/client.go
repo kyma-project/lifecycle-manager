@@ -2,6 +2,7 @@ package istio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -23,7 +24,7 @@ func NewIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 ) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create istio client from config: %w", err)
+		return nil, errors.Join(ErrFailedToCreateIstioClient, err)
 	}
 	return &Client{
 		Interface:     cs,
@@ -37,7 +38,7 @@ func (c *Client) GetVirtualService(ctx context.Context, name, namespace string) 
 		VirtualServices(namespace).
 		Get(ctx, name, apimetav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
+		return nil, errors.Join(ErrFailedToGetVirtualService, err)
 	}
 	return virtualService, nil
 }
@@ -47,7 +48,7 @@ func (c *Client) ListVirtualServices(ctx context.Context, namespace string) (*is
 		VirtualServices(namespace).
 		List(ctx, apimetav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list virtual services %w", err)
+		return nil, errors.Join(ErrFailedToListVirtualServices, err)
 	}
 	return virtualServiceList, nil
 }
@@ -57,7 +58,7 @@ func (c *Client) CreateVirtualService(ctx context.Context, virtualService *istio
 		VirtualServices(virtualService.GetNamespace()).
 		Create(ctx, virtualService, apimetav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create istio virtual service: %w", err)
+		return errors.Join(ErrFailedToCreateVirtualService, err)
 	}
 	return nil
 }
@@ -73,7 +74,7 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 		VirtualServices(virtualServiceRemote.Namespace).
 		Update(ctx, virtualServiceRemote, apimetav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to update istio virtual service: %w", err)
+		return errors.Join(ErrFailedToUpdateVirtualService, err)
 	}
 	return nil
 }
@@ -84,7 +85,7 @@ func (c *Client) DeleteVirtualService(ctx context.Context, name, namespace strin
 		VirtualServices(namespace).
 		Delete(ctx, name, apimetav1.DeleteOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to delete virtual service for cr: %w", err)
+		return errors.Join(ErrFailedToDeleteVirtualService, err)
 	}
 	return nil
 }
@@ -94,7 +95,7 @@ func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector 
 ) {
 	selector, err := apimetav1.LabelSelectorAsSelector(labelSelector)
 	if err != nil {
-		return nil, fmt.Errorf("error converting label selector: %w", err)
+		return nil, errors.Join(ErrFailedToConvertLabelSelector, err)
 	}
 
 	selectorString := selector.String()
@@ -104,8 +105,7 @@ func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector 
 			LabelSelector: selectorString,
 		})
 	if err != nil {
-		return nil, fmt.Errorf("error looking up Istio gateway with the label selector %q: %w",
-			selectorString, err)
+		return nil, errors.Join(fmt.Errorf("%w, %q", ErrFailedToGetGatewayByLabelSelector, selectorString), err)
 	}
 
 	return gateways, nil
