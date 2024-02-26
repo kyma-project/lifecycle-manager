@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 )
@@ -31,7 +31,7 @@ func TestGet_WhenCalled_NotInCache(t *testing.T) {
 	cachedCrd, ok := cache.Get(key)
 
 	assert.False(t, ok)
-	assert.Equal(t, v1.CustomResourceDefinition{}, cachedCrd)
+	assert.Equal(t, apiextensionsv1.CustomResourceDefinition{}, cachedCrd)
 }
 
 func TestGet_WhenInCache_TypeIsWrong(t *testing.T) {
@@ -42,13 +42,13 @@ func TestGet_WhenInCache_TypeIsWrong(t *testing.T) {
 	cachedCrd, ok := cache.Get(key)
 
 	assert.False(t, ok)
-	assert.Equal(t, v1.CustomResourceDefinition{}, cachedCrd)
+	assert.Equal(t, apiextensionsv1.CustomResourceDefinition{}, cachedCrd)
 }
 
 func TestGet_WhenInCache_TypeIsRight(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache)
-	someCrd := v1.CustomResourceDefinition{}
+	someCrd := apiextensionsv1.CustomResourceDefinition{}
 	someCrd.Name = "some-crd"
 	internalCache.Store(key, someCrd)
 
@@ -62,14 +62,14 @@ func TestGet_WhenInCache_TypeIsRight(t *testing.T) {
 func TestAdd_WhenCalled(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache)
-	someCrd := v1.CustomResourceDefinition{}
+	someCrd := apiextensionsv1.CustomResourceDefinition{}
 	someCrd.Name = "some-crd"
 
 	cache.Add(key, someCrd)
 
 	cachedValue, ok := internalCache.Load(key)
 	assert.True(t, ok)
-	cachedCrd, ok := cachedValue.(v1.CustomResourceDefinition)
+	cachedCrd, ok := cachedValue.(apiextensionsv1.CustomResourceDefinition)
 	assert.True(t, ok)
 	assert.Equal(t, someCrd.Name, cachedCrd.Name)
 	assert.Equal(t, someCrd, cachedCrd)
