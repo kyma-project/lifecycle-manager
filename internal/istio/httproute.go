@@ -11,32 +11,32 @@ import (
 
 func NewHTTPRoute(watcher *v1beta2.Watcher) (*istioapiv1beta1.HTTPRoute, error) {
 	if watcher == nil {
-		return nil, fmt.Errorf("%w watcher", ErrInvalidArgument)
+		return nil, fmt.Errorf("watcher must not be nil: %w", ErrInvalidArgument)
 	}
 
 	if watcher.GetName() == "" {
-		return nil, fmt.Errorf("%w watcher.Name", ErrInvalidArgument)
+		return nil, fmt.Errorf("watcher.Name must not be empty: %w", ErrInvalidArgument)
 	}
 
 	if watcher.GetNamespace() == "" {
-		return nil, fmt.Errorf("%w watcher.Namespace", ErrInvalidArgument)
+		return nil, fmt.Errorf("watcher.Namespace must not be empty: %w", ErrInvalidArgument)
 	}
 
 	if watcher.GetModuleName() == "" {
-		return nil, fmt.Errorf("%w watcher.GetModuleName()", ErrInvalidArgument)
+		return nil, fmt.Errorf("unable to GetModuleName(): %w", ErrInvalidArgument)
 	}
 
 	if watcher.Spec.ServiceInfo.Name == "" {
-		return nil, fmt.Errorf("%w watcher.Spec.ServiceInfo.Name", ErrInvalidArgument)
+		return nil, fmt.Errorf("watcher.Spec.ServiceInfo.Name must not be empty: %w", ErrInvalidArgument)
 	}
 
 	if watcher.Spec.ServiceInfo.Namespace == "" {
-		return nil, fmt.Errorf("%w watcher.Spec.ServiceInfo.Namespace", ErrInvalidArgument)
+		return nil, fmt.Errorf("watcher.Spec.ServiceInfo.Namespace must not be empty: %w", ErrInvalidArgument)
 	}
 
 	// 0 is the zero value of int64 and further a reserved port => consider it invalid
 	if watcher.Spec.ServiceInfo.Port == 0 {
-		return nil, fmt.Errorf("%w watcher.Spec.ServiceInfo.Port", ErrInvalidArgument)
+		return nil, fmt.Errorf("watcher.Spec.ServiceInfo.Port must not be 0: %w", ErrInvalidArgument)
 	}
 
 	return &istioapiv1beta1.HTTPRoute{

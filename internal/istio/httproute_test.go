@@ -52,7 +52,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
 
 	assert.Nil(t, httpRoute)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
-	assert.Contains(t, err.Error(), "watcher.GetModuleName()")
+	assert.Contains(t, err.Error(), "GetModuleName()")
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {

@@ -170,6 +170,7 @@ func Test_NewVirtualService_ReturnsError_WhenUnableToCreateHTTPRoute(t *testing.
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "unable to construct httpRoute from watcher")
 }
 
 func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {

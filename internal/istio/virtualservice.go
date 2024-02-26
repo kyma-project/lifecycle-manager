@@ -18,33 +18,33 @@ const (
 
 func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
 	if namespace == "" {
-		return nil, fmt.Errorf("%w namespace", ErrInvalidArgument)
+		return nil, fmt.Errorf("namespace must not be empty: %w", ErrInvalidArgument)
 	}
 
 	if watcher == nil {
-		return nil, fmt.Errorf("%w watcher", ErrInvalidArgument)
+		return nil, fmt.Errorf("watcher must not be nil: %w", ErrInvalidArgument)
 	}
 
-	if watcher.Name == "" {
-		return nil, fmt.Errorf("%w watcher.Name", ErrInvalidArgument)
+	if watcher.GetName() == "" {
+		return nil, fmt.Errorf("watcher.Name must not be empty: %w", ErrInvalidArgument)
 	}
 
 	if gateways == nil {
-		return nil, fmt.Errorf("%w gateways", ErrInvalidArgument)
+		return nil, fmt.Errorf("gateways must not be nil: %w", ErrInvalidArgument)
 	}
 
 	if len(gateways.Items) == 0 {
-		return nil, fmt.Errorf("%w gateways.Items", ErrInvalidArgument)
+		return nil, fmt.Errorf("gateways.Items must not be empty: %w", ErrInvalidArgument)
 	}
 
 	hosts, err := getHosts(gateways.Items)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidArgument, err)
+		return nil, errors.Join(fmt.Errorf("unable to construct hosts from gateways: %w", ErrInvalidArgument), err)
 	}
 
 	httpRoute, err := NewHTTPRoute(watcher)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidArgument, err)
+		return nil, errors.Join(fmt.Errorf("unable to construct httpRoute from watcher: %w", ErrInvalidArgument), err)
 	}
 
 	virtualService := &istioclientapiv1beta1.VirtualService{}
