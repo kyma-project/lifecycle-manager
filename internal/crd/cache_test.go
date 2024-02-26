@@ -68,7 +68,8 @@ func TestAdd_WhenCalled(t *testing.T) {
 	cache.Add(key, someCrd)
 
 	cachedValue, ok := internalCache.Load(key)
-	cachedCrd := cachedValue.(v1.CustomResourceDefinition)
+	assert.True(t, ok)
+	cachedCrd, ok := cachedValue.(v1.CustomResourceDefinition)
 	assert.True(t, ok)
 	assert.Equal(t, someCrd.Name, cachedCrd.Name)
 	assert.Equal(t, someCrd, cachedCrd)
