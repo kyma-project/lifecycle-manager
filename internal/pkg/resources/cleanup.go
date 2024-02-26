@@ -33,16 +33,16 @@ func NewConcurrentCleanup(clnt client.Client, manifest *v1beta2.Manifest) *Concu
 func (c *ConcurrentCleanup) DeleteDiffResources(ctx context.Context, resources []*resource.Info,
 ) error {
 	status := c.manifest.GetStatus()
-	excludeCRDList, pureCRDList, err := splitResources(resources)
+	operatorRelatedResources, operatorManagedResources, err := splitResources(resources)
 	if err != nil {
 		return err
 	}
 
-	if err := c.CleanupResources(ctx, excludeCRDList, status); err != nil {
+	if err := c.CleanupResources(ctx, operatorManagedResources, status); err != nil {
 		return err
 	}
 
-	if err := c.CleanupResources(ctx, pureCRDList, status); err != nil {
+	if err := c.CleanupResources(ctx, operatorRelatedResources, status); err != nil {
 		return err
 	}
 
@@ -64,22 +64,34 @@ func (c *ConcurrentCleanup) CleanupResources(
 }
 
 func splitResources(resources []*resource.Info) ([]*resource.Info, []*resource.Info, error) {
-	excludeCRDList := make([]*resource.Info, 0)
-	pureCRDList := make([]*resource.Info, 0)
+	operatorRelatedResources := make([]*resource.Info, 0)
+	operatorManagedResources := make([]*resource.Info, 0)
 
 	for _, resource := range resources {
 		obj, ok := resource.Object.(client.Object)
 		if !ok {
 			return nil, nil, common.ErrTypeAssert
 		}
-		if obj.GetObjectKind().GroupVersionKind().Kind == "CustomResourceDefinition" {
-			pureCRDList = append(pureCRDList, resource)
+		if isOperatorRelatedResources(obj.GetObjectKind().GroupVersionKind().Kind) {
+			operatorRelatedResources = append(operatorRelatedResources, resource)
 			continue
 		}
-		excludeCRDList = append(excludeCRDList, resource)
+		operatorManagedResources = append(operatorManagedResources, resource)
 	}
 
-	return excludeCRDList, pureCRDList, nil
+	return operatorRelatedResources, operatorManagedResources, nil
+}
+
+func isOperatorRelatedResources(kind string) bool {
+	return kind == "CustomResourceDefinition" ||
+		kind == "ServiceAccount" ||
+		kind == "Role" ||
+		kind == "ClusterRole" ||
+		kind == "RoleBinding" ||
+		kind == "ControllerManagerConfig" ||
+		kind == "ClusterRoleBinding" ||
+		kind == "Service" ||
+		kind == "Deployment"
 }
 
 func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) error {
