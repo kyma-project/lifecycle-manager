@@ -1,6 +1,7 @@
 package filemutex_test
 
 import (
+	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"
 
@@ -23,7 +24,7 @@ func TestGetLocker_WhenCalled_CreatesMutexAndStoreInCache(t *testing.T) {
 
 	locker, err := cache.GetLocker(key)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	internalStored, ok := internalCache.Load(key)
 	assert.True(t, ok)
 	assert.Equal(t, internalStored, locker)
@@ -35,7 +36,7 @@ func TestGetLocker_WhenCalledSecondTime_ReturnsStored(t *testing.T) {
 	locker, _ := cache.GetLocker(key)
 
 	cachedLocker, err := cache.GetLocker(key)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, locker, cachedLocker)
 }
 
