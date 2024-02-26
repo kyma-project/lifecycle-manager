@@ -42,13 +42,18 @@ func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *ist
 		return nil, errors.Join(ErrInvalidArgument, err)
 	}
 
+	httpRoute, err := NewHTTPRoute(watcher)
+	if err != nil {
+		return nil, errors.Join(ErrInvalidArgument, err)
+	}
+
 	virtualService := &istioclientapiv1beta1.VirtualService{}
 	virtualService.SetName(watcher.Name)
 	virtualService.SetNamespace(namespace)
 	virtualService.Spec.Gateways = getGatewayNames(gateways.Items)
 	virtualService.Spec.Hosts = hosts
 	virtualService.Spec.Http = []*istioapiv1beta1.HTTPRoute{
-		NewHTTPRoute(watcher),
+		httpRoute,
 	}
 
 	return virtualService, nil

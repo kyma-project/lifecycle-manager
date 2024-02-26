@@ -5,11 +5,88 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 )
+
+func Test_NewHTTPRoute_ReturnsError_WhenWatcherIsNil(t *testing.T) {
+	var watcher *v1beta2.Watcher = nil
+
+	httpRoute, err := istio.NewHTTPRoute(watcher)
+
+	assert.Nil(t, httpRoute)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "watcher")
+}
+
+func Test_NewHTTPRoute_ReturnsError_WhenNoName(t *testing.T) {
+	watcher := getSimpleWatcher()
+	watcher.Name = ""
+
+	httpRoute, err := istio.NewHTTPRoute(watcher)
+
+	assert.Nil(t, httpRoute)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "watcher.Name")
+}
+
+func Test_NewHTTPRoute_ReturnsError_WhenNoNamespace(t *testing.T) {
+	watcher := getSimpleWatcher()
+	watcher.Namespace = ""
+
+	httpRoute, err := istio.NewHTTPRoute(watcher)
+
+	assert.Nil(t, httpRoute)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "watcher.Namespace")
+}
+
+func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
+	watcher := getSimpleWatcher()
+	watcher.Labels = nil
+
+	httpRoute, err := istio.NewHTTPRoute(watcher)
+
+	assert.Nil(t, httpRoute)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "watcher.GetModuleName()")
+}
+
+func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {
+	var watcher *v1beta2.Watcher = getSimpleWatcher()
+	watcher.Spec.ServiceInfo.Name = ""
+
+	httpRoute, err := istio.NewHTTPRoute(watcher)
+
+	assert.Nil(t, httpRoute)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "watcher.Spec.ServiceInfo.Name")
+}
+
+func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoNamespace(t *testing.T) {
+	var watcher *v1beta2.Watcher = getSimpleWatcher()
+	watcher.Spec.ServiceInfo.Namespace = ""
+
+	httpRoute, err := istio.NewHTTPRoute(watcher)
+
+	assert.Nil(t, httpRoute)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "watcher.Spec.ServiceInfo.Namespace")
+}
+
+func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoPort(t *testing.T) {
+	var watcher *v1beta2.Watcher = getSimpleWatcher()
+	watcher.Spec.ServiceInfo.Port = 0
+
+	httpRoute, err := istio.NewHTTPRoute(watcher)
+
+	assert.Nil(t, httpRoute)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	assert.Contains(t, err.Error(), "watcher.Spec.ServiceInfo.Port")
+}
 
 func Test_NewHTTPRoute_ReturnsCorrectHttpRoute(t *testing.T) {
 	watcher := getSimpleWatcher()
@@ -18,8 +95,9 @@ func Test_NewHTTPRoute_ReturnsCorrectHttpRoute(t *testing.T) {
 	expectedHTTPRouteDestinationHost := getDestinationHost(watcher)
 	expectedHTTPRouteDestinationPort := getDestinationPort(watcher)
 
-	httpRoute := istio.NewHTTPRoute(watcher)
+	httpRoute, err := istio.NewHTTPRoute(watcher)
 
+	assert.Nil(t, err)
 	assert.Equal(t, expectedHTTPRouteName, httpRoute.GetName())
 	assert.Equal(t, expectedHTTPRouteMatchURIPrefix, httpRoute.GetMatch()[0].GetUri().GetPrefix())
 	assert.Equal(t, expectedHTTPRouteDestinationHost, httpRoute.GetRoute()[0].GetDestination().GetHost())

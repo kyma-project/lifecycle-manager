@@ -160,6 +160,18 @@ func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
 	}
 }
 
+func Test_NewVirtualService_ReturnsError_WhenUnableToCreateHTTPRoute(t *testing.T) {
+	watcher := getSimpleWatcher()
+	namespace := getSimpleNamespace()
+	gateways := getSimpleGateways()
+	watcher.Spec.ServiceInfo = v1beta2.Service{}
+
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
+
+	assert.Nil(t, vs)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+}
+
 func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {
 	watcher := getSimpleWatcher()
 	namespace := getSimpleNamespace()
