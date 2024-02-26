@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/crd"
+
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -70,6 +72,7 @@ var (
 	cfg                *rest.Config
 	descriptorCache    *cache.DescriptorCache
 	descriptorProvider *provider.CachedDescriptorProvider
+	crdCache           *crd.Cache
 )
 
 func TestAPIs(t *testing.T) {
@@ -133,13 +136,14 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	descriptorCache = cache.NewDescriptorCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)
+	crdCache = crd.NewCache(nil)
 	err = (&controller.KymaReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(crdCache),
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           true,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,

@@ -22,8 +22,11 @@ type SyncCrdsUseCase struct {
 	crdCache *crd.Cache
 }
 
-func NewSyncCrdsUseCase() SyncCrdsUseCase {
-	return SyncCrdsUseCase{crdCache: crd.NewCache(nil)}
+func NewSyncCrdsUseCase(cache *crd.Cache) SyncCrdsUseCase {
+	if cache == nil {
+		return SyncCrdsUseCase{crdCache: crd.NewCache(nil)}
+	}
+	return SyncCrdsUseCase{crdCache: cache}
 }
 
 func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma,

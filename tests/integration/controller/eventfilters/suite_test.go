@@ -140,7 +140,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
