@@ -11,7 +11,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -26,7 +25,7 @@ type Client struct {
 	logger        logr.Logger
 }
 
-func NewVersionedIstioClient(cfg *rest.Config, recorder record.EventRecorder,
+func NewIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 	logger logr.Logger,
 ) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
@@ -40,10 +39,10 @@ func NewVersionedIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 	}, nil
 }
 
-func (c *Client) GetVirtualService(ctx context.Context, vsName, vsNamespace string) (*istioclientapiv1beta1.VirtualService, error) {
+func (c *Client) GetVirtualService(ctx context.Context, name, namespace string) (*istioclientapiv1beta1.VirtualService, error) {
 	virtualService, err := c.NetworkingV1beta1().
-		VirtualServices(vsNamespace).
-		Get(ctx, vsName, apimetav1.GetOptions{})
+		VirtualServices(namespace).
+		Get(ctx, name, apimetav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
 	}
@@ -60,10 +59,10 @@ func (c *Client) ListVirtualServices(ctx context.Context, namespace string) (*is
 	return virtualServiceList, nil
 }
 
-func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclientapiv1beta1.VirtualService) error {
+func (c *Client) CreateVirtualService(ctx context.Context, virtualService *istioclientapiv1beta1.VirtualService) error {
 	_, err := c.NetworkingV1beta1().
-		VirtualServices(virtualSvc.GetNamespace()).
-		Create(ctx, virtualSvc, apimetav1.CreateOptions{})
+		VirtualServices(virtualService.GetNamespace()).
+		Create(ctx, virtualService, apimetav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create istio virtual service: %w", err)
 	}
@@ -113,11 +112,11 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 	return nil
 }
 
-func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey, vsNamespace string,
+func (c *Client) DeleteVirtualService(ctx context.Context, name, namespace string,
 ) error {
 	err := c.NetworkingV1beta1().
-		VirtualServices(vsNamespace).
-		Delete(ctx, watcherObjKey.Name, apimetav1.DeleteOptions{})
+		VirtualServices(namespace).
+		Delete(ctx, name, apimetav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to delete virtual service for cr: %w", err)
 	}

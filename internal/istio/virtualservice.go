@@ -16,9 +16,9 @@ const (
 	prefixFormat    = "/%s/%s/event"
 )
 
-func NewVirtualService(targetNamespace string, watcher *v1beta2.Watcher, gateways []*istioclientapiv1beta1.Gateway) (*istioclientapiv1beta1.VirtualService, error) {
-	if targetNamespace == "" {
-		return nil, fmt.Errorf("%w targetNamespace", ErrInvalidArgument)
+func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways []*istioclientapiv1beta1.Gateway) (*istioclientapiv1beta1.VirtualService, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("%w namespace", ErrInvalidArgument)
 	}
 
 	if watcher == nil {
@@ -40,7 +40,7 @@ func NewVirtualService(targetNamespace string, watcher *v1beta2.Watcher, gateway
 
 	virtualService := &istioclientapiv1beta1.VirtualService{}
 	virtualService.SetName(watcher.Name)
-	virtualService.SetNamespace(targetNamespace)
+	virtualService.SetNamespace(namespace)
 	virtualService.Spec.Gateways = getGatewayNames(gateways)
 	virtualService.Spec.Hosts = hosts
 	virtualService.Spec.Http = []*istioapiv1beta1.HTTPRoute{

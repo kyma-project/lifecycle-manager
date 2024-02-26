@@ -135,7 +135,7 @@ func allVirtualServicesDeletedForNs(namespace string) func(customIstioClient *is
 			if err != nil {
 				return err
 			}
-			err = customIstioClient.RemoveVirtualServiceForCR(suiteCtx, client.ObjectKeyFromObject(watcherCR), namespace)
+			err = customIstioClient.DeleteVirtualService(suiteCtx, watcherCR.GetName(), namespace)
 			if err != nil {
 				return err
 			}
@@ -185,7 +185,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
 	BeforeAll(func() {
-		customIstioClient, err = istio.NewVersionedIstioClient(restCfg,
+		customIstioClient, err = istio.NewIstioClient(restCfg,
 			k8sManager.GetEventRecorderFor(controller.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		// create Watcher CRs

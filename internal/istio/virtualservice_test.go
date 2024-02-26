@@ -58,7 +58,7 @@ func Test_NewVirtualService_ReturnsError_WhenNamespaceIsEmpty(t *testing.T) {
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
-	assert.Contains(t, err.Error(), "targetNamespace")
+	assert.Contains(t, err.Error(), "namespace")
 }
 
 func Test_NewVirtualService_SetsCorrectNamespace(t *testing.T) {
