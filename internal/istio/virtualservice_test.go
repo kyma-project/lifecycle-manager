@@ -1,4 +1,4 @@
-package resource_test
+package istio_test
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/istio/resource"
+	"github.com/kyma-project/lifecycle-manager/internal/istio"
 )
 
 func Test_NewVirtualService_ReturnsError_WhenWatcherIsNil(t *testing.T) {
@@ -19,10 +19,10 @@ func Test_NewVirtualService_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
-	require.ErrorIs(t, err, resource.ErrInvalidArgument)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "watcher")
 }
 
@@ -31,10 +31,10 @@ func Test_NewVirtualService_ReturnsError_WhenWatcherNameIsEmpty(t *testing.T) {
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
-	require.ErrorIs(t, err, resource.ErrInvalidArgument)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "watcher.Name")
 }
 
@@ -43,7 +43,7 @@ func Test_NewVirtualService_SetsCorrectName(t *testing.T) {
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Equal(t, watcher.Name, vs.Name)
@@ -54,10 +54,10 @@ func Test_NewVirtualService_ReturnsError_WhenNamespaceIsEmpty(t *testing.T) {
 	namespace := ""
 	gateways := getSimpleGateways()
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
-	require.ErrorIs(t, err, resource.ErrInvalidArgument)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "targetNamespace")
 }
 
@@ -66,7 +66,7 @@ func Test_NewVirtualService_SetsCorrectNamespace(t *testing.T) {
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Equal(t, namespace, vs.Namespace)
@@ -77,10 +77,10 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 	namespace := getSimpleNamespace()
 	var gateways []*istioclientapiv1beta1.Gateway = nil
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
-	require.ErrorIs(t, err, resource.ErrInvalidArgument)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "gateways")
 }
 
@@ -89,10 +89,10 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysAreEmpty(t *testing.T) {
 	namespace := getSimpleNamespace()
 	gateways := []*istioclientapiv1beta1.Gateway{}
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
-	require.ErrorIs(t, err, resource.ErrInvalidArgument)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "gateways")
 }
 
@@ -102,7 +102,7 @@ func Test_NewVirtualService_SetsCorrectGateways(t *testing.T) {
 	gateways := getSimpleGateways()
 	expectedGatewayNames := getGatewayNamesMap(gateways)
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Len(t, vs.Spec.GetGateways(), len(expectedGatewayNames))
@@ -120,11 +120,11 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysHaveNoServers(t *testing.T)
 		gateway.Spec.Servers = []*istioapiv1beta1.Server{}
 	}
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
-	require.ErrorIs(t, err, resource.ErrInvalidArgument)
-	require.ErrorIs(t, err, resource.ErrCantFindGatewayServersHost)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	require.ErrorIs(t, err, istio.ErrCantFindGatewayServersHost)
 }
 
 func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testing.T) {
@@ -137,11 +137,11 @@ func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testin
 		}
 	}
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
-	require.ErrorIs(t, err, resource.ErrInvalidArgument)
-	require.ErrorIs(t, err, resource.ErrCantFindGatewayServersHost)
+	require.ErrorIs(t, err, istio.ErrInvalidArgument)
+	require.ErrorIs(t, err, istio.ErrCantFindGatewayServersHost)
 }
 
 func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
@@ -150,7 +150,7 @@ func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
 	gateways := getSimpleGateways()
 	expectedHosts := getHostNamesMap(gateways)
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Len(t, vs.Spec.GetHosts(), len(expectedHosts))
@@ -165,7 +165,7 @@ func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
 
-	vs, err := resource.NewVirtualService(namespace, watcher, gateways)
+	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Len(t, vs.Spec.GetHttp(), 1)
@@ -178,7 +178,7 @@ func Test_PrepareIstioHTTPRouteForCR_ReturnsCorrectHttpRoute(t *testing.T) {
 	expectedHTTPRouteDestinationHost := getDestinationHost(watcher)
 	expectedHTTPRouteDestinationPort := getDestinationPort(watcher)
 
-	httpRoute := resource.PrepareIstioHTTPRouteForCR(watcher)
+	httpRoute := istio.PrepareIstioHTTPRouteForCR(watcher)
 
 	assert.Equal(t, expectedHTTPRouteName, httpRoute.GetName())
 	assert.Equal(t, expectedHTTPRouteMatchURIPrefix, httpRoute.GetMatch()[0].GetUri().GetPrefix())

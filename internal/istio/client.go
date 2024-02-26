@@ -2,7 +2,6 @@ package istio
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -20,8 +19,6 @@ import (
 const (
 	firstElementIdx = 0
 )
-
-var ErrCantFindMatchingGateway = errors.New("can't find matching Istio Gateway")
 
 type Client struct {
 	istioclient.Interface

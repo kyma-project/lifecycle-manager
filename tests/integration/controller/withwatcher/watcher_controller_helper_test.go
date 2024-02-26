@@ -18,7 +18,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
-	"github.com/kyma-project/lifecycle-manager/internal/istio/resource"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -254,7 +253,7 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, names
 
 	for idx, route := range virtualService.Spec.GetHttp() {
 		if route.GetName() == client.ObjectKeyFromObject(watcher).String() {
-			istioHTTPRoute := resource.PrepareIstioHTTPRouteForCR(watcher)
+			istioHTTPRoute := istio.PrepareIstioHTTPRouteForCR(watcher)
 			if !istio.IsRouteConfigEqual(virtualService.Spec.GetHttp()[idx], istioHTTPRoute) {
 				return errRouteConfigMismatch
 			}
