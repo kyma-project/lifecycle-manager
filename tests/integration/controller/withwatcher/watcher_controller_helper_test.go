@@ -254,7 +254,7 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, names
 
 	for idx, route := range virtualService.Spec.GetHttp() {
 		if route.GetName() == client.ObjectKeyFromObject(watcher).String() {
-			istioHTTPRoute := istio.NewHTTPRoute(watcher)
+			istioHTTPRoute, _ := istio.NewHTTPRoute(watcher)
 			if !isRouteConfigEqual(virtualService.Spec.GetHttp()[idx], istioHTTPRoute) {
 				return errRouteConfigMismatch
 			}

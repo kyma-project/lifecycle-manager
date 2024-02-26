@@ -56,7 +56,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {
-	var watcher *v1beta2.Watcher = getSimpleWatcher()
+	watcher := getSimpleWatcher()
 	watcher.Spec.ServiceInfo.Name = ""
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -67,7 +67,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoNamespace(t *testing.T) {
-	var watcher *v1beta2.Watcher = getSimpleWatcher()
+	watcher := getSimpleWatcher()
 	watcher.Spec.ServiceInfo.Namespace = ""
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -78,7 +78,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoNamespace(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoPort(t *testing.T) {
-	var watcher *v1beta2.Watcher = getSimpleWatcher()
+	watcher := getSimpleWatcher()
 	watcher.Spec.ServiceInfo.Port = 0
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -97,7 +97,7 @@ func Test_NewHTTPRoute_ReturnsCorrectHttpRoute(t *testing.T) {
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedHTTPRouteName, httpRoute.GetName())
 	assert.Equal(t, expectedHTTPRouteMatchURIPrefix, httpRoute.GetMatch()[0].GetUri().GetPrefix())
 	assert.Equal(t, expectedHTTPRouteDestinationHost, httpRoute.GetRoute()[0].GetDestination().GetHost())
