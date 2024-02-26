@@ -1,11 +1,11 @@
 package filemutex_test
 
 import (
-	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
 )
