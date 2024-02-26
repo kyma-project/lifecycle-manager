@@ -6,11 +6,20 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-//nolint:gochecknoglobals // in-memory cache used for CRDs
-var crdCache = sync.Map{}
+type Cache struct {
+	cache *sync.Map
+}
 
-func GetCachedCRD(key string) (apiextensionsv1.CustomResourceDefinition, bool) {
-	value, ok := crdCache.Load(key)
+func NewCache(internalCache *sync.Map) *Cache {
+	if internalCache == nil {
+		return &Cache{cache: &sync.Map{}}
+	}
+
+	return &Cache{cache: internalCache}
+}
+
+func (c *Cache) Get(key string) (apiextensionsv1.CustomResourceDefinition, bool) {
+	value, ok := c.cache.Load(key)
 	if !ok {
 		return apiextensionsv1.CustomResourceDefinition{}, false
 	}
@@ -22,6 +31,6 @@ func GetCachedCRD(key string) (apiextensionsv1.CustomResourceDefinition, bool) {
 	return crd, true
 }
 
-func SetCRDInCache(key string, value apiextensionsv1.CustomResourceDefinition) {
-	crdCache.Store(key, value)
+func (c *Cache) Add(key string, value apiextensionsv1.CustomResourceDefinition) {
+	c.cache.Store(key, value)
 }
