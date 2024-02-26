@@ -134,6 +134,7 @@ var _ = BeforeSuite(func() {
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider:  descriptorProvider,
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),

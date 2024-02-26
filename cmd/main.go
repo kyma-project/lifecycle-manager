@@ -269,6 +269,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		KcpRestConfig:      kcpRestConfig,
 		RemoteClientCache:  remoteClientCache,
 		DescriptorProvider: descriptorProvider,
+		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(),
 		SKRWebhookManager:  skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,

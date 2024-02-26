@@ -26,7 +26,7 @@ func NewSyncCrdsUseCase() SyncCrdsUseCase {
 	return SyncCrdsUseCase{crdCache: crd.NewCache(nil)}
 }
 
-func (s *SyncCrdsUseCase) SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
+func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma,
 	runtimeClient Client, controlPlaneClient Client,
 ) (bool, error) {
 	kymaCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,

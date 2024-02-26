@@ -70,6 +70,7 @@ type KymaReconciler struct {
 	record.EventRecorder
 	queue.RequeueIntervals
 	DescriptorProvider  *provider.CachedDescriptorProvider
+	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
 	KcpRestConfig       *rest.Config
 	RemoteClientCache   *remote.ClientCache
@@ -241,7 +242,7 @@ func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, k
 	if err != nil {
 		return false, fmt.Errorf("failed to get syncContext: %w", err)
 	}
-	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
+	updateRequired, err := r.SyncRemoteCrds.Execute(
 		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
 	if err != nil {
 		return false, err

@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -212,6 +214,8 @@ var _ = BeforeSuite(func() {
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
+		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(),
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
