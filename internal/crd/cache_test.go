@@ -10,6 +10,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 )
 
+const key = "testKey"
+
 func TestNewCache_WhenCalled_NoCachePassedIn(t *testing.T) {
 	cache := crd.NewCache(nil)
 
@@ -25,7 +27,6 @@ func TestNewCache_WhenCalled_CachePassedIn(t *testing.T) {
 
 func TestGet_WhenCalled_NotInCache(t *testing.T) {
 	cache := crd.NewCache(nil)
-	key := "testKey"
 
 	cachedCrd, ok := cache.Get(key)
 
@@ -36,7 +37,6 @@ func TestGet_WhenCalled_NotInCache(t *testing.T) {
 func TestGet_WhenInCache_TypeIsWrong(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache)
-	key := "testKey"
 	internalCache.Store(key, "not a CRD")
 
 	cachedCrd, ok := cache.Get(key)
@@ -48,7 +48,6 @@ func TestGet_WhenInCache_TypeIsWrong(t *testing.T) {
 func TestGet_WhenInCache_TypeIsRight(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache)
-	key := "testKey"
 	someCrd := v1.CustomResourceDefinition{}
 	someCrd.Name = "some-crd"
 	internalCache.Store(key, someCrd)
@@ -63,7 +62,6 @@ func TestGet_WhenInCache_TypeIsRight(t *testing.T) {
 func TestAdd_WhenCalled(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache)
-	key := "testKey"
 	someCrd := v1.CustomResourceDefinition{}
 	someCrd.Name = "some-crd"
 
