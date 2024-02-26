@@ -75,7 +75,7 @@ func Test_NewVirtualService_SetsCorrectNamespace(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 	watcher := getSimpleWatcher()
 	namespace := getSimpleNamespace()
-	var gateways []*istioclientapiv1beta1.Gateway = nil
+	var gateways *istioclientapiv1beta1.GatewayList = nil
 
 	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
@@ -87,20 +87,20 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenGatewaysAreEmpty(t *testing.T) {
 	watcher := getSimpleWatcher()
 	namespace := getSimpleNamespace()
-	gateways := []*istioclientapiv1beta1.Gateway{}
+	gateways := &istioclientapiv1beta1.GatewayList{}
 
 	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
-	assert.Contains(t, err.Error(), "gateways")
+	assert.Contains(t, err.Error(), "gateways.Items")
 }
 
 func Test_NewVirtualService_SetsCorrectGateways(t *testing.T) {
 	watcher := getSimpleWatcher()
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
-	expectedGatewayNames := getGatewayNamesMap(gateways)
+	expectedGatewayNames := getGatewayNamesMap(gateways.Items)
 
 	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
@@ -116,7 +116,7 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysHaveNoServers(t *testing.T)
 	watcher := getSimpleWatcher()
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
-	for _, gateway := range gateways {
+	for _, gateway := range gateways.Items {
 		gateway.Spec.Servers = []*istioapiv1beta1.Server{}
 	}
 
@@ -131,7 +131,7 @@ func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testin
 	watcher := getSimpleWatcher()
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
-	for _, gateway := range gateways {
+	for _, gateway := range gateways.Items {
 		for _, server := range gateway.Spec.GetServers() {
 			server.Hosts = []string{}
 		}
@@ -148,7 +148,7 @@ func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
 	watcher := getSimpleWatcher()
 	namespace := getSimpleNamespace()
 	gateways := getSimpleGateways()
-	expectedHosts := getHostNamesMap(gateways)
+	expectedHosts := getHostNamesMap(gateways.Items)
 
 	vs, err := istio.NewVirtualService(namespace, watcher, gateways)
 
@@ -225,7 +225,7 @@ func getDestinationPort(watcher *v1beta2.Watcher) uint32 {
 	return uint32(watcher.Spec.ServiceInfo.Port)
 }
 
-func getSimpleGateways() []*istioclientapiv1beta1.Gateway {
+func getSimpleGateways() *istioclientapiv1beta1.GatewayList {
 	gateways := []*istioclientapiv1beta1.Gateway{}
 	for gatewayIndex := 0; gatewayIndex < 3; gatewayIndex++ {
 		gateway := &istioclientapiv1beta1.Gateway{}
@@ -249,7 +249,9 @@ func getSimpleGateways() []*istioclientapiv1beta1.Gateway {
 		gateways = append(gateways, gateway)
 	}
 
-	return gateways
+	return &istioclientapiv1beta1.GatewayList{
+		Items: gateways,
+	}
 }
 
 func getGatewayNamesMap(gateways []*istioclientapiv1beta1.Gateway) map[string]bool {

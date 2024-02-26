@@ -11,8 +11,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 const (
@@ -69,33 +67,6 @@ func (c *Client) CreateVirtualService(ctx context.Context, virtualService *istio
 	return nil
 }
 
-func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) ([]*istioclientapiv1beta1.Gateway,
-	error,
-) {
-	selector, err := apimetav1.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
-	if err != nil {
-		return nil, fmt.Errorf("error converting label selector: %w", err)
-	}
-	labelSelector := selector.String()
-	gateways, err := c.NetworkingV1beta1().
-		Gateways(apimetav1.NamespaceAll).
-		List(ctx, apimetav1.ListOptions{
-			LabelSelector: labelSelector,
-		})
-	if err != nil {
-		return nil, fmt.Errorf("error looking up Istio gateway with the label selector %q: %w",
-			labelSelector, err)
-	}
-
-	if len(gateways.Items) == 0 {
-		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotFound",
-			"Watcher: Gateway for the VirtualService not found")
-		return nil, fmt.Errorf("%w. Label selector: %q", ErrCantFindMatchingGateway, labelSelector)
-	}
-
-	return gateways.Items, nil
-}
-
 func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 	virtualServiceRemote *istioclientapiv1beta1.VirtualService,
 ) error {
@@ -121,6 +92,28 @@ func (c *Client) DeleteVirtualService(ctx context.Context, name, namespace strin
 		return fmt.Errorf("failed to delete virtual service for cr: %w", err)
 	}
 	return nil
+}
+
+func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector *apimetav1.LabelSelector) (*istioclientapiv1beta1.GatewayList,
+	error,
+) {
+	selector, err := apimetav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, fmt.Errorf("error converting label selector: %w", err)
+	}
+
+	selectorString := selector.String()
+	gateways, err := c.NetworkingV1beta1().
+		Gateways(apimetav1.NamespaceAll).
+		List(ctx, apimetav1.ListOptions{
+			LabelSelector: selectorString,
+		})
+	if err != nil {
+		return nil, fmt.Errorf("error looking up Istio gateway with the label selector %q: %w",
+			selectorString, err)
+	}
+
+	return gateways, nil
 }
 
 func IsRouteConfigEqual(route1 *istioapiv1beta1.HTTPRoute, route2 *istioapiv1beta1.HTTPRoute) bool {

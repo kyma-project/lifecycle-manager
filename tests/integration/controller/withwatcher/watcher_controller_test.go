@@ -41,12 +41,12 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	if err != nil {
 		return err
 	}
-	gateways, err := customIstioClient.LookupGateways(suiteCtx, watcher)
+	gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcher.Spec.Gateway.LabelSelector)
 	if err != nil {
 		return err
 	}
-	Expect(gateways).To(HaveLen(1))
-	gateway := gateways[0]
+	Expect(gateways.Items).To(HaveLen(1))
+	gateway := gateways.Items[0]
 	Expect(gateway.Spec.GetServers()).To(HaveLen(1))
 	Expect(gateway.Spec.GetServers()[0].GetHosts()).To(HaveLen(1))
 	gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
@@ -62,13 +62,13 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 		if err := isListenerHTTPRouteConfigured(suiteCtx, customIstioClient, namespace, watcherCR); err != nil {
 			return err
 		}
-		gateways, err := customIstioClient.LookupGateways(suiteCtx, watcherCR)
+		gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcherCR.Spec.Gateway.LabelSelector)
 		if err != nil {
 			return err
 		}
-		Expect(gateways).To(HaveLen(1))
+		Expect(gateways.Items).To(HaveLen(1))
 		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, namespace, customIstioClient,
-			gateways[0]); err != nil {
+			gateways.Items[0]); err != nil {
 			return err
 		}
 	}

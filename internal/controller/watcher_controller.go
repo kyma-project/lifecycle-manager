@@ -144,8 +144,10 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-	gateways, err := r.IstioClient.LookupGateways(ctx, watcherCR)
-	if err != nil {
+	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector)
+	if err != nil || len(gateways.Items) == 0 {
+		r.EventRecorder.Event(watcherCR, "Warning", "WatcherGatewayNotFound",
+			"Watcher: Gateway for the VirtualService not found")
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 

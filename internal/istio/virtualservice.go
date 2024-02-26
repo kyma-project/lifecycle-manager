@@ -16,7 +16,7 @@ const (
 	prefixFormat    = "/%s/%s/event"
 )
 
-func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways []*istioclientapiv1beta1.Gateway) (*istioclientapiv1beta1.VirtualService, error) {
+func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
 	if namespace == "" {
 		return nil, fmt.Errorf("%w namespace", ErrInvalidArgument)
 	}
@@ -29,11 +29,15 @@ func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways []*i
 		return nil, fmt.Errorf("%w watcher.Name", ErrInvalidArgument)
 	}
 
-	if len(gateways) == 0 {
+	if gateways == nil {
 		return nil, fmt.Errorf("%w gateways", ErrInvalidArgument)
 	}
 
-	hosts, err := getHosts(gateways)
+	if len(gateways.Items) == 0 {
+		return nil, fmt.Errorf("%w gateways.Items", ErrInvalidArgument)
+	}
+
+	hosts, err := getHosts(gateways.Items)
 	if err != nil {
 		return nil, errors.Join(ErrInvalidArgument, err)
 	}
@@ -41,7 +45,7 @@ func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways []*i
 	virtualService := &istioclientapiv1beta1.VirtualService{}
 	virtualService.SetName(watcher.Name)
 	virtualService.SetNamespace(namespace)
-	virtualService.Spec.Gateways = getGatewayNames(gateways)
+	virtualService.Spec.Gateways = getGatewayNames(gateways.Items)
 	virtualService.Spec.Hosts = hosts
 	virtualService.Spec.Http = []*istioapiv1beta1.HTTPRoute{
 		PrepareIstioHTTPRouteForCR(watcher),
