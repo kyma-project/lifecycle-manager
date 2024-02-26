@@ -5,16 +5,11 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	istioapiv1beta1 "istio.io/api/networking/v1beta1"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-)
-
-const (
-	firstElementIdx = 0
 )
 
 type Client struct {
@@ -114,31 +109,4 @@ func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector 
 	}
 
 	return gateways, nil
-}
-
-func IsRouteConfigEqual(route1 *istioapiv1beta1.HTTPRoute, route2 *istioapiv1beta1.HTTPRoute) bool {
-	stringMatch1, ok := route1.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapiv1beta1.StringMatch_Prefix)
-	if !ok {
-		return false
-	}
-	stringMatch2, ok := route2.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapiv1beta1.StringMatch_Prefix)
-	if !ok {
-		return false
-	}
-
-	if stringMatch1.Prefix != stringMatch2.Prefix {
-		return false
-	}
-
-	if route1.GetRoute()[firstElementIdx].GetDestination().GetHost() !=
-		route2.GetRoute()[firstElementIdx].GetDestination().GetHost() {
-		return false
-	}
-
-	if route1.GetRoute()[firstElementIdx].GetDestination().GetPort().GetNumber() !=
-		route2.GetRoute()[firstElementIdx].GetDestination().GetPort().GetNumber() {
-		return false
-	}
-
-	return true
 }
