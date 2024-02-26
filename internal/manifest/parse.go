@@ -28,7 +28,7 @@ type PathExtractor struct {
 
 func NewPathExtractor(cache *filemutex.MutexCache) *PathExtractor {
 	if cache == nil {
-		return &PathExtractor{fileMutexCache: filemutex.NewMutexCache()}
+		return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
 	}
 	return &PathExtractor{fileMutexCache: cache}
 }
