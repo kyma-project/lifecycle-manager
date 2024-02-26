@@ -48,36 +48,10 @@ func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *ist
 	virtualService.Spec.Gateways = getGatewayNames(gateways.Items)
 	virtualService.Spec.Hosts = hosts
 	virtualService.Spec.Http = []*istioapiv1beta1.HTTPRoute{
-		PrepareIstioHTTPRouteForCR(watcher),
+		NewHTTPRoute(watcher),
 	}
 
 	return virtualService, nil
-}
-
-func PrepareIstioHTTPRouteForCR(obj *v1beta2.Watcher) *istioapiv1beta1.HTTPRoute {
-	return &istioapiv1beta1.HTTPRoute{
-		Name: client.ObjectKeyFromObject(obj).String(),
-		Match: []*istioapiv1beta1.HTTPMatchRequest{
-			{
-				Uri: &istioapiv1beta1.StringMatch{
-					MatchType: &istioapiv1beta1.StringMatch_Prefix{
-						//nolint:nosnakecase // external type
-						Prefix: fmt.Sprintf(prefixFormat, contractVersion, obj.GetModuleName()),
-					},
-				},
-			},
-		},
-		Route: []*istioapiv1beta1.HTTPRouteDestination{
-			{
-				Destination: &istioapiv1beta1.Destination{
-					Host: destinationHost(obj.Spec.ServiceInfo.Name, obj.Spec.ServiceInfo.Namespace),
-					Port: &istioapiv1beta1.PortSelector{
-						Number: uint32(obj.Spec.ServiceInfo.Port),
-					},
-				},
-			},
-		},
-	}
 }
 
 func getGatewayNames(gateways []*istioclientapiv1beta1.Gateway) []string {

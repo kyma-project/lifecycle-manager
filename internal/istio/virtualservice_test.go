@@ -171,21 +171,6 @@ func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {
 	assert.Len(t, vs.Spec.GetHttp(), 1)
 }
 
-func Test_PrepareIstioHTTPRouteForCR_ReturnsCorrectHttpRoute(t *testing.T) {
-	watcher := getSimpleWatcher()
-	expectedHTTPRouteName := getWatcherName(watcher)
-	expectedHTTPRouteMatchURIPrefix := getHTTPRoutePrefix(watcher)
-	expectedHTTPRouteDestinationHost := getDestinationHost(watcher)
-	expectedHTTPRouteDestinationPort := getDestinationPort(watcher)
-
-	httpRoute := istio.PrepareIstioHTTPRouteForCR(watcher)
-
-	assert.Equal(t, expectedHTTPRouteName, httpRoute.GetName())
-	assert.Equal(t, expectedHTTPRouteMatchURIPrefix, httpRoute.GetMatch()[0].GetUri().GetPrefix())
-	assert.Equal(t, expectedHTTPRouteDestinationHost, httpRoute.GetRoute()[0].GetDestination().GetHost())
-	assert.Equal(t, expectedHTTPRouteDestinationPort, httpRoute.GetRoute()[0].GetDestination().GetPort().GetNumber())
-}
-
 func getSimpleWatcher() *v1beta2.Watcher {
 	watcher := &v1beta2.Watcher{}
 
@@ -207,22 +192,6 @@ func getSimpleWatcher() *v1beta2.Watcher {
 
 func getSimpleNamespace() string {
 	return "bar"
-}
-
-func getWatcherName(watcher *v1beta2.Watcher) string {
-	return fmt.Sprintf("%v/%v", watcher.Namespace, watcher.Name)
-}
-
-func getHTTPRoutePrefix(watcher *v1beta2.Watcher) string {
-	return fmt.Sprintf("/v1/%s/event", watcher.GetLabels()[shared.ManagedBy])
-}
-
-func getDestinationHost(watcher *v1beta2.Watcher) string {
-	return fmt.Sprintf("%s.%s.svc.cluster.local", watcher.Spec.ServiceInfo.Name, watcher.Spec.ServiceInfo.Namespace)
-}
-
-func getDestinationPort(watcher *v1beta2.Watcher) uint32 {
-	return uint32(watcher.Spec.ServiceInfo.Port)
 }
 
 func getSimpleGateways() *istioclientapiv1beta1.GatewayList {
