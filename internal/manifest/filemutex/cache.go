@@ -18,7 +18,7 @@ func NewMutexCache(concurrMap *sync.Map) *MutexCache {
 	return &MutexCache{cache: concurrMap}
 }
 
-// GetLocker always returns the same sync.Locker instance for given key.
+// GetLocker always returns the same sync.Locker instance for a given key.
 func (m *MutexCache) GetLocker(key string) (sync.Locker, error) {
 	val, ok := m.cache.Load(key)
 	if !ok {

@@ -16,9 +16,16 @@ func TestNewMutexCache_WhenCalled_NotNil(t *testing.T) {
 	assert.NotNil(t, cache)
 }
 
+func TestNewMutexCache_WhenCalledWithInitialCache_NotNil(t *testing.T) {
+	internalCache := &sync.Map{}
+	cache := filemutex.NewMutexCache(internalCache)
+
+	assert.NotNil(t, cache)
+}
+
 const key = "testKey"
 
-func TestGetLocker_WhenCalled_CreatesMutexAndStoreInCache(t *testing.T) {
+func TestGetLocker_WhenCalled_CreatesMutexAndStoresInCache(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := filemutex.NewMutexCache(internalCache)
 
