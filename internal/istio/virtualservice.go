@@ -17,24 +17,8 @@ const (
 )
 
 func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
-	if namespace == "" {
-		return nil, fmt.Errorf("namespace must not be empty: %w", ErrInvalidArgument)
-	}
-
-	if watcher == nil {
-		return nil, fmt.Errorf("watcher must not be nil: %w", ErrInvalidArgument)
-	}
-
-	if watcher.GetName() == "" {
-		return nil, fmt.Errorf("watcher.Name must not be empty: %w", ErrInvalidArgument)
-	}
-
-	if gateways == nil {
-		return nil, fmt.Errorf("gateways must not be nil: %w", ErrInvalidArgument)
-	}
-
-	if len(gateways.Items) == 0 {
-		return nil, fmt.Errorf("gateways.Items must not be empty: %w", ErrInvalidArgument)
+	if err := validateArgumentsForNewVirtualService(namespace, watcher, gateways); err != nil {
+		return nil, err
 	}
 
 	hosts, err := getHosts(gateways.Items)
@@ -90,4 +74,28 @@ func getHosts(gateways []*istioclientapiv1beta1.Gateway) ([]string, error) {
 
 func destinationHost(serviceName, serviceNamespace string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace)
+}
+
+func validateArgumentsForNewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) error {
+	if namespace == "" {
+		return fmt.Errorf("namespace must not be empty: %w", ErrInvalidArgument)
+	}
+
+	if watcher == nil {
+		return fmt.Errorf("watcher must not be nil: %w", ErrInvalidArgument)
+	}
+
+	if watcher.GetName() == "" {
+		return fmt.Errorf("watcher.Name must not be empty: %w", ErrInvalidArgument)
+	}
+
+	if gateways == nil {
+		return fmt.Errorf("gateways must not be nil: %w", ErrInvalidArgument)
+	}
+
+	if len(gateways.Items) == 0 {
+		return fmt.Errorf("gateways.Items must not be empty: %w", ErrInvalidArgument)
+	}
+
+	return nil
 }
