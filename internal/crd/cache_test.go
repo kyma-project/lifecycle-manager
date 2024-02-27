@@ -55,7 +55,6 @@ func TestGet_WhenInCache_TypeIsRight(t *testing.T) {
 	cachedCrd, ok := cache.Get(key)
 
 	assert.True(t, ok)
-	assert.Equal(t, someCrd.Name, cachedCrd.Name)
 	assert.Equal(t, someCrd, cachedCrd)
 }
 
@@ -71,6 +70,5 @@ func TestAdd_WhenCalled(t *testing.T) {
 	assert.True(t, ok)
 	cachedCrd, ok := cachedValue.(apiextensionsv1.CustomResourceDefinition)
 	assert.True(t, ok)
-	assert.Equal(t, someCrd.Name, cachedCrd.Name)
 	assert.Equal(t, someCrd, cachedCrd)
 }
