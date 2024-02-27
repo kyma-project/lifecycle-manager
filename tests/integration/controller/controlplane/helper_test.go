@@ -12,7 +12,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -204,8 +203,8 @@ func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinitio
 
 	// Replace the cached CRD after updating the KCP CRD to validate that
 	// the Generation values are updated correctly
-	if _, ok := cache.GetCachedCRD(kymaCrdName); ok {
-		cache.SetCRDInCache(kymaCrdName, *crd)
+	if _, ok := crdCache.Get(kymaCrdName); ok {
+		crdCache.Add(kymaCrdName, *crd)
 	}
 	if err != nil {
 		return nil, err

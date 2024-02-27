@@ -32,7 +32,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -129,7 +129,7 @@ func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta
 }
 
 func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
-	err := r.IstioClient.RemoveVirtualServiceForCR(ctx, client.ObjectKeyFromObject(watcherCR), r.WatcherVSNamespace)
+	err := r.IstioClient.DeleteVirtualService(ctx, watcherCR.GetName(), r.WatcherVSNamespace)
 	if err != nil {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsConfigDelErr)
@@ -144,7 +144,14 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR, r.WatcherVSNamespace)
+	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector)
+	if err != nil || len(gateways.Items) == 0 {
+		r.EventRecorder.Event(watcherCR, "Warning", "WatcherGatewayNotFound",
+			"Watcher: Gateway for the VirtualService not found")
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
+	}
+
+	virtualSvc, err := istio.NewVirtualService(r.WatcherVSNamespace, watcherCR, gateways)
 	if err != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
