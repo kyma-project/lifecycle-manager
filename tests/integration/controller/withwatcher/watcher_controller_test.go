@@ -12,7 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -41,12 +41,12 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	if err != nil {
 		return err
 	}
-	gateways, err := customIstioClient.LookupGateways(suiteCtx, watcher)
+	gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcher.Spec.Gateway.LabelSelector)
 	if err != nil {
 		return err
 	}
-	Expect(gateways).To(HaveLen(1))
-	gateway := gateways[0]
+	Expect(gateways.Items).To(HaveLen(1))
+	gateway := gateways.Items[0]
 	Expect(gateway.Spec.GetServers()).To(HaveLen(1))
 	Expect(gateway.Spec.GetServers()[0].GetHosts()).To(HaveLen(1))
 	gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
@@ -62,13 +62,13 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 		if err := isListenerHTTPRouteConfigured(suiteCtx, customIstioClient, namespace, watcherCR); err != nil {
 			return err
 		}
-		gateways, err := customIstioClient.LookupGateways(suiteCtx, watcherCR)
+		gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcherCR.Spec.Gateway.LabelSelector)
 		if err != nil {
 			return err
 		}
-		Expect(gateways).To(HaveLen(1))
+		Expect(gateways.Items).To(HaveLen(1))
 		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, namespace, customIstioClient,
-			gateways[0]); err != nil {
+			gateways.Items[0]); err != nil {
 			return err
 		}
 	}
@@ -135,7 +135,7 @@ func allVirtualServicesDeletedForNs(namespace string) func(customIstioClient *is
 			if err != nil {
 				return err
 			}
-			err = customIstioClient.RemoveVirtualServiceForCR(suiteCtx, client.ObjectKeyFromObject(watcherCR), namespace)
+			err = customIstioClient.DeleteVirtualService(suiteCtx, watcherCR.GetName(), namespace)
 			if err != nil {
 				return err
 			}
@@ -185,7 +185,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
 	BeforeAll(func() {
-		customIstioClient, err = istio.NewVersionedIstioClient(restCfg,
+		customIstioClient, err = istio.NewIstioClient(restCfg,
 			k8sManager.GetEventRecorderFor(controller.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		// create Watcher CRs

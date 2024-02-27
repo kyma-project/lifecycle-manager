@@ -8,6 +8,7 @@ import (
 	"os"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	istioapiv1beta1 "istio.io/api/networking/v1beta1"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +18,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -253,8 +254,8 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, names
 
 	for idx, route := range virtualService.Spec.GetHttp() {
 		if route.GetName() == client.ObjectKeyFromObject(watcher).String() {
-			istioHTTPRoute := istio.PrepareIstioHTTPRouteForCR(watcher)
-			if !istio.IsRouteConfigEqual(virtualService.Spec.GetHttp()[idx], istioHTTPRoute) {
+			istioHTTPRoute, _ := istio.NewHTTPRoute(watcher)
+			if !isRouteConfigEqual(virtualService.Spec.GetHttp()[idx], istioHTTPRoute) {
 				return errRouteConfigMismatch
 			}
 			return nil
@@ -282,4 +283,33 @@ func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, namespace s
 	}
 
 	return errRouteNotFound
+}
+
+func isRouteConfigEqual(route1 *istioapiv1beta1.HTTPRoute, route2 *istioapiv1beta1.HTTPRoute) bool {
+	const firstElementIdx = 0
+
+	stringMatch1, ok := route1.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapiv1beta1.StringMatch_Prefix)
+	if !ok {
+		return false
+	}
+	stringMatch2, ok := route2.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapiv1beta1.StringMatch_Prefix)
+	if !ok {
+		return false
+	}
+
+	if stringMatch1.Prefix != stringMatch2.Prefix {
+		return false
+	}
+
+	if route1.GetRoute()[firstElementIdx].GetDestination().GetHost() !=
+		route2.GetRoute()[firstElementIdx].GetDestination().GetHost() {
+		return false
+	}
+
+	if route1.GetRoute()[firstElementIdx].GetDestination().GetPort().GetNumber() !=
+		route2.GetRoute()[firstElementIdx].GetDestination().GetPort().GetNumber() {
+		return false
+	}
+
+	return true
 }
