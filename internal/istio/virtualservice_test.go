@@ -93,7 +93,7 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysAreEmpty(t *testing.T) {
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
-	assert.Contains(t, err.Error(), "gateways.Items")
+	assert.Contains(t, err.Error(), "gateways")
 }
 
 func Test_NewVirtualService_SetsCorrectGateways(t *testing.T) {

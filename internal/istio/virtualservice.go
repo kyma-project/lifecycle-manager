@@ -89,12 +89,8 @@ func validateArgumentsForNewVirtualService(namespace string, watcher *v1beta2.Wa
 		return fmt.Errorf("watcher.Name must not be empty: %w", ErrInvalidArgument)
 	}
 
-	if gateways == nil {
-		return fmt.Errorf("gateways must not be nil: %w", ErrInvalidArgument)
-	}
-
-	if len(gateways.Items) == 0 {
-		return fmt.Errorf("gateways.Items must not be empty: %w", ErrInvalidArgument)
+	if gateways == nil || len(gateways.Items) == 0 {
+		return fmt.Errorf("gateways must not be empty: %w", ErrInvalidArgument)
 	}
 
 	return nil
