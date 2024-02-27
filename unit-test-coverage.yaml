@@ -1,3 +1,5 @@
 packages:
+  internal/crd: 100
   internal/descriptor/cache: 93
   internal/descriptor/provider: 68
+  internal/manifest/filemutex: 100

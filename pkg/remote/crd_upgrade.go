@@ -15,8 +15,43 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/cache"
+	"github.com/kyma-project/lifecycle-manager/internal/crd"
 )
+
+type SyncCrdsUseCase struct {
+	crdCache *crd.Cache
+}
+
+func NewSyncCrdsUseCase(cache *crd.Cache) SyncCrdsUseCase {
+	if cache == nil {
+		return SyncCrdsUseCase{crdCache: crd.NewCache(nil)}
+	}
+	return SyncCrdsUseCase{crdCache: cache}
+}
+
+func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma,
+	runtimeClient Client, controlPlaneClient Client,
+) (bool, error) {
+	kymaCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
+		runtimeClient, kyma, shared.KymaKind.Plural())
+	if err != nil {
+		err = client.IgnoreNotFound(err)
+		if err != nil {
+			return false, fmt.Errorf("failed to fetch module template CRDs and update Kyma annotations: %w", err)
+		}
+	}
+
+	moduleTemplateCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
+		runtimeClient, kyma, shared.ModuleTemplateKind.Plural())
+	if err != nil {
+		err = client.IgnoreNotFound(err)
+		if err != nil {
+			return false, fmt.Errorf("failed to fetch kyma CRDs and update Kyma annotations: %w", err)
+		}
+	}
+
+	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
+}
 
 func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.CustomResourceDefinition) error {
 	crdToApply := &apiextensionsv1.CustomResourceDefinition{}
@@ -82,34 +117,10 @@ func getAnnotation(crd *apiextensionsv1.CustomResourceDefinition, crdType CrdTyp
 	return fmt.Sprintf("%s-%s-crd-generation", strings.ToLower(crd.Spec.Names.Kind), strings.ToLower(string(crdType)))
 }
 
-func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
-	runtimeClient Client, controlPlaneClient Client,
-) (bool, error) {
-	kymaCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
-		runtimeClient, kyma, shared.KymaKind.Plural())
-	if err != nil {
-		err = client.IgnoreNotFound(err)
-		if err != nil {
-			return false, fmt.Errorf("failed to fetch module template CRDs and update Kyma annotations: %w", err)
-		}
-	}
-
-	moduleTemplateCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
-		runtimeClient, kyma, shared.ModuleTemplateKind.Plural())
-	if err != nil {
-		err = client.IgnoreNotFound(err)
-		if err != nil {
-			return false, fmt.Errorf("failed to fetch kyma CRDs and update Kyma annotations: %w", err)
-		}
-	}
-
-	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
-}
-
-func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient Client,
+func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient Client,
 	runtimeClient Client, kyma *v1beta2.Kyma, plural string,
 ) (bool, error) {
-	kcpCrd, skrCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
+	kcpCrd, skrCrd, err := s.fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
 	if err != nil {
 		return false, err
 	}
@@ -133,25 +144,23 @@ func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient C
 	return crdUpdated, nil
 }
 
-func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
+func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
 	*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error,
 ) {
-	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
-
 	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
-
-	crd, ok := cache.GetCachedCRD(kcpCrdName)
+	kcpCrd, ok := s.crdCache.Get(kcpCrdName)
 	if !ok {
-		crd = apiextensionsv1.CustomResourceDefinition{}
+		kcpCrd = apiextensionsv1.CustomResourceDefinition{}
 		err := controlPlaneClient.Get(
-			ctx, client.ObjectKey{Name: kcpCrdName}, &crd,
+			ctx, client.ObjectKey{Name: kcpCrdName}, &kcpCrd,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to fetch CRDs from kcp: %w", err)
 		}
-		cache.SetCRDInCache(kcpCrdName, crd)
+		s.crdCache.Add(kcpCrdName, kcpCrd)
 	}
 
+	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
 	err := runtimeClient.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
@@ -161,7 +170,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 		return nil, nil, fmt.Errorf("failed to fetch CRDs from runtime: %w", err)
 	}
 
-	return &crd, crdFromRuntime, nil
+	return &kcpCrd, crdFromRuntime, nil
 }
 
 func ContainsLatestVersion(crdFromRuntime *apiextensionsv1.CustomResourceDefinition, latestVersion string) bool {
