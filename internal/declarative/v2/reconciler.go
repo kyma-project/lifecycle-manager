@@ -164,7 +164,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff)
 	}
 
-	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+	if err := r.removeModuleCR(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
@@ -405,7 +405,7 @@ func generateOperationMessage(installationCondition apimetav1.Condition, stateIn
 	return installationCondition.Message
 }
 
-func (r *Reconciler) doPreDelete(ctx context.Context, clnt Client, obj Object) error {
+func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object) error {
 	if !obj.GetDeletionTimestamp().IsZero() {
 		for _, preDelete := range r.PreDeletes {
 			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
