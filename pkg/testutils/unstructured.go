@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/onsi/ginkgo/v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -77,6 +78,7 @@ func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 }
 
 func CRExists(obj apimetav1.Object, clientError error) error {
+	ginkgo.GinkgoWriter.Println(clientError)
 	if util.IsNotFound(clientError) {
 		return ErrNotFound
 	}

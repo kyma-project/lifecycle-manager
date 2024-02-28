@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,19 +31,19 @@ func ModuleTemplateExists(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	defaultChannel string,
-) error {
+) bool {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, defaultChannel)
-	return CRExists(moduleTemplate, err)
+	return moduleTemplate == nil || errors.Is(err, templatelookup.ErrNoTemplatesInListResult)
 }
 
-func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
+func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) bool {
 	for _, module := range kyma.Spec.Modules {
-		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel); err != nil {
-			return err
+		if !ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel) {
+			return false
 		}
 	}
 
-	return nil
+	return true
 }
 
 func UpdateModuleTemplateSpec(ctx context.Context,

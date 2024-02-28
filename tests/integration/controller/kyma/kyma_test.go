@@ -137,7 +137,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("Module Catalog created", func() {
 			Eventually(AllModuleTemplatesExists, Timeout, Interval).
 				WithArguments(ctx, controlPlaneClient, kyma).
-				Should(Succeed())
+				Should(BeTrue())
 		})
 	})
 

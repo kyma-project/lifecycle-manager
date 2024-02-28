@@ -223,13 +223,18 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, module, kyma.Spec.Channel).
 				Should(Succeed())
+
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, module, kyma.Spec.Channel).
+				Should(BeFalse())
 		})
 
 		It("Then ModuleTemplate is no longer in SKR Cluster", func() {
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, module, kyma.Spec.Channel).
-				Should(Equal(ErrNotFound))
+				Should(BeFalse())
 		})
 	})
 })

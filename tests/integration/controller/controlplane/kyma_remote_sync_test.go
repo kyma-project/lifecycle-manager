@@ -99,10 +99,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("ModuleTemplate exists in KCP cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, moduleInKCP, kyma.Spec.Channel).
-			Should(Succeed())
+			Should(BeTrue())
 		By("ModuleTemplate exists in SKR cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, runtimeClient, moduleInKCP,
-			kyma.Spec.Channel).Should(Succeed())
+			kyma.Spec.Channel).Should(BeTrue())
 
 		By("No module synced to remote Kyma")
 		Eventually(NotContainsModuleInSpec, Timeout, Interval).
@@ -113,7 +113,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Remote Module Catalog created")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, moduleInSKR, kyma.Spec.Channel).
-			Should(Succeed())
+			Should(BeTrue())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(runtimeClient, remoteKyma.GetName(), flags.DefaultRemoteSyncNamespace).
 			Should(Succeed())
