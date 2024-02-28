@@ -8,11 +8,10 @@ const (
 	// ManagedBy defines the controller managing the resource.
 	ManagedBy = OperatorGroup + Separator + "managed-by"
 
-	KymaName               = OperatorGroup + Separator + "kyma-name"
-	Signature              = OperatorGroup + Separator + "signature"
-	ModuleName             = OperatorGroup + Separator + "module-name"
-	IsRemoteModuleTemplate = OperatorGroup + Separator + "remote-template"
-	IsMandatoryModule      = OperatorGroup + Separator + "mandatory-module"
+	KymaName          = OperatorGroup + Separator + "kyma-name"
+	Signature         = OperatorGroup + Separator + "signature"
+	ModuleName        = OperatorGroup + Separator + "module-name"
+	IsMandatoryModule = OperatorGroup + Separator + "mandatory-module"
 
 	//nolint:gosec // OCI registry credits label, no confidential content
 	OCIRegistryCredLabel = "oci-registry-cred"

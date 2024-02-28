@@ -1,0 +1,116 @@
+name: "Create release"
+
+env:
+  IMAGE_REPO: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
+  CODE_REPOSITORY: kyma-project/lifecycle-manager
+on:
+  workflow_dispatch:
+    inputs:
+      tagName:
+        description: "Release tag. Example: 1.2.3"
+        default: ""
+        required: true
+      commitHash:
+        description: "full commit hash or branch name to tag"
+        default: "main"
+        required: true
+jobs:
+  validate-release:
+    name: Validate release
+    runs-on: ubuntu-latest
+    outputs:
+      last_release_tag: ${{ steps.get_last_release_tag.outputs.last_release_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate the release tag
+        run: ./scripts/release/validate_release_tag.sh ${{ github.event.inputs.tagName }}
+      - name: Check if release doesn't exist yet
+        env:
+          CURRENT_RELEASE_TAG: ${{ github.event.inputs.tagName }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/release/get_release_by_tag.sh $CURRENT_RELEASE_TAG
+      - name: Get last release version
+        id: get_last_release_tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          SCRIPT_OUTPUT=$(./scripts/release/get_last_release.sh)
+          SCRIPT_EXIT_CODE=$?
+          if [[ $SCRIPT_EXIT_CODE != 0 ]]; then
+            echo "$SCRIPT_OUTPUT"
+            exit $SCRIPT_EXIT_CODE
+          fi
+          set -e
+          echo "Last Release version: $SCRIPT_OUTPUT"
+          echo "last_release_tag=$SCRIPT_OUTPUT" >> $GITHUB_OUTPUT
+  create-tag:
+    name: Create lightweight tag
+    runs-on: ubuntu-latest
+    needs: validate-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create lightweight tag
+        run: |
+          git tag ${{ github.event.inputs.tagName }} ${{ github.event.inputs.commitHash }}
+          git push origin ${{ github.event.inputs.tagName }}
+      - name: Wait for the Docker image
+        timeout-minutes: 20
+        env:
+          ITERATIONS: 40
+          SLEEP_SECONDS: 30
+        run: ./scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.tagName }} $ITERATIONS $SLEEP_SECONDS
+  draft-release:
+    name: Create draft release
+    runs-on: ubuntu-latest
+    needs: [validate-release, create-tag]
+    outputs:
+      release_id: ${{ steps.draft_release.outputs.release_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate changelog
+        id: generate_changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_RELEASE_TAG: ${{ github.event.inputs.tagName }}
+          LAST_RELEASE_TAG: ${{ needs.validate-release.outputs.last_release_tag }}
+          DOCKER_IMAGE_URL: ${{ env.IMAGE_REPO }}:${{ github.event.inputs.tagName }}
+        run: |
+          echo "Generating changelog for version: $CURRENT_RELEASE_TAG" 
+          CHANGELOG_FILE_NAME=$(./scripts/release/create_changelog.sh $CURRENT_RELEASE_TAG $LAST_RELEASE_TAG $DOCKER_IMAGE_URL)
+          echo "changelog_file_name=$CHANGELOG_FILE_NAME" >> $GITHUB_OUTPUT
+      - name: Create draft release
+        id: draft_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_RELEASE_TAG: ${{ github.event.inputs.tagName }}
+          CHANGELOG_FILE_NAME: ${{ steps.generate_changelog.outputs.changelog_file_name }}
+        run: |
+          RELEASE_ID=$(./scripts/release/create_draft_release.sh $CURRENT_RELEASE_TAG $CHANGELOG_FILE_NAME)
+          echo "RELEASE_ID=$RELEASE_ID"
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+  publish_release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs: draft-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ needs.draft-release.outputs.release_id }}
+        run: |
+          echo "RELEASE_ID=$RELEASE_ID"
+          ./scripts/release/publish_release.sh $RELEASE_ID

@@ -1,6 +1,8 @@
 # ModuleTemplate Custom Resource
 
-The core of our modular discovery, the [ModuleTemplate custom resource (CR)](/api/v1beta2/moduletemplate_types.go) contains 3 main parts that are used to initialize and resolve modules.
+The core of our modular discovery is the [ModuleTemplate custom resource (CR)](../../../api/v1beta2/moduletemplate_types.go). It is used to initialize and resolve modules.
+
+## Configuration
 
 ### **.spec.channel**
 
@@ -52,6 +54,7 @@ The `.spec.customStateCheck` field in Kyma Lifecycle Manager is primarily design
 Imagine a scenario where a module's health is indicated by `status.health` in its CR. In such cases, users can employ the customStateCheck configuration to map the health states to Lifecycle Manager states.
 
 Here's an example of YAML configuration:
+
 ```yaml
 spec:
   customStateCheck:
@@ -68,6 +71,7 @@ In this example, when the module's CR is in the green health state, the correspo
 The valid mappedState values are defined in the [Kyma CR API](https://github.com/kyma-project/lifecycle-manager/blob/main/api/v1beta2/kyma_types.go#L225-L245).
 
 Furthermore, this field supports complex mappings. For instance, if multiple states are needed to determine the `Ready` state, users can define the following customStateCheck:
+
 ```yaml
 spec:
   customStateCheck:
@@ -87,12 +91,12 @@ The core of any ModuleTemplate CR, the descriptor can be one of the schemas ment
 
 By default, it will most likely be easiest to use [Kyma CLI](https://github.com/kyma-project/cli/tree/main) and its `create module` command to create a template with a valid descriptor, but it can also be generated manually, for example using [OCM CLI](https://github.com/open-component-model/ocm/tree/main/cmds/ocm).
 
-### `.spec.mandatory`
+### **.spec.mandatory**
 
 The `mandatory` field indicates whether the module is installed in all runtime clusters without any interaction from the user.
 Mandatory modules do not appear in the Kyma CR `.status` and `.spec.modules`, furthermore they have the same configuration across all runtime clusters.
 
-### `operator.kyma-project.io` labels
+## `operator.kyma-project.io` labels
 
 These are the synchronization labels available on the ModuleTemplate CR:
 

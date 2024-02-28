@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -25,16 +24,18 @@ type RawManifestInfo struct {
 }
 
 type SpecResolver struct {
-	KCP          *declarativev2.ClusterInfo
-	ChartCache   string
-	cachedCharts map[string]string
+	KCP                   *declarativev2.ClusterInfo
+	manifestPathExtractor *PathExtractor
+	ChartCache            string
+	cachedCharts          map[string]string
 }
 
-func NewSpecResolver(kcp *declarativev2.ClusterInfo) *SpecResolver {
+func NewSpecResolver(kcp *declarativev2.ClusterInfo, extractor *PathExtractor) *SpecResolver {
 	return &SpecResolver{
-		KCP:          kcp,
-		ChartCache:   os.TempDir(),
-		cachedCharts: make(map[string]string),
+		KCP:                   kcp,
+		manifestPathExtractor: extractor,
+		ChartCache:            os.TempDir(),
+		cachedCharts:          make(map[string]string),
 	}
 }
 
@@ -43,9 +44,7 @@ var (
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
 )
 
-func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
-	remoteClient client.Client,
-) (*declarativev2.Spec, error) {
+func (s *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object) (*declarativev2.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
@@ -54,10 +53,6 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 		)
 	}
 
-	targetClient := m.KCP.Client
-	if manifest.Labels[shared.IsRemoteModuleTemplate] == shared.EnableLabelValue {
-		targetClient = remoteClient
-	}
 	var imageSpec v1beta2.ImageSpec
 	if err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
@@ -72,7 +67,7 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
-	rawManifestInfo, err := m.getRawManifestForInstall(ctx, imageSpec, targetClient)
+	rawManifestInfo, err := s.getRawManifestForInstall(ctx, imageSpec, s.KCP.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -85,17 +80,16 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 	}, nil
 }
 
-func (m *SpecResolver) getRawManifestForInstall(ctx context.Context,
+func (s *SpecResolver) getRawManifestForInstall(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	targetClient client.Client,
 ) (*RawManifestInfo, error) {
-	keyChain, err := m.lookupKeyChain(ctx, imageSpec, targetClient)
+	keyChain, err := s.lookupKeyChain(ctx, imageSpec, targetClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
 
-	// extract raw manifest from layer digest
-	rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
+	rawManifestPath, err := s.manifestPathExtractor.GetPathFromRawManifest(ctx, imageSpec, keyChain)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
 	}
@@ -105,7 +99,7 @@ func (m *SpecResolver) getRawManifestForInstall(ctx context.Context,
 	}, nil
 }
 
-func (m *SpecResolver) lookupKeyChain(
+func (s *SpecResolver) lookupKeyChain(
 	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient client.Client,
 ) (authn.Keychain, error) {
 	var keyChain authn.Keychain
