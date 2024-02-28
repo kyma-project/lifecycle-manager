@@ -149,8 +149,8 @@ func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, st
 		return 0, err
 	}
 
-	re := regexp.MustCompile(fmt.Sprintf(`%s{kyma_name=%s,module_name=%s,state=%s} (\d+)`,
-		metrics.MetricMandatoryTemplateCount, kymaName, moduleName, state))
+	re := regexp.MustCompile(fmt.Sprintf(`%s{kyma_name="%s",module_name="%s",state="%s"} (\d+)`,
+		metrics.MetricMandatoryModuleState, kymaName, moduleName, state))
 	return parseCount(re, bodyString)
 }
 

@@ -33,7 +33,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 					Should(Succeed())
 			})
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
-				Consistently(KymaIsInState).
+				Eventually(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 					Should(Succeed())
@@ -68,7 +68,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 		It("Then mandatory SKR module is removed", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-v2-controller-manager",
+				WithArguments(runtimeClient, deployName,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
