@@ -40,11 +40,16 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			})
 
 			By("And count of Mandatory Module State Metric in \"Ready\" State is 1", func() {
-				// TODO Check Metrics
+				Eventually(GetMandatoryModuleStateMetric).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), "template-operator", string(shared.StateReady)).
+					Should(Equal(1))
 			})
 
 			By("And count of Mandatory ModuleTemplates Metric is 1", func() {
-				// TODO Check Metrics
+				Eventually(GetMandatoryModuleTemplateCountMetric).
+					WithContext(ctx).
+					Should(Equal(1))
 			})
 		})
 
@@ -82,11 +87,16 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			})
 
 			By("And count of Mandatory Module State Metric in \"Ready\" State is 0", func() {
-				// TODO Check Metric
+				Eventually(GetMandatoryModuleStateMetric).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), "template-operator", string(shared.StateReady)).
+					Should(Equal(0))
 			})
 
 			By("And count of Mandatory ModuleTemplates Metric is 0", func() {
-				// TODO Check Metric
+				Eventually(GetMandatoryModuleTemplateCountMetric).
+					WithContext(ctx).
+					Should(Equal(0))
 			})
 		})
 

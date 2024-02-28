@@ -133,6 +133,27 @@ func GetSelfSignedCertNotRenewMetricsGauge(ctx context.Context, kymaName string)
 	return parseCount(re, bodyString)
 }
 
+func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(fmt.Sprintf(`%s (\d+)`, metrics.MetricMandatoryTemplateCount))
+	return parseCount(re, bodyString)
+}
+
+func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, state string) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(fmt.Sprintf(`%s{kyma_name=%s,module_name=%s,state=%s} (\d+)`,
+		metrics.MetricMandatoryTemplateCount, kymaName, moduleName, state))
+	return parseCount(re, bodyString)
+}
+
 func getMetricsBody(ctx context.Context) (string, error) {
 	clnt := &http.Client{}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
