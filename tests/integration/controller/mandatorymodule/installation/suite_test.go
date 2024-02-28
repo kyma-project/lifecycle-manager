@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -113,6 +114,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           false,
+		Metrics:             metrics.NewMandatoryModulesMetrics(),
 	}
 
 	err = mandatoryModuleReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
