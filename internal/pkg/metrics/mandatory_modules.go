@@ -48,3 +48,11 @@ func (m *MandatoryModulesMetrics) RecordMandatoryModuleState(kymaName, moduleNam
 		}).Set(newValue)
 	}
 }
+
+// CleanupMetrics deletes all 'lifecycle_mgr_mandatory_module_state' metrics for the matching Kyma and Module.
+func (m *MandatoryModulesMetrics) CleanupMetrics(kymaName, moduleName string) {
+	m.moduleStateGauge.DeletePartialMatch(prometheus.Labels{
+		KymaNameLabel:   kymaName,
+		moduleNameLabel: moduleName,
+	})
+}

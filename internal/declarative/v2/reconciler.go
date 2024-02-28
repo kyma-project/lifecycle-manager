@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -117,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	logf.FromContext(ctx).Info("Before setting the Mandatory Module Metrics")
-	if obj.GetLabels()[shared.IsMandatoryModule] == "true" {
+	if obj.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
 		state := obj.GetStatus().State
 		kymaName := obj.GetLabels()[shared.KymaName]
 		moduleName := obj.GetLabels()[shared.ModuleName]
@@ -136,6 +137,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
+			r.cleanUpMandatoryModuleMetrics(obj)
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec)
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestParseSpec)
@@ -149,6 +151,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
+			r.cleanUpMandatoryModuleMetrics(obj)
 			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone)
 		}
 
@@ -202,6 +205,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
+		r.cleanUpMandatoryModuleMetrics(obj)
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting)
 	}
 	return ctrl.Result{RequeueAfter: r.Success}, nil
@@ -665,4 +669,12 @@ func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
 		return ctrl.Result{}, fmt.Errorf("failed to update object: %w", err)
 	}
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) cleanUpMandatoryModuleMetrics(obj Object) {
+	if obj.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
+		kymaName := obj.GetLabels()[shared.KymaName]
+		moduleName := obj.GetLabels()[shared.ModuleName]
+		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
+	}
 }
