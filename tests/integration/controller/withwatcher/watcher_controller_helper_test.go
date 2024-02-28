@@ -164,7 +164,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
-			Namespace: apimetav1.NamespaceDefault,
+			Namespace: kcpSystemNs,
 			Labels: map[string]string{
 				shared.ManagedBy: managerInstanceName,
 			},
@@ -173,7 +173,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      managerInstanceName + "-svc",
-				Namespace: apimetav1.NamespaceDefault,
+				Namespace: kcpSystemNs,
 			},
 			LabelsToWatch: map[string]string{
 				managerInstanceName + "-watchable": "true",
@@ -212,7 +212,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 func getWatcher(name string) (*v1beta2.Watcher, error) {
 	watcherCR := &v1beta2.Watcher{}
 	err := controlPlaneClient.Get(suiteCtx,
-		client.ObjectKey{Name: name, Namespace: apimetav1.NamespaceDefault},
+		client.ObjectKey{Name: name, Namespace: kcpSystemNs},
 		watcherCR)
 	return watcherCR, err
 }
