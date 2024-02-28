@@ -67,7 +67,8 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 }
 
 func DeleteModuleTemplate(ctx context.Context,
-	clnt client.Client, module v1beta2.Module, kymaChannel string) error {
+	clnt client.Client, module v1beta2.Module, kymaChannel string,
+) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel)
 	if util.IsNotFound(err) {
 		return nil
