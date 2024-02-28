@@ -6,7 +6,9 @@ import (
 
 	istioapiv1beta1 "istio.io/api/networking/v1beta1"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -16,7 +18,27 @@ const (
 	prefixFormat    = "/%s/%s/event"
 )
 
-func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
+type (
+	VirtualServiceFactory interface {
+		NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error)
+	}
+
+	VirtualServiceService struct {
+		scheme *machineryruntime.Scheme
+	}
+)
+
+func NewVirtualServiceService(scheme *machineryruntime.Scheme) (*VirtualServiceService, error) {
+	if scheme == nil {
+		return nil, fmt.Errorf("scheme must not be nil: %w", ErrInvalidArgument)
+	}
+
+	return &VirtualServiceService{
+		scheme: scheme,
+	}, nil
+}
+
+func (vss *VirtualServiceService) NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
 	if err := validateArgumentsForNewVirtualService(namespace, watcher, gateways); err != nil {
 		return nil, err
 	}
@@ -38,6 +60,10 @@ func NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *ist
 	virtualService.Spec.Hosts = hosts
 	virtualService.Spec.Http = []*istioapiv1beta1.HTTPRoute{
 		httpRoute,
+	}
+
+	if err := controllerutil.SetOwnerReference(watcher, virtualService, vss.scheme); err != nil {
+		return nil, errors.Join(ErrFailedToAddOwnerReference, err)
 	}
 
 	return virtualService, nil

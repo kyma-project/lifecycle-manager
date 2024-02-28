@@ -13,6 +13,8 @@ var (
 	ErrFailedToConvertLabelSelector      = errors.New("failed to convert label selector to selector")
 	ErrFailedToGetGatewayByLabelSelector = errors.New("failed to get gateway by label selector")
 
+	ErrFailedToAddOwnerReference = errors.New("failed to add owner reference")
+
 	ErrCantFindMatchingGateway    = errors.New("can't find matching Istio Gateway")
 	ErrInvalidArgument            = errors.New("invalid argument")
 	ErrCantFindGatewayServersHost = errors.New("can't find Istio Gateway servers hosts")

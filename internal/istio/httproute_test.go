@@ -23,7 +23,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoName(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := setupWatcher()
 	watcher.Name = ""
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -34,7 +34,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoNamespace(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := setupWatcher()
 	watcher.Namespace = ""
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -45,7 +45,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoNamespace(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := setupWatcher()
 	watcher.Labels = nil
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -56,7 +56,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := setupWatcher()
 	watcher.Spec.ServiceInfo.Name = ""
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -67,7 +67,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoNamespace(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := setupWatcher()
 	watcher.Spec.ServiceInfo.Namespace = ""
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -78,7 +78,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoNamespace(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoPort(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := setupWatcher()
 	watcher.Spec.ServiceInfo.Port = 0
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -89,7 +89,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoPort(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsCorrectHttpRoute(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := setupWatcher()
 	expectedHTTPRouteName := getWatcherName(watcher)
 	expectedHTTPRouteMatchURIPrefix := getHTTPRoutePrefix(watcher)
 	expectedHTTPRouteDestinationHost := getDestinationHost(watcher)

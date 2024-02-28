@@ -49,10 +49,11 @@ var (
 type WatcherReconciler struct {
 	client.Client
 	record.EventRecorder
-	IstioClient        *istio.Client
-	WatcherVSNamespace string
-	RestConfig         *rest.Config
-	Scheme             *machineryruntime.Scheme
+	IstioClient           *istio.Client
+	VirtualServiceFactory istio.VirtualServiceFactory
+	WatcherVSNamespace    string
+	RestConfig            *rest.Config
+	Scheme                *machineryruntime.Scheme
 	queue.RequeueIntervals
 }
 
@@ -151,7 +152,7 @@ func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 
-	virtualSvc, err := istio.NewVirtualService(r.WatcherVSNamespace, watcherCR, gateways)
+	virtualSvc, err := r.VirtualServiceFactory.NewVirtualService(r.WatcherVSNamespace, watcherCR, gateways)
 	if err != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
