@@ -70,6 +70,7 @@ type KymaReconciler struct {
 	record.EventRecorder
 	queue.RequeueIntervals
 	DescriptorProvider  *provider.CachedDescriptorProvider
+	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
 	KcpRestConfig       *rest.Config
 	RemoteClientCache   *remote.ClientCache
@@ -241,7 +242,7 @@ func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, k
 	if err != nil {
 		return false, fmt.Errorf("failed to get syncContext: %w", err)
 	}
-	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
+	updateRequired, err := r.SyncRemoteCrds.Execute(
 		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
 	if err != nil {
 		return false, err
@@ -584,7 +585,7 @@ func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta
 }
 
 func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1beta2.Kyma) (common.Modules, error) {
-	lookup := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider, r.SyncKymaEnabled(kyma))
+	lookup := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider)
 	templates := lookup.GetRegularTemplates(ctx, kyma)
 	for _, template := range templates {
 		if template.Err != nil {
