@@ -157,19 +157,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestRenderResources)
 	}
 
+	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
+		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff)
+	}
+
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.Metrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestPreDelete)
-	}
-
-	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
-		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
-		return ctrl.Result{Requeue: true}, nil
-	} else if err != nil {
-		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff)
 	}
 
 	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
