@@ -99,6 +99,5 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 					Should(Equal(0))
 			})
 		})
-
 	})
 })
