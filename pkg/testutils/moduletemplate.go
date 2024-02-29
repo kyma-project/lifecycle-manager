@@ -31,19 +31,23 @@ func ModuleTemplateExists(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	defaultChannel string,
-) bool {
+) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, defaultChannel)
-	return moduleTemplate == nil || errors.Is(err, templatelookup.ErrNoTemplatesInListResult)
+	if moduleTemplate == nil || errors.Is(err, templatelookup.ErrNoTemplatesInListResult) {
+		return ErrNotFound
+	}
+
+	return nil
 }
 
-func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) bool {
+func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
 	for _, module := range kyma.Spec.Modules {
-		if !ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel) {
-			return false
+		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel); err != nil {
+			return err
 		}
 	}
 
-	return true
+	return nil
 }
 
 func UpdateModuleTemplateSpec(ctx context.Context,
