@@ -41,7 +41,7 @@ func (matcher *BeInStateMatcher) FailureMessage(actual interface{}) string {
 }
 
 func (matcher *BeInStateMatcher) NegatedFailureMessage(actual interface{}) string {
-	return format.Message(actual, "not "+matcher.FailureMessage(actual))
+	return negateMessage(actual, matcher.FailureMessage(actual))
 }
 
 func HaveConditionWithStatus(
@@ -73,7 +73,7 @@ func (matcher *HaveConditionMatcher) FailureMessage(actual interface{}) string {
 }
 
 func (matcher *HaveConditionMatcher) NegatedFailureMessage(actual interface{}) string {
-	return format.Message(actual, "not "+matcher.FailureMessage(actual))
+	return negateMessage(actual, matcher.FailureMessage(actual))
 }
 
 func EventuallyDeclarativeStatusShould(ctx context.Context, key client.ObjectKey, testClient client.Client,
@@ -140,5 +140,9 @@ func (matcher *SyncedResourcesExistingMatcher) FailureMessage(actual interface{}
 }
 
 func (matcher *SyncedResourcesExistingMatcher) NegatedFailureMessage(actual interface{}) string {
-	return format.Message(actual, "not "+matcher.FailureMessage(actual))
+	return negateMessage(actual, matcher.FailureMessage(actual))
+}
+
+func negateMessage(actual interface{}, message string) string {
+	return format.Message(actual, "not "+message)
 }
