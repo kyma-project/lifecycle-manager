@@ -453,7 +453,7 @@ func dropStoredVersion(mgr manager.Manager, versionToBeRemoved string) {
 	kcpClient, err := clientset.NewForConfig(cfg)
 	if err != nil {
 		setupLog.V(log.DebugLevel).Error(err,
-			fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
+			"unable to initialize client to remove "+versionToBeRemoved)
 	}
 	ctx := context.TODO()
 	var crdList *apiextensionsv1.CustomResourceDefinitionList
