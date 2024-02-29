@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -137,6 +139,8 @@ var _ = BeforeSuite(func() {
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
+		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
