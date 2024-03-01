@@ -118,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	logf.FromContext(ctx).Info("Before setting the Mandatory Module Metrics")
-	if obj.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
+	if obj.GetLabels() != nil && obj.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
 		state := obj.GetStatus().State
 		kymaName := obj.GetLabels()[shared.KymaName]
 		moduleName := obj.GetLabels()[shared.ModuleName]
