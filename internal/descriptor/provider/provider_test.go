@@ -52,7 +52,7 @@ func TestGetDescriptor_OnInvalidRawDescriptor_ReturnsErrDescriptorNil(t *testing
 }
 
 func TestGetDescriptor_OnEmptyCache_ReturnsParsedDescriptor(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache()
+	descriptorCache := cache.NewDescriptorCache(nil)
 	descriptorProvider := provider.NewCachedDescriptorProvider(descriptorCache)
 	template := builder.NewModuleTemplateBuilder().Build()
 
@@ -81,7 +81,7 @@ func TestAdd_OnDescriptorTypeButNull_ReturnsNoError(t *testing.T) {
 }
 
 func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache()
+	descriptorCache := cache.NewDescriptorCache(nil)
 	descriptorProvider := provider.NewCachedDescriptorProvider(descriptorCache)
 
 	expected := &v1beta2.Descriptor{

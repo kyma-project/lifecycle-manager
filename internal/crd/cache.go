@@ -6,16 +6,27 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-type Cache struct {
-	cache *sync.Map
+type Metrics interface {
+	UpdateCrdTotal(size int)
 }
 
-func NewCache(internalCache *sync.Map) *Cache {
+type Cache struct {
+	cache   *sync.Map
+	metrics Metrics
+}
+
+func NewCache(internalCache *sync.Map, metrics Metrics) *Cache {
 	if internalCache == nil {
-		return &Cache{cache: &sync.Map{}}
+		return &Cache{
+			cache:   &sync.Map{},
+			metrics: metrics,
+		}
 	}
 
-	return &Cache{cache: internalCache}
+	return &Cache{
+		cache:   internalCache,
+		metrics: metrics,
+	}
 }
 
 func (c *Cache) Get(key string) (apiextensionsv1.CustomResourceDefinition, bool) {
@@ -33,4 +44,13 @@ func (c *Cache) Get(key string) (apiextensionsv1.CustomResourceDefinition, bool)
 
 func (c *Cache) Add(key string, value apiextensionsv1.CustomResourceDefinition) {
 	c.cache.Store(key, value)
+	if c.metrics == nil {
+		return
+	}
+	length := 0
+	c.cache.Range(func(key, value interface{}) bool {
+		length++
+		return true
+	})
+	c.metrics.UpdateCrdTotal(length)
 }
