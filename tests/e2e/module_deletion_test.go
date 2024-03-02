@@ -217,5 +217,19 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments(defaultRemoteKymaName, remoteNamespace, runtimeClient, shared.StateReady).
 				Should(Succeed())
 		})
+
+		It("When ModuleTemplate is removed from KCP Cluster", func() {
+			Eventually(DeleteModuleTemplate).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, module, kyma.Spec.Channel).
+				Should(Succeed())
+		})
+
+		It("Then ModuleTemplate is no longer in SKR Cluster", func() {
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, module, kyma.Spec.Channel).
+				Should(Equal(ErrNotFound))
+		})
 	})
 })

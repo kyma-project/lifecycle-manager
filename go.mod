@@ -17,9 +17,9 @@ require (
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/open-component-model/ocm v0.6.0
-	github.com/prometheus/client_golang v1.18.0
-	github.com/stretchr/testify v1.8.4
+	github.com/open-component-model/ocm v0.7.0
+	github.com/prometheus/client_golang v1.19.0
+	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
@@ -217,10 +217,10 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mandelsoft/filepath v0.0.0-20230412200429-36b1eb66bd27 // indirect
+	github.com/mandelsoft/filepath v0.0.0-20240223090642-3e2777258aa3 // indirect
 	github.com/mandelsoft/logging v0.0.0-20230905123808-7042ee3aae45 // indirect
 	github.com/mandelsoft/spiff v1.7.0-beta-5 // indirect
-	github.com/mandelsoft/vfs v0.4.0 // indirect
+	github.com/mandelsoft/vfs v0.4.3 // indirect
 	github.com/marstr/guid v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
@@ -251,7 +251,7 @@ require (
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/common v0.47.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/puzpuzpuz/xsync/v2 v2.5.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
@@ -277,9 +277,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.17.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.1.6 // indirect
-	github.com/stretchr/objx v0.5.1 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
+	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c // indirect
 	github.com/thales-e-security/pool v0.0.2 // indirect
 	github.com/theupdateframework/go-tuf v0.6.1 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect

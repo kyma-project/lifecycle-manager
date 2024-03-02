@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -9,6 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 func GetModuleTemplate(ctx context.Context,
@@ -25,18 +27,22 @@ func GetModuleTemplate(ctx context.Context,
 	return templateInfo.ModuleTemplate, nil
 }
 
-func RegularModuleTemplateExists(ctx context.Context,
+func ModuleTemplateExists(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	defaultChannel string,
 ) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, defaultChannel)
-	return CRExists(moduleTemplate, err)
+	if moduleTemplate == nil || errors.Is(err, templatelookup.ErrNoTemplatesInListResult) {
+		return ErrNotFound
+	}
+
+	return nil
 }
 
 func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
 	for _, module := range kyma.Spec.Modules {
-		if err := RegularModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel); err != nil {
+		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel); err != nil {
 			return err
 		}
 	}
@@ -61,6 +67,21 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{key: newValue}
 	if err := clnt.Update(ctx, moduleTemplate); err != nil {
 		return fmt.Errorf("update module tempate: %w", err)
+	}
+	return nil
+}
+
+func DeleteModuleTemplate(ctx context.Context,
+	clnt client.Client, module v1beta2.Module, kymaChannel string,
+) error {
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel)
+	if util.IsNotFound(err) {
+		return nil
+	}
+
+	err = client.IgnoreNotFound(clnt.Delete(ctx, moduleTemplate))
+	if err != nil {
+		return fmt.Errorf("moduletemplate not deleted: %w", err)
 	}
 	return nil
 }

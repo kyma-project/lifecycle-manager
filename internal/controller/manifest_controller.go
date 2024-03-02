@@ -83,11 +83,12 @@ func ManifestReconciler(mgr manager.Manager, requeueIntervals queue.RequeueInter
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
+	extractor := manifest.NewPathExtractor(nil)
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
 		mgr, &v1beta2.Manifest{}, requeueIntervals, manifestMetrics,
 		declarativev2.WithSpecResolver(
-			manifest.NewSpecResolver(kcp),
+			manifest.NewSpecResolver(kcp, extractor),
 		),
 		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),

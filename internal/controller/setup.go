@@ -22,7 +22,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 )
@@ -142,7 +142,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options ctrlrunti
 		return errRestConfigIsNotSet
 	}
 	var err error
-	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, r.EventRecorder,
+	r.IstioClient, err = istio.NewIstioClient(r.RestConfig, r.EventRecorder,
 		ctrl.Log.WithName("istioClient"))
 	if err != nil {
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
