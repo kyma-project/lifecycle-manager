@@ -85,7 +85,7 @@ func IsManifestReconcileDurationCountNonZero(ctx context.Context, manifestName s
 		metrics.MetricReconcileDuration + `_count{` + metrics.MetricLabelModule +
 			`="` + manifestName + reMatchCount)
 	count, err := parseCount(re, bodyString)
-	return count >= 0, err
+	return count > 0, err
 }
 
 func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state string) (int, error) {
