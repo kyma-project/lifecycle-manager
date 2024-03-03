@@ -51,6 +51,7 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 	}
 }
 
+// GetManifest is only used when manifest still been tracked in kyma.status
 func GetManifest(ctx context.Context,
 	clnt client.Client,
 	kymaName,
@@ -70,17 +71,17 @@ func GetManifest(ctx context.Context,
 		}
 	}
 
-	return GetManifestWithObjectKey(ctx, clnt, client.ObjectKey{
-		Namespace: manifestKey.Namespace,
-		Name:      manifestKey.Name,
-	})
+	return GetManifestWithObjectKey(ctx, clnt, manifestKey.GetNamespace(), manifestKey.GetName())
 }
 
 func GetManifestWithObjectKey(ctx context.Context,
-	clnt client.Client, obj client.ObjectKey,
+	clnt client.Client, manifestNamespace, manifestName string,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	if err := clnt.Get(ctx, obj, manifest); err != nil {
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Namespace: manifestNamespace,
+		Name:      manifestName,
+	}, manifest); err != nil {
 		return nil, fmt.Errorf("get manifest: %w", err)
 	}
 	return manifest, nil

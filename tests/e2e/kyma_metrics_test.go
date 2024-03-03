@@ -1,13 +1,13 @@
 package e2e_test
 
 import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -62,17 +62,20 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 		})
 
 		It("When Kyma Module is disabled", func() {
+			manifestInCluster, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
+				module.Name)
+			Expect(err).Should(Succeed())
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 				Should(Succeed())
-		})
 
-		It("Then Manifest CR is removed", func() {
-			Eventually(ManifestExists).
-				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
-				Should(Equal(ErrNotFound))
+			By("Then Manifest CR is removed")
+			Eventually(func() error {
+				manifest, err := GetManifestWithObjectKey(ctx, controlPlaneClient, manifestInCluster.GetNamespace(),
+					manifestInCluster.GetName())
+				return CRExists(manifest, err)
+			}).Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
@@ -91,6 +94,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
 				Should(Equal(0))
+
 		})
 
 		It("Then Related Manifest Requeue Metrics Get Increased", func() {
