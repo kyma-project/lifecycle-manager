@@ -21,7 +21,6 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 15,
   "links": [],
   "panels": [
     {
@@ -160,11 +159,13 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:133",
           "format": "ops",
           "logBase": 1,
           "show": true
         },
         {
+          "$$hashKey": "object:134",
           "format": "ops",
           "logBase": 1,
           "show": true
@@ -256,11 +257,13 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:339",
           "format": "bytes",
           "logBase": 1,
           "show": true
         },
         {
+          "$$hashKey": "object:340",
           "format": "bytes",
           "logBase": 1,
           "show": true
@@ -353,12 +356,14 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:392",
           "format": "short",
           "logBase": 1,
           "min": 0,
           "show": true
         },
         {
+          "$$hashKey": "object:393",
           "format": "short",
           "logBase": 1,
           "min": 0,
@@ -630,6 +635,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:152",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -638,6 +644,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:153",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -747,11 +754,13 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:101",
           "format": "s",
           "logBase": 1,
           "show": true
         },
         {
+          "$$hashKey": "object:102",
           "format": "s",
           "logBase": 1,
           "show": true
@@ -1213,11 +1222,13 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:365",
           "format": "s",
           "logBase": 1,
           "show": true
         },
         {
+          "$$hashKey": "object:366",
           "format": "s",
           "logBase": 1,
           "show": true
@@ -1321,11 +1332,13 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:275",
           "format": "s",
           "logBase": 1,
           "show": true
         },
         {
+          "$$hashKey": "object:276",
           "format": "s",
           "logBase": 1,
           "show": true
@@ -1429,12 +1442,14 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:567",
           "format": "short",
           "logBase": 1,
           "min": 0,
           "show": true
         },
         {
+          "$$hashKey": "object:568",
           "format": "short",
           "logBase": 1,
           "min": 0,
@@ -1542,11 +1557,13 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:186",
           "format": "ops",
           "logBase": 1,
           "show": true
         },
         {
+          "$$hashKey": "object:187",
           "format": "ops",
           "logBase": 1,
           "show": true
@@ -1752,6 +1769,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:103",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -1760,6 +1778,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:104",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -1970,7 +1989,7 @@
     "list": []
   },
   "time": {
-    "from": "now-7d",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
