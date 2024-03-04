@@ -1,0 +1,77 @@
+name: "Check for diff in manifests"
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    types:
+      - "opened"
+      - "synchronize"
+      - "reopened"
+      - "labeled"
+      - "unlabeled"
+
+jobs:
+  create-pr-manifests:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'confirm/helm-update') == false }}
+    name: Create PR manifests
+    runs-on: ubuntu-latest
+    outputs:
+      manifests: ${{ steps.make-pr-manifests.outputs.manifests }}
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+      - name: Run 'make dry-run'
+        id: make-pr-manifests
+        run: |
+          make dry-run
+          {
+            echo 'manifests<<EOF'
+            cat ./dry-run/manifests.yaml
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+  create-main-manifests:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'confirm/helm-update') == false }}
+    name: Create 'main' manifests
+    runs-on: ubuntu-latest
+    outputs:
+      manifests: ${{ steps.make-main-manifests.outputs.manifests }}
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Run 'make dry-run'
+        id: make-main-manifests
+        run: |
+          make dry-run
+          {
+            echo 'manifests<<EOF'
+            cat ./dry-run/manifests.yaml
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+  diff-manifests:
+    needs:
+    - create-pr-manifests
+    - create-main-manifests
+    name: Diff manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diff
+        env:
+          PR_MANIFESTS: ${{needs.create-pr-manifests.outputs.manifests}}
+          MAIN_MANIFESTS: ${{needs.create-main-manifests.outputs.manifests}}
+        run: |
+          echo "$PR_MANIFESTS" >> ./prManifests.yaml
+          echo "$MAIN_MANIFESTS" >> ./mainManifests.yaml
+
+          set +e
+          SCRIPT_OUTPUT=$(diff ./prManifests.yaml ./mainManifests.yaml)
+          SCRIPT_EXIT_CODE=$?
+          if [[ $SCRIPT_EXIT_CODE != 0 ]]; then
+            echo "Detected diff in manifests. Make sure to update Helm charts accordingly and add the'confirm/helm-update' label to the PR when okay."
+            echo "$SCRIPT_OUTPUT"
+            exit $SCRIPT_EXIT_CODE
+          fi
+          set -e
+
+          echo "No diff in manifests, all good."
