@@ -47,7 +47,7 @@ The module list is used to define the desired set of all modules. This is mainly
 Let's take a look at this simplified ModuleTemplate CR:
 
 ```yaml
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: ModuleTemplate
 metadata:
   name: moduletemplate-sample
@@ -129,7 +129,7 @@ We also calculate the **.status.state** readiness based on all the conditions av
 This describes the tracked modules that should be installed within a Kyma cluster. Each tracked module is based on one entry in **.spec.modules** and represents the resolved Manifest CR that is based on a given ModuleTemplate CR in a release channel:
 
 ```yaml
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: Kyma
 # ...
 status:
@@ -137,7 +137,7 @@ status:
   - channel: alpha
     fqdn: kyma.project.io/module/btp-operator
     manifest:
-      apiVersion: operator.kyma-project.io/v1beta1
+      apiVersion: operator.kyma-project.io/v1beta2
       kind: Manifest
       metadata:
         generation: 1
@@ -146,7 +146,7 @@ status:
     name: btp-operator
     state: Processing
     template:
-      apiVersion: operator.kyma-project.io/v1beta1
+      apiVersion: operator.kyma-project.io/v1beta2
       kind: ModuleTemplate
       metadata:
         generation: 2
