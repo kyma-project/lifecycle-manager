@@ -3,7 +3,6 @@ package withwatcher_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 
@@ -173,11 +172,11 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 		Spec: v1beta2.WatcherSpec{
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
-				Name:      fmt.Sprintf("%s-svc", managerInstanceName),
+				Name:      managerInstanceName + "-svc",
 				Namespace: apimetav1.NamespaceDefault,
 			},
 			LabelsToWatch: map[string]string{
-				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
+				managerInstanceName + "-watchable": "true",
 			},
 			ResourceToWatch: v1beta2.WatchableGVR{
 				Group:    v1beta2.GroupVersionResource.Group,

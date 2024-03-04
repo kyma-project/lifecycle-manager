@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -92,6 +93,9 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	reconcileStart := time.Now()
+	defer r.Metrics.ObserveReconcileDuration(reconcileStart, req.NamespacedName.Name)
+
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
 		r.Metrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
@@ -376,7 +380,7 @@ func (r *Reconciler) checkTargetReadiness(
 	}
 
 	if crStateInfo.State == shared.StateProcessing {
-		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", crStateInfo.Info)
+		waitingMsg := "waiting for resources to become ready: " + crStateInfo.Info
 		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
 		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
