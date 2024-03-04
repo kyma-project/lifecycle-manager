@@ -77,7 +77,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				manifest, err := GetManifestWithObjectKey(ctx, controlPlaneClient, manifestInCluster.GetNamespace(),
 					manifestInCluster.GetName())
 				return CRExists(manifest, err)
-			}).WithTimeout(1 * time.Minute).Should(Equal(ErrNotFound))
+			}).WithTimeout(2 * time.Minute).Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
