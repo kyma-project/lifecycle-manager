@@ -106,7 +106,6 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
 				Should(Equal(0))
-
 		})
 
 		It("Then Related Manifest Requeue Metrics Get Increased", func() {

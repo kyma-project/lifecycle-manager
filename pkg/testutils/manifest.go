@@ -51,7 +51,7 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 	}
 }
 
-// GetManifest is only used when manifest still been tracked in kyma.status
+// GetManifest is only used when manifest still been tracked in kyma.status.
 func GetManifest(ctx context.Context,
 	clnt client.Client,
 	kymaName,
