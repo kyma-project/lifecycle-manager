@@ -27,7 +27,7 @@ func NewCachedDescriptorProvider(descriptorCache *cache.DescriptorCache) *Cached
 		}
 	}
 	return &CachedDescriptorProvider{
-		descriptorCache: cache.NewDescriptorCache(nil),
+		descriptorCache: cache.NewDescriptorCache(nil, nil),
 	}
 }
 

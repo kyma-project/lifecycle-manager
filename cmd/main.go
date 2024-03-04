@@ -40,7 +40,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -52,6 +52,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -128,7 +129,7 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme) {
+func setupManager(flagVar *flags.FlagVar, cacheOptions ctrlcache.Options, scheme *machineryruntime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.ClientQPS)
 	config.Burst = flagVar.ClientBurst
@@ -160,9 +161,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
 
-	remoteClientCache := remote.NewClientCache()
+	cacheMetrics := metrics.NewCacheSizeMetrics()
+	remoteClientCache := remote.NewClientCache(nil, cacheMetrics)
 	sharedMetrics := metrics.NewSharedMetrics()
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	descriptorCache := cache.NewDescriptorCache(nil, cacheMetrics)
+	descriptorProvider := provider.NewCachedDescriptorProvider(descriptorCache)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
