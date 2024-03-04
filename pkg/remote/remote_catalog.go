@@ -258,7 +258,6 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 	}, crd)
-
 	if err != nil {
 		return fmt.Errorf("failed to get module template CRD from kcp: %w", err)
 	}

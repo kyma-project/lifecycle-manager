@@ -133,10 +133,10 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	remoteClientCache := remote.NewClientCache()
-	descriptorCache = cache.NewDescriptorCache()
+	remoteClientCache := remote.NewClientCache(nil, nil)
+	descriptorCache = cache.NewDescriptorCache(nil, nil)
 	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)
-	crdCache = crd.NewCache(nil)
+	crdCache = crd.NewCache(nil, nil)
 	err = (&controller.KymaReconciler{
 		Client:              k8sManager.GetClient(),
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),

@@ -48,7 +48,6 @@ func CheckKLMLogs(ctx context.Context,
 
 	_, err = getPodLogs(ctx, runtimeConfig,
 		runtimeClient, remoteNamespace, watcher.SkrResourceName, watcherPodContainer, logsSince)
-
 	if err != nil {
 		return err
 	}

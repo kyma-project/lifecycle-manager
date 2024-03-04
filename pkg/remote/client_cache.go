@@ -6,25 +6,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewClientCache() *ClientCache {
-	return &ClientCache{internal: &sync.Map{}}
+type Metrics interface {
+	UpdateClientTotal(size int)
 }
 
-// ClientCache is an optimized concurrency-safe in-memory cache based on sync.Map.
-// It is mainly written so that a program that needs multiple Clients in different goroutines
-// can access them without recreation. It does this by holding a concurrency-safe reference map
-// based on an access key (ClientCacheID). It is not optimized for multi-write scenarios, but rather
-// append-only cases where clients are expected to live longer than their calling goroutine.
-//
-// It thus borrows the same optimizations from it:
-// The ClientCache type is optimized for when the entry for a given
-// key is only ever written once but read many times, as in caches that only grow.
+func NewClientCache(cache *sync.Map, metrics Metrics) *ClientCache {
+	if cache == nil {
+		return &ClientCache{
+			cache:   &sync.Map{},
+			metrics: metrics,
+		}
+	}
+	return &ClientCache{
+		cache:   cache,
+		metrics: metrics,
+	}
+}
+
 type ClientCache struct {
-	internal *sync.Map
+	cache   *sync.Map
+	metrics Metrics
+	size    int
 }
 
-func (cache *ClientCache) Get(key client.ObjectKey) Client {
-	value, ok := cache.internal.Load(key)
+func (c *ClientCache) Get(key client.ObjectKey) Client {
+	value, ok := c.cache.Load(key)
 	if !ok {
 		return nil
 	}
@@ -36,10 +42,26 @@ func (cache *ClientCache) Get(key client.ObjectKey) Client {
 	return clnt
 }
 
-func (cache *ClientCache) Set(key client.ObjectKey, value Client) {
-	cache.internal.Store(key, value)
+func (c *ClientCache) Set(key client.ObjectKey, value Client) {
+	_, existed := c.cache.Swap(key, value)
+	if !existed {
+		c.size++
+	}
+	if c.metrics != nil {
+		c.metrics.UpdateClientTotal(c.size)
+	}
 }
 
-func (cache *ClientCache) Del(key client.ObjectKey) {
-	cache.internal.Delete(key)
+func (c *ClientCache) Del(key client.ObjectKey) {
+	_, existed := c.cache.LoadAndDelete(key)
+	if !existed {
+		c.size--
+	}
+	if c.metrics != nil {
+		c.metrics.UpdateClientTotal(c.size)
+	}
+}
+
+func (c *ClientCache) GetSize() int {
+	return c.size
 }

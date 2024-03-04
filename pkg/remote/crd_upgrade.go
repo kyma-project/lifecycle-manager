@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,7 +26,7 @@ type SyncCrdsUseCase struct {
 
 func NewSyncCrdsUseCase(cache *crd.Cache) SyncCrdsUseCase {
 	if cache == nil {
-		return SyncCrdsUseCase{crdCache: crd.NewCache(nil)}
+		return SyncCrdsUseCase{crdCache: crd.NewCache(nil, metrics.NewCacheSizeMetrics())}
 	}
 	return SyncCrdsUseCase{crdCache: cache}
 }

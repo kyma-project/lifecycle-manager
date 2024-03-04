@@ -13,10 +13,11 @@ type Metrics interface {
 type Cache struct {
 	cache   *sync.Map
 	metrics Metrics
+	size    int
 }
 
-func NewCache(internalCache *sync.Map, metrics Metrics) *Cache {
-	if internalCache == nil {
+func NewCache(cache *sync.Map, metrics Metrics) *Cache {
+	if cache == nil {
 		return &Cache{
 			cache:   &sync.Map{},
 			metrics: metrics,
@@ -24,7 +25,7 @@ func NewCache(internalCache *sync.Map, metrics Metrics) *Cache {
 	}
 
 	return &Cache{
-		cache:   internalCache,
+		cache:   cache,
 		metrics: metrics,
 	}
 }
@@ -43,14 +44,15 @@ func (c *Cache) Get(key string) (apiextensionsv1.CustomResourceDefinition, bool)
 }
 
 func (c *Cache) Add(key string, value apiextensionsv1.CustomResourceDefinition) {
-	c.cache.Store(key, value)
-	if c.metrics == nil {
-		return
+	_, existed := c.cache.Swap(key, value)
+	if !existed {
+		c.size++
 	}
-	length := 0
-	c.cache.Range(func(key, value interface{}) bool {
-		length++
-		return true
-	})
-	c.metrics.UpdateCrdTotal(length)
+	if c.metrics != nil {
+		c.metrics.UpdateCrdTotal(c.size)
+	}
+}
+
+func (c *Cache) GetSize() int {
+	return c.size
 }

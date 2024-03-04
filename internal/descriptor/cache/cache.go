@@ -11,19 +11,27 @@ type Metrics interface {
 }
 
 type DescriptorCache struct {
-	cache   sync.Map
+	cache   *sync.Map
 	metrics Metrics
+	size    int
 }
 
-func NewDescriptorCache(metrics Metrics) *DescriptorCache {
+func NewDescriptorCache(cache *sync.Map, metrics Metrics) *DescriptorCache {
+	if cache == nil {
+		return &DescriptorCache{
+			cache:   &sync.Map{},
+			metrics: metrics,
+		}
+	}
+
 	return &DescriptorCache{
-		cache:   sync.Map{},
+		cache:   cache,
 		metrics: metrics,
 	}
 }
 
-func (d *DescriptorCache) Get(key DescriptorKey) *v1beta2.Descriptor {
-	value, ok := d.cache.Load(string(key))
+func (c *DescriptorCache) Get(key DescriptorKey) *v1beta2.Descriptor {
+	value, ok := c.cache.Load(string(key))
 	if !ok {
 		return nil
 	}
@@ -35,15 +43,16 @@ func (d *DescriptorCache) Get(key DescriptorKey) *v1beta2.Descriptor {
 	return &v1beta2.Descriptor{ComponentDescriptor: desc.Copy()}
 }
 
-func (d *DescriptorCache) Set(key DescriptorKey, value *v1beta2.Descriptor) {
-	d.cache.Store(string(key), value)
-	if d.metrics == nil {
-		return
+func (c *DescriptorCache) Set(key DescriptorKey, value *v1beta2.Descriptor) {
+	_, existed := c.cache.Swap(string(key), value)
+	if !existed {
+		c.size++
 	}
-	length := 0
-	d.cache.Range(func(key, value interface{}) bool {
-		length++
-		return true
-	})
-	d.metrics.UpdateDescriptorTotal(length)
+	if c.metrics != nil {
+		c.metrics.UpdateDescriptorTotal(c.size)
+	}
+}
+
+func (c *DescriptorCache) GetSize() int {
+	return c.size
 }
