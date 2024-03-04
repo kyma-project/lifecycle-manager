@@ -3,11 +3,12 @@ package random
 import "math/rand"
 
 const (
-	randomNameLength  = 8
-	randomNameCharSet = "abcdefghijklmnopqrstuvwxyz"
+	randomNameLength        = 8
+	randomNameCharSet       = "abcdefghijklmnopqrstuvwxyz"
+	randomPortUpperBoundary = 65535
 )
 
-// RandomName creates a random string [a-z] of len 8.
+// Name creates a random string [a-z] of len 8.
 func Name() string {
 	b := make([]byte, randomNameLength)
 	for i := range b {
@@ -15,4 +16,10 @@ func Name() string {
 		b[i] = randomNameCharSet[rand.Intn(len(randomNameCharSet))]
 	}
 	return string(b)
+}
+
+// Port creates a random int64 in range [1, 65535].
+func Port() int64 {
+	//nolint:gosec // random number generator sufficient for testing purposes
+	return int64(rand.Intn(randomPortUpperBoundary) + 1)
 }

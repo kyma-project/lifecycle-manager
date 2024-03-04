@@ -10,12 +10,12 @@ import (
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/uuid"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 func Test_NewVirtualServiceService_ReturnsError_WhenSchemeIsNil(t *testing.T) {
@@ -38,7 +38,7 @@ func Test_NewVirtualServiceService_ReturnsVirtualServiceService(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 	vss := setupVirtualServiceService(t)
 	var watcher *v1beta2.Watcher = nil
-	namespace := setupNamespace()
+	namespace := random.Name()
 	gateways := setupGateways()
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -51,7 +51,7 @@ func Test_NewVirtualService_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenWatcherNameIsEmpty(t *testing.T) {
 	vss := setupVirtualServiceService(t)
 	watcher := &v1beta2.Watcher{}
-	namespace := setupNamespace()
+	namespace := random.Name()
 	gateways := setupGateways()
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -63,8 +63,8 @@ func Test_NewVirtualService_ReturnsError_WhenWatcherNameIsEmpty(t *testing.T) {
 
 func Test_NewVirtualService_SetsCorrectName(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -75,7 +75,7 @@ func Test_NewVirtualService_SetsCorrectName(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenNamespaceIsEmpty(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
+	watcher := builder.NewWatcherBuilder().Build()
 	namespace := ""
 	gateways := setupGateways()
 
@@ -88,8 +88,8 @@ func Test_NewVirtualService_ReturnsError_WhenNamespaceIsEmpty(t *testing.T) {
 
 func Test_NewVirtualService_SetsCorrectNamespace(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -100,8 +100,8 @@ func Test_NewVirtualService_SetsCorrectNamespace(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	var gateways *istioclientapiv1beta1.GatewayList = nil
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -113,8 +113,8 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenGatewaysAreEmpty(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := &istioclientapiv1beta1.GatewayList{}
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -126,8 +126,8 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysAreEmpty(t *testing.T) {
 
 func Test_NewVirtualService_SetsCorrectGateways(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 	expectedGatewayNames := getGatewayNamesMap(gateways.Items)
 
@@ -143,8 +143,8 @@ func Test_NewVirtualService_SetsCorrectGateways(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenGatewaysHaveNoServers(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 	for _, gateway := range gateways.Items {
 		gateway.Spec.Servers = []*istioapiv1beta1.Server{}
@@ -159,8 +159,8 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysHaveNoServers(t *testing.T)
 
 func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 	for _, gateway := range gateways.Items {
 		for _, server := range gateway.Spec.GetServers() {
@@ -177,8 +177,8 @@ func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testin
 
 func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 	expectedHosts := getHostNamesMap(gateways.Items)
 
@@ -194,8 +194,8 @@ func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenUnableToCreateHTTPRoute(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 	watcher.Spec.ServiceInfo = v1beta2.Service{}
 
@@ -208,8 +208,8 @@ func Test_NewVirtualService_ReturnsError_WhenUnableToCreateHTTPRoute(t *testing.
 
 func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -220,8 +220,8 @@ func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenFailingToAddOwnerReference(t *testing.T) {
 	vss, _ := istio.NewVirtualServiceService(machineryruntime.NewScheme()) // does not provide needed Watcher scheme
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 
 	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
@@ -232,8 +232,8 @@ func Test_NewVirtualService_ReturnsError_WhenFailingToAddOwnerReference(t *testi
 
 func Test_NewVirtualService_SetsOwnerReference(t *testing.T) {
 	vss := setupVirtualServiceService(t)
-	watcher := setupWatcher()
-	namespace := setupNamespace()
+	watcher := builder.NewWatcherBuilder().Build()
+	namespace := watcher.GetNamespace()
 	gateways := setupGateways()
 	expectedOwnerReference := getOwnerReference(watcher)
 
@@ -263,39 +263,12 @@ func setupScheme(t *testing.T) *machineryruntime.Scheme {
 	return scheme
 }
 
-func setupWatcher() *v1beta2.Watcher {
-	watcher := &v1beta2.Watcher{}
-
-	watcher.SetName("watcher-name")
-	watcher.SetNamespace(setupNamespace())
-
-	watcher.Labels = map[string]string{
-		shared.ManagedBy: "some-manager",
-	}
-
-	watcher.Spec.ServiceInfo = v1beta2.Service{
-		Name:      "service-name",
-		Namespace: setupNamespace(),
-		Port:      4711,
-	}
-
-	watcher.APIVersion = "operator.kyma-project.io/v1beta2"
-	watcher.Kind = "Watcher"
-	watcher.UID = uuid.NewUUID()
-
-	return watcher
-}
-
-func setupNamespace() string {
-	return "bar"
-}
-
 func setupGateways() *istioclientapiv1beta1.GatewayList {
 	gateways := []*istioclientapiv1beta1.Gateway{}
 	for gatewayIndex := 0; gatewayIndex < 3; gatewayIndex++ {
 		gateway := &istioclientapiv1beta1.Gateway{}
 		gateway.SetName(fmt.Sprintf("gateway-name-%v", gatewayIndex))
-		gateway.SetNamespace(setupNamespace())
+		gateway.SetNamespace(random.Name())
 
 		servers := []*istioapiv1beta1.Server{}
 		for serverIndex := 0; serverIndex < 3; serverIndex++ {
