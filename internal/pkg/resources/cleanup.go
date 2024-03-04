@@ -55,6 +55,7 @@ func (c *ConcurrentCleanup) CleanupResources(
 	status shared.Status,
 ) error {
 	if err := c.Run(ctx, resources); errors.Is(err, ErrDeletionNotFinished) {
+		c.manifest.SetStatus(status.WithState(shared.StateWarning).WithErr(err))
 		return err
 	} else if err != nil {
 		c.manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
@@ -95,7 +96,6 @@ func isOperatorRelatedResources(kind string) bool {
 }
 
 func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) error {
-	// The Runtime Complexity of this Branch is N as only ServerSideApplier Patch is required
 	results := make(chan error, len(infos))
 	for i := range infos {
 		i := i
