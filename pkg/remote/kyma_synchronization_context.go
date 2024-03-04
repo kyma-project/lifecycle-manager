@@ -157,7 +157,6 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crd,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
 	}
