@@ -1,19 +1,10 @@
 package metrics
 
-import (
-	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-)
+import "github.com/kyma-project/lifecycle-manager/pkg/queue"
 
 type ManifestRequeueReason string
 
 const (
-	MetricReconcileDuration               string                = "reconcile_duration_seconds"
-	MetricLabelModule                     string                = "module_name"
 	ManifestTypeCast                      ManifestRequeueReason = "manifest_type_cast"
 	ManifestRetrieval                     ManifestRequeueReason = "manifest_retrieval"
 	ManifestInit                          ManifestRequeueReason = "manifest_initialize"
@@ -37,35 +28,12 @@ const (
 
 type ManifestMetrics struct {
 	*SharedMetrics
-	reconcileDurationHistogram *prometheus.HistogramVec
 }
 
 func NewManifestMetrics(sharedMetrics *SharedMetrics) *ManifestMetrics {
-	metrics := &ManifestMetrics{
-		SharedMetrics: sharedMetrics,
-		reconcileDurationHistogram: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name: MetricReconcileDuration,
-				Help: "Histogram of reconcile duration for manifest reconciliation in seconds",
-				Buckets: []float64{
-					0.005, 0.01, 0.025, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6,
-					0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5, 6, 7, 8, 9, 10, 15, 20,
-					25, 30, 40, 50, 60,
-				},
-			},
-			[]string{MetricLabelModule},
-		),
-	}
-	ctrlmetrics.Registry.MustRegister(metrics.reconcileDurationHistogram)
-	return metrics
+	return &ManifestMetrics{SharedMetrics: sharedMetrics}
 }
 
 func (k *ManifestMetrics) RecordRequeueReason(requeueReason ManifestRequeueReason, requeueType queue.RequeueType) {
 	k.requeueReasonCounter.WithLabelValues(string(requeueReason), string(requeueType)).Inc()
-}
-
-func (k *ManifestMetrics) ObserveReconcileDuration(reconcileStart time.Time, moduleName string) {
-	durationInSeconds := time.Since(reconcileStart).Seconds()
-	k.reconcileDurationHistogram.WithLabelValues(moduleName).
-		Observe(durationInSeconds)
 }
