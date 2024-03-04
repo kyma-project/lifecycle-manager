@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -147,7 +146,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
-		if util.IsConnectionRefusedOrUnauthorized(err) {
+		if util.IsConnectionOrHostError(err) {
 			r.invalidateClientCache(ctx, obj)
 			return r.ssaStatus(ctx, obj, metrics.ManifestUnauthorized)
 		}
@@ -469,7 +468,7 @@ func (r *Reconciler) renderTargetResources(
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
 		// Prevent ETCD load bursts during secret rotation
-		if !util.IsConnectionRefusedOrUnauthorized(err) {
+		if !util.IsConnectionOrHostError(err) {
 			r.Event(obj, "Warning", "TargetResourceParsing", err.Error())
 		}
 
@@ -609,7 +608,18 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 	if err != nil {
 		return nil, err
 	}
+
+	err = testClient(ctx, clnt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to test remote cluster: %w", err)
+	}
+
 	return clnt, nil
+}
+
+func testClient(ctx context.Context, clnt *SingletonClients) error {
+	nodeList := &apicorev1.NodeList{}
+	return clnt.List(ctx, nodeList)
 }
 
 func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
