@@ -21,7 +21,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 21,
+  "id": 15,
   "links": [],
   "panels": [
     {
@@ -78,7 +78,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -160,13 +160,11 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:133",
           "format": "ops",
           "logBase": 1,
           "show": true
         },
         {
-          "$$hashKey": "object:134",
           "format": "ops",
           "logBase": 1,
           "show": true
@@ -216,7 +214,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -258,13 +256,11 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:339",
           "format": "bytes",
           "logBase": 1,
           "show": true
         },
         {
-          "$$hashKey": "object:340",
           "format": "bytes",
           "logBase": 1,
           "show": true
@@ -316,7 +312,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -357,14 +353,12 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:392",
           "format": "short",
           "logBase": 1,
           "min": 0,
           "show": true
         },
         {
-          "$$hashKey": "object:393",
           "format": "short",
           "logBase": 1,
           "min": 0,
@@ -597,7 +591,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -636,7 +630,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:152",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -645,7 +638,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:153",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -689,6 +681,8 @@
         "min": false,
         "rightSide": true,
         "show": true,
+        "sort": "current",
+        "sortDesc": false,
         "total": false,
         "values": true
       },
@@ -700,7 +694,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -715,9 +709,9 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(reconcile_duration_seconds_sum[$__rate_interval])\n/\nrate(reconcile_duration_seconds_count[$__rate_interval])",
           "interval": "",
-          "legendFormat": "{{controller}}",
+          "legendFormat": "manifest {{module_name}}",
           "refId": "A"
         },
         {
@@ -753,13 +747,11 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:101",
           "format": "s",
           "logBase": 1,
           "show": true
         },
         {
-          "$$hashKey": "object:102",
           "format": "s",
           "logBase": 1,
           "show": true
@@ -814,7 +806,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "targets": [
         {
           "datasource": {
@@ -1168,7 +1160,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1221,13 +1213,11 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:365",
           "format": "s",
           "logBase": 1,
           "show": true
         },
         {
-          "$$hashKey": "object:366",
           "format": "s",
           "logBase": 1,
           "show": true
@@ -1278,7 +1268,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1331,13 +1321,11 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:275",
           "format": "s",
           "logBase": 1,
           "show": true
         },
         {
-          "$$hashKey": "object:276",
           "format": "s",
           "logBase": 1,
           "show": true
@@ -1388,7 +1376,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1441,14 +1429,12 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:567",
           "format": "short",
           "logBase": 1,
           "min": 0,
           "show": true
         },
         {
-          "$$hashKey": "object:568",
           "format": "short",
           "logBase": 1,
           "min": 0,
@@ -1501,7 +1487,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1556,13 +1542,11 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:186",
           "format": "ops",
           "logBase": 1,
           "show": true
         },
         {
-          "$$hashKey": "object:187",
           "format": "ops",
           "logBase": 1,
           "show": true
@@ -1623,7 +1607,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1731,7 +1715,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1768,7 +1752,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:103",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -1777,7 +1760,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:104",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -1827,7 +1809,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1921,7 +1903,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1980,7 +1962,7 @@
       }
     }
   ],
-  "refresh": "",
+  "refresh": false,
   "schemaVersion": 27,
   "style": "dark",
   "tags": [],
