@@ -12,8 +12,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
-const reMatchCount = `"} (\d+)`
-
 var ErrMetricNotFound = errors.New("metric was not found")
 
 func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
@@ -29,7 +27,8 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 func getKymaStateMetricRegex(kymaName, state string) *regexp.Regexp {
 	return regexp.MustCompile(
 		metrics.MetricKymaState + `{instance_id="[^"]+",kyma_name="` + kymaName +
-			`",shoot="[^"]+",state="` + state + reMatchCount)
+			`",shoot="[^"]+",state="` + state +
+			`"} (\d+)`)
 }
 
 func AssertKymaStateMetricNotFound(ctx context.Context, kymaName, state string) error {
@@ -56,7 +55,8 @@ func GetRequeueReasonCount(ctx context.Context,
 	}
 	re := regexp.MustCompile(
 		metrics.MetricRequeueReason + `{requeue_reason="` + requeueReason +
-			`",requeue_type="` + requeueType + reMatchCount)
+			`",requeue_type="` + requeueType +
+			`"}` + ` (\d+)`)
 	return parseCount(re, bodyString)
 }
 
@@ -69,23 +69,10 @@ func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, r
 	}
 	re := regexp.MustCompile(
 		metrics.MetricRequeueReason + `{requeue_reason="` + requeueReason +
-			`",requeue_type="` + requeueType + reMatchCount)
+			`",requeue_type="` + requeueType +
+			`"}` + ` (\d+)`)
 	count, err := parseCount(re, bodyString)
 	return count >= 1, err
-}
-
-func IsManifestReconcileDurationCountNonZero(ctx context.Context, manifestName string) (bool,
-	error,
-) {
-	bodyString, err := getMetricsBody(ctx)
-	if err != nil {
-		return false, err
-	}
-	re := regexp.MustCompile(
-		metrics.MetricReconcileDuration + `_count{` + metrics.MetricLabelModule +
-			`="` + manifestName + reMatchCount)
-	count, err := parseCount(re, bodyString)
-	return count > 0, err
 }
 
 func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state string) (int, error) {
@@ -96,7 +83,8 @@ func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state 
 	re := regexp.MustCompile(
 		metrics.MetricModuleState + `{instance_id="[^"]+",kyma_name="` + kymaName +
 			`",module_name="` + moduleName +
-			`",shoot="[^"]+",state="` + state + reMatchCount)
+			`",shoot="[^"]+",state="` + state +
+			`"} (\d+)`)
 	return parseCount(re, bodyString)
 }
 
