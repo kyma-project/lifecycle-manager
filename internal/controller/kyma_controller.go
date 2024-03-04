@@ -114,7 +114,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {
-		logger.V(log.DebugLevel).Info(fmt.Sprintf("skipping reconciliation for Kyma: %s", kyma.Name))
+		logger.V(log.DebugLevel).Info("skipping reconciliation for Kyma: " + kyma.Name)
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 

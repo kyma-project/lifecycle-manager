@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -28,7 +27,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 
 	Context("Given KCP Cluster and rotated CA certificate", func() {
 		kcpNamespacedSecretName := types.NamespacedName{
-			Name:      fmt.Sprintf("%s-webhook-tls", kyma.Name),
+			Name:      kyma.Name + "-webhook-tls",
 			Namespace: "istio-system",
 		}
 

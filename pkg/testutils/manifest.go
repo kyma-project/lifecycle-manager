@@ -334,7 +334,7 @@ func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerNam
 		return err
 	}
 	if gotHash != digest {
-		return fmt.Errorf("has not equal to digest")
+		return errors.New("has not equal to digest")
 	}
 	return nil
 }

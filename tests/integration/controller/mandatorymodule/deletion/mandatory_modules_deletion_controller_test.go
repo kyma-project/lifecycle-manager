@@ -153,5 +153,5 @@ func mandatoryModuleTemplateFinalizerExists(ctx context.Context, clnt client.Cli
 	if controllerutil.ContainsFinalizer(&template, "operator.kyma-project.io/mandatory-module") {
 		return nil
 	}
-	return fmt.Errorf("ModuleTemplate does not contain mandatory finalizer")
+	return errors.New("ModuleTemplate does not contain mandatory finalizer")
 }
