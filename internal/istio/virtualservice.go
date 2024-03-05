@@ -20,7 +20,7 @@ const (
 
 type (
 	VirtualServiceFactory interface {
-		NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error)
+		NewVirtualService(watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error)
 	}
 
 	VirtualServiceService struct {
@@ -38,8 +38,8 @@ func NewVirtualServiceService(scheme *machineryruntime.Scheme) (*VirtualServiceS
 	}, nil
 }
 
-func (vss *VirtualServiceService) NewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
-	if err := validateArgumentsForNewVirtualService(namespace, watcher, gateways); err != nil {
+func (vss *VirtualServiceService) NewVirtualService(watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
+	if err := validateArgumentsForNewVirtualService(watcher, gateways); err != nil {
 		return nil, err
 	}
 
@@ -54,8 +54,8 @@ func (vss *VirtualServiceService) NewVirtualService(namespace string, watcher *v
 	}
 
 	virtualService := &istioclientapiv1beta1.VirtualService{}
-	virtualService.SetName(watcher.Name)
-	virtualService.SetNamespace(namespace)
+	virtualService.SetName(watcher.GetName())
+	virtualService.SetNamespace(watcher.GetNamespace())
 	virtualService.Spec.Gateways = getGatewayNames(gateways.Items)
 	virtualService.Spec.Hosts = hosts
 	virtualService.Spec.Http = []*istioapiv1beta1.HTTPRoute{
@@ -102,17 +102,17 @@ func destinationHost(serviceName, serviceNamespace string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace)
 }
 
-func validateArgumentsForNewVirtualService(namespace string, watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) error {
-	if namespace == "" {
-		return fmt.Errorf("namespace must not be empty: %w", ErrInvalidArgument)
-	}
-
+func validateArgumentsForNewVirtualService(watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) error {
 	if watcher == nil {
 		return fmt.Errorf("watcher must not be nil: %w", ErrInvalidArgument)
 	}
 
 	if watcher.GetName() == "" {
 		return fmt.Errorf("watcher.Name must not be empty: %w", ErrInvalidArgument)
+	}
+
+	if watcher.GetNamespace() == "" {
+		return fmt.Errorf("watcher.Namespace must not be empty: %w", ErrInvalidArgument)
 	}
 
 	if gateways == nil || len(gateways.Items) == 0 {

@@ -152,7 +152,7 @@ func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 
-	virtualSvc, err := r.VirtualServiceFactory.NewVirtualService(r.WatcherVSNamespace, watcherCR, gateways)
+	virtualSvc, err := r.VirtualServiceFactory.NewVirtualService(watcherCR, gateways)
 	if err != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}

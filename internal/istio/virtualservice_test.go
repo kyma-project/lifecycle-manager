@@ -38,10 +38,9 @@ func Test_NewVirtualServiceService_ReturnsVirtualServiceService(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	var watcher *v1beta2.Watcher = nil
-	namespace := random.Name()
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -50,11 +49,10 @@ func Test_NewVirtualService_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenWatcherNameIsEmpty(t *testing.T) {
 	vss := createVirtualServiceService(t)
-	watcher := &v1beta2.Watcher{}
-	namespace := random.Name()
+	watcher := builder.NewWatcherBuilder().WithName("").Build()
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -64,10 +62,9 @@ func Test_NewVirtualService_ReturnsError_WhenWatcherNameIsEmpty(t *testing.T) {
 func Test_NewVirtualService_SetsCorrectName(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Equal(t, watcher.Name, vs.Name)
@@ -75,36 +72,33 @@ func Test_NewVirtualService_SetsCorrectName(t *testing.T) {
 
 func Test_NewVirtualService_ReturnsError_WhenNamespaceIsEmpty(t *testing.T) {
 	vss := createVirtualServiceService(t)
-	watcher := builder.NewWatcherBuilder().Build()
-	namespace := ""
+	watcher := builder.NewWatcherBuilder().WithNamespace("").Build()
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
-	assert.Contains(t, err.Error(), "namespace")
+	assert.Contains(t, err.Error(), "watcher.Namespace")
 }
 
 func Test_NewVirtualService_SetsCorrectNamespace(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.NoError(t, err)
-	assert.Equal(t, namespace, vs.Namespace)
+	assert.Equal(t, watcher.GetNamespace(), vs.Namespace)
 }
 
 func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	var gateways *istioclientapiv1beta1.GatewayList = nil
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -114,10 +108,9 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysIsNil(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenGatewaysAreEmpty(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := &istioclientapiv1beta1.GatewayList{}
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -127,11 +120,10 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysAreEmpty(t *testing.T) {
 func Test_NewVirtualService_SetsCorrectGateways(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 	expectedGatewayNames := getGatewayNamesMap(gateways.Items)
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Len(t, vs.Spec.GetGateways(), len(expectedGatewayNames))
@@ -144,13 +136,12 @@ func Test_NewVirtualService_SetsCorrectGateways(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenGatewaysHaveNoServers(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 	for _, gateway := range gateways.Items {
 		gateway.Spec.Servers = []*istioapiv1beta1.Server{}
 	}
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -160,7 +151,6 @@ func Test_NewVirtualService_ReturnsError_WhenGatewaysHaveNoServers(t *testing.T)
 func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 	for _, gateway := range gateways.Items {
 		for _, server := range gateway.Spec.GetServers() {
@@ -168,7 +158,7 @@ func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testin
 		}
 	}
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -178,11 +168,10 @@ func Test_NewVirtualService_ReturnsError_WhenGatewayServersHaveNoHosts(t *testin
 func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 	expectedHosts := getHostNamesMap(gateways.Items)
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Len(t, vs.Spec.GetHosts(), len(expectedHosts))
@@ -195,11 +184,10 @@ func Test_NewVirtualService_SetsCorrectHosts(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenUnableToCreateHTTPRoute(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 	watcher.Spec.ServiceInfo = v1beta2.Service{}
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	assert.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrInvalidArgument)
@@ -209,10 +197,9 @@ func Test_NewVirtualService_ReturnsError_WhenUnableToCreateHTTPRoute(t *testing.
 func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.NoError(t, err)
 	assert.Len(t, vs.Spec.GetHttp(), 1)
@@ -221,10 +208,9 @@ func Test_NewVirtualService_SetsAHttpRoute(t *testing.T) {
 func Test_NewVirtualService_ReturnsError_WhenFailingToAddOwnerReference(t *testing.T) {
 	vss, _ := istio.NewVirtualServiceService(machineryruntime.NewScheme()) // does not provide needed Watcher scheme
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.Nil(t, vs)
 	require.ErrorIs(t, err, istio.ErrFailedToAddOwnerReference)
@@ -233,11 +219,10 @@ func Test_NewVirtualService_ReturnsError_WhenFailingToAddOwnerReference(t *testi
 func Test_NewVirtualService_SetsOwnerReference(t *testing.T) {
 	vss := createVirtualServiceService(t)
 	watcher := builder.NewWatcherBuilder().Build()
-	namespace := watcher.GetNamespace()
 	gateways := createGateways()
 	expectedOwnerReference := getOwnerReference(watcher)
 
-	vs, err := vss.NewVirtualService(namespace, watcher, gateways)
+	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.NoError(t, err)
 	ownerReferences := vs.ObjectMeta.GetOwnerReferences()
