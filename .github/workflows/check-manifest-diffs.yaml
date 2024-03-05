@@ -20,10 +20,10 @@ jobs:
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v4
-      - name: Run 'make dry-run'
+      - name: Run 'make dry-run-control-plane'
         id: make-pr-manifests
         run: |
-          make dry-run
+          make dry-run-control-plane
           {
             echo 'manifests<<EOF'
             cat ./dry-run/manifests.yaml
@@ -40,10 +40,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-      - name: Run 'make dry-run'
+      - name: Run 'make dry-run-control-plane'
         id: make-main-manifests
         run: |
-          make dry-run
+          make dry-run-control-plane
           {
             echo 'manifests<<EOF'
             cat ./dry-run/manifests.yaml
