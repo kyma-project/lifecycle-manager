@@ -63,16 +63,6 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(BeTrue())
 		})
 
-		It("Then Related Manifest Duration Metric Is Non Zero", func() {
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
-			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(IsManifestReconcileDurationCountNonZero).
-				WithContext(ctx).
-				WithArguments(manifest.Name).
-				Should(BeTrue())
-		})
-
 		It("When Kyma Module is disabled", func() {
 			manifestInCluster, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
 				module.Name)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -95,9 +94,6 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	reconcileStart := time.Now()
-	defer r.Metrics.ObserveReconcileDuration(reconcileStart, req.NamespacedName.Name)
-
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
 		r.Metrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
