@@ -375,7 +375,7 @@ func (r *Reconciler) checkTargetReadiness(
 	}
 
 	if crStateInfo.State == shared.StateProcessing {
-		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", crStateInfo.Info)
+		waitingMsg := "waiting for resources to become ready: " + crStateInfo.Info
 		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
 		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate

@@ -77,7 +77,7 @@ var _ = Describe(
 		var cfg *rest.Config
 		var testClient client.Client
 		BeforeAll(func() {
-			runID = fmt.Sprintf("run-%s", rand.String(4))
+			runID = "run-" + rand.String(4)
 			env, cfg = StartEnv()
 			testClient = GetTestClient(cfg)
 			ctx, cancel = context.WithCancel(context.TODO())
@@ -160,7 +160,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	var testClient client.Client
 	const ocirefSynced = "sha256:synced"
 
-	runID := fmt.Sprintf("run-%s", rand.String(4))
+	runID := "run-" + rand.String(4)
 	obj := &declarativetest.TestAPI{Spec: declarativetest.TestAPISpec{ManifestName: "deletion-manifest"}}
 	obj.SetLabels(k8slabels.Set{testRunLabel: runID})
 	obj.SetNamespace(customResourceNamespace.Name)
