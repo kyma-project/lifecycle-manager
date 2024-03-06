@@ -71,6 +71,10 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 			gateways.Items[0]); err != nil {
 			return err
 		}
+
+		if err := verifyWatcherConfiguredAsVirtualServiceOwner(suiteCtx, watcherCR.Name, namespace, watcherCR, customIstioClient); err != nil {
+			return err
+		}
 	}
 	return nil
 }

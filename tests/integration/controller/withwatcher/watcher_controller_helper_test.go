@@ -33,13 +33,14 @@ const (
 )
 
 var (
-	centralComponents                     = []string{componentToBeUpdated, componentToBeRemoved}
-	errRouteNotFound                      = errors.New("http route is not found")
-	errHTTPRoutesEmpty                    = errors.New("empty http routes")
-	errRouteConfigMismatch                = errors.New("http route config mismatch")
-	errVirtualServiceHostsNotMatchGateway = errors.New("virtual service hosts not match with gateway")
-	errWatcherExistsAfterDeletion         = errors.New("watcher CR still exists after deletion")
-	errWatcherNotReady                    = errors.New("watcher not ready")
+	centralComponents                             = []string{componentToBeUpdated, componentToBeRemoved}
+	errRouteNotFound                              = errors.New("http route is not found")
+	errHTTPRoutesEmpty                            = errors.New("empty http routes")
+	errRouteConfigMismatch                        = errors.New("http route config mismatch")
+	errVirtualServiceHostsNotMatchGateway         = errors.New("virtual service hosts not match with gateway")
+	errWatcherExistsAfterDeletion                 = errors.New("watcher CR still exists after deletion")
+	errWatcherNotReady                            = errors.New("watcher not ready")
+	errVirtualServiceOwnerReferencesNotConfigured = errors.New("virtual service does not include KLM in owner references")
 )
 
 func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
@@ -164,7 +165,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
-			Namespace: apimetav1.NamespaceDefault,
+			Namespace: kcpSystemNs,
 			Labels: map[string]string{
 				shared.ManagedBy: managerInstanceName,
 			},
@@ -173,7 +174,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      managerInstanceName + "-svc",
-				Namespace: apimetav1.NamespaceDefault,
+				Namespace: kcpSystemNs,
 			},
 			LabelsToWatch: map[string]string{
 				managerInstanceName + "-watchable": "true",
@@ -212,7 +213,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 func getWatcher(name string) (*v1beta2.Watcher, error) {
 	watcherCR := &v1beta2.Watcher{}
 	err := controlPlaneClient.Get(suiteCtx,
-		client.ObjectKey{Name: name, Namespace: apimetav1.NamespaceDefault},
+		client.ObjectKey{Name: name, Namespace: kcpSystemNs},
 		watcherCR)
 	return watcherCR, err
 }
@@ -229,6 +230,32 @@ func isVirtualServiceHostsConfigured(ctx context.Context,
 	if !contains(virtualService.Spec.GetHosts(), gateway.Spec.GetServers()[0].GetHosts()[0]) {
 		return errVirtualServiceHostsNotMatchGateway
 	}
+	return nil
+}
+
+func verifyWatcherConfiguredAsVirtualServiceOwner(ctx context.Context,
+	vsName, vsNamespace string,
+	watcher *v1beta2.Watcher,
+	istioClient *istio.Client,
+) error {
+	virtualService, err := istioClient.GetVirtualService(ctx, vsName, vsNamespace)
+	if err != nil {
+		return err
+	}
+
+	watcherInOwnerReferences := false
+	for _, ownerReference := range virtualService.GetObjectMeta().GetOwnerReferences() {
+		if ownerReference.Name == watcher.GetName() &&
+			ownerReference.Kind == watcher.Kind &&
+			ownerReference.UID == watcher.GetUID() {
+			watcherInOwnerReferences = true
+		}
+	}
+
+	if !watcherInOwnerReferences {
+		return errVirtualServiceOwnerReferencesNotConfigured
+	}
+
 	return nil
 }
 
