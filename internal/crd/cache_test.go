@@ -72,3 +72,45 @@ func TestAdd_WhenCalled(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, someCrd, cachedCrd)
 }
+
+func TestAdd_WhenCalled_AlreadyExists(t *testing.T) {
+	internalCache := &sync.Map{}
+	cache := crd.NewCache(internalCache, nil)
+	someCrd := apiextensionsv1.CustomResourceDefinition{}
+	someCrd.Name = "some-crd"
+	internalCache.Store(key, someCrd)
+
+	newCrd := apiextensionsv1.CustomResourceDefinition{}
+	newCrd.Name = "new-crd"
+
+	cache.Add(key, newCrd)
+
+	cachedValue, ok := internalCache.Load(key)
+	assert.True(t, ok)
+	cachedCrd, ok := cachedValue.(apiextensionsv1.CustomResourceDefinition)
+	assert.True(t, ok)
+	assert.Equal(t, newCrd, cachedCrd)
+}
+
+func TestAdd_WhenCalled_UpdatesMetrics(t *testing.T) {
+	metrics := &MetricsMock{}
+	cache := crd.NewCache(nil, metrics)
+	someCrd := apiextensionsv1.CustomResourceDefinition{}
+	someCrd.Name = "some-crd"
+
+	cache.Add(key, someCrd)
+
+	assert.True(t, metrics.Called())
+}
+
+type MetricsMock struct {
+	called bool
+}
+
+func (m *MetricsMock) UpdateCrdTotal(_ int) {
+	m.called = true
+}
+
+func (m *MetricsMock) Called() bool {
+	return m.called
+}
