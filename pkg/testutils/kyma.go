@@ -144,7 +144,7 @@ func EnableModule(ctx context.Context,
 		}
 		kyma.Spec.Modules = append(
 			kyma.Spec.Modules, module)
-		err = clnt.Update(ctx, kyma)
+		err = clnt.Patch(ctx, kyma, client.Apply, client.ForceOwnership, client.FieldOwner(shared.OperatorName))
 		if err != nil {
 			return fmt.Errorf("update kyma: %w", err)
 		}
