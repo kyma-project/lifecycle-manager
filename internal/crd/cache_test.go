@@ -1,12 +1,12 @@
 package crd_test
 
 import (
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 )
