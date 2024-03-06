@@ -1,6 +1,7 @@
 package crd_test
 
 import (
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
 	"testing"
 
@@ -45,11 +46,12 @@ func TestGet_WhenInCache_TypeIsWrong(t *testing.T) {
 	assert.Equal(t, apiextensionsv1.CustomResourceDefinition{}, cachedCrd)
 }
 
+const crdName = "some-crd"
+
 func TestGet_WhenInCache_TypeIsRight(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache, nil)
-	someCrd := apiextensionsv1.CustomResourceDefinition{}
-	someCrd.Name = "some-crd"
+	someCrd := apiextensionsv1.CustomResourceDefinition{ObjectMeta: apimetav1.ObjectMeta{Name: crdName}}
 	internalCache.Store(key, someCrd)
 
 	cachedCrd, ok := cache.Get(key)
@@ -61,8 +63,7 @@ func TestGet_WhenInCache_TypeIsRight(t *testing.T) {
 func TestAdd_WhenCalled(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache, nil)
-	someCrd := apiextensionsv1.CustomResourceDefinition{}
-	someCrd.Name = "some-crd"
+	someCrd := apiextensionsv1.CustomResourceDefinition{ObjectMeta: apimetav1.ObjectMeta{Name: crdName}}
 
 	cache.Add(key, someCrd)
 
@@ -76,8 +77,7 @@ func TestAdd_WhenCalled(t *testing.T) {
 func TestAdd_WhenCalled_AlreadyExists(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := crd.NewCache(internalCache, nil)
-	someCrd := apiextensionsv1.CustomResourceDefinition{}
-	someCrd.Name = "some-crd"
+	someCrd := apiextensionsv1.CustomResourceDefinition{ObjectMeta: apimetav1.ObjectMeta{Name: crdName}}
 	internalCache.Store(key, someCrd)
 
 	newCrd := apiextensionsv1.CustomResourceDefinition{}
@@ -95,8 +95,7 @@ func TestAdd_WhenCalled_AlreadyExists(t *testing.T) {
 func TestAdd_WhenCalled_UpdatesMetrics(t *testing.T) {
 	metrics := &MetricsMock{}
 	cache := crd.NewCache(nil, metrics)
-	someCrd := apiextensionsv1.CustomResourceDefinition{}
-	someCrd.Name = "some-crd"
+	someCrd := apiextensionsv1.CustomResourceDefinition{ObjectMeta: apimetav1.ObjectMeta{Name: crdName}}
 
 	cache.Add(key, someCrd)
 
