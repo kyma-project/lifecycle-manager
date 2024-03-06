@@ -57,7 +57,7 @@ jobs:
     env:
       K3D_VERSION: v5.6.0
       K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.28.5' }}
-      ISTIO_VERSION: 1.19
+      ISTIO_VERSION: 1.19.7
       CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
@@ -99,7 +99,7 @@ jobs:
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr \
-            --servers 3 \
+            --servers 5 \
             -p 10080:80@loadbalancer \
             -p 10443:443@loadbalancer \
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
