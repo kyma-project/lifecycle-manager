@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -611,7 +612,7 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 
 	err = testClient(ctx, clnt)
 	if err != nil {
-		return nil, fmt.Errorf("test connection to remote cluster failed: %w", err)
+		return nil, err
 	}
 
 	return clnt, nil
@@ -619,7 +620,8 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 
 func testClient(ctx context.Context, clnt *SingletonClients) error {
 	nodeList := &apicorev1.NodeList{}
-	return clnt.List(ctx, nodeList)
+	err := clnt.List(ctx, nodeList)
+	return fmt.Errorf("test connection to remote cluster failed: %w", err)
 }
 
 func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
