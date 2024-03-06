@@ -1,6 +1,7 @@
 package cache_test
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
@@ -41,6 +42,23 @@ func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
 	descriptorCache.Set(key, desc)
 
 	assertDescriptorEqual(t, desc, descriptorCache.Get(key))
+}
+
+func TestNewDescriptorCache_WithExistingCache_ReturnsCacheWithExistingValues(t *testing.T) {
+	existingCache := &sync.Map{}
+	existingCache.Store("existingKey", &v1beta2.Descriptor{
+		ComponentDescriptor: &compdesc.ComponentDescriptor{
+			ComponentSpec: compdesc.ComponentSpec{
+				ObjectMeta: ocmmetav1.ObjectMeta{Name: "existingDescriptor"},
+			},
+		},
+	})
+
+	descriptorCache := cache.NewDescriptorCache(existingCache, nil)
+	assert.NotNil(t, descriptorCache)
+
+	result := descriptorCache.Get("existingKey")
+	assert.NotNil(t, result)
 }
 
 func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
@@ -103,6 +121,14 @@ func TestGetSize_WhenCalled_ReturnsSize(t *testing.T) {
 	assert.Equal(t, 1, descriptorCache.GetSize())
 }
 
+func TestSet_WhenCalledWithNilDescriptor_DoesNotUpdateSize(t *testing.T) {
+	descriptorCache := cache.NewDescriptorCache(nil, nil)
+	key := cache.DescriptorKey("key")
+
+	descriptorCache.Set(key, nil)
+	assert.Equal(t, 0, descriptorCache.GetSize())
+}
+
 func TestSet_WhenCalledWithTheSameKey_UpdatesSize(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache(nil, nil)
 	key, desc := cache.DescriptorKey("key"), &v1beta2.Descriptor{
@@ -117,6 +143,9 @@ func TestSet_WhenCalledWithTheSameKey_UpdatesSize(t *testing.T) {
 	descriptorCache.Set(key, desc)
 
 	assert.Equal(t, 1, descriptorCache.GetSize())
+}
+
+func TestClear_WhenCalled_DeletesAllEntries(t *testing.T) {
 }
 
 type MetricsMock struct {

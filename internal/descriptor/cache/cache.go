@@ -44,6 +44,10 @@ func (c *DescriptorCache) Get(key DescriptorKey) *v1beta2.Descriptor {
 }
 
 func (c *DescriptorCache) Set(key DescriptorKey, value *v1beta2.Descriptor) {
+	if value == nil {
+		return
+	}
+
 	_, existed := c.cache.Swap(string(key), value)
 	if !existed {
 		c.size++
