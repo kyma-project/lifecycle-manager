@@ -27,7 +27,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 const (
@@ -47,7 +47,7 @@ var (
 )
 
 func NewTestModule(name, channel string) v1beta2.Module {
-	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, builder.RandomName()), channel)
+	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel)
 }
 
 func NewTemplateOperator(channel string) v1beta2.Module {

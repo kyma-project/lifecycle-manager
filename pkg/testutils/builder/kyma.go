@@ -2,17 +2,12 @@ package builder
 
 import (
 	"fmt"
-	"math/rand"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-)
-
-const (
-	nameLength = 8
-	charSet    = "abcdefghijklmnopqrstuvwxyz"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 type KymaBuilder struct {
@@ -28,7 +23,7 @@ func NewKymaBuilder() KymaBuilder {
 				Kind:       string(shared.KymaKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      RandomName(),
+				Name:      random.Name(),
 				Namespace: apimetav1.NamespaceDefault,
 			},
 			Spec:   v1beta2.KymaSpec{},
@@ -45,7 +40,7 @@ func (kb KymaBuilder) WithName(name string) KymaBuilder {
 
 // WithNamePrefix sets v1beta2.Kyma.ObjectMeta.Name.
 func (kb KymaBuilder) WithNamePrefix(prefix string) KymaBuilder {
-	kb.kyma.ObjectMeta.Name = fmt.Sprintf("%s-%s", prefix, RandomName())
+	kb.kyma.ObjectMeta.Name = fmt.Sprintf("%s-%s", prefix, random.Name())
 	return kb
 }
 
@@ -91,14 +86,4 @@ func (kb KymaBuilder) WithCondition(condition apimetav1.Condition) KymaBuilder {
 // Build returns the built v1beta2.Kyma.
 func (kb KymaBuilder) Build() *v1beta2.Kyma {
 	return kb.kyma
-}
-
-// RandomName creates a random string [a-z] of len 8.
-func RandomName() string {
-	b := make([]byte, nameLength)
-	for i := range b {
-		//nolint:gosec // random number generator sufficient for testing purposes
-		b[i] = charSet[rand.Intn(len(charSet))]
-	}
-	return string(b)
 }
