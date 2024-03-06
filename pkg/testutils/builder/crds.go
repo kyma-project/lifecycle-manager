@@ -9,6 +9,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 type CRDBuilder struct {
@@ -18,7 +19,7 @@ type CRDBuilder struct {
 // NewCRDBuilder returns a CRDBuilder for CustomResourceDefinitions of Group
 // operator.kyma-project.io initialized with a random name.
 func NewCRDBuilder() CRDBuilder {
-	crdName := RandomName()
+	crdName := random.Name()
 
 	return CRDBuilder{
 		crd: &apiextensionsv1.CustomResourceDefinition{

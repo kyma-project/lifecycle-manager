@@ -10,6 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 func Test_NewHTTPRoute_ReturnsError_WhenWatcherIsNil(t *testing.T) {
@@ -23,8 +24,9 @@ func Test_NewHTTPRoute_ReturnsError_WhenWatcherIsNil(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoName(t *testing.T) {
-	watcher := getSimpleWatcher()
-	watcher.Name = ""
+	watcher := builder.NewWatcherBuilder().
+		WithName("").
+		Build()
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
 
@@ -34,8 +36,9 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoNamespace(t *testing.T) {
-	watcher := getSimpleWatcher()
-	watcher.Namespace = ""
+	watcher := builder.NewWatcherBuilder().
+		WithNamespace("").
+		Build()
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
 
@@ -45,7 +48,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoNamespace(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := builder.NewWatcherBuilder().Build()
 	watcher.Labels = nil
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
@@ -56,8 +59,9 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoModuleName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {
-	watcher := getSimpleWatcher()
-	watcher.Spec.ServiceInfo.Name = ""
+	watcher := builder.NewWatcherBuilder().
+		WithServiceInfoName("").
+		Build()
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
 
@@ -67,8 +71,9 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoName(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoNamespace(t *testing.T) {
-	watcher := getSimpleWatcher()
-	watcher.Spec.ServiceInfo.Namespace = ""
+	watcher := builder.NewWatcherBuilder().
+		WithServiceInfoNamespace("").
+		Build()
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
 
@@ -78,8 +83,9 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoNamespace(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoPort(t *testing.T) {
-	watcher := getSimpleWatcher()
-	watcher.Spec.ServiceInfo.Port = 0
+	watcher := builder.NewWatcherBuilder().
+		WithServiceInfoPort(0).
+		Build()
 
 	httpRoute, err := istio.NewHTTPRoute(watcher)
 
@@ -89,7 +95,7 @@ func Test_NewHTTPRoute_ReturnsError_WhenNoServiceInfoPort(t *testing.T) {
 }
 
 func Test_NewHTTPRoute_ReturnsCorrectHttpRoute(t *testing.T) {
-	watcher := getSimpleWatcher()
+	watcher := builder.NewWatcherBuilder().Build()
 	expectedHTTPRouteName := getWatcherName(watcher)
 	expectedHTTPRouteMatchURIPrefix := getHTTPRoutePrefix(watcher)
 	expectedHTTPRouteDestinationHost := getDestinationHost(watcher)

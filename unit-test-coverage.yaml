@@ -3,4 +3,4 @@ packages:
   internal/descriptor/cache: 93
   internal/descriptor/provider: 68
   internal/manifest/filemutex: 100
-  internal/istio: 59
+  internal/istio: 63
