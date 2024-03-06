@@ -53,7 +53,7 @@ jobs:
     name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       K3D_VERSION: v5.6.0
       K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.28.5' }}
@@ -103,7 +103,7 @@ jobs:
             -p 10080:80@loadbalancer \
             -p 10443:443@loadbalancer \
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
-            --k3s-arg '--tls-san=host.k3d.internal,disable=traefik@server:0'
+            --k3s-arg '--tls-san=host.k3d.internal,--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
           k3d cluster create kcp \
@@ -113,7 +113,7 @@ jobs:
             -p 9081:8080@loadbalancer \
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
             --registry-create k3d-kcp-registry:5111 \
-            --k3s-arg '--tls-san=host.k3d.internal,disable=traefik@server:0'
+            --k3s-arg '--tls-san=host.k3d.internal,--disable=traefik@server:0'
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
@@ -319,7 +319,8 @@ jobs:
           maxRetry=3
           for retry in $(seq 1 $maxRetry)
           do
-            if make -C tests/e2e ${{ matrix.e2e-test }}; then
+            result=$(make -C tests/e2e ${{ matrix.e2e-test }})
+            if [[ $result == "PASS" ]]; then
               exit 0
             elif [[ $retry -lt $maxRetry ]]; then
               echo "Test failed, will retry"
