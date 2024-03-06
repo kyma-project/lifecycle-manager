@@ -65,7 +65,7 @@ func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	if kyma.SkipReconciliation() {
-		logger.V(log.DebugLevel).Info(fmt.Sprintf("skipping mandatory modules reconciliation for Kyma: %s", kyma.Name))
+		logger.V(log.DebugLevel).Info("skipping mandatory modules reconciliation for Kyma: " + kyma.Name)
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 

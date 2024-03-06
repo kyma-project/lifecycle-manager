@@ -227,20 +227,6 @@ func enableWebhooks(mgr manager.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 		os.Exit(1)
 	}
-
-	if err := (&v1beta2.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
-		os.Exit(1)
-	}
-	if err := (&v1beta2.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
-		os.Exit(1)
-	}
-
-	if err := (&v1beta2.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
-		os.Exit(1)
-	}
 }
 
 func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
@@ -455,7 +441,7 @@ func dropStoredVersion(mgr manager.Manager, versionToBeRemoved string) {
 	kcpClient, err := clientset.NewForConfig(cfg)
 	if err != nil {
 		setupLog.V(log.DebugLevel).Error(err,
-			fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
+			"unable to initialize client to remove "+versionToBeRemoved)
 	}
 	ctx := context.TODO()
 	var crdList *apiextensionsv1.CustomResourceDefinitionList

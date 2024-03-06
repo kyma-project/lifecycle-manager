@@ -84,7 +84,7 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 	for _, watcher := range watchers {
 		moduleName := watcher.GetModuleName()
 		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorGroup)
-		svcPath := fmt.Sprintf("/validate/%s", moduleName)
+		svcPath := "/validate/" + moduleName
 		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
 		sideEffects := admissionregistrationv1.SideEffectClassNoneOnDryRun
 		failurePolicy := admissionregistrationv1.Ignore

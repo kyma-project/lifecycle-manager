@@ -25,7 +25,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -41,7 +41,7 @@ var (
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return &v1beta2.Manifest{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", prefix, builder.RandomName()),
+			Name:      fmt.Sprintf("%s-%s", prefix, random.Name()),
 			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
 				shared.KymaName: string(uuid.NewUUID()),
@@ -333,7 +333,7 @@ func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerNam
 		return err
 	}
 	if gotHash != digest {
-		return fmt.Errorf("has not equal to digest")
+		return errors.New("has not equal to digest")
 	}
 	return nil
 }
