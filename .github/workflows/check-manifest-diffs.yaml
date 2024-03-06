@@ -32,7 +32,7 @@ jobs:
 
       - name: Save PR manifests in cache
         id: cache-pr-manifests
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: ./cache/pr/
           key: ${{ env.PR_CACHE_KEY }}
@@ -56,7 +56,7 @@ jobs:
 
       - name: Save 'main' manifests in cache
         id: cache-main-manifests
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: ./cache/main/
           key: ${{ env.MAIN_CACHE_KEY }}
@@ -69,14 +69,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Restore PR manifests cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         id: restore-pr-cache
         with:
           path: ./cache/pr/
           key: ${{ env.PR_CACHE_KEY }}
 
       - name: Restore 'main' manifests cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         id: restore-main-cache
         with:
           path: ./cache/main/
