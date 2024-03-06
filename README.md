@@ -6,7 +6,7 @@ Kyma is an opinionated set of Kubernetes-based modular building blocks that incl
 
 ## Modularization
 
-Lifecycle Manager was introduced along with the concept of Kyma modularization. With Kyma's modular approach, you can install just the modules you need, giving you more flexibility and reducing the footprint of your Kyma cluster. Lifecycle Manager manages clusters using the [Kyma](api/v1beta1/kyma_types.go) custom resource (CR). The CR defines the desired state of modules in a cluster. With the CR you can enable and disable modules. Lifecycle Manager installs or uninstalls modules and updates their statuses. For more details, read about the [modularization concept in Kyma](https://github.com/kyma-project/community/tree/main/concepts/modularization).
+Lifecycle Manager was introduced along with the concept of Kyma modularization. With Kyma's modular approach, you can install just the modules you need, giving you more flexibility and reducing the footprint of your Kyma cluster. Lifecycle Manager manages clusters using the [Kyma](api/v1beta2/kyma_types.go) custom resource (CR). The CR defines the desired state of modules in a cluster. With the CR you can enable and disable modules. Lifecycle Manager installs or uninstalls modules and updates their statuses. For more details, read about the [modularization concept in Kyma](https://github.com/kyma-project/community/tree/main/concepts/modularization).
 
 ## Basic Concepts
 

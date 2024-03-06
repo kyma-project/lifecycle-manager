@@ -171,7 +171,7 @@ func (k *KymaMetrics) CleanupNonExistingKymaCrsMetrics(ctx context.Context, kcpC
 			continue
 		}
 		if _, exists := kymaNames[currentKymaName]; !exists {
-			logs.FromContext(ctx).Info(fmt.Sprintf("Deleting a metric for non-existing Kyma: %s", currentKymaName))
+			logs.FromContext(ctx).Info("Deleting a metric for non-existing Kyma: " + currentKymaName)
 			k.KymaStateGauge.DeletePartialMatch(prometheus.Labels{
 				KymaNameLabel: currentKymaName,
 			})

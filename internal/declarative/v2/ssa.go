@@ -99,13 +99,8 @@ func (c *ConcurrentDefaultSSA) serverSideApply(
 ) {
 	start := time.Now()
 	logger := logf.FromContext(ctx, "owner", c.owner)
-
-	logger.V(internal.TraceLogLevel).Info(
-		fmt.Sprintf("apply %s", resource.ObjectName()),
-	)
-
+	logger.V(internal.TraceLogLevel).Info("apply " + resource.ObjectName())
 	results <- c.serverSideApplyResourceInfo(ctx, resource)
-
 	logger.V(internal.TraceLogLevel).Info(
 		fmt.Sprintf("apply %s finished", resource.ObjectName()),
 		"time", time.Since(start),

@@ -29,7 +29,6 @@ linters-settings:
       - github.com/onsi/ginkgo/v2
       - github.com/onsi/gomega
   revive:
-    enable-all-rules: false
     severity: error
     rules:
       - name: comment-spacings
