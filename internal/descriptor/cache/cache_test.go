@@ -11,9 +11,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 )
 
+func TestNewDescriptorCache_WithNilCache_ReturnsNewCache(t *testing.T) {
+	descriptorCache := cache.NewDescriptorCache(nil, nil)
+
+	assert.NotNil(t, descriptorCache)
+}
+
 func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache(nil, nil)
-	key := cache.DescriptorKey("key 1")
+	key := cache.DescriptorKey("key")
 
 	actual := descriptorCache.Get(key)
 
@@ -22,19 +28,19 @@ func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
 
 func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache(nil, nil)
-	key1 := cache.DescriptorKey("key 1")
-	ocmDesc1 := &compdesc.ComponentDescriptor{
+	key := cache.DescriptorKey("key")
+	ocmDesc := &compdesc.ComponentDescriptor{
 		ComponentSpec: compdesc.ComponentSpec{
 			ObjectMeta: ocmmetav1.ObjectMeta{
-				Name: "descriptor 1",
+				Name: "descriptor",
 			},
 		},
 	}
-	desc1 := &v1beta2.Descriptor{ComponentDescriptor: ocmDesc1}
+	desc := &v1beta2.Descriptor{ComponentDescriptor: ocmDesc}
 
-	descriptorCache.Set(key1, desc1)
+	descriptorCache.Set(key, desc)
 
-	assertDescriptorEqual(t, desc1, descriptorCache.Get(key1))
+	assertDescriptorEqual(t, desc, descriptorCache.Get(key))
 }
 
 func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
@@ -62,6 +68,67 @@ func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
 
 	assertDescriptorEqual(t, newValue, descriptorCache.Get(newKey))
 	assertDescriptorEqual(t, newValue, descriptorCache.Get(originalKey))
+}
+
+func TestSet_WhenCalled_UpdatesMetrics(t *testing.T) {
+	metrics := &MetricsMock{}
+	descriptorCache := cache.NewDescriptorCache(nil, metrics)
+	key, desc := cache.DescriptorKey("key"), &v1beta2.Descriptor{
+		ComponentDescriptor: &compdesc.ComponentDescriptor{
+			ComponentSpec: compdesc.ComponentSpec{
+				ObjectMeta: ocmmetav1.ObjectMeta{Name: "descriptor"},
+			},
+		},
+	}
+
+	descriptorCache.Set(key, desc)
+
+	assert.True(t, metrics.Called())
+}
+
+func TestGetSize_WhenCalled_ReturnsSize(t *testing.T) {
+	descriptorCache := cache.NewDescriptorCache(nil, nil)
+	key, desc := cache.DescriptorKey("key"), &v1beta2.Descriptor{
+		ComponentDescriptor: &compdesc.ComponentDescriptor{
+			ComponentSpec: compdesc.ComponentSpec{
+				ObjectMeta: ocmmetav1.ObjectMeta{Name: "descriptor"},
+			},
+		},
+	}
+
+	assert.Equal(t, 0, descriptorCache.GetSize())
+
+	descriptorCache.Set(key, desc)
+
+	assert.Equal(t, 1, descriptorCache.GetSize())
+}
+
+func TestSet_WhenCalledWithTheSameKey_UpdatesSize(t *testing.T) {
+	descriptorCache := cache.NewDescriptorCache(nil, nil)
+	key, desc := cache.DescriptorKey("key"), &v1beta2.Descriptor{
+		ComponentDescriptor: &compdesc.ComponentDescriptor{
+			ComponentSpec: compdesc.ComponentSpec{
+				ObjectMeta: ocmmetav1.ObjectMeta{Name: "descriptor"},
+			},
+		},
+	}
+
+	descriptorCache.Set(key, desc)
+	descriptorCache.Set(key, desc)
+
+	assert.Equal(t, 1, descriptorCache.GetSize())
+}
+
+type MetricsMock struct {
+	called bool
+}
+
+func (m *MetricsMock) UpdateDescriptorTotal(_ int) {
+	m.called = true
+}
+
+func (m *MetricsMock) Called() bool {
+	return m.called
 }
 
 func assertDescriptorEqual(t *testing.T, expected, actual *v1beta2.Descriptor) {
