@@ -16,6 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 type ModuleTemplateBuilder struct {
@@ -31,7 +32,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Kind:       string(shared.KymaKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      RandomName(),
+				Name:      random.Name(),
 				Namespace: apimetav1.NamespaceDefault,
 			},
 			Spec: v1beta2.ModuleTemplateSpec{
