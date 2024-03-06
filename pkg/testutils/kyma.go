@@ -8,7 +8,6 @@ import (
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -137,45 +136,37 @@ func EnableModule(ctx context.Context,
 	kymaName, kymaNamespace string,
 	module v1beta2.Module,
 ) error {
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
-		if err != nil {
-			return err
-		}
-		kyma.Spec.Modules = append(
-			kyma.Spec.Modules, module)
-		err = clnt.Patch(ctx, kyma, client.Apply, client.ForceOwnership, client.FieldOwner(shared.OperatorName))
-		if err != nil {
-			return fmt.Errorf("update kyma: %w", err)
-		}
-		return nil
-	})
-
-	return err
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, module)
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
+	}
+	return nil
 }
 
 func DisableModule(ctx context.Context, clnt client.Client,
 	kymaName, kymaNamespace, moduleName string,
 ) error {
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
-		if err != nil {
-			return err
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules = removeModuleWithIndex(kyma.Spec.Modules, i)
+			break
 		}
-		for i, module := range kyma.Spec.Modules {
-			if module.Name == moduleName {
-				kyma.Spec.Modules = removeModuleWithIndex(kyma.Spec.Modules, i)
-				break
-			}
-		}
-		err = clnt.Update(ctx, kyma)
-		if err != nil {
-			return fmt.Errorf("update kyma: %w", err)
-		}
-		return nil
-	})
-
-	return err
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
+	}
+	return nil
 }
 
 func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {

@@ -9,7 +9,6 @@ import (
 	apiappsv1 "k8s.io/api/apps/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -124,20 +123,16 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 })
 
 func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		kyma := &v1beta2.Kyma{}
-		if err := k8sClient.Get(ctx,
-			client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace},
-			kyma); err != nil {
-			return err
-		}
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx,
+		client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace},
+		kyma); err != nil {
+		return err
+	}
 
-		kyma.Spec.Channel = channel
+	kyma.Spec.Channel = channel
 
-		return k8sClient.Update(ctx, kyma)
-	})
-
-	return err
+	return k8sClient.Update(ctx, kyma)
 }
 
 func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {
