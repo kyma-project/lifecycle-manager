@@ -611,7 +611,7 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 
 	err = testClient(ctx, clnt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to test remote cluster: %w", err)
+		return nil, fmt.Errorf("test connection to remote cluster failed: %w", err)
 	}
 
 	return clnt, nil

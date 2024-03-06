@@ -49,12 +49,18 @@ func IsConnectionOrHostError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.Is(err, syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err) || isNoSuchHostError(err)
+	return errors.Is(err, syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err) || containsNoSuchHostError(err)
 }
 
-func containsNoSuchHostError(err error) bool {
-	// TODO Go through list of errors
-	return false
+func containsNoSuchHostError(joinErr error) bool {
+	if joinErr, ok := joinErr.(interface{ Unwrap() []error }); ok {
+		for _, e := range joinErr.Unwrap() {
+			if isNoSuchHostError(e) {
+				return true
+			}
+		}
+	}
+	return isNoSuchHostError(joinErr)
 }
 
 func isNoSuchHostError(err error) bool {
