@@ -99,6 +99,7 @@ jobs:
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr \
+            --servers 3 \
             -p 10080:80@loadbalancer \
             -p 10443:443@loadbalancer \
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
