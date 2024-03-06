@@ -70,52 +70,52 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 test: watcher-enqueue kyma-deletion module-status-propagation
 
 kyma-deletion-with-foreground-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Foreground Propagation After SKR Cluster Removal"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Foreground Propagation After SKR Cluster Removal"
 
 kyma-deletion-with-background-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Background Propagation After SKR Cluster Removal"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Background Propagation After SKR Cluster Removal"
 
 kyma-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manage Module Metrics"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Manage Module Metrics"
 
 watcher-enqueue:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 
 module-status-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Warning Status Propagation"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Warning Status Propagation"
 
 module-without-default-cr:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
 module-consistency:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Keep Consistent After Deploy"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Module Keep Consistent After Deploy"
 
 mandatory-module:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
 
 non-blocking-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
 
 skip-manifest-reconciliation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manifest Skip Reconciliation Label"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Manifest Skip Reconciliation Label"
 
 upgrade-under-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
 
 purge-controller:
-	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
+	go test  -timeout 15m -ginkgo.v -ginkgo.focus "Purge Controller"
 
 purge-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Purge Metrics"
 
 module-upgrade-channel-switch:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
 
 module-upgrade-new-version:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By New Version"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Module Upgrade By New Version"
 
 ca-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
 
 self-signed-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
+	go test -timeout 15m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"

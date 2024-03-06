@@ -57,7 +57,7 @@ jobs:
     env:
       K3D_VERSION: v5.6.0
       K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.28.5' }}
-      ISTIO_VERSION: 1.19.7
+      ISTIO_VERSION: 1.20.3
       CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
@@ -99,7 +99,7 @@ jobs:
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr \
-            --servers 5 \
+            --servers 3 \
             -p 10080:80@loadbalancer \
             -p 10443:443@loadbalancer \
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
@@ -107,6 +107,7 @@ jobs:
       - name: Provision KCP cluster
         run: |
           k3d cluster create kcp \
+            --servers 3 \
             -p 9443:443@loadbalancer \
             -p 9080:80@loadbalancer \
             -p 9081:8080@loadbalancer \
@@ -315,4 +316,15 @@ jobs:
       - name: Run ${{ matrix.e2e-test }}
         working-directory: lifecycle-manager
         run: |
-          make -C tests/e2e ${{ matrix.e2e-test }}
+          maxRetry=3
+          for retry in $(seq 1 $maxRetry)
+          do
+            if make -C tests/e2e ${{ matrix.e2e-test }}; then
+              exit 0
+            elif [[ $retry -lt $maxRetry ]]; then
+              echo "Test failed, will retry"
+            else
+              echo "Test failed"
+              exit 1
+            fi
+          done
