@@ -621,7 +621,10 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 func testClient(ctx context.Context, clnt *SingletonClients) error {
 	nodeList := &apicorev1.NodeList{}
 	err := clnt.List(ctx, nodeList)
-	return fmt.Errorf("test connection to remote cluster failed: %w", err)
+	if err != nil {
+		return fmt.Errorf("test connection to remote cluster failed: %w", err)
+	}
+	return nil
 }
 
 func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
