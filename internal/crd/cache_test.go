@@ -102,6 +102,24 @@ func TestAdd_WhenCalled_UpdatesMetrics(t *testing.T) {
 	assert.True(t, metrics.Called())
 }
 
+func TestGetSize_WhenCalled_ReturnsSize(t *testing.T) {
+	cache := crd.NewCache(nil, nil)
+	someCrd := apiextensionsv1.CustomResourceDefinition{ObjectMeta: apimetav1.ObjectMeta{Name: crdName}}
+	cache.Add(key, someCrd)
+
+	assert.Equal(t, 1, cache.GetSize())
+}
+
+func TestAdd_WhenCalledWithTheSameKey_UpdatesSize(t *testing.T) {
+	cache := crd.NewCache(nil, nil)
+	someCrd := apiextensionsv1.CustomResourceDefinition{ObjectMeta: apimetav1.ObjectMeta{Name: crdName}}
+
+	cache.Add(key, someCrd)
+	cache.Add(key, someCrd)
+
+	assert.Equal(t, 1, cache.GetSize())
+}
+
 type MetricsMock struct {
 	called bool
 }
