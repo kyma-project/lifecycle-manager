@@ -126,6 +126,8 @@ linters-settings:
         alias: logf
       - pkg: sigs.k8s.io/controller-runtime/pkg/metrics
         alias: ctrlmetrics
+      - pkg: sigs.k8s.io/controller-runtime/pkg/cache
+        alias: ctrlcache
       - pkg: sigs.k8s.io/controller-runtime/pkg/metrics/server
         alias: metricsserver
       - pkg: github.com/prometheus/client_model/go

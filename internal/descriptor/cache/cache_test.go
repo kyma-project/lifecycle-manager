@@ -12,7 +12,7 @@ import (
 )
 
 func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache(nil)
+	descriptorCache := cache.NewDescriptorCache(nil, nil)
 	key := cache.DescriptorKey("key 1")
 
 	actual := descriptorCache.Get(key)
@@ -21,7 +21,7 @@ func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
 }
 
 func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache(nil)
+	descriptorCache := cache.NewDescriptorCache(nil, nil)
 	key1 := cache.DescriptorKey("key 1")
 	ocmDesc1 := &compdesc.ComponentDescriptor{
 		ComponentSpec: compdesc.ComponentSpec{
@@ -38,7 +38,7 @@ func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
 }
 
 func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache(nil)
+	descriptorCache := cache.NewDescriptorCache(nil, nil)
 	originalKey, originalValue := cache.DescriptorKey("key 1"), &v1beta2.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{
 			ComponentSpec: compdesc.ComponentSpec{

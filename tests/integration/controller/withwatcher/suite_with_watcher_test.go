@@ -179,7 +179,7 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	remoteClientCache = remote.NewClientCache()
+	remoteClientCache = remote.NewClientCache(nil, nil)
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",

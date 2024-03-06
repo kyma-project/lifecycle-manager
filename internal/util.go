@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/resource"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
+	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
@@ -71,9 +71,9 @@ func GetResourceLabel(resource client.Object, labelName string) (string, error) 
 	return labelValue, nil
 }
 
-func DefaultCacheOptions() cache.Options {
-	return cache.Options{
-		ByObject: map[client.Object]cache.ByObject{
+func DefaultCacheOptions() ctrlcache.Options {
+	return ctrlcache.Options{
+		ByObject: map[client.Object]ctrlcache.ByObject{
 			&apicorev1.Secret{}: {
 				Label: k8slabels.Everything(),
 			},

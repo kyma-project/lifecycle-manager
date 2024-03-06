@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	MetricNameCacheSizeDescTotal      = "lifecycle_mgr_cache_descriptor_total"
-	MetricNameCacheSizeCrdTotal       = "lifecycle_mgr_cache_crd_total"
-	MetricNameCacheSizeFileMutexTotal = "lifecycle_mgr_cache_filemutex_total"
-	MetricNameCacheSizeClientTotal    = "lifecycle_mgr_cache_client_total"
+	MetricNameCacheSizeDesc      = "lifecycle_mgr_cache_size_descriptor"
+	MetricNameCacheSizeCrd       = "lifecycle_mgr_cache_size_crd"
+	MetricNameCacheSizeFileMutex = "lifecycle_mgr_cache_size_filemutex"
+	MetricNameCacheSizeClient    = "lifecycle_mgr_cache_size_client"
 )
 
 type CacheSizeMetrics struct {
@@ -22,19 +22,19 @@ type CacheSizeMetrics struct {
 func NewCacheSizeMetrics() *CacheSizeMetrics {
 	cacheMetrics := &CacheSizeMetrics{
 		descriptorTotalGauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: MetricNameCacheSizeDescTotal,
+			Name: MetricNameCacheSizeDesc,
 			Help: "Shows current number of entries in the descriptor cache",
 		}),
 		crdTotalGauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: MetricNameCacheSizeCrdTotal,
+			Name: MetricNameCacheSizeCrd,
 			Help: "Shows current number of entries in the crd cache",
 		}),
 		filemutexTotalGauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: MetricNameCacheSizeFileMutexTotal,
+			Name: MetricNameCacheSizeFileMutex,
 			Help: "Shows current number of entries in the filemutex cache",
 		}),
 		clientTotalGauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: MetricNameCacheSizeClientTotal,
+			Name: MetricNameCacheSizeClient,
 			Help: "Shows current number of entries in the client cache",
 		}),
 	}
