@@ -1,10 +1,19 @@
 package metrics
 
-import "github.com/kyma-project/lifecycle-manager/pkg/queue"
+import (
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+)
 
 type ManifestRequeueReason string
 
 const (
+	MetricManifestDuration                                      = "reconcile_duration_seconds"
+	ManifestNameLabel                                           = "manifest_name"
 	ManifestTypeCast                      ManifestRequeueReason = "manifest_type_cast"
 	ManifestRetrieval                     ManifestRequeueReason = "manifest_retrieval"
 	ManifestInit                          ManifestRequeueReason = "manifest_initialize"
@@ -28,12 +37,26 @@ const (
 
 type ManifestMetrics struct {
 	*SharedMetrics
+	ManifestDurationGauge *prometheus.GaugeVec
 }
 
 func NewManifestMetrics(sharedMetrics *SharedMetrics) *ManifestMetrics {
-	return &ManifestMetrics{SharedMetrics: sharedMetrics}
+	metrics := &ManifestMetrics{
+		SharedMetrics: sharedMetrics,
+		ManifestDurationGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: MetricManifestDuration,
+			Help: "Indicates the duration for manifest reconciliation in seconds",
+		}, []string{ManifestNameLabel}),
+	}
+
+	ctrlmetrics.Registry.MustRegister(metrics.ManifestDurationGauge)
+	return metrics
 }
 
 func (k *ManifestMetrics) RecordRequeueReason(requeueReason ManifestRequeueReason, requeueType queue.RequeueType) {
 	k.requeueReasonCounter.WithLabelValues(string(requeueReason), string(requeueType)).Inc()
+}
+
+func (k *ManifestMetrics) RecordManifestDuration(manifestName string, duration time.Duration) {
+	k.ManifestDurationGauge.WithLabelValues(manifestName).Set(duration.Seconds())
 }
