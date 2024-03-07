@@ -99,21 +99,21 @@ jobs:
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr \
-            --servers 3 \
             -p 10080:80@loadbalancer \
             -p 10443:443@loadbalancer \
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
-            --k3s-arg '--tls-san=host.k3d.internal@server:*'
+            --k3s-arg '--disable=traefik@server:*' \
+            --k3s-arg '--tls-san=host.k3d.internal@server:*' \
       - name: Provision KCP cluster
         run: |
           k3d cluster create kcp \
-            --servers 3 \
             -p 9443:443@loadbalancer \
             -p 9080:80@loadbalancer \
             -p 9081:8080@loadbalancer \
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
             --registry-create k3d-kcp-registry:5111 \
-            --k3s-arg '--tls-san=host.k3d.internal@server:*'
+            --k3s-arg '--disable=traefik@server:*' \
+            --k3s-arg '--tls-san=host.k3d.internal@server:*' \
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
