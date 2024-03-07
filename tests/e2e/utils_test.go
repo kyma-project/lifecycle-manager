@@ -35,7 +35,7 @@ const (
 	defaultRemoteKymaName = "default"
 	EventuallyTimeout     = 10 * time.Second
 	ConsistentDuration    = 20 * time.Second
-	interval              = 1 * time.Second
+	interval              = 500 * time.Millisecond
 	moduleCRFinalizer     = "cr-finalizer"
 )
 
