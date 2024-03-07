@@ -73,7 +73,7 @@ func splitResources(resources []*resource.Info) ([]*resource.Info, []*resource.I
 		if !ok {
 			return nil, nil, common.ErrTypeAssert
 		}
-		if isOperatorRelatedResources(obj.GetObjectKind().GroupVersionKind().Kind) {
+		if IsOperatorRelatedResources(obj.GetObjectKind().GroupVersionKind().Kind) {
 			operatorRelatedResources = append(operatorRelatedResources, item)
 			continue
 		}
@@ -83,13 +83,12 @@ func splitResources(resources []*resource.Info) ([]*resource.Info, []*resource.I
 	return operatorRelatedResources, operatorManagedResources, nil
 }
 
-func isOperatorRelatedResources(kind string) bool {
+func IsOperatorRelatedResources(kind string) bool {
 	return kind == "CustomResourceDefinition" ||
 		kind == "ServiceAccount" ||
 		kind == "Role" ||
 		kind == "ClusterRole" ||
 		kind == "RoleBinding" ||
-		kind == "ControllerManagerConfig" ||
 		kind == "ClusterRoleBinding" ||
 		kind == "Service" ||
 		kind == "Deployment"
