@@ -37,6 +37,7 @@ var (
 	ErrManifestsExist               = errors.New("cluster contains manifest CRs")
 	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
 	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
+	errManifestNotInKymaStatus      = errors.New("manifest is not tracked by kyma.status")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -52,7 +53,7 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 	}
 }
 
-// GetManifest is only used when manifest still been tracked in kyma.status.
+// GetManifest should be only used when manifest still been tracked in kyma.status.
 func GetManifest(ctx context.Context,
 	clnt client.Client,
 	kymaName,
@@ -64,14 +65,16 @@ func GetManifest(ctx context.Context,
 		return nil, err
 	}
 
-	var manifestKey v1beta2.TrackingObject
+	var manifestKey *v1beta2.TrackingObject
 	for _, module := range kyma.Status.Modules {
 		module := module
 		if module.Name == moduleName {
-			manifestKey = *module.Manifest
+			manifestKey = module.Manifest
 		}
 	}
-
+	if manifestKey == nil {
+		return nil, errManifestNotInKymaStatus
+	}
 	return GetManifestWithMetadata(ctx, clnt, manifestKey.GetNamespace(), manifestKey.GetName())
 }
 
