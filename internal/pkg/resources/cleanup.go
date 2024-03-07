@@ -18,14 +18,12 @@ var ErrDeletionNotFinished = errors.New("deletion is not yet finished")
 
 type ConcurrentCleanup struct {
 	clnt     client.Client
-	policy   client.PropagationPolicy
 	manifest *v1beta2.Manifest
 }
 
 func NewConcurrentCleanup(clnt client.Client, manifest *v1beta2.Manifest) *ConcurrentCleanup {
 	return &ConcurrentCleanup{
 		clnt:     clnt,
-		policy:   client.PropagationPolicy(apimetav1.DeletePropagationBackground),
 		manifest: manifest,
 	}
 }
@@ -33,23 +31,23 @@ func NewConcurrentCleanup(clnt client.Client, manifest *v1beta2.Manifest) *Concu
 func (c *ConcurrentCleanup) DeleteDiffResources(ctx context.Context, resources []*resource.Info,
 ) error {
 	status := c.manifest.GetStatus()
-	operatorRelatedResources, operatorManagedResources, err := splitResources(resources)
+	operatorRelatedResources, operatorManagedResources, err := SplitResources(resources)
 	if err != nil {
 		return err
 	}
 
-	if err := c.CleanupResources(ctx, operatorManagedResources, status); err != nil {
+	if err := c.cleanupResources(ctx, operatorManagedResources, status); err != nil {
 		return err
 	}
 
-	if err := c.CleanupResources(ctx, operatorRelatedResources, status); err != nil {
+	if err := c.cleanupResources(ctx, operatorRelatedResources, status); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *ConcurrentCleanup) CleanupResources(
+func (c *ConcurrentCleanup) cleanupResources(
 	ctx context.Context,
 	resources []*resource.Info,
 	status shared.Status,
@@ -64,7 +62,7 @@ func (c *ConcurrentCleanup) CleanupResources(
 	return nil
 }
 
-func splitResources(resources []*resource.Info) ([]*resource.Info, []*resource.Info, error) {
+func SplitResources(resources []*resource.Info) ([]*resource.Info, []*resource.Info, error) {
 	operatorRelatedResources := make([]*resource.Info, 0)
 	operatorManagedResources := make([]*resource.Info, 0)
 
@@ -129,5 +127,5 @@ func (c *ConcurrentCleanup) cleanupResource(ctx context.Context, info *resource.
 	if !ok {
 		return
 	}
-	results <- c.clnt.Delete(ctx, obj, c.policy)
+	results <- c.clnt.Delete(ctx, obj, client.PropagationPolicy(apimetav1.DeletePropagationBackground))
 }

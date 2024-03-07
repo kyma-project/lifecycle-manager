@@ -42,13 +42,13 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 			By("And count of Kyma State Metric in \"Ready\" State is 1")
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), string(shared.StateReady)).
+				WithArguments(kyma.GetName(), shared.StateReady).
 				Should(Equal(1))
 
 			By("And count of Kyma Module Metric in \"Ready\" State is 1")
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
+				WithArguments(kyma.GetName(), module.Name, shared.StateReady).
 				Should(Equal(1))
 		})
 
@@ -74,7 +74,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 
 			By("Then Manifest CR is removed")
 			Eventually(func() error {
-				manifest, err := GetManifestWithObjectKey(ctx, controlPlaneClient, manifestInCluster.GetNamespace(),
+				manifest, err := GetManifestWithMetadata(ctx, controlPlaneClient, manifestInCluster.GetNamespace(),
 					manifestInCluster.GetName())
 				return CRExists(manifest, err)
 			}).WithTimeout(2 * time.Minute).Should(Equal(ErrNotFound))
@@ -88,13 +88,13 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 			By("And count of Kyma State Metric in \"Ready\" State is 1")
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), string(shared.StateReady)).
+				WithArguments(kyma.GetName(), shared.StateReady).
 				Should(Equal(1))
 
 			By("And count of Kyma Module Metric in \"Ready\" State is 0")
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
+				WithArguments(kyma.GetName(), module.Name, shared.StateReady).
 				Should(Equal(0))
 		})
 
@@ -130,11 +130,11 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 			for _, state := range shared.AllStates() {
 				Eventually(AssertKymaStateMetricNotFound).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), string(state)).
+					WithArguments(kyma.GetName(), state).
 					Should(Equal(ErrMetricNotFound))
 				Eventually(GetModuleStateMetricCount).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), module.Name, string(state)).
+					WithArguments(kyma.GetName(), module.Name, state).
 					Should(Equal(0))
 			}
 		})

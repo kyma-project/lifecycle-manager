@@ -71,10 +71,10 @@ func GetManifest(ctx context.Context,
 		}
 	}
 
-	return GetManifestWithObjectKey(ctx, clnt, manifestKey.GetNamespace(), manifestKey.GetName())
+	return GetManifestWithMetadata(ctx, clnt, manifestKey.GetNamespace(), manifestKey.GetName())
 }
 
-func GetManifestWithObjectKey(ctx context.Context,
+func GetManifestWithMetadata(ctx context.Context,
 	clnt client.Client, manifestNamespace, manifestName string,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}

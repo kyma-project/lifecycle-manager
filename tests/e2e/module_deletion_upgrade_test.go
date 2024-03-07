@@ -108,7 +108,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 			By("And Module CR is in \"Deleting\" State")
 			Consistently(CheckSampleCRIsInState).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Deleting").
+				WithArguments("sample-yaml", "kyma-system", runtimeClient, shared.StateDeleting).
 				Should(Succeed())
 
 			By("And Manifest CR is still in \"Deleting\" State")

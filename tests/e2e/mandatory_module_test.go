@@ -3,11 +3,12 @@ package e2e_test
 import (
 	"os/exec"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -30,7 +31,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			By("And the SKR Module Default CR is in a \"Ready\" State", func() {
 				Eventually(CheckSampleCRIsInState).
 					WithContext(ctx).
-					WithArguments("sample-yaml", "kyma-system", runtimeClient, "Ready").
+					WithArguments("sample-yaml", "kyma-system", runtimeClient, shared.StateReady).
 					Should(Succeed())
 			})
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {

@@ -168,7 +168,7 @@ func SetFinalizer(name, namespace, group, version, kind string, finalizers []str
 }
 
 func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
-	expectedState string,
+	expectedState shared.State,
 ) error {
 	return CRIsInState(ctx,
 		"operator.kyma-project.io", "v1alpha1", "Sample",
