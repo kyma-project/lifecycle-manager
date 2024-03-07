@@ -1,0 +1,97 @@
+name: "Check for diff in manifests"
+
+env:
+  PR_CACHE_KEY: pr-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+  MAIN_CACHE_KEY: main-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    types:
+      - "opened"
+      - "synchronize"
+      - "reopened"
+      - "labeled"
+      - "unlabeled"
+
+jobs:
+  create-pr-manifests:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'confirm/helm-update') == false }}
+    name: Create PR manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+
+      - name: Run 'make dry-run-control-plane'
+        id: make-pr-manifests
+        run: |
+          make dry-run-control-plane
+          mkdir -p ./cache/pr
+          mv ./dry-run/manifests.yaml ./cache/pr/manifests.yaml
+
+      - name: Save PR manifests in cache
+        id: cache-pr-manifests
+        uses: actions/cache/save@v4
+        with:
+          path: ./cache/pr/
+          key: ${{ env.PR_CACHE_KEY }}
+
+  create-main-manifests:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'confirm/helm-update') == false }}
+    name: Create 'main' manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Run 'make dry-run-control-plane'
+        id: make-main-manifests
+        run: |
+          make dry-run-control-plane
+          mkdir -p ./cache/main
+          sudo mv ./dry-run/manifests.yaml ./cache/main/manifests.yaml
+
+      - name: Save 'main' manifests in cache
+        id: cache-main-manifests
+        uses: actions/cache/save@v4
+        with:
+          path: ./cache/main/
+          key: ${{ env.MAIN_CACHE_KEY }}
+
+  diff-manifests:
+    needs:
+    - create-pr-manifests
+    - create-main-manifests
+    name: Diff manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore PR manifests cache
+        uses: actions/cache/restore@v4
+        id: restore-pr-cache
+        with:
+          path: ./cache/pr/
+          key: ${{ env.PR_CACHE_KEY }}
+
+      - name: Restore 'main' manifests cache
+        uses: actions/cache/restore@v4
+        id: restore-main-cache
+        with:
+          path: ./cache/main/
+          key: ${{ env.MAIN_CACHE_KEY }}
+    
+      - name: Diff
+        run: |
+          set +e
+          SCRIPT_OUTPUT=$(diff ./cache/pr/manifests.yaml ./cache/main/manifests.yaml)
+          SCRIPT_EXIT_CODE=$?
+          if [[ $SCRIPT_EXIT_CODE != 0 ]]; then
+            echo "Detected diff in manifests. Make sure to update Helm charts accordingly and add the'confirm/helm-update' label to the PR when okay."
+            echo "$SCRIPT_OUTPUT"
+            exit $SCRIPT_EXIT_CODE
+          fi
+          set -e
+
+          echo "No diff in manifests, all good."

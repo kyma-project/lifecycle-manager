@@ -132,7 +132,7 @@ func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string,
 
 	kyma.Spec.Channel = channel
 
-	return k8sClient.Update(ctx, kyma)
+	return k8sClient.Patch(ctx, kyma, client.StrategicMergeFrom(kyma))
 }
 
 func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {

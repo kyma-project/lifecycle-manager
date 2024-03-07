@@ -142,7 +142,7 @@ func EnableModule(ctx context.Context,
 	}
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
-	err = clnt.Update(ctx, kyma)
+	err = clnt.Patch(ctx, kyma, client.StrategicMergeFrom(kyma))
 	if err != nil {
 		return fmt.Errorf("update kyma: %w", err)
 	}
@@ -162,7 +162,7 @@ func DisableModule(ctx context.Context, clnt client.Client,
 			break
 		}
 	}
-	err = clnt.Update(ctx, kyma)
+	err = clnt.Patch(ctx, kyma, client.StrategicMergeFrom(kyma))
 	if err != nil {
 		return fmt.Errorf("update kyma: %w", err)
 	}
