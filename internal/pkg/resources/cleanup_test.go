@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kyma-project/template-operator/api/v1alpha1"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apirbacv1 "k8s.io/api/rbac/v1"
@@ -35,8 +35,8 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 			[]machineryruntime.Object{
 				&apicorev1.ServiceAccount{},
 				&apiappsv1.Deployment{},
-				&v1alpha1.Sample{},
-				&v1alpha1.Managed{},
+				&templatev1alpha1.Sample{},
+				&templatev1alpha1.Managed{},
 			},
 			resources.ErrDeletionNotFinished,
 			shared.StateWarning,
@@ -46,8 +46,8 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 			[]machineryruntime.Object{
 				&apicorev1.ServiceAccount{},
 				&apiappsv1.Deployment{},
-				&v1alpha1.Sample{},
-				&v1alpha1.Managed{},
+				&templatev1alpha1.Sample{},
+				&templatev1alpha1.Managed{},
 			},
 			errors.New("unexpected error"),
 			shared.StateError,
@@ -57,8 +57,8 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 			[]machineryruntime.Object{
 				&apicorev1.ServiceAccount{},
 				&apiappsv1.Deployment{},
-				&v1alpha1.Sample{},
-				&v1alpha1.Managed{},
+				&templatev1alpha1.Sample{},
+				&templatev1alpha1.Managed{},
 			},
 			apierrors.NewNotFound(schema.GroupResource{}, "manifest not found"),
 			shared.StateDeleting,
@@ -163,14 +163,14 @@ func Test_SplitResources(t *testing.T) {
 			[]machineryruntime.Object{
 				&apicorev1.ServiceAccount{},
 				&apiappsv1.Deployment{},
-				&v1alpha1.Sample{},
-				&v1alpha1.Managed{},
+				&templatev1alpha1.Sample{},
+				&templatev1alpha1.Managed{},
 			},
 			[]machineryruntime.Object{
 				&apicorev1.ServiceAccount{}, &apiappsv1.Deployment{},
 			},
 			[]machineryruntime.Object{
-				&v1alpha1.Sample{}, &v1alpha1.Managed{},
+				&templatev1alpha1.Sample{}, &templatev1alpha1.Managed{},
 			},
 		},
 	}

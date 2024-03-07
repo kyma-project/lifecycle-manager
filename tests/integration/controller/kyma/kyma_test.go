@@ -150,7 +150,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 					Channel: v1beta2.DefaultChannel,
 					Resource: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
-							Namespace: "kyma-system",
+							Namespace: RemoteNamespace,
 						},
 					},
 				}

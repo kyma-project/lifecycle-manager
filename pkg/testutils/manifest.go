@@ -16,6 +16,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -408,7 +409,7 @@ func InstallManifest(ctx context.Context, clnt client.Client, manifest *v1beta2.
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": shared.OperatorGroup + shared.Separator + "v1alpha1",
-				"kind":       "Sample",
+				"kind":       string(templatev1alpha1.SampleKind),
 				"metadata": map[string]interface{}{
 					"name":      "sample-cr-" + manifest.GetName(),
 					"namespace": apimetav1.NamespaceDefault,
