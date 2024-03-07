@@ -15,7 +15,7 @@ import (
 
 var ErrMetricNotFound = errors.New("metric was not found")
 
-func GetKymaStateMetricCount(ctx context.Context, kymaName, state shared.State) (int, error) {
+func GetKymaStateMetricCount(ctx context.Context, kymaName string, state shared.State) (int, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
@@ -25,13 +25,13 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state shared.State) 
 	return parseCount(re, bodyString)
 }
 
-func getKymaStateMetricRegex(kymaName, state shared.State) *regexp.Regexp {
+func getKymaStateMetricRegex(kymaName string, state shared.State) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf(`%s{instance_id="[^"]+",kyma_name="%s",shoot="[^"]+",state="%s"} (\d+)`,
 		metrics.MetricKymaState,
 		kymaName, string(state)))
 }
 
-func AssertKymaStateMetricNotFound(ctx context.Context, kymaName, state shared.State) error {
+func AssertKymaStateMetricNotFound(ctx context.Context, kymaName string, state shared.State) error {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, r
 	return count >= 1, err
 }
 
-func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state shared.State) (int, error) {
+func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName string, state shared.State) (int, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
