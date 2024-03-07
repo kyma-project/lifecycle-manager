@@ -68,16 +68,16 @@ func splitResources(resources []*resource.Info) ([]*resource.Info, []*resource.I
 	operatorRelatedResources := make([]*resource.Info, 0)
 	operatorManagedResources := make([]*resource.Info, 0)
 
-	for _, resource := range resources {
-		obj, ok := resource.Object.(client.Object)
+	for _, item := range resources {
+		obj, ok := item.Object.(client.Object)
 		if !ok {
 			return nil, nil, common.ErrTypeAssert
 		}
 		if isOperatorRelatedResources(obj.GetObjectKind().GroupVersionKind().Kind) {
-			operatorRelatedResources = append(operatorRelatedResources, resource)
+			operatorRelatedResources = append(operatorRelatedResources, item)
 			continue
 		}
-		operatorManagedResources = append(operatorManagedResources, resource)
+		operatorManagedResources = append(operatorManagedResources, item)
 	}
 
 	return operatorRelatedResources, operatorManagedResources, nil
