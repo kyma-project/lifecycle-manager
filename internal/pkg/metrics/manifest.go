@@ -60,3 +60,9 @@ func (k *ManifestMetrics) RecordRequeueReason(requeueReason ManifestRequeueReaso
 func (k *ManifestMetrics) RecordManifestDuration(manifestName string, duration time.Duration) {
 	k.ManifestDurationGauge.WithLabelValues(manifestName).Set(duration.Seconds())
 }
+
+func (k *ManifestMetrics) RemoveManifestDuration(manifestName string) {
+	k.ManifestDurationGauge.DeletePartialMatch(prometheus.Labels{
+		ManifestNameLabel: manifestName,
+	})
+}
