@@ -221,7 +221,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(ModuleServiceAccountName, TestModuleResourceNamespace,
-					"core", "v1", "ServiceAccount", runtimeClient).
+					"", "v1", "ServiceAccount", runtimeClient).
 				Should(Succeed())
 		})
 
