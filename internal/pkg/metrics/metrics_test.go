@@ -44,6 +44,11 @@ func Test_ConstantMetricNames(t *testing.T) {
 			constValue:    SelfSignedCertNotRenewMetrics,
 			expectedValue: "lifecycle_mgr_self_signed_cert_not_renew",
 		},
+		{
+			constName:     "MetricManifestDuration",
+			constValue:    MetricManifestDuration,
+			expectedValue: "reconcile_duration_seconds",
+		},
 	}
 	for _, testcase := range tests {
 		testcase := testcase
