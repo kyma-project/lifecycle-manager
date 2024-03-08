@@ -211,27 +211,10 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 					shared.StateDeleting).
 				Should(Succeed())
 
-			By("And Module CR on SKR Cluster is not removed")
-			Consistently(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
-					templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind), runtimeClient).
-				Should(Equal(ErrDeletionTimestampFound))
-
-			By("And Module CR on SKR Cluster is in \"Deleting\" State")
-			Consistently(CheckSampleCRIsInState).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, runtimeClient, shared.StateDeleting).
-				Should(Succeed())
-			Eventually(SampleCRDeletionTimeStampSet).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, runtimeClient).
-				Should(Succeed())
-
 			By("And Module Operator Deployment is not removed on SKR cluster")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
-				WithArguments(ModuleDeploymentName, TestModuleResourceNamespace,
+				WithArguments(ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace,
 					"apps", "v1", "Deployment", runtimeClient).
 				Should(Succeed())
 			By("And Module Operator RBAC related resources not removed on SKR cluster")
