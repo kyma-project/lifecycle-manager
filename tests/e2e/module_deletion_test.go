@@ -228,7 +228,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		It("When managed CR get deleted", func() {
 			Eventually(SetFinalizer).
 				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
+				WithArguments(ModuleManagedCRName, TestModuleResourceNamespace, templatev1alpha1.GroupVersion.Group,
 					templatev1alpha1.GroupVersion.Version,
 					ManagedCRKind,
 					[]string{}, runtimeClient).

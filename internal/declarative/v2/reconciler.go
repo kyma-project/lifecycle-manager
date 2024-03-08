@@ -477,7 +477,9 @@ func (r *Reconciler) pruneDiff(
 	if err != nil {
 		return err
 	}
-
+	if len(diff) == 0 {
+		return nil
+	}
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
 		// and we should prevent diff resources to be deleted.
@@ -493,11 +495,7 @@ func (r *Reconciler) pruneDiff(
 	if !ok {
 		return v1beta2.ErrTypeAssertManifest
 	}
-	if err := resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff); err != nil {
-		return err
-	}
-
-	return nil
+	return resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object,

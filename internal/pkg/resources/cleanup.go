@@ -3,12 +3,10 @@ package resources
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -37,19 +35,10 @@ func (c *ConcurrentCleanup) DeleteDiffResources(ctx context.Context, resources [
 	if err != nil {
 		return err
 	}
-	logger := logf.FromContext(ctx)
-	logger.Info(fmt.Sprintf("start delete operatorManagedResources %v", operatorManagedResources))
 	if err := c.cleanupResources(ctx, operatorManagedResources, status); err != nil {
-		logger.Error(err, fmt.Sprintf("delete operatorManagedResources error"))
 		return err
 	}
-	logger.Info(fmt.Sprintf("start delete operatorRelatedResources %v", operatorRelatedResources))
-	if err := c.cleanupResources(ctx, operatorRelatedResources, status); err != nil {
-		logger.Error(err, fmt.Sprintf("delete operatorRelatedResources error"))
-		return err
-	}
-	logger.Info("delete diff finished")
-	return nil
+	return c.cleanupResources(ctx, operatorRelatedResources, status)
 }
 
 func (c *ConcurrentCleanup) cleanupResources(
@@ -88,6 +77,7 @@ func SplitResources(resources []*resource.Info) ([]*resource.Info, []*resource.I
 
 func IsOperatorRelatedResources(kind string) bool {
 	return kind == "CustomResourceDefinition" ||
+		kind == "Namespace" ||
 		kind == "ServiceAccount" ||
 		kind == "Role" ||
 		kind == "ClusterRole" ||

@@ -26,40 +26,21 @@ import (
 func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 	tests := []struct {
 		name                string
-		resources           []machineryruntime.Object
 		clientError         error
 		expectManifestState shared.State
 	}{
 		{
 			"Given resources deletion not finished, expect manifest CR state to Warning",
-			[]machineryruntime.Object{
-				&apicorev1.ServiceAccount{},
-				&apiappsv1.Deployment{},
-				&templatev1alpha1.Sample{},
-				&templatev1alpha1.Managed{},
-			},
 			resources.ErrDeletionNotFinished,
 			shared.StateWarning,
 		},
 		{
 			"Given resources deletion with unexpect error, expect manifest CR state to Error",
-			[]machineryruntime.Object{
-				&apicorev1.ServiceAccount{},
-				&apiappsv1.Deployment{},
-				&templatev1alpha1.Sample{},
-				&templatev1alpha1.Managed{},
-			},
 			errors.New("unexpected error"),
 			shared.StateError,
 		},
 		{
 			"Given resources deletion with not found error, expect manifest CR state not change",
-			[]machineryruntime.Object{
-				&apicorev1.ServiceAccount{},
-				&apiappsv1.Deployment{},
-				&templatev1alpha1.Sample{},
-				&templatev1alpha1.Managed{},
-			},
 			apierrors.NewNotFound(schema.GroupResource{}, "manifest not found"),
 			shared.StateDeleting,
 		},
@@ -67,7 +48,12 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 	for _, testCase := range tests {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
-			resourcesInfo := convertToResourceInfo(testCase.resources)
+			resourcesInfo := convertToResourceInfo([]machineryruntime.Object{
+				&apicorev1.ServiceAccount{},
+				&apiappsv1.Deployment{},
+				&templatev1alpha1.Sample{},
+				&templatev1alpha1.Managed{},
+			})
 			fakeClient := NewErrorMockFakeClient(testCase.clientError)
 			manifest := testutils.NewTestManifest("test")
 			manifest.Status.State = shared.StateDeleting
@@ -111,6 +97,7 @@ func Test_IsOperatorRelatedResources(t *testing.T) {
 		{
 			"operator related resources should be determined",
 			[]any{
+				apicorev1.Namespace{},
 				apicorev1.ServiceAccount{},
 				apicorev1.Service{},
 				apirbacv1.Role{},
@@ -161,13 +148,18 @@ func Test_SplitResources(t *testing.T) {
 		{
 			"resources split correctly",
 			[]machineryruntime.Object{
+				&apicorev1.Namespace{},
+				&apiextensionsv1.CustomResourceDefinition{},
 				&apicorev1.ServiceAccount{},
 				&apiappsv1.Deployment{},
 				&templatev1alpha1.Sample{},
 				&templatev1alpha1.Managed{},
 			},
 			[]machineryruntime.Object{
-				&apicorev1.ServiceAccount{}, &apiappsv1.Deployment{},
+				&apicorev1.Namespace{},
+				&apiextensionsv1.CustomResourceDefinition{},
+				&apicorev1.ServiceAccount{},
+				&apiappsv1.Deployment{},
 			},
 			[]machineryruntime.Object{
 				&templatev1alpha1.Sample{}, &templatev1alpha1.Managed{},
