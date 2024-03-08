@@ -73,11 +73,11 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(Succeed())
 
 			By("Then Manifest CR is removed")
-			Eventually(func() error {
-				manifest, err := GetManifestWithMetadata(ctx, controlPlaneClient, manifestInCluster.GetNamespace(),
-					manifestInCluster.GetName())
-				return CRExists(manifest, err)
-			}).WithTimeout(2 * time.Minute).Should(Equal(ErrNotFound))
+			Eventually(ManifestExistsByMetadata).
+				WithContext(ctx).
+				WithTimeout(2*time.Minute).
+				WithArguments(controlPlaneClient, manifestInCluster.Namespace, manifestInCluster.Name).
+				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).

@@ -134,6 +134,17 @@ func ManifestExists(
 	return CRExists(manifest, err)
 }
 
+func ManifestExistsByMetadata(
+	ctx context.Context,
+	clnt client.Client,
+	manifestNamespace,
+	manifestName string,
+) error {
+	manifest, err := GetManifestWithMetadata(ctx, clnt, manifestNamespace,
+		manifestName)
+	return CRExists(manifest, err)
+}
+
 func NoManifestExist(ctx context.Context,
 	clnt client.Client,
 ) error {

@@ -192,7 +192,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		It("When Kyma Module gets disabled with managed CR blocked for deletion", func() {
 			Eventually(SetFinalizer).
 				WithContext(ctx).
-				WithArguments(ModuleManagedCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
+				WithArguments(ModuleManagedCRName, TestModuleResourceNamespace, templatev1alpha1.GroupVersion.Group,
 					templatev1alpha1.GroupVersion.Version,
 					ManagedCRKind,
 					[]string{"sample.kyma-project.io/finalizer", "blocking-finalizer"}, runtimeClient).
