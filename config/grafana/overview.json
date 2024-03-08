@@ -21,7 +21,6 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 21,
   "links": [],
   "panels": [
     {
@@ -78,7 +77,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -216,7 +215,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -316,7 +315,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -597,7 +596,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -700,7 +699,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -731,6 +730,14 @@
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "reconcile_duration_seconds",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Manifest: {{manifest_name}}",
+          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -814,7 +821,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "targets": [
         {
           "datasource": {
@@ -1168,7 +1175,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1278,7 +1285,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1388,7 +1395,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1501,7 +1508,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1623,7 +1630,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1731,7 +1738,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1827,7 +1834,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1921,7 +1928,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
