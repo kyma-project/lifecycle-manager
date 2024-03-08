@@ -225,8 +225,7 @@ jobs:
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:
-          repository: 'lindnerby/template-operator'
-          ref: 'go-122'
+          repository: kyma-project/template-operator
           path: template-operator
       - name: Create Template Operator Module and apply
         working-directory: template-operator
