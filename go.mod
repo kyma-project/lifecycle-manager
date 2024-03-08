@@ -6,7 +6,7 @@ replace github.com/kyma-project/lifecycle-manager/api => ./api
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
-	github.com/cert-manager/cert-manager v1.14.3
+	github.com/cert-manager/cert-manager v1.14.4
 	github.com/go-logr/logr v1.4.1
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
@@ -328,7 +328,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.56.1 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
