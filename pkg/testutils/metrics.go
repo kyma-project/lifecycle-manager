@@ -56,7 +56,7 @@ func GetRequeueReasonCount(ctx context.Context,
 	re := regexp.MustCompile(
 		metrics.MetricRequeueReason + `{requeue_reason="` + requeueReason +
 			`",requeue_type="` + requeueType +
-			`"}` + ` (\d+)`)
+			`"} (\d+)`)
 	return parseCount(re, bodyString)
 }
 
@@ -70,7 +70,7 @@ func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, r
 	re := regexp.MustCompile(
 		metrics.MetricRequeueReason + `{requeue_reason="` + requeueReason +
 			`",requeue_type="` + requeueType +
-			`"}` + ` (\d+)`)
+			`"} (\d+)`)
 	count, err := parseCount(re, bodyString)
 	return count >= 1, err
 }
@@ -138,7 +138,7 @@ func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
 		return 0, err
 	}
 
-	re := regexp.MustCompile(fmt.Sprintf(`%s (\d+)`, metrics.MetricMandatoryTemplateCount))
+	re := regexp.MustCompile(metrics.MetricMandatoryTemplateCount + ` (\d+)`)
 	return parseCount(re, bodyString)
 }
 

@@ -122,13 +122,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestInit)
 	}
 
-	logf.FromContext(ctx).Info("Before setting the Mandatory Module Metrics")
 	if obj.GetLabels() != nil && obj.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
 		state := obj.GetStatus().State
 		kymaName := obj.GetLabels()[shared.KymaName]
 		moduleName := obj.GetLabels()[shared.ModuleName]
-		logf.FromContext(ctx).Info(fmt.Sprintf("Setting the Mandatory Module Metrics with State: %s for Kyma: %s and Module: %s",
-			state, kymaName, moduleName))
 		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
 	}
 
