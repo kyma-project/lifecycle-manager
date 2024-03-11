@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -163,11 +164,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions ctrlcache.Options, scheme
 
 	cacheMetrics := metrics.NewCacheSizeMetrics()
 	remoteClientCache := remote.NewClientCache(nil, cacheMetrics)
-	sharedMetrics := metrics.NewSharedMetrics()
+	crdCache := crd.NewCache(nil, cacheMetrics)
 	descriptorCache := cache.NewDescriptorCache(nil, cacheMetrics)
 	descriptorProvider := provider.NewCachedDescriptorProvider(descriptorCache)
+	sharedMetrics := metrics.NewSharedMetrics()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
-	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
+	setupKymaReconciler(mgr, remoteClientCache, crdCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
@@ -244,7 +246,7 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
+func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, crdCache *crd.Cache,
 	descriptorProvider *provider.CachedDescriptorProvider,
 	flagVar *flags.FlagVar, options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
 	kymaMetrics *metrics.KymaMetrics,
@@ -258,7 +260,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		KcpRestConfig:      kcpRestConfig,
 		RemoteClientCache:  remoteClientCache,
 		DescriptorProvider: descriptorProvider,
-		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(nil),
+		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(crdCache),
 		SKRWebhookManager:  skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,

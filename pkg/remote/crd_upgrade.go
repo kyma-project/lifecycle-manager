@@ -16,7 +16,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
 type SyncCrdsUseCase struct {
@@ -25,7 +24,7 @@ type SyncCrdsUseCase struct {
 
 func NewSyncCrdsUseCase(cache *crd.Cache) SyncCrdsUseCase {
 	if cache == nil {
-		return SyncCrdsUseCase{crdCache: crd.NewCache(nil, metrics.NewCacheSizeMetrics())}
+		return SyncCrdsUseCase{crdCache: crd.NewCache(nil, nil)}
 	}
 	return SyncCrdsUseCase{crdCache: cache}
 }
