@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 	"strconv"
+	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -142,7 +142,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
-			r.Metrics.RemoveManifestDuration(req.Name)
+			r.ManifestMetrics.RemoveManifestDuration(req.Name)
 			r.cleanUpMandatoryModuleMetrics(obj)
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec)
 		}
@@ -158,7 +158,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
 			r.cleanUpMandatoryModuleMetrics(obj)
-			r.Metrics.RemoveManifestDuration(req.Name)
+			r.ManifestMetrics.RemoveManifestDuration(req.Name)
 			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone)
 		}
 
@@ -178,9 +178,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
-		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
-	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
@@ -215,7 +212,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if !obj.GetDeletionTimestamp().IsZero() {
 		r.cleanUpMandatoryModuleMetrics(obj)
-		r.Metrics.RemoveManifestDuration(req.Name)
+		r.ManifestMetrics.RemoveManifestDuration(req.Name)
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting)
 	}
 	return ctrl.Result{RequeueAfter: r.Success}, nil
@@ -673,9 +670,9 @@ func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
 func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name string) {
 	duration := time.Since(startTime)
 	if duration >= 1*time.Minute {
-		r.Metrics.RecordManifestDuration(name, duration)
+		r.ManifestMetrics.RecordManifestDuration(name, duration)
 	} else {
-		r.Metrics.RemoveManifestDuration(name)
+		r.ManifestMetrics.RemoveManifestDuration(name)
 	}
 }
 
