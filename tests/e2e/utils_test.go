@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,9 +35,7 @@ const (
 	defaultRemoteKymaName = "default"
 	EventuallyTimeout     = 10 * time.Second
 	ConsistentDuration    = 20 * time.Second
-	interval              = 1 * time.Second
-	remoteNamespace       = "kyma-system"
-	controlPlaneNamespace = "kcp-system"
+	interval              = 500 * time.Millisecond
 	moduleCRFinalizer     = "cr-finalizer"
 )
 
@@ -59,7 +58,7 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 		By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
 		Eventually(CheckRemoteKymaCR).
 			WithContext(ctx).
-			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
+			WithArguments(RemoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
 			Should(Succeed())
 	})
 }
@@ -168,10 +167,10 @@ func SetFinalizer(name, namespace, group, version, kind string, finalizers []str
 }
 
 func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
-	expectedState string,
+	expectedState shared.State,
 ) error {
 	return CRIsInState(ctx,
-		"operator.kyma-project.io", "v1alpha1", "Sample",
+		"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind),
 		name, namespace,
 		[]string{"status", "state"},
 		clnt,

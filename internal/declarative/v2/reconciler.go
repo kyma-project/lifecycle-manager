@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 	"strconv"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -17,7 +18,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -95,6 +98,8 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	startTime := time.Now()
+	defer r.recordReconciliationDuration(startTime, req.Name)
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
@@ -137,6 +142,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
+			r.Metrics.RemoveManifestDuration(req.Name)
 			r.cleanUpMandatoryModuleMetrics(obj)
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec)
 		}
@@ -152,6 +158,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
 			r.cleanUpMandatoryModuleMetrics(obj)
+			r.Metrics.RemoveManifestDuration(req.Name)
 			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone)
 		}
 
@@ -170,6 +177,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestRenderResources)
 	}
 
+	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
+		r.Metrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 	diff := ResourceList(current).Difference(target)
 	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
@@ -178,7 +187,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj, metrics.ManifestPruneDiff)
 	}
 
-	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+	if err := r.removeModuleCR(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
@@ -206,6 +215,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if !obj.GetDeletionTimestamp().IsZero() {
 		r.cleanUpMandatoryModuleMetrics(obj)
+		r.Metrics.RemoveManifestDuration(req.Name)
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting)
 	}
 	return ctrl.Result{RequeueAfter: r.Success}, nil
@@ -323,7 +333,9 @@ func (r *Reconciler) renderResources(
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object, target []*resource.Info) error {
+func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
+	target []*resource.Info,
+) error {
 	status := obj.GetStatus()
 
 	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
@@ -418,24 +430,7 @@ func generateOperationMessage(installationCondition apimetav1.Condition, stateIn
 	return installationCondition.Message
 }
 
-func (r *Reconciler) deleteDiffResources(
-	ctx context.Context, clnt Client, obj Object, diff []*resource.Info,
-) error {
-	status := obj.GetStatus()
-
-	if err := NewConcurrentCleanup(clnt).Run(ctx, diff); errors.Is(err, ErrDeletionNotFinished) {
-		r.Event(obj, "Normal", "Deletion", err.Error())
-		return err
-	} else if err != nil {
-		r.Event(obj, "Warning", "Deletion", err.Error())
-		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
-		return err
-	}
-
-	return nil
-}
-
-func (r *Reconciler) doPreDelete(ctx context.Context, clnt Client, obj Object) error {
+func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object) error {
 	if !obj.GetDeletionTimestamp().IsZero() {
 		for _, preDelete := range r.PreDeletes {
 			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
@@ -500,15 +495,16 @@ func (r *Reconciler) pruneDiff(
 	ctx context.Context,
 	clnt Client,
 	obj Object,
-	diff []*resource.Info,
+	current, target []*resource.Info,
 	spec *Spec,
 ) error {
-	var err error
-	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
 	if err != nil {
 		return err
 	}
-
+	if len(diff) == 0 {
+		return nil
+	}
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
 		// and we should prevent diff resources to be deleted.
@@ -519,14 +515,17 @@ func (r *Reconciler) pruneDiff(
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 
-	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
-		return err
+	// Remove this type casting while in progress this issue: https://github.com/kyma-project/lifecycle-manager/issues/1006
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return v1beta2.ErrTypeAssertManifest
 	}
-
-	return nil
+	return resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)
 }
 
-func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
+func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object,
+	spec *Spec,
+) bool {
 	return len(diff) > 0 && ociRefNotChanged(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
 }
 
@@ -669,6 +668,15 @@ func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
 		return ctrl.Result{}, fmt.Errorf("failed to update object: %w", err)
 	}
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name string) {
+	duration := time.Since(startTime)
+	if duration >= 1*time.Minute {
+		r.Metrics.RecordManifestDuration(name, duration)
+	} else {
+		r.Metrics.RemoveManifestDuration(name)
+	}
 }
 
 func (r *Reconciler) cleanUpMandatoryModuleMetrics(obj Object) {

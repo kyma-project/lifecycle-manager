@@ -56,9 +56,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      K3D_VERSION: v5.4.7
-      K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.27.10' }}
-      ISTIO_VERSION: 1.17.1
+      K3D_VERSION: v5.6.0
+      K8S_VERSION: ${{ github.event.inputs.k8s_version || '1.28.7' }}
+      ISTIO_VERSION: 1.20.3
       CM_VERSION: v1.13.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
@@ -102,17 +102,19 @@ jobs:
           k3d cluster create skr \
             -p 10080:80@loadbalancer \
             -p 10443:443@loadbalancer \
-            --image rancher/k3s:v$K8S_VERSION-k3s2 \
-            --k3s-arg '--disable=traefik@server:0'
+            --image rancher/k3s:v$K8S_VERSION-k3s1 \
+            --k3s-arg '--disable=traefik@server:*' \
+            --k3s-arg '--tls-san=host.k3d.internal@server:*'
       - name: Provision KCP cluster
         run: |
           k3d cluster create kcp \
             -p 9443:443@loadbalancer \
             -p 9080:80@loadbalancer \
             -p 9081:8080@loadbalancer \
-            --image rancher/k3s:v$K8S_VERSION-k3s2 \
+            --image rancher/k3s:v$K8S_VERSION-k3s1 \
             --registry-create k3d-kcp-registry:5111 \
-            --k3s-arg '--disable=traefik@server:0'
+            --k3s-arg '--disable=traefik@server:*' \
+            --k3s-arg '--tls-san=host.k3d.internal@server:*'
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
