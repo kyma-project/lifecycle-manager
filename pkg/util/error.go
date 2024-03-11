@@ -45,7 +45,7 @@ func IsNotFound(err error) bool {
 	return false
 }
 
-func IsConnectionOrHostError(err error) bool {
+func IsConnectionRelatedError(err error) bool {
 	if err == nil {
 		return false
 	}

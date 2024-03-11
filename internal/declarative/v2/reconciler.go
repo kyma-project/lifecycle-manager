@@ -152,7 +152,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
-		if util.IsConnectionOrHostError(err) {
+		if util.IsConnectionRelatedError(err) {
 			r.invalidateClientCache(ctx, obj)
 			return r.ssaStatus(ctx, obj, metrics.ManifestUnauthorized)
 		}
@@ -475,7 +475,7 @@ func (r *Reconciler) renderTargetResources(
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
 		// Prevent ETCD load bursts during secret rotation
-		if !util.IsConnectionOrHostError(err) {
+		if !util.IsConnectionRelatedError(err) {
 			r.Event(obj, "Warning", "TargetResourceParsing", err.Error())
 		}
 
@@ -565,7 +565,15 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 	var err error
 	var clnt Client
 	if r.ClientCacheKeyFn == nil {
-		return r.configClient(ctx, obj)
+		clnt, err = r.configClient(ctx, obj)
+		if err != nil {
+			return nil, err
+		}
+		err = testClient(ctx, clnt)
+		if err != nil {
+			return nil, err
+		}
+		return clnt, nil
 	}
 
 	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
@@ -592,6 +600,10 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 			return nil, fmt.Errorf("failed to patch namespace: %w", err)
 		}
 	}
+	err = testClient(ctx, clnt)
+	if err != nil {
+		return nil, err
+	}
 
 	return clnt, nil
 }
@@ -616,15 +628,10 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 		return nil, err
 	}
 
-	err = testClient(ctx, clnt)
-	if err != nil {
-		return nil, err
-	}
-
 	return clnt, nil
 }
 
-func testClient(ctx context.Context, clnt *SingletonClients) error {
+func testClient(ctx context.Context, clnt Client) error {
 	nodeList := &apicorev1.NodeList{}
 	err := clnt.List(ctx, nodeList)
 	if err != nil {
