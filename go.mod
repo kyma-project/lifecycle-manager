@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.21.1
+go 1.22.1
 
 replace github.com/kyma-project/lifecycle-manager/api => ./api
 
@@ -35,6 +35,7 @@ require (
 
 require (
 	github.com/go-co-op/gocron v1.37.0
+	github.com/kyma-project/template-operator/api v0.0.0-20240307063418-941f23f566fe
 	github.com/prometheus/client_model v0.6.0
 	k8s.io/api v0.29.2
 	k8s.io/apiextensions-apiserver v0.29.2

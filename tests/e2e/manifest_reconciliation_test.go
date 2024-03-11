@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
@@ -11,7 +13,7 @@ import (
 )
 
 var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
@@ -19,22 +21,21 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given kyma deployed in KCP", func() {
-		deployName := "template-operator-controller-manager"
 		It("When enabling Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 			By("Then the Module Operator is deployed on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, deployName,
+				WithArguments(runtimeClient, ModuleDeploymentName,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State")
 			Eventually(CheckSampleCRIsInState).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Ready").
+				WithArguments(TestModuleCRName, RemoteNamespace, runtimeClient, shared.StateReady).
 				Should(Succeed())
 			By("And the KCP Kyma CR is in a \"Ready\" State")
 			Eventually(KymaIsInState).
@@ -52,24 +53,24 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("When deleting the SKR Default CR")
 			Eventually(DeleteCRWithGVK).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "sample-yaml", "kyma-system", "operator.kyma-project.io",
-					"v1alpha1", "Sample").
+				WithArguments(runtimeClient, TestModuleCRName, RemoteNamespace, "operator.kyma-project.io",
+					"v1alpha1", string(templatev1alpha1.SampleKind)).
 				Should(Succeed())
 			By("Then SKR Module Default CR is not recreated")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
-					"v1alpha1", "Sample", runtimeClient).
+				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io",
+					"v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
 				Should(Equal(ErrNotFound))
 
 			By("When deleting the SKR Module Manager Deployment")
-			err := DeleteCRWithGVK(ctx, runtimeClient, deployName,
+			err := DeleteCRWithGVK(ctx, runtimeClient, ModuleDeploymentName,
 				TestModuleResourceNamespace, "apps", "v1", "Deployment")
 			Expect(err).ToNot(HaveOccurred())
 			By("Then Module Manager Deployment is not recreated on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, deployName,
+				WithArguments(runtimeClient, ModuleDeploymentName,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 		})
@@ -83,13 +84,13 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("Then Module Default CR is recreated")
 			Eventually(CheckIfExists).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system",
-					"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
+				WithArguments(TestModuleCRName, RemoteNamespace,
+					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
 				Should(Succeed())
 			By("Then Module Deployment is recreated")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, deployName,
+				WithArguments(runtimeClient, ModuleDeploymentName,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 
@@ -102,7 +103,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("And the SKR Kyma CR is in a \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, runtimeClient, shared.StateReady).
+				WithArguments(defaultRemoteKymaName, RemoteNamespace, runtimeClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})

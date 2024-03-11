@@ -16,6 +16,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -36,6 +37,7 @@ var (
 	ErrManifestsExist               = errors.New("cluster contains manifest CRs")
 	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
 	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
+	errManifestNotInKymaStatus      = errors.New("manifest is not tracked by kyma.status")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -51,6 +53,7 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 	}
 }
 
+// GetManifest should be only used when manifest still been tracked in kyma.status.
 func GetManifest(ctx context.Context,
 	clnt client.Client,
 	kymaName,
@@ -62,25 +65,27 @@ func GetManifest(ctx context.Context,
 		return nil, err
 	}
 
-	var manifestKey v1beta2.TrackingObject
+	var manifestKey *v1beta2.TrackingObject
 	for _, module := range kyma.Status.Modules {
 		module := module
 		if module.Name == moduleName {
-			manifestKey = *module.Manifest
+			manifestKey = module.Manifest
 		}
 	}
-
-	return GetManifestWithObjectKey(ctx, clnt, client.ObjectKey{
-		Namespace: manifestKey.Namespace,
-		Name:      manifestKey.Name,
-	})
+	if manifestKey == nil {
+		return nil, errManifestNotInKymaStatus
+	}
+	return GetManifestWithMetadata(ctx, clnt, manifestKey.GetNamespace(), manifestKey.GetName())
 }
 
-func GetManifestWithObjectKey(ctx context.Context,
-	clnt client.Client, obj client.ObjectKey,
+func GetManifestWithMetadata(ctx context.Context,
+	clnt client.Client, manifestNamespace, manifestName string,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	if err := clnt.Get(ctx, obj, manifest); err != nil {
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Namespace: manifestNamespace,
+		Name:      manifestName,
+	}, manifest); err != nil {
 		return nil, fmt.Errorf("get manifest: %w", err)
 	}
 	return manifest, nil
@@ -126,6 +131,17 @@ func ManifestExists(
 	moduleName string,
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	return CRExists(manifest, err)
+}
+
+func ManifestExistsByMetadata(
+	ctx context.Context,
+	clnt client.Client,
+	manifestNamespace,
+	manifestName string,
+) error {
+	manifest, err := GetManifestWithMetadata(ctx, clnt, manifestNamespace,
+		manifestName)
 	return CRExists(manifest, err)
 }
 
@@ -407,7 +423,7 @@ func InstallManifest(ctx context.Context, clnt client.Client, manifest *v1beta2.
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": shared.OperatorGroup + shared.Separator + "v1alpha1",
-				"kind":       "Sample",
+				"kind":       string(templatev1alpha1.SampleKind),
 				"metadata": map[string]interface{}{
 					"name":      "sample-cr-" + manifest.GetName(),
 					"namespace": apimetav1.NamespaceDefault,

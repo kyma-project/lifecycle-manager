@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -143,7 +144,11 @@ func verifyObjectExists(ctx context.Context, clnt client.Client, obj *unstructur
 func emptySampleCR(manifestName string) *unstructured.Unstructured {
 	res := &unstructured.Unstructured{}
 	res.SetGroupVersionKind(
-		schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "Sample"})
+		schema.GroupVersionKind{
+			Group:   templatev1alpha1.GroupVersion.Group,
+			Version: templatev1alpha1.GroupVersion.Version,
+			Kind:    string(templatev1alpha1.SampleKind),
+		})
 	res.SetName("sample-cr-" + manifestName)
 	res.SetNamespace(apimetav1.NamespaceDefault)
 	return res
