@@ -150,7 +150,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 					Channel: v1beta2.DefaultChannel,
 					Resource: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
-							Namespace: "kyma-system",
+							Namespace: RemoteNamespace,
 						},
 					},
 				}
@@ -318,6 +318,9 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 					Should(Succeed())
 			}
 		})
+		manifestForKcpModule, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
+			kcpModule.Name)
+		Expect(err).Should(Succeed())
 		By("Remove kcp-module from kyma.spec.modules", func() {
 			kyma.Spec.Modules = []v1beta2.Module{
 				skrModule,
@@ -327,10 +330,10 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 		})
 
 		By("kcp-module deleted", func() {
-			Eventually(ManifestExists, Timeout, Interval).
+			Eventually(ManifestExistsByMetadata, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), kcpModule.Name).
-				Should(MatchError(ErrNotFound))
+				WithArguments(controlPlaneClient, manifestForKcpModule.Namespace, manifestForKcpModule.Name).
+				Should(Equal(ErrNotFound))
 		})
 
 		By("skr-module exists", func() {
