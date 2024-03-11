@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"context"
 
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
@@ -13,10 +15,10 @@ import (
 )
 
 var _ = Describe("Warning Status Propagation", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	moduleCR := NewTestModuleCR(remoteNamespace)
+	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
@@ -24,7 +26,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
@@ -63,14 +65,14 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 		})
 
 		It("Then there is no Module in KCP Kyma CR spec", func() {
 			Eventually(NotContainsModuleInSpec, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Warning\" State")
@@ -101,21 +103,21 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			var finalizers []string
 			Eventually(SetFinalizer).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1",
-					"Sample", finalizers, runtimeClient).
+				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io", "v1alpha1",
+					string(templatev1alpha1.SampleKind), finalizers, runtimeClient).
 				Should(Succeed())
 		})
 
 		It("Then Module CR, Module Operator Deployment and Manifest CR are removed", func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system",
-					"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
+				WithArguments(TestModuleCRName, RemoteNamespace,
+					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
 				Should(Equal(ErrNotFound))
 
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-controller-manager", TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
 			Eventually(NoManifestExist).

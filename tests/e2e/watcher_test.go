@@ -28,7 +28,7 @@ const (
 var errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
 
 var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, "regular",
 		v1beta2.SyncStrategyLocalSecret)
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 	incomingRequestMsg := fmt.Sprintf("event received from SKR, adding %s/%s to queue",
@@ -38,27 +38,27 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 	skrNamespacedSecretName := types.NamespacedName{
 		Name:      watcher.SkrTLSName,
-		Namespace: remoteNamespace,
+		Namespace: RemoteNamespace,
 	}
 
 	Context("Given SKR Cluster with TLS Secret", func() {
 		It("When Runtime Watcher deployment is ready", func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
+				WithArguments(watcher.SkrResourceName, RemoteNamespace, runtimeClient).
 				Should(Succeed())
 
 			By("And Runtime Watcher deployment is deleted")
 			Eventually(deleteWatcherDeployment).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
+				WithArguments(watcher.SkrResourceName, RemoteNamespace, runtimeClient).
 				Should(Succeed())
 		})
 
 		It("Then Runtime Watcher deployment is ready again", func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
+				WithArguments(watcher.SkrResourceName, RemoteNamespace, runtimeClient).
 				Should(Succeed())
 		})
 
@@ -86,7 +86,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			switchedChannel := "fast"
 			Eventually(changeRemoteKymaChannel).
 				WithContext(ctx).
-				WithArguments(remoteNamespace, switchedChannel, runtimeClient).
+				WithArguments(RemoteNamespace, switchedChannel, runtimeClient).
 				Should(Succeed())
 		})
 
@@ -108,7 +108,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			By("And SKR Kyma CR Status is updated")
 			Eventually(updateRemoteKymaStatusSubresource).
 				WithContext(ctx).
-				WithArguments(runtimeClient, remoteNamespace).
+				WithArguments(runtimeClient, RemoteNamespace).
 				Should(Succeed())
 		})
 
@@ -186,7 +186,7 @@ func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace st
 func updateWatcherSpecField(ctx context.Context, k8sClient client.Client, name string) error {
 	watcherCR := &v1beta2.Watcher{}
 	err := k8sClient.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: controlPlaneNamespace},
+		client.ObjectKey{Name: name, Namespace: ControlPlaneNamespace},
 		watcherCR)
 	if err != nil {
 		return fmt.Errorf("failed to get Kyma %w", err)

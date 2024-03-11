@@ -17,7 +17,7 @@ import (
 )
 
 var _ = Describe("CA Certificate Rotation", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -33,7 +33,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 
 		skrNamespacedSecretName := types.NamespacedName{
 			Name:      watcher.SkrTLSName,
-			Namespace: remoteNamespace,
+			Namespace: RemoteNamespace,
 		}
 		It("Then KCP TLS Certificate is removed", func() {
 			timeNow := &apimetav1.Time{Time: time.Now()}

@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -13,13 +12,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-)
-
-var (
-	ErrWaitingForAsyncCustomResourceDeletion = errors.New(
-		"deletion of custom resource was triggered and is now waiting to be completed")
-	ErrWaitingForAsyncCustomResourceDefinitionDeletion = errors.New(
-		"deletion of custom resource definition was triggered and is now waiting to be completed")
 )
 
 // PostRunCreateCR is a hook for creating the manifest default custom resource if not available in the cluster
@@ -60,13 +52,10 @@ func PostRunCreateCR(
 	return nil
 }
 
-// PreDeleteDeleteCR is a hook for deleting the manifest default custom resource if available in the cluster
-// It is used to clean up the controller default data.
-// It uses DeletePropagationBackground as it will return an error if the resource exists, even if deletion is triggered
-// This leads to the reconciled resource immediately being requeued due to ErrWaitingForAsyncCustomResourceDeletion.
-// In this case, the next time it will run into this delete function,
-// it will either say that the resource is already being deleted (2xx) and retry or its no longer found.
-// Then the finalizer is dropped, and we consider the CR removal successful.
+// PreDeleteDeleteCR is a hook for deleting the module CR if available in the cluster.
+// It uses DeletePropagationBackground to delete module CR.
+// Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
+// and we consider the CR removal successful.
 func PreDeleteDeleteCR(
 	ctx context.Context, skr declarativev2.Client, kcp client.Client, obj declarativev2.Object,
 ) error {

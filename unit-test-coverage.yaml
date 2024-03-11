@@ -4,3 +4,4 @@ packages:
   internal/descriptor/provider: 68
   internal/manifest/filemutex: 100
   internal/istio: 63
+  internal/pkg/resources: 85

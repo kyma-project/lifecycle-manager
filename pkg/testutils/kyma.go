@@ -229,7 +229,7 @@ func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Clie
 		name, namespace,
 		[]string{"status", "state"},
 		clnt,
-		string(state))
+		state)
 }
 
 func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, state shared.State) error {
