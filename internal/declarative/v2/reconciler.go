@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -92,6 +93,8 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	startTime := time.Now()
+	defer r.recordReconciliationDuration(startTime, req.Name)
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
 		r.Metrics.RecordRequeueReason(metrics.ManifestTypeCast, queue.UnexpectedRequeue)
@@ -124,6 +127,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
+			r.Metrics.RemoveManifestDuration(req.Name)
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec)
 		}
 		return r.ssaStatus(ctx, obj, metrics.ManifestParseSpec)
@@ -137,6 +141,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
+			r.Metrics.RemoveManifestDuration(req.Name)
 			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone)
 		}
 
@@ -190,6 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
+		r.Metrics.RemoveManifestDuration(req.Name)
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting)
 	}
 	return ctrl.Result{RequeueAfter: r.Success}, nil
@@ -668,4 +674,13 @@ func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
 		return ctrl.Result{}, fmt.Errorf("failed to update object: %w", err)
 	}
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name string) {
+	duration := time.Since(startTime)
+	if duration >= 1*time.Minute {
+		r.Metrics.RecordManifestDuration(name, duration)
+	} else {
+		r.Metrics.RemoveManifestDuration(name)
+	}
 }
