@@ -51,6 +51,7 @@ const (
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
 	DefaultDropStoredVersion                                            = "v1alpha1"
+	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
 )
 
@@ -178,6 +179,8 @@ func DefineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", DefaultDropStoredVersion,
 		"The API version to be dropped from the storage versions")
+	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
+		"The API version to be dropped from the storage versions")
 	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
 	flag.BoolVar(&flagVar.UseWatcherDevRegistry, "watcher-dev-registry", false,
@@ -244,7 +247,8 @@ type FlagVar struct {
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
-	DropStoredVersion                      string
+	DropStoredVersion                      string // TODO: Remove this flag after it gets removed from landscapes
+	DropCrdStoredVersionMap                string
 	UseWatcherDevRegistry                  bool
 	WatcherImageTag                        string
 	WatcherResourceLimitsMemory            string
