@@ -28,7 +28,8 @@ import (
 func SetupWithManager(mgr manager.Manager,
 	options ctrlruntime.Options,
 	requeueIntervals queue.RequeueIntervals,
-	settings SetupUpSetting, manifestMetrics *metrics.ManifestMetrics,
+	settings SetupUpSetting,
+	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -70,14 +71,14 @@ func SetupWithManager(mgr manager.Manager,
 		).WithOptions(options)
 
 	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, requeueIntervals,
-		manifestMetrics)); err != nil {
+		manifestMetrics, mandatoryModulesMetrics)); err != nil {
 		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
 	}
 	return nil
 }
 
 func ManifestReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
-	manifestMetrics *metrics.ManifestMetrics,
+	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
@@ -86,7 +87,7 @@ func ManifestReconciler(mgr manager.Manager, requeueIntervals queue.RequeueInter
 	extractor := manifest.NewPathExtractor(nil)
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
-		mgr, &v1beta2.Manifest{}, requeueIntervals, manifestMetrics,
+		mgr, &v1beta2.Manifest{}, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
 		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp, extractor),
 		),
