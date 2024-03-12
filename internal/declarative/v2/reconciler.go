@@ -106,12 +106,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, common.ErrTypeAssert
 	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
-		logf.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
-		if !util.IsNotFound(err) {
-			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
-			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+		if util.IsNotFound(err) {
+			logf.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
+			return ctrl.Result{}, nil
 		}
-		return ctrl.Result{Requeue: false}, nil
+		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
+		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
 
 	if r.ShouldSkip(ctx, obj) {
