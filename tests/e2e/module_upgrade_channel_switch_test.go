@@ -10,10 +10,10 @@ import (
 )
 
 var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system",
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace,
 		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	moduleCR := NewTestModuleCR(remoteNamespace)
+	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
@@ -21,7 +21,7 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
@@ -34,7 +34,7 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 			By("And Module Operator Deployment exists")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-v1-controller-manager", TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -47,7 +47,7 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 		It("When Module Distribution Channel is changed", func() {
 			Eventually(UpdateKymaModuleChannel).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "fast").
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, "fast").
 				Should(Succeed())
 		})
 
@@ -60,13 +60,13 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 			By("And new Module Operator Deployment exists")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-v2-controller-manager", TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And old Module Operator Deployment does not exist")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-v1-controller-manager", TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")

@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"os"
+	"strconv"
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -284,7 +285,7 @@ type SkipReconcile func(context.Context, Object) (skip bool)
 
 // SkipReconcileOnDefaultLabelPresentAndTrue determines SkipReconcile by checking if DefaultSkipReconcileLabel is true.
 func SkipReconcileOnDefaultLabelPresentAndTrue(ctx context.Context, object Object) bool {
-	if object.GetLabels() != nil && object.GetLabels()[shared.SkipReconcileLabel] == "true" {
+	if object.GetLabels() != nil && object.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true) {
 		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
 			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
 		return true

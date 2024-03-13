@@ -14,10 +14,10 @@ import (
 )
 
 var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	moduleCR := NewTestModuleCR(remoteNamespace)
+	moduleCR := NewTestModuleCR(RemoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -26,11 +26,10 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
-		moduleOperator := "template-operator-controller-manager"
 		It("Then Module Resources are deployed on SKR cluster", func() {
 			By("And Module CR exists")
 			Eventually(ModuleCRExists).
@@ -40,7 +39,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 			By("And Module Operator Deployment is ready")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleOperator, TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -80,7 +79,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 
 			Eventually(StopDeployment).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleOperator, TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			Eventually(SetSkipLabelToManifest).
@@ -92,7 +91,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 		It("Then Module Operator has been reset", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleOperator, TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
 				Should(Succeed())
 		})
 	})
