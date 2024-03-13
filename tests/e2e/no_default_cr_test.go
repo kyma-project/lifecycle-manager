@@ -12,7 +12,8 @@ import (
 )
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
+		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
@@ -22,7 +23,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		It("When Kyma Module without Module Default CR is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
@@ -34,7 +35,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 			}).WithContext(ctx).Should(Equal(ErrManifestResourceIsNil))
 
 			By("And no Module CR exists")
-			moduleCR := NewTestModuleCR(remoteNamespace)
+			moduleCR := NewTestModuleCR(RemoteNamespace)
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).

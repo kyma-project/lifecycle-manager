@@ -9,12 +9,13 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
 var ErrMetricNotFound = errors.New("metric was not found")
 
-func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
+func GetKymaStateMetricCount(ctx context.Context, kymaName string, state shared.State) (int, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
@@ -24,14 +25,13 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 	return parseCount(re, bodyString)
 }
 
-func getKymaStateMetricRegex(kymaName, state string) *regexp.Regexp {
-	return regexp.MustCompile(
-		metrics.MetricKymaState + `{instance_id="[^"]+",kyma_name="` + kymaName +
-			`",shoot="[^"]+",state="` + state +
-			`"} (\d+)`)
+func getKymaStateMetricRegex(kymaName string, state shared.State) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf(`%s{instance_id="[^"]+",kyma_name="%s",shoot="[^"]+",state="%s"} (\d+)`,
+		metrics.MetricKymaState,
+		kymaName, string(state)))
 }
 
-func AssertKymaStateMetricNotFound(ctx context.Context, kymaName, state string) error {
+func AssertKymaStateMetricNotFound(ctx context.Context, kymaName string, state shared.State) error {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func GetRequeueReasonCount(ctx context.Context,
 	re := regexp.MustCompile(
 		metrics.MetricRequeueReason + `{requeue_reason="` + requeueReason +
 			`",requeue_type="` + requeueType +
-			`"}` + ` (\d+)`)
+			`"} (\d+)`)
 	return parseCount(re, bodyString)
 }
 
@@ -70,21 +70,20 @@ func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, r
 	re := regexp.MustCompile(
 		metrics.MetricRequeueReason + `{requeue_reason="` + requeueReason +
 			`",requeue_type="` + requeueType +
-			`"}` + ` (\d+)`)
+			`"} (\d+)`)
 	count, err := parseCount(re, bodyString)
 	return count >= 1, err
 }
 
-func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state string) (int, error) {
+func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName string, state shared.State) (int, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
-	re := regexp.MustCompile(
-		metrics.MetricModuleState + `{instance_id="[^"]+",kyma_name="` + kymaName +
-			`",module_name="` + moduleName +
-			`",shoot="[^"]+",state="` + state +
-			`"} (\d+)`)
+	re := regexp.MustCompile(fmt.Sprintf(`%s{instance_id="[^"]+",kyma_name="%s",module_name="%s",shoot="[^"]+",state="%s"} (\d+)`,
+		metrics.MetricModuleState,
+		kymaName,
+		moduleName, string(state)))
 	return parseCount(re, bodyString)
 }
 
@@ -130,6 +129,27 @@ func GetSelfSignedCertNotRenewMetricsGauge(ctx context.Context, kymaName string)
 	re := regexp.MustCompile(fmt.Sprintf(`%s{%s="%s"} (\d+)`, metrics.SelfSignedCertNotRenewMetrics,
 		metrics.KymaNameLabel,
 		kymaName))
+	return parseCount(re, bodyString)
+}
+
+func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(metrics.MetricMandatoryTemplateCount + ` (\d+)`)
+	return parseCount(re, bodyString)
+}
+
+func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, state string) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(fmt.Sprintf(`%s{kyma_name="%s",module_name="%s",state="%s"} (\d+)`,
+		metrics.MetricMandatoryModuleState, kymaName, moduleName, state))
 	return parseCount(re, bodyString)
 }
 

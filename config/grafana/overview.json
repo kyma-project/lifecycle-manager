@@ -461,7 +461,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_total[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_total[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -548,7 +548,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "increase(controller_runtime_reconcile_errors_total[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_errors_total[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -608,7 +608,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "increase(lifecycle_mgr_requeue_reason_total)[$__rate_interval]",
+          "expr": "rate(lifecycle_mgr_requeue_reason_total)[$__rate_interval]",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1516,7 +1516,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(increase(workqueue_adds_total{name=\"manifest\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_adds_total{name=\"manifest\"}[$__rate_interval])) by (name)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1529,7 +1529,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(increase(workqueue_adds_total{name=\"kyma\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_adds_total{name=\"kyma\"}[$__rate_interval])) by (name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1838,7 +1838,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "increase(lifecycle_mgr_purgectrl_requests_total{service=\"klm-metrics-service\"}[$__rate_interval])",
+          "expr": "rate(lifecycle_mgr_purgectrl_requests_total{service=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "",
           "refId": "A"

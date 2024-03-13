@@ -15,10 +15,10 @@ import (
 )
 
 func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	moduleCR := NewTestModuleCR(remoteNamespace)
+	moduleCR := NewTestModuleCR(RemoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
 
@@ -26,7 +26,7 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 		It("When Kyma Module is enabled on SKR Cluster", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
@@ -40,7 +40,7 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 			By("And Kyma Module is disabled")
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 		})
 

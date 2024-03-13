@@ -1,29 +1,31 @@
 package e2e_test
 
 import (
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Manage Module Metrics", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	moduleCR := NewTestModuleCR(remoteNamespace)
+	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 
 	Context("Given SKR Cluster", func() {
 		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
@@ -40,13 +42,13 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 			By("And count of Kyma State Metric in \"Ready\" State is 1")
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), string(shared.StateReady)).
+				WithArguments(kyma.GetName(), shared.StateReady).
 				Should(Equal(1))
 
 			By("And count of Kyma Module Metric in \"Ready\" State is 1")
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
+				WithArguments(kyma.GetName(), module.Name, shared.StateReady).
 				Should(Equal(1))
 		})
 
@@ -62,16 +64,19 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 		})
 
 		It("When Kyma Module is disabled", func() {
+			manifestInCluster, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
+				module.Name)
+			Expect(err).Should(Succeed())
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
-		})
 
-		It("Then Manifest CR is removed", func() {
-			Eventually(ManifestExists).
+			By("Then Manifest CR is removed")
+			Eventually(ManifestExistsByMetadata).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				WithTimeout(2*time.Minute).
+				WithArguments(controlPlaneClient, manifestInCluster.Namespace, manifestInCluster.Name).
 				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -83,13 +88,13 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 			By("And count of Kyma State Metric in \"Ready\" State is 1")
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), string(shared.StateReady)).
+				WithArguments(kyma.GetName(), shared.StateReady).
 				Should(Equal(1))
 
 			By("And count of Kyma Module Metric in \"Ready\" State is 0")
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
+				WithArguments(kyma.GetName(), module.Name, shared.StateReady).
 				Should(Equal(0))
 		})
 
@@ -125,11 +130,11 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 			for _, state := range shared.AllStates() {
 				Eventually(AssertKymaStateMetricNotFound).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), string(state)).
+					WithArguments(kyma.GetName(), state).
 					Should(Equal(ErrMetricNotFound))
 				Eventually(GetModuleStateMetricCount).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), module.Name, string(state)).
+					WithArguments(kyma.GetName(), module.Name, state).
 					Should(Equal(0))
 			}
 		})

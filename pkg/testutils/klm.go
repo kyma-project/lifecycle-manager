@@ -18,11 +18,11 @@ import (
 )
 
 const (
-	controlPlaneNamespace = "kcp-system"
+	ControlPlaneNamespace = "kcp-system"
 	watcherPodContainer   = "server"
 	KLMPodPrefix          = "klm-controller-manager"
 	KLMPodContainer       = "manager"
-	remoteNamespace       = "kyma-system"
+	RemoteNamespace       = "kyma-system"
 )
 
 var (
@@ -36,7 +36,7 @@ func CheckKLMLogs(ctx context.Context,
 	k8sClient, runtimeClient client.Client,
 	logsSince *apimetav1.Time,
 ) error {
-	logs, err := getPodLogs(ctx, controlPlaneConfig, k8sClient, controlPlaneNamespace, KLMPodPrefix, KLMPodContainer,
+	logs, err := getPodLogs(ctx, controlPlaneConfig, k8sClient, ControlPlaneNamespace, KLMPodPrefix, KLMPodContainer,
 		logsSince)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func CheckKLMLogs(ctx context.Context,
 	}
 
 	_, err = getPodLogs(ctx, runtimeConfig,
-		runtimeClient, remoteNamespace, watcher.SkrResourceName, watcherPodContainer, logsSince)
+		runtimeClient, RemoteNamespace, watcher.SkrResourceName, watcherPodContainer, logsSince)
 	if err != nil {
 		return err
 	}
