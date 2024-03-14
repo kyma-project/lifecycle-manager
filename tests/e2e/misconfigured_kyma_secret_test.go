@@ -10,7 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-var _ = FDescribe("Misconfigured Kyma Secret", Ordered, func() {
+var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
