@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func Test_parseStorageVersionsMap(t *testing.T) {
+func TestParseStorageVersionsMap(t *testing.T) {
 	versions := "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 
 	expectedOutput := map[string]string{
@@ -36,6 +36,7 @@ func TestDropStoredVersion(t *testing.T) {
 						Names: apiextensionsv1.CustomResourceDefinitionNames{
 							Kind: "Manifest",
 						},
+						Group: "operator.kyma-project.io",
 					},
 					Status: apiextensionsv1.CustomResourceDefinitionStatus{
 						StoredVersions: []string{"v1beta1", "v1beta2"},
@@ -45,8 +46,9 @@ func TestDropStoredVersion(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{Name: "Test"},
 					Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 						Names: apiextensionsv1.CustomResourceDefinitionNames{
-							Kind: "Test",
+							Kind: "ModuleTemplate",
 						},
+						Group: "operator.kyma-project.io",
 					},
 					Status: apiextensionsv1.CustomResourceDefinitionStatus{
 						StoredVersions: []string{"v1beta1"},

@@ -9,6 +9,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -25,7 +26,7 @@ func DropStoredVersion(kcpClient client.Client, versionsToBeDropped string) {
 
 	for _, crdItem := range crdList.Items {
 		storedVersionToDrop, crdFound := versionsToBeDroppedMap[crdItem.Spec.Names.Kind]
-		if !crdFound {
+		if crdItem.Spec.Group != shared.OperatorGroup || !crdFound {
 			continue
 		}
 		logger.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))
