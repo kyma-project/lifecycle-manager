@@ -103,7 +103,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_requests_total[$__rate_interval])",
+          "expr": "rate(watcher_listener_requests_total[$__rate_interval])",
           "instant": false,
           "interval": "",
           "legendFormat": "Pod: {{pod}}",
@@ -338,14 +338,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_request_errors_total[$__rate_interval])",
+          "expr": "rate(watcher_listener_request_errors_total[$__rate_interval])",
           "interval": "",
           "legendFormat": "Total Failed Requests",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_exceeding_size_limit_requests_total[$__rate_interval])",
+          "expr": "rate(watcher_listener_exceeding_size_limit_requests_total[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "Failed Requests due to Size Limit",
@@ -353,7 +353,7 @@
         },
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_failed_verification_requests_total[$__rate_interval])",
+          "expr": "rate(watcher_listener_failed_verification_requests_total[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "Failed Requests due to Verification Error",

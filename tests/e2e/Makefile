@@ -78,6 +78,9 @@ kyma-deletion-with-background-propagation:
 kyma-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manage Module Metrics"
 
+mandatory-module-metrics:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Metrics"
+
 watcher-enqueue:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 

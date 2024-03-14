@@ -65,7 +65,9 @@ Every resource is converted to a generic [resource](v2/resource_converter.go), w
 
 ## Resource Synchronization
 
-All [create/update](v2/ssa.go) and [delete](v2/cleanup.go) cluster interactions of the library are done by leveraging highly concurrent [ServerSideApply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) implementations that are written to:
+All [create/update](v2/ssa.go) and [delete](../pkg/resources/cleanup.go) cluster interactions of the library are done by
+leveraging highly concurrent [ServerSideApply](https://kubernetes.io/docs/reference/using-api/server-side-apply/)
+implementations that are written to:
 1. Always apply the latest available version of resources in the schema by using inbuilt schema conversions
 2. Delegate as much compute to the api-server to reduce overall load of the controller even with several hundred concurrent reconciliations.
 3. Use a highly concurrent process that is rather focusing on retrying an apply and failing early and often instead of introducing dependencies between different resources. The library will always attempt to reconcile all resources in parallel and will simply ask for a retry in case it is determined there is a missing interdependency (e.g. a missing CustomResourceDefinition that is applied in parallel, only leading to sucessful reconciliations in subsequent reconciliations).

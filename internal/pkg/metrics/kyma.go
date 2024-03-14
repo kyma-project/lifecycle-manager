@@ -19,8 +19,6 @@ const (
 	MetricKymaState     = "lifecycle_mgr_kyma_state"
 	MetricModuleState   = "lifecycle_mgr_module_state"
 	MetricRequeueReason = "lifecycle_mgr_requeue_reason_total"
-	stateLabel          = "state"
-	moduleNameLabel     = "module_name"
 )
 
 type KymaMetrics struct {

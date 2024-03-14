@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -93,7 +94,7 @@ func CRExists(obj apimetav1.Object, clientError error) error {
 }
 
 func CRIsInState(ctx context.Context, group, version, kind, name, namespace string, statusPath []string,
-	clnt client.Client, expectedState string,
+	clnt client.Client, expectedState shared.State,
 ) error {
 	resourceCR, err := GetCR(ctx, clnt, client.ObjectKey{Name: name, Namespace: namespace}, schema.GroupVersionKind{
 		Group:   group,
@@ -109,7 +110,7 @@ func CRIsInState(ctx context.Context, group, version, kind, name, namespace stri
 		return ErrFetchingStatus
 	}
 
-	if stateFromCR != expectedState {
+	if stateFromCR != string(expectedState) {
 		return fmt.Errorf("%w: expect %s, but in %s",
 			ErrSampleCrNotInExpectedState, expectedState, stateFromCR)
 	}

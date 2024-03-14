@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,8 +16,13 @@ import (
 )
 
 const (
-	TestModuleCRName            = "sample-yaml"
-	TestModuleResourceNamespace = "template-operator-system"
+	TestModuleCRName                   = "sample-yaml"
+	TestModuleResourceNamespace        = "template-operator-system"
+	ModuleDeploymentName               = "template-operator-controller-manager"
+	ModuleServiceAccountName           = "template-operator-controller-manager"
+	ModuleManagedCRName                = "template-operator-managed-resource"
+	ModuleDeploymentNameInNewerVersion = "template-operator-v2-controller-manager"
+	ModuleDeploymentNameInOlderVersion = "template-operator-v1-controller-manager"
 )
 
 var (
@@ -41,8 +47,8 @@ func NewTestModuleCR(namespace string) *unstructured.Unstructured {
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, "v1alpha1",
-		"Sample", name, namespace, clnt)
+	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, templatev1alpha1.GroupVersion.Version,
+		string(templatev1alpha1.SampleKind), name, namespace, clnt)
 	if err != nil {
 		return err
 	}
@@ -54,8 +60,8 @@ func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string,
 }
 
 func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, "v1alpha1",
-		"Sample", name, namespace, clnt)
+	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, templatev1alpha1.GroupVersion.Version,
+		string(templatev1alpha1.SampleKind), name, namespace, clnt)
 	if err != nil {
 		return err
 	}

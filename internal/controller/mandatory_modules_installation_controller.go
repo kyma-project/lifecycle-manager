@@ -27,6 +27,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -44,6 +45,7 @@ type MandatoryModuleReconciler struct {
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	RemoteSyncNamespace string
 	InKCPMode           bool
+	Metrics             *metrics.MandatoryModulesMetrics
 }
 
 func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -71,6 +73,7 @@ func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return emptyResultWithErr(err)
 	}
+	r.Metrics.RecordMandatoryTemplatesCount(len(mandatoryTemplates))
 
 	modules, err := r.GenerateModulesFromTemplate(ctx, mandatoryTemplates, kyma)
 	if err != nil {
