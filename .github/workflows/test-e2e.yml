@@ -50,7 +50,7 @@ jobs:
                     "self-signed-certificate-rotation",
                     "mandatory-module",
                     "mandatory-module-metrics",
-                    "remote-client-cache-invalidation"
+                    "misconfigured-kyma-secret"
         ]
     name: "E2E"
     needs: [wait-for-img]

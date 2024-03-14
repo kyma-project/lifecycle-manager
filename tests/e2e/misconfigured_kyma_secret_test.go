@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-var _ = Describe("Remote Client Cache Invalidation", Ordered, func() {
+var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
@@ -17,8 +18,8 @@ var _ = Describe("Remote Client Cache Invalidation", Ordered, func() {
 
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given Non-existent SKR Cluster", func() {
-		It("When Kyma Module is enabled on SKR Cluster", func() {
+	Context("Given Working Two Cluster Setup", func() {
+		It("When Kyma Secret is misconfigured and Module enabled", func() {
 			Eventually(DeleteKymaSecret).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
@@ -28,15 +29,28 @@ var _ = Describe("Remote Client Cache Invalidation", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 
+			By("And Module is enabled")
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module).
 				Should(Succeed())
+		})
+
+		It("Then Module is not created", func() {
 			Consistently(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Not(Succeed()))
 
+			By("And Manifest CR is in \"Error\" State")
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+					shared.StateError).
+				Should(Succeed())
+		})
+
+		It("When Kyma Secret is corrected", func() {
 			Eventually(DeleteKymaSecret).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
@@ -45,13 +59,21 @@ var _ = Describe("Remote Client Cache Invalidation", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
+		})
 
+		It("Then Module is created", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
+			By("Manifest CR is in \"Ready\" State")
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+					shared.StateReady).
+				Should(Succeed())
 
-			By("And Kyma Module is disabled")
+			By("And Kyma Module will be disabled")
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
