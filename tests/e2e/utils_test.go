@@ -42,7 +42,7 @@ const (
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		By("When a KCP Kyma CR is created on the KCP cluster")
-		Eventually(CreateInvalidKymaSecret).
+		Eventually(CreateKymaSecret).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 			Should(Succeed())
