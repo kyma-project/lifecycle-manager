@@ -50,6 +50,7 @@ jobs:
                     "self-signed-certificate-rotation",
                     "mandatory-module",
                     "mandatory-module-metrics",
+                    "remote-client-cache-invalidation"
         ]
     name: "E2E"
     needs: [wait-for-img]

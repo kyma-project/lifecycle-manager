@@ -122,3 +122,6 @@ ca-certificate-rotation:
 
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
+
+remote-client-cache-invalidation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Remote Client Cache Invalidation"
