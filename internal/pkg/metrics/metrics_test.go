@@ -49,6 +49,16 @@ func Test_ConstantMetricNames(t *testing.T) {
 			constValue:    MetricManifestDuration,
 			expectedValue: "reconcile_duration_seconds",
 		},
+		{
+			constName:     "MetricMandatoryTemplateCount",
+			constValue:    MetricMandatoryTemplateCount,
+			expectedValue: "lifecycle_mgr_mandatory_modules",
+		},
+		{
+			constName:     "MetricMandatoryModuleState",
+			constValue:    MetricMandatoryModuleState,
+			expectedValue: "lifecycle_mgr_mandatory_module_state",
+		},
 	}
 	for _, testcase := range tests {
 		testcase := testcase

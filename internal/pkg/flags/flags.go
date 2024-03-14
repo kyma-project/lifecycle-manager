@@ -247,7 +247,7 @@ type FlagVar struct {
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
-	DropStoredVersion                      string // TODO: Remove this flag after it gets removed from landscapes
+	DropStoredVersion                      string
 	DropCrdStoredVersionMap                string
 	UseWatcherDevRegistry                  bool
 	WatcherImageTag                        string

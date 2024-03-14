@@ -136,7 +136,7 @@ var _ = BeforeSuite(func() {
 	reconciler = declarativev2.NewFromManager(k8sManager, &v1beta2.Manifest{}, queue.RequeueIntervals{
 		Success: 1 * time.Second, Busy: 1 * time.Second,
 	},
-		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), declarativev2.WithSpecResolver(
+		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(), declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp, extractor),
 		), declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {

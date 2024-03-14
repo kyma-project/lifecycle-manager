@@ -13,9 +13,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
+const resourceVersionPairCount = 2
+
 func DropStoredVersion(kcpClient client.Client, versionsToBeDropped string) {
 	logger := ctrl.Log.WithName("storage-version-migration")
-	versionsToBeDroppedMap := parseStorageVersionsMap(versionsToBeDropped)
+	versionsToBeDroppedMap := ParseStorageVersionsMap(versionsToBeDropped)
 	logger.V(log.DebugLevel).Info(fmt.Sprintf("Handling dropping stored versions for, %v",
 		versionsToBeDroppedMap))
 	ctx := context.TODO()
@@ -47,10 +49,10 @@ func DropStoredVersion(kcpClient client.Client, versionsToBeDropped string) {
 	}
 }
 
-func parseStorageVersionsMap(versions string) map[string]string {
+func ParseStorageVersionsMap(versions string) map[string]string {
 	versionsToBeDroppedMap := map[string]string{}
 	for _, pair := range strings.Split(versions, ",") {
-		if kv := strings.Split(pair, ":"); len(kv) == 2 {
+		if kv := strings.Split(pair, ":"); len(kv) == resourceVersionPairCount {
 			versionsToBeDroppedMap[kv[0]] = kv[1]
 		}
 	}

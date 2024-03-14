@@ -162,9 +162,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	sharedMetrics := metrics.NewSharedMetrics()
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
+	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics)
-	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
 
 	if flagVar.EnablePurgeFinalizer {
@@ -348,7 +349,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 }
 
 func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	sharedMetrics *metrics.SharedMetrics,
+	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
@@ -361,7 +362,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 		}, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-		}, metrics.NewManifestMetrics(sharedMetrics),
+		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(1)
@@ -389,7 +390,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 }
 
 func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options,
+	flagVar *flags.FlagVar, options ctrlruntime.Options, metrics *metrics.MandatoryModulesMetrics,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
@@ -405,6 +406,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provid
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		InKCPMode:           flagVar.InKCPMode,
 		DescriptorProvider:  descriptorProvider,
+		Metrics:             metrics,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(1)

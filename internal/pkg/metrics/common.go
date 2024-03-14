@@ -13,6 +13,8 @@ const (
 	shootIDLabel    = "shoot"
 	instanceIDLabel = "instance_id"
 	KymaNameLabel   = "kyma_name"
+	stateLabel      = "state"
+	moduleNameLabel = "module_name"
 )
 
 const (
