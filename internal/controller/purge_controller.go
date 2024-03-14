@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -85,9 +86,13 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		if util.IsNotFound(err) {
-			if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
+			dropped, err := r.dropPurgeFinalizer(ctx, kyma)
+			if err != nil {
 				r.raiseRemovingPurgeFinalizerFailedError(ctx, kyma, err)
 				return ctrl.Result{}, err
+			}
+			if dropped {
+				logger.Info(fmt.Sprintf("Removed purge finalizer for Kyma %s", req.NamespacedName))
 			}
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -96,19 +101,28 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	r.Metrics.UpdatePurgeCount()
-	if err := r.performCleanup(ctx, remoteClient); err != nil {
+
+	handledResources, err := r.performCleanup(ctx, remoteClient)
+	if err != nil {
 		logger.Error(err, fmt.Sprintf("failed purge cleanup for Kyma %s", req.NamespacedName))
 		r.Metrics.UpdatePurgeError(ctx, kyma, metrics.ErrCleanup)
 		return ctrl.Result{}, err
 	}
 
-	if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
+	if len(handledResources) > 0 {
+		logger.Info("Removed purge finalizer for resources " + strings.Join(handledResources, ", "))
+	}
+
+	dropped, err := r.dropPurgeFinalizer(ctx, kyma)
+	if err != nil {
 		r.raiseRemovingPurgeFinalizerFailedError(ctx, kyma, err)
 		return ctrl.Result{}, err
 	}
+	if dropped {
+		logger.Info(fmt.Sprintf("Removed purge finalizer for Kyma %s", req.NamespacedName))
+	}
 
 	r.Metrics.UpdatePurgeTime(time.Since(start))
-
 	return ctrl.Result{}, nil
 }
 
@@ -137,14 +151,15 @@ func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta
 	return nil
 }
 
-func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 	if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
 		controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer)
 		if err := r.Update(ctx, kyma); err != nil {
-			return fmt.Errorf("failed updating object: %w", err)
+			return false, fmt.Errorf("failed updating object: %w", err)
 		}
+		return true, nil
 	}
-	return nil
+	return false, nil
 }
 
 func (r *PurgeReconciler) calculateRequeueAfterTime(kyma *v1beta2.Kyma) time.Duration {
@@ -155,12 +170,13 @@ func (r *PurgeReconciler) calculateRequeueAfterTime(kyma *v1beta2.Kyma) time.Dur
 	return 0
 }
 
-func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient client.Client) error {
+func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient client.Client) ([]string, error) {
 	crdList := apiextensionsv1.CustomResourceDefinitionList{}
 	if err := remoteClient.List(ctx, &crdList); err != nil {
-		return fmt.Errorf("failed fetching CRDs from remote cluster: %w", err)
+		return nil, fmt.Errorf("failed fetching CRDs from remote cluster: %w", err)
 	}
 
+	allHandledResources := []string{}
 	for _, crd := range crdList.Items {
 		if shouldSkip(crd, r.SkipCRDs) {
 			continue
@@ -168,16 +184,18 @@ func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient clien
 
 		staleResources, err := getAllRemainingCRs(ctx, remoteClient, crd)
 		if err != nil {
-			return fmt.Errorf("failed fetching stale resources from remote cluster: %w", err)
+			return allHandledResources, fmt.Errorf("failed fetching stale resources from remote cluster: %w", err)
 		}
 
-		err = dropFinalizers(ctx, remoteClient, staleResources)
+		handledResources, err := dropFinalizers(ctx, remoteClient, staleResources)
 		if err != nil {
-			return fmt.Errorf("failed removing finalizers from stale resources: %w", err)
+			return allHandledResources, fmt.Errorf("failed removing finalizers from stale resources: %w", err)
 		}
+
+		allHandledResources = append(allHandledResources, handledResources...)
 	}
 
-	return nil
+	return allHandledResources, nil
 }
 
 func shouldSkip(crd apiextensionsv1.CustomResourceDefinition, matcher matcher.CRDMatcherFunc) bool {
@@ -215,15 +233,17 @@ func getAllRemainingCRs(ctx context.Context, remoteClient client.Client,
 
 func dropFinalizers(ctx context.Context, remoteClient client.Client,
 	staleResources unstructured.UnstructuredList,
-) error {
+) ([]string, error) {
+	handledResources := []string{}
 	for index := range staleResources.Items {
 		resource := staleResources.Items[index]
 		resource.SetFinalizers(nil)
 		if err := remoteClient.Update(ctx, &resource); err != nil {
-			return fmt.Errorf("failed updating resource: %w", err)
+			return handledResources, fmt.Errorf("failed updating resource: %w", err)
 		}
+		handledResources = append(handledResources, fmt.Sprintf("%s/%s", resource.GetNamespace(), resource.GetName()))
 	}
-	return nil
+	return handledResources, nil
 }
 
 func (r *PurgeReconciler) raiseSettingPurgeFinalizerFailedEvent(kyma *v1beta2.Kyma, err error) {
