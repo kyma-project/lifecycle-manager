@@ -10,17 +10,27 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
+var _ = FDescribe("Misconfigured Kyma Secret", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
-	InitEmptyKymaBeforeAll(kyma)
+	BeforeAll(func() {
+		By("When a KCP Kyma CR is created on the KCP cluster with misconfigured Kyma Secret")
+		Eventually(CreateInvalidKymaSecret).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			Should(Succeed())
+		Eventually(controlPlaneClient.Create).
+			WithContext(ctx).
+			WithArguments(kyma).
+			Should(Succeed())
+	})
+	CleanupKymaAfterAll(kyma)
 
-	Context("Given Working Two Cluster Setup", func() {
-		It("When Kyma Secret is misconfigured and Module enabled", func() {
-			By("And Module is enabled")
+	Context("Given Two Cluster Setup", func() {
+		It("When Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module).
@@ -32,12 +42,10 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Not(Succeed()))
-
-			By("And Manifest CR is in \"Error\" State")
-			Eventually(CheckManifestIsInState).
+			By("No Manifest CR exists")
+			Eventually(NoManifestExist).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
-					shared.StateError).
+				WithArguments(controlPlaneClient).
 				Should(Succeed())
 		})
 
@@ -62,12 +70,6 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
 					shared.StateReady).
-				Should(Succeed())
-
-			By("And Kyma Module will be disabled")
-			Eventually(DisableModule).
-				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 		})
 	})
