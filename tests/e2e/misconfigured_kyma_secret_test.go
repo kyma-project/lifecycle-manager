@@ -20,15 +20,6 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 
 	Context("Given Working Two Cluster Setup", func() {
 		It("When Kyma Secret is misconfigured and Module enabled", func() {
-			Eventually(DeleteKymaSecret).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-				Should(Succeed())
-			Eventually(CreateInvalidKymaSecret).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-				Should(Succeed())
-
 			By("And Module is enabled")
 			Eventually(EnableModule).
 				WithContext(ctx).
