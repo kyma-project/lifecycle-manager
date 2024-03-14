@@ -2,6 +2,7 @@ package v2
 
 import (
 	"errors"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,6 +105,10 @@ func (c *DefaultResourceToInfoConverter) UnstructuredToInfos(
 		}
 
 		if err != nil {
+			if util.IsConnectionRelatedError(err) {
+				return nil, err
+			}
+
 			errs = append(errs, err)
 			continue
 		}

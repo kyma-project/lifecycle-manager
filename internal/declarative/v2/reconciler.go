@@ -565,15 +565,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 	var err error
 	var clnt Client
 	if r.ClientCacheKeyFn == nil {
-		clnt, err = r.configClient(ctx, obj)
-		if err != nil {
-			return nil, err
-		}
-		err = testClient(ctx, clnt)
-		if err != nil {
-			return nil, err
-		}
-		return clnt, nil
+		return r.configClient(ctx, obj)
 	}
 
 	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
@@ -600,10 +592,6 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 			return nil, fmt.Errorf("failed to patch namespace: %w", err)
 		}
 	}
-	err = testClient(ctx, clnt)
-	if err != nil {
-		return nil, err
-	}
 
 	return clnt, nil
 }
@@ -629,15 +617,6 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 	}
 
 	return clnt, nil
-}
-
-func testClient(ctx context.Context, clnt Client) error {
-	nodeList := &apicorev1.NodeList{}
-	err := clnt.List(ctx, nodeList)
-	if err != nil {
-		return fmt.Errorf("test connection to remote cluster failed: %w", err)
-	}
-	return nil
 }
 
 func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object,
