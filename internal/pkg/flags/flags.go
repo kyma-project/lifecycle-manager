@@ -180,7 +180,8 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", DefaultDropStoredVersion,
 		"The API version to be dropped from the storage versions")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
-		"The API version to be dropped from the storage versions")
+		"Specify the API versions to be dropped from the storage version. The input format should be a "+
+			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
 	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
 	flag.BoolVar(&flagVar.UseWatcherDevRegistry, "watcher-dev-registry", false,
