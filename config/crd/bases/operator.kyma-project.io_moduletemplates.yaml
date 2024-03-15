@@ -122,6 +122,7 @@ spec:
             - descriptor
             - target
             type: object
+            enableModuleConfig: true
         type: object
     served: false
     storage: false

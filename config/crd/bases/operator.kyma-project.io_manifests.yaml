@@ -152,6 +152,7 @@ spec:
             - install
             - remote
             type: object
+            enableModuleConfig: true
           status:
             description: Status defines the observed state of CustomObject.
             properties:
