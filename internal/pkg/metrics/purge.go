@@ -57,7 +57,15 @@ func (p *PurgeMetrics) UpdatePurgeTime(duration time.Duration) {
 	p.purgeTimeGauge.Set(duration.Seconds())
 }
 
-func (p *PurgeMetrics) UpdatePurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError) {
+func (p *PurgeMetrics) SetPurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError) {
+	p.updatePurgeError(ctx, kyma, purgeError, 1)
+}
+
+func (p *PurgeMetrics) UnsetPurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError) {
+	p.updatePurgeError(ctx, kyma, purgeError, 0)
+}
+
+func (p *PurgeMetrics) updatePurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError, value int) {
 	shootID, err := ExtractShootID(kyma)
 	if err != nil {
 		logf.FromContext(ctx).Error(err, "Failed to update error metrics")
@@ -77,5 +85,5 @@ func (p *PurgeMetrics) UpdatePurgeError(ctx context.Context, kyma *v1beta2.Kyma,
 		logf.FromContext(ctx).Error(err, "Failed to update error metrics")
 		return
 	}
-	metric.Set(1)
+	metric.Set(float64(value))
 }
