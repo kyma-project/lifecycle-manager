@@ -110,6 +110,9 @@ type ModuleTemplateSpec struct {
 	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
+
+	// To let the LifecycleManager know which module CR should be synced back to the KCP
+	EnableModuleConfig bool `json:"enableModuleConfig"`
 }
 
 type CustomStateCheck struct {

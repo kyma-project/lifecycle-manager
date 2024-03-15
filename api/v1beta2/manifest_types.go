@@ -62,6 +62,9 @@ type ManifestSpec struct {
 	// +nullable
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
+
+	// To let the LifecycleManager know which module CR should be synced back to the KCP
+	EnableModuleConfig bool `json:"enableModuleConfig"`
 }
 
 // ImageSpec defines OCI Image specifications.
