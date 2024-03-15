@@ -122,7 +122,6 @@ spec:
             - descriptor
             - target
             type: object
-            enableModuleConfig: true
         type: object
     served: false
     storage: false
@@ -218,6 +217,10 @@ spec:
                   charts and kustomize renderers are deprecated and ignored.
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              enableModuleConfig:
+                description: To let the LifecycleManager know which module CR should
+                  be synced back to the KCP
+                type: boolean
               mandatory:
                 description: |-
                   Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with

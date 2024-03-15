@@ -120,6 +120,10 @@ spec:
                     - ""
                     type: string
                 type: object
+              enableModuleConfig:
+                description: To let the LifecycleManager know which module CR should
+                  be synced back to the KCP
+                type: boolean
               install:
                 description: Install specifies a list of installations for Manifest
                 properties:
@@ -152,7 +156,6 @@ spec:
             - install
             - remote
             type: object
-            enableModuleConfig: true
           status:
             description: Status defines the observed state of CustomObject.
             properties:
@@ -389,6 +392,10 @@ spec:
                     - ""
                     type: string
                 type: object
+              enableModuleConfig:
+                description: To let the LifecycleManager know which module CR should
+                  be synced back to the KCP
+                type: boolean
               install:
                 description: Install specifies a list of installations for Manifest
                 properties:

@@ -64,6 +64,7 @@ type ManifestSpec struct {
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 
 	// To let the LifecycleManager know which module CR should be synced back to the KCP
+	// +optional
 	EnableModuleConfig bool `json:"enableModuleConfig"`
 }
 
