@@ -173,19 +173,16 @@ func (r *PurgeReconciler) handlePurge(ctx context.Context, kyma *v1beta2.Kyma, r
 }
 
 func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
-	if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
-		return nil
-	}
-	controllerutil.AddFinalizer(kyma, shared.PurgeFinalizer)
-	if err := r.Update(ctx, kyma); err != nil {
-		return fmt.Errorf("failed updating object: %w", err)
+	if controllerutil.AddFinalizer(kyma, shared.PurgeFinalizer) {
+		if err := r.Update(ctx, kyma); err != nil {
+			return fmt.Errorf("failed updating object: %w", err)
+		}
 	}
 	return nil
 }
 
 func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
-		controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer)
+	if controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer) {
 		if err := r.Update(ctx, kyma); err != nil {
 			return false, fmt.Errorf("failed updating object: %w", err)
 		}
