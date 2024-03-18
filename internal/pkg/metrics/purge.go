@@ -57,14 +57,15 @@ func (p *PurgeMetrics) UpdatePurgeTime(duration time.Duration) {
 	p.purgeTimeGauge.Set(duration.Seconds())
 }
 
-func (p *PurgeMetrics) UpdatePurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError) {
+func (p *PurgeMetrics) SetPurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError) {
 	shootID, err := ExtractShootID(kyma)
 	if err != nil {
-		logf.FromContext(ctx).Error(err, "Failed to update error metrics")
+		logf.FromContext(ctx).Error(err, "Failed to set error metrics")
 		return
 	}
 	instanceID, err := ExtractInstanceID(kyma)
 	if err != nil {
+		logf.FromContext(ctx).Error(err, "Failed to set error metrics")
 		return
 	}
 	metric, err := p.purgeErrorGauge.GetMetricWith(prometheus.Labels{
@@ -74,8 +75,15 @@ func (p *PurgeMetrics) UpdatePurgeError(ctx context.Context, kyma *v1beta2.Kyma,
 		errorReasonLabel: string(purgeError),
 	})
 	if err != nil {
-		logf.FromContext(ctx).Error(err, "Failed to update error metrics")
+		logf.FromContext(ctx).Error(err, "Failed to set error metrics")
 		return
 	}
 	metric.Set(1)
+}
+
+func (p *PurgeMetrics) DeletePurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError) {
+	p.purgeErrorGauge.DeletePartialMatch(prometheus.Labels{
+		KymaNameLabel:    kyma.Name,
+		errorReasonLabel: string(purgeError),
+	})
 }
