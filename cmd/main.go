@@ -32,13 +32,10 @@ import (
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,6 +49,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -178,10 +176,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	addHealthChecks(mgr)
-	if flagVar.DropStoredVersion != "" {
-		go func(version string) {
-			dropStoredVersion(mgr, version)
-		}(flagVar.DropStoredVersion)
+	if flagVar.DropCrdStoredVersionMap != "" {
+		go func(crdVersions string) {
+			clnt := mgr.GetClient()
+			crd.DropStoredVersion(clnt, crdVersions)
+		}(flagVar.DropCrdStoredVersionMap)
 	}
 	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
 
@@ -432,47 +431,5 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(1)
-	}
-}
-
-func dropStoredVersion(mgr manager.Manager, versionToBeRemoved string) {
-	cfg := mgr.GetConfig()
-	kcpClient, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		setupLog.V(log.DebugLevel).Error(err,
-			"unable to initialize client to remove "+versionToBeRemoved)
-	}
-	ctx := context.TODO()
-	var crdList *apiextensionsv1.CustomResourceDefinitionList
-	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx,
-		apimetav1.ListOptions{}); err != nil {
-		setupLog.V(log.InfoLevel).Error(err, "unable to list CRDs")
-	}
-
-	crdsToPatch := []string{
-		string(shared.ModuleTemplateKind), string(shared.WatcherKind),
-		string(shared.ManifestKind), string(shared.KymaKind),
-	}
-
-	for _, crdItem := range crdList.Items {
-		if crdItem.Spec.Group != shared.OperatorGroup && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
-			continue
-		}
-		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))
-		oldStoredVersions := crdItem.Status.StoredVersions
-		newStoredVersions := make([]string, 0, len(oldStoredVersions))
-		for _, stored := range oldStoredVersions {
-			if stored != versionToBeRemoved {
-				newStoredVersions = append(newStoredVersions, stored)
-			}
-		}
-		crdItem.Status.StoredVersions = newStoredVersions
-		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
-		crd := crdItem
-		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
-			UpdateStatus(ctx, &crd, apimetav1.UpdateOptions{}); err != nil {
-			msg := fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved)
-			setupLog.V(log.InfoLevel).Error(err, msg)
-		}
 	}
 }
