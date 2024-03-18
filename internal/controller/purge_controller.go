@@ -135,7 +135,7 @@ func (r *PurgeReconciler) handleRemoteClientNotFoundError(ctx context.Context, k
 		if dropped {
 			logf.FromContext(ctx).Info("Removed purge finalizer for Kyma " + kyma.GetName())
 		}
-		r.Metrics.UnsetPurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
+		r.Metrics.DeletePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -160,7 +160,7 @@ func (r *PurgeReconciler) handlePurge(ctx context.Context, kyma *v1beta2.Kyma, r
 	if err != nil {
 		return r.handleCleanupError(ctx, kyma, err)
 	}
-	r.Metrics.UnsetPurgeError(ctx, kyma, metrics.ErrCleanup)
+	r.Metrics.DeletePurgeError(ctx, kyma, metrics.ErrCleanup)
 
 	dropped, err := r.dropPurgeFinalizer(ctx, kyma)
 	if dropped {
@@ -169,7 +169,7 @@ func (r *PurgeReconciler) handlePurge(ctx context.Context, kyma *v1beta2.Kyma, r
 	if err != nil {
 		return r.handleRemovingPurgeFinalizerFailedError(ctx, kyma, err)
 	}
-	r.Metrics.UnsetPurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
+	r.Metrics.DeletePurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 
 	r.Metrics.UpdatePurgeTime(time.Since(start))
 	return ctrl.Result{}, nil
