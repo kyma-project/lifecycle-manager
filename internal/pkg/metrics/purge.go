@@ -82,21 +82,8 @@ func (p *PurgeMetrics) SetPurgeError(ctx context.Context, kyma *v1beta2.Kyma, pu
 }
 
 func (p *PurgeMetrics) DeletePurgeError(ctx context.Context, kyma *v1beta2.Kyma, purgeError PurgeError) {
-	shootID, err := ExtractShootID(kyma)
-	if err != nil {
-		logf.FromContext(ctx).Error(err, "Failed to delete error metrics")
-		return
-	}
-	instanceID, err := ExtractInstanceID(kyma)
-	if err != nil {
-		logf.FromContext(ctx).Error(err, "Failed to delete error metrics")
-		return
-	}
-
 	p.purgeErrorGauge.DeletePartialMatch(prometheus.Labels{
 		KymaNameLabel:    kyma.Name,
-		shootIDLabel:     shootID,
-		instanceIDLabel:  instanceID,
 		errorReasonLabel: string(purgeError),
 	})
 }
