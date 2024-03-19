@@ -3,6 +3,7 @@ package v2
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -155,4 +156,43 @@ func Test_hasDiff(t *testing.T) {
 				testCase.oldResources, testCase.newResources)
 		})
 	}
+}
+
+func TestReconciler_hasStatusDiff_WhenSameStatus(t *testing.T) {
+	oldStatus := shared.Status{
+		State: shared.StateReady,
+		LastOperation: shared.LastOperation{
+			Operation:      "resources are ready",
+			LastUpdateTime: apimetav1.Now(),
+		},
+	}
+
+	newStatus := shared.Status{
+		State: shared.StateReady,
+		LastOperation: shared.LastOperation{
+			Operation:      "resources are ready",
+			LastUpdateTime: apimetav1.NewTime(time.Now().Add(time.Hour)),
+		},
+	}
+	require.Equal(t, false, hasStatusDiff(newStatus, oldStatus))
+}
+
+func TestReconciler_hasStatusDiff_WhenDifferentStatus(t *testing.T) {
+	oldStatus := shared.Status{
+		State: shared.StateReady,
+		LastOperation: shared.LastOperation{
+			Operation:      "resources are ready",
+			LastUpdateTime: apimetav1.Now(),
+		},
+	}
+
+	newStatus := shared.Status{
+		State: shared.StateProcessing,
+		LastOperation: shared.LastOperation{
+			Operation:      "installing resources",
+			LastUpdateTime: apimetav1.Now(),
+		},
+	}
+
+	require.Equal(t, true, hasStatusDiff(newStatus, oldStatus))
 }
