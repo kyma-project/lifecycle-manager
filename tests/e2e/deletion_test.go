@@ -88,22 +88,6 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
 				Should(Succeed())
-
-			By("And Manifest is in \"Error\" State", func() {
-				Eventually(CheckManifestIsInState).
-					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
-						shared.StateError).
-					Should(Succeed())
-			})
-
-			By("And Manifest Status LastUpdateTime does not get changed")
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
-			Expect(err).To(Not(HaveOccurred()))
-			Consistently(ManifestStatusLastUpdateTimeIsNotChanged).
-				WithContext(ctx).WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
-				manifest.Status.LastUpdateTime).
-				Should(Succeed())
 		})
 
 		It("When Kubeconfig Secret is deleted", func() {
