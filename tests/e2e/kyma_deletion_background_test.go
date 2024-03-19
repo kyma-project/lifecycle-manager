@@ -5,7 +5,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal", Ordered,
+var _ = Describe("KCP Kyma CR Deletion With Background Propagation After SKR Cluster Removal", Ordered,
 	func() {
 		RunDeletionTest(apimetav1.DeletePropagationBackground)
 	})

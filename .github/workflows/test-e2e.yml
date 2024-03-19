@@ -33,8 +33,8 @@ jobs:
     strategy:
       matrix:
         e2e-test: [ "watcher-enqueue",
-                    "kyma-deprovision-with-foreground-propagation",
-                    "kyma-deprovision-with-background-propagation",
+                    "kyma-deletion-with-foreground-propagation",
+                    "kyma-deletion-with-background-propagation",
                     "module-status-propagation",
                     "kyma-metrics",
                     "module-without-default-cr",

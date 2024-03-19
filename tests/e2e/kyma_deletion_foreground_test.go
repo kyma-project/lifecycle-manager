@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 )
 
-var _ = Describe("KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal", Ordered,
+var _ = Describe("KCP Kyma CR Deletion With Foreground Propagation After SKR Cluster Removal", Ordered,
 	func() {
 		RunDeletionTest(apimetav1.DeletePropagationForeground)
 	})
