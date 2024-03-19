@@ -178,8 +178,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	addHealthChecks(mgr)
 	if flagVar.DropCrdStoredVersionMap != "" {
 		go func(crdVersions string) {
-			clnt := mgr.GetClient()
-			crd.DropStoredVersion(clnt, crdVersions)
+			if mgr.GetCache().WaitForCacheSync(context.Background()) {
+				clnt := mgr.GetClient()
+				crd.DropStoredVersion(clnt, crdVersions)
+			} else {
+				setupLog.V(log.InfoLevel).Error(err, "unable to run storage version dropper")
+			}
 		}(flagVar.DropCrdStoredVersionMap)
 	}
 	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
