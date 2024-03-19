@@ -33,11 +33,12 @@ import (
 var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 
 var (
-	ErrManifestResourceIsNil        = errors.New("manifest spec.resource is nil")
-	ErrManifestsExist               = errors.New("cluster contains manifest CRs")
-	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
-	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
-	errManifestNotInKymaStatus      = errors.New("manifest is not tracked by kyma.status")
+	ErrManifestResourceIsNil         = errors.New("manifest spec.resource is nil")
+	ErrManifestsExist                = errors.New("cluster contains manifest CRs")
+	errManifestNotInExpectedState    = errors.New("manifest CR not in expected state")
+	errManifestDeletionTimestampSet  = errors.New("manifest CR has set DeletionTimeStamp")
+	errManifestNotInKymaStatus       = errors.New("manifest is not tracked by kyma.status")
+	errManifestLastUpdateTimeChanged = errors.New("manifest last update time is changed")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -267,6 +268,22 @@ func CheckManifestIsInState(
 		return fmt.Errorf("%w: expect %s, but in %s",
 			errManifestNotInExpectedState, expectedState, manifest.Status.State)
 	}
+	return nil
+}
+
+func ManifestStatusLastUpdateTimeIsNotChanged(ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
+	lastUpdateTime apimetav1.Time) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	if manifest.Status.LastUpdateTime != lastUpdateTime {
+		return errManifestLastUpdateTimeChanged
+	}
+
 	return nil
 }
 
