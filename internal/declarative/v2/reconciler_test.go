@@ -174,7 +174,7 @@ func TestReconciler_hasStatusDiff_WhenSameStatus(t *testing.T) {
 			LastUpdateTime: apimetav1.NewTime(time.Now().Add(time.Hour)),
 		},
 	}
-	require.Equal(t, false, hasStatusDiff(newStatus, oldStatus))
+	require.False(t, hasStatusDiff(newStatus, oldStatus))
 }
 
 func TestReconciler_hasStatusDiff_WhenDifferentStatus(t *testing.T) {
@@ -194,5 +194,5 @@ func TestReconciler_hasStatusDiff_WhenDifferentStatus(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, true, hasStatusDiff(newStatus, oldStatus))
+	require.True(t, hasStatusDiff(newStatus, oldStatus))
 }

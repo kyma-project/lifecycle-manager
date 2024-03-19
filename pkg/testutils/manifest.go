@@ -274,7 +274,8 @@ func CheckManifestIsInState(
 func ManifestStatusLastUpdateTimeIsNotChanged(ctx context.Context,
 	kymaName, kymaNamespace, moduleName string,
 	clnt client.Client,
-	lastUpdateTime apimetav1.Time) error {
+	lastUpdateTime apimetav1.Time,
+) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
 		return err
