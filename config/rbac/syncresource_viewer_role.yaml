@@ -1,0 +1,27 @@
+# permissions for end users to view syncresources.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: syncresource-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: operator
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: syncresource-viewer-role
+rules:
+  - apiGroups:
+      - operator.kyma-project.io
+    resources:
+      - syncresources
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - operator.kyma-project.io
+    resources:
+      - syncresources/status
+    verbs:
+      - get
