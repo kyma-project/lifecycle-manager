@@ -155,7 +155,7 @@ func (r *PurgeReconciler) handlePurge(ctx context.Context, kyma *v1beta2.Kyma, r
 
 	handledResources, err := r.performCleanup(ctx, remoteClient)
 	if len(handledResources) > 0 {
-		logger.Info("Removed purge finalizer for resources " + strings.Join(handledResources, ", "))
+		logger.Info(fmt.Sprintf("Removed all finalizers for Kyma %s related resources %s", kyma.GetName(), strings.Join(handledResources, ", ")))
 	}
 	if err != nil {
 		return r.handleCleanupError(ctx, kyma, err)
