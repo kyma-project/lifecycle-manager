@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"net"
 	"strings"
 	"syscall"
 
@@ -44,10 +45,17 @@ func IsNotFound(err error) bool {
 	return false
 }
 
-func IsConnectionRefusedOrUnauthorized(err error) bool {
+func IsConnectionRelatedError(err error) bool {
 	if err == nil {
 		return false
 	}
+	return errors.Is(err, syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err) || isNoSuchHostError(err)
+}
 
-	return errors.Is(err, syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err)
+func isNoSuchHostError(err error) bool {
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return dnsErr.IsNotFound
+	}
+	return false
 }
