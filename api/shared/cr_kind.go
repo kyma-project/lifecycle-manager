@@ -7,6 +7,7 @@ const (
 	ModuleTemplateKind Kind = "ModuleTemplate"
 	WatcherKind        Kind = "Watcher"
 	ManifestKind       Kind = "Manifest"
+	ModuleConfigKind   Kind = "ModuleConfig"
 )
 
 type Kind string

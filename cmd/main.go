@@ -46,6 +46,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
@@ -83,6 +84,7 @@ func registerSchemas() {
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
 
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
+	machineryutilruntime.Must(v1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
