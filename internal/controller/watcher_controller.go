@@ -60,7 +60,9 @@ type WatcherReconciler struct {
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers/finalizers,verbs=update
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;create;update;delete
-// +kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=list;
+// +kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=list;get;
+// +kubebuilder:rbac:groups="",namespace=istio-system,resources=secrets,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups="",namespace=kyma-system,resources=secrets,verbs=get;list;watch;create;update;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
