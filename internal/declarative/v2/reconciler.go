@@ -625,11 +625,11 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 }
 
 func (r *Reconciler) ssaStatusIfDiffExist(ctx context.Context, obj Object,
-	requeueReason metrics.ManifestRequeueReason, currentObjStatus shared.Status,
+	requeueReason metrics.ManifestRequeueReason, previous shared.Status,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 
-	if hasStatusDiff(obj.GetStatus(), currentObjStatus) {
+	if hasStatusDiff(obj.GetStatus(), previous) {
 		resetNonPatchableField(obj)
 		if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
 			r.Event(obj, "Warning", "PatchStatus", err.Error())
@@ -640,8 +640,8 @@ func (r *Reconciler) ssaStatusIfDiffExist(ctx context.Context, obj Object,
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 }
 
-func hasStatusDiff(newObjStatus, currentObjStatus shared.Status) bool {
-	return currentObjStatus.State != newObjStatus.State || newObjStatus.LastOperation.Operation != currentObjStatus.LastOperation.Operation
+func hasStatusDiff(first, second shared.Status) bool {
+	return first.State != second.State || first.LastOperation.Operation != second.LastOperation.Operation
 }
 
 func (r *Reconciler) ssaSpec(ctx context.Context, obj client.Object,

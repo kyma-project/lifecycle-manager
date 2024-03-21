@@ -158,41 +158,75 @@ func Test_hasDiff(t *testing.T) {
 	}
 }
 
-func TestReconciler_hasStatusDiff_WhenSameStatus(t *testing.T) {
-	oldStatus := shared.Status{
-		State: shared.StateReady,
-		LastOperation: shared.LastOperation{
-			Operation:      "resources are ready",
-			LastUpdateTime: apimetav1.Now(),
+func Test_hasStatusDiff(t *testing.T) {
+	type args struct {
+		first  shared.Status
+		second shared.Status
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Different Status",
+			args: args{
+				first: shared.Status{
+					State: shared.StateReady,
+					LastOperation: shared.LastOperation{
+						Operation:      "resources are ready",
+						LastUpdateTime: apimetav1.Now(),
+					},
+				},
+				second: shared.Status{
+					State: shared.StateProcessing,
+					LastOperation: shared.LastOperation{
+						Operation:      "installing resources",
+						LastUpdateTime: apimetav1.Now(),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Same Status",
+			args: args{
+				first: shared.Status{
+					State: shared.StateReady,
+					LastOperation: shared.LastOperation{
+						Operation:      "resources are ready",
+						LastUpdateTime: apimetav1.Now(),
+					},
+				},
+				second: shared.Status{
+					State: shared.StateReady,
+					LastOperation: shared.LastOperation{
+						Operation:      "resources are ready",
+						LastUpdateTime: apimetav1.NewTime(time.Now().Add(time.Hour)),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Empty Status",
+			args: args{
+				first: shared.Status{},
+				second: shared.Status{
+					State: shared.StateReady,
+					LastOperation: shared.LastOperation{
+						Operation:      "resources are ready",
+						LastUpdateTime: apimetav1.NewTime(time.Now().Add(time.Hour)),
+					},
+				},
+			},
+			want: true,
 		},
 	}
-
-	newStatus := shared.Status{
-		State: shared.StateReady,
-		LastOperation: shared.LastOperation{
-			Operation:      "resources are ready",
-			LastUpdateTime: apimetav1.NewTime(time.Now().Add(time.Hour)),
-		},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equalf(t, tt.want, hasStatusDiff(tt.args.first, tt.args.second), "hasStatusDiff(%v, %v)",
+				tt.args.first, tt.args.second)
+		})
 	}
-	require.False(t, hasStatusDiff(newStatus, oldStatus))
-}
-
-func TestReconciler_hasStatusDiff_WhenDifferentStatus(t *testing.T) {
-	oldStatus := shared.Status{
-		State: shared.StateReady,
-		LastOperation: shared.LastOperation{
-			Operation:      "resources are ready",
-			LastUpdateTime: apimetav1.Now(),
-		},
-	}
-
-	newStatus := shared.Status{
-		State: shared.StateProcessing,
-		LastOperation: shared.LastOperation{
-			Operation:      "installing resources",
-			LastUpdateTime: apimetav1.Now(),
-		},
-	}
-
-	require.True(t, hasStatusDiff(newStatus, oldStatus))
 }
