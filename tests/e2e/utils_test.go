@@ -111,6 +111,21 @@ func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 	return k8sClient.Create(ctx, secret)
 }
 
+func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
+	invalidRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, "non.existent.url")
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      kymaName,
+			Namespace: kymaNamespace,
+			Labels: map[string]string{
+				shared.KymaName: kymaName,
+			},
+		},
+		Data: map[string][]byte{"config": []byte(invalidRuntimeConfig)},
+	}
+	return k8sClient.Create(ctx, secret)
+}
+
 func CheckRemoteKymaCR(ctx context.Context,
 	kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client, expectedState shared.State,
 ) error {
