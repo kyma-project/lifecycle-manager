@@ -31,11 +31,8 @@ rules:
   resources:
   - secrets
   verbs:
-  - create
-  - delete
   - get
   - list
-  - update
   - watch
 - apiGroups:
   - ""
@@ -84,11 +81,7 @@ rules:
   resources:
   - gateways
   verbs:
-  - create
-  - delete
-  - get
   - list
-  - watch
 - apiGroups:
   - networking.istio.io
   resources:
@@ -98,7 +91,6 @@ rules:
   - delete
   - get
   - list
-  - patch
   - update
 - apiGroups:
   - operator.kyma-project.io
@@ -124,10 +116,8 @@ rules:
   - kymas/status
   verbs:
   - get
-  - list
   - patch
   - update
-  - watch
 - apiGroups:
   - operator.kyma-project.io
   resources:
