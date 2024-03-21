@@ -39,7 +39,7 @@ The creation of the Kyma CR triggers a reconciliation that:
 1. Looks for a ModuleTemplate CR based on the search criteria, for example, the OCM Component Name of the module or simply the name of the ModuleTemplate CR.
 2. Creates a Manifest CR for `my-module` based on a ModuleTemplate CR found in the cluster by resolving all relevant image layers for the installation.
 3. Installs the content of the modules operator by applying it to the cluster, and observing its state.
-4. Reports back all states observed in the Manifest CR which then get propagated to the Kyma CR on the cluster.
+4. Reports back all states observed in the Manifest CR which then get propagated to the Kyma CR in the cluster.
    Lifecycle Manager then uses the observed states to aggregate and combine the readiness condition of the cluster and determine the installation state or trigger more reconciliation loops as needed.
 
 As mentioned above, when each module operator completes their installation, it reports its resource status. However, to accurately report the state, we read out the `.status.state` field to accumulate status reporting for the entire cluster.
