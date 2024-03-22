@@ -9,6 +9,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type ResourceInfoConverter interface {
@@ -86,6 +87,9 @@ func (c *DefaultResourceToInfoConverter) UnstructuredToInfos(
 	errs := make([]error, 0, len(resources))
 	for _, obj := range resources {
 		resourceInfo, err := c.converter.ResourceInfo(obj, true)
+		if util.IsConnectionRelatedError(err) {
+			return nil, err
+		}
 
 		// if there is no match we will initialize the resource anyway, just without
 		// the mapping. This will cause the applier and mappings to fall back to unstructured

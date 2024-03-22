@@ -16,6 +16,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	waitingForFinalizersOperationMsg := "waiting as other finalizers are present"
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -104,6 +105,42 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(defaultRemoteKymaName, RemoteNamespace, runtimeClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("When a blocking finalizer is added to the Manifest CR", func() {
+			Eventually(AddFinalizerToManifest).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					"blocking-finalizer").
+				Should(Succeed())
+
+			By("And Manifest CR has deletion timestamp set")
+			Eventually(DeleteManifest).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Succeed())
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+					shared.StateDeleting).
+				Should(Succeed())
+		})
+
+		It("Then Manifest Status LastUpdateTime does not get changed", func() {
+			Eventually(ManifestStatusOperationContainsMessage).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					waitingForFinalizersOperationMsg).
+				Should(Succeed())
+
+			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
+			Expect(err).To(Not(HaveOccurred()))
+
+			Consistently(ManifestStatusLastUpdateTimeIsNotChanged).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					manifest.Status).
 				Should(Succeed())
 		})
 	})
