@@ -38,7 +38,7 @@ require (
 	github.com/kyma-project/template-operator/api v0.0.0-20240307063418-941f23f566fe
 	github.com/prometheus/client_model v0.6.0
 	k8s.io/api v0.29.3
-	k8s.io/apiextensions-apiserver v0.29.2
+	k8s.io/apiextensions-apiserver v0.29.3
 	k8s.io/apimachinery v0.29.3
 	k8s.io/cli-runtime v0.29.3
 	k8s.io/client-go v0.29.3
