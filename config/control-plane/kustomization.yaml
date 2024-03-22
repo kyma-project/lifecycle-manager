@@ -115,11 +115,33 @@ transformers:
   kind: PatchTransformer
   metadata:
     name: fix-metrics-rolebinding-namespace
-  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}]'
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
   target:
     group: rbac.authorization.k8s.io
     kind: RoleBinding
-    name: metrics-rolebinding
+    name: klm-metrics-rolebinding
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-manager-rolebinding-kyma-namespace
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
+  target:
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: klm-manager-rolebinding-kyma-system
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-manager-rolebinding-istio-namespace
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "istio-system"}, {"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
+  target:
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: klm-manager-rolebinding-istio-system
     version: v1
 - |-
   apiVersion: builtin
