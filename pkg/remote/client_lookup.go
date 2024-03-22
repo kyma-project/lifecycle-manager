@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -24,47 +23,27 @@ func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client
 		return remoteClient, nil
 	}
 
-	cfg, err := l.restConfigFromStrategy(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-
-	clnt, err := client.New(cfg, client.Options{Scheme: l.kcp.Scheme()})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create lookup client: %w", err)
-	}
-
-	skr := NewClientWithConfig(clnt, cfg)
-
-	l.cache.Set(key, skr)
-
-	return skr, nil
-}
-
-func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.ObjectKey) (*rest.Config, error) {
-	var err error
-	var restConfig *rest.Config
-
 	clusterClient := ClusterClient{
 		DefaultClient: l.kcp,
 		Logger:        logf.FromContext(ctx),
 	}
 
-	// switch l.strategy {
-	// case v1beta2.SyncStrategyLocalClient:
-	//	restConfig = l.kcp.Config()
-	// case v1beta2.SyncStrategyLocalSecret:
-	//	fallthrough
-	// default:
-	restConfig, err = clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
-	//}
+	restConfig, err := clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	// Overrides the default rate-limiting as we want unified flow control settings in KCP and SKR clusters.
 	restConfig.QPS = l.kcp.Config().QPS
 	restConfig.Burst = l.kcp.Config().Burst
 
-	return restConfig, err
+	clnt, err := client.New(restConfig, client.Options{Scheme: l.kcp.Scheme()})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create lookup client: %w", err)
+	}
+
+	skr := NewClientWithConfig(clnt, restConfig)
+
+	l.cache.Set(key, skr)
+
+	return skr, nil
 }
