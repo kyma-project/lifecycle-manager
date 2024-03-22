@@ -15,7 +15,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e
-	github.com/onsi/ginkgo/v2 v2.16.0
+	github.com/onsi/ginkgo/v2 v2.17.0
 	github.com/onsi/gomega v1.32.0
 	github.com/open-component-model/ocm v0.8.0
 	github.com/prometheus/client_golang v1.19.0
@@ -38,7 +38,7 @@ require (
 	github.com/kyma-project/template-operator/api v0.0.0-20240307063418-941f23f566fe
 	github.com/prometheus/client_model v0.6.0
 	k8s.io/api v0.29.3
-	k8s.io/apiextensions-apiserver v0.29.2
+	k8s.io/apiextensions-apiserver v0.29.3
 	k8s.io/apimachinery v0.29.3
 	k8s.io/cli-runtime v0.29.3
 	k8s.io/client-go v0.29.3
@@ -127,7 +127,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/cli v24.0.7+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v24.0.7+incompatible // indirect
+	github.com/docker/docker v24.0.9+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.0 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
