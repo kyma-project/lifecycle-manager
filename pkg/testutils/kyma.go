@@ -26,18 +26,16 @@ var (
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
-	return NewKymaWithSyncLabel(name, apimetav1.NamespaceDefault, v1beta2.DefaultChannel,
-		v1beta2.SyncStrategyLocalClient)
+	return NewKymaWithSyncLabel(name, apimetav1.NamespaceDefault, v1beta2.DefaultChannel)
 }
 
 // NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
 // are typically used in e2e test, which expect related access secret provided.
-func NewKymaWithSyncLabel(name, namespace, channel, syncStrategy string) *v1beta2.Kyma {
+func NewKymaWithSyncLabel(name, namespace, channel string) *v1beta2.Kyma {
 	return builder.NewKymaBuilder().
 		WithNamePrefix(name).
 		WithNamespace(namespace).
 		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
-		WithAnnotation(shared.SyncStrategyAnnotation, syncStrategy).
 		WithLabel(shared.InstanceIDLabel, "test-instance").
 		WithLabel(shared.SyncLabel, shared.EnableLabelValue).
 		WithChannel(channel).

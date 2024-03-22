@@ -12,7 +12,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -22,11 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type ClientFunc func() *rest.Config
-
 var (
-	//nolint:gochecknoglobals // used for testing
-	LocalClient                        ClientFunc
 	ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 )
 
@@ -38,13 +33,8 @@ type KymaSynchronizationContext struct {
 func InitializeKymaSynchronizationContext(ctx context.Context, kcp Client, cache *ClientCache,
 	kyma *v1beta2.Kyma, syncNamespace string,
 ) (*KymaSynchronizationContext, error) {
-	strategyValue, found := kyma.Annotations[shared.SyncStrategyAnnotation]
-	syncStrategy := v1beta2.SyncStrategyLocalSecret
-	if found && strategyValue == v1beta2.SyncStrategyLocalClient {
-		syncStrategy = v1beta2.SyncStrategyLocalClient
-	}
-	skr, err := NewClientLookup(kcp, cache, v1beta2.SyncStrategy(syncStrategy)).
-		Lookup(ctx, client.ObjectKeyFromObject(kyma))
+
+	skr, err := NewClientLookup(kcp, cache).Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err
 	}

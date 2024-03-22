@@ -7,19 +7,15 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type ClientLookup struct {
 	kcp   Client
 	cache *ClientCache
-
-	strategy v1beta2.SyncStrategy
 }
 
-func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta2.SyncStrategy) *ClientLookup {
-	return &ClientLookup{kcp: kcp, cache: cache, strategy: strategy}
+func NewClientLookup(kcp Client, cache *ClientCache) *ClientLookup {
+	return &ClientLookup{kcp: kcp, cache: cache}
 }
 
 func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client, error) {
@@ -54,18 +50,14 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 		Logger:        logf.FromContext(ctx),
 	}
 
-	switch l.strategy {
-	case v1beta2.SyncStrategyLocalClient:
-		if LocalClient != nil {
-			restConfig = LocalClient()
-		} else {
-			restConfig = l.kcp.Config()
-		}
-	case v1beta2.SyncStrategyLocalSecret:
-		fallthrough
-	default:
-		restConfig, err = clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
-	}
+	//switch l.strategy {
+	//case v1beta2.SyncStrategyLocalClient:
+	//	restConfig = l.kcp.Config()
+	//case v1beta2.SyncStrategyLocalSecret:
+	//	fallthrough
+	//default:
+	restConfig, err = clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
+	//}
 
 	if err != nil {
 		return nil, err

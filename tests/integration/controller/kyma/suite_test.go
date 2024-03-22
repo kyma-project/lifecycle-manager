@@ -131,9 +131,10 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
-		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
-		DescriptorProvider:  descriptorProvider,
+		Client:             k8sManager.GetClient(),
+		EventRecorder:      k8sManager.GetEventRecorderFor(shared.OperatorName),
+		DescriptorProvider: descriptorProvider,
+
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,

@@ -333,7 +333,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
-		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
+		return remote.NewClientLookup(kcpClient, remoteClientCache).Lookup(ctx, key)
 	}
 
 	if err := (&controller.PurgeReconciler{
