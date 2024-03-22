@@ -21,9 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
-)
+var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
 type KymaSynchronizationContext struct {
 	ControlPlaneClient Client
@@ -33,7 +31,6 @@ type KymaSynchronizationContext struct {
 func InitializeKymaSynchronizationContext(ctx context.Context, kcp Client, cache *ClientCache,
 	kyma *v1beta2.Kyma, syncNamespace string,
 ) (*KymaSynchronizationContext, error) {
-
 	skr, err := NewClientLookup(kcp, cache).Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err

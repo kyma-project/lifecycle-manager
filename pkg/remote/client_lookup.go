@@ -50,15 +50,14 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 		Logger:        logf.FromContext(ctx),
 	}
 
-	//switch l.strategy {
-	//case v1beta2.SyncStrategyLocalClient:
+	// switch l.strategy {
+	// case v1beta2.SyncStrategyLocalClient:
 	//	restConfig = l.kcp.Config()
-	//case v1beta2.SyncStrategyLocalSecret:
+	// case v1beta2.SyncStrategyLocalSecret:
 	//	fallthrough
-	//default:
+	// default:
 	restConfig, err = clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
 	//}
-
 	if err != nil {
 		return nil, err
 	}
