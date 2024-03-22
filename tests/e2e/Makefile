@@ -67,13 +67,31 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 
 ##@ E2E Tests
 
-test: watcher-enqueue kyma-deletion module-status-propagation
+test: kyma-deprovision-with-foreground-propagation \
+	   kyma-deprovision-with-background-propagation \
+	   kyma-metrics \
+	   mandatory-module-metrics \
+	   watcher-enqueue \
+	   module-status-propagation \
+	   module-without-default-cr \
+	   module-consistency \
+	   mandatory-module \
+	   non-blocking-deletion \
+	   skip-manifest-reconciliation \
+	   upgrade-under-deletion \
+	   purge-controller \
+	   purge-metrics \
+	   module-upgrade-channel-switch \
+	   module-upgrade-new-version \
+	   ca-certificate-rotation \
+	   self-signed-certificate-rotation \
+	   misconfigured-kyma-secret
 
-kyma-deletion-with-foreground-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Foreground Propagation After SKR Cluster Removal"
+kyma-deprovision-with-foreground-propagation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
 
-kyma-deletion-with-background-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion With Background Propagation After SKR Cluster Removal"
+kyma-deprovision-with-background-propagation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal"
 
 kyma-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manage Module Metrics"
@@ -122,3 +140,6 @@ ca-certificate-rotation:
 
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
+
+misconfigured-kyma-secret:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Misconfigured Kyma Secret"
