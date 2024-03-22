@@ -122,6 +122,7 @@ rules:
   - get
   - patch
   - update
+  - watch
 - apiGroups:
   - operator.kyma-project.io
   resources:
