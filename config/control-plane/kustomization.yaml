@@ -114,6 +114,17 @@ transformers:
   apiVersion: builtin
   kind: PatchTransformer
   metadata:
+    name: fix-metrics-rolebinding-namespace
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}]'
+  target:
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: metrics-rolebinding
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
     name: fix-dashboard-watcher-cm
   patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
   target:
