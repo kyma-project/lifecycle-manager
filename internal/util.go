@@ -78,5 +78,10 @@ func DefaultCacheOptions() cache.Options {
 				Label: k8slabels.Everything(),
 			},
 		},
+		DefaultNamespaces: map[string]cache.Config{
+			"kyma-system":  {},
+			"kcp-system":   {},
+			"istio-system": {},
+		},
 	}
 }

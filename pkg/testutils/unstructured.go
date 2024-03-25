@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/onsi/ginkgo/v2/dsl/core"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -105,12 +104,11 @@ func CRIsInState(ctx context.Context, group, version, kind, name, namespace stri
 	if err != nil {
 		return err
 	}
-	core.GinkgoWriter.Println(fmt.Sprintf("RESOURCE: %s", resourceCR))
+
 	stateFromCR, stateExists, err := unstructured.NestedString(resourceCR.Object, statusPath...)
 	if err != nil || !stateExists {
 		return ErrFetchingStatus
 	}
-	core.GinkgoWriter.Println(fmt.Sprintf("STATE: %s", stateFromCR))
 
 	if stateFromCR != string(expectedState) {
 		return fmt.Errorf("%w: expect %s, but in %s",
