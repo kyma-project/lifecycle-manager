@@ -15,5 +15,5 @@ configMapGenerator:
 
 images:
 - name: controller
-  newName: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
+  newName: k3d-kcp-registry:5000/klm
   newTag: latest

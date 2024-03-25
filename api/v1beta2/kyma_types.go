@@ -125,10 +125,10 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 // +kubebuilder:subresource:status
 type KymaStatus struct {
 	// State signifies current state of Kyma.
-	// Value can be one of ("Ready", "Processing", "Warning", "Error", "Deleting").
+	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
 	State shared.State `json:"state,omitempty"`
 
-	// List of status conditions to indicate the status of a Kyma.
+	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
 	// +listType=map
 	// +listMapKey=type
