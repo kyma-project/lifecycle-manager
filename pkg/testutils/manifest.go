@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -33,11 +34,13 @@ import (
 var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 
 var (
-	ErrManifestResourceIsNil        = errors.New("manifest spec.resource is nil")
-	ErrManifestsExist               = errors.New("cluster contains manifest CRs")
-	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
-	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
-	errManifestNotInKymaStatus      = errors.New("manifest is not tracked by kyma.status")
+	ErrManifestResourceIsNil                          = errors.New("manifest spec.resource is nil")
+	ErrManifestsExist                                 = errors.New("cluster contains manifest CRs")
+	errManifestNotInExpectedState                     = errors.New("manifest CR not in expected state")
+	errManifestDeletionTimestampSet                   = errors.New("manifest CR has set DeletionTimeStamp")
+	errManifestNotInKymaStatus                        = errors.New("manifest is not tracked by kyma.status")
+	errManifestLastUpdateTimeChangedWithoutStatusDiff = errors.New("manifest last update time is changed without diff in status")
+	errManifestOperationNotContainMessage             = errors.New("manifest last operation does  not contain expected message")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -89,6 +92,39 @@ func GetManifestWithMetadata(ctx context.Context,
 		return nil, fmt.Errorf("get manifest: %w", err)
 	}
 	return manifest, nil
+}
+
+func AddFinalizerToManifest(ctx context.Context, clnt client.Client, kymaName,
+	kymaNamespace,
+	moduleName, finalizer string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	allFinalizers := append(manifest.GetFinalizers(), finalizer)
+	manifest.SetFinalizers(allFinalizers)
+	err = clnt.Update(ctx, manifest)
+	if err != nil {
+		return fmt.Errorf("failed to update manifest, %w", err)
+	}
+
+	return nil
+}
+
+func DeleteManifest(ctx context.Context, clnt client.Client, kymaName, kymaNamespace, moduleName string) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	err = clnt.Delete(ctx, manifest)
+	if client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("deleting manifest failed %w", err)
+	}
+
+	return nil
 }
 
 func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt client.Client,
@@ -267,6 +303,38 @@ func CheckManifestIsInState(
 		return fmt.Errorf("%w: expect %s, but in %s",
 			errManifestNotInExpectedState, expectedState, manifest.Status.State)
 	}
+	return nil
+}
+
+func ManifestStatusLastUpdateTimeIsNotChanged(ctx context.Context,
+	clnt client.Client,
+	kymaName, kymaNamespace, moduleName string,
+	oldStatus shared.Status,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	if manifest.Status.LastUpdateTime != oldStatus.LastUpdateTime {
+		return errManifestLastUpdateTimeChangedWithoutStatusDiff
+	}
+
+	return nil
+}
+
+func ManifestStatusOperationContainsMessage(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName, msg string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	if !strings.Contains(manifest.Status.Operation, msg) {
+		return errManifestOperationNotContainMessage
+	}
+
 	return nil
 }
 

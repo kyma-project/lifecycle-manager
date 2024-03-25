@@ -57,7 +57,7 @@ This setup is deployed with the following security features enabled:
        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
        ```
 
-4. Deploy Lifecycle Manager on the cluster:
+4. Deploy Lifecycle Manager in the cluster:
 
     ```shell
     make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
