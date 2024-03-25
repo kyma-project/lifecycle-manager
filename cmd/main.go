@@ -444,7 +444,7 @@ func setupSyncResourceReconciler(mgr ctrl.Manager) {
 	if err := (&controller.SyncResourceReconciler{
 		Client: mgr.GetClient(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "SyncResource")
+		setupLog.Error(err, "unable to create controller", "controller", shared.SyncResourceKind)
 		os.Exit(1)
 	}
 }
