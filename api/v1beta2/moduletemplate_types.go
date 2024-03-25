@@ -111,7 +111,7 @@ type ModuleTemplateSpec struct {
 
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 
-	// To let the LifecycleManager know which module CR should be synced back to the KCP
+	// EnableModuleConfig specifies if the Module CR will be synced from SKR to KCP
 	// +optional
 	EnableModuleConfig bool `json:"enableModuleConfig"`
 }

@@ -121,8 +121,8 @@ spec:
                     type: string
                 type: object
               enableModuleConfig:
-                description: To let the LifecycleManager know which module CR should
-                  be synced back to the KCP
+                description: EnableModuleConfig specifies if the Module CR will be synced
+                  from SKR to KCP
                 type: boolean
               install:
                 description: Install specifies a list of installations for Manifest
@@ -393,8 +393,8 @@ spec:
                     type: string
                 type: object
               enableModuleConfig:
-                description: To let the LifecycleManager know which module CR should
-                  be synced back to the KCP
+                description: EnableModuleConfig specifies if the Module CR will be synced
+                  from SKR to KCP
                 type: boolean
               install:
                 description: Install specifies a list of installations for Manifest
