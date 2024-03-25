@@ -17,7 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -25,17 +28,64 @@ import (
 
 // SyncResourceSpec defines the desired state of SyncResource
 type SyncResourceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Kyma specifies related kyma name
+	Kyma string `json:"kyma"`
 
-	// Foo is an example field of SyncResource. Edit syncresource_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// SyncedItems specifies a list of resources to be synced to remote cluster, which is bound to a specific strategy defined.
+	SyncedItems []SyncedItem `json:"items"`
+}
+
+type SyncStrategy string
+
+const (
+	CreateAndSync   SyncStrategy = "CreateAndSync"
+	CreateAndIgnore SyncStrategy = "CreateAndIgnore"
+	Delete          SyncStrategy = "Delete"
+)
+
+type SyncedItem struct {
+	// +kubebuilder:validation:Enum=CreateAndSync;Delete;CreateAndIgnore
+	Strategy SyncStrategy `json:"strategy"`
+
+	// Name defines the name of the resource, it is not necessarily the same name as the actual resource, but mainly for indexing purposes
+	Name string `json:"name"`
+
+	// Resource contains the resource manifest, to be noticed, lifecycle manager only takes responsibility for syncing spec section of the resource, but not subresource, e.g: status, if the sync of subresource is required, use `SubResource` instead. A valid resource should have apiVersion, kind, metadata and spec fields.
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
+	Resource *unstructured.Unstructured `json:"resource,omitempty"`
+
+	// SubResource contains the resource manifest, to be noticed, lifecycle manager only takes responsibility for syncing subresource section of the resource, but not spec section, if the sync of spec is required, use Resource instead. A valid subresource should have apiVersion, kind, metadata and status fields.
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
+	SubResource *unstructured.Unstructured `json:"subresource,omitempty"`
 }
 
 // SyncResourceStatus defines the observed state of SyncResource
 type SyncResourceStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// List of status conditions to indicate the status of a synced resource.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	Conditions []apimetav1.Condition `json:"conditions,omitempty"`
+
+	shared.LastOperation `json:"lastOperation,omitempty"`
+
+	// State signifies current state of all SyncedItem in this CR.
+	State shared.State `json:"state,omitempty"`
+
+	SyncedItemStatus []SyncedItemStatus `json:"items"`
+}
+
+type SyncedItemStatus struct {
+	// Message is a human-readable message indicating details about this SyncedItem.
+	Message string `json:"message"`
+
+	// Name is the name of SyncedItem
+	Name string `json:"name"`
+
+	// State signifies current state of this SyncedItem.
+	State shared.State `json:"state,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -43,8 +93,8 @@ type SyncResourceStatus struct {
 
 // SyncResource is the Schema for the syncresources API
 type SyncResource struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   SyncResourceSpec   `json:"spec,omitempty"`
 	Status SyncResourceStatus `json:"status,omitempty"`
@@ -54,9 +104,9 @@ type SyncResource struct {
 
 // SyncResourceList contains a list of SyncResource
 type SyncResourceList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SyncResource `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []SyncResource `json:"items"`
 }
 
 func init() {
