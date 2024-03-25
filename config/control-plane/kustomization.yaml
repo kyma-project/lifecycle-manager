@@ -27,7 +27,7 @@ resources:
 
 components:
   - ../crd
-  - ../rbac
+  - ../rbac/namespace_bindings
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   - ../istio
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
@@ -68,6 +68,9 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --access-namespaces=kcp-system,kyma-system,istio-system
     target:
       kind: Deployment
     # We expect a kcp-system namespace to be already present in KCP

@@ -71,17 +71,17 @@ func GetResourceLabel(resource client.Object, labelName string) (string, error) 
 	return labelValue, nil
 }
 
-func DefaultCacheOptions() cache.Options {
+func DefaultCacheOptions(namespaces []string) cache.Options {
+	var defaultNamespaces map[string]cache.Config
+	for _, v := range namespaces {
+		defaultNamespaces[v] = cache.Config{}
+	}
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
 			&apicorev1.Secret{}: {
 				Label: k8slabels.Everything(),
 			},
 		},
-		DefaultNamespaces: map[string]cache.Config{
-			"kyma-system":  {},
-			"kcp-system":   {},
-			"istio-system": {},
-		},
+		DefaultNamespaces: defaultNamespaces,
 	}
 }
