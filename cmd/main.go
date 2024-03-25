@@ -46,6 +46,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
@@ -83,6 +84,7 @@ func registerSchemas() {
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
 
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
+	machineryutilruntime.Must(v1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -102,10 +104,9 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
 
-	var accessNamespaces []string
-	for _, ns := range strings.Split(flagVar.AccessNamespaces, ",") {
-		accessNamespaces = append(accessNamespaces, ns)
-	}
+	accessNamespaces := []string{}
+	accessNamespaces = append(accessNamespaces, strings.Split(flagVar.AccessNamespaces, ",")...)
+
 	setupManager(flagVar, internal.DefaultCacheOptions(accessNamespaces), scheme)
 }
 
@@ -171,7 +172,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
-
+	setupSyncResourceReconciler(mgr)
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
 	}
@@ -438,6 +439,15 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
+		os.Exit(1)
+	}
+}
+
+func setupSyncResourceReconciler(mgr ctrl.Manager) {
+	if err := (&controller.SyncResourceReconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", shared.SyncResourceKind)
 		os.Exit(1)
 	}
 }

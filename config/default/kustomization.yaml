@@ -40,7 +40,7 @@ resources:
 
 components:
   - ../crd
-  - ../rbac
+  - ../rbac/cluster_bindings
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   #- ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in

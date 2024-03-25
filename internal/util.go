@@ -72,7 +72,7 @@ func GetResourceLabel(resource client.Object, labelName string) (string, error) 
 }
 
 func DefaultCacheOptions(namespaces []string) cache.Options {
-	var defaultNamespaces map[string]cache.Config
+	defaultNamespaces := map[string]cache.Config{}
 	for _, v := range namespaces {
 		defaultNamespaces[v] = cache.Config{}
 	}
