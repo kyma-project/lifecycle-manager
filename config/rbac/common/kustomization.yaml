@@ -16,3 +16,5 @@ resources:
   - manifest_clusterrole.yaml
   - crd_clusterrole.yaml
   - crd_clusterrole_binding.yaml
+  - gateway_clusterrole.yaml
+  - gateway_clusterrole_binding.yaml

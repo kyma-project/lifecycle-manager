@@ -139,12 +139,56 @@ transformers:
   apiVersion: builtin
   kind: PatchTransformer
   metadata:
+    name: fix-manager-rolebinding-manifest-kyma-namespace
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
+  target:
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: klm-manager-rolebinding-manifest-kyma-system
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-manager-rolebinding-manifest-istio-namespace
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "istio-system"}, {"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
+  target:
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: klm-manager-rolebinding-manifest-istio-system
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-manager-rolebinding-manifest-kcp-subject
+  patch: '[{"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
+  target:
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: klm-manager-rolebinding-manifest-kcp-system
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
     name: fix-manager-rolebinding-istio-namespace
   patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "istio-system"}, {"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
   target:
     group: rbac.authorization.k8s.io
     kind: RoleBinding
     name: klm-manager-rolebinding-istio-system
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-manager-rolebinding-kcp-subject
+  patch: '[{"op": "replace", "path": "/subjects/0/name", "value": "klm-controller-manager"}, {"op": "replace", "path": "/subjects/0/namespace", "value": "kcp-system"}]'
+  target:
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: klm-manager-rolebinding-kcp-system
     version: v1
 - |-
   apiVersion: builtin

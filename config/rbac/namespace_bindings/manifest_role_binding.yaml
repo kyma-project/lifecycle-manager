@@ -1,8 +1,36 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: manager-rolebinding-manifest
+  name: manager-rolebinding-manifest-kcp-system
   namespace: kcp-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: manager-role-manifest
+subjects:
+  - kind: ServiceAccount
+    name: controller-manager
+    namespace: system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: manager-rolebinding-manifest-kyma-system
+  namespace: kyma-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: manager-role-manifest
+subjects:
+  - kind: ServiceAccount
+    name: controller-manager
+    namespace: system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: manager-rolebinding-manifest-istio-system
+  namespace: istio-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
