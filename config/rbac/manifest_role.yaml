@@ -40,5 +40,4 @@ roleRef:
   name: manager-role-manifest
 subjects:
 - kind: ServiceAccount
-  name: controller-manager
-  namespace: system
+  name: klm-controller-manager

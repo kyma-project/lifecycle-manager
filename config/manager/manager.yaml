@@ -9,7 +9,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: system
   labels:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io
 spec:

@@ -149,31 +149,31 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
-    - syncresources
+  - syncresources
   verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
-    - operator.kyma-project.io
+  - operator.kyma-project.io
   resources:
-    - syncresources/finalizers
+  - syncresources/finalizers
   verbs:
-    - update
+  - update
 - apiGroups:
-    - operator.kyma-project.io
+  - operator.kyma-project.io
   resources:
-    - syncresources/status
+  - syncresources/status
   verbs:
-    - get
-    - patch
-    - update
+  - get
+  - patch
+  - update
 - apiGroups:
-    - operator.kyma-project.io
+  - operator.kyma-project.io
   resources:
   - watchers
   verbs:
