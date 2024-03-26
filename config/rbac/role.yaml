@@ -149,6 +149,32 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
+    - syncresources
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+    - operator.kyma-project.io
+  resources:
+    - syncresources/finalizers
+  verbs:
+    - update
+- apiGroups:
+    - operator.kyma-project.io
+  resources:
+    - syncresources/status
+  verbs:
+    - get
+    - patch
+    - update
+- apiGroups:
+    - operator.kyma-project.io
+  resources:
   - watchers
   verbs:
   - create
