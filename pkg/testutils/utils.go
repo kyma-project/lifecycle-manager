@@ -20,13 +20,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -108,9 +106,10 @@ func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Env
 		return nil, nil, err
 	}
 
-	remote.LocalClient = func() *rest.Config {
-		return authUser.Config()
-	}
+	// TODO: replace with interface in Reconcilers
+	//remote.LocalClient = func() *rest.Config {
+	//	return authUser.Config()
+	//}
 
 	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
 

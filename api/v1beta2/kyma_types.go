@@ -103,6 +103,10 @@ const (
 	CustomResourcePolicyIgnore = "Ignore"
 )
 
+// SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
+// lookup, or other behavioral patterns when interacting with the remote cluster.
+type SyncStrategy string
+
 func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 	moduleStatusMap := make(map[string]*ModuleStatus)
 	for i := range kyma.Status.Modules {
