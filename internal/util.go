@@ -82,6 +82,5 @@ func DefaultCacheOptions(namespaces []string) cache.Options {
 				Label: k8slabels.Everything(),
 			},
 		},
-		DefaultNamespaces: defaultNamespaces,
 	}
 }
