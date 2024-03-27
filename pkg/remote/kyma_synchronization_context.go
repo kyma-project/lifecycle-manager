@@ -23,29 +23,34 @@ import (
 
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
-type KymaSynchronizationContext struct {
-	ControlPlaneClient Client
-	RuntimeClient      Client
+type SyncContextFactory interface {
+	GetSyncContext(ctx context.Context, kyma *v1beta2.Kyma, syncNamespace string) (*KymaSynchronizationContext, error)
 }
 
-func InitializeKymaSynchronizationContext(ctx context.Context, kcp Client, cache *ClientCache,
-	kyma *v1beta2.Kyma, syncNamespace string,
-) (*KymaSynchronizationContext, error) {
-	skr, err := NewClientLookup(kcp, cache).Lookup(ctx, client.ObjectKeyFromObject(kyma))
+type KymaSynchronizationContext struct {
+	RuntimeClient Client
+}
+
+type KymaSyncContextFactory struct {
+	kcpClient   Client
+	clientCache *ClientCache
+}
+
+func (k *KymaSyncContextFactory) GetSyncContext(ctx context.Context, kyma *v1beta2.Kyma, syncNamespace string) (*KymaSynchronizationContext, error) {
+	skr, err := NewClientLookup(k.kcpClient, k.clientCache).Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err
 	}
 
-	sync := &KymaSynchronizationContext{
-		ControlPlaneClient: kcp,
-		RuntimeClient:      skr,
+	syncContext := &KymaSynchronizationContext{
+		RuntimeClient: skr,
 	}
 
-	if err := sync.ensureRemoteNamespaceExists(ctx, syncNamespace); err != nil {
+	if err := syncContext.ensureRemoteNamespaceExists(ctx, syncNamespace); err != nil {
 		return nil, err
 	}
 
-	return sync, nil
+	return syncContext, nil
 }
 
 func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
@@ -137,7 +142,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
 	var err error
-	err = c.ControlPlaneClient.Get(
+	err = c..Get(
 		ctx, client.ObjectKey{
 			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 			// name changes, this also has to be adjusted here. We can think of making this configurable later

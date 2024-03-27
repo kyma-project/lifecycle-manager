@@ -69,6 +69,7 @@ type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
+	KymaSyncContext     remote.SyncContextFactory
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
@@ -238,6 +239,8 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 }
 
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+
+	r.KymaSyncContext.GetSyncContext(ctx, kyma, na)
 	syncContext, err := remote.SyncContextFromContext(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get syncContext: %w", err)

@@ -26,6 +26,7 @@ import (
 // SKRWebhookManifestManager is a SKRWebhookManager implementation that applies
 // the SKR webhook's raw manifest using a native kube-client.
 type SKRWebhookManifestManager struct {
+	kcpClient          client.Client
 	config             SkrWebhookManagerConfig
 	kcpAddr            string
 	baseResources      []*unstructured.Unstructured
@@ -41,8 +42,7 @@ type SkrWebhookManagerConfig struct {
 	SkrWatcherImage        string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
-	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
-	RemoteSyncNamespace string
+	RemoteSyncNamespace    string
 }
 
 const rawManifestFilePathTpl = "%s/resources.yaml"

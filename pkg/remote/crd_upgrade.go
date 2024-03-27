@@ -19,7 +19,9 @@ import (
 )
 
 type SyncCrdsUseCase struct {
-	crdCache *crd.Cache
+	kcpClient        Client
+	skrClientFactory en
+	crdCache         *crd.Cache
 }
 
 func NewSyncCrdsUseCase(cache *crd.Cache) SyncCrdsUseCase {
