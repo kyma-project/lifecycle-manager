@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -219,6 +220,18 @@ func (r *MandatoryModuleDeletionReconciler) SetupWithManager(mgr ctrl.Manager,
 		Named(MandatoryModuleDeletionControllerName).
 		WithOptions(options).
 		WithEventFilter(predicate.GenerationChangedPredicate{})
+
+	if err := controllerBuilder.Complete(r); err != nil {
+		return fmt.Errorf("error occurred while building controller: %w", err)
+	}
+
+	return nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *SyncResourceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.SyncResource{})
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
