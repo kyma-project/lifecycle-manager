@@ -8,4 +8,4 @@ roleRef:
   name: metrics-reader
 subjects:
   - kind: ServiceAccount
-    name: klm-controller-manager
+    name: controller-manager
