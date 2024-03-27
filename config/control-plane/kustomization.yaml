@@ -99,6 +99,17 @@ transformers:
   apiVersion: builtin
   kind: PatchTransformer
   metadata:
+    name: fix-webhook-service-namespace
+  patch: '[{"op": "replace", "path": "/webhooks/0/clientConfig/service/namespace", "value": "kcp-system"}]'
+  target:
+    kind: ValidatingWebhookConfiguration
+    group: admissionregistration.k8s.io
+    name: klm-validating-webhook-configuration
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
     name: fix-dashboard-overview-cm
   patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
   target:
