@@ -79,7 +79,6 @@ type Service struct {
 }
 
 // WatcherStatus defines the observed state of Watcher.
-// +kubebuilder:subresource:status
 type WatcherStatus struct {
 	// State signifies current state of a Watcher.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning")
