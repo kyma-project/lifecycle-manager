@@ -25,9 +25,9 @@ The workflow for a ModuleConfig CR involves several steps, orchestrated by Lifec
 
 4. Lifecycle Manager generates or updates a ModuleConfig CR from the Module CR in the Kyma runtime.
 
-6. Module Manager watches the ModuleConfig CR for changes.
+5. Module Manager watches the ModuleConfig CR for changes.
 
-7. Module Manager generates a SyncResource CR from the ModuleConfig CR enabling  Lifecycle Manager to reconcile the end-user's changes.
+6. Module Manager generates a SyncResource CR from the ModuleConfig CR enabling  Lifecycle Manager to reconcile the end-user's changes.
 
 
 ![Sync Resource Sequence Diagram](../../assets/sync-resource-sequence.svg)
