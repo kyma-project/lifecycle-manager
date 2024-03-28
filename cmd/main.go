@@ -169,6 +169,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
+	setupModuleConfigReconciler(mgr)
 
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
@@ -436,6 +437,15 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
+		os.Exit(1)
+	}
+}
+
+func setupModuleConfigReconciler(mgr ctrl.Manager) {
+	if err := (&controller.ModuleConfigReconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", shared.ModuleConfigKind)
 		os.Exit(1)
 	}
 }
