@@ -131,6 +131,32 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
+  - moduleconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - moduleconfigs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - moduleconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
   - moduletemplates
   verbs:
   - create
