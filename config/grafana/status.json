@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 14,
+  "id": 61,
   "links": [],
   "panels": [
     {
@@ -431,6 +431,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           }
@@ -460,12 +464,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_mandatory_modules",
+          "expr": "sum(lifecycle_mgr_mandatory_modules)",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
+      "timeFrom": null,
+      "timeShift": null,
       "title": "Mandatory Modules Count",
       "type": "gauge"
     }
