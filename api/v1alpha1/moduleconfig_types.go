@@ -22,20 +22,20 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// ModuleConfigSpec defines the desired state of ModuleConfig
+// ModuleConfigSpec defines the desired state of ModuleConfig.
 type ModuleConfigSpec struct {
-	// Kyma specifies related kyma name
+	// Kyma specifies the related Kyma name.
 	Kyma string `json:"kyma"`
-	// Module specifies related module name
+	// Module specifies the related module name.
 	Module string `json:"module"`
 
-	// Resource contains Module CR manifest which provides the required configuration data for related Module Manager
+	// Resource contains a copy of the related Module CR's manifest.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:XEmbeddedResource
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 }
 
-// ModuleConfigStatus defines the observed state of ModuleConfig
+// ModuleConfigStatus defines the observed state of ModuleConfig.
 type ModuleConfigStatus struct {
 	// List of status conditions to indicate the status of ModuleConfig.
 	// +optional

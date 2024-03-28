@@ -1,34 +1,33 @@
 # ModuleConfig Custom Resource
 
-The [ModuleConfig custom resource (CR)](../../../api/v1alpha1/moduleconfig_types.go) facilitates the synchronization of `Module` CR configuration between the SKR and KCP clusters, reflecting dynamic changes made by the user.
+The [ModuleConfig custom resource (CR)](../../../api/v1alpha1/moduleconfig_types.go) facilitates the synchronization of the Module CR configuration between Kyma runtime and Kyma Control Plane clusters, reflecting dynamic changes made by the user.
 
 ## Generation
 
-The SKR Watcher notifies the Lifecycle Manager (LM) in case of changes detected in a `Module`. A `ModuleConfig` is then generated/updated by the LM in from the `Module` within the SKR cluster.
+[Runtime Watcher](https://github.com/kyma-project/runtime-watcher) notifies Lifecycle Manager (LM) of changes detected in a Module CR. Lifecycle Manager generates or updates a ModuleConfig CR in Kyma runtime, based on the detected changes.
 
-## Preconditions
+## Prerequisites
 
-For a `ModuleConfig` to be generated, the following preconditions must be met:
-- The SKR Watcher must be enabled.
-- The `.spec.enableModuleConfig` field in the `ModuleTemplate` must be true. Use the `--enableModuleConfig` CLI flag when generating `ModuleTemplate` to set this field.
+For Lifecycle Manager to generate a ModuleConfig CR, it requires the following prerequisites:
+- [Runtime Watcher](https://github.com/kyma-project/runtime-watcher) enabled
+- The **.spec.enableModuleConfig** parameter in the ModuleTemplate CR set to `true`. To set this field, use the `--enableModuleConfig` CLI flag when generating `ModuleTemplate`.
 
 ## Workflow
 
-The workflow for the `ModuleConfig` involves several steps, orchestrated primarily by the LM and the SKR Watcher:
+The workflow for a ModuleConfig CR involves several steps, orchestrated by Lifecycle Manager and Runtime Watcher:
 
-1. An existing `Module` CR within the SKR is updated by the end-user.
+1. The end-user updates an existing Module CR in Kyma runtime. 
 
-2. The SKR Watcher gets triggered.
 
-3. The SKR Watcher notifies the LM about a change in the `Module` CR.
+2. Runtime Watcher notifies Lifecycle Manager about the changes detected in the Module CR.
 
-4. The LM fetches the latest version of `Module` CR from the SKR cluster.
+3. Lifecycle Manager fetches the latest version of the Module CR from the Kyma runtime.
 
-5. Subsequently, the LM generates or updates the `ModuleConfig` from the `Module` within the SKR cluster.
+4. Lifecycle Manager generates or updates a ModuleConfig CR from the Module CR in the Kyma runtime.
 
-6. This `ModuleConfig` CR is being watched by the respective Module Manager (MM) for changes.
+6. Module Manager watches the ModuleConfig CR for changes.
 
-7. The MM will generate a `SyncResource` CR from the `ModuleConfig`, enabling the LM to reconcile the user's changes.
+7. Module Manager generates a SyncResource CR from the ModuleConfig CR enabling  Lifecycle Manager to reconcile the end-user's changes.
 
 
 ![Sync Resource Sequence Diagram](../../assets/sync-resource-sequence.svg)
