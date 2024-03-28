@@ -170,7 +170,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
 	setupModuleConfigReconciler(mgr)
-
+  
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
 	}
