@@ -122,7 +122,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: randomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.DefaultCacheOptions(),
+			Cache:  internal.DefaultCacheOptions([]string{}),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
