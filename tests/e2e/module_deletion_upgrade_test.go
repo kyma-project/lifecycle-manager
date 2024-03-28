@@ -15,8 +15,7 @@ import (
 )
 
 var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)

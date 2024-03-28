@@ -13,8 +13,7 @@ import (
 )
 
 var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	waitingForFinalizersOperationMsg := "waiting as other finalizers are present"
 

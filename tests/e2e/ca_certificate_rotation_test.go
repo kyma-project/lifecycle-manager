@@ -17,8 +17,7 @@ import (
 )
 
 var _ = Describe("CA Certificate Rotation", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
