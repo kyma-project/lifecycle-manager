@@ -87,7 +87,7 @@ var errTemplateCleanup = errors.New("failed to delete obsolete catalog templates
 func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
 	runtimeModules []v1beta2.ModuleTemplate,
-	syncContext *KymaSynchronizationContext,
+	syncContext *KymaClient,
 ) error {
 	diffsToDelete := c.diffsToDelete(runtimeModules, kcpModules)
 	channelLength := len(diffsToDelete)
@@ -116,7 +116,7 @@ var errCatTemplatesApply = errors.New("could not apply catalog templates")
 
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
-	syncContext *KymaSynchronizationContext,
+	syncContext *KymaClient,
 ) error {
 	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
@@ -159,14 +159,14 @@ func containsCRDNotFoundError(errs []error) bool {
 }
 
 func (c *RemoteCatalog) patchDiff(
-	ctx context.Context, diff *v1beta2.ModuleTemplate, syncContext *KymaSynchronizationContext,
+	ctx context.Context, diff *v1beta2.ModuleTemplate, syncContext *KymaClient,
 	deleteInsteadOfPatch bool,
 ) error {
 	var err error
 	if deleteInsteadOfPatch {
-		err = syncContext.RuntimeClient.Delete(ctx, diff)
+		err = syncContext.SkrClient.Delete(ctx, diff)
 	} else {
-		err = syncContext.RuntimeClient.Patch(
+		err = syncContext.SkrClient.Patch(
 			ctx, diff, client.Apply, c.settings.SSAPatchOptions,
 		)
 	}

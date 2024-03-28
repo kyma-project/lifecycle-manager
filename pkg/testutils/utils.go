@@ -112,7 +112,6 @@ func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Env
 	//}
 
 	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
-
 	return skrClient, skrEnv, err
 }
 

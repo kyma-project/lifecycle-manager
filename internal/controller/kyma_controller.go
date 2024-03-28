@@ -69,7 +69,7 @@ type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
-	KymaSyncContext     remote.SyncContextFactory
+	KymaClientFactory   remote.KymaClientFactory
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
@@ -157,24 +157,6 @@ func (r *KymaReconciler) deleteRemoteClientCache(ctx context.Context, kyma *v1be
 	r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 }
 
-// getSyncedContext returns either the original context (in case Syncing is disabled) or initiates a sync-context
-// with a remote client and returns that context instead.
-// In case of failure, original context should be returned.
-func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kyma) (context.Context, error) {
-	if !r.SyncKymaEnabled(kyma) {
-		return ctx, nil
-	}
-
-	remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
-	ctxWithSync, err := remote.InitializeSyncContext(ctx, kyma,
-		r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache)
-	if err != nil {
-		return ctx, err
-	}
-
-	return ctxWithSync, nil
-}
-
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
@@ -228,7 +210,6 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	}
 
 	if r.SyncKymaEnabled(kyma) {
-		// update the remote kyma with the state of the control plane
 		if err := r.syncStatusToRemote(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
@@ -240,7 +221,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 
-	r.KymaSyncContext.GetSyncContext(ctx, kyma, na)
+	r.KymaClientFactory.GetClient(ctx, kyma, na)
 	syncContext, err := remote.SyncContextFromContext(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get syncContext: %w", err)
@@ -284,7 +265,7 @@ func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReas
 }
 
 func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
-	syncContext, err := remote.SyncContextFromContext(ctx)
+	syncContext, err := r.KymaClientFactory.GetClient(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get syncContext: %w", err)
 	}

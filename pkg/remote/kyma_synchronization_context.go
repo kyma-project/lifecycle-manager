@@ -23,58 +23,53 @@ import (
 
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
-type SyncContextFactory interface {
-	GetSyncContext(ctx context.Context, kyma *v1beta2.Kyma, syncNamespace string) (*KymaSynchronizationContext, error)
+type KymaClientFactory interface {
+	GetClient(ctx context.Context, kyma *v1beta2.Kyma) (*KymaClient, error)
 }
 
-type KymaSynchronizationContext struct {
-	RuntimeClient Client
+type KymaClient struct {
+	Client
 }
 
 type KymaSyncContextFactory struct {
-	kcpClient   Client
-	clientCache *ClientCache
+	clientCache  *ClientCache
+	clientLookup *ClientLookup
 }
 
-func (k *KymaSyncContextFactory) GetSyncContext(ctx context.Context, kyma *v1beta2.Kyma, syncNamespace string) (*KymaSynchronizationContext, error) {
-	skr, err := NewClientLookup(k.kcpClient, k.clientCache).Lookup(ctx, client.ObjectKeyFromObject(kyma))
+func (k *KymaSyncContextFactory) GetClient(ctx context.Context, kyma *v1beta2.Kyma) (*KymaClient, error) {
+	skrClient, err := k.clientLookup.Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err
 	}
 
-	syncContext := &KymaSynchronizationContext{
-		RuntimeClient: skr,
+	syncContext := &KymaClient{
+		Client: skrClient,
 	}
 
-	if err := syncContext.ensureRemoteNamespaceExists(ctx, syncNamespace); err != nil {
+	if err := syncContext.ensureNamespaceExists(ctx); err != nil {
 		return nil, err
 	}
 
 	return syncContext, nil
 }
 
-func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
-	ctx context.Context, remoteSyncNamespace string,
-) (*v1beta2.Kyma, error) {
-	remoteKyma := &v1beta2.Kyma{}
-	remoteKyma.Name = shared.DefaultRemoteKymaName
-	remoteKyma.Namespace = remoteSyncNamespace
-	if err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma); err != nil {
-		return remoteKyma, fmt.Errorf("failed to get remote kyma: %w", err)
+func (k *KymaClient) getRemotelySyncedKyma(ctx context.Context) (*v1beta2.Kyma, error) {
+	skrKyma := &v1beta2.Kyma{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      shared.DefaultRemoteKymaName,
+			Namespace: shared.DefaultRemoteNamespace,
+		},
 	}
 
-	return remoteKyma, nil
+	if err := k.Client.Get(ctx, client.ObjectKeyFromObject(skrKyma), skrKyma); err != nil {
+		return skrKyma, fmt.Errorf("failed to get remote kyma: %w", err)
+	}
+
+	return skrKyma, nil
 }
 
-func RemoveFinalizersFromRemoteKyma(
-	ctx context.Context, remoteSyncNamespace string,
-) error {
-	syncContext, err := SyncContextFromContext(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get syncContext: %w", err)
-	}
-
-	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
+func (k *KymaClient) RemoveFinalizersFromRemoteKyma(ctx context.Context) error {
+	remoteKyma, err := k.getRemotelySyncedKyma(ctx)
 	if err != nil {
 		return err
 	}
@@ -83,37 +78,29 @@ func RemoveFinalizersFromRemoteKyma(
 		controllerutil.RemoveFinalizer(remoteKyma, finalizer)
 	}
 
-	err = syncContext.RuntimeClient.Update(ctx, remoteKyma)
+	err = k.Client.Update(ctx, remoteKyma)
 	if err != nil {
 		return fmt.Errorf("failed to update remote kyma when removing finalizers: %w", err)
 	}
 	return nil
 }
 
-func DeleteRemotelySyncedKyma(
-	ctx context.Context, remoteSyncNamespace string,
-) error {
-	syncContext, err := SyncContextFromContext(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get syncContext: %w", err)
-	}
-	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
+func (k *KymaClient) DeleteRemotelySyncedKyma(ctx context.Context) error {
+	remoteKyma, err := k.getRemotelySyncedKyma(ctx)
 	if err != nil {
 		return err
 	}
-	err = syncContext.RuntimeClient.Delete(ctx, remoteKyma)
+	err = k.Client.Delete(ctx, remoteKyma)
 	if err != nil {
 		return fmt.Errorf("failed to delete remote kyma: %w", err)
 	}
 	return nil
 }
 
-// ensureRemoteNamespaceExists tries to ensure existence of a namespace for synchronization based on
-// name of controlPlaneKyma.namespace in this order.
-func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context, syncNamespace string) error {
+func (k *KymaClient) ensureNamespaceExists(ctx context.Context) error {
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:   syncNamespace,
+			Name:   shared.DefaultRemoteNamespace,
 			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
@@ -127,40 +114,36 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
-	fieldManager := "kyma-sync-context"
-
-	if err := c.RuntimeClient.Patch(
-		ctx, namespace, patch, &client.PatchOptions{Force: &force, FieldManager: fieldManager},
-	); err != nil {
+	patchOpts := &client.PatchOptions{Force: &force, FieldManager: "kyma-sync-context"}
+	if err := k.Client.Patch(ctx, namespace, patch, patchOpts); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
 
 	return nil
 }
 
-func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
+func (k *KymaClient) createOrUpdateCRD(ctx context.Context, plural string) error {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
 	var err error
-	err = c..Get(
-		ctx, client.ObjectKey{
-			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-			// name changes, this also has to be adjusted here. We can think of making this configurable later
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crd,
+	err = k.Client.Get(ctx, client.ObjectKey{
+		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+		// name changes, this also has to be adjusted here. We can think of making this configurable later
+		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+	}, crd,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
 	}
 
-	err = c.RuntimeClient.Get(
+	err = k.Client.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,
 	)
 
 	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, c.RuntimeClient, crd)
+		return PatchCRD(ctx, k.Client, crd)
 	}
 
 	if err != nil {
@@ -170,16 +153,13 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	return nil
 }
 
-func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
-	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
-) (*v1beta2.Kyma, error) {
+func (k *KymaClient) CreateOrFetchRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
 	recorder := adapter.RecorderFromContext(ctx)
-
-	remoteKyma, err := c.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
+	remoteKyma, err := k.getRemotelySyncedKyma(ctx)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := c.CreateOrUpdateCRD(ctx, shared.KymaKind.Plural()); err != nil {
+		if err := k.createOrUpdateCRD(ctx, shared.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
 
@@ -192,7 +172,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		}
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
-		err = c.RuntimeClient.Create(ctx, remoteKyma)
+		err = k.Client.Create(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
 			return nil, fmt.Errorf("failed to create remote kyma: %w", err)
@@ -205,24 +185,21 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	return remoteKyma, nil
 }
 
-func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
-	ctx context.Context,
-	controlPlaneKyma, remoteKyma *v1beta2.Kyma,
-) error {
+func (k *KymaClient) SynchronizeRemoteKyma(ctx context.Context, controlPlaneKyma, remoteKyma *v1beta2.Kyma) error {
 	if !remoteKyma.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
 	recorder := adapter.RecorderFromContext(ctx)
 
-	c.SyncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
-	if err := c.RuntimeClient.Update(ctx, remoteKyma); err != nil {
+	k.syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
+	if err := k.Client.Update(ctx, remoteKyma); err != nil {
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not synchronise runtime kyma "+
 			"spec, watcher labels and annotations")
 		return fmt.Errorf("failed to synchronise runtime kyma: %w", err)
 	}
 
 	remoteKyma.Status = controlPlaneKyma.Status
-	if err := c.RuntimeClient.Status().Update(ctx, remoteKyma); err != nil {
+	if err := k.Client.Status().Update(ctx, remoteKyma); err != nil {
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 		return fmt.Errorf("failed to update runtime kyma status: %w", err)
 	}
@@ -230,18 +207,15 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 }
 
 // ReplaceModules replaces modules specification from control plane Kyma with Remote Kyma specifications.
-func ReplaceModules(
-	controlPlaneKyma *v1beta2.Kyma,
-	remoteKyma *v1beta2.Kyma,
-) {
+func ReplaceModules(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
 	controlPlaneKyma.Spec.Modules = []v1beta2.Module{}
 	controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, remoteKyma.Spec.Modules...)
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
 }
 
-// SyncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
+// syncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
 // a working e2e-flow for the runtime-watcher.
-func (c *KymaSynchronizationContext) SyncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
+func (k *KymaClient) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
 	if remoteKyma.Labels == nil {
 		remoteKyma.Labels = make(map[string]string)
 	}
