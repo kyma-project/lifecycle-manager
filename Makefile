@@ -44,9 +44,22 @@ help: ## Display this help.
 
 ##@ Development
 
+MANIFESTS_DIR?=manifests
+KUSTOMIZE_SRC?=config/control-plane/
+MANIFESTS_ALL=manifests/all.yaml
+MANIFESTS_TARGETS=
+
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+
+$(MANIFESTS_ALL): manifests kustomize
+	$(KUSTOMIZE) build $(KUSTOMIZE_SRC) > $@
+
+.PHONY: kustomize-build
+kustomize-build: $(MANIFESTS_ALL) ## Generate the kustomize build output
+	@echo "Built kustomize manifests"
+
 
 .PHONY: test-crd
 test-crd: controller-gen ## Generate crd for test
@@ -124,7 +137,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
-	
+
 .PHONY: lt-deploy
 lt-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
