@@ -67,8 +67,6 @@ patches:
         value: --is-kyma-managed
     target:
       kind: Deployment
-    # We expect a kcp-system namespace to be already present in KCP
-  - path: patches/namespace_delete.yaml
     # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
   - path: patches/service_monitor.yaml
     # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
@@ -82,8 +80,7 @@ patches:
     # kubebuilder operators.
   - path: patches/unique_certificate_name.yaml
 
-# We patch the Metrics ConfigMaps here, as we expect KCP to be watching for grafana dashboards in the 'kyma-system' namespace
-# instead of 'kcp-system', as configured above with the global namespace transformer.
+# We patch the Metrics ConfigMaps here, as we expect KCP to be watching for grafana dashboards in the 'kyma-system' namespace.
 # Note1: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
 # Note2: the 'grafana_dashboard' label could be applied using a standard JSON patch, but a namespace must be patched here and it's better to have all related customizations in a single place. 
 transformers:

@@ -30,7 +30,6 @@ patches:
 # 'CERTMANAGER' needs to be enabled to use ca injection
 # the following config is for teaching kustomize how to do var substitution
 - path: webhookcainjection_patch.yaml
-- path: namespace_delete.yaml
 
 resources:
 - ../manager
@@ -59,10 +58,6 @@ transformers:
     namespace: kcp-system
   unsetOnly: true
   setRoleBindingSubjects: allServiceAccounts
-  fieldSpecs:
-  - kind: Namespace
-    path: metadata/name
-    create: true
 - |-
   apiVersion: builtin
   kind: AnnotationsTransformer
