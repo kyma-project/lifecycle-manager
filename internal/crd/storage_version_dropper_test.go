@@ -64,7 +64,7 @@ func TestDropStoredVersion(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	_ = apiextensionsv1.AddToScheme(scheme)
 	fakeClientBuilder := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(currentCrds...).Build()
-	crd.DropStoredVersion(fakeClientBuilder, versionToBeDropped)
+	crd.DropStoredVersion(context.TODO(), fakeClientBuilder, versionToBeDropped)
 
 	var updatedCRD apiextensionsv1.CustomResourceDefinition
 	err := fakeClientBuilder.Get(context.TODO(), client.ObjectKey{Name: "Manifest"}, &updatedCRD)

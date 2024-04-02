@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -71,6 +72,9 @@ var (
 	scheme       = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
 	setupLog     = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 	buildVersion = "not_provided"               //nolint:gochecknoglobals // used to embed static binary version during release builds
+
+	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
+	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
 )
 
 func registerSchemas() {
@@ -175,17 +179,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	addHealthChecks(mgr)
-	if flagVar.DropCrdStoredVersionMap != "" {
-		go func(crdVersions string) {
-			if mgr.GetCache().WaitForCacheSync(context.Background()) {
-				clnt := mgr.GetClient()
-				crd.DropStoredVersion(clnt, crdVersions)
-			} else {
-				setupLog.V(log.InfoLevel).Error(err, "unable to run storage version dropper")
-			}
-		}(flagVar.DropCrdStoredVersionMap)
-	}
-	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
+
+	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr)
+	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -205,14 +201,32 @@ func addHealthChecks(mgr manager.Manager) {
 	}
 }
 
-func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client,
-	cleanupIntervalInMinutes int,
-) {
+func cleanupStoredVersions(crdVersionsToDrop string, mgr manager.Manager) {
+	if crdVersionsToDrop == "" {
+		return
+	}
+
+	ctx := context.Background()
+	if !mgr.GetCache().WaitForCacheSync(ctx) {
+		setupLog.V(log.InfoLevel).Error(errFailedToDropStoredVersions, "failed to sync cache")
+		return
+	}
+
+	crd.DropStoredVersion(ctx, mgr.GetClient(), crdVersionsToDrop)
+}
+
+func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInMinutes int, mgr manager.Manager) {
+	ctx := context.Background()
+	if !mgr.GetCache().WaitForCacheSync(ctx) {
+		setupLog.V(log.InfoLevel).Error(errFailedToScheduleMetricsCleanupJob, "failed to sync cache")
+		return
+	}
+
 	scheduler := gocron.NewScheduler(time.UTC)
 	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), metricCleanupTimeout)
+		ctx, cancel := context.WithTimeout(ctx, metricCleanupTimeout)
 		defer cancel()
-		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, kcpClient); err != nil {
+		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, mgr.GetClient()); err != nil {
 			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
 		}
 	})
@@ -221,6 +235,7 @@ func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Cl
 			scheduleErr))
 	}
 	scheduler.StartAsync()
+	setupLog.V(log.DebugLevel).Info("scheduled job for cleaning up metrics")
 }
 
 func enableWebhooks(mgr manager.Manager) {
