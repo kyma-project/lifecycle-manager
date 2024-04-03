@@ -1,9 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Adds namespace to all resources.
-namespace: kcp-system
-
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
 # "wordpress" becomes "alices-wordpress".
@@ -37,6 +34,7 @@ patches:
 resources:
 - ../manager
 - ../certmanager
+- namespace_create.yaml
 
 components:
   - ../crd
@@ -51,82 +49,46 @@ components:
   # [GRAFANA] To generate configmap for provision grafana dashboard
   #- ../grafana
 
-replacements:
-# substitutes CERTIFICATE_NAMESPACE, the namespace of the certificate CR
-- source:
+transformers:
+- |-
+  apiVersion: builtin
+  kind: NamespaceTransformer
+  metadata:
+    name: adds-resources-to-kcp-system
+    namespace: kcp-system
+  unsetOnly: true
+  setRoleBindingSubjects: allServiceAccounts
+- |-
+  apiVersion: builtin
+  kind: AnnotationsTransformer
+  metadata:
+    name: add-ca-inject-annotation
+  annotations:
+    cert-manager.io/inject-ca-from: kcp-system/lifecycle-manager-serving-cert
+  fieldSpecs:
+  - kind: CustomResourceDefinition
+    path: metadata/annotations
+  - kind: ValidatingWebhookConfiguration
+    path: metadata/annotations
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-cert-dns-names
+  patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "lifecycle-manager-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "lifecycle-manager-webhook-service.kcp-system.svc.cluster.local"}]'
+  target:
     kind: Certificate
-    name: serving-cert # this name should match the one in certificate.yaml
-    fieldPath: metadata.namespace
-  targets:
-  - select:
-      kind: ValidatingWebhookConfiguration
-      name: validating-webhook-configuration
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 0
-  - select:
-      kind: CustomResourceDefinition
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 0
-# substitutes CERTIFICATE_NAME, the name of the certificate CR
-- source:
-    kind: Certificate
-    name: serving-cert # this name should match the one in certificate.yaml
-    fieldPath: metadata.name
-  targets:
-  - select:
-      kind: ValidatingWebhookConfiguration
-      name: validating-webhook-configuration
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 1
-  - select:
-      kind: CustomResourceDefinition
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 1
-# substitutes SERVICE_NAMESPACE, the namespace of the service
-- source:
-    kind: Service
+    name: lifecycle-manager-serving-cert
     version: v1
-    name: webhook-service
-    fieldpath: metadata.namespace
-  targets:
-  - select:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: serving-cert
-    fieldpaths:
-    - spec.dnsNames.0
-    - spec.dnsNames.1
-    options:
-      delimiter: '.'
-      index: 1
-# substitutes SERVICE_NAME, the name of the service
-- source:
-    kind: Service
+    group: cert-manager.io
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-validating-webhook-namespace
+  patch: '[{"op": "replace", "path": "/webhooks/0/clientConfig/service/namespace", "value": "kcp-system"}]'
+  target:
+    kind: ValidatingWebhookConfiguration
+    name: lifecycle-manager-validating-webhook-configuration
     version: v1
-    name: webhook-service
-    fieldpath: metadata.name
-  targets:
-  - select:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: serving-cert
-    fieldpaths:
-    - spec.dnsNames.0
-    - spec.dnsNames.1
-    options:
-      delimiter: '.'
-      index: 0
+    group: admissionregistration.k8s.io
