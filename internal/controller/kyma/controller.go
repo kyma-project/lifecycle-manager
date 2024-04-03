@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package kyma
 
 import (
 	"context"
@@ -34,6 +34,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	kymactx "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/context"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
@@ -119,7 +120,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
-	ctx, err := r.getSyncedContext(ctx, kyma)
+	ctx = kymactx.Set(ctx, kyma)
+	err := r.EnsureSkrConnectivityUC.Execute(ctx)
 
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 		logger.Info("access secret not found for kyma, assuming already deleted cluster")
