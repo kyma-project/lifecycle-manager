@@ -51,5 +51,5 @@ func (m *MemoryClientCache) Size() int {
 
 func jitter() time.Duration {
 	randJitter, _ := rand.Int(rand.Reader, big.NewInt(jitterMaxSeconds))
-	return time.Duration(randJitter.Int64()) * time.Second
+	return time.Duration(randJitter.Int64()+1) * time.Second
 }
