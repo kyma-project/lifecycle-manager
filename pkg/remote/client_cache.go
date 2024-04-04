@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	// TTL is between 23 and 25 hours
+	// TTL is between 23 and 25 hours.
 	ttlInSecondsLower, ttlInSecondsUpper = 23 * 60 * 60, 25 * 60 * 60
 )
 
@@ -33,7 +33,7 @@ func (c *ClientCache) Get(key client.ObjectKey) Client {
 }
 
 func (c *ClientCache) Add(key client.ObjectKey, value Client) {
-	c.internal.Set(key, value, getRandomTtl())
+	c.internal.Set(key, value, getRandomTTL())
 }
 
 func (c *ClientCache) Delete(key client.ObjectKey) {
@@ -44,7 +44,7 @@ func (c *ClientCache) Size() int {
 	return c.internal.Len()
 }
 
-func getRandomTtl() time.Duration {
+func getRandomTTL() time.Duration {
 	randomRange, _ := rand.Int(rand.Reader, big.NewInt(int64(ttlInSecondsUpper-ttlInSecondsLower)))
 	return time.Duration(randomRange.Int64()+int64(ttlInSecondsLower)) * time.Second
 }

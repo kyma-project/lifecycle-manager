@@ -15,7 +15,7 @@ type ClientCache interface {
 }
 
 const (
-	// TTL is between 23 and 25 hours
+	// TTL is between 23 and 25 hours.
 	ttlInSecondsLower, ttlInSecondsUpper = 23 * 60 * 60, 25 * 60 * 60
 )
 
@@ -38,7 +38,7 @@ func (m *MemoryClientCache) GetClient(key string) Client {
 }
 
 func (m *MemoryClientCache) AddClient(key string, value Client) {
-	m.internal.Set(key, value, getRandomTtl())
+	m.internal.Set(key, value, getRandomTTL())
 }
 
 func (m *MemoryClientCache) DeleteClient(key string) {
@@ -49,7 +49,7 @@ func (m *MemoryClientCache) Size() int {
 	return m.internal.Len()
 }
 
-func getRandomTtl() time.Duration {
+func getRandomTTL() time.Duration {
 	randomRange, _ := rand.Int(rand.Reader, big.NewInt(int64(ttlInSecondsUpper-ttlInSecondsLower)))
 	return time.Duration(randomRange.Int64()+int64(ttlInSecondsLower)) * time.Second
 }
