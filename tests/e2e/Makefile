@@ -143,3 +143,6 @@ self-signed-certificate-rotation:
 
 misconfigured-kyma-secret:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Misconfigured Kyma Secret"
+
+rbac-privileges:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "RBAC Privileges"

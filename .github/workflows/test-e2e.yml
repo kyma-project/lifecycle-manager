@@ -50,7 +50,8 @@ jobs:
                     "self-signed-certificate-rotation",
                     "mandatory-module",
                     "mandatory-module-metrics",
-                    "misconfigured-kyma-secret"
+                    "misconfigured-kyma-secret",
+                    "rbac-privileges"
         ]
     name: "E2E"
     needs: [wait-for-img]
