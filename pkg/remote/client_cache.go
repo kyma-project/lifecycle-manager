@@ -45,6 +45,10 @@ func (c *ClientCache) Delete(key client.ObjectKey) {
 	c.internal.Delete(key)
 }
 
+func (c *ClientCache) Size() int {
+	return c.internal.Len()
+}
+
 func jitter() time.Duration {
 	return time.Duration(rand.Intn(jitterMaxSeconds)) * time.Second
 }

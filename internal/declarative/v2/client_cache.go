@@ -8,9 +8,9 @@ import (
 )
 
 type ClientCache interface {
-	Get(key string) Client
-	Add(key string, client Client)
-	Delete(key string)
+	GetClient(key string) Client
+	AddClient(key string, client Client)
+	DeleteClient(key string)
 }
 
 const (
@@ -28,7 +28,7 @@ func NewMemoryClientCache() *MemoryClientCache {
 	return cache
 }
 
-func (m *MemoryClientCache) Get(key string) Client {
+func (m *MemoryClientCache) GetClient(key string) Client {
 	ok := m.internal.Has(key)
 	if !ok {
 		return nil
@@ -42,12 +42,16 @@ func (m *MemoryClientCache) Get(key string) Client {
 	return clnt
 }
 
-func (m *MemoryClientCache) Add(key string, value Client) {
+func (m *MemoryClientCache) AddClient(key string, value Client) {
 	m.internal.Set(key, value, ttl+jitter())
 }
 
-func (m *MemoryClientCache) Delete(key string) {
+func (m *MemoryClientCache) DeleteClient(key string) {
 	m.internal.Delete(key)
+}
+
+func (m *MemoryClientCache) Size() int {
+	return m.internal.Len()
 }
 
 func jitter() time.Duration {
