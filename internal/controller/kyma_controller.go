@@ -153,7 +153,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *KymaReconciler) deleteRemoteClientCache(ctx context.Context, kyma *v1beta2.Kyma) {
 	logger := logf.FromContext(ctx)
 	logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
-	r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+	r.RemoteClientCache.Delete(client.ObjectKeyFromObject(kyma))
 }
 
 // getSyncedContext returns either the original context (in case Syncing is disabled) or initiates a sync-context
@@ -441,7 +441,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 			return ctrl.Result{}, err
 		}
 
-		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+		r.RemoteClientCache.Delete(client.ObjectKeyFromObject(kyma))
 		if err := remote.RemoveFinalizersFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
