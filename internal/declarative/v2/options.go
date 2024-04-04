@@ -37,7 +37,7 @@ func DefaultOptions() *Options {
 			KymaComponentTransform,
 			DisclaimerTransform,
 		),
-		WithSingletonClientCache(NewMemorySingletonClientCache()),
+		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
 		WithSkipReconcileOn(SkipReconcileOnDefaultLabelPresentAndTrue),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
@@ -302,7 +302,7 @@ func (o WithSkipReconcileOnOption) Apply(options *Options) {
 	options.ShouldSkip = o.skipReconcile
 }
 
-type ClientCacheKeyFn func(ctx context.Context, obj Object) (any, bool)
+type ClientCacheKeyFn func(ctx context.Context, obj Object) (string, bool)
 
 type WithClientCacheKeyOption struct {
 	ClientCacheKeyFn

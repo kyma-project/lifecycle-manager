@@ -575,7 +575,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 
 	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
 	if found {
-		clnt = r.GetClientFromCache(clientsCacheKey)
+		clnt = r.Get(clientsCacheKey)
 	}
 
 	if clnt == nil {
@@ -583,7 +583,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 		if err != nil {
 			return nil, err
 		}
-		r.SetClientInCache(clientsCacheKey, clnt)
+		r.Add(clientsCacheKey, clnt)
 	}
 
 	if r.Namespace != apimetav1.NamespaceNone && r.Namespace != apimetav1.NamespaceDefault {

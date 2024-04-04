@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,12 +23,12 @@ type ClientCache struct {
 	internal ttlcache.Cache[client.ObjectKey, Client]
 }
 
-func (cache *ClientCache) Get(key client.ObjectKey) Client {
-	ok := cache.internal.Has(key)
+func (c *ClientCache) Get(key client.ObjectKey) Client {
+	ok := c.internal.Has(key)
 	if !ok {
 		return nil
 	}
-	value := cache.internal.Get(key).Value()
+	value := c.internal.Get(key).Value()
 	clnt, ok := value.(Client)
 	if !ok {
 		return nil
@@ -38,12 +37,12 @@ func (cache *ClientCache) Get(key client.ObjectKey) Client {
 	return clnt
 }
 
-func (cache *ClientCache) Add(key client.ObjectKey, value Client) {
-	cache.internal.Set(key, value, ttl+jitter())
+func (c *ClientCache) Add(key client.ObjectKey, value Client) {
+	c.internal.Set(key, value, ttl+jitter())
 }
 
-func (cache *ClientCache) Delete(key client.ObjectKey) {
-	cache.internal.Delete(key)
+func (c *ClientCache) Delete(key client.ObjectKey) {
+	c.internal.Delete(key)
 }
 
 func jitter() time.Duration {
