@@ -54,8 +54,8 @@ const (
 	DefaultDropStoredVersion                                            = "v1alpha1"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
-	DefaultLeaderElectionLeaseDuration                                  = 120 * time.Second
-	DefaultLeaderElectionRenewDeadline                                  = 90 * time.Second
+	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
+	DefaultLeaderElectionRenewDeadline                                  = 120 * time.Second
 )
 
 var (
