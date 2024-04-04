@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	ttl              = 24 * time.Hour
-	jitterMaxSeconds = 120
+	// TTL is between 23 and 25 hours
+	ttlInSecondsLower, ttlInSecondsUpper = 23 * 60 * 60, 25 * 60 * 60
 )
 
 func NewClientCache() *ClientCache {
@@ -33,7 +33,7 @@ func (c *ClientCache) Get(key client.ObjectKey) Client {
 }
 
 func (c *ClientCache) Add(key client.ObjectKey, value Client) {
-	c.internal.Set(key, value, ttl+jitter())
+	c.internal.Set(key, value, getRandomTtl())
 }
 
 func (c *ClientCache) Delete(key client.ObjectKey) {
@@ -44,7 +44,7 @@ func (c *ClientCache) Size() int {
 	return c.internal.Len()
 }
 
-func jitter() time.Duration {
-	randJitter, _ := rand.Int(rand.Reader, big.NewInt(jitterMaxSeconds))
-	return time.Duration(randJitter.Int64()+1) * time.Second
+func getRandomTtl() time.Duration {
+	randomRange, _ := rand.Int(rand.Reader, big.NewInt(int64(ttlInSecondsUpper-ttlInSecondsLower)))
+	return time.Duration(randomRange.Int64()+int64(ttlInSecondsLower)) * time.Second
 }
