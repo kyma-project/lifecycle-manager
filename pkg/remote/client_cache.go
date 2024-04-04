@@ -1,7 +1,8 @@
 package remote
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
@@ -28,13 +29,7 @@ func (c *ClientCache) Get(key client.ObjectKey) Client {
 	if !ok {
 		return nil
 	}
-	value := c.internal.Get(key).Value()
-	clnt, ok := value.(Client)
-	if !ok {
-		return nil
-	}
-
-	return clnt
+	return c.internal.Get(key).Value()
 }
 
 func (c *ClientCache) Add(key client.ObjectKey, value Client) {
@@ -50,5 +45,6 @@ func (c *ClientCache) Size() int {
 }
 
 func jitter() time.Duration {
-	return time.Duration(rand.Intn(jitterMaxSeconds)) * time.Second
+	randJitter, _ := rand.Int(rand.Reader, big.NewInt(jitterMaxSeconds))
+	return time.Duration(randJitter.Int64()) * time.Second
 }

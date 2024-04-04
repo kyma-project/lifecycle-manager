@@ -1,7 +1,8 @@
 package v2
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
@@ -33,13 +34,7 @@ func (m *MemoryClientCache) GetClient(key string) Client {
 	if !ok {
 		return nil
 	}
-	value := m.internal.Get(key).Value()
-	clnt, ok := value.(Client)
-	if !ok {
-		return nil
-	}
-
-	return clnt
+	return m.internal.Get(key).Value()
 }
 
 func (m *MemoryClientCache) AddClient(key string, value Client) {
@@ -55,5 +50,6 @@ func (m *MemoryClientCache) Size() int {
 }
 
 func jitter() time.Duration {
-	return time.Duration(rand.Intn(jitterMaxSeconds)) * time.Second
+	randJitter, _ := rand.Int(rand.Reader, big.NewInt(jitterMaxSeconds))
+	return time.Duration(randJitter.Int64()) * time.Second
 }
