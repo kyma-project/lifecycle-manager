@@ -13,17 +13,7 @@ var _ = Describe("RBAC Privileges", func() {
 		It("Then KLM Service Account has the correct ClusterRoleBindings", func() {
 			klmClusterRoleBindings, err := ListKlmClusterRoleBindings(controlPlaneClient, ctx, "klm-controller-manager")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(klmClusterRoleBindings.Items).To(HaveLen(2))
-
-			gatewayRoleRules := []v1.PolicyRule{
-				{
-					APIGroups: []string{"networking.istio.io"},
-					Resources: []string{"gateways"},
-					Verbs:     []string{"get", "list"},
-				},
-			}
-			Expect(GetClusterRoleBindingPolicyRules(ctx, controlPlaneClient, "klm-manager-role-gateway",
-				klmClusterRoleBindings)).To(Equal(gatewayRoleRules))
+			Expect(klmClusterRoleBindings.Items).To(HaveLen(1))
 
 			crdRoleRules := []v1.PolicyRule{
 				{
