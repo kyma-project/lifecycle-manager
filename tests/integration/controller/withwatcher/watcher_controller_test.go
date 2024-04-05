@@ -36,13 +36,13 @@ func crSpecUpdates(_ *istio.Client) error {
 	return nil
 }
 
-func gatewayUpdated(customIstioClient *istio.Client, namespace string) error {
+func gatewayUpdated(customIstioClient *istio.Client) error {
 	watcher, err := getWatcher(componentToBeUpdated)
 	if err != nil {
 		return err
 	}
 	gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcher.Spec.Gateway.LabelSelector,
-		namespace)
+		kcpSystemNs)
 	if err != nil {
 		return err
 	}

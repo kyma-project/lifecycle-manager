@@ -3,6 +3,7 @@ package flags
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -53,11 +54,14 @@ const (
 	DefaultDropStoredVersion                                            = "v1alpha1"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
+	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
+	DefaultLeaderElectionRenewDeadline                                  = 120 * time.Second
 )
 
 var (
-	errMissingWatcherImageTag = errors.New("runtime watcher image tag is not provided")
-	errWatcherDirNotExist     = errors.New("failed to locate watcher resource manifest folder")
+	errMissingWatcherImageTag      = errors.New("runtime watcher image tag is not provided")
+	errWatcherDirNotExist          = errors.New("failed to locate watcher resource manifest folder")
+	errLeaderElectionTimeoutConfig = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
 )
 
 //nolint:funlen // defines all program flags
@@ -91,6 +95,10 @@ func DefineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.DurationVar(&flagVar.LeaderElectionLeaseDuration, "leader-election-lease-duration",
+		DefaultLeaderElectionLeaseDuration, "Configures the 'LeaseDuration' option of the controller-runtime library used to run the controller manager process.")
+	flag.DurationVar(&flagVar.LeaderElectionRenewDeadline, "leader-election-renew-deadline",
+		DefaultLeaderElectionRenewDeadline, "Configures the 'RenewDeadline' option of the controller-runtime library used to run the controller manager process.")
 	flag.DurationVar(&flagVar.KymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		DefaultKymaRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
@@ -206,6 +214,8 @@ type FlagVar struct {
 	MetricsAddr                                    string
 	EnableDomainNameVerification                   bool
 	EnableLeaderElection                           bool
+	LeaderElectionLeaseDuration                    time.Duration
+	LeaderElectionRenewDeadline                    time.Duration
 	EnablePurgeFinalizer                           bool
 	EnableKcpWatcher                               bool
 	EnableWebhooks                                 bool
@@ -271,6 +281,10 @@ func (f FlagVar) Validate() error {
 		if err != nil || !dirInfo.IsDir() {
 			return errWatcherDirNotExist
 		}
+	}
+
+	if f.LeaderElectionRenewDeadline >= f.LeaderElectionLeaseDuration {
+		return fmt.Errorf("%w (%.1f[s])", errLeaderElectionTimeoutConfig, f.LeaderElectionLeaseDuration.Seconds())
 	}
 
 	return nil
