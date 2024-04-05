@@ -53,6 +53,7 @@ type WatcherReconciler struct {
 	VirtualServiceFactory istio.VirtualServiceFactory
 	RestConfig            *rest.Config
 	Scheme                *machineryruntime.Scheme
+	IstioGatewayNamespace string
 	queue.RequeueIntervals
 }
 
@@ -142,7 +143,8 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector)
+	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
+		r.IstioGatewayNamespace)
 	if err != nil || len(gateways.Items) == 0 {
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherGatewayNotFound",
 			"Watcher: Gateway for the VirtualService not found")

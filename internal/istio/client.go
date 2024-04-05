@@ -33,7 +33,8 @@ func NewIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 	}, nil
 }
 
-func (c *Client) GetVirtualService(ctx context.Context, name, namespace string) (*istioclientapiv1beta1.VirtualService, error) {
+func (c *Client) GetVirtualService(ctx context.Context, name, namespace string) (*istioclientapiv1beta1.VirtualService,
+	error) {
 	virtualService, err := c.NetworkingV1beta1().
 		VirtualServices(namespace).
 		Get(ctx, name, apimetav1.GetOptions{})
@@ -43,7 +44,8 @@ func (c *Client) GetVirtualService(ctx context.Context, name, namespace string) 
 	return virtualService, nil
 }
 
-func (c *Client) ListVirtualServices(ctx context.Context, namespace string) (*istioclientapiv1beta1.VirtualServiceList, error) {
+func (c *Client) ListVirtualServices(ctx context.Context, namespace string) (*istioclientapiv1beta1.VirtualServiceList,
+	error) {
 	virtualServiceList, err := c.NetworkingV1beta1().
 		VirtualServices(namespace).
 		List(ctx, apimetav1.ListOptions{})
@@ -90,7 +92,8 @@ func (c *Client) DeleteVirtualService(ctx context.Context, name, namespace strin
 	return nil
 }
 
-func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector *apimetav1.LabelSelector) (*istioclientapiv1beta1.GatewayList,
+func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector *apimetav1.LabelSelector,
+	gatewayNamespace string) (*istioclientapiv1beta1.GatewayList,
 	error,
 ) {
 	selector, err := apimetav1.LabelSelectorAsSelector(labelSelector)
@@ -100,7 +103,7 @@ func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector 
 
 	selectorString := selector.String()
 	gateways, err := c.NetworkingV1beta1().
-		Gateways(apimetav1.NamespaceAll).
+		Gateways(gatewayNamespace).
 		List(ctx, apimetav1.ListOptions{
 			LabelSelector: selectorString,
 		})

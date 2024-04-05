@@ -225,11 +225,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controller.WatcherReconciler{
-		Client:           k8sManager.GetClient(),
-		RestConfig:       k8sManager.GetConfig(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
-		Scheme:           k8sclientscheme.Scheme,
-		RequeueIntervals: intervals,
+		Client:                k8sManager.GetClient(),
+		RestConfig:            k8sManager.GetConfig(),
+		EventRecorder:         k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
+		Scheme:                k8sclientscheme.Scheme,
+		RequeueIntervals:      intervals,
+		IstioGatewayNamespace: kcpSystemNs,
 	}).SetupWithManager(
 		k8sManager, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,

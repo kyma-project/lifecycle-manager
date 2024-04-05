@@ -404,6 +404,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 			Error:   flags.DefaultKymaRequeueErrInterval,
 			Warning: flags.DefaultKymaRequeueWarningInterval,
 		},
+		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
 		os.Exit(1)
