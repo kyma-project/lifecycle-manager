@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.22.1
+go 1.22.2
 
 replace github.com/kyma-project/lifecycle-manager/api => ./api
 
@@ -14,7 +14,7 @@ require (
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240404131948-84f05fb48fc1
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
 	github.com/open-component-model/ocm v0.8.0
@@ -35,7 +35,7 @@ require (
 
 require (
 	github.com/go-co-op/gocron v1.37.0
-	github.com/kyma-project/template-operator/api v0.0.0-20240307063418-941f23f566fe
+	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.0
 	k8s.io/api v0.29.3
 	k8s.io/apiextensions-apiserver v0.29.3

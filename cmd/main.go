@@ -66,7 +66,11 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const metricCleanupTimeout = 5 * time.Minute
+const (
+	metricCleanupTimeout    = 5 * time.Minute
+	bootstrapFailedExitCode = 1
+	runtimeProblemExitCode  = 2
+)
 
 var (
 	scheme       = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
@@ -100,7 +104,7 @@ func main() {
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 	if flagVar.Pprof {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
@@ -147,12 +151,14 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			HealthProbeBindAddress: flagVar.ProbeAddr,
 			LeaderElection:         flagVar.EnableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",
+			LeaseDuration:          &flagVar.LeaderElectionLeaseDuration,
+			RenewDeadline:          &flagVar.LeaderElectionRenewDeadline,
 			Cache:                  cacheOptions,
 		},
 	)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
@@ -160,7 +166,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnableKcpWatcher {
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
 			setupLog.Error(err, "failed to create skr webhook manager")
-			os.Exit(1)
+			os.Exit(bootstrapFailedExitCode)
 		}
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
@@ -188,7 +194,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		os.Exit(runtimeProblemExitCode)
 	}
 }
 
@@ -404,6 +410,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 			Error:   flags.DefaultKymaRequeueErrInterval,
 			Warning: flags.DefaultKymaRequeueWarningInterval,
 		},
+		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
 		os.Exit(1)

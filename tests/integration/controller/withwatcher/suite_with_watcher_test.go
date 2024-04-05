@@ -27,9 +27,6 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
-	istioapiv1beta1 "istio.io/api/networking/v1beta1"
-	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
-	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -172,7 +169,6 @@ var _ = BeforeSuite(func() {
 	Expect(createNamespace(suiteCtx, istioSystemNs, controlPlaneClient)).To(Succeed())
 	Expect(createNamespace(suiteCtx, kcpSystemNs, controlPlaneClient)).To(Succeed())
 
-	Expect(createGateway(suiteCtx, restCfg)).To(Succeed())
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
 	for _, istioResource := range istioResources {
@@ -225,11 +221,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controller.WatcherReconciler{
-		Client:           k8sManager.GetClient(),
-		RestConfig:       k8sManager.GetConfig(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
-		Scheme:           k8sclientscheme.Scheme,
-		RequeueIntervals: intervals,
+		Client:                k8sManager.GetClient(),
+		RestConfig:            k8sManager.GetConfig(),
+		EventRecorder:         k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
+		Scheme:                k8sclientscheme.Scheme,
+		RequeueIntervals:      intervals,
+		IstioGatewayNamespace: kcpSystemNs,
 	}).SetupWithManager(
 		k8sManager, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,
@@ -268,36 +265,4 @@ func createNamespace(ctx context.Context, namespace string, k8sClient client.Cli
 		},
 	}
 	return k8sClient.Create(ctx, ns)
-}
-
-func createGateway(ctx context.Context, restConfig *rest.Config) error {
-	gateway := &istioclientapiv1beta1.Gateway{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      gatewayName,
-			Namespace: kcpSystemNs,
-			Labels: map[string]string{
-				"app": gatewayName,
-			},
-		},
-		Spec: istioapiv1beta1.Gateway{
-			Servers: []*istioapiv1beta1.Server{
-				{
-					Port: &istioapiv1beta1.Port{
-						Number: 443,
-						Name:   "https",
-					},
-					Hosts: []string{"example.host"},
-				},
-			},
-			Selector: nil,
-		},
-	}
-
-	ic, err := istioclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-	_, err = ic.NetworkingV1beta1().Gateways(kcpSystemNs).Create(ctx, gateway, apimetav1.CreateOptions{})
-
-	return err
 }
