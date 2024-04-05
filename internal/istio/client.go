@@ -34,7 +34,8 @@ func NewIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 }
 
 func (c *Client) GetVirtualService(ctx context.Context, name, namespace string) (*istioclientapiv1beta1.VirtualService,
-	error) {
+	error,
+) {
 	virtualService, err := c.NetworkingV1beta1().
 		VirtualServices(namespace).
 		Get(ctx, name, apimetav1.GetOptions{})
@@ -45,7 +46,8 @@ func (c *Client) GetVirtualService(ctx context.Context, name, namespace string) 
 }
 
 func (c *Client) ListVirtualServices(ctx context.Context, namespace string) (*istioclientapiv1beta1.VirtualServiceList,
-	error) {
+	error,
+) {
 	virtualServiceList, err := c.NetworkingV1beta1().
 		VirtualServices(namespace).
 		List(ctx, apimetav1.ListOptions{})
