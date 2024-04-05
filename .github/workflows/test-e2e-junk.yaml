@@ -6,7 +6,7 @@ jobs:
   wait-for-image-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/wait-for-image-build
+      - uses: ./.github/actions/wait-for-image-build
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
@@ -17,6 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: foo
-        uses: actions/hello-world-action
+        uses: ./.github/actions/hello-world-action
         with:
           who-to-greet: 'Mona the Octocat'
