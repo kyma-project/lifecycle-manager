@@ -108,13 +108,167 @@
       "type": "stat"
     },
     {
+      "datasource": "VictoriaMetrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "left",
+            "filterable": false
+          },
+          "mappings": [
+            {
+              "from": "",
+              "id": 1,
+              "text": "",
+              "to": "",
+              "type": 1,
+              "value": ""
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "image"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 80,
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.29",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count by (image) (group by (shoot, image) (kube_pod_container_info{namespace=\"kyma-system\",pod=~\"skr-webhook-.*\"}))",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "Shoots",
+          "refId": "Shoots"
+        }
+      ],
+      "title": "Images on Shoots",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Count",
+              "image": "Image"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "VictoriaMetrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 82,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.29",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (kube_deployment_status_replicas_unavailable{deployment=\"skr-webhook\"})) OR on() vector(0)",
+          "format": "heatmap",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "Unready SKR Watcher Deployments",
+          "refId": "Unready SKR Watcher Deployments"
+        }
+      ],
+      "title": "Unready SKR Watcher Deployments",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 24
       },
       "id": 50,
       "panels": [],
@@ -168,7 +322,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 25
       },
       "id": 48,
       "options": {
@@ -216,7 +370,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 34
       },
       "hiddenSeries": false,
       "id": 52,
@@ -324,7 +478,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 34
       },
       "id": 54,
       "options": {
@@ -403,7 +557,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 43
       },
       "id": 56,
       "options": {
@@ -455,7 +609,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 51
       },
       "id": 68,
       "panels": [],
@@ -478,7 +632,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 70,
@@ -572,7 +726,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 72,
@@ -666,7 +820,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 44
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 73,
@@ -760,7 +914,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 44
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 74,
@@ -854,7 +1008,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 52
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 75,
@@ -948,7 +1102,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 52
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 76,
