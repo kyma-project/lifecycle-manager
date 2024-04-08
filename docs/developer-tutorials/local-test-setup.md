@@ -76,9 +76,9 @@ This setup is deployed with the following security features enabled:
       ```shell
       # build your local image
       make docker-build IMG=k3d-registry.localhost:5111/<your-image-name>:<your-image-tag>
-      # push it to the local registry
+      # push the image to the local registry
       make docker-push IMG=k3d-registry.localhost:5111/<your-image-name>:<your-image-tag>
-      # deploy using the image (note the change to port 5000 which is exposed in the cluster)
+      # deploy Lifecycle Manager using the image (note the change to port 5000 which is exposed in the cluster)
       make local-deploy-with-watcher IMG=k3d-registry.localhost:5000/<your-image-name>:<your-image-tag>
       ```
 
@@ -93,10 +93,10 @@ This setup is deployed with the following security features enabled:
    ```shell
    cd <local path to template operator repository>
    
-   # generates the manifests and saves them to a template-operator.yaml file
+   # generate the manifests and save them to the template-operator.yaml file
    make build-manifests
    
-   # create the a ModuleTemplate CR and saves it to a template-yaml file
+   # create the a ModuleTemplate CR and save it to the template.yaml file
    kyma alpha create module -p ./ --version 1.2.3 \
    --registry k3d-registry.localhost:5111 --insecure --module-config-file ./module-config.yaml
    ```
