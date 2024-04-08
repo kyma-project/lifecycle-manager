@@ -16,3 +16,4 @@ runs:
     - uses: ./.github/actions/install-istioctl
       with:
         istio_version: ${{ inputs.istio_version }}
+    - uses: ./.github/actions/install-kyma-cli
