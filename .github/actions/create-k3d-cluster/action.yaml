@@ -1,0 +1,29 @@
+name: Create k3d cluster
+description: Creates a k3d cluster.
+inputs:
+  cluster_name:
+    description: The name of the cluster to create.
+    required: true
+  args:
+    description: Additional arguments to pass to the k3d cluster create command separated by semicolon (;).
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Create k3d cluster
+      shell: bash
+      run: |
+        IFS=';' read -ra splitted_args <<< "${{ inputs.args }}"
+  
+        install_command="k3d cluster create kcp "
+          
+        for arg in "${splitted_args[@]}";
+        do
+          install_command+="$arg "
+        done
+          
+        install_command+="--image rancher/k3s:v$K8S_VERSION-k3s1 "
+        install_command+="--k3s-arg '--disable=traefik@server:*' "
+        install_command+="--k3s-arg '--tls-san=host.k3d.internal@server:*'"
+
+        echo "$install_command"
