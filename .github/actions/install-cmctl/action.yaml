@@ -1,0 +1,14 @@
+name: Install cmctl
+description: Downloads cmctl (cert-manager Command Line Tool) and installs it locally.
+runs:
+  using: "composite"
+  steps:
+    - name: Install cmctl
+      shell: bash
+      run: |
+        OS=$(go env GOOS)
+        ARCH=$(go env GOARCH)
+        
+        curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
+        tar xzf cmctl.tar.gz
+        sudo mv cmctl /usr/local/bin
