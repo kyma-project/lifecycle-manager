@@ -228,6 +228,16 @@ func Test_ConstantFlags(t *testing.T) {
 			constValue:    DefaultDropCrdStoredVersionMap,
 			expectedValue: "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1",
 		},
+		{
+			constName:     "DefaultLeaderElectionLeaseDuration",
+			constValue:    DefaultLeaderElectionLeaseDuration.String(),
+			expectedValue: (180 * time.Second).String(),
+		},
+		{
+			constName:     "DefaultLeaderElectionRenewDeadline",
+			constValue:    DefaultLeaderElectionRenewDeadline.String(),
+			expectedValue: (120 * time.Second).String(),
+		},
 	}
 	for _, testcase := range tests {
 		testcase := testcase

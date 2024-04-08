@@ -4,7 +4,6 @@ metadata:
   labels:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   name: metrics-service
-  namespace: system
 spec:
   ports:
   - name: metrics

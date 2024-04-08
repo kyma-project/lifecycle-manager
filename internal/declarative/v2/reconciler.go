@@ -222,7 +222,7 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
 		if ok {
 			logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
 				clientsCacheKey))
-			r.ClientCache.Delete(clientsCacheKey)
+			r.ClientCache.DeleteClient(clientsCacheKey)
 		}
 	}
 }
@@ -575,7 +575,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 
 	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
 	if found {
-		clnt = r.GetClientFromCache(clientsCacheKey)
+		clnt = r.GetClient(clientsCacheKey)
 	}
 
 	if clnt == nil {
@@ -583,7 +583,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 		if err != nil {
 			return nil, err
 		}
-		r.SetClientInCache(clientsCacheKey, clnt)
+		r.AddClient(clientsCacheKey, clnt)
 	}
 
 	if r.Namespace != apimetav1.NamespaceNone && r.Namespace != apimetav1.NamespaceDefault {

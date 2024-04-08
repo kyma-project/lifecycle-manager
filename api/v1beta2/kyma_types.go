@@ -117,7 +117,6 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 }
 
 // KymaStatus defines the observed state of Kyma
-// +kubebuilder:subresource:status
 type KymaStatus struct {
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").

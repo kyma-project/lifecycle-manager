@@ -43,7 +43,7 @@ func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client
 
 	skr := NewClientWithConfig(clnt, restConfig)
 
-	l.cache.Set(key, skr)
+	l.cache.Add(key, skr)
 
 	return skr, nil
 }

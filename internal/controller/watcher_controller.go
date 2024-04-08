@@ -53,16 +53,15 @@ type WatcherReconciler struct {
 	VirtualServiceFactory istio.VirtualServiceFactory
 	RestConfig            *rest.Config
 	Scheme                *machineryruntime.Scheme
+	IstioGatewayNamespace string
 	queue.RequeueIntervals
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers/finalizers,verbs=update
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;create;update;patch;delete
-// +kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;create;update;delete
+// +kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=list;get;
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
@@ -144,7 +143,8 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector)
+	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
+		r.IstioGatewayNamespace)
 	if err != nil || len(gateways.Items) == 0 {
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherGatewayNotFound",
 			"Watcher: Gateway for the VirtualService not found")
