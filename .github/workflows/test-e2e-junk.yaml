@@ -16,6 +16,10 @@ jobs:
   e2e-integration:
     needs: wait-for-image-build
     runs-on: ubuntu-latest
+    env:
+      K8S_VERSION: 1.28.7
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-tools
+        with:
+          k8s_version: ${{ env.K8S_VERSION }}

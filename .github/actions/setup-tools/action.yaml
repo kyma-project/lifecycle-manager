@@ -1,6 +1,12 @@
 name: Setup tools
 description: Downloads, installs and configures all the tools needed to setup and run the tests.
+inputs:
+  k8s_version:
+    description: 'The version of Kubernetes to install. For example, 1.28.7.'
+    required: true
 runs:
   using: "composite"
   steps:
     - uses: ./.github/actions/install-kubectl
+      with:
+        k8s_version: ${{ inputs.k8s_version }}
