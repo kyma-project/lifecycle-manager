@@ -10,6 +10,12 @@ inputs:
   k3d_version:
     description: 'The version of k3d to install. For example, 5.6.0.'
     required: true
+  go-version-file: 
+    description: The path to the Go version file.
+    required: true
+  cache-dependency-path:
+    description: The path to the Go dependency file.
+    required: true
 runs:
   using: "composite"
   steps:
@@ -21,6 +27,10 @@ runs:
     #     istio_version: ${{ inputs.istio_version }}
     # - uses: ./.github/actions/install-kyma-cli
     # - uses: ./.github/actions/install-cmctl
-    - uses: ./.github/actions/install-k3d
+    # - uses: ./.github/actions/install-k3d
+    #   with:
+    #     k3d_version: ${{ inputs.k3d_version }}
+    - uses: actions/setup-go@v4
       with:
-        k3d_version: ${{ inputs.k3d_version }}
+        go-version-file: ${{ inputs.go-version-file }}
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}

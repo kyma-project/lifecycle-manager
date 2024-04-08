@@ -20,6 +20,8 @@ jobs:
       K8S_VERSION: 1.28.7
       ISTIO_VERSION: 1.20.3
       K3D_VERSION: 5.6.0
+      GO_VERSION_FILE_PATH: lifecycle-manager/go.mod
+      CACHE_DEPENDENCY_PATH: lifecycle-manager/go.sum
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-tools
@@ -27,3 +29,5 @@ jobs:
           k8s_version: ${{ env.K8S_VERSION }}
           istio_version: ${{ env.ISTIO_VERSION }}
           k3d_version: ${{ env.K3D_VERSION }}
+          go-version-file: ${{ env.GO_VERSION_FILE_PATH }}
+          cache-dependency-path: ${{ env.CACHE_DEPENDENCY_PATH }}
