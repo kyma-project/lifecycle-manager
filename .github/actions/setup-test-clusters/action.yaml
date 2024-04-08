@@ -1,0 +1,6 @@
+name: Setup test clusters
+description: Creates and configures the KCP and SKR clusters.
+runs:
+  using: "composite"
+  steps:
+    - uses: ./lifecycle-manager/.github/actions/configure-hosts

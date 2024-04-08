@@ -1,0 +1,16 @@
+name: Configure hosts
+description: Introduces an entry to the /etc/hosts file resolving k3d-kcp-registry to localhost.
+runs:
+  using: "composite"
+  steps:
+    - name: Configure hosts
+      shell: bash
+      run: |
+        FILE=/etc/hosts
+        if [ -f "$FILE" ]; then
+            sudo echo "127.0.0.1 k3d-kcp-registry" | sudo tee -a $FILE
+        else
+            echo "$FILE does not exist."
+            exit 1
+        fi
+        echo "/etc/hosts file patched"

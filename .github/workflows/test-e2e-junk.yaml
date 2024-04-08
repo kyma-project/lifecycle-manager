@@ -34,3 +34,4 @@ jobs:
           k3d_version: ${{ env.K3D_VERSION }}
           go-version-file: ${{ env.GO_VERSION_FILE_PATH }}
           cache-dependency-path: ${{ env.CACHE_DEPENDENCY_PATH }}
+      - uses: ./lifecycle-manager/.github/actions/setup-test-clusters
