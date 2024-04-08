@@ -18,8 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       K8S_VERSION: 1.28.7
+      ISTIO_VERSION: 1.20.3
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-tools
         with:
           k8s_version: ${{ env.K8S_VERSION }}
+          istio_version: ${{ env.ISTIO_VERSION }}
