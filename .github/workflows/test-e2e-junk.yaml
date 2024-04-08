@@ -23,8 +23,11 @@ jobs:
       GO_VERSION_FILE_PATH: lifecycle-manager/go.mod
       CACHE_DEPENDENCY_PATH: lifecycle-manager/go.sum
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-tools
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          path: lifecycle-manager
+      - uses: ./lifecycle-manager/.github/actions/setup-tools
         with:
           k8s_version: ${{ env.K8S_VERSION }}
           istio_version: ${{ env.ISTIO_VERSION }}
