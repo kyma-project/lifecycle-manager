@@ -1,0 +1,6 @@
+name: Setup tools
+description: Downloads, installs and configures all the tools needed to setup and run the tests.
+runs:
+  using: "composite"
+  steps:
+    - uses: ./.github/actions/install-kubectl
