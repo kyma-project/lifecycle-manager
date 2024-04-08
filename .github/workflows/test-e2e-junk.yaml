@@ -6,11 +6,13 @@ jobs:
   wait-for-image-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/wait-for-image-build
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
+      - run: |
+          echo Done...
+      # - uses: actions/checkout@v4
+      # - uses: ./.github/actions/wait-for-image-build
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
   e2e-integration:
     needs: wait-for-image-build
     runs-on: ubuntu-latest
