@@ -65,11 +65,11 @@ func (cc *ClusterClient) GetRESTConfig(
 }
 
 func WithClientCacheKey() declarativev2.WithClientCacheKeyOption {
-	cacheKey := func(ctx context.Context, resource declarativev2.Object) (any, bool) {
+	cacheKey := func(ctx context.Context, resource declarativev2.Object) (string, bool) {
 		logger := logf.FromContext(ctx)
 		manifest, ok := resource.(*v1beta2.Manifest)
 		if !ok {
-			return nil, false
+			return "", false
 		}
 
 		labelValue, err := internal.GetResourceLabel(resource, shared.KymaName)
@@ -79,7 +79,7 @@ func WithClientCacheKey() declarativev2.WithClientCacheKeyOption {
 			logger.V(internal.DebugLogLevel).Info(
 				"client can not been cached due to lack of expected label",
 				"resource", objectKey)
-			return nil, false
+			return "", false
 		}
 		cacheKey := GenerateCacheKey(labelValue, strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
 		return cacheKey, true
