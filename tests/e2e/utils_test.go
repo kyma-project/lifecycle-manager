@@ -31,7 +31,7 @@ var (
 
 const (
 	localHostname         = "0.0.0.0"
-	k3dHostname           = "host.k3d.internal"
+	k3dHostname           = "skr.cluster.local"
 	defaultRemoteKymaName = "default"
 	EventuallyTimeout     = 10 * time.Second
 	ConsistentDuration    = 20 * time.Second

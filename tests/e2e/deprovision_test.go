@@ -81,6 +81,10 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
+			cmd = exec.Command("sh", "../../scripts/tests/remove_host_from_coredns.sh")
+			out, err = cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
 		})
 
 		It("Then KCP Kyma CR is in \"Error\" State", func() {
