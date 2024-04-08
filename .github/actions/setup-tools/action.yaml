@@ -7,14 +7,20 @@ inputs:
   istio_version:
     description: 'The version of Istio to install. For example, 1.20.3.'
     required: true
+  k3d_version:
+    description: 'The version of k3d to install. For example, 5.6.0.'
+    required: true
 runs:
   using: "composite"
   steps:
-    - uses: ./.github/actions/install-kubectl
+    # - uses: ./.github/actions/install-kubectl
+    #   with:
+    #     k8s_version: ${{ inputs.k8s_version }}
+    # - uses: ./.github/actions/install-istioctl
+    #   with:
+    #     istio_version: ${{ inputs.istio_version }}
+    # - uses: ./.github/actions/install-kyma-cli
+    # - uses: ./.github/actions/install-cmctl
+    - uses: ./.github/actions/install-k3d
       with:
-        k8s_version: ${{ inputs.k8s_version }}
-    - uses: ./.github/actions/install-istioctl
-      with:
-        istio_version: ${{ inputs.istio_version }}
-    - uses: ./.github/actions/install-kyma-cli
-    - uses: ./.github/actions/install-cmctl
+        k3d_version: ${{ inputs.k3d_version }}
