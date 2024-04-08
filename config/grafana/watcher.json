@@ -21,9 +21,92 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 41,
   "links": [],
   "panels": [
+    {
+      "datasource": "VictoriaMetrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 78,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.29",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (runtime:apiserver:available))",
+          "format": "heatmap",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "SKR Count",
+          "refId": "SKR Count"
+        },
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (kube_deployment_spec_replicas{deployment=\"skr-webhook\"})) / count(group by (shoot) (runtime:apiserver:available)) * 100",
+          "format": "heatmap",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "SKR's with SKR Watcher Deployment",
+          "refId": "SKR's with SKR Watcher Deployment"
+        },
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (kube_deployment_spec_replicas{deployment=\"skr-webhook\"}))",
+          "format": "heatmap",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "SKR Watcher Deployment Count",
+          "refId": "SKR Watcher Deployment Count"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Usage",
+      "type": "stat"
+    },
     {
       "collapsed": false,
       "datasource": null,
@@ -31,7 +114,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 90
+        "y": 8
       },
       "id": 50,
       "panels": [],
@@ -85,7 +168,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 91
+        "y": 9
       },
       "id": 48,
       "options": {
@@ -133,7 +216,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 52,
@@ -153,7 +236,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -241,7 +324,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 100
+        "y": 18
       },
       "id": 54,
       "options": {
@@ -256,7 +339,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "targets": [
         {
           "exemplar": true,
@@ -320,7 +403,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 109
+        "y": 27
       },
       "id": 56,
       "options": {
@@ -372,7 +455,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 117
+        "y": 35
       },
       "id": 68,
       "panels": [],
@@ -395,7 +478,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 118
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 70,
@@ -415,7 +498,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -489,7 +572,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 118
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 72,
@@ -509,7 +592,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -583,7 +666,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 126
+        "y": 44
       },
       "hiddenSeries": false,
       "id": 73,
@@ -603,7 +686,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -677,7 +760,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 126
+        "y": 44
       },
       "hiddenSeries": false,
       "id": 74,
@@ -697,7 +780,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -771,7 +854,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 134
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 75,
@@ -791,7 +874,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -865,7 +948,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 134
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 76,
@@ -885,7 +968,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.28",
+      "pluginVersion": "7.5.29",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
