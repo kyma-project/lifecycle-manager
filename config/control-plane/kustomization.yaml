@@ -6,6 +6,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 namePrefix: klm- #kyma-lifecycle-manager
+
 # Labels to add to all resources and selectors.
 commonLabels:
   app.kubernetes.io/instance: kcp-lifecycle-manager
@@ -24,7 +25,7 @@ resources:
 
 components:
   - ../crd
-  - ../rbac
+  - ../rbac/namespace_bindings
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   - ../istio
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
@@ -65,6 +66,9 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --access-namespaces=kcp-system,kyma-system,istio-system
     target:
       kind: Deployment
     # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
@@ -84,6 +88,17 @@ patches:
 # Note1: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
 # Note2: the 'grafana_dashboard' label could be applied using a standard JSON patch, but a namespace must be patched here and it's better to have all related customizations in a single place. 
 transformers:
+- |-
+  apiVersion: builtin
+  kind: PrefixSuffixTransformer
+  metadata:
+    name: add-klm-prefix-to-resources
+  prefix: klm-
+  fieldSpecs:
+  - path: subjects/name
+    kind: RoleBinding
+  - path: subjects/name
+    kind: ClusterRoleBinding
 - |-
   apiVersion: builtin
   kind: NamespaceTransformer

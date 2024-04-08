@@ -110,7 +110,10 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
 
-	setupManager(flagVar, internal.DefaultCacheOptions(), scheme)
+	accessNamespaces := []string{}
+	accessNamespaces = append(accessNamespaces, strings.Split(flagVar.AccessNamespaces, ",")...)
+
+	setupManager(flagVar, internal.DefaultCacheOptions(accessNamespaces), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
@@ -407,6 +410,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 			Error:   flags.DefaultKymaRequeueErrInterval,
 			Warning: flags.DefaultKymaRequeueWarningInterval,
 		},
+		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
 		os.Exit(1)
