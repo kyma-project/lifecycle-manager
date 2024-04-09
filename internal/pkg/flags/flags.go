@@ -204,6 +204,9 @@ func DefineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.MetricsCleanupIntervalInMinutes, "metrics-cleanup-interval",
 		DefaultMetricsCleanupIntervalInMinutes,
 		"The interval at which the cleanup of non-existing kyma CRs metrics runs.")
+	flag.StringVar(&flagVar.AccessNamespaces, "access-namespaces", "",
+		"The namespaces to which the manager should have access to. If left empty, then the manager has access "+
+			"to all namespaces. Namespaces should be comma-separated e.g. 'kcp-system.kyma-system' ")
 	return flagVar
 }
 
@@ -266,6 +269,7 @@ type FlagVar struct {
 	WatcherResourceLimitsCPU               string
 	WatcherResourcesPath                   string
 	MetricsCleanupIntervalInMinutes        int
+	AccessNamespaces                       string
 }
 
 func (f FlagVar) Validate() error {

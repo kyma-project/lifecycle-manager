@@ -1,42 +1,55 @@
 package v2
 
 import (
-	"sync"
+	"crypto/rand"
+	"math/big"
+	"time"
+
+	"github.com/jellydator/ttlcache/v3"
 )
 
 type ClientCache interface {
-	GetClientFromCache(key any) Client
-	SetClientInCache(key any, client Client)
-	Delete(key any)
+	GetClient(key string) Client
+	AddClient(key string, client Client)
+	DeleteClient(key string)
 }
+
+const (
+	// TTL is between 23 and 25 hours.
+	ttlInSecondsLower, ttlInSecondsUpper = 23 * 60 * 60, 25 * 60 * 60
+)
 
 type MemoryClientCache struct {
-	cache sync.Map // Cluster specific
+	internal ttlcache.Cache[string, Client]
 }
 
-// NewMemorySingletonClientCache returns a new instance of MemoryClientCache.
-func NewMemorySingletonClientCache() *MemoryClientCache {
-	return &MemoryClientCache{
-		cache: sync.Map{},
-	}
+func NewMemoryClientCache() *MemoryClientCache {
+	cache := &MemoryClientCache{internal: *ttlcache.New[string, Client]()}
+	go cache.internal.Start()
+	return cache
 }
 
-func (r *MemoryClientCache) GetClientFromCache(key any) Client {
-	value, ok := r.cache.Load(key)
+func (m *MemoryClientCache) GetClient(key string) Client {
+	ok := m.internal.Has(key)
 	if !ok {
 		return nil
 	}
-	clnt, ok := value.(Client)
-	if !ok {
-		return nil
-	}
-	return clnt
+	return m.internal.Get(key).Value()
 }
 
-func (r *MemoryClientCache) SetClientInCache(key any, client Client) {
-	r.cache.Store(key, client)
+func (m *MemoryClientCache) AddClient(key string, value Client) {
+	m.internal.Set(key, value, getRandomTTL())
 }
 
-func (r *MemoryClientCache) Delete(key any) {
-	r.cache.Delete(key)
+func (m *MemoryClientCache) DeleteClient(key string) {
+	m.internal.Delete(key)
+}
+
+func (m *MemoryClientCache) Size() int {
+	return m.internal.Len()
+}
+
+func getRandomTTL() time.Duration {
+	randomRange, _ := rand.Int(rand.Reader, big.NewInt(int64(ttlInSecondsUpper-ttlInSecondsLower)))
+	return time.Duration(randomRange.Int64()+int64(ttlInSecondsLower)) * time.Second
 }
