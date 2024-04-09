@@ -1,8 +1,11 @@
 name: Apply test-specific patches
 description: Applies test-specific patches to kustomize.
 inputs:
-  k8s_version:
-    description: 'The version of Kubernetes to install. For example, 1.28.7.'
+  klm_version_tag:
+    description: The version tag for the KLM image. For example, PR-123.
+    required: true
+  klm_image_repo:
+    description: The repository for the KLM image. For example, dev.
     required: true
 runs:
   using: "composite"
@@ -23,3 +26,70 @@ runs:
         cat purge_finalizer.yaml
         kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
         popd
+    - name: Patch metrics cleanup interval
+      if : ${{ matrix.e2e-test == 'kyma-metrics' }}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd config/watcher_local_test
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --metrics-cleanup-interval=1" >> metrics_cleanup.yaml
+        cat metrics_cleanup.yaml
+        kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment
+        popd
+    - name: Patch self signed certificate lifetime
+      if: ${{matrix.e2e-test == 'self-signed-certificate-rotation'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd config/watcher_local_test
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-duration=1h
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-before=59m
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+        cat self-signed-cert.yaml
+        kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
+        popd
+    - name: Patch CA certificate renewBefore
+      if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd config/watcher_local_test
+        echo \
+        "- op: replace
+          path: /spec/renewBefore
+          value: 59m 
+        - op: replace
+          path: /spec/duration
+          value: 1h">> certificate_renewal.yaml
+        cat certificate_renewal.yaml
+        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving-cert
+        popd
+    - name: Deploy LM local testing kustomize
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        maxRetry=5
+        for retry in $(seq 1 $maxRetry)
+        do
+          if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/${{ inputs.klm_image_repo }}/lifecycle-manager:${{ inputs.klm_version_tag }}; then
+            kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=90s
+            echo "KLM deployed successfully"
+            exit 0
+          elif [[ $retry -lt $maxRetry ]]; then
+            echo "Deploy encountered some error, will retry after 20 seconds"
+            sleep 20
+          else
+            echo "KLM deployment failed"
+            exit 1
+          fi
+        done
