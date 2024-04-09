@@ -20,6 +20,7 @@ jobs:
       K8S_VERSION: 1.28.7
       ISTIO_VERSION: 1.20.3
       K3D_VERSION: 5.6.0
+      CERT_MANAGER_VERSION: 1.13.3
       GO_VERSION_FILE_PATH: lifecycle-manager/go.mod
       CACHE_DEPENDENCY_PATH: lifecycle-manager/go.sum
     steps:
@@ -37,4 +38,6 @@ jobs:
       - uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ env.K8S_VERSION }}
+          cert_manager_version: ${{ env.CERT_MANAGER_VERSION }}
+
       
