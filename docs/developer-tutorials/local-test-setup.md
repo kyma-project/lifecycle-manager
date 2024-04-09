@@ -71,12 +71,15 @@ This setup is deployed with the following security features enabled:
 
    <details>
       <summary>Custom Lifecycle Manager image deployment</summary>
-      If you want to test a custom image of Lifecycle Manager, adapt the `IMG` variable in `Makefile` and run the following:
+      If you want to test a custom image of Lifecycle Manager, run the following:
 
       ```shell
-      make docker-build
-      make docker-push
-      make local-deploy-with-watcher IMG=<image-name>:<image-tag>
+      # build your local image
+      make docker-build IMG=k3d-registry.localhost:5111/<your-image-name>:<your-image-tag>
+      # push the image to the local registry
+      make docker-push IMG=k3d-registry.localhost:5111/<your-image-name>:<your-image-tag>
+      # deploy Lifecycle Manager using the image (note the change to port 5000 which is exposed in the cluster)
+      make local-deploy-with-watcher IMG=k3d-registry.localhost:5000/<your-image-name>:<your-image-tag>
       ```
 
    </details>
@@ -88,8 +91,14 @@ This setup is deployed with the following security features enabled:
    Adjust the path to your `template-operator` local directory or any other reference module operator accordingly.
 
    ```shell
-   kyma alpha create module -p ../template-operator --version 1.2.3 \
-   --registry k3d-registry.localhost:5111 --insecure --module-config-file ../template-operator/module-config.yaml
+   cd <local path to template operator repository>
+   
+   # generate the manifests and save them to the template-operator.yaml file
+   make build-manifests
+   
+   # create the a ModuleTemplate CR and save it to the template.yaml file
+   kyma alpha create module -p ./ --version 1.2.3 \
+   --registry k3d-registry.localhost:5111 --insecure --module-config-file ./module-config.yaml
    ```
 
 6. Verify images pushed to the local registry:
@@ -125,7 +134,7 @@ This setup is deployed with the following security features enabled:
 8. Apply the template:
 
    ```shell
-   kubectl apply -f template.yaml
+   kubectl apply -f ./template.yaml
    ```
 
 ### SKR cluster setup
