@@ -1,9 +1,12 @@
+name: TestSuite E2E Junk
+
 on:
   pull_request:
     branches: [ "main" ]
 
 jobs:
   wait-for-image-build:
+    name: "Wait for image build"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,8 +54,10 @@ jobs:
           repository: kyma-project/template-operator
           path: template-operator
       - uses: ./lifecycle-manager/.github/actions/get-configuration
+        name: Get configuration
         id: configuration
       - uses: ./lifecycle-manager/.github/actions/setup-tools
+        name: Setup tools
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           istio_version: ${{ steps.configuration.outputs.istio_version }}
@@ -60,15 +65,17 @@ jobs:
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
       - uses: ./lifecycle-manager/.github/actions/setup-test-clusters
+        name: Setup test clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
       - uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
+        name: Deploy lifecycle-manager
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - uses: ./lifecycle-manager/.github/actions/deploy-template-operator
-      - name: Run ${{ matrix.e2e-test }}
+      - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         run: |
           make -C tests/e2e ${{ matrix.e2e-test }}
