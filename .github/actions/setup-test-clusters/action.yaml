@@ -6,5 +6,9 @@ runs:
     - uses: ./lifecycle-manager/.github/actions/configure-hosts
     - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
       with:
-        cluster_name: kcp
+        cluster_name: skr
         args: "-p 10080:80@loadbalancer;-p 10443:443@loadbalancer"
+    - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
+      with:
+        cluster_name: kcp
+        args: "-p 9443:443@loadbalancer;-p 9080:80@loadbalancer;-p 9081:8080@loadbalancer;--registry-create k3d-kcp-registry:5111"

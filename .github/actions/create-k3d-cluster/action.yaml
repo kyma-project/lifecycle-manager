@@ -15,7 +15,7 @@ runs:
       run: |
         IFS=';' read -ra splitted_args <<< "${{ inputs.args }}"
   
-        install_command="k3d cluster create kcp "
+        install_command="k3d cluster create ${{ inputs.cluster_name }} "
           
         for arg in "${splitted_args[@]}";
         do
