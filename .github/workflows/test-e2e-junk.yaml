@@ -48,33 +48,41 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: lifecycle-manager
+
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:
           repository: kyma-project/template-operator
           path: template-operator
-      - uses: ./lifecycle-manager/.github/actions/get-configuration
-        name: Get configuration
+
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
-      - uses: ./lifecycle-manager/.github/actions/setup-tools
-        name: Setup tools
+
+      - name: Setup tools
+        uses: ./lifecycle-manager/.github/actions/setup-tools
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           istio_version: ${{ steps.configuration.outputs.istio_version }}
           k3d_version: ${{ steps.configuration.outputs.k3d_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
-      - uses: ./lifecycle-manager/.github/actions/setup-test-clusters
-        name: Setup test clusters
+
+      - name: Setup test clusters
+        uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
-      - uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
-        name: Deploy lifecycle-manager
+
+      - name: Deploy lifecycle-manager
+        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
-      - uses: ./lifecycle-manager/.github/actions/deploy-template-operator
+
+      - name: Deploy template-operator
+        uses: ./lifecycle-manager/.github/actions/deploy-template-operator
+
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         run: |
