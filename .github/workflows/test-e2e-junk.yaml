@@ -6,13 +6,11 @@ jobs:
   wait-for-image-build:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          echo Done...
-      # - uses: actions/checkout@v4
-      # - uses: ./.github/actions/wait-for-image-build
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/wait-for-image-build
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
   e2e-integration:
     name: "E2E Tests"
     needs: wait-for-image-build
@@ -40,6 +38,8 @@ jobs:
           - "misconfigured-kyma-secret"
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      GOSUMDB: off
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v4
@@ -68,3 +68,7 @@ jobs:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
       - uses: ./lifecycle-manager/.github/actions/deploy-template-operator
+      - name: Run ${{ matrix.e2e-test }}
+        working-directory: lifecycle-manager
+        run: |
+          make -C tests/e2e ${{ matrix.e2e-test }}
