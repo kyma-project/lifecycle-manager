@@ -46,8 +46,6 @@ jobs:
           - "misconfigured-kyma-secret"
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      GOSUMDB: off
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v4

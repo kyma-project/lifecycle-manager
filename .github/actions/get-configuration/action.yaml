@@ -1,5 +1,5 @@
 name: Get configuration
-description: Defines configuration variables such as versions.
+description: Defines configuration variables such as versions. Exposes globally needed environment variables.
 outputs:
   k8s_version:
     description: The version of k8s to use. For example, 1.28.7.
@@ -32,3 +32,7 @@ runs:
         echo "cert_manager_version=1.13.3" >> $GITHUB_OUTPUT
         echo "klm_version_tag=PR-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
         echo "klm_image_repo=dev" >> $GITHUB_OUTPUT
+    - name: Expose environment variables
+      shell: bash
+      run: |
+        echo "GOSUMDB=off" >> $GITHUB_ENV
