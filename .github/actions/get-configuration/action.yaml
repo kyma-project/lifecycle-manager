@@ -13,6 +13,12 @@ outputs:
   cert_manager_version:
     description: The version of cert-manager to deploy. For example, 1.13.3.
     value: ${{ steps.define-variables.outputs.cert_manager_version }}
+  klm_version_tag:
+    description: The version tag for the KLM image. For example, PR-123.
+    value: ${{ steps.define-variables.outputs.klm_version_tag }}
+  klm_image_repo:
+    description: The repository for the KLM image. For example, dev.
+    value: ${{ steps.define-variables.outputs.klm_image_repo }}
 runs:
   using: "composite"
   steps:
@@ -24,3 +30,5 @@ runs:
         echo "istio_version=1.20.3" >> $GITHUB_OUTPUT
         echo "k3d_version=5.6.0" >> $GITHUB_OUTPUT
         echo "cert_manager_version=1.13.3" >> $GITHUB_OUTPUT
+        echo "klm_version_tag=PR-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+        echo "klm_image_repo=dev" >> $GITHUB_OUTPUT
