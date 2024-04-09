@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"io"
 	"os"
 	"path/filepath"
@@ -85,9 +86,26 @@ func NewTestNamespace(namespace string) *apicorev1.Namespace {
 	}
 }
 
-func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Environment, error) {
+type IntegrationTestSkrContextFactory struct {
+	testSkrClient remote.Client
+}
+
+func (f *IntegrationTestSkrContextFactory) Init(_ context.Context, _ *v1beta2.Kyma) error {
+	return nil
+}
+
+func (f *IntegrationTestSkrContextFactory) Get(_ context.Context) (*remote.SkrContext, error) {
+	return &remote.SkrContext{Client: f.testSkrClient}, nil
+}
+
+func NewIntegrationTestSkrContextFactory(skrClient remote.Client) *IntegrationTestSkrContextFactory {
+	return &IntegrationTestSkrContextFactory{testSkrClient: skrClient}
+}
+
+func NewSKRCluster(scheme *machineryruntime.Scheme) (remote.Client, *envtest.Environment, error) {
 	skrEnv := &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
+		//Scheme: scheme,
 	}
 	cfg, err := skrEnv.Start()
 	if err != nil {
@@ -105,14 +123,13 @@ func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Env
 	if err != nil {
 		return nil, nil, err
 	}
-
 	// TODO: replace with interface in Reconcilers
 	//remote.LocalClient = func() *rest.Config {
 	//	return authUser.Config()
 	//}
 
 	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
-	return skrClient, skrEnv, err
+	return remote.NewClientWithConfig(skrClient, authUser.Config()), skrEnv, err
 }
 
 func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.CustomResourceDefinition, error) {

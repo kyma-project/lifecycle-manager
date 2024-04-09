@@ -17,6 +17,7 @@ package withwatcher_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"os"
 	"path/filepath"
 	"testing"
@@ -67,17 +68,17 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	controlPlaneClient client.Client
-	runtimeClient      client.Client
-	k8sManager         manager.Manager
-	controlPlaneEnv    *envtest.Environment
-	runtimeEnv         *envtest.Environment
-	suiteCtx           context.Context
-	cancel             context.CancelFunc
-	restCfg            *rest.Config
-	istioResources     []*unstructured.Unstructured
-	remoteClientCache  *remote.ClientCache
-	logger             logr.Logger
+	k8sManager        manager.Manager
+	kcpClient         client.Client
+	kcpEnv            *envtest.Environment
+	skrClient         client.Client
+	skrEnv            *envtest.Environment
+	suiteCtx          context.Context
+	cancel            context.CancelFunc
+	restCfg           *rest.Config
+	istioResources    []*unstructured.Unstructured
+	remoteClientCache *remote.ClientCache
+	logger            logr.Logger
 )
 
 const (
@@ -118,13 +119,13 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
-	controlPlaneEnv = &envtest.Environment{
+	kcpEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
 		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	restCfg, err = controlPlaneEnv.Start()
+	restCfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restCfg).NotTo(BeNil())
 
@@ -150,8 +151,8 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	controlPlaneClient = k8sManager.GetClient()
-	runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
+	kcpClient = k8sManager.GetClient()
+	skrClient, skrEnv, err = NewSKRCluster(kcpClient.Scheme())
 	Expect(err).ToNot(HaveOccurred())
 
 	intervals := queue.RequeueIntervals{
@@ -166,8 +167,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	Expect(createNamespace(suiteCtx, istioSystemNs, controlPlaneClient)).To(Succeed())
-	Expect(createNamespace(suiteCtx, kcpSystemNs, controlPlaneClient)).To(Succeed())
+	Expect(createNamespace(suiteCtx, istioSystemNs, kcpClient)).To(Succeed())
+	Expect(createNamespace(suiteCtx, kcpSystemNs, kcpClient)).To(Succeed())
 
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
@@ -199,19 +200,21 @@ var _ = BeforeSuite(func() {
 	}
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
-
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
-		restCfg, k8sclientscheme.Scheme,
+		kcpClient,
 		caCertCache,
 		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
-	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
+
+	testSkrContextFactory := IntegrationTest
+	err = (&kyma.Reconciler{
+		Client: kcpClient,
+
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, nil),
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
@@ -247,14 +250,14 @@ var _ = AfterSuite(func() {
 	for _, istioResource := range istioResources {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(controlPlaneClient, istioResource).Should(Succeed())
+			WithArguments(kcpClient, istioResource).Should(Succeed())
 	}
 	// cancel environment context
 	cancel()
 
-	err := controlPlaneEnv.Stop()
+	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
-	err = runtimeEnv.Stop()
+	err = skrEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
 
