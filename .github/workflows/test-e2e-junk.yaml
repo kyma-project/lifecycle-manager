@@ -67,3 +67,4 @@ jobs:
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
+      - uses: ./lifecycle-manager/.github/actions/deploy-template-operator
