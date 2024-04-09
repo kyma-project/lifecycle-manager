@@ -28,9 +28,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: lifecycle-manager
+      - uses: ./lifecycle-manager/.github/actions/configure-variables
+        id: configuration
       - uses: ./lifecycle-manager/.github/actions/setup-tools
         with:
-          k8s_version: ${{ env.K8S_VERSION }}
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           istio_version: ${{ env.ISTIO_VERSION }}
           k3d_version: ${{ env.K3D_VERSION }}
           go-version-file: ${{ env.GO_VERSION_FILE_PATH }}
@@ -39,5 +41,7 @@ jobs:
         with:
           k8s_version: ${{ env.K8S_VERSION }}
           cert_manager_version: ${{ env.CERT_MANAGER_VERSION }}
-
+      - shell: bash
+        run: |
+          echo "TODO: ${KLM_VERSION_TAG}"
       

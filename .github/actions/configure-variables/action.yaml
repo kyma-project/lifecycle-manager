@@ -1,0 +1,18 @@
+name: Define (env) variables
+description: Defines variables such as versions and file paths. Where needed, those are also exported as environment variables.
+outputs:
+  k8s_version:
+    description: The version of k8s to use. For example, 1.28.7.
+    value: ${{ steps.define-variables.outputs.k8s_version }}
+runs:
+  using: "composite"
+  steps:
+    - name: Define variables
+      id: define-variables
+      shell: bash
+      run: |
+        echo "k8s_version=1.28.7" >> $GITHUB_OUTPUT
+    - name: Export env variables
+      shell: bash
+      run: |
+        echo "KLM_VERSION_TAG=latest" >> $GITHUB_ENV
