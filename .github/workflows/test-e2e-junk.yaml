@@ -13,7 +13,7 @@ jobs:
       - uses: ./.github/actions/wait-for-image-build
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
+          statusName: pull-lifecycle-mgr-build
   e2e-integration:
     name: "E2E Tests"
     needs: wait-for-image-build
