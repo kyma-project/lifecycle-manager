@@ -11,8 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -23,10 +21,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-// SKRWebhookManifestManager is a SKRWebhookManager implementation that applies
-// the SKR webhook's raw manifest using a native kube-client.
 type SKRWebhookManifestManager struct {
 	kcpClient          client.Client
+	skrContextFactory  remote.SkrContextFactory
 	config             SkrWebhookManagerConfig
 	kcpAddr            string
 	baseResources      []*unstructured.Unstructured
@@ -47,8 +44,7 @@ type SkrWebhookManagerConfig struct {
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
 
-func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
-	schema *machineryruntime.Scheme,
+func NewSKRWebhookManifestManager(kcpClient client.Client,
 	caCertificateCache *CACertificateCache,
 	managerConfig SkrWebhookManagerConfig,
 	certificateConfig CertificateConfig,
@@ -66,15 +62,12 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	if err != nil {
 		return nil, err
 	}
-	kcpClient, err := client.New(kcpConfig, client.Options{Scheme: schema})
-	if err != nil {
-		return nil, fmt.Errorf("can't create kcpClient: %w", err)
-	}
 	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient, gatewayConfig)
 	if err != nil {
 		return nil, err
 	}
 	return &SKRWebhookManifestManager{
+		kcpClient:          kcpClient,
 		config:             managerConfig,
 		certificateConfig:  certificateConfig,
 		kcpAddr:            resolvedKcpAddr,
@@ -87,13 +80,13 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	syncContext, err := remote.SyncContextFromContext(ctx)
+	skrContext, err := m.skrContextFactory.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get syncContext: %w", err)
+		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
-	certificateMgr := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
+	certificateMgr := NewCertificateManager(m.kcpClient, kyma.Name,
 		m.certificateConfig, m.caCertificateCache)
 
 	certificate, err := certificateMgr.CreateSelfSignedCert(ctx, kyma)
@@ -110,11 +103,11 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
 	resources, err := m.getSKRClientObjectsForInstall(
-		ctx, syncContext.ControlPlaneClient, kymaObjKey, m.config.RemoteSyncNamespace, logger)
+		ctx, kymaObjKey, m.config.RemoteSyncNamespace, logger)
 	if err != nil {
 		return err
 	}
-	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, resources,
+	err = runResourceOperationWithGroupedErrors(ctx, skrContext.Client, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.config.RemoteSyncNamespace)
 			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
@@ -145,11 +138,11 @@ func (m *SKRWebhookManifestManager) updateCertNotRenewMetrics(certificate *certm
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	syncContext, err := remote.SyncContextFromContext(ctx)
+	skrContext, err := m.skrContextFactory.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get syncContext: %w", err)
+		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
-	certificate := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
+	certificate := NewCertificateManager(m.kcpClient, kyma.Name,
 		m.certificateConfig, m.caCertificateCache)
 	if err = certificate.Remove(ctx); err != nil {
 		return err
@@ -158,7 +151,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, []v1beta2.Watcher{},
 		m.config.RemoteSyncNamespace)
 	skrClientObjects = append(skrClientObjects, genClientObjects...)
-	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, skrClientObjects,
+	err = runResourceOperationWithGroupedErrors(ctx, skrContext.Client, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.config.RemoteSyncNamespace)
 			err = clt.Delete(ctx, resource)
@@ -175,11 +168,11 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	return nil
 }
 
-func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client,
+func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Context,
 	kymaObjKey client.ObjectKey, remoteNs string, logger logr.Logger,
 ) ([]client.Object, error) {
 	var skrClientObjects []client.Object
-	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kcpClient, kymaObjKey, remoteNs)
+	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kymaObjKey, remoteNs)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +181,7 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 		return nil, err
 	}
 	skrClientObjects = append(skrClientObjects, resources...)
-	watchers, err := getWatchers(ctx, kcpClient)
+	watchers, err := getWatchers(ctx, m.kcpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +208,7 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 	return resources, nil
 }
 
-func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client,
+func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context,
 	kymaObjKey client.ObjectKey, remoteNs string,
 ) (*unstructuredResourcesConfig, error) {
 	tlsSecret := &apicorev1.Secret{}
@@ -224,7 +217,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		Name:      ResolveTLSCertName(kymaObjKey.Name),
 	}
 
-	if err := kcpClient.Get(ctx, certObjKey, tlsSecret); err != nil {
+	if err := m.kcpClient.Get(ctx, certObjKey, tlsSecret); err != nil {
 		if util.IsNotFound(err) {
 			return nil, &CertificateNotReadyError{}
 		}

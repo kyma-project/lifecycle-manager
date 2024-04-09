@@ -23,14 +23,14 @@ type resourceOperation func(ctx context.Context, clt client.Client, resource cli
 
 // runResourceOperationWithGroupedErrors loops through the resources and runs the passed operation
 // on each resource concurrently and groups their returned errors into one.
-func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Client,
+func runResourceOperationWithGroupedErrors(ctx context.Context, skrClient client.Client,
 	resources []client.Object, operation resourceOperation,
 ) error {
 	errGrp, grpCtx := errgroup.WithContext(ctx)
 	for idx := range resources {
 		resIdx := idx
 		errGrp.Go(func() error {
-			return operation(grpCtx, clt, resources[resIdx])
+			return operation(grpCtx, skrClient, resources[resIdx])
 		})
 	}
 	if err := errGrp.Wait(); err != nil {
