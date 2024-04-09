@@ -58,7 +58,7 @@ jobs:
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
-      - uses: ./lifecycle-manager/.github/actions/apply-test-specific-patches
+      - uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}

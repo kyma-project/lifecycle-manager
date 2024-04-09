@@ -1,5 +1,5 @@
-name: Apply test-specific patches
-description: Applies test-specific patches to kustomize.
+name: Deploy lifecycle-manager
+description: Applies test-specific patches to the lifecycle-manager kustomize and deploys it.
 inputs:
   klm_version_tag:
     description: The version tag for the KLM image. For example, PR-123.
