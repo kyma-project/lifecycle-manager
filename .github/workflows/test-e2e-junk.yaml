@@ -14,8 +14,32 @@ jobs:
       #     token: ${{ secrets.GITHUB_TOKEN }}
       #     statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
   e2e-integration:
+    name: "E2E Tests"
     needs: wait-for-image-build
+    strategy:
+      matrix:
+        e2e-test:
+          - "watcher-enqueue"
+          - "kyma-deprovision-with-foreground-propagation"
+          - "kyma-deprovision-with-background-propagation"
+          - "module-status-propagation"
+          - "kyma-metrics"
+          - "module-without-default-cr"
+          - "module-consistency"
+          - "non-blocking-deletion"
+          - "upgrade-under-deletion"
+          - "purge-controller"
+          - "purge-metrics"
+          - "module-upgrade-channel-switch"
+          - "module-upgrade-new-version"
+          - "skip-manifest-reconciliation"
+          - "ca-certificate-rotation"
+          - "self-signed-certificate-rotation"
+          - "mandatory-module"
+          - "mandatory-module-metrics"
+          - "misconfigured-kyma-secret"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v4
