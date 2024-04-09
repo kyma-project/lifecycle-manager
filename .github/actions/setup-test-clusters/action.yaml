@@ -22,3 +22,4 @@ runs:
     - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
       with:
         context_name: k3d-kcp
+    - uses: ./lifecycle-manager/.github/actions/deploy-istio
