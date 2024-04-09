@@ -18,19 +18,15 @@ runs:
       run: |
         IFS=';' read -ra splitted_args <<< "${{ inputs.args }}"
   
-        install_command="k3d cluster create ${{ inputs.cluster_name }} "
+        create_command="k3d cluster create ${{ inputs.cluster_name }} "
           
         for arg in "${splitted_args[@]}";
         do
-          install_command+="$arg "
+          create_command+="$arg "
         done
           
-        install_command+="--image rancher/k3s:v${{ inputs.k8s_version }}-k3s1 "
-        install_command+="--k3s-arg --disable=traefik@server:* "
-        install_command+="--k3s-arg --tls-san=host.k3d.internal@server:* "
+        create_command+="--image rancher/k3s:v${{ inputs.k8s_version }}-k3s1 "
+        create_command+="--k3s-arg --disable=traefik@server:* "
+        create_command+="--k3s-arg --tls-san=host.k3d.internal@server:* "
 
-        eval ${install_command}
-    - name: Test
-      shell: bash
-      run: |
-        k3d cluster list
+        eval ${create_command}
