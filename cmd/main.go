@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -46,7 +47,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
@@ -66,12 +66,19 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const metricCleanupTimeout = 5 * time.Minute
+const (
+	metricCleanupTimeout    = 5 * time.Minute
+	bootstrapFailedExitCode = 1
+	runtimeProblemExitCode  = 2
+)
 
 var (
 	scheme       = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
 	setupLog     = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 	buildVersion = "not_provided"               //nolint:gochecknoglobals // used to embed static binary version during release builds
+
+	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
+	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
 )
 
 func registerSchemas() {
@@ -84,7 +91,6 @@ func registerSchemas() {
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
 
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
-	machineryutilruntime.Must(v1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -98,13 +104,16 @@ func main() {
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 	if flagVar.Pprof {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
 
-	setupManager(flagVar, internal.DefaultCacheOptions(), scheme)
+	accessNamespaces := []string{}
+	accessNamespaces = append(accessNamespaces, strings.Split(flagVar.AccessNamespaces, ",")...)
+
+	setupManager(flagVar, internal.DefaultCacheOptions(accessNamespaces), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
@@ -142,12 +151,14 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			HealthProbeBindAddress: flagVar.ProbeAddr,
 			LeaderElection:         flagVar.EnableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",
+			LeaseDuration:          &flagVar.LeaderElectionLeaseDuration,
+			RenewDeadline:          &flagVar.LeaderElectionRenewDeadline,
 			Cache:                  cacheOptions,
 		},
 	)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
@@ -155,7 +166,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnableKcpWatcher {
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
 			setupLog.Error(err, "failed to create skr webhook manager")
-			os.Exit(1)
+			os.Exit(bootstrapFailedExitCode)
 		}
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
@@ -169,7 +180,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
-	setupSyncResourceReconciler(mgr)
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
 	}
@@ -178,21 +188,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	addHealthChecks(mgr)
-	if flagVar.DropCrdStoredVersionMap != "" {
-		go func(crdVersions string) {
-			if mgr.GetCache().WaitForCacheSync(context.Background()) {
-				clnt := mgr.GetClient()
-				crd.DropStoredVersion(clnt, crdVersions)
-			} else {
-				setupLog.V(log.InfoLevel).Error(err, "unable to run storage version dropper")
-			}
-		}(flagVar.DropCrdStoredVersionMap)
-	}
-	go runKymaMetricsCleanup(kymaMetrics, mgr.GetClient(), flagVar.MetricsCleanupIntervalInMinutes)
+
+	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr)
+	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		os.Exit(runtimeProblemExitCode)
 	}
 }
 
@@ -208,14 +210,32 @@ func addHealthChecks(mgr manager.Manager) {
 	}
 }
 
-func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Client,
-	cleanupIntervalInMinutes int,
-) {
+func cleanupStoredVersions(crdVersionsToDrop string, mgr manager.Manager) {
+	if crdVersionsToDrop == "" {
+		return
+	}
+
+	ctx := context.Background()
+	if !mgr.GetCache().WaitForCacheSync(ctx) {
+		setupLog.V(log.InfoLevel).Error(errFailedToDropStoredVersions, "failed to sync cache")
+		return
+	}
+
+	crd.DropStoredVersion(ctx, mgr.GetClient(), crdVersionsToDrop)
+}
+
+func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInMinutes int, mgr manager.Manager) {
+	ctx := context.Background()
+	if !mgr.GetCache().WaitForCacheSync(ctx) {
+		setupLog.V(log.InfoLevel).Error(errFailedToScheduleMetricsCleanupJob, "failed to sync cache")
+		return
+	}
+
 	scheduler := gocron.NewScheduler(time.UTC)
 	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), metricCleanupTimeout)
+		ctx, cancel := context.WithTimeout(ctx, metricCleanupTimeout)
 		defer cancel()
-		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, kcpClient); err != nil {
+		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, mgr.GetClient()); err != nil {
 			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
 		}
 	})
@@ -224,6 +244,7 @@ func runKymaMetricsCleanup(kymaMetrics *metrics.KymaMetrics, kcpClient client.Cl
 			scheduleErr))
 	}
 	scheduler.StartAsync()
+	setupLog.V(log.DebugLevel).Info("scheduled job for cleaning up metrics")
 }
 
 func enableWebhooks(mgr manager.Manager) {
@@ -389,6 +410,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 			Error:   flags.DefaultKymaRequeueErrInterval,
 			Warning: flags.DefaultKymaRequeueWarningInterval,
 		},
+		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
 		os.Exit(1)
@@ -436,15 +458,6 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
-		os.Exit(1)
-	}
-}
-
-func setupSyncResourceReconciler(mgr ctrl.Manager) {
-	if err := (&controller.SyncResourceReconciler{
-		Client: mgr.GetClient(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", shared.SyncResourceKind)
 		os.Exit(1)
 	}
 }

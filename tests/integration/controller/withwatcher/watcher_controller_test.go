@@ -41,7 +41,8 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	if err != nil {
 		return err
 	}
-	gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcher.Spec.Gateway.LabelSelector)
+	gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcher.Spec.Gateway.LabelSelector,
+		kcpSystemNs)
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,8 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 		if err := isListenerHTTPRouteConfigured(suiteCtx, customIstioClient, namespace, watcherCR); err != nil {
 			return err
 		}
-		gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcherCR.Spec.Gateway.LabelSelector)
+		gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcherCR.Spec.Gateway.LabelSelector,
+			namespace)
 		if err != nil {
 			return err
 		}
@@ -72,7 +74,8 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 			return err
 		}
 
-		if err := verifyWatcherConfiguredAsVirtualServiceOwner(suiteCtx, watcherCR.Name, namespace, watcherCR, customIstioClient); err != nil {
+		if err := verifyWatcherConfiguredAsVirtualServiceOwner(suiteCtx, watcherCR.Name, namespace, watcherCR,
+			customIstioClient); err != nil {
 			return err
 		}
 	}

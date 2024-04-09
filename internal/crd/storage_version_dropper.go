@@ -15,12 +15,11 @@ import (
 
 const resourceVersionPairCount = 2
 
-func DropStoredVersion(kcpClient client.Client, versionsToBeDropped string) {
+func DropStoredVersion(ctx context.Context, kcpClient client.Client, versionsToBeDropped string) {
 	logger := ctrl.Log.WithName("storage-version-migration")
 	versionsToBeDroppedMap := ParseStorageVersionsMap(versionsToBeDropped)
 	logger.V(log.DebugLevel).Info(fmt.Sprintf("Handling dropping stored versions for, %v",
 		versionsToBeDroppedMap))
-	ctx := context.TODO()
 	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
 	if err := kcpClient.List(ctx, crdList); err != nil {
 		logger.V(log.InfoLevel).Error(err, "unable to list CRDs")

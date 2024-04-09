@@ -84,11 +84,8 @@ rules:
   resources:
   - gateways
   verbs:
-  - create
-  - delete
   - get
   - list
-  - watch
 - apiGroups:
   - networking.istio.io
   resources:
@@ -98,7 +95,6 @@ rules:
   - delete
   - get
   - list
-  - patch
   - update
 - apiGroups:
   - operator.kyma-project.io
@@ -124,7 +120,6 @@ rules:
   - kymas/status
   verbs:
   - get
-  - list
   - patch
   - update
   - watch
@@ -148,32 +143,6 @@ rules:
   - update
 - apiGroups:
   - operator.kyma-project.io
-  resources:
-    - syncresources
-  verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-- apiGroups:
-    - operator.kyma-project.io
-  resources:
-    - syncresources/finalizers
-  verbs:
-    - update
-- apiGroups:
-    - operator.kyma-project.io
-  resources:
-    - syncresources/status
-  verbs:
-    - get
-    - patch
-    - update
-- apiGroups:
-    - operator.kyma-project.io
   resources:
   - watchers
   verbs:
