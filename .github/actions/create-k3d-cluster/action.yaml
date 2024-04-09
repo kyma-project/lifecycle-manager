@@ -30,3 +30,7 @@ runs:
         install_command+="--k3s-arg '--tls-san=host.k3d.internal@server:*'"
 
         echo "$install_command"
+    - name: Test
+      shell: bash
+      run: |
+        k3d cluster list
