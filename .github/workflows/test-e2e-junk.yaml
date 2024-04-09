@@ -16,32 +16,22 @@ jobs:
   e2e-integration:
     needs: wait-for-image-build
     runs-on: ubuntu-latest
-    env:
-      K8S_VERSION: 1.28.7
-      ISTIO_VERSION: 1.20.3
-      K3D_VERSION: 5.6.0
-      CERT_MANAGER_VERSION: 1.13.3
-      GO_VERSION_FILE_PATH: lifecycle-manager/go.mod
-      CACHE_DEPENDENCY_PATH: lifecycle-manager/go.sum
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v4
         with:
           path: lifecycle-manager
-      - uses: ./lifecycle-manager/.github/actions/configure-variables
+      - uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
       - uses: ./lifecycle-manager/.github/actions/setup-tools
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
-          istio_version: ${{ env.ISTIO_VERSION }}
-          k3d_version: ${{ env.K3D_VERSION }}
-          go-version-file: ${{ env.GO_VERSION_FILE_PATH }}
-          cache-dependency-path: ${{ env.CACHE_DEPENDENCY_PATH }}
+          istio_version: ${{ steps.configuration.outputs.istio_version }}
+          k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          go-version-file: lifecycle-manager/go.mod
+          cache-dependency-path: lifecycle-manager/go.sum
       - uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
-          k8s_version: ${{ env.K8S_VERSION }}
-          cert_manager_version: ${{ env.CERT_MANAGER_VERSION }}
-      - shell: bash
-        run: |
-          echo "TODO: ${KLM_VERSION_TAG}"
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
       

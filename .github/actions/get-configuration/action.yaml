@@ -1,0 +1,26 @@
+name: Define (env) variables
+description: Defines variables such as versions and file paths. Where needed, those are also exported as environment variables.
+outputs:
+  k8s_version:
+    description: The version of k8s to use. For example, 1.28.7.
+    value: ${{ steps.define-variables.outputs.k8s_version }}
+  istio_version:
+    description: The version of Istio to install. For example, 1.20.3.
+    value: ${{ steps.define-variables.outputs.istio_version }}
+  k3d_version:
+    description: The version of k3d to install. For example, 5.6.0.
+    value: ${{ steps.define-variables.outputs.k3d_version }}
+  cert_manager_version:
+    description: The version of cert-manager to deploy. For example, 1.13.3.
+    value: ${{ steps.define-variables.outputs.cert_manager_version }}
+runs:
+  using: "composite"
+  steps:
+    - name: Define variables
+      id: define-variables
+      shell: bash
+      run: |
+        echo "k8s_version=1.28.7" >> $GITHUB_OUTPUT
+        echo "istio_version=1.20.3" >> $GITHUB_OUTPUT
+        echo "k3d_version=5.6.0" >> $GITHUB_OUTPUT
+        echo "cert_manager_version=1.13.3" >> $GITHUB_OUTPUT
