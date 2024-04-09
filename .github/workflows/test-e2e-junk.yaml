@@ -78,7 +78,7 @@ jobs:
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
 
       - name: Deploy lifecycle-manager
-        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
+        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
