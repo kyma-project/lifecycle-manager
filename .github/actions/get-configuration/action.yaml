@@ -1,5 +1,5 @@
-name: Define (env) variables
-description: Defines variables such as versions and file paths. Where needed, those are also exported as environment variables.
+name: Get configuration
+description: Defines configuration variables such as versions.
 outputs:
   k8s_version:
     description: The version of k8s to use. For example, 1.28.7.
