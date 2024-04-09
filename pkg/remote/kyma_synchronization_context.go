@@ -51,11 +51,11 @@ func (s *SkrContext) DeleteKyma(ctx context.Context) error {
 	return nil
 }
 
-func (s *SkrContext) createOrUpdateCRD(ctx context.Context, plural string) error {
+func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Client, plural string) error {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
 	var err error
-	err = s.Client.Get(ctx, client.ObjectKey{
+	err = kcpClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
@@ -82,13 +82,13 @@ func (s *SkrContext) createOrUpdateCRD(ctx context.Context, plural string) error
 	return nil
 }
 
-func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
+func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma, err := s.getRemoteKyma(ctx)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := s.createOrUpdateCRD(ctx, shared.KymaKind.Plural()); err != nil {
+		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
 

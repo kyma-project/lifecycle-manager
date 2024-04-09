@@ -37,8 +37,8 @@ const (
 )
 
 var (
-	ErrNotFound                   = errors.New("resource not exists")
-	ErrNotDeleted                 = errors.New("resource not deleted")
+	ErrNotFound                   = errors.New("resource does not exist")
+	ErrNotDeleted                 = errors.New("resource has not been deleted")
 	ErrDeletionTimestampFound     = errors.New("deletion timestamp not nil")
 	ErrEmptyRestConfig            = errors.New("rest.Config is nil")
 	ErrSampleCrNotInExpectedState = errors.New("resource not in expected state")

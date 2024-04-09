@@ -260,7 +260,7 @@ func (r *Reconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1be
 	if err != nil {
 		return nil, fmt.Errorf("failed to get syncContext: %w", err)
 	}
-	remoteKyma, err := syncContext.CreateOrFetchKyma(ctx, controlPlaneKyma)
+	remoteKyma, err := syncContext.CreateOrFetchKyma(ctx, r.Client, controlPlaneKyma)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			return nil, err
