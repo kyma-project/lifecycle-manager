@@ -37,3 +37,4 @@ jobs:
       - uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ env.K8S_VERSION }}
+      
