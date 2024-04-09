@@ -1,0 +1,25 @@
+name: Apply test-specific patches
+description: Applies test-specific patches to kustomize.
+inputs:
+  k8s_version:
+    description: 'The version of Kubernetes to install. For example, 1.28.7.'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Patch purge finalizer flags
+      if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd config/watcher_local_test
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --enable-purge-finalizer=true
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+        cat purge_finalizer.yaml
+        kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+        popd
