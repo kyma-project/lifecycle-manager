@@ -26,8 +26,8 @@ runs:
         done
           
         install_command+="--image rancher/k3s:v${{ inputs.k8s_version }}-k3s1 "
-        install_command+="--k3s-arg '--disable=traefik@server:*' "
-        install_command+="--k3s-arg '--tls-san=host.k3d.internal@server:*'"
+        install_command+="--k3s-arg --disable=traefik@server:* "
+        install_command+="--k3s-arg --tls-san=host.k3d.internal@server:* "
 
         echo "$install_command"
     - name: Test
