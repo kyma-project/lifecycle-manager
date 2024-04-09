@@ -3,6 +3,11 @@ name: TestSuite E2E Junk
 on:
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      k8s_version:
+        description: "With Kubernetes version"
+        required: false
 
 jobs:
   wait-for-image-build:
