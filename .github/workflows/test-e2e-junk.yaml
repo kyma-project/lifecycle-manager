@@ -35,3 +35,5 @@ jobs:
           go-version-file: ${{ env.GO_VERSION_FILE_PATH }}
           cache-dependency-path: ${{ env.CACHE_DEPENDENCY_PATH }}
       - uses: ./lifecycle-manager/.github/actions/setup-test-clusters
+        with:
+          k8s_version: ${{ env.K8S_VERSION }}
