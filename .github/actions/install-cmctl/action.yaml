@@ -1,7 +1,7 @@
 name: Install cmctl
 description: Downloads cmctl (cert-manager Command Line Tool) and installs it locally.
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Install cmctl
       shell: bash

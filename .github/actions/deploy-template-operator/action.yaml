@@ -1,7 +1,7 @@
 name: Deploy template-operator
 description: Deploys a test-specific template-operator.
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Create Template Operator Module and apply
       working-directory: template-operator

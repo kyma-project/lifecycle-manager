@@ -8,7 +8,7 @@ inputs:
     description: The version of cert-manager to depoy. For example, 1.13.3.
     required: true
 runs:
-  using: "composite"
+  using: composite
   steps:
     - uses: ./lifecycle-manager/.github/actions/configure-hosts
     - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster

@@ -1,7 +1,7 @@
 name: Configure hosts
 description: Introduces an entry to the /etc/hosts file resolving k3d-kcp-registry to localhost.
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Configure hosts
       shell: bash

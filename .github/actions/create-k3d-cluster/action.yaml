@@ -11,7 +11,7 @@ inputs:
     description: Additional arguments to pass to the k3d cluster create command separated by semicolon (;).
     required: false
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Create k3d cluster
       shell: bash

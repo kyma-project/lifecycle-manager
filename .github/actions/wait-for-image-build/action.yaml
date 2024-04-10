@@ -16,7 +16,7 @@ inputs:
     required: false
     default: "10"
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Wait for image build
       id: wait-for-build

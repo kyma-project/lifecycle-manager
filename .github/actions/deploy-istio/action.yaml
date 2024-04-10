@@ -1,7 +1,7 @@
 name: Deploy istio
 description: Deploys istio in the currently configured context.
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Deploy istio
       shell: bash

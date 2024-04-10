@@ -2,10 +2,10 @@ name: Install kubectl
 description: Downloads kubectl and installs it locally. Follows the instructions for Debian-based distributions at https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management.
 inputs:
   k8s_version:
-    description: 'The version of Kubernetes to install. For example, 1.28.7.'
+    description: The version of Kubernetes to install. For example, 1.28.7.
     required: true
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Parse K8s minor version
       id: parse_k8s_minor_version

@@ -1,7 +1,7 @@
 name: Install kyma-cli
 description: Downloads kyma-cli and installs it locally.
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Install kyma-cli
       shell: bash

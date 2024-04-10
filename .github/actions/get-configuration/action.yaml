@@ -20,7 +20,7 @@ outputs:
     description: The repository for the KLM image. For example, dev.
     value: ${{ steps.define-variables.outputs.klm_image_repo }}
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Define variables
       id: define-variables
