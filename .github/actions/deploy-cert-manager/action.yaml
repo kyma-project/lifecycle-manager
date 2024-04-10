@@ -2,7 +2,7 @@ name: Deploy cert-manager
 description: Deploys cert-manager in the currently configured context.
 inputs:
   cert_manager_version:
-    description: The version of cert-manager to depoy. For example, 1.13.3.
+    description: The version of cert-manager to deploy. For example, 1.13.3.
     required: true
 runs:
   using: composite
