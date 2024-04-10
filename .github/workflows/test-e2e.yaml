@@ -21,7 +21,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           statusName: pull-lifecycle-mgr-build
   e2e-integration:
-    name: E2E Tests
+    name: E2E
     needs: wait-for-image-build
     strategy:
       matrix:
