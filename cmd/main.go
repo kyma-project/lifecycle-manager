@@ -110,7 +110,8 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
 
-	setupManager(flagVar, internal.DefaultCacheOptions(), scheme)
+	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged)
+	setupManager(flagVar, cacheOptions, scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {

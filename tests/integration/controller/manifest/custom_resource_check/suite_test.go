@@ -107,7 +107,7 @@ var _ = BeforeSuite(func() {
 	if !found {
 		metricsBindAddress = ":0"
 	}
-	cacheOpts := internal.DefaultCacheOptions("")
+	cacheOpts := internal.GetCacheOptions(false)
 	syncPeriod := 2 * time.Second
 	cacheOpts.SyncPeriod = &syncPeriod
 
