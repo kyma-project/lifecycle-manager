@@ -1,5 +1,4 @@
 packages:
-  cmd/main: 100
   config/samples/component-integration-installed/crd/v1beta1: 100
   config/samples/component-integration-installed/crd/v1beta2: 100
   internal: 100
