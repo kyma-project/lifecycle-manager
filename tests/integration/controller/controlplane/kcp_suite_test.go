@@ -18,6 +18,8 @@ package controlplane_test
 import (
 	"context"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"testing"
@@ -138,6 +140,15 @@ var _ = BeforeSuite(func() {
 	}
 
 	skrClient, skrEnv, err = NewSKRCluster(kcpClient.Scheme())
+	Expect(err).NotTo(HaveOccurred())
+	namespace := &apicorev1.Namespace{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:   shared.DefaultRemoteNamespace,
+			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+		},
+		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+	}
+	err = skrClient.Create(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(skrClient, skrEnv.Config))

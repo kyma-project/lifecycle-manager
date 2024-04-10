@@ -90,7 +90,7 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(ctx, kcpClient, moduleInKCP, kyma.Spec.Channel).
 			Should(Succeed())
 		By("ModuleTemplate exists in SKR cluster")
-		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, skrClient, moduleInKCP,
+		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, skrClient, moduleInSKR,
 			kyma.Spec.Channel).Should(Succeed())
 
 		By("No module synced to remote Kyma")
