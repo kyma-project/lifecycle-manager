@@ -309,6 +309,7 @@ func (r *Reconciler) renderResources(
 	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), r.Namespace)
 
 	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil {
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
 
@@ -348,7 +349,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		} else if status.State != shared.StateWarning {
-			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
+			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		}
 		return ErrWarningResourceSyncStateDiff
 	}
@@ -432,6 +433,7 @@ func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object
 			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
 				r.Event(obj, "Warning", "PreDelete", err.Error())
 				// we do not set a status here since it will be deleting if timestamp is set.
+				obj.SetStatus(obj.GetStatus().WithErr(err))
 				return err
 			}
 		}
@@ -496,6 +498,7 @@ func (r *Reconciler) pruneDiff(
 ) error {
 	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
 	if err != nil {
+		obj.SetStatus(obj.GetStatus().WithErr(err))
 		return err
 	}
 	if len(diff) == 0 {
@@ -514,9 +517,16 @@ func (r *Reconciler) pruneDiff(
 	// Remove this type casting while in progress this issue: https://github.com/kyma-project/lifecycle-manager/issues/1006
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
+		obj.SetStatus(obj.GetStatus().WithErr(v1beta2.ErrTypeAssertManifest))
 		return v1beta2.ErrTypeAssertManifest
 	}
-	return resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)
+	err = resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)
+	if err != nil {
+		obj.SetStatus(obj.GetStatus().WithErr(err))
+		return err
+	}
+
+	return nil
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object,
