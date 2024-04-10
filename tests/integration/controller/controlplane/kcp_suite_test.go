@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 
 	"go.uber.org/zap/zapcore"
@@ -39,7 +40,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -122,7 +122,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: UseRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.DefaultCacheOptions("Manifest:kcp-system;Kyma:kyma-system,kcp-system;ModuleTemplate:kcp-system,kyma-system"),
+			Cache:  internal.DefaultCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
