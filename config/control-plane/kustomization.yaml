@@ -68,7 +68,7 @@ patches:
         value: --is-kyma-managed
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --access-namespaces=kcp-system,kyma-system,istio-system
+        value: --access-namespaces=Manifest:kcp-system;Kyma:kcp-system,kyma-system;ModuleTemplate:kcp-system,kyma-system
     target:
       kind: Deployment
     # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication

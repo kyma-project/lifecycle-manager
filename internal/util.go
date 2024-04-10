@@ -11,12 +11,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 const (
 	DebugLogLevel = 2
 	TraceLogLevel = 3
+
+	resourceVersionPairCount = 2
 )
 
 func ParseManifestToObjects(path string) (ManifestResources, error) {
@@ -71,17 +75,47 @@ func GetResourceLabel(resource client.Object, labelName string) (string, error) 
 	return labelValue, nil
 }
 
-func DefaultCacheOptions(namespaces []string) cache.Options {
-	defaultNamespaces := map[string]cache.Config{}
-	for _, v := range namespaces {
-		defaultNamespaces[v] = cache.Config{}
-	}
+func DefaultCacheOptions(namespaces string) cache.Options {
+	namespacesMap := parseCacheNamespaces(namespaces)
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
 			&apicorev1.Secret{}: {
 				Label: k8slabels.Everything(),
 			},
+			&v1beta2.Kyma{}: {
+				Namespaces: getResourceNamespacesConfig(string(shared.KymaKind), namespacesMap),
+			},
+			&v1beta2.Manifest{}: {
+				Namespaces: getResourceNamespacesConfig(string(shared.ManifestKind), namespacesMap),
+			},
+			&v1beta2.ModuleTemplate{}: {
+				Namespaces: getResourceNamespacesConfig(string(shared.ModuleTemplateKind), namespacesMap),
+			},
 		},
-		DefaultNamespaces: defaultNamespaces,
 	}
+}
+
+func parseCacheNamespaces(namespaces string) map[string][]string {
+	namespacesMap := map[string]string{}
+	for _, pair := range strings.Split(namespaces, ";") {
+		if kv := strings.Split(pair, ":"); len(kv) == resourceVersionPairCount {
+			namespacesMap[kv[0]] = kv[1]
+		}
+	}
+
+	namespacesFormattedMap := map[string][]string{}
+	for k, v := range namespacesMap {
+		namespacesFormattedMap[k] = strings.Split(v, ",")
+	}
+
+	return namespacesFormattedMap
+}
+
+func getResourceNamespacesConfig(resource string, namespacesMap map[string][]string) map[string]cache.Config {
+	configCache := map[string]cache.Config{}
+	for _, namespace := range namespacesMap[resource] {
+		configCache[namespace] = cache.Config{}
+	}
+
+	return configCache
 }

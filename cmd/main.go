@@ -110,10 +110,7 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
 
-	accessNamespaces := []string{}
-	accessNamespaces = append(accessNamespaces, strings.Split(flagVar.AccessNamespaces, ",")...)
-
-	setupManager(flagVar, internal.DefaultCacheOptions(accessNamespaces), scheme)
+	setupManager(flagVar, internal.DefaultCacheOptions(flagVar.AccessNamespaces), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {

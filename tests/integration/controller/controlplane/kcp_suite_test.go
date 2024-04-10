@@ -122,7 +122,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: UseRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.DefaultCacheOptions([]string{"default", "kcp-system", "kyma-system", "istio-system"}),
+			Cache:  internal.DefaultCacheOptions("Manifest:kcp-system;Kyma:kyma-system,kcp-system;ModuleTemplate:kcp-system,kyma-system"),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

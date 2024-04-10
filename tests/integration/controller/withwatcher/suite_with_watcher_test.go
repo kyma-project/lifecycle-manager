@@ -146,7 +146,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: metricsBindAddress,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.DefaultCacheOptions([]string{}),
+			Cache:  internal.DefaultCacheOptions(""),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

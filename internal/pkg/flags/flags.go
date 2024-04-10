@@ -96,9 +96,11 @@ func DefineFlagVar() *FlagVar {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.LeaderElectionLeaseDuration, "leader-election-lease-duration",
-		DefaultLeaderElectionLeaseDuration, "Configures the 'LeaseDuration' option of the controller-runtime library used to run the controller manager process.")
+		DefaultLeaderElectionLeaseDuration,
+		"Configures the 'LeaseDuration' option of the controller-runtime library used to run the controller manager process.")
 	flag.DurationVar(&flagVar.LeaderElectionRenewDeadline, "leader-election-renew-deadline",
-		DefaultLeaderElectionRenewDeadline, "Configures the 'RenewDeadline' option of the controller-runtime library used to run the controller manager process.")
+		DefaultLeaderElectionRenewDeadline,
+		"Configures the 'RenewDeadline' option of the controller-runtime library used to run the controller manager process.")
 	flag.DurationVar(&flagVar.KymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		DefaultKymaRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
@@ -205,8 +207,9 @@ func DefineFlagVar() *FlagVar {
 		DefaultMetricsCleanupIntervalInMinutes,
 		"The interval at which the cleanup of non-existing kyma CRs metrics runs.")
 	flag.StringVar(&flagVar.AccessNamespaces, "access-namespaces", "",
-		"The namespaces to which the manager should have access to. If left empty, then the manager has access "+
-			"to all namespaces. Namespaces should be comma-separated e.g. 'kcp-system.kyma-system' ")
+		"The namespaces to which the manager should have access to handle resource kinds. If left empty,"+
+			" then the manager has access to all namespaces. Namespaced resources should be semicolon-separated e.g. "+
+			"'Kyma:kcp-system,kyma-system;Manifest:kcp-system' ")
 	return flagVar
 }
 
