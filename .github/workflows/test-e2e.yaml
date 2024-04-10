@@ -1,4 +1,4 @@
-name: TestSuite E2E Junk
+name: TestSuite E2E
 
 on:
   pull_request:
