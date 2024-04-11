@@ -205,6 +205,9 @@ jobs:
           cat certificate_renewal.yaml
           kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving-cert
           popd
+      - name: Patch SKR hostname in the KCP cluster
+        working-directory: lifecycle-manager
+        run: ./scripts/tests/add_host_to_coredns.sh
       - name: Deploy LM local testing kustomize
         working-directory: lifecycle-manager
         run: |
@@ -223,9 +226,6 @@ jobs:
               exit 1
             fi
           done
-      - name: Patch SKR Hostname in the KCP cluster
-        working-directory: lifecycle-manager
-        run: ./scripts/tests/add_host_to_coredns.sh
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:

@@ -34,7 +34,7 @@ patches:
       value: --log-level=9
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --additional-dns-names=localhost,127.0.0.1,host.k3d.internal,skr.cluster.local
+      value: --additional-dns-names=localhost,127.0.0.1,host.k3d.internal
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --listener-port-overwrite=9443
