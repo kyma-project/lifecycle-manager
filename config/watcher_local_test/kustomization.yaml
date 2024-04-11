@@ -55,9 +55,6 @@ patches:
 - patch: |-
     - op: replace
       path: /spec/servers/0/hosts/0
-      value: "skr.cluster.local"
-    - op: add
-      path: /spec/servers/0/hosts/1
       value: "host.k3d.internal"
   target:
     group: networking.istio.io
