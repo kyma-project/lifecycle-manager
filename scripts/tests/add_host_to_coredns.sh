@@ -1,20 +1,31 @@
 #!/bin/bash
 
-# Define custom hostname and IP address
-HOSTNAME_TO_ADD="skr.cluster.local"
-IP_ADDRESS="host.k3d.internal"
+NEW_SKR_HOSTNAME="skr.cluster.local"
+HOST_IP_ADDRESS=""
 
-# Fetch the current CoreDNS ConfigMap
-COREDNS_CONFIG_MAP=$(kubectl get configmap coredns -n kube-system -o json)
+FOUND=0
+SECONDS=0
+TIMEOUT=60
 
-# Extract the NodeHosts content
-NODEHOSTS=$(echo "$COREDNS_CONFIG_MAP" | jq -r '.data.NodeHosts')
+until [ $FOUND -eq 1 ]; do
+    if [ $SECONDS -gt $TIMEOUT ]; then
+        echo "Timeout reached. host.k3d.internal address not found."
+        exit 1
+    fi
+    CURRENT_ENTRIES=$(kubectl get configmap coredns -n kube-system -o yaml | yq eval '.data.NodeHosts' -)
+    if echo "$CURRENT_ENTRIES" | grep -q "host.k3d.internal"; then
+        HOST_IP_ADDRESS=$(echo "$CURRENT_ENTRIES" | grep "host.k3d.internal" | awk '{print $1}')
+        FOUND=1
+    else
+        sleep 5
+        SECONDS=$((SECONDS+5))
+    fi
+done
 
-# Add custom hostname to the NodeHosts content
-NEW_NODEHOSTS_CONTENT="$NODEHOSTS $IP_ADDRESS $HOSTNAME_TO_ADD"
+NEW_ENTRY="$HOST_IP_ADDRESS $NEW_SKR_HOSTNAME"
 
-# Update the ConfigMap with the new NodeHosts content
-kubectl patch configmap coredns -n kube-system --type=json -p="[{'op': 'replace', 'path': '/data/NodeHosts', 'value': \"$NEW_NODEHOSTS_CONTENT\"}]"
+kubectl get configmap coredns -n kube-system -o yaml | \
+  yq eval '.data.NodeHosts += "'"${NEW_ENTRY}"'"' - | \
+  kubectl apply -f -
 
-# Restart CoreDNS pods to apply the changes
 kubectl rollout restart -n kube-system deployment coredns
