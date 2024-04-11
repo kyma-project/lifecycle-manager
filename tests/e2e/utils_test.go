@@ -27,10 +27,10 @@ import (
 var (
 	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
 	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
+	skrHostname               = "host.k3d.internal"
 )
 
 const (
-	k3dHostname           = "skr.cluster.local"
 	localHostname         = "0.0.0.0"
 	defaultRemoteKymaName = "default"
 	EventuallyTimeout     = 10 * time.Second
@@ -97,7 +97,7 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
+	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, skrHostname)
 	secret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      kymaName,

@@ -20,6 +20,7 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
+	skrHostname = "skr.cluster.local"
 	InitEmptyKymaBeforeAll(kyma)
 
 	Context("Given SKR Cluster", func() {
