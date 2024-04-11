@@ -27,7 +27,7 @@ import (
 var (
 	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
 	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
-	skrHostname               = "host.k3d.internal"
+	skrHostname               = "skr.cluster.local"
 )
 
 const (

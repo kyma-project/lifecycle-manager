@@ -208,8 +208,6 @@ jobs:
           popd
       - name: Patch SKR hostname in the KCP cluster
         working-directory: lifecycle-manager
-        if: ${{ matrix.e2e-test == 'kyma-deprovision-with-foreground-propagation' ||
-          matrix.e2e-test == 'kyma-deprovision-with-background-propagation' }}
         run: ./scripts/tests/add_skr_host_to_coredns.sh
       - name: Deploy LM local testing kustomize
         working-directory: lifecycle-manager
