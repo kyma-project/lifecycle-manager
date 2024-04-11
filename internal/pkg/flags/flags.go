@@ -133,7 +133,8 @@ func DefineFlagVar() *FlagVar {
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
-			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
+			"comma-separated list, for example \"--additional-dns-names="+
+			"localhost,127.0.0.1,host.k3d.internal,skr.cluster.local\".")
 	flag.StringVar(&flagVar.IstioNamespace, "istio-namespace", DefaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
 	flag.StringVar(&flagVar.IstioGatewayName, "istio-gateway-name", DefaultIstioGatewayName,
