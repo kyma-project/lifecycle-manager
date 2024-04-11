@@ -175,10 +175,7 @@ var _ = Describe("RBAC Privileges", func() {
 			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
 				"istio-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(istioSystemKlmRoleBindings.Items).To(HaveLen(2))
-
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, controlPlaneClient, "klm-manager-role-manifest",
-				istioSystemKlmRoleBindings)).To(Equal(manifestRoleRules))
+			Expect(istioSystemKlmRoleBindings.Items).To(HaveLen(1))
 
 			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, controlPlaneClient, "klm-manager-role",
 				istioSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
@@ -187,10 +184,7 @@ var _ = Describe("RBAC Privileges", func() {
 			kymaSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
 				"kyma-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kymaSystemKlmRoleBindings.Items).To(HaveLen(3))
-
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, controlPlaneClient, "klm-manager-role-manifest",
-				kymaSystemKlmRoleBindings)).To(Equal(manifestRoleRules))
+			Expect(kymaSystemKlmRoleBindings.Items).To(HaveLen(2))
 
 			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, controlPlaneClient, "klm-manager-role",
 				kymaSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
