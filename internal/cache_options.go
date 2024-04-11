@@ -19,7 +19,10 @@ type DefaultCacheOptions struct {
 }
 
 type KcpCacheOptions struct {
-	CacheOptions cache.Options
+	CacheOptions    cache.Options
+	istioNamespace  string
+	kcpNamespace    string
+	remoteNamespace string
 }
 
 func (c *DefaultCacheOptions) GetCacheOptions() cache.Options {
@@ -38,52 +41,56 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 			&apicorev1.Secret{}: {
 				Label: k8slabels.Everything(),
 				Namespaces: map[string]cache.Config{
-					"kcp-system":   {},
-					"istio-system": {},
-					"kyma-system":  {},
+					c.kcpNamespace:    {},
+					c.istioNamespace:  {},
+					c.remoteNamespace: {},
 				},
 			},
 			&v1beta2.Kyma{}: {
 				Namespaces: map[string]cache.Config{
-					"kyma-system": {},
-					"kcp-system":  {},
+					c.remoteNamespace: {},
+					c.kcpNamespace:    {},
 				},
 			},
 			&v1beta2.ModuleTemplate{}: {
 				Namespaces: map[string]cache.Config{
-					"kyma-system": {},
-					"kcp-system":  {},
+					c.remoteNamespace: {},
+					c.kcpNamespace:    {},
 				},
 			},
 			&v1beta2.Manifest{}: {
 				Namespaces: map[string]cache.Config{
-					"kcp-system": {},
+					c.kcpNamespace: {},
 				},
 			},
 			&v1beta2.Watcher{}: {
 				Namespaces: map[string]cache.Config{
-					"kcp-system": {},
+					c.kcpNamespace: {},
 				},
 			},
 			&certmanagerv1.Issuer{}: {
 				Namespaces: map[string]cache.Config{
-					"kcp-system":   {},
-					"istio-system": {},
+					c.kcpNamespace:   {},
+					c.istioNamespace: {},
 				},
 			},
 			&certmanagerv1.Certificate{}: {
 				Namespaces: map[string]cache.Config{
-					"kcp-system":   {},
-					"istio-system": {},
+					c.kcpNamespace:   {},
+					c.istioNamespace: {},
 				},
 			},
 		},
 	}
 }
 
-func GetCacheOptions(isKymaManaged bool) cache.Options {
+func GetCacheOptions(isKymaManaged bool, istioNamespace, kcpNamespace, remoteNamespace string) cache.Options {
 	if isKymaManaged {
-		options := &KcpCacheOptions{}
+		options := &KcpCacheOptions{
+			istioNamespace:  istioNamespace,
+			kcpNamespace:    kcpNamespace,
+			remoteNamespace: remoteNamespace,
+		}
 		return options.GetCacheOptions()
 	}
 

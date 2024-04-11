@@ -110,7 +110,8 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
 	}
 
-	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged)
+	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged, flagVar.IstioNamespace,
+		flagVar.IstioGatewayNamespace, flagVar.RemoteSyncNamespace)
 	setupManager(flagVar, cacheOptions, scheme)
 }
 
