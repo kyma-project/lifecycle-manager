@@ -14,6 +14,7 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
+
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
@@ -73,6 +74,20 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				Should(Succeed())
+
+			By("And Kyma Module Version in Kyma Status is updated")
+			Eventually(ModuleVersionInKymaStatusIsCorrect).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					NewModuleVersion).
+				Should(Succeed())
+
+			By("And Manifest Version is updated")
+			Eventually(ManifestVersionIsCorrect).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					NewModuleVersion).
 				Should(Succeed())
 		})
 	})
