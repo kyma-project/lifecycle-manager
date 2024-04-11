@@ -107,7 +107,7 @@ var _ = BeforeSuite(func() {
 	if !found {
 		metricsBindAddress = ":0"
 	}
-	cacheOpts := internal.DefaultCacheOptions([]string{})
+	cacheOpts := internal.GetCacheOptions(false, "istio-system", "kcp-system", "kyma-system")
 	syncPeriod := 2 * time.Second
 	cacheOpts.SyncPeriod = &syncPeriod
 
