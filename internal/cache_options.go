@@ -10,8 +10,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-type ConfigCacheOptions interface {
-	GetConfigCacheOptions() cache.Options
+type CacheOptions interface {
+	GetCacheOptions() cache.Options
 }
 
 type DefaultCacheOptions struct {
@@ -22,7 +22,7 @@ type KcpCacheOptions struct {
 	CacheOptions cache.Options
 }
 
-func (c *DefaultCacheOptions) GetConfigCacheOptions() cache.Options {
+func (c *DefaultCacheOptions) GetCacheOptions() cache.Options {
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
 			&apicorev1.Secret{}: {
@@ -32,7 +32,7 @@ func (c *DefaultCacheOptions) GetConfigCacheOptions() cache.Options {
 	}
 }
 
-func (c *KcpCacheOptions) GetConfigCacheOptions() cache.Options {
+func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
 			&apicorev1.Secret{}: {
@@ -84,9 +84,9 @@ func (c *KcpCacheOptions) GetConfigCacheOptions() cache.Options {
 func GetCacheOptions(isKymaManaged bool) cache.Options {
 	if isKymaManaged {
 		options := &KcpCacheOptions{}
-		return options.GetConfigCacheOptions()
+		return options.GetCacheOptions()
 	}
 
 	options := &DefaultCacheOptions{}
-	return options.GetConfigCacheOptions()
+	return options.GetCacheOptions()
 }
