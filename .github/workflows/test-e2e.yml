@@ -114,7 +114,6 @@ jobs:
             --image rancher/k3s:v$K8S_VERSION-k3s1 \
             --registry-create k3d-kcp-registry:5111 \
             --k3s-arg '--disable=traefik@server:*' \
-            --k3s-arg '--tls-san=host.k3d.internal@server:*' \
             --k3s-arg '--tls-san=skr.cluster.local@server:*'
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
@@ -208,8 +207,6 @@ jobs:
           popd
       - name: Patch SKR hostname in the KCP cluster
         working-directory: lifecycle-manager
-        if: ${{ matrix.e2e-test == 'kyma-deprovision-with-foreground-propagation' ||
-          matrix.e2e-test == 'kyma-deprovision-with-background-propagation' }}
         run: ./scripts/tests/add_skr_host_to_coredns.sh
       - name: Deploy LM local testing kustomize
         working-directory: lifecycle-manager

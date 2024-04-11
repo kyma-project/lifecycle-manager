@@ -27,10 +27,10 @@ import (
 var (
 	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
 	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
-	k3dHostname               = "host.k3d.internal"
 )
 
 const (
+	k3dHostname           = "skr.cluster.local"
 	localHostname         = "0.0.0.0"
 	defaultRemoteKymaName = "default"
 	EventuallyTimeout     = 10 * time.Second

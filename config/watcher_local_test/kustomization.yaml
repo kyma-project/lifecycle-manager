@@ -67,9 +67,6 @@ patches:
       value: "localhost"
     - op: add
       path: /spec/dnsNames/1
-      value: "host.k3d.internal"
-    - op: add
-      path: /spec/dnsNames/2
       value: "skr.cluster.local"
   target:
     group: cert-manager.io
