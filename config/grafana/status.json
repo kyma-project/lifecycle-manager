@@ -16,7 +16,6 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 14,
   "links": [],
   "panels": [
     {
@@ -460,7 +459,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_mandatory_modules",
+          "expr": "sum(lifecycle_mgr_mandatory_modules)",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
