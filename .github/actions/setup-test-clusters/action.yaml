@@ -1,0 +1,31 @@
+name: Setup test clusters
+description: Creates and configures the KCP and SKR clusters.
+inputs:
+  k8s_version:
+    description: The version of k8s to use. For example, 1.28.7
+    required: true
+  cert_manager_version:
+    description: The version of cert-manager to depoy. For example, 1.13.3.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: ./lifecycle-manager/.github/actions/configure-hosts
+    - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
+      with:
+        cluster_name: skr
+        k8s_version: ${{ inputs.k8s_version }}
+        args: "-p 10080:80@loadbalancer;-p 10443:443@loadbalancer"
+    - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
+      with:
+        cluster_name: kcp
+        k8s_version: ${{ inputs.k8s_version }}
+        args: "-p 9443:443@loadbalancer;-p 9080:80@loadbalancer;-p 9081:8080@loadbalancer;--registry-create k3d-kcp-registry:5111"
+    - uses: ./lifecycle-manager/.github/actions/export-kubeconfigs
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp
+    - uses: ./lifecycle-manager/.github/actions/deploy-istio
+    - uses: ./lifecycle-manager/.github/actions/deploy-cert-manager
+      with:
+        cert_manager_version: ${{ inputs.cert_manager_version }}
