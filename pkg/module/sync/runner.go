@@ -120,15 +120,6 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	return nil
 }
 
-func (r *Runner) getModuleFromKymaStatus(kyma *v1beta2.Kyma, moduleName string) (*v1beta2.ModuleStatus, error) {
-	for _, moduleStatus := range kyma.Status.Modules {
-		if moduleStatus.Name == moduleName {
-			return &moduleStatus, nil
-		}
-	}
-	return nil, ErrModuleNotInKymaStatus
-}
-
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
 	manifestObj *v1beta2.Manifest,
 ) error {
