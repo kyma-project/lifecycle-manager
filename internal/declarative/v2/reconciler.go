@@ -523,10 +523,9 @@ func (r *Reconciler) pruneDiff(
 	err = resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)
 	if err != nil {
 		obj.SetStatus(obj.GetStatus().WithErr(err))
-		return err
 	}
 
-	return nil
+	return err
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object,
