@@ -1,0 +1,94 @@
+name: TestSuite E2E
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      k8s_version:
+        description: With Kubernetes version
+        required: false
+
+jobs:
+  wait-for-image-build:
+    name: Wait for image build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/wait-for-image-build
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          statusName: pull-lifecycle-mgr-build
+  e2e-integration:
+    name: E2E
+    needs: wait-for-image-build
+    strategy:
+      matrix:
+        e2e-test:
+          - watcher-enqueue
+          - kyma-deprovision-with-foreground-propagation
+          - kyma-deprovision-with-background-propagation
+          - module-status-propagation
+          - kyma-metrics
+          - module-without-default-cr
+          - module-consistency
+          - non-blocking-deletion
+          - upgrade-under-deletion
+          - purge-controller
+          - purge-metrics
+          - module-upgrade-channel-switch
+          - module-upgrade-new-version
+          - skip-manifest-reconciliation
+          - ca-certificate-rotation
+          - self-signed-certificate-rotation
+          - mandatory-module
+          - mandatory-module-metrics
+          - misconfigured-kyma-secret
+          - rbac-privileges
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          path: lifecycle-manager
+
+      - name: Checkout template-operator
+        uses: actions/checkout@v4
+        with:
+          repository: kyma-project/template-operator
+          path: template-operator
+
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
+        id: configuration
+
+      - name: Setup tools
+        uses: ./lifecycle-manager/.github/actions/setup-tools
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          istio_version: ${{ steps.configuration.outputs.istio_version }}
+          k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          go-version-file: lifecycle-manager/go.mod
+          cache-dependency-path: lifecycle-manager/go.sum
+
+      - name: Setup test clusters
+        uses: ./lifecycle-manager/.github/actions/setup-test-clusters
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
+
+      - name: Deploy lifecycle-manager
+        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
+        with:
+          klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
+          klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
+
+      - name: Deploy template-operator
+        uses: ./lifecycle-manager/.github/actions/deploy-template-operator
+
+      - name: Run '${{ matrix.e2e-test }}' test
+        working-directory: lifecycle-manager
+        run: |
+          make -C tests/e2e ${{ matrix.e2e-test }}
