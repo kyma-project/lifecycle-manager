@@ -23,10 +23,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	ErrServerSideApplyFailed = errors.New("ServerSideApply failed")
-	ErrModuleNotInKymaStatus = errors.New("module not found in kyma status")
-)
+var ErrServerSideApplyFailed = errors.New("ServerSideApply failed")
 
 func New(clnt client.Client) *Runner {
 	return &Runner{
@@ -113,14 +110,14 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		return commonerrs.ErrTypeAssert
 	}
 
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled, manifestObj); err != nil {
+	if err := r.DoUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled, manifestObj); err != nil {
 		return err
 	}
 	module.Manifest = manifestObj
 	return nil
 }
 
-func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
+func (r *Runner) DoUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
 	manifestObj *v1beta2.Manifest,
 ) error {
 	manifestInCluster := &v1beta2.Manifest{}
@@ -130,7 +127,7 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabl
 		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
 	}
 
-	if !needToUpdate(manifestInCluster, manifestObj) {
+	if !NeedToUpdate(manifestInCluster, manifestObj) {
 		return nil
 	}
 
@@ -168,9 +165,12 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestInClus
 	return nil
 }
 
-func needToUpdate(manifestInCluter, manifestObj *v1beta2.Manifest) bool {
+func NeedToUpdate(manifestInCluter, manifestObj *v1beta2.Manifest) bool {
+	if manifestInCluter == nil {
+		return true
+	}
+
 	return manifestInCluter.Spec.Version != manifestObj.Spec.Version ||
-		manifestInCluter.Status.State != manifestObj.Status.State ||
 		GetChannelLabel(manifestInCluter) != GetChannelLabel(manifestObj) ||
 		manifestInCluter.Generation != manifestObj.Generation
 }

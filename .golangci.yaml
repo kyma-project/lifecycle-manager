@@ -131,6 +131,8 @@ linters-settings:
         alias: metricsserver
       - pkg: github.com/prometheus/client_model/go
         alias: prometheusclient
+      - pkg: github.com/kyma-project/lifecycle-manager/pkg/module/sync/mock
+        alias: syncmock
   ireturn:
     allow:
       - anon

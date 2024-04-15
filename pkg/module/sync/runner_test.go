@@ -8,10 +8,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -184,5 +189,273 @@ func configureModuleInKyma(
 			Manifest: manifest,
 		}
 		kyma.Status.Modules = append(kyma.Status.Modules, module)
+	}
+}
+
+func Test_NeedToUpdate(t *testing.T) {
+	type args struct {
+		manifestInCluter *v1beta2.Manifest
+		manifestObj      *v1beta2.Manifest
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "should return true when manifest in cluster is nil",
+			args: args{
+				manifestInCluter: nil,
+				manifestObj: &v1beta2.Manifest{
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "should return true when manifests channels are different",
+			args: args{
+				manifestInCluter: &v1beta2.Manifest{
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.0",
+					},
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{
+							shared.ChannelLabel: "fast",
+						},
+						Generation: 0,
+					},
+				},
+				manifestObj: &v1beta2.Manifest{
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.0",
+					},
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{
+							shared.ChannelLabel: "regular",
+						},
+						Generation: 0,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "should return true when manifests versions are different",
+			args: args{
+				manifestInCluter: &v1beta2.Manifest{
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.0",
+					},
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{
+							shared.ChannelLabel: "regular",
+						},
+						Generation: 0,
+					},
+				},
+				manifestObj: &v1beta2.Manifest{
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.1",
+					},
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{
+							shared.ChannelLabel: "regular",
+						},
+						Generation: 0,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "should return false when manifests are the same",
+			args: args{
+				manifestInCluter: &v1beta2.Manifest{
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.0",
+					},
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{
+							shared.ChannelLabel: "regular",
+						},
+						Generation: 0,
+					},
+				},
+				manifestObj: &v1beta2.Manifest{
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.0",
+					},
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{
+							shared.ChannelLabel: "regular",
+						},
+						Generation: 0,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluter, tt.args.manifestObj),
+				"NeedToUpdate(%v, %v)", tt.args.manifestInCluter, tt.args.manifestObj)
+		})
+	}
+}
+
+func TestRunner_DoUpdateWithStrategy(t *testing.T) {
+	type args struct {
+		isEnabledModule bool
+		manifestObj     *v1beta2.Manifest
+	}
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err, "error adding v1beta2 to scheme")
+	currentManifest := &v1beta2.Manifest{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:       "manifest",
+			Namespace:  "kcp-system",
+			Generation: 0,
+			Labels: map[string]string{
+				shared.ChannelLabel: "regular",
+			},
+		},
+		Spec: v1beta2.ManifestSpec{
+			Version: "1.0.0",
+			Install: v1beta2.InstallInfo{
+				Name: "first",
+			},
+		},
+		Status: shared.Status{
+			State: shared.StateReady,
+		},
+	}
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(currentManifest).Build()
+	tests := []struct {
+		name             string
+		args             args
+		expectedManifest *v1beta2.Manifest
+	}{
+		{
+			name: "should not patch manifest if manifest is not updated",
+			args: args{
+				isEnabledModule: true,
+				manifestObj: &v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Name:       "manifest",
+						Namespace:  "kcp-system",
+						Generation: 0,
+						Labels: map[string]string{
+							shared.ChannelLabel: "regular",
+						},
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.0",
+						Install: v1beta2.InstallInfo{
+							Name: "first",
+						},
+					},
+					Status: shared.Status{
+						State: shared.StateReady,
+						Synced: []shared.Resource{
+							{
+								Name: "test",
+							},
+						},
+					},
+				},
+			},
+			expectedManifest: currentManifest,
+		},
+		{
+			name: "should update manifest spec only if module is disabled and manifest is updated",
+			args: args{
+				isEnabledModule: false,
+				manifestObj: &v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Name:       "manifest",
+						Namespace:  "kcp-system",
+						Generation: 0,
+						Labels: map[string]string{
+							shared.ChannelLabel: "fast",
+						},
+					},
+					Spec: v1beta2.ManifestSpec{
+						Version: "1.0.0",
+						Install: v1beta2.InstallInfo{
+							Name: "test",
+						},
+					},
+					Status: shared.Status{
+						State: shared.StateReady,
+					},
+				},
+			},
+			expectedManifest: &v1beta2.Manifest{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "manifest",
+					Namespace:  "kcp-system",
+					Generation: 0,
+					Labels: map[string]string{
+						shared.ChannelLabel: "regular",
+					},
+				},
+				Spec: v1beta2.ManifestSpec{
+					Version: "1.0.0",
+					Install: v1beta2.InstallInfo{
+						Name: "test",
+					},
+				},
+				Status: shared.Status{
+					State: shared.StateReady,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		testCase := tt
+		owner := "test"
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := context.TODO()
+			runner := &sync.Runner{
+				Client: fakeClient,
+			}
+
+			err = runner.DoUpdateWithStrategy(ctx, owner, testCase.args.isEnabledModule,
+				testCase.args.manifestObj)
+			require.NoError(t, err, "error updating with strategy")
+
+			var manifest v1beta2.Manifest
+			err := runner.Get(ctx,
+				client.ObjectKey{Name: testCase.args.manifestObj.Name, Namespace: testCase.args.manifestObj.Namespace},
+				&manifest)
+			require.NoError(t, err)
+			testCase.expectedManifest.Generation = manifest.Generation
+			testCase.expectedManifest.ResourceVersion = manifest.ResourceVersion
+			require.Equal(t, testCase.expectedManifest, &manifest)
+		})
 	}
 }
