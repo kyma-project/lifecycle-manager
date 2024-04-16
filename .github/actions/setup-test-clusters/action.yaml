@@ -7,6 +7,9 @@ inputs:
   cert_manager_version:
     description: The version of cert-manager to depoy. For example, 1.13.3.
     required: true
+  additional_skr_args:
+    description: Additional arguments to pass to the k3d create command for the SKR cluster separated by semicolon (;).
+    required: false
 runs:
   using: composite
   steps:
@@ -15,7 +18,7 @@ runs:
       with:
         cluster_name: skr
         k8s_version: ${{ inputs.k8s_version }}
-        args: "-p 10080:80@loadbalancer;-p 10443:443@loadbalancer"
+        args: "-p 10080:80@loadbalancer;-p 10443:443@loadbalancer;${{ inputs.additional_skr_args }}"
     - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
       with:
         cluster_name: kcp
