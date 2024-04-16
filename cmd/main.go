@@ -71,10 +71,10 @@ const (
 	metricCleanupTimeout    = 5 * time.Minute
 	bootstrapFailedExitCode = 1
 	runtimeProblemExitCode  = 2
-	buildVersion            = "not_provided"
 )
 
 var (
+	buildVersion                         = "not_provided" //nolint:gochecknoglobals // used to embed static binary version during release builds
 	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
 	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
 )
