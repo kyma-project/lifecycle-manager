@@ -80,7 +80,6 @@ var (
 )
 
 func registerSchemas(scheme *machineryruntime.Scheme) {
-
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
@@ -137,7 +136,8 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 }
 
 func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
-	setupLog logr.Logger) {
+	setupLog logr.Logger,
+) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.ClientQPS)
 	config.Burst = flagVar.ClientBurst
@@ -226,7 +226,8 @@ func cleanupStoredVersions(crdVersionsToDrop string, mgr manager.Manager, setupL
 }
 
 func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInMinutes int, mgr manager.Manager,
-	setupLog logr.Logger) {
+	setupLog logr.Logger,
+) {
 	ctx := context.Background()
 	if !mgr.GetCache().WaitForCacheSync(ctx) {
 		setupLog.V(log.InfoLevel).Error(errFailedToScheduleMetricsCleanupJob, "failed to sync cache")
@@ -272,7 +273,8 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 
 func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
 	descriptorProvider *provider.CachedDescriptorProvider, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger) {
+	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger,
+) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
 
@@ -350,7 +352,8 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *flags.FlagVar,
-	options ctrlruntime.Options, setupLog logr.Logger) {
+	options ctrlruntime.Options, setupLog logr.Logger,
+) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
@@ -368,13 +371,14 @@ func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCach
 		mgr, options,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
 func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	setupLog logr.Logger) {
+	setupLog logr.Logger,
+) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -389,12 +393,13 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *flags.FlagVar,
-	setupLog logr.Logger) {
+	setupLog logr.Logger,
+) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	if err := (&controller.WatcherReconciler{
@@ -411,13 +416,14 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
 func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	flagVar *flags.FlagVar, options ctrlruntime.Options, metrics *metrics.MandatoryModulesMetrics,
-	setupLog logr.Logger) {
+	setupLog logr.Logger,
+) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
 	if err := (&controller.MandatoryModuleReconciler{
@@ -435,12 +441,13 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provid
 		Metrics:             metrics,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
 func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
+	flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger,
+) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
 	if err := (&controller.MandatoryModuleDeletionReconciler{
@@ -455,6 +462,6 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
-		os.Exit(1)
+		os.Exit(bootstrapFailedExitCode)
 	}
 }
