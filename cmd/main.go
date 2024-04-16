@@ -29,6 +29,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-co-op/gocron"
+	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -70,18 +71,16 @@ const (
 	metricCleanupTimeout    = 5 * time.Minute
 	bootstrapFailedExitCode = 1
 	runtimeProblemExitCode  = 2
+	buildVersion            = "not_provided"
 )
 
 var (
-	scheme       = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
-	setupLog     = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
-	buildVersion = "not_provided"               //nolint:gochecknoglobals // used to embed static binary version during release builds
-
 	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
 	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
 )
 
-func registerSchemas() {
+func registerSchemas(scheme *machineryruntime.Scheme) {
+
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
@@ -95,11 +94,12 @@ func registerSchemas() {
 }
 
 func main() {
-	registerSchemas()
+	setupLog := ctrl.Log.WithName("setup")
+	scheme := machineryruntime.NewScheme()
+	registerSchemas(scheme)
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
-
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
@@ -107,15 +107,15 @@ func main() {
 		os.Exit(bootstrapFailedExitCode)
 	}
 	if flagVar.Pprof {
-		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout)
+		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout, setupLog)
 	}
 
 	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged, flagVar.IstioNamespace,
 		flagVar.IstioGatewayNamespace, flagVar.RemoteSyncNamespace)
-	setupManager(flagVar, cacheOptions, scheme)
+	setupManager(flagVar, cacheOptions, scheme, setupLog)
 }
 
-func pprofStartServer(addr string, timeout time.Duration) {
+func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
 	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
@@ -136,7 +136,8 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme) {
+func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
+	setupLog logr.Logger) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.ClientQPS)
 	config.Burst = flagVar.ClientBurst
@@ -167,7 +168,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
-		setupKcpWatcherReconciler(mgr, options, flagVar)
+		setupKcpWatcherReconciler(mgr, options, flagVar, setupLog)
 	}
 
 	remoteClientCache := remote.NewClientCache()
@@ -175,21 +176,22 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics)
-	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics)
-	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options)
+	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics,
+		setupLog)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
+	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options, setupLog)
 	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
+		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, setupLog)
 	}
 	if flagVar.EnableWebhooks {
-		enableWebhooks(mgr)
+		enableWebhooks(mgr, setupLog)
 	}
 
-	addHealthChecks(mgr)
+	addHealthChecks(mgr, setupLog)
 
-	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr)
-	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr)
+	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
+	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -197,7 +199,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 }
 
-func addHealthChecks(mgr manager.Manager) {
+func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {
 	// +kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -209,7 +211,7 @@ func addHealthChecks(mgr manager.Manager) {
 	}
 }
 
-func cleanupStoredVersions(crdVersionsToDrop string, mgr manager.Manager) {
+func cleanupStoredVersions(crdVersionsToDrop string, mgr manager.Manager, setupLog logr.Logger) {
 	if crdVersionsToDrop == "" {
 		return
 	}
@@ -223,7 +225,8 @@ func cleanupStoredVersions(crdVersionsToDrop string, mgr manager.Manager) {
 	crd.DropStoredVersion(ctx, mgr.GetClient(), crdVersionsToDrop)
 }
 
-func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInMinutes int, mgr manager.Manager) {
+func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInMinutes int, mgr manager.Manager,
+	setupLog logr.Logger) {
 	ctx := context.Background()
 	if !mgr.GetCache().WaitForCacheSync(ctx) {
 		setupLog.V(log.InfoLevel).Error(errFailedToScheduleMetricsCleanupJob, "failed to sync cache")
@@ -246,7 +249,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 	setupLog.V(log.DebugLevel).Info("scheduled job for cleaning up metrics")
 }
 
-func enableWebhooks(mgr manager.Manager) {
+func enableWebhooks(mgr manager.Manager, setupLog logr.Logger) {
 	if err := (&v1beta2.ModuleTemplate{}).
 		SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
@@ -268,10 +271,8 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 }
 
 func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
-	descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
-	kymaMetrics *metrics.KymaMetrics,
-) {
+	descriptorProvider *provider.CachedDescriptorProvider, flagVar *flags.FlagVar, options ctrlruntime.Options,
+	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
 
@@ -348,11 +349,8 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.WatcherImageTag)
 }
 
-func setupPurgeReconciler(mgr ctrl.Manager,
-	remoteClientCache *remote.ClientCache,
-	flagVar *flags.FlagVar,
-	options ctrlruntime.Options,
-) {
+func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *flags.FlagVar,
+	options ctrlruntime.Options, setupLog logr.Logger) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
@@ -376,7 +374,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 
 func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-) {
+	setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -395,7 +393,8 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	}
 }
 
-func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *flags.FlagVar) {
+func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *flags.FlagVar,
+	setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	if err := (&controller.WatcherReconciler{
@@ -418,7 +417,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 
 func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	flagVar *flags.FlagVar, options ctrlruntime.Options, metrics *metrics.MandatoryModulesMetrics,
-) {
+	setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
 	if err := (&controller.MandatoryModuleReconciler{
@@ -441,8 +440,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provid
 }
 
 func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options,
-) {
+	flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
 	if err := (&controller.MandatoryModuleDeletionReconciler{
