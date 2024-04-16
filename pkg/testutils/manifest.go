@@ -475,6 +475,19 @@ func WithValidInstallImageSpec(ctx context.Context, clnt client.Client, name, ma
 	}
 }
 
+func UpdateManifestSpec(cxt context.Context, clnt client.Client, manifestName string, spec v1beta2.ManifestSpec) error {
+	manifest, err := GetManifestWithName(cxt, clnt, manifestName)
+	if err != nil {
+		return err
+	}
+	manifest.Spec = spec
+	if err = clnt.Update(cxt, manifest); err != nil {
+		return fmt.Errorf("error updating Manifest: %w", err)
+	}
+
+	return nil
+}
+
 func InstallManifest(ctx context.Context, clnt client.Client, manifest *v1beta2.Manifest, installSpecByte []byte,
 	enableResource bool,
 ) error {
@@ -520,6 +533,20 @@ func ExpectManifestStateIn(ctx context.Context, clnt client.Client,
 		}
 		return nil
 	}
+}
+
+func ExpectManifestLastOperationMessageContains(ctx context.Context, clnt client.Client,
+	manifestName, message string) error {
+	manifest, err := GetManifestWithName(ctx, clnt, manifestName)
+	if err != nil {
+		return err
+	}
+
+	if !strings.Contains(manifest.Status.Operation, message) {
+		return errManifestOperationNotContainMessage
+	}
+
+	return nil
 }
 
 func ExpectOCISyncRefAnnotationExists(ctx context.Context, clnt client.Client,
