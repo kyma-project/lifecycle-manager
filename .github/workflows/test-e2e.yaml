@@ -78,7 +78,6 @@ jobs:
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
-          additional_skr_args: -p 10443:443@loadbalancer
 
       - name: Deploy lifecycle-manager
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e

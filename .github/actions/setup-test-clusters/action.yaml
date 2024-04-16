@@ -18,7 +18,7 @@ runs:
       with:
         cluster_name: skr
         k8s_version: ${{ inputs.k8s_version }}
-        args: "-p 10080:80@loadbalancer;${{ inputs.additional_skr_args }}"
+        args: "-p 10080:80@loadbalancer;-p 10443:443@loadbalancer;${{ inputs.additional_skr_args }}"
     - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
       with:
         cluster_name: kcp
