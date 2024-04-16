@@ -536,7 +536,8 @@ func ExpectManifestStateIn(ctx context.Context, clnt client.Client,
 }
 
 func ExpectManifestLastOperationMessageContains(ctx context.Context, clnt client.Client,
-	manifestName, message string) error {
+	manifestName, message string,
+) error {
 	manifest, err := GetManifestWithName(ctx, clnt, manifestName)
 	if err != nil {
 		return err
