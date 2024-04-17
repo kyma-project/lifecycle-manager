@@ -21,6 +21,10 @@ packages:
   pkg/security: 100
   pkg/status: 100
 
+  pkg/testutils: 100
+  pkg/testutils/builder: 100
+  pkg/testutils/random: 100
+
   pkg/types: 100
   pkg/util: 100
   pkg/watch: 100
