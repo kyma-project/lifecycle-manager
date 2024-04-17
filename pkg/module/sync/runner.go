@@ -110,38 +110,28 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		return commonerrs.ErrTypeAssert
 	}
 
-	if err := r.DoUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled, manifestObj); err != nil {
-		return err
+	if NeedToUpdate(kyma.Status, manifestObj) {
+		if err = r.DoUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled, manifestObj); err != nil {
+			return err
+		}
 	}
 	module.Manifest = manifestObj
+
 	return nil
 }
 
 func (r *Runner) DoUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
 	manifestObj *v1beta2.Manifest,
 ) error {
-	manifestInCluster := &v1beta2.Manifest{}
-	var err error
-	if err = r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(), Name: manifestObj.GetName()},
-		manifestInCluster); err != nil && !util.IsNotFound(err) {
-		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
-	}
-
-	if !NeedToUpdate(manifestInCluster, manifestObj) {
-		return nil
-	}
-
 	if isEnabledModule {
 		return r.patchManifest(ctx, owner, manifestObj)
 	}
 
 	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
-	if !util.IsNotFound(err) {
-		if err := r.updateAvailableManifestSpec(ctx, manifestInCluster,
-			manifestObj); err != nil {
-			return err
-		}
+	if err := r.updateAvailableManifestSpec(ctx, manifestObj); client.IgnoreNotFound(err) != nil {
+		return err
 	}
+
 	return nil
 }
 
@@ -156,8 +146,14 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 	return nil
 }
 
-func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestInCluster, manifestObj *v1beta2.Manifest,
+func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v1beta2.Manifest,
 ) error {
+	manifestInCluster := &v1beta2.Manifest{}
+
+	if err := r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(), Name: manifestObj.GetName()},
+		manifestInCluster); err != nil {
+		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+	}
 	manifestInCluster.Spec = manifestObj.Spec
 	if err := r.Update(ctx, manifestInCluster); err != nil {
 		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
@@ -165,17 +161,27 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestInClus
 	return nil
 }
 
-func NeedToUpdate(manifestInCluter, manifestObj *v1beta2.Manifest) bool {
-	if manifestInCluter == nil {
+func NeedToUpdate(kymaStatus v1beta2.KymaStatus, manifestObj *v1beta2.Manifest) bool {
+	moduleStatus := getModuleStatus(kymaStatus, manifestObj.GetName())
+
+	if moduleStatus == nil {
 		return true
 	}
 
-	return manifestInCluter.Spec.Version != manifestObj.Spec.Version ||
-		GetChannelLabel(manifestInCluter) != GetChannelLabel(manifestObj) ||
-		manifestInCluter.Generation != manifestObj.Generation
+	return moduleStatus.Version != manifestObj.Spec.Version ||
+		moduleStatus.Channel != getChannelLabel(manifestObj)
 }
 
-func GetChannelLabel(manifest *v1beta2.Manifest) string {
+func getModuleStatus(status v1beta2.KymaStatus, moduleName string) *v1beta2.ModuleStatus {
+	for idx := range status.Modules {
+		if status.Modules[idx].Name == moduleName {
+			return &status.Modules[idx]
+		}
+	}
+	return nil
+}
+
+func getChannelLabel(manifest *v1beta2.Manifest) string {
 	if manifest.Labels == nil {
 		return ""
 	}

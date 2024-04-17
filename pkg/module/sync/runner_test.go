@@ -194,8 +194,8 @@ func configureModuleInKyma(
 
 func Test_NeedToUpdate(t *testing.T) {
 	type args struct {
-		manifestInCluter *v1beta2.Manifest
-		manifestObj      *v1beta2.Manifest
+		kymaStatus  v1beta2.KymaStatus
+		manifestObj *v1beta2.Manifest
 	}
 	tests := []struct {
 		name string
@@ -203,9 +203,9 @@ func Test_NeedToUpdate(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "should return true when manifest in cluster is nil",
+			name: "should return true when manifest is still to be created",
 			args: args{
-				manifestInCluter: nil,
+				kymaStatus: v1beta2.KymaStatus{},
 				manifestObj: &v1beta2.Manifest{
 					Status: shared.Status{
 						State: shared.StateReady,
@@ -217,18 +217,13 @@ func Test_NeedToUpdate(t *testing.T) {
 		{
 			name: "should return true when manifests channels are different",
 			args: args{
-				manifestInCluter: &v1beta2.Manifest{
-					Status: shared.Status{
-						State: shared.StateReady,
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "1.0.0",
-					},
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{
-							shared.ChannelLabel: "fast",
+				kymaStatus: v1beta2.KymaStatus{
+					Modules: []v1beta2.ModuleStatus{
+						{
+							Name:    "test",
+							Version: "1.0.0",
+							Channel: "fast",
 						},
-						Generation: 0,
 					},
 				},
 				manifestObj: &v1beta2.Manifest{
@@ -243,6 +238,7 @@ func Test_NeedToUpdate(t *testing.T) {
 							shared.ChannelLabel: "regular",
 						},
 						Generation: 0,
+						Name:       "test",
 					},
 				},
 			},
@@ -251,18 +247,13 @@ func Test_NeedToUpdate(t *testing.T) {
 		{
 			name: "should return true when manifests versions are different",
 			args: args{
-				manifestInCluter: &v1beta2.Manifest{
-					Status: shared.Status{
-						State: shared.StateReady,
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "1.0.0",
-					},
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{
-							shared.ChannelLabel: "regular",
+				kymaStatus: v1beta2.KymaStatus{
+					Modules: []v1beta2.ModuleStatus{
+						{
+							Name:    "test",
+							Version: "1.0.0",
+							Channel: "regular",
 						},
-						Generation: 0,
 					},
 				},
 				manifestObj: &v1beta2.Manifest{
@@ -277,6 +268,7 @@ func Test_NeedToUpdate(t *testing.T) {
 							shared.ChannelLabel: "regular",
 						},
 						Generation: 0,
+						Name:       "test",
 					},
 				},
 			},
@@ -285,18 +277,13 @@ func Test_NeedToUpdate(t *testing.T) {
 		{
 			name: "should return false when manifests are the same",
 			args: args{
-				manifestInCluter: &v1beta2.Manifest{
-					Status: shared.Status{
-						State: shared.StateReady,
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "1.0.0",
-					},
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{
-							shared.ChannelLabel: "regular",
+				kymaStatus: v1beta2.KymaStatus{
+					Modules: []v1beta2.ModuleStatus{
+						{
+							Name:    "test",
+							Version: "1.0.0",
+							Channel: "regular",
 						},
-						Generation: 0,
 					},
 				},
 				manifestObj: &v1beta2.Manifest{
@@ -311,6 +298,7 @@ func Test_NeedToUpdate(t *testing.T) {
 							shared.ChannelLabel: "regular",
 						},
 						Generation: 0,
+						Name:       "test",
 					},
 				},
 			},
@@ -319,8 +307,8 @@ func Test_NeedToUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluter, tt.args.manifestObj),
-				"NeedToUpdate(%v, %v)", tt.args.manifestInCluter, tt.args.manifestObj)
+			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.kymaStatus, tt.args.manifestObj),
+				"NeedToUpdate(%v, %v)", tt.args.kymaStatus, tt.args.manifestObj)
 		})
 	}
 }
@@ -359,38 +347,7 @@ func TestRunner_DoUpdateWithStrategy(t *testing.T) {
 		expectedManifest *v1beta2.Manifest
 	}{
 		{
-			name: "should not patch manifest if manifest is not updated",
-			args: args{
-				isEnabledModule: true,
-				manifestObj: &v1beta2.Manifest{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Name:       "manifest",
-						Namespace:  "kcp-system",
-						Generation: 0,
-						Labels: map[string]string{
-							shared.ChannelLabel: "regular",
-						},
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "1.0.0",
-						Install: v1beta2.InstallInfo{
-							Name: "first",
-						},
-					},
-					Status: shared.Status{
-						State: shared.StateReady,
-						Synced: []shared.Resource{
-							{
-								Name: "test",
-							},
-						},
-					},
-				},
-			},
-			expectedManifest: currentManifest,
-		},
-		{
-			name: "should update manifest spec only if module is disabled and manifest is updated",
+			name: "should update manifest spec only if module is disabled",
 			args: args{
 				isEnabledModule: false,
 				manifestObj: &v1beta2.Manifest{
