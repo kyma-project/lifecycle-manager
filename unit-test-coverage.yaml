@@ -21,7 +21,6 @@ packages:
   pkg/security: 100
   pkg/status: 100
 
-  pkg/templatelookup: 100
   pkg/testutils: 100
   pkg/testutils/builder: 100
   pkg/testutils/random: 100
