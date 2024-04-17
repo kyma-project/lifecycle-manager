@@ -1,4 +1,6 @@
 packages:
+  config/samples/component-integration-installed/crd/v1beta2: 100
+  config/samples/component-integration-installed/crd/v1beta1: 100
   internal: 100
   internal/controller: 100
   internal/crd: 100
