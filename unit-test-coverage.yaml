@@ -3,6 +3,7 @@ packages:
   internal/controller: 100
   internal/crd: 100
   internal/declarative/v2: 100
+  internal/declarative/v2/mock: 100
   internal/descriptor/cache: 100
   internal/descriptor/provider: 100
   internal/istio: 100
