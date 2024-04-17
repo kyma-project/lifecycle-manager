@@ -590,9 +590,8 @@ func CredSecretLabelSelector(labelValue string) *apimetav1.LabelSelector {
 	}
 }
 
-func ManifestVersionIsCorrect(ctx context.Context, clnt client.Client, kymaName,
-	kymaNamespace,
-	moduleName, version string,
+func ManifestVersionIsCorrect(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName, version string,
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {

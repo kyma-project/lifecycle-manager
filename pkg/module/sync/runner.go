@@ -111,26 +111,11 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 
 	if NeedToUpdate(kyma.Status, manifestObj) {
-		if err = r.DoUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled, manifestObj); err != nil {
+		if err = r.patchManifest(ctx, kyma.Labels[shared.ManagedBy], manifestObj); client.IgnoreNotFound(err) != nil {
 			return err
 		}
 	}
 	module.Manifest = manifestObj
-
-	return nil
-}
-
-func (r *Runner) DoUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
-	manifestObj *v1beta2.Manifest,
-) error {
-	if isEnabledModule {
-		return r.patchManifest(ctx, owner, manifestObj)
-	}
-
-	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
-	if err := r.updateAvailableManifestSpec(ctx, manifestObj); client.IgnoreNotFound(err) != nil {
-		return err
-	}
 
 	return nil
 }
@@ -146,46 +131,23 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 	return nil
 }
 
-func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v1beta2.Manifest,
-) error {
-	manifestInCluster := &v1beta2.Manifest{}
-
-	if err := r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(), Name: manifestObj.GetName()},
-		manifestInCluster); err != nil {
-		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
-	}
-	manifestInCluster.Spec = manifestObj.Spec
-	if err := r.Update(ctx, manifestInCluster); err != nil {
-		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
-	}
-	return nil
-}
-
-func NeedToUpdate(kymaStatus v1beta2.KymaStatus, manifestObj *v1beta2.Manifest) bool {
-	moduleStatus := getModuleStatus(kymaStatus, manifestObj.GetName())
+func NeedToUpdate(kymaStatus v1beta2.KymaStatus, latestManifest *v1beta2.Manifest) bool {
+	moduleName := getLabelValue(latestManifest, shared.ModuleName)
+	moduleStatus := kymaStatus.GetModuleStatus(moduleName)
 
 	if moduleStatus == nil {
 		return true
 	}
 
-	return moduleStatus.Version != manifestObj.Spec.Version ||
-		moduleStatus.Channel != getChannelLabel(manifestObj)
+	return moduleStatus.Version != latestManifest.Spec.Version ||
+		moduleStatus.Channel != getLabelValue(latestManifest, shared.ChannelLabel)
 }
 
-func getModuleStatus(status v1beta2.KymaStatus, moduleName string) *v1beta2.ModuleStatus {
-	for idx := range status.Modules {
-		if status.Modules[idx].Name == moduleName {
-			return &status.Modules[idx]
-		}
-	}
-	return nil
-}
-
-func getChannelLabel(manifest *v1beta2.Manifest) string {
+func getLabelValue(manifest *v1beta2.Manifest, labelName string) string {
 	if manifest.Labels == nil {
 		return ""
 	}
-	return manifest.Labels[shared.ChannelLabel]
+	return manifest.Labels[labelName]
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {

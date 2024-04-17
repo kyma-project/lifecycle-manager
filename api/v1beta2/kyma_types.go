@@ -421,6 +421,16 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 	return modules
 }
 
+func (status *KymaStatus) GetModuleStatus(moduleName string) *ModuleStatus {
+	for i := range status.Modules {
+		moduleStatus := &status.Modules[i]
+		if moduleStatus.Name == moduleName {
+			return moduleStatus
+		}
+	}
+	return nil
+}
+
 func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
 		return false
