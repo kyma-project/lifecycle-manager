@@ -20,3 +20,18 @@ packages:
   pkg/remote: 100
   pkg/security: 100
   pkg/status: 100
+
+  tests/e2e: 100
+  tests/integration: 100
+  tests/integration/apiwebhook: 100
+  tests/integration/controller/controlplane: 100
+  tests/integration/controller/eventfilters: 100
+  tests/integration/controller/kyma: 100
+  tests/integration/controller/mandatorymodule/deletion: 100
+  tests/integration/controller/mandatorymodule/installation: 100
+  tests/integration/controller/manifest: 100
+  tests/integration/controller/manifest/custom_resource_check: 100
+  tests/integration/controller/purge: 100
+  tests/integration/controller/withwatcher: 100
+  tests/integration/security: 100
+  tests/integration/watcher: 100
