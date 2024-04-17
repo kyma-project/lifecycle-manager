@@ -1,5 +1,6 @@
 packages:
   internal: 100
+  internal/controller: 100
   internal/crd: 100
   internal/declarative/v2: 100
   internal/descriptor/cache: 100
@@ -10,7 +11,7 @@ packages:
   internal/pkg/flags: 100
   internal/pkg/metrics: 100
   internal/pkg/resources: 100
-  internal/tests/api: 0
+  internal/tests/api: 100
   pkg/matcher: 100
   pkg/module/sync: 100
   pkg/remote: 100
