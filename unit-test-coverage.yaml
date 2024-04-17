@@ -28,4 +28,3 @@ packages:
   pkg/types: 100
   pkg/util: 100
   pkg/watch: 100
-  pkg/watcher: 100
