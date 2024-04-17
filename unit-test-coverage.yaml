@@ -7,28 +7,11 @@ packages:
   internal/istio: 100
   internal/manifest: 100
   internal/manifest/filemutex: 100
-  internal/pkg/flags: 100
   internal/pkg/metrics: 100
   internal/pkg/resources: 100
   internal/tests/api: 100
-  pkg/adapter: 100
-  pkg/common: 100
-  pkg/img: 100
-  pkg/log: 100
   pkg/matcher: 100
-  pkg/module/common: 100
-  pkg/module/parse: 100
   pkg/module/sync: 100
-  pkg/ocmextensions: 100
-  pkg/queue: 100
   pkg/remote: 100
   pkg/security: 100
   pkg/status: 100
-  pkg/templatelookup: 100
-  pkg/testutils: 100
-  pkg/testutils/builder: 100
-  pkg/testutils/random: 100
-  pkg/types: 100
-  pkg/util: 100
-  pkg/watch: 100
-  pkg/watcher: 100
