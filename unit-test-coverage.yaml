@@ -6,4 +6,4 @@ packages:
   internal/istio: 63
   internal/pkg/resources: 85
   pkg/remote: 5
-  pkg/module/sync: 100
+  pkg/module/sync: 32
