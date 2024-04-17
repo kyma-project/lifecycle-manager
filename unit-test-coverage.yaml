@@ -10,6 +10,7 @@ packages:
   internal/pkg/flags: 100
   internal/pkg/metrics: 100
   internal/pkg/resources: 100
+  internal/tests/api: 0
   pkg/matcher: 100
   pkg/module/sync: 100
   pkg/remote: 100
