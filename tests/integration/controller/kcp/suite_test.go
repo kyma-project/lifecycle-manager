@@ -17,13 +17,14 @@ package kcp_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-	apicorev1 "k8s.io/api/core/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"

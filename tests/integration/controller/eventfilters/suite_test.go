@@ -17,11 +17,12 @@ package eventfilters_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 

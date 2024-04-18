@@ -19,9 +19,10 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"strings"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 
 	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"

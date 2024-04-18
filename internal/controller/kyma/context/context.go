@@ -3,6 +3,7 @@ package context
 import (
 	"context"
 	"errors"
+
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"

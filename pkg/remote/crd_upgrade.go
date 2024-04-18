@@ -29,12 +29,14 @@ func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextFac
 		return SyncCrdsUseCase{
 			kcpClient:         kcpClient,
 			skrContextFactory: skrContextFactory,
-			crdCache:          crd.NewCache(nil)}
+			crdCache:          crd.NewCache(nil),
+		}
 	}
 	return SyncCrdsUseCase{
 		kcpClient:         kcpClient,
 		skrContextFactory: skrContextFactory,
-		crdCache:          cache}
+		crdCache:          cache,
+	}
 }
 
 func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {

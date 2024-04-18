@@ -18,10 +18,11 @@ package purge_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"

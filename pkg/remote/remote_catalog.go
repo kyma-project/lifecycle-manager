@@ -50,7 +50,8 @@ func NewRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextFacto
 	return &RemoteCatalog{
 		kcpClient:         kcpClient,
 		skrContextFactory: skrContextFactory,
-		settings:          settings}
+		settings:          settings,
+	}
 }
 
 // CreateOrUpdate first lists all currently available moduleTemplates in the Runtime.

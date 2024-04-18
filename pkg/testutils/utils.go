@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -105,7 +106,7 @@ func NewIntegrationTestSkrContextFactory(skrClient remote.Client) *IntegrationTe
 func NewSKRCluster(scheme *machineryruntime.Scheme) (remote.Client, *envtest.Environment, error) {
 	skrEnv := &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
-		//Scheme: scheme,
+		// Scheme: scheme,
 	}
 	cfg, err := skrEnv.Start()
 	if err != nil {
