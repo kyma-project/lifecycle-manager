@@ -283,7 +283,6 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		Client:             mgr.GetClient(),
 		SkrContextFactory:  skrContextFactory,
 		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
-		KcpRestConfig:      kcpRestConfig,
 		RemoteClientCache:  remoteClientCache,
 		DescriptorProvider: descriptorProvider,
 		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),

@@ -39,7 +39,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -62,7 +61,7 @@ import (
 const randomPort = "0"
 
 var (
-	controlPlaneClient client.Client
+	kcpClient          client.Client
 	k8sManager         manager.Manager
 	controlPlaneEnv    *envtest.Environment
 	ctx                context.Context
@@ -131,22 +130,22 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
+	kcpClient = k8sManager.GetClient()
+	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(kcpClient, k8sManager.GetConfig()))
 	err = (&kyma.Reconciler{
-		Client:              k8sManager.GetClient(),
+		Client:              kcpClient,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider:  descriptorProvider,
-		SkrContextFactory:   NewIntegrationTestSkrContextFactory(k8sManager.GetClient()),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
+		SkrContextFactory:   testSkrContextFactory,
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		controller.SetupUpSetting{ListenerAddr: randomPort})
+		kyma.ReconcilerSetupSettings{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
-
-	controlPlaneClient = k8sManager.GetClient()
 
 	go func() {
 		defer GinkgoRecover()
