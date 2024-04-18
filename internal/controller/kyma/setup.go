@@ -26,15 +26,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 )
 
-type SetupUpSetting struct {
+type ReconcilerSetupSettings struct {
 	ListenerAddr                 string
 	EnableDomainNameVerification bool
 	IstioNamespace               string
 }
 
-const (
-	controllerName = "kyma"
-)
+const controllerName = "kyma"
 
 var (
 	errConvertingWatched      = errors.New("error converting watched to object key")
@@ -42,7 +40,7 @@ var (
 	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
 )
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Options, settings SetupUpSetting) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Options, settings ReconcilerSetupSettings) error {
 	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
@@ -53,7 +51,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
 			builder.WithPredicates(predicates),
 		).
-		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
+		// Watch secrets in lifecycle-manager so that cache notices changes
 		Watches(&apicorev1.Secret{}, handler.Funcs{})
 
 	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
@@ -78,7 +76,6 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 		verifyFunc,
 	)
 
-	// watch event channel
 	r.watchEventChannel(controllerBuilder, eventChannel)
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {

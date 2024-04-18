@@ -297,7 +297,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
 	}).SetupWithManager(
-		mgr, options, kyma.SetupUpSetting{
+		mgr, options, kyma.ReconcilerSetupSettings{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 			IstioNamespace:               flagVar.IstioNamespace,

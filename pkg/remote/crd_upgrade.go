@@ -19,12 +19,12 @@ import (
 )
 
 type SyncCrdsUseCase struct {
-	kcpClient         Client
+	kcpClient         client.Client
 	skrContextFactory SkrContextFactory
 	crdCache          *crd.Cache
 }
 
-func NewSyncCrdsUseCase(kcpClient Client, skrContextFactory SkrContextFactory, cache *crd.Cache) SyncCrdsUseCase {
+func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextFactory, cache *crd.Cache) SyncCrdsUseCase {
 	if cache == nil {
 		return SyncCrdsUseCase{
 			kcpClient:         kcpClient,
@@ -127,7 +127,7 @@ func getAnnotation(crd *apiextensionsv1.CustomResourceDefinition, crdType CrdTyp
 	return fmt.Sprintf("%s-%s-crd-generation", strings.ToLower(crd.Spec.Names.Kind), strings.ToLower(string(crdType)))
 }
 
-func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient Client,
+func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient client.Client,
 	runtimeClient Client, kyma *v1beta2.Kyma, plural string,
 ) (bool, error) {
 	kcpCrd, skrCrd, err := s.fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
@@ -154,7 +154,7 @@ func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
 	return crdUpdated, nil
 }
 
-func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, controlPlaneClient Client, skrClient Client, plural string) (
+func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, controlPlaneClient client.Client, skrClient Client, plural string) (
 	*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error,
 ) {
 	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)

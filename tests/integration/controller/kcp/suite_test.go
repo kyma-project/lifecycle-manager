@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package controlplane_test
+package kcp_test
 
 import (
 	"context"
@@ -164,13 +164,12 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  descriptorProvider,
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(remote.NewClientWithConfig(kcpClient, kcpEnv.Config), testSkrContextFactory, crdCache),
-		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           true,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		kyma.SetupUpSetting{ListenerAddr: UseRandomPort})
+		kyma.ReconcilerSetupSettings{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

@@ -17,6 +17,7 @@ package eventfilters_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +31,6 @@ import (
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -40,13 +40,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 
@@ -66,12 +66,12 @@ const (
 )
 
 var (
-	controlPlaneClient client.Client
-	k8sManager         manager.Manager
-	controlPlaneEnv    *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
-	cfg                *rest.Config
+	kcpClient  client.Client
+	k8sManager manager.Manager
+	kcpEnv     *envtest.Environment
+	ctx        context.Context
+	cancel     context.CancelFunc
+	cfg        *rest.Config
 )
 
 func TestAPIs(t *testing.T) {
@@ -101,13 +101,13 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
-	controlPlaneEnv = &envtest.Environment{
+	kcpEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
 		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = controlPlaneEnv.Start()
+	cfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -134,22 +134,22 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
+	kcpClient = k8sManager.GetClient()
+	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(kcpClient, k8sManager.GetConfig()))
+	err = (&kyma.Reconciler{
+		Client:              kcpClient,
+		SkrContextFactory:   testSkrContextFactory,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
-		KcpRestConfig:       k8sManager.GetConfig(),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		controller.SetupUpSetting{ListenerAddr: randomPort})
+		kyma.ReconcilerSetupSettings{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
-
-	controlPlaneClient = k8sManager.GetClient()
 
 	go func() {
 		defer GinkgoRecover()
@@ -162,6 +162,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := controlPlaneEnv.Stop()
+	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

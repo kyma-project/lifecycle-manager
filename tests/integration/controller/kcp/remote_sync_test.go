@@ -1,4 +1,4 @@
-package controlplane_test
+package kcp_test
 
 import (
 	"errors"

@@ -206,21 +206,20 @@ var _ = BeforeSuite(func() {
 		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
 
-	testSkrContextFactory := IntegrationTest
+	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(skrClient, skrEnv.Config))
 	err = (&kyma.Reconciler{
-		Client: kcpClient,
-
+		Client:              kcpClient,
+		SkrContextFactory:   testSkrContextFactory,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteClientCache:   remoteClientCache,
-		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
+	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, kyma.ReconcilerSetupSettings{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controller.WatcherReconciler{

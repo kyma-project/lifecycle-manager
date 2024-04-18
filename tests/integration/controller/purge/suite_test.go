@@ -18,6 +18,7 @@ package purge_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"path/filepath"
 	"testing"
 	"time"
@@ -54,8 +55,8 @@ const useRandomPort = "0"
 
 var (
 	purgeReconciler             *controller.PurgeReconciler
-	controlPlaneClient          client.Client
-	singleClusterEnv            *envtest.Environment
+	kcpClient                   client.Client
+	kcpEnv                      *envtest.Environment
 	ctx                         context.Context
 	cancel                      context.CancelFunc
 	skipFinalizerRemovalForCRDs = "*.networking.istio.io"
@@ -78,13 +79,13 @@ var _ = BeforeSuite(func() {
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 	Expect(err).ToNot(HaveOccurred())
-	singleClusterEnv = &envtest.Environment{
+	kcpEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
 		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err := singleClusterEnv.Start()
+	cfg, err := kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -103,16 +104,12 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	var useLocalClient controller.RemoteClientResolver = func(context.Context, client.ObjectKey) (client.Client,
-		error,
-	) {
-		return k8sManager.GetClient(), nil
-	}
-
+	kcpClient = k8sManager.GetClient()
+	testSkContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(kcpClient, k8sManager.GetConfig()))
 	purgeReconciler = &controller.PurgeReconciler{
-		Client:                k8sManager.GetClient(),
+		Client:                kcpClient,
+		SkrContextFactory:     testSkContextFactory,
 		EventRecorder:         k8sManager.GetEventRecorderFor(shared.OperatorName),
-		ResolveRemoteClient:   useLocalClient,
 		PurgeFinalizerTimeout: time.Second,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
 		Metrics:               metrics.NewPurgeMetrics(),
@@ -121,7 +118,7 @@ var _ = BeforeSuite(func() {
 	err = purgeReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
-	controlPlaneClient = k8sManager.GetClient()
+	kcpClient = k8sManager.GetClient()
 
 	go func() {
 		defer GinkgoRecover()
@@ -134,6 +131,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := singleClusterEnv.Stop()
+	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

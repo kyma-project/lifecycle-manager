@@ -17,6 +17,7 @@ package kyma_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"os"
 	"path/filepath"
 	"testing"
@@ -130,15 +131,14 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
-	err = (&controller.KymaReconciler{
-		Client:             k8sManager.GetClient(),
-		EventRecorder:      k8sManager.GetEventRecorderFor(shared.OperatorName),
-		DescriptorProvider: descriptorProvider,
-
+	err = (&kyma.Reconciler{
+		Client:              k8sManager.GetClient(),
+		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		DescriptorProvider:  descriptorProvider,
+		SkrContextFactory:   NewIntegrationTestSkrContextFactory(k8sManager.GetClient()),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
-		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
