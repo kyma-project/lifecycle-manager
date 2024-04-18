@@ -14,6 +14,7 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
+	newTemplateFilePath := "../moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml"
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -48,7 +49,7 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 		It("When Module Template Version is Upgraded", func() {
 			Expect(ApplyYAML(ctx,
 				controlPlaneClient,
-				"../moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml")).
+				newTemplateFilePath)).
 				Should(Succeed())
 		})
 
@@ -77,17 +78,20 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 				Should(Succeed())
 
 			By("And Kyma Module Version in Kyma Status is updated")
+			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(newTemplateFilePath)
+			Expect(err).ToNot(HaveOccurred())
+
 			Eventually(ModuleVersionInKymaStatusIsCorrect).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-					NewModuleVersion).
+					newModuleTemplateVersion).
 				Should(Succeed())
 
 			By("And Manifest Version is updated")
 			Eventually(ManifestVersionIsCorrect).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-					NewModuleVersion).
+					newModuleTemplateVersion).
 				Should(Succeed())
 		})
 	})

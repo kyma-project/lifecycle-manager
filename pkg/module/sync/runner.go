@@ -131,6 +131,17 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabl
 	return nil
 }
 
+func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v1beta2.Manifest) error {
+	if err := r.Patch(ctx, manifestObj,
+		client.Apply,
+		client.FieldOwner(owner),
+		client.ForceOwnership,
+	); err != nil {
+		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+	}
+	return nil
+}
+
 func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v1beta2.Manifest) error {
 	manifestInCluster := &v1beta2.Manifest{}
 
@@ -150,17 +161,6 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v
 
 func needToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest) bool {
 	return manifestInCluster.Spec.Version != manifestObj.Spec.Version
-}
-
-func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v1beta2.Manifest) error {
-	if err := r.Patch(ctx, manifestObj,
-		client.Apply,
-		client.FieldOwner(owner),
-		client.ForceOwnership,
-	); err != nil {
-		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
-	}
-	return nil
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {

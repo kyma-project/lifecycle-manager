@@ -28,7 +28,7 @@ func TestParseManifestToObjects(t *testing.T) {
 		{
 			"test template operator manifest, expect no error",
 			"template-operator-manifest.yaml",
-			14,
+			13,
 			assert.NoError,
 		},
 		{

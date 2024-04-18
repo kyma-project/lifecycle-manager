@@ -17,20 +17,3 @@ For further information, read the [kubebuilder tutorial](https://book.kubebuilde
    ```bash
    go run ./main.go ./flags.go --enable-webhooks
    ```
-
-   You can also enable webhooks by updating `config/manager/controller_manager_config.yaml`:
-
-   ```yaml
-   apiVersion: controller-runtime.sigs.k8s.io/v1alpha1
-   kind: ControllerManagerConfig
-   health:
-     healthProbeBindAddress: :8081
-   metrics:
-     bindAddress: 127.0.0.1:8080
-   webhook:
-     port: 9443
-   leaderElection:
-     leaderElect: true
-     resourceName: 893110f7.kyma-project.io
-   enableWebhooks: true
-   ```

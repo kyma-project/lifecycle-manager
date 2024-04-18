@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -84,4 +86,25 @@ func DeleteModuleTemplate(ctx context.Context,
 		return fmt.Errorf("moduletemplate not deleted: %w", err)
 	}
 	return nil
+}
+
+func ReadModuleVersionFromModuleTemplate(moduleTemplateFilePath string) (string, error) {
+	moduleTemplateFile, err := os.ReadFile(moduleTemplateFilePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read ModuleTemplate file: %w", err)
+	}
+
+	var moduleTemplate *v1beta2.ModuleTemplate
+	err = yaml.Unmarshal(moduleTemplateFile, &moduleTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal ModuleTemplate: %w", err)
+	}
+
+	var desc v1beta2.Descriptor
+	err = yaml.Unmarshal(moduleTemplate.Spec.Descriptor.Raw, &desc)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal ModuleTemplate.Spec.Descriptor: %w", err)
+	}
+
+	return desc.Version, nil
 }
