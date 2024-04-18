@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -100,7 +101,7 @@ func ReadModuleVersionFromModuleTemplate(moduleTemplateFilePath string) (string,
 		return "", fmt.Errorf("failed to unmarshal ModuleTemplate: %w", err)
 	}
 
-	var desc v1beta2.Descriptor
+	var desc compdescv2.ComponentDescriptor
 	err = yaml.Unmarshal(moduleTemplate.Spec.Descriptor.Raw, &desc)
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal ModuleTemplate.Spec.Descriptor: %w", err)
