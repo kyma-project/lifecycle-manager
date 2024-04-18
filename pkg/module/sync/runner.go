@@ -110,10 +110,8 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		return commonerrs.ErrTypeAssert
 	}
 
-	if NeedToUpdate(kyma.Status, manifestObj) {
-		if err = r.patchManifest(ctx, kyma.Labels[shared.ManagedBy], manifestObj); client.IgnoreNotFound(err) != nil {
-			return err
-		}
+	if err = r.patchManifest(ctx, kyma.Labels[shared.ManagedBy], manifestObj); client.IgnoreNotFound(err) != nil {
+		return err
 	}
 	module.Manifest = manifestObj
 
@@ -129,25 +127,6 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
 	}
 	return nil
-}
-
-func NeedToUpdate(kymaStatus v1beta2.KymaStatus, latestManifest *v1beta2.Manifest) bool {
-	moduleName := getLabelValue(latestManifest, shared.ModuleName)
-	moduleStatus := kymaStatus.GetModuleStatus(moduleName)
-
-	if moduleStatus == nil {
-		return true
-	}
-
-	return moduleStatus.Version != latestManifest.Spec.Version ||
-		moduleStatus.Channel != getLabelValue(latestManifest, shared.ChannelLabel)
-}
-
-func getLabelValue(manifest *v1beta2.Manifest, labelName string) string {
-	if manifest.Labels == nil {
-		return ""
-	}
-	return manifest.Labels[labelName]
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {

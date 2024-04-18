@@ -9,11 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -186,129 +184,5 @@ func configureModuleInKyma(
 			Manifest: manifest,
 		}
 		kyma.Status.Modules = append(kyma.Status.Modules, module)
-	}
-}
-
-func Test_NeedToUpdate(t *testing.T) {
-	type args struct {
-		kymaStatus  v1beta2.KymaStatus
-		manifestObj *v1beta2.Manifest
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "should return true when manifest is still to be created",
-			args: args{
-				kymaStatus: v1beta2.KymaStatus{},
-				manifestObj: &v1beta2.Manifest{
-					Status: shared.Status{
-						State: shared.StateReady,
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			name: "should return true when manifests channels are different",
-			args: args{
-				kymaStatus: v1beta2.KymaStatus{
-					Modules: []v1beta2.ModuleStatus{
-						{
-							Name:    "test",
-							Version: "1.0.0",
-							Channel: "fast",
-							State:   shared.StateReady,
-						},
-					},
-				},
-				manifestObj: &v1beta2.Manifest{
-					Status: shared.Status{
-						State: shared.StateReady,
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "1.0.0",
-					},
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{
-							shared.ChannelLabel: "regular",
-							shared.ModuleName:   "test",
-						},
-						Generation: 0,
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			name: "should return true when manifests versions are different",
-			args: args{
-				kymaStatus: v1beta2.KymaStatus{
-					Modules: []v1beta2.ModuleStatus{
-						{
-							Name:    "test",
-							Version: "1.0.0",
-							Channel: "regular",
-							State:   shared.StateReady,
-						},
-					},
-				},
-				manifestObj: &v1beta2.Manifest{
-					Status: shared.Status{
-						State: shared.StateReady,
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "1.0.1",
-					},
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{
-							shared.ChannelLabel: "regular",
-							shared.ModuleName:   "test",
-						},
-						Generation: 0,
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			name: "should return false when manifests are the same",
-			args: args{
-				kymaStatus: v1beta2.KymaStatus{
-					Modules: []v1beta2.ModuleStatus{
-						{
-							Name:    "test",
-							Version: "1.0.0",
-							Channel: "regular",
-							State:   shared.StateReady,
-						},
-					},
-				},
-				manifestObj: &v1beta2.Manifest{
-					Status: shared.Status{
-						State: shared.StateReady,
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "1.0.0",
-					},
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{
-							shared.ChannelLabel: "regular",
-							shared.ModuleName:   "test",
-						},
-						Generation: 0,
-					},
-				},
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.kymaStatus, tt.args.manifestObj),
-				"NeedToUpdate(%v, %v)", tt.args.kymaStatus, tt.args.manifestObj)
-		})
 	}
 }
