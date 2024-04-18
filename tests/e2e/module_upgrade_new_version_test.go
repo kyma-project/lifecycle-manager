@@ -78,7 +78,8 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 				Should(Succeed())
 
 			By("And Kyma Module Version in Kyma Status is updated")
-			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(newTemplateFilePath)
+			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(ctx, controlPlaneClient, module,
+				kyma.Spec.Channel)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(ModuleVersionInKymaStatusIsCorrect).

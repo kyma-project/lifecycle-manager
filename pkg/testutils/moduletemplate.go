@@ -4,11 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
-	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -89,23 +86,19 @@ func DeleteModuleTemplate(ctx context.Context,
 	return nil
 }
 
-func ReadModuleVersionFromModuleTemplate(moduleTemplateFilePath string) (string, error) {
-	moduleTemplateFile, err := os.ReadFile(moduleTemplateFilePath)
+func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client, module v1beta2.Module,
+	channel string,
+) (string, error) {
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, channel)
 	if err != nil {
-		return "", fmt.Errorf("failed to read ModuleTemplate file: %w", err)
+		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
 	}
 
-	var moduleTemplate *v1beta2.ModuleTemplate
-	err = yaml.Unmarshal(moduleTemplateFile, &moduleTemplate)
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	ocmDesc, err := descriptorProvider.GetDescriptor(moduleTemplate)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal ModuleTemplate: %w", err)
+		return "", fmt.Errorf("failed to get descriptor: %w", err)
 	}
 
-	var desc compdescv2.ComponentDescriptor
-	err = yaml.Unmarshal(moduleTemplate.Spec.Descriptor.Raw, &desc)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal ModuleTemplate.Spec.Descriptor: %w", err)
-	}
-
-	return desc.Version, nil
+	return ocmDesc.Version, nil
 }
