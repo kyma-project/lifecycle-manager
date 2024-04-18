@@ -1,0 +1,15 @@
+name: Export kubeconfigs
+description: Merges the configs from KCP and SKR k3d clusters into the default kubeconfig and exports the same as environment variables KCP_KUBECONFIG and SKR_KUBECONFIG.
+inputs:
+  context_name:
+    description: The name of the context to use.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Export kubeconfigs
+      shell: bash
+      run: |
+        k3d kubeconfig merge -a -d
+        echo "KCP_KUBECONFIG=$(k3d kubeconfig write kcp)" >> $GITHUB_ENV
+        echo "SKR_KUBECONFIG=$(k3d kubeconfig write skr)" >> $GITHUB_ENV
