@@ -213,6 +213,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.ManifestMetrics.RemoveManifestDuration(req.Name)
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting)
 	}
+
+	if err = r.handleStatusPatch(ctx, obj, currentObjStatus); err != nil {
+		r.Event(obj, "Warning", "PatchStatus", err.Error())
+		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
+	}
+
 	return ctrl.Result{RequeueAfter: r.Success}, nil
 }
 
@@ -634,19 +640,28 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 }
 
 func (r *Reconciler) ssaStatusIfDiffExist(ctx context.Context, obj Object,
-	requeueReason metrics.ManifestRequeueReason, previous shared.Status,
+	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 
-	if hasStatusDiff(obj.GetStatus(), previous) {
-		resetNonPatchableField(obj)
-		if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
-			r.Event(obj, "Warning", "PatchStatus", err.Error())
-			return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
-		}
+	if err := r.handleStatusPatch(ctx, obj, previousStatus); err != nil {
+		r.Event(obj, "Warning", "PatchStatus", err.Error())
+		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
 
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+}
+
+func (r *Reconciler) handleStatusPatch(ctx context.Context, obj Object, previousStatus shared.Status) error {
+	if hasStatusDiff(obj.GetStatus(), previousStatus) {
+		resetNonPatchableField(obj)
+		if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
+			r.Event(obj, "Warning", "PatchStatus", err.Error())
+			return fmt.Errorf("failed to patch status: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func hasStatusDiff(first, second shared.Status) bool {
