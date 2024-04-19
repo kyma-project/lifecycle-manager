@@ -41,6 +41,7 @@ var (
 	errManifestNotInKymaStatus                        = errors.New("manifest is not tracked by kyma.status")
 	errManifestLastUpdateTimeChangedWithoutStatusDiff = errors.New("manifest last update time is changed without diff in status")
 	errManifestOperationNotContainMessage             = errors.New("manifest last operation does  not contain expected message")
+	errManifestVersionIsIncorrect                     = errors.New("manifest version is incorrect")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -615,4 +616,17 @@ func CredSecretLabelSelector(labelValue string) *apimetav1.LabelSelector {
 	return &apimetav1.LabelSelector{
 		MatchLabels: map[string]string{OCIRegistryCredLabelKeyForTest: labelValue},
 	}
+}
+
+func ManifestVersionIsCorrect(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName, version string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+	if manifest.Spec.Version != version {
+		return errManifestVersionIsIncorrect
+	}
+	return nil
 }
