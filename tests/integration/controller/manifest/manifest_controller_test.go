@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
@@ -29,7 +30,7 @@ var _ = Describe(
 	"Rendering manifest install layer", Ordered, func() {
 		ociTempDir := "main-dir"
 		installName := filepath.Join(ociTempDir, "installs")
-
+		var validManifest *v1beta2.Manifest
 		setupTestEnvironment(ociTempDir, installName)
 
 		Context("Given a Manifest CR", func() {
@@ -69,6 +70,12 @@ var _ = Describe(
 						serverAddress, true, false), standardTimeout, standardInterval).
 						WithArguments(manifest).
 						Should(Succeed())
+					Eventually(func() error {
+						var err error
+						validManifest, err = testutils.GetManifestWithName(ctx, controlPlaneClient, manifest.GetName())
+						return err
+					}).Should(Succeed())
+
 					By("Then Manifest CR is in Ready State", func() {
 						Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady),
 							standardTimeout,
@@ -107,6 +114,39 @@ var _ = Describe(
 							standardInterval).
 							WithArguments(manifest.GetName()).Should(Succeed())
 					})
+					By("And Manifest LastOperation is updated with error message", func() {
+						Eventually(testutils.ExpectManifestLastOperationMessageContains,
+							standardTimeout,
+							standardInterval).
+							WithContext(ctx).
+							WithArguments(controlPlaneClient, manifest.GetName(),
+								"failed to extract raw manifest from layer digest").
+							Should(Succeed())
+					})
+
+					By("When OCI Image is corrected", func() {
+						Eventually(testutils.UpdateManifestSpec, standardTimeout, standardInterval).
+							WithContext(ctx).
+							WithArguments(controlPlaneClient, manifest.GetName(), validManifest.Spec).
+							Should(Succeed())
+					})
+
+					By("The Manifest CR is in Ready State and lastOperation is updated correctly", func() {
+						Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateError),
+							standardTimeout,
+							standardInterval).
+							WithArguments(manifest.GetName()).Should(Succeed())
+					})
+					By("And Manifest LastOperation is updated correctly", func() {
+						Eventually(testutils.ExpectManifestLastOperationMessageContains,
+							standardTimeout,
+							standardInterval).
+							WithContext(ctx).
+							WithArguments(controlPlaneClient, manifest.GetName(),
+								"installation is ready and resources can be used").
+							Should(Succeed())
+					})
+
 					Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, manifest), standardTimeout,
 						standardInterval).Should(Succeed())
 				},
