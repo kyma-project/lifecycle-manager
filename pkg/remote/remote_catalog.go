@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -137,9 +137,9 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 		}
 	}
 
-	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
+	// retry if ModuleTemplate CRD is not existing in SKR cluster
 	if containsCRDNotFoundError(errs) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, shared.ModuleTemplateKind.Plural()); err != nil {
+		if err := c.createModuleTemplateCRDInRuntime(ctx); err != nil {
 			return err
 		}
 	}
@@ -245,35 +245,26 @@ func (c *RemoteCatalog) Delete(
 	return nil
 }
 
-func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string) error {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
-
-	var err error
+func (c *RemoteCatalog) createModuleTemplateCRDInRuntime(ctx context.Context) error {
+	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
+	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
+	objKey := client.ObjectKey{Name: fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group)}
+	err := c.kcpClient.Get(ctx, objKey, kcpCrd)
+	if err != nil {
+		return fmt.Errorf("failed to get module template CRD from kcp: %w", err)
+	}
 
 	skrContext, err := c.skrContextFactory.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
+	err = skrContext.Client.Get(ctx, objKey, skrCrd)
 
-	err = skrContext.Client.Get(ctx, client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crd)
-	if err != nil {
-		return fmt.Errorf("failed to get module template CRD from kcp: %w", err)
+	if util.IsNotFound(err) || !ContainsLatestVersion(skrCrd, v1beta2.GroupVersion.Version) {
+		return PatchCRD(ctx, c.kcpClient, kcpCrd)
 	}
 
-	err = c.kcpClient.Get(ctx, client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crdFromRuntime)
-
-	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, c.kcpClient, crd)
-	}
-
-	if !crdReady(crdFromRuntime) {
+	if !crdReady(skrCrd) {
 		return ErrTemplateCRDNotReady
 	}
 
