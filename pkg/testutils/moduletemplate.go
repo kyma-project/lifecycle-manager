@@ -85,3 +85,20 @@ func DeleteModuleTemplate(ctx context.Context,
 	}
 	return nil
 }
+
+func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client, module v1beta2.Module,
+	channel string,
+) (string, error) {
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, channel)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
+	}
+
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	ocmDesc, err := descriptorProvider.GetDescriptor(moduleTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to get descriptor: %w", err)
+	}
+
+	return ocmDesc.Version, nil
+}
