@@ -11,6 +11,8 @@ import (
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -44,7 +46,8 @@ type SkrWebhookManagerConfig struct {
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
 
-func NewSKRWebhookManifestManager(kcpClient client.Client,
+func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
+	schema *machineryruntime.Scheme,
 	caCertificateCache *CACertificateCache,
 	managerConfig SkrWebhookManagerConfig,
 	certificateConfig CertificateConfig,
@@ -61,6 +64,10 @@ func NewSKRWebhookManifestManager(kcpClient client.Client,
 	baseResources, err := getRawManifestUnstructuredResources(rawManifestFile)
 	if err != nil {
 		return nil, err
+	}
+	kcpClient, err := client.New(kcpConfig, client.Options{Scheme: schema})
+	if err != nil {
+		return nil, fmt.Errorf("can't create kcpClient: %w", err)
 	}
 	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient, gatewayConfig)
 	if err != nil {

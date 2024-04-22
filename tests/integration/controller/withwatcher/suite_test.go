@@ -202,7 +202,7 @@ var _ = BeforeSuite(func() {
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
-		kcpClient,
+		restCfg, k8sclientscheme.Scheme,
 		caCertCache,
 		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
