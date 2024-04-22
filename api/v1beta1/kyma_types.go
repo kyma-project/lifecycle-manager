@@ -19,6 +19,7 @@ package v1beta1
 import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -35,9 +36,12 @@ type Kyma struct {
 	apimetav1.TypeMeta   `json:",inline"`
 	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KymaSpec           `json:"spec,omitempty"`
-	Status v1beta2.KymaStatus `json:"status,omitempty"`
+	Spec   KymaSpec   `json:"spec,omitempty"`
+	Status KymaStatus `json:"status,omitempty"`
 }
+
+// +k8s:deepcopy-gen=false
+type KymaStatus = shared.KymaStatus
 
 // Sync defines settings used to apply the kyma synchronization to other clusters. This is defaulted to false
 // and NOT INTENDED FOR PRODUCTIVE USE.
@@ -76,12 +80,15 @@ type KymaSpec struct {
 	Channel string `json:"channel"`
 
 	// Modules specifies the list of modules to be installed
-	Modules []v1beta2.Module `json:"modules,omitempty"`
+	Modules []Module `json:"modules,omitempty"`
 
 	// Active Synchronization Settings
 	// +optional
 	Sync Sync `json:"sync,omitempty"`
 }
+
+// +k8s:deepcopy-gen=false
+type Module = v1beta2.Module
 
 // +kubebuilder:object:root=true
 
