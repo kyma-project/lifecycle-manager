@@ -68,7 +68,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	if err != nil {
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
-	if err := c.createOrUpdateCatalog(ctx, kcpModules, skrKymaClient); err != nil {
+	if err = c.createOrUpdateCatalog(ctx, kcpModules, skrKymaClient); err != nil {
 		return err
 	}
 
@@ -261,7 +261,7 @@ func (c *RemoteCatalog) createModuleTemplateCRDInRuntime(ctx context.Context) er
 	err = skrContext.Client.Get(ctx, objKey, skrCrd)
 
 	if util.IsNotFound(err) || !ContainsLatestVersion(skrCrd, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, c.kcpClient, kcpCrd)
+		return PatchCRD(ctx, skrContext.Client, kcpCrd)
 	}
 
 	if !crdReady(skrCrd) {

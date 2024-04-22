@@ -40,6 +40,8 @@ const KubeConfigKey = "config"
 var ErrAccessSecretNotFound = errors.New("access secret not found")
 
 func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma *v1beta2.Kyma) error {
+	// TODO check cache if client already created and return early
+
 	kubeConfigSecretList := &apicorev1.SecretList{}
 	if err := k.kcpClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}), Namespace: kyma.Namespace,
