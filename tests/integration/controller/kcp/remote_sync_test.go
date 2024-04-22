@@ -26,7 +26,7 @@ var (
 	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
 )
 
-var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
+var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	remoteKyma := createRemoteKyma()
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
