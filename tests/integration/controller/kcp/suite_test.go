@@ -165,7 +165,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(remote.NewClientWithConfig(kcpClient, kcpEnv.Config), testSkrContextFactory, crdCache),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
 		InKCPMode:           true,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,

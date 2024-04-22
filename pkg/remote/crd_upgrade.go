@@ -44,8 +44,7 @@ func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool
 	if err != nil {
 		return false, fmt.Errorf("failed to get SKR context: %w", err)
 	}
-	kymaCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, s.kcpClient,
-		skrContext.Client, kyma, shared.KymaKind.Plural())
+	kymaCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, skrContext.Client, kyma, shared.KymaKind.Plural())
 	if err != nil {
 		err = client.IgnoreNotFound(err)
 		if err != nil {
@@ -53,8 +52,7 @@ func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool
 		}
 	}
 
-	moduleTemplateCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, s.kcpClient,
-		skrContext.Client, kyma, shared.ModuleTemplateKind.Plural())
+	moduleTemplateCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, skrContext.Client, kyma, shared.ModuleTemplateKind.Plural())
 	if err != nil {
 		err = client.IgnoreNotFound(err)
 		if err != nil {
@@ -129,19 +127,18 @@ func getAnnotation(crd *apiextensionsv1.CustomResourceDefinition, crdType CrdTyp
 	return fmt.Sprintf("%s-%s-crd-generation", strings.ToLower(crd.Spec.Names.Kind), strings.ToLower(string(crdType)))
 }
 
-func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient client.Client,
-	runtimeClient Client, kyma *v1beta2.Kyma, plural string,
+func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, skrClient Client, kyma *v1beta2.Kyma, plural string,
 ) (bool, error) {
-	kcpCrd, skrCrd, err := s.fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
+	kcpCrd, skrCrd, err := s.fetchCrds(ctx, skrClient, plural)
 	if err != nil {
 		return false, err
 	}
-	crdUpdated, err := updateRemoteCRD(ctx, kyma, runtimeClient, skrCrd, kcpCrd)
+	crdUpdated, err := updateRemoteCRD(ctx, kyma, skrClient, skrCrd, kcpCrd)
 	if err != nil {
 		return false, err
 	}
 	if crdUpdated {
-		err = runtimeClient.Get(
+		err = skrClient.Get(
 			ctx, client.ObjectKey{
 				Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 			}, skrCrd,
@@ -156,14 +153,12 @@ func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
 	return crdUpdated, nil
 }
 
-func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, controlPlaneClient client.Client, skrClient Client, plural string) (
-	*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error,
-) {
+func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient Client, plural string) (*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error) {
 	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
 	kcpCrd, ok := s.crdCache.Get(kcpCrdName)
 	if !ok {
 		kcpCrd = apiextensionsv1.CustomResourceDefinition{}
-		err := controlPlaneClient.Get(
+		err := s.kcpClient.Get(
 			ctx, client.ObjectKey{Name: kcpCrdName}, &kcpCrd,
 		)
 		if err != nil {

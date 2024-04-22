@@ -89,7 +89,7 @@ func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Cli
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
+		if err = s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
 

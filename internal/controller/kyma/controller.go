@@ -199,7 +199,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 			return ctrl.Result{Requeue: true}, nil
 		}
 		// update the control-plane kyma with the changes to the spec of the remote Kyma
-		if err := r.replaceSpecFromRemote(ctx, kyma); err != nil {
+		if err = r.replaceSpecFromRemote(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
 				" with remote kyma spec: %w", err))
@@ -291,9 +291,7 @@ func (r *Reconciler) syncStatusToRemote(ctx context.Context, controlPlaneKyma *v
 }
 
 // replaceSpecFromRemote replaces the spec from control-lane Kyma with the remote Kyma spec as single source of truth.
-func (r *Reconciler) replaceSpecFromRemote(
-	ctx context.Context, controlPlaneKyma *v1beta2.Kyma,
-) error {
+func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
