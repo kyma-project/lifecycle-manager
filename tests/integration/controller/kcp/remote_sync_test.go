@@ -29,6 +29,7 @@ var (
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma")
+	//err := testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	skrKyma := buildSkrKyma()
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
@@ -36,7 +37,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	var skrClient client.Client
 	var err error
-
 	SKRTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
@@ -49,6 +49,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		WithOCM(compdescv2.SchemaVersion).Build()
 
 	BeforeAll(func() {
+		err = testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+		Expect(err).NotTo(HaveOccurred())
 		skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(CreateCR, Timeout, Interval).
@@ -230,13 +232,15 @@ func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
 
 var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-integration-test-1")
+	//err := testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
 	skrKyma := buildSkrKyma()
 	var skrClient client.Client
 	var err error
-
 	BeforeAll(func() {
+		err = testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+		Expect(err).NotTo(HaveOccurred())
 		skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -300,6 +304,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
+	//err := testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
 	skrKyma := buildSkrKyma()
@@ -307,6 +312,8 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	var err error
 
 	BeforeAll(func() {
+		err = testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+		Expect(err).NotTo(HaveOccurred())
 		skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 		Expect(err).NotTo(HaveOccurred())
 	})

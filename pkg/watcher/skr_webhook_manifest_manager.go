@@ -47,6 +47,7 @@ type SkrWebhookManagerConfig struct {
 const rawManifestFilePathTpl = "%s/resources.yaml"
 
 func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
+	skrContextFactory remote.SkrContextFactory,
 	schema *machineryruntime.Scheme,
 	caCertificateCache *CACertificateCache,
 	managerConfig SkrWebhookManagerConfig,
@@ -75,6 +76,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	}
 	return &SKRWebhookManifestManager{
 		kcpClient:          kcpClient,
+		skrContextFactory:  skrContextFactory,
 		config:             managerConfig,
 		certificateConfig:  certificateConfig,
 		kcpAddr:            resolvedKcpAddr,
