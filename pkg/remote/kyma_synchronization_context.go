@@ -122,7 +122,7 @@ func (s *SkrContext) SynchronizeKyma(ctx context.Context, controlPlaneKyma, remo
 	}
 	recorder := adapter.RecorderFromContext(ctx)
 
-	s.syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
+	syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
 	if err := s.Client.Update(ctx, remoteKyma); err != nil {
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not synchronise runtime kyma "+
 			"spec, watcher labels and annotations")
@@ -161,7 +161,7 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 
 // syncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
 // a working e2e-flow for the runtime-watcher.
-func (s *SkrContext) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
+func syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
 	if remoteKyma.Labels == nil {
 		remoteKyma.Labels = make(map[string]string)
 	}
