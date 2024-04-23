@@ -67,7 +67,7 @@ const UseRandomPort = "0"
 var (
 	k8sManager manager.Manager
 	kcpClient  client.Client
-	//skrClient             client.Client
+	// skrClient             client.Client
 	testSkrContextFactory *IntegrationTestSkrContextFactory
 	kcpEnv                *envtest.Environment
 	skrEnv                *envtest.Environment

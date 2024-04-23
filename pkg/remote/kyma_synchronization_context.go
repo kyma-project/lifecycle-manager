@@ -84,7 +84,8 @@ func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Cli
 }
 
 func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) (*v1beta2.Kyma,
-	error) {
+	error,
+) {
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma, err := s.getRemoteKyma(ctx)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {

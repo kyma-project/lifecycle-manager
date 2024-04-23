@@ -84,7 +84,8 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 func (r *PurgeReconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state shared.State,
-	message string) error {
+	message string,
+) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("failed updating status to %s because of %s: %w", state, message, err)
 	}
@@ -121,7 +122,8 @@ func handlePurgeNotDue(logger logr.Logger, kyma *v1beta2.Kyma, requeueAfter time
 }
 
 func (r *PurgeReconciler) handleRemovingPurgeFinalizerFailedError(ctx context.Context, kyma *v1beta2.Kyma,
-	err error) (ctrl.Result, error) {
+	err error,
+) (ctrl.Result, error) {
 	logf.FromContext(ctx).Error(err,
 		fmt.Sprintf("Failed removing purge finalizer from Kyma %s/%s", kyma.GetNamespace(), kyma.GetName()))
 	r.raiseRemovingPurgeFinalizerFailedEvent(kyma, err)
@@ -130,7 +132,8 @@ func (r *PurgeReconciler) handleRemovingPurgeFinalizerFailedError(ctx context.Co
 }
 
 func (r *PurgeReconciler) handleSkrNotFoundError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result,
-	error) {
+	error,
+) {
 	if util.IsNotFound(err) {
 		dropped, err := r.dropPurgeFinalizer(ctx, kyma)
 		if err != nil {
@@ -153,7 +156,8 @@ func (r *PurgeReconciler) handleCleanupError(ctx context.Context, kyma *v1beta2.
 }
 
 func (r *PurgeReconciler) handlePurge(ctx context.Context, kyma *v1beta2.Kyma, remoteClient client.Client,
-	start time.Time) (ctrl.Result, error) {
+	start time.Time,
+) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 
 	r.Metrics.UpdatePurgeCount()

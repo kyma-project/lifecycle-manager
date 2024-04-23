@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 

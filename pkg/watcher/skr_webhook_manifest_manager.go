@@ -84,7 +84,8 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 }
 
 func (m *SKRWebhookManifestManager) Install(ctx context.Context, factory remote.SkrContextFactory,
-	kyma *v1beta2.Kyma) error {
+	kyma *v1beta2.Kyma,
+) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	skrContext, err := factory.Get(kyma.GetNamespacedName())
@@ -143,7 +144,8 @@ func (m *SKRWebhookManifestManager) updateCertNotRenewMetrics(certificate *certm
 }
 
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, factory remote.SkrContextFactory,
-	kyma *v1beta2.Kyma) error {
+	kyma *v1beta2.Kyma,
+) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	skrContext, err := factory.Get(kyma.GetNamespacedName())

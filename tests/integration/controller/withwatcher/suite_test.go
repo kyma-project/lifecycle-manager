@@ -73,8 +73,8 @@ var (
 	kcpClient             client.Client
 	kcpEnv                *envtest.Environment
 	testSkrContextFactory *IntegrationTestSkrContextFactory
-	//skrClient         client.Client
-	//skrEnv            *envtest.Environment
+	// skrClient         client.Client
+	// skrEnv            *envtest.Environment
 	suiteCtx          context.Context
 	cancel            context.CancelFunc
 	restCfg           *rest.Config
@@ -256,8 +256,8 @@ var _ = AfterSuite(func() {
 
 	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
-	//err = skrEnv.Stop()
-	//Expect(err).NotTo(HaveOccurred())
+	// err = skrEnv.Stop()
+	// Expect(err).NotTo(HaveOccurred())
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {
