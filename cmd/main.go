@@ -27,6 +27,8 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -332,14 +334,16 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *flags.FlagVar) (*watcher
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
 		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
 	}
-	return watcher.NewSKRWebhookManifestManager(
-		mgr.GetClient(),
-		mgr.GetConfig(),
-		mgr.GetScheme(),
-		caCertificateCache,
-		config,
-		certConfig,
-		gatewayConfig)
+	kcpClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	if err != nil {
+		return nil, fmt.Errorf("can't create kcpClient: %w", err)
+	}
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(kcpClient)
+	if err != nil {
+		return nil, err
+	}
+	return watcher.NewSKRWebhookManifestManager(mgr.GetClient(), resolvedKcpAddr, caCertificateCache, config,
+		certConfig)
 }
 
 const (

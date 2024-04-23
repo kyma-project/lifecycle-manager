@@ -11,8 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -45,9 +43,9 @@ type SkrWebhookManagerConfig struct {
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
 
-func NewSKRWebhookManifestManager(getClient client.Client, kcpConfig *rest.Config, schema *machineryruntime.Scheme,
-	caCertificateCache *CACertificateCache, managerConfig SkrWebhookManagerConfig, certificateConfig CertificateConfig,
-	gatewayConfig GatewayConfig) (*SKRWebhookManifestManager, error) {
+func NewSKRWebhookManifestManager(kcpClient client.Client, kcpAddr string, caCertificateCache *CACertificateCache,
+	managerConfig SkrWebhookManagerConfig, certificateConfig CertificateConfig,
+) (*SKRWebhookManifestManager, error) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
@@ -60,15 +58,11 @@ func NewSKRWebhookManifestManager(getClient client.Client, kcpConfig *rest.Confi
 	if err != nil {
 		return nil, err
 	}
-	resolvedKcpAddr, err := resolveKcpAddr(ctx, getClient, gatewayConfig)
-	if err != nil {
-		return nil, err
-	}
 	return &SKRWebhookManifestManager{
-		kcpClient:          getClient,
+		kcpClient:          kcpClient,
 		config:             managerConfig,
 		certificateConfig:  certificateConfig,
-		kcpAddr:            resolvedKcpAddr,
+		kcpAddr:            kcpAddr,
 		baseResources:      baseResources,
 		caCertificateCache: caCertificateCache,
 		WatcherMetrics:     metrics.NewWatcherMetrics(),
