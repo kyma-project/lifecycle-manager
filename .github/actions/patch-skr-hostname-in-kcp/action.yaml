@@ -5,4 +5,5 @@ runs:
   steps:
     - name: Patch SKR hostname in the KCP cluster
       working-directory: ./lifecycle-manager
+      shell: bash
       run: ./scripts/tests/add_skr_host_to_coredns.sh
