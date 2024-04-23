@@ -33,11 +33,11 @@ func (c *ClientCache) Contains(key client.ObjectKey) bool {
 }
 
 func (c *ClientCache) Get(key client.ObjectKey) Client {
-	ok := c.internal.Has(key)
-	if !ok {
+	client := c.internal.Get(key)
+	if client == nil {
 		return nil
 	}
-	return c.internal.Get(key).Value()
+	return client.Value()
 }
 
 func (c *ClientCache) Delete(key client.ObjectKey) {
