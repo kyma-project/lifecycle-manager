@@ -87,7 +87,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	skrContext, err := m.skrContextFactory.Get(ctx)
+	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
@@ -145,7 +145,7 @@ func (m *SKRWebhookManifestManager) updateCertNotRenewMetrics(certificate *certm
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	skrContext, err := m.skrContextFactory.Get(ctx)
+	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
