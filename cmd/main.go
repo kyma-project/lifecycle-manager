@@ -333,9 +333,8 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
 	}
 	return watcher.NewSKRWebhookManifestManager(
-		mgr.GetConfig(),
+		mgr.GetClient(),
 		skrContextFactory,
-		mgr.GetScheme(),
 		caCertificateCache,
 		config,
 		certConfig,
