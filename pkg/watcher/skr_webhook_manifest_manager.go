@@ -25,7 +25,6 @@ import (
 
 type SKRWebhookManifestManager struct {
 	kcpClient          client.Client
-	skrContextFactory  remote.SkrContextFactory
 	config             SkrWebhookManagerConfig
 	kcpAddr            string
 	baseResources      []*unstructured.Unstructured
@@ -84,10 +83,11 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	}, nil
 }
 
-func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (m *SKRWebhookManifestManager) Install(ctx context.Context, factory remote.SkrContextFactory,
+	kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := factory.Get(kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
@@ -142,10 +142,11 @@ func (m *SKRWebhookManifestManager) updateCertNotRenewMetrics(certificate *certm
 	}
 }
 
-func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (m *SKRWebhookManifestManager) Remove(ctx context.Context, factory remote.SkrContextFactory,
+	kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := factory.Get(kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}

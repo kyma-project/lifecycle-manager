@@ -356,7 +356,7 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 
 	if r.WatcherEnabled(kyma) {
 		errGroup.Go(func() error {
-			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
+			if err := r.SKRWebhookManager.Install(ctx, r.SkrContextFactory, kyma); err != nil {
 				r.Metrics.RecordRequeueReason(metrics.SkrWebhookResourcesInstallation, queue.UnexpectedRequeue)
 				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
 					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
@@ -391,7 +391,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 	logger := logf.FromContext(ctx).V(log.InfoLevel)
 
 	if r.WatcherEnabled(kyma) {
-		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
+		if err := r.SKRWebhookManager.Remove(ctx, r.SkrContextFactory, kyma); err != nil {
 			// error is expected, try again
 			r.enqueueNormalEvent(kyma, webhookChartRemoval, err.Error())
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
