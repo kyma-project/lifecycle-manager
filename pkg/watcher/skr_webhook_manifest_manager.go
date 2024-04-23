@@ -45,13 +45,9 @@ type SkrWebhookManagerConfig struct {
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
 
-func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
-	schema *machineryruntime.Scheme,
-	caCertificateCache *CACertificateCache,
-	managerConfig SkrWebhookManagerConfig,
-	certificateConfig CertificateConfig,
-	gatewayConfig GatewayConfig,
-) (*SKRWebhookManifestManager, error) {
+func NewSKRWebhookManifestManager(getClient client.Client, kcpConfig *rest.Config, schema *machineryruntime.Scheme,
+	caCertificateCache *CACertificateCache, managerConfig SkrWebhookManagerConfig, certificateConfig CertificateConfig,
+	gatewayConfig GatewayConfig) (*SKRWebhookManifestManager, error) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
@@ -64,16 +60,12 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	if err != nil {
 		return nil, err
 	}
-	kcpClient, err := client.New(kcpConfig, client.Options{Scheme: schema})
-	if err != nil {
-		return nil, fmt.Errorf("can't create kcpClient: %w", err)
-	}
-	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient, gatewayConfig)
+	resolvedKcpAddr, err := resolveKcpAddr(ctx, getClient, gatewayConfig)
 	if err != nil {
 		return nil, err
 	}
 	return &SKRWebhookManifestManager{
-		kcpClient:          kcpClient,
+		kcpClient:          getClient,
 		config:             managerConfig,
 		certificateConfig:  certificateConfig,
 		kcpAddr:            resolvedKcpAddr,

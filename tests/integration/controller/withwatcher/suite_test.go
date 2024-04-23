@@ -200,10 +200,9 @@ var _ = BeforeSuite(func() {
 	}
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
-		restCfg, k8sclientscheme.Scheme,
-		caCertCache,
-		skrChartCfg, certificateConfig, gatewayConfig)
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(k8sManager.GetClient(), restCfg,
+		k8sclientscheme.Scheme,
+		caCertCache, skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
 
 	testSkrContextFactory = NewIntegrationTestSkrContextFactory(kcpClient.Scheme())

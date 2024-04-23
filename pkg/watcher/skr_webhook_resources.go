@@ -216,7 +216,7 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 
 func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watcher, error) {
 	watcherList := &v1beta2.WatcherList{}
-	if err := kcpClient.List(ctx, watcherList, &client.ListOptions{Namespace: "kcp-system"}); err != nil {
+	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}
 
