@@ -107,11 +107,11 @@ func givenKymaAndModuleTemplateCondition(
 				mtBuilder.WithLabel(shared.BetaLabel, shared.EnableLabelValue)
 			}
 			template := mtBuilder.Build()
-			Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+			Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 				WithArguments(template).
 				Should(Succeed())
 		}
-		Eventually(controlPlaneClient.Create, Timeout, Interval).
+		Eventually(kcpClient.Create, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma).Should(Succeed())
 		return nil
@@ -121,7 +121,7 @@ func givenKymaAndModuleTemplateCondition(
 func expectManifestInstalled(shouldInstalled bool) func(kyma *v1beta2.Kyma) error {
 	return func(kyma *v1beta2.Kyma) error {
 		for _, module := range kyma.Spec.Modules {
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
+			manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 			if shouldInstalled && manifest != nil {
 				return nil
 			}

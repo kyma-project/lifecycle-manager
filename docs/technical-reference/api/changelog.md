@@ -12,9 +12,8 @@ The main change introduced to the Kyma CRD is the removal of the  **.spec.sync**
 
 - **.sync.enabled** - replaced by the `operator.kyma-project.io/sync` label in a Kyma CR. For details, read the [Kyma CR synchronization labels](link TBD) document.
 - **.sync.moduleCatalog** - replaced by a combination the `operator.kyma-project.io/sync`, `operator.kyma-project.io/internal`, and `operator.kyma-project.io/beta` labels in Kyma and ModuleTemplate CRs. For details, read the [Kyma CR synchronization labels](link TBD) document.
-- **.sync.strategy** - replaced with **sync-strategy** annotation in a Kyma CR. By default, the value for the **sync.strategy** annotation is `local-secret`, other values are used for testing purposes only.
 - **.sync.namespace** - replaced with a `sync-namespace` command-line flag for Lifecycle Manager. It means that a user can no longer configure the Namespace synchronized with a particular Kyma CR. The Namespace is the same for all Kyma CRs in a given Lifecycle Manager instance, and a user can't change it.
-- **.sync.noModuleCopy** - removed. Currently the **.spec.modules[]** for a remote Kyma CR is always initialized as empty.
+- **.sync.noModuleCopy** - removed. Currently, the **.spec.modules[]** for a remote Kyma CR is always initialized as empty.
 
 ### ModuleTemplate CR
 

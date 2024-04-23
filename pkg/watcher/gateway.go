@@ -20,16 +20,16 @@ type GatewayConfig struct {
 	LocalGatewayPortOverwrite string
 }
 
-func resolveKcpAddr(ctx context.Context, kcpClient client.Client,
-	gatewayConfig GatewayConfig,
+func (g *GatewayConfig) ResolveKcpAddr(kcpClient client.Client,
 ) (string, error) { // Get public KCP DNS name and port from the Gateway
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 	gateway := &istioclientapiv1beta1.Gateway{}
-
 	if err := kcpClient.Get(ctx, client.ObjectKey{
-		Namespace: gatewayConfig.IstioGatewayNamespace,
-		Name:      gatewayConfig.IstioGatewayName,
+		Namespace: g.IstioGatewayNamespace,
+		Name:      g.IstioGatewayName,
 	}, gateway); err != nil {
-		return "", fmt.Errorf("failed to get istio gateway %s: %w", gatewayConfig.IstioGatewayName, err)
+		return "", fmt.Errorf("failed to get istio gateway %s: %w", g.IstioGatewayName, err)
 	}
 
 	if len(gateway.Spec.GetServers()) != 1 || len(gateway.Spec.GetServers()[0].GetHosts()) != 1 {
@@ -38,8 +38,8 @@ func resolveKcpAddr(ctx context.Context, kcpClient client.Client,
 	host := gateway.Spec.GetServers()[0].GetHosts()[0]
 	port := gateway.Spec.GetServers()[0].GetPort().GetNumber()
 
-	if gatewayConfig.LocalGatewayPortOverwrite != "" {
-		return net.JoinHostPort(host, gatewayConfig.LocalGatewayPortOverwrite), nil
+	if g.LocalGatewayPortOverwrite != "" {
+		return net.JoinHostPort(host, g.LocalGatewayPortOverwrite), nil
 	}
 
 	return net.JoinHostPort(host, strconv.Itoa(int(port))), nil

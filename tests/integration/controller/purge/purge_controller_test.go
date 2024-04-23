@@ -29,15 +29,15 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 		var issuer2 *unstructured.Unstructured
 
 		By("Create the Kyma object", func() {
-			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
 				for i := 0; i < 2; i++ {
-					err = controlPlaneClient.Update(ctx, kyma)
+					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break
 					}
-					err = controlPlaneClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
+					err = kcpClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
 					time.Sleep(5 * time.Millisecond)
 				}
 				Expect(err).ToNot(HaveOccurred())
@@ -47,22 +47,22 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 		By("Create some CR with finalizer(s)", func() {
 			issuer1 = createIssuerFor(kyma, "1")
 			Expect(issuer1).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, issuer1)).Should(Succeed())
-			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, issuer1)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), kcpClient)).
 				Should(ContainElement(testFinalizer))
 
 			issuer2 = createIssuerFor(kyma, "2")
 			Expect(issuer2).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, issuer2)).Should(Succeed())
-			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, issuer2)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), kcpClient)).
 				Should(ContainElement(testFinalizer))
 		})
 
 		By("Kyma deletion is triggered", func() {
-			err := controlPlaneClient.Delete(ctx, kyma)
+			err := kcpClient.Delete(ctx, kyma)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(updateKymaStatus(ctx, controlPlaneClient, purgeReconciler.UpdateStatus,
+			Eventually(updateKymaStatus(ctx, kcpClient, purgeReconciler.UpdateStatus,
 				client.ObjectKeyFromObject(kyma), shared.StateDeleting), Timeout, Interval).
 				Should(Succeed())
 		})
@@ -70,15 +70,15 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 		By("Target finalizers should be dropped", func() {
 			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateDeleting).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateDeleting).
 				Should(Succeed())
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(issuer1), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(issuer1), kcpClient).
 				Should(BeEmpty())
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(issuer2), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(issuer2), kcpClient).
 				Should(BeEmpty())
 		})
 	})
@@ -92,15 +92,15 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 		var issuer2 *unstructured.Unstructured
 
 		By("Creating the kyma object first", func() {
-			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
 				for i := 0; i < 2; i++ {
-					err = controlPlaneClient.Update(ctx, kyma)
+					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break
 					}
-					err = controlPlaneClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
+					err = kcpClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
 					time.Sleep(5 * time.Millisecond)
 				}
 				Expect(err).ToNot(HaveOccurred())
@@ -110,32 +110,32 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 		By("Create some CR with finalizer(s)", func() {
 			issuer1 = createIssuerFor(kyma, "1")
 			Expect(issuer1).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, issuer1)).Should(Succeed())
-			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, issuer1)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), kcpClient)).
 				Should(ContainElement(testFinalizer))
 
 			issuer2 = createIssuerFor(kyma, "2")
 			Expect(issuer2).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, issuer2)).Should(Succeed())
-			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, issuer2)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), kcpClient)).
 				Should(ContainElement(testFinalizer))
 		})
 
 		By("Triggering kyma deletion and is completely removed", func() {
 			//	Kyma delete event
-			err := controlPlaneClient.Delete(ctx, kyma)
+			err := kcpClient.Delete(ctx, kyma)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Target finalizers should be dropped immediately", func() {
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(issuer1), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(issuer1), kcpClient).
 				Should(BeEmpty())
 
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(issuer2), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(issuer2), kcpClient).
 				Should(BeEmpty())
 		})
 	})
@@ -151,16 +151,16 @@ var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 		var destRule2 *unstructured.Unstructured
 
 		By("Creating the kyma object first and adding custom finalizers to be skipped", func() {
-			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
 				// 5 Retries
 				for i := 0; i < 5; i++ {
-					err = controlPlaneClient.Update(ctx, kyma)
+					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break
 					}
-					err = controlPlaneClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
+					err = kcpClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
 					time.Sleep(5 * time.Millisecond)
 				}
 				Expect(err).ToNot(HaveOccurred())
@@ -170,56 +170,56 @@ var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 		By("Create some CR with finalizer(s)", func() {
 			issuer1 = createIssuerFor(kyma, "1")
 			Expect(issuer1).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, issuer1)).Should(Succeed())
-			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, issuer1)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), kcpClient)).
 				Should(ContainElement(testFinalizer))
 
 			issuer2 = createIssuerFor(kyma, "2")
 			Expect(issuer2).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, issuer2)).Should(Succeed())
-			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, issuer2)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), kcpClient)).
 				Should(ContainElement(testFinalizer))
 		})
 
 		By("Creating CRs which shouldn't be touched", func() {
 			destRule1 = createDestinationRuleFor(kyma, "1")
 			Expect(destRule1).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, destRule1)).Should(Succeed())
-			Expect(getDestinationRuleFinalizers(ctx, client.ObjectKeyFromObject(destRule1), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, destRule1)).Should(Succeed())
+			Expect(getDestinationRuleFinalizers(ctx, client.ObjectKeyFromObject(destRule1), kcpClient)).
 				Should(ContainElement(testFinalizer))
 
 			destRule2 = createDestinationRuleFor(kyma, "2")
 			Expect(destRule2).NotTo(BeNil())
-			Expect(controlPlaneClient.Create(ctx, destRule2)).Should(Succeed())
-			Expect(getDestinationRuleFinalizers(ctx, client.ObjectKeyFromObject(destRule2), controlPlaneClient)).
+			Expect(kcpClient.Create(ctx, destRule2)).Should(Succeed())
+			Expect(getDestinationRuleFinalizers(ctx, client.ObjectKeyFromObject(destRule2), kcpClient)).
 				Should(ContainElement(testFinalizer))
 		})
 
 		By("Triggering kyma deletion and is completely removed", func() {
 			//	Kyma delete event
-			err := controlPlaneClient.Delete(ctx, kyma)
+			err := kcpClient.Delete(ctx, kyma)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Target finalizers should be dropped immediately", func() {
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(issuer1), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(issuer1), kcpClient).
 				Should(BeEmpty())
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(issuer2), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(issuer2), kcpClient).
 				Should(BeEmpty())
 		})
 
 		By("To-Skip CRDs should remain untouched", func() {
 			Eventually(getDestinationRuleFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(destRule1), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(destRule1), kcpClient).
 				ShouldNot(BeEmpty())
 			Eventually(getDestinationRuleFinalizers, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(client.ObjectKeyFromObject(destRule2), controlPlaneClient).
+				WithArguments(client.ObjectKeyFromObject(destRule2), kcpClient).
 				ShouldNot(BeEmpty())
 		})
 	})

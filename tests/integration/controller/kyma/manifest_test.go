@@ -55,7 +55,7 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 
 	It("expect Manifest.Spec.Remote=false", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeFalse())
 	})
 })
@@ -72,7 +72,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(ManifestExists, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
 				Should(Succeed())
 		}
 
@@ -80,7 +80,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
 					shared.StateReady).
 				Should(Succeed())
 		}
@@ -88,7 +88,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		By("Kyma CR should be in Ready state")
 		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 			Should(Succeed())
 
 		By("Update Module Template spec.data.spec field")
@@ -151,7 +151,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -201,10 +201,10 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	It("update Manifest", func() {
 		// await for the manifest to be created
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeFalse())
 
-		manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
+		manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		Expect(err).ToNot(HaveOccurred())
 
 		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
@@ -215,12 +215,12 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 		manifest.Spec.Install.Source.Raw = updatedBytes
 
-		err = controlPlaneClient.Update(ctx, manifest)
+		err = kcpClient.Update(ctx, manifest)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -258,7 +258,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(ManifestExists, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
 				Should(Succeed())
 		}
 
@@ -266,7 +266,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
 					shared.StateReady).
 				Should(Succeed())
 		}
@@ -274,7 +274,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		By("Kyma CR should be in Ready state")
 		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 			Should(Succeed())
 
 		By("Manifest spec.install.source.ref corresponds to Module Template resources[].access.digest")
@@ -322,21 +322,21 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 	It("Given a Manifest CR exists", func() {
 		Eventually(ManifestExists, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(Succeed())
 	})
 
 	It("When a skip label is added to Manifest", func() {
 		Eventually(SetSkipLabelToManifest, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 			Should(Succeed())
 	})
 
 	It("Then Skip label always exists in Manifest CR", func() {
 		Consistently(SkipLabelExistsInManifest, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeTrue())
 	})
 })
@@ -487,7 +487,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 // getKCPModuleTemplate is a generic ModuleTemplate validation function.
 func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(validateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kymaChannel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel)
 		if err != nil {
 			return err
 		}
@@ -504,7 +504,7 @@ func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(m
 // updateKCPModuleTemplate is a generic ModuleTemplate update function.
 func updateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(updateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kymaChannel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel)
 		if err != nil {
 			return err
 		}
@@ -514,7 +514,7 @@ func updateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(mod
 			return err
 		}
 
-		return controlPlaneClient.Update(ctx, moduleTemplate)
+		return kcpClient.Update(ctx, moduleTemplate)
 	}
 }
 
@@ -523,7 +523,7 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 	return func(validationFn func(*v1beta2.Manifest) error) func() error {
 		return func() error {
 			// ensure manifest is refreshed each time the function is invoked for "Eventually" assertion to work correctly.
-			manifest, err := GetManifest(ctx, controlPlaneClient,
+			manifest, err := GetManifest(ctx, kcpClient,
 				kyma.GetName(), kyma.GetNamespace(),
 				kyma.Spec.Modules[0].Name)
 			if err != nil {

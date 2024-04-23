@@ -24,16 +24,20 @@ type ClientCache struct {
 	internal ttlcache.Cache[client.ObjectKey, Client]
 }
 
-func (c *ClientCache) Get(key client.ObjectKey) Client {
-	ok := c.internal.Has(key)
-	if !ok {
-		return nil
-	}
-	return c.internal.Get(key).Value()
-}
-
 func (c *ClientCache) Add(key client.ObjectKey, value Client) {
 	c.internal.Set(key, value, getRandomTTL())
+}
+
+func (c *ClientCache) Contains(key client.ObjectKey) bool {
+	return c.internal.Has(key)
+}
+
+func (c *ClientCache) Get(key client.ObjectKey) Client {
+	client := c.internal.Get(key)
+	if client == nil {
+		return nil
+	}
+	return client.Value()
 }
 
 func (c *ClientCache) Delete(key client.ObjectKey) {

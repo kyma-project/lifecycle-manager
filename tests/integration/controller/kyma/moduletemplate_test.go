@@ -29,7 +29,7 @@ const (
 
 func expectManifestSpecDataEquals(kymaName, value string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, apimetav1.NamespaceDefault)
+		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, apimetav1.NamespaceDefault)
 		if err != nil {
 			return err
 		}
@@ -43,12 +43,12 @@ func expectManifestSpecDataEquals(kymaName, value string) func() error {
 }
 
 func expectManifestSpecNotContainsCredSecretSelector(kymaName, kymaNamespace string) error {
-	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, kymaNamespace)
+	kyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
 	if err != nil {
 		return err
 	}
 	for _, module := range kyma.Spec.Modules {
-		moduleInCluster, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
+		moduleInCluster, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		if err != nil {
 			return err
 		}
@@ -62,12 +62,12 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName, kymaNamespace str
 }
 
 func expectManifestSpecContainsCredSecretSelector(kymaName, kymaNamespace string) error {
-	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, kymaNamespace)
+	kyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
 	if err != nil {
 		return err
 	}
 	for _, module := range kyma.Spec.Modules {
-		moduleInCluster, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
+		moduleInCluster, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs not contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
+		DeployModuleTemplates(ctx, kcpClient, kyma)
 		Eventually(expectManifestSpecNotContainsCredSecretSelector, Timeout, Interval).
 			WithArguments(kyma.Name, kyma.Namespace).Should(Succeed())
 	})
@@ -126,7 +126,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCMPrivateRepo().Build()
-		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
 		Eventually(expectManifestSpecContainsCredSecretSelector, Timeout, Interval).

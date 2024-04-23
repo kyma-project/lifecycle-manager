@@ -34,7 +34,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 		By("having transitioned the CR State to Ready as there are no modules", func() {
 			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
@@ -42,7 +42,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 	It("Should contain empty status.modules", func() {
 		By("containing empty status.modules", func() {
 			Eventually(func() error {
-				createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				if err != nil {
 					return err
 				}
@@ -58,7 +58,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 	It("Should contain expected Modules conditions", func() {
 		By("containing Modules condition", func() {
 			Eventually(func() error {
-				createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				if err != nil {
 					return err
 				}
@@ -99,7 +99,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("checking the state to be Processing", func() {
 			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
 				Should(Succeed())
 		})
 
@@ -112,7 +112,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(UpdateManifestState, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
 						shared.StateReady).
 					Should(Succeed())
 			}
@@ -121,12 +121,12 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("having updated the Kyma CR state to ready", func() {
 			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
 		By("Kyma status contains expected condition", func() {
-			kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+			kymaInCluster, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(
 				kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
@@ -136,7 +136,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		})
 		By("Module Catalog created", func() {
 			Eventually(AllModuleTemplatesExists, Timeout, Interval).
-				WithArguments(ctx, controlPlaneClient, kyma).
+				WithArguments(ctx, kcpClient, kyma).
 				Should(Succeed())
 		})
 	})
@@ -154,7 +154,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 						},
 					},
 				}
-				createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				if err != nil {
 					return err
 				}
@@ -162,7 +162,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 				if len(modulesStatus) != 1 {
 					return ErrWrongModulesStatus
 				}
-				template, err := GetModuleTemplate(ctx, controlPlaneClient, module, v1beta2.DefaultChannel)
+				template, err := GetModuleTemplate(ctx, kcpClient, module, v1beta2.DefaultChannel)
 				if err != nil {
 					return err
 				}
@@ -217,18 +217,18 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 				kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
 					Name: testCase.moduleName,
 				})
-				Eventually(controlPlaneClient.Update, Timeout, Interval).
+				Eventually(kcpClient.Update, Timeout, Interval).
 					WithContext(ctx).WithArguments(kyma).Should(Succeed())
 			})
 			By("checking the state to be Warning", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
 					Should(Succeed())
 			})
 
 			By("Kyma status contains expected condition", func() {
-				kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				kymaInCluster, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(
 					kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules,
@@ -238,18 +238,18 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 		It("should result Kyma in Ready state", func() {
 			By(testCase.disableStatement, func() {
 				kyma.Spec.Modules = []v1beta2.Module{}
-				Eventually(controlPlaneClient.Update, Timeout, Interval).
+				Eventually(kcpClient.Update, Timeout, Interval).
 					WithContext(ctx).WithArguments(kyma).Should(Succeed())
 			})
 			By("checking the state to be Ready", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 			})
 
 			By("Kyma status contains expected condition", func() {
-				kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				kymaInCluster, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(
 					kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
@@ -259,7 +259,7 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 })
 
 func containsCondition(kyma *v1beta2.Kyma) error {
-	createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+	createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 	if err != nil {
 		return err
 	}
@@ -287,7 +287,7 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(ManifestExists, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
 					Should(Succeed())
 			}
 		})
@@ -295,7 +295,7 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(DeleteModule, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, kyma, activeModule.Name).Should(Succeed())
+					WithArguments(kcpClient, kyma, activeModule.Name).Should(Succeed())
 			}
 		})
 
@@ -303,7 +303,7 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(ManifestExists, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
 					Should(Succeed())
 			}
 		})
@@ -314,39 +314,39 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(ManifestExists, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
 					Should(Succeed())
 			}
 		})
-		manifestForKcpModule, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
+		manifestForKcpModule, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
 			kcpModule.Name)
 		Expect(err).Should(Succeed())
 		By("Remove kcp-module from kyma.spec.modules", func() {
 			kyma.Spec.Modules = []v1beta2.Module{
 				skrModule,
 			}
-			Eventually(controlPlaneClient.Update, Timeout, Interval).
+			Eventually(kcpClient.Update, Timeout, Interval).
 				WithContext(ctx).WithArguments(kyma).Should(Succeed())
 		})
 
 		By("kcp-module deleted", func() {
 			Eventually(ManifestExistsByMetadata, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, manifestForKcpModule.Namespace, manifestForKcpModule.Name).
+				WithArguments(kcpClient, manifestForKcpModule.Namespace, manifestForKcpModule.Name).
 				Should(Equal(ErrNotFound))
 		})
 
 		By("skr-module exists", func() {
 			Eventually(ManifestExists, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), skrModule.Name).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), skrModule.Name).
 				Should(Succeed())
 		})
 	})
 
 	It("Disabled module should be removed from status.modules", func() {
 		Eventually(func() error {
-			kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+			kyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 			if err != nil {
 				return err
 			}
@@ -380,7 +380,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			WithModuleCR(data).
 			WithOCM(compdescv2.SchemaVersion).
 			WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
-		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
 	})
@@ -390,7 +390,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(ManifestExists, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
 					Should(Succeed())
 			}
 		})
@@ -399,7 +399,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(UpdateManifestState, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
 						shared.StateReady).
 					Should(Succeed())
 			}
@@ -408,14 +408,14 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("Kyma CR should be in Ready state", func() {
 			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
 		By("Add skip-reconciliation label to Kyma CR", func() {
 			Eventually(UpdateKymaLabel, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
 					"true").
 				Should(Succeed())
 		})
@@ -437,7 +437,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
 				"false").
 			Should(Succeed())
 	})
@@ -449,7 +449,7 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 
 	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
 		Eventually(ContainsKymaManagerField, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), shared.UnmanagedKyma).
+			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.UnmanagedKyma).
 			Should(BeTrue())
 	})
 })
@@ -469,7 +469,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 					WithChannel(module.Channel).
 					WithOCM(compdescv2.SchemaVersion).
 					WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
-				Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+				Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 					WithArguments(template).
 					Should(Succeed())
 			}
@@ -478,7 +478,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
 			Eventually(func() error {
 				expectedNamespace := ""
-				createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				if err != nil {
 					return err
 				}
@@ -503,18 +503,18 @@ func expectKymaStatusModules(ctx context.Context,
 	kyma *v1beta2.Kyma, moduleName string, state shared.State,
 ) func() error {
 	return func() error {
-		return CheckModuleState(ctx, controlPlaneClient, kyma.Name, kyma.Namespace, moduleName, state)
+		return CheckModuleState(ctx, kcpClient, kyma.Name, kyma.Namespace, moduleName, state)
 	}
 }
 
 func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, "")
 		if err != nil {
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			return UpdateModuleTemplateSpec(ctx, controlPlaneClient,
+			return UpdateModuleTemplateSpec(ctx, kcpClient,
 				activeModule, InitSpecKey, valueUpdated, createdKyma.Spec.Channel)
 		}
 		return nil

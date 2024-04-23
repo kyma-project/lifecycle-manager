@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package controlplane_test
+package kcp_test
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 
 	"go.uber.org/zap/zapcore"
@@ -40,7 +41,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
+
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -64,15 +65,18 @@ import (
 const UseRandomPort = "0"
 
 var (
-	controlPlaneClient client.Client
-	k8sManager         manager.Manager
-	controlPlaneEnv    *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
-	cfg                *rest.Config
-	descriptorCache    *cache.DescriptorCache
-	descriptorProvider *provider.CachedDescriptorProvider
-	crdCache           *crd.Cache
+	k8sManager manager.Manager
+	kcpClient  client.Client
+	// skrClient             client.Client
+	testSkrContextFactory *IntegrationTestSkrContextFactory
+	kcpEnv                *envtest.Environment
+	skrEnv                *envtest.Environment
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	cfg                   *rest.Config
+	descriptorCache       *cache.DescriptorCache
+	descriptorProvider    *provider.CachedDescriptorProvider
+	crdCache              *crd.Cache
 )
 
 func TestAPIs(t *testing.T) {
@@ -84,7 +88,7 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
-
+	var err error
 	By("bootstrapping test environment")
 
 	externalCRDs, err := AppendExternalCRDs(
@@ -101,13 +105,13 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
-	controlPlaneEnv = &envtest.Environment{
+	kcpEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
 		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = controlPlaneEnv.Start()
+	cfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -126,6 +130,8 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
+	kcpClient = k8sManager.GetClient()
+
 	intervals := queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
@@ -133,27 +139,29 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
+	Expect(err).NotTo(HaveOccurred())
+
+	testSkrContextFactory = NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+
 	remoteClientCache := remote.NewClientCache()
 	descriptorCache = cache.NewDescriptorCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)
 	crdCache = crd.NewCache(nil)
-	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
+	err = (&kyma.Reconciler{
+		Client:              kcpClient,
+		SkrContextFactory:   testSkrContextFactory,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(crdCache),
-		KcpRestConfig:       k8sManager.GetConfig(),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
 		InKCPMode:           true,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		controller.SetupUpSetting{ListenerAddr: UseRandomPort})
+		kyma.ReconcilerSetupSettings{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
-
-	controlPlaneClient = k8sManager.GetClient()
 
 	go func() {
 		defer GinkgoRecover()
@@ -166,6 +174,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := controlPlaneEnv.Stop()
+	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

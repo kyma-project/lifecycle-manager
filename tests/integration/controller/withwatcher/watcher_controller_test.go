@@ -29,7 +29,7 @@ func crSpecUpdates(_ *istio.Client) error {
 		}
 		watcherCR.Spec.ServiceInfo.Port = 9090
 		watcherCR.Spec.Field = v1beta2.StatusField
-		if err := controlPlaneClient.Update(suiteCtx, watcherCR); err != nil {
+		if err := kcpClient.Update(suiteCtx, watcherCR); err != nil {
 			return err
 		}
 	}
@@ -51,7 +51,7 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	Expect(gateway.Spec.GetServers()).To(HaveLen(1))
 	Expect(gateway.Spec.GetServers()[0].GetHosts()).To(HaveLen(1))
 	gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
-	return controlPlaneClient.Update(suiteCtx, gateway)
+	return kcpClient.Update(suiteCtx, gateway)
 }
 
 func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, namespace string) error {
@@ -122,7 +122,7 @@ func deleteWatcher(name string) error {
 	if util.IsNotFound(err) {
 		return nil
 	}
-	return controlPlaneClient.Delete(suiteCtx, watcher)
+	return kcpClient.Delete(suiteCtx, watcher)
 }
 
 func allCRsDeleted(_ *istio.Client) error {
@@ -198,7 +198,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		// create Watcher CRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
-			Expect(controlPlaneClient.Create(suiteCtx, watcherCR)).To(Succeed())
+			Expect(kcpClient.Create(suiteCtx, watcherCR)).To(Succeed())
 		}
 	})
 

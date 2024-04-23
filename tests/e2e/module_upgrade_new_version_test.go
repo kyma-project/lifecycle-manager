@@ -10,8 +10,7 @@ import (
 )
 
 var _ = Describe("Module Upgrade By New Version", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace,
-		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	newTemplateFilePath := "../moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml"

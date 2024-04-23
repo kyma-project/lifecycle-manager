@@ -77,43 +77,43 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(runtimeClient, shared.DefaultRemoteKymaName, flags.DefaultRemoteSyncNamespace).
+			WithArguments(skrClient, shared.DefaultRemoteKymaName, flags.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
 
 	It("kyma reconciliation creates Certificate CR on KCP", func() {
 		Eventually(certificateExists, Timeout, Interval).
-			WithArguments(controlPlaneClient, kyma.Name).
+			WithArguments(kcpClient, kyma.Name).
 			Should(Succeed())
 
 		By("deleting the Certificate CR on KCP")
-		certificateCR, err := getCertificate(controlPlaneClient, kyma.Name)
+		certificateCR, err := getCertificate(kcpClient, kyma.Name)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(runtimeClient, certificateCR).Should(Succeed())
+			WithArguments(skrClient, certificateCR).Should(Succeed())
 
 		By("Certificate CR recreated on KCP")
 		Eventually(certificateExists, Timeout, Interval).
-			WithArguments(controlPlaneClient, kyma.Name).
+			WithArguments(kcpClient, kyma.Name).
 			Should(Succeed())
 	})
 
 	It("kyma reconciliation creates Certificate Secret on SKR", func() {
 		Eventually(secretExists, Timeout, Interval).
-			WithArguments(runtimeClient, skrTLSSecretObjKey).
+			WithArguments(skrClient, skrTLSSecretObjKey).
 			Should(Succeed())
 
 		By("deleting the Certificate Secret on SKR")
-		secret, err := getSecret(runtimeClient, skrTLSSecretObjKey)
+		secret, err := getSecret(skrClient, skrTLSSecretObjKey)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(runtimeClient, secret).Should(Succeed())
+			WithArguments(skrClient, secret).Should(Succeed())
 
 		By("recreated Certificate Secret on SKR")
 		Eventually(secretExists, Timeout, Interval).
-			WithArguments(runtimeClient, skrTLSSecretObjKey).
+			WithArguments(skrClient, skrTLSSecretObjKey).
 			Should(Succeed())
 	})
 
@@ -122,15 +122,15 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 
 		By("changing the TLS secret on KCP")
 		tlsSecret.Data[apicorev1.TLSPrivateKeyKey] = []byte(newKey)
-		Expect(controlPlaneClient.Update(suiteCtx, tlsSecret)).To(Succeed())
+		Expect(kcpClient.Update(suiteCtx, tlsSecret)).To(Succeed())
 
 		By("updates the TLS secret on SKR")
 		Eventually(matchTLSSecretPrivateKey, Timeout, Interval).
-			WithArguments(runtimeClient, skrTLSSecretObjKey, []byte(newKey)).
+			WithArguments(skrClient, skrTLSSecretObjKey, []byte(newKey)).
 			Should(Succeed())
 	})
 
 	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).To(Succeed())
+		Expect(kcpClient.Delete(suiteCtx, kyma)).To(Succeed())
 	})
 })

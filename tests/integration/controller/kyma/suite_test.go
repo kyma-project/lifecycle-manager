@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -38,7 +40,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -61,7 +62,7 @@ import (
 const randomPort = "0"
 
 var (
-	controlPlaneClient client.Client
+	kcpClient          client.Client
 	k8sManager         manager.Manager
 	controlPlaneEnv    *envtest.Environment
 	ctx                context.Context
@@ -130,22 +131,22 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
-	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
+	kcpClient = k8sManager.GetClient()
+	testSkrContextFactory := NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+	err = (&kyma.Reconciler{
+		Client:              kcpClient,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
+		SkrContextFactory:   testSkrContextFactory,
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
-		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		controller.SetupUpSetting{ListenerAddr: randomPort})
+		kyma.ReconcilerSetupSettings{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
-
-	controlPlaneClient = k8sManager.GetClient()
 
 	go func() {
 		defer GinkgoRecover()

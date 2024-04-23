@@ -14,18 +14,18 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 	BeforeAll(func() {
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 
 		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 			Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
 		Eventually(SyncKyma, Timeout, Interval).
-			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 
 	Context("Given Kyma Controller is set with generation predicate event filter", func() {
@@ -34,14 +34,14 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 		It("When kyma.spec is updated", func() {
 			Eventually(updateKymaChannel).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma, newChannel).
+				WithArguments(kcpClient, kyma, newChannel).
 				Should(Succeed())
 		})
 
 		It("Then Kyma should be reconciled immediately", func() {
 			Eventually(kymaIsInExpectedStateWithUpdatedChannel).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.Name, kyma.Namespace, newChannel, shared.StateReady).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, newChannel, shared.StateReady).
 				Should(Succeed())
 		})
 	})
@@ -52,14 +52,14 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 		It("When a new label is added to Kyma", func() {
 			Eventually(addLabelToKyma).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma, labelKey, labelValue).
+				WithArguments(kcpClient, kyma, labelKey, labelValue).
 				Should(Succeed())
 		})
 
 		It("Then Kyma should be reconciled immediately", func() {
 			Eventually(kymaIsInExpectedStateWithLabelUpdated).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.Name, kyma.Namespace, labelKey, labelValue, shared.StateReady).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, labelKey, labelValue, shared.StateReady).
 				Should(Succeed())
 		})
 	})
@@ -67,6 +67,6 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 	AfterAll(func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 })
