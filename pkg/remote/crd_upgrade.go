@@ -24,7 +24,8 @@ type SyncCrdsUseCase struct {
 	crdCache          *crd.Cache
 }
 
-func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextFactory, cache *crd.Cache) SyncCrdsUseCase {
+func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextFactory,
+	cache *crd.Cache) SyncCrdsUseCase {
 	if cache == nil {
 		return SyncCrdsUseCase{
 			kcpClient:         kcpClient,
@@ -52,7 +53,8 @@ func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool
 		}
 	}
 
-	moduleTemplateCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, skrContext.Client, kyma, shared.ModuleTemplateKind.Plural())
+	moduleTemplateCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, skrContext.Client, kyma,
+		shared.ModuleTemplateKind.Plural())
 	if err != nil {
 		err = client.IgnoreNotFound(err)
 		if err != nil {
@@ -127,7 +129,8 @@ func getAnnotation(crd *apiextensionsv1.CustomResourceDefinition, crdType CrdTyp
 	return fmt.Sprintf("%s-%s-crd-generation", strings.ToLower(crd.Spec.Names.Kind), strings.ToLower(string(crdType)))
 }
 
-func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, skrClient Client, kyma *v1beta2.Kyma, plural string,
+func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, skrClient Client, kyma *v1beta2.Kyma,
+	plural string,
 ) (bool, error) {
 	kcpCrd, skrCrd, err := s.fetchCrds(ctx, skrClient, plural)
 	if err != nil {
@@ -153,7 +156,8 @@ func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
 	return crdUpdated, nil
 }
 
-func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient Client, plural string) (*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error) {
+func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient Client,
+	plural string) (*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error) {
 	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
 	kcpCrd, ok := s.crdCache.Get(kcpCrdName)
 	if !ok {
