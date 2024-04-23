@@ -22,11 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-	apicorev1 "k8s.io/api/core/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 
 	"go.uber.org/zap/zapcore"
@@ -68,17 +65,18 @@ import (
 const UseRandomPort = "0"
 
 var (
-	k8sManager         manager.Manager
-	kcpClient          client.Client
-	skrClient          client.Client
-	kcpEnv             *envtest.Environment
-	skrEnv             *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
-	cfg                *rest.Config
-	descriptorCache    *cache.DescriptorCache
-	descriptorProvider *provider.CachedDescriptorProvider
-	crdCache           *crd.Cache
+	k8sManager manager.Manager
+	kcpClient  client.Client
+	//skrClient             client.Client
+	testSkrContextFactory *IntegrationTestSkrContextFactory
+	kcpEnv                *envtest.Environment
+	skrEnv                *envtest.Environment
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	cfg                   *rest.Config
+	descriptorCache       *cache.DescriptorCache
+	descriptorProvider    *provider.CachedDescriptorProvider
+	crdCache              *crd.Cache
 )
 
 func TestAPIs(t *testing.T) {
@@ -141,19 +139,10 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	skrClient, skrEnv, err = NewSKRCluster(kcpClient.Scheme())
-	Expect(err).NotTo(HaveOccurred())
-	namespace := &apicorev1.Namespace{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:   shared.DefaultRemoteNamespace,
-			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
-		},
-		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-	}
-	err = skrClient.Create(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(skrClient, skrEnv.Config))
+	testSkrContextFactory = NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+
 	remoteClientCache := remote.NewClientCache()
 	descriptorCache = cache.NewDescriptorCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)

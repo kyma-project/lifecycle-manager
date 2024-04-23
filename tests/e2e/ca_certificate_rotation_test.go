@@ -25,12 +25,11 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	caCertName := "klm-watcher-serving-cert"
 
 	Context("Given KCP Cluster and rotated CA certificate", func() {
-		kcpNamespacedSecretName := types.NamespacedName{
+		kcpSecretName := types.NamespacedName{
 			Name:      kyma.Name + "-webhook-tls",
 			Namespace: "istio-system",
 		}
-
-		skrNamespacedSecretName := types.NamespacedName{
+		skrSecretName := types.NamespacedName{
 			Name:      watcher.SkrTLSName,
 			Namespace: RemoteNamespace,
 		}
@@ -54,13 +53,13 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(CertificateSecretIsCreatedAfter).
 				WithContext(ctx).
-				WithArguments(kcpNamespacedSecretName, controlPlaneClient, caCertificate.Status.NotBefore).
+				WithArguments(kcpSecretName, controlPlaneClient, caCertificate.Status.NotBefore).
 				Should(Succeed())
 
 			By("And new TLS Certificate is synced to SKR Cluster")
 			Eventually(CertificateSecretIsSyncedToSkrCluster).
 				WithContext(ctx).
-				WithArguments(kcpNamespacedSecretName, controlPlaneClient, skrNamespacedSecretName, runtimeClient).
+				WithArguments(kcpSecretName, controlPlaneClient, skrSecretName, runtimeClient).
 				Should(Succeed())
 		})
 	})

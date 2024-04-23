@@ -134,9 +134,9 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	remoteClientCache := remote.NewClientCache()
 	kcpClient = k8sManager.GetClient()
-	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(kcpClient, k8sManager.GetConfig()))
+	testSkrContextFactory := NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+	remoteClientCache := remote.NewClientCache()
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,

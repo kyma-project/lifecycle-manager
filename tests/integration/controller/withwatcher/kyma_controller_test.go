@@ -46,7 +46,13 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 	caCertificate := createCaCertificate()
+	var skrClient client.Client
+	var err error
 
+	BeforeAll(func() {
+		skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+		Expect(err).NotTo(HaveOccurred())
+	})
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
 
 	It("kyma reconciliation installs watcher with correct webhook config", func() {

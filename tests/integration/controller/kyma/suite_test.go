@@ -132,7 +132,7 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	kcpClient = k8sManager.GetClient()
-	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(kcpClient, k8sManager.GetConfig()))
+	testSkrContextFactory := NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),

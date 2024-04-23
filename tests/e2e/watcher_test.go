@@ -35,7 +35,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
-	skrNamespacedSecretName := types.NamespacedName{
+	secretName := types.NamespacedName{
 		Name:      watcher.SkrTLSName,
 		Namespace: RemoteNamespace,
 	}
@@ -64,18 +64,18 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		It("When TLS Secret is deleted on SKR Cluster", func() {
 			Eventually(CertificateSecretExists).
 				WithContext(ctx).
-				WithArguments(skrNamespacedSecretName, runtimeClient).
+				WithArguments(secretName, runtimeClient).
 				Should(Succeed())
 			Eventually(DeleteCertificateSecret).
 				WithContext(ctx).
-				WithArguments(skrNamespacedSecretName, runtimeClient).
+				WithArguments(secretName, runtimeClient).
 				Should(Succeed())
 		})
 
 		It("Then TLS Secret is recreated", func() {
 			Eventually(CertificateSecretExists).
 				WithContext(ctx).
-				WithArguments(skrNamespacedSecretName, runtimeClient).
+				WithArguments(secretName, runtimeClient).
 				Should(Succeed())
 		})
 

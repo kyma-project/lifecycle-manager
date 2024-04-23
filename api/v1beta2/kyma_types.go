@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -436,4 +437,11 @@ func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 		updateRequired = true
 	}
 	return updateRequired
+}
+
+func (kyma *Kyma) GetNamespacedName() types.NamespacedName {
+	return types.NamespacedName{
+		Namespace: kyma.GetNamespace(),
+		Name:      kyma.GetName(),
+	}
 }

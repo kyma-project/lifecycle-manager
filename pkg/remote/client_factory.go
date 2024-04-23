@@ -8,8 +8,6 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	kymactx "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/context"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -19,8 +17,8 @@ import (
 )
 
 type SkrContextFactory interface {
-	Get(ctx context.Context) (*SkrContext, error)
-	Init(ctx context.Context, kyma *v1beta2.Kyma) error
+	Get(kyma types.NamespacedName) (*SkrContext, error)
+	Init(ctx context.Context, kyma types.NamespacedName) error
 }
 
 type KymaSkrContextFactory struct {
@@ -38,9 +36,12 @@ func NewKymaSkrContextFactory(kcpClient Client, clientCache *ClientCache) *KymaS
 const KubeConfigKey = "config"
 
 var ErrAccessSecretNotFound = errors.New("access secret not found")
+var ErrSkrClientContextNotFound = errors.New("skr client context not found")
 
-func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma *v1beta2.Kyma) error {
-	// TODO check cache if client already created and return early
+func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma types.NamespacedName) error {
+	if k.clientCache.Contains(kyma) {
+		return nil
+	}
 
 	kubeConfigSecretList := &apicorev1.SecretList{}
 	if err := k.kcpClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
@@ -66,7 +67,7 @@ func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma *v1beta2.Kyma) er
 		return fmt.Errorf("failed to create lookup client: %w", err)
 	}
 
-	skr := NewClientWithConfig(clnt, restConfig)
+	skrClient := NewClientWithConfig(clnt, restConfig)
 
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -85,27 +86,19 @@ func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma *v1beta2.Kyma) er
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
 	patchOpts := &client.PatchOptions{Force: &force, FieldManager: "kyma-sync-context"}
-	if err := skr.Patch(ctx, namespace, patch, patchOpts); err != nil {
+	if err := skrClient.Patch(ctx, namespace, patch, patchOpts); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
 
-	key := types.NamespacedName{Name: kyma.Name, Namespace: kyma.Namespace}
-	k.clientCache.Add(key, skr)
+	k.clientCache.Add(kyma, skrClient)
 	return nil
 }
 
-func (k *KymaSkrContextFactory) Get(ctx context.Context) (*SkrContext, error) {
-	kymaName, err := kymactx.Get(ctx)
-	if err != nil {
-		// TODO wrap error
-		return nil, err
+func (k *KymaSkrContextFactory) Get(kyma types.NamespacedName) (*SkrContext, error) {
+	skrClient := k.clientCache.Get(kyma)
+	if skrClient == nil {
+		return nil, ErrSkrClientContextNotFound
 	}
 
-	skrClient := k.clientCache.Get(kymaName)
-
-	kymaClient := &SkrContext{
-		Client: skrClient,
-	}
-
-	return kymaClient, nil
+	return &SkrContext{Client: skrClient}, nil
 }

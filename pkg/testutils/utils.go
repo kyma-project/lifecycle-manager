@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -88,32 +90,33 @@ func NewTestNamespace(namespace string) *apicorev1.Namespace {
 }
 
 type IntegrationTestSkrContextFactory struct {
-	testSkrClient remote.Client
+	clients sync.Map
+	scheme  *machineryruntime.Scheme
 }
 
-func (f *IntegrationTestSkrContextFactory) Init(_ context.Context, _ *v1beta2.Kyma) error {
-	return nil
+func NewIntegrationTestSkrContextFactory(scheme *machineryruntime.Scheme) *IntegrationTestSkrContextFactory {
+	return &IntegrationTestSkrContextFactory{
+		clients: sync.Map{},
+		scheme:  scheme,
+	}
 }
 
-func (f *IntegrationTestSkrContextFactory) Get(_ context.Context) (*remote.SkrContext, error) {
-	return &remote.SkrContext{Client: f.testSkrClient}, nil
-}
+func (f *IntegrationTestSkrContextFactory) Init(ctx context.Context, kyma types.NamespacedName) error {
+	_, ok := f.clients.Load(kyma.Name)
+	if ok {
+		return nil
+	}
 
-func NewIntegrationTestSkrContextFactory(skrClient remote.Client) *IntegrationTestSkrContextFactory {
-	return &IntegrationTestSkrContextFactory{testSkrClient: skrClient}
-}
-
-func NewSKRCluster(scheme *machineryruntime.Scheme) (remote.Client, *envtest.Environment, error) {
 	skrEnv := &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 		// Scheme: scheme,
 	}
 	cfg, err := skrEnv.Start()
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 	if cfg == nil {
-		return nil, nil, ErrEmptyRestConfig
+		return ErrEmptyRestConfig
 	}
 
 	var authUser *envtest.AuthenticatedUser
@@ -122,16 +125,70 @@ func NewSKRCluster(scheme *machineryruntime.Scheme) (remote.Client, *envtest.Env
 		Groups: []string{"system:masters"},
 	}, cfg)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
-	// TODO: replace with interface in Reconcilers
-	//remote.LocalClient = func() *rest.Config {
-	//	return authUser.Config()
-	//}
 
-	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
-	return remote.NewClientWithConfig(skrClient, authUser.Config()), skrEnv, err
+	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: f.scheme})
+	if err != nil {
+		return err
+	}
+	namespace := &apicorev1.Namespace{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:   shared.DefaultRemoteNamespace,
+			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+		},
+		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+	}
+	err = skrClient.Create(ctx, namespace)
+
+	newClient := remote.NewClientWithConfig(skrClient, authUser.Config())
+	f.clients.Store(kyma.Name, newClient)
+	return err
 }
+
+var errSkrEnvNotStarted = errors.New("SKR envtest environment not started")
+
+func (f *IntegrationTestSkrContextFactory) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
+	value, ok := f.clients.Load(kyma.Name)
+	if !ok {
+		return nil, errSkrEnvNotStarted
+	}
+	skrClient, ok := value.(remote.ConfigAndClient)
+	if !ok {
+		return nil, errSkrEnvNotStarted
+	}
+	return &remote.SkrContext{Client: &skrClient}, nil
+}
+
+//func NewSKRCluster(scheme *machineryruntime.Scheme) (remote.Client, *envtest.Environment, error) {
+//	skrEnv := &envtest.Environment{
+//		ErrorIfCRDPathMissing: true,
+//		// Scheme: scheme,
+//	}
+//	cfg, err := skrEnv.Start()
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//	if cfg == nil {
+//		return nil, nil, ErrEmptyRestConfig
+//	}
+//
+//	var authUser *envtest.AuthenticatedUser
+//	authUser, err = skrEnv.AddUser(envtest.User{
+//		Name:   "skr-admin-account",
+//		Groups: []string{"system:masters"},
+//	}, cfg)
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//	// TODO: replace with interface in Reconcilers
+//	//remote.LocalClient = func() *rest.Config {
+//	//	return authUser.Config()
+//	//}
+//
+//	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
+//	return remote.NewClientWithConfig(skrClient, authUser.Config()), skrEnv, err
+//}
 
 func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.CustomResourceDefinition, error) {
 	var crds []*apiextensionsv1.CustomResourceDefinition

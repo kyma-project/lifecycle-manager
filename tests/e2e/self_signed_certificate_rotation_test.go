@@ -21,12 +21,12 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 
 	Context("Given Kyma deployed in KCP", func() {
 		It("When self signed certificate exists", func() {
-			namespacedCertName := types.NamespacedName{
+			certName := types.NamespacedName{
 				Name:      watcher.ResolveTLSCertName(kyma.Name),
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {
-				_, err := GetCACertificate(ctx, namespacedCertName, controlPlaneClient)
+				_, err := GetCACertificate(ctx, certName, controlPlaneClient)
 				return err
 			}).Should(Succeed())
 		})

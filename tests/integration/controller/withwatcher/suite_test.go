@@ -69,11 +69,12 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	k8sManager        manager.Manager
-	kcpClient         client.Client
-	kcpEnv            *envtest.Environment
-	skrClient         client.Client
-	skrEnv            *envtest.Environment
+	k8sManager            manager.Manager
+	kcpClient             client.Client
+	kcpEnv                *envtest.Environment
+	testSkrContextFactory *IntegrationTestSkrContextFactory
+	//skrClient         client.Client
+	//skrEnv            *envtest.Environment
 	suiteCtx          context.Context
 	cancel            context.CancelFunc
 	restCfg           *rest.Config
@@ -153,8 +154,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = k8sManager.GetClient()
-	skrClient, skrEnv, err = NewSKRCluster(kcpClient.Scheme())
-	Expect(err).ToNot(HaveOccurred())
 
 	intervals := queue.RequeueIntervals{
 		Success: 1 * time.Second,
@@ -207,7 +206,7 @@ var _ = BeforeSuite(func() {
 		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
 
-	testSkrContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(skrClient, skrEnv.Config))
+	testSkrContextFactory = NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
@@ -257,8 +256,8 @@ var _ = AfterSuite(func() {
 
 	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
-	err = skrEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
+	//err = skrEnv.Stop()
+	//Expect(err).NotTo(HaveOccurred())
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {

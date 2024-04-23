@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"k8s.io/apimachinery/pkg/types"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -32,7 +33,7 @@ type RemoteCatalog struct {
 }
 
 type Catalog interface {
-	CreateOrUpdate(ctx context.Context, moduleTemplateList *v1beta2.ModuleTemplateList) error
+	CreateOrUpdate(ctx context.Context, kyma types.NamespacedName, moduleTemplates *v1beta2.ModuleTemplateList) error
 	Delete(ctx context.Context) error
 }
 
@@ -62,13 +63,14 @@ func NewRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextFacto
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
+	kyma types.NamespacedName,
 	kcpModules []v1beta2.ModuleTemplate,
 ) error {
-	skrKymaClient, err := c.skrContextFactory.Get(ctx)
+	skrKymaClient, err := c.skrContextFactory.Get(kyma)
 	if err != nil {
-		return fmt.Errorf("failed to get syncContext: %w", err)
+		return fmt.Errorf("failed to get SkrContext to update remote catalog: %w", err)
 	}
-	if err = c.createOrUpdateCatalog(ctx, kcpModules, skrKymaClient); err != nil {
+	if err = c.createOrUpdateCatalog(ctx, kyma, kcpModules, skrKymaClient); err != nil {
 		return err
 	}
 
@@ -118,6 +120,7 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 var errCatTemplatesApply = errors.New("could not apply catalog templates")
 
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
+	kyma types.NamespacedName,
 	kcpModules []v1beta2.ModuleTemplate,
 	syncContext *SkrContext,
 ) error {
@@ -139,7 +142,7 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 
 	// retry if ModuleTemplate CRD is not existing in SKR cluster
 	if containsCRDNotFoundError(errs) {
-		if err := c.createModuleTemplateCRDInRuntime(ctx); err != nil {
+		if err := c.createModuleTemplateCRDInRuntime(ctx, kyma); err != nil {
 			return err
 		}
 	}
@@ -219,10 +222,11 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate) {
 
 func (c *RemoteCatalog) Delete(
 	ctx context.Context,
+	kyma types.NamespacedName,
 ) error {
-	skrContext, err := c.skrContextFactory.Get(ctx)
+	skrContext, err := c.skrContextFactory.Get(kyma)
 	if err != nil {
-		return fmt.Errorf("failed to get skrContext: %w", err)
+		return fmt.Errorf("failed to get SkrContext for deleting RemoteCatalog: %w", err)
 	}
 
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
@@ -232,31 +236,31 @@ func (c *RemoteCatalog) Delete(
 		if util.IsNotFound(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to list module templates on runtime: %w", err)
+		return fmt.Errorf("failed to list module templates from skr: %w", err)
 	}
 	for i := range moduleTemplatesRuntime.Items {
 		if isManagedByKcp(moduleTemplatesRuntime.Items[i]) {
 			if err := skrContext.Client.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
 				!util.IsNotFound(err) {
-				return fmt.Errorf("failed to delete module template from runtime: %w", err)
+				return fmt.Errorf("failed to delete module template from skr: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-func (c *RemoteCatalog) createModuleTemplateCRDInRuntime(ctx context.Context) error {
+func (c *RemoteCatalog) createModuleTemplateCRDInRuntime(ctx context.Context, kyma types.NamespacedName) error {
 	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
 	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
 	objKey := client.ObjectKey{Name: fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group)}
 	err := c.kcpClient.Get(ctx, objKey, kcpCrd)
 	if err != nil {
-		return fmt.Errorf("failed to get module template CRD from kcp: %w", err)
+		return fmt.Errorf("failed to get ModuleTemplate CRD from KCP: %w", err)
 	}
 
-	skrContext, err := c.skrContextFactory.Get(ctx)
+	skrContext, err := c.skrContextFactory.Get(kyma)
 	if err != nil {
-		return fmt.Errorf("failed to get skrContext: %w", err)
+		return fmt.Errorf("failed to get SkrContext to create ModuleTemplate CRDs for RemoteCatalog : %w", err)
 	}
 	err = skrContext.Client.Get(ctx, objKey, skrCrd)
 
@@ -269,7 +273,7 @@ func (c *RemoteCatalog) createModuleTemplateCRDInRuntime(ctx context.Context) er
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to get module template CRD from runtime: %w", err)
+		return fmt.Errorf("failed to get ModuleTemplate CRD from SKR: %w", err)
 	}
 
 	return nil
