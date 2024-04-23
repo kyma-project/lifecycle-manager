@@ -50,7 +50,7 @@ func NewSKRWebhookManifestManager(
 	caCertificateCache *CACertificateCache,
 	managerConfig SkrWebhookManagerConfig,
 	certificateConfig CertificateConfig,
-	gatewayConfig GatewayConfig,
+	resolvedKcpAddr string,
 ) (*SKRWebhookManifestManager, error) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -61,11 +61,6 @@ func NewSKRWebhookManifestManager(
 	}
 	defer closeFileAndLogErr(ctx, rawManifestFile, manifestFilePath)
 	baseResources, err := getRawManifestUnstructuredResources(rawManifestFile)
-	if err != nil {
-		return nil, err
-	}
-
-	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient, gatewayConfig)
 	if err != nil {
 		return nil, err
 	}
