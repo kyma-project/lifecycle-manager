@@ -121,8 +121,12 @@ func DeleteRemotelySyncedKyma(
 func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context, syncNamespace string) error {
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:   syncNamespace,
-			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+			Name: syncNamespace,
+			Labels: map[string]string{
+				shared.ManagedBy:  shared.OperatorName,
+				"istio-injection": "enabled",
+				"namespaces.warden.kyma-project.io/validate": "enabled",
+			},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
