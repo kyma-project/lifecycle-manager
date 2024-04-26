@@ -22,8 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -106,7 +104,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = k8sManager.GetClient()
-	testSkContextFactory := NewIntegrationTestSkrContextFactory(remote.NewClientWithConfig(kcpClient, k8sManager.GetConfig()))
+	testSkContextFactory := NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
 	purgeReconciler = &controller.PurgeReconciler{
 		Client:                kcpClient,
 		SkrContextFactory:     testSkContextFactory,

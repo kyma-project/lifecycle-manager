@@ -134,8 +134,12 @@ func (f *IntegrationTestSkrContextFactory) Init(ctx context.Context, kyma types.
 	}
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:   shared.DefaultRemoteNamespace,
-			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+			Name: shared.DefaultRemoteNamespace,
+			Labels: map[string]string{
+				shared.ManagedBy:  shared.OperatorName,
+				"istio-injection": "enabled",
+				"namespaces.warden.kyma-project.io/validate": "enabled",
+			},
 		},
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 	}
