@@ -22,47 +22,6 @@ import (
 
 var ErrPrivateKeyNotMatching = errors.New("private Key for the TLS secret doesn't match")
 
-func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
-	certificateCR := &certmanagerv1.Certificate{}
-	err := clnt.Get(suiteCtx,
-		client.ObjectKey{Name: watcher.ResolveTLSCertName(kymaName), Namespace: istioSystemNs},
-		certificateCR)
-	return certificateCR, err
-}
-
-func getSecret(clnt client.Client, objKey client.ObjectKey) (*apicorev1.Secret, error) {
-	secretCR := &apicorev1.Secret{}
-	err := clnt.Get(suiteCtx, objKey, secretCR)
-	return secretCR, err
-}
-
-func certificateExists(clnt client.Client, kymaName string) error {
-	_, err := getCertificate(clnt, kymaName)
-	if util.IsNotFound(err) {
-		return fmt.Errorf("%w: %w", ErrNotFound, err)
-	}
-	return nil
-}
-
-func secretExists(clnt client.Client, secretObjKey client.ObjectKey) error {
-	_, err := getSecret(clnt, secretObjKey)
-	if util.IsNotFound(err) {
-		return fmt.Errorf("%w: %w", ErrNotFound, err)
-	}
-	return nil
-}
-
-func matchTLSSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey, privateKey []byte) error {
-	secretCR, err := getSecret(clnt, secretObjKey)
-	if err != nil {
-		return err
-	}
-	if !bytes.Equal(secretCR.Data[apicorev1.TLSPrivateKeyKey], privateKey) {
-		return ErrPrivateKeyNotMatching
-	}
-	return nil
-}
-
 var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
 
@@ -74,6 +33,13 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	caCertificate := createCaCertificate()
 
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
+	var skrClient client.Client
+	var err error
+	BeforeAll(func() {
+		skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(suiteCtx).
@@ -134,3 +100,44 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		Expect(kcpClient.Delete(suiteCtx, kyma)).To(Succeed())
 	})
 })
+
+func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
+	certificateCR := &certmanagerv1.Certificate{}
+	err := clnt.Get(suiteCtx,
+		client.ObjectKey{Name: watcher.ResolveTLSCertName(kymaName), Namespace: istioSystemNs},
+		certificateCR)
+	return certificateCR, err
+}
+
+func getSecret(clnt client.Client, objKey client.ObjectKey) (*apicorev1.Secret, error) {
+	secretCR := &apicorev1.Secret{}
+	err := clnt.Get(suiteCtx, objKey, secretCR)
+	return secretCR, err
+}
+
+func certificateExists(clnt client.Client, kymaName string) error {
+	_, err := getCertificate(clnt, kymaName)
+	if util.IsNotFound(err) {
+		return fmt.Errorf("%w: %w", ErrNotFound, err)
+	}
+	return nil
+}
+
+func secretExists(clnt client.Client, secretObjKey client.ObjectKey) error {
+	_, err := getSecret(clnt, secretObjKey)
+	if util.IsNotFound(err) {
+		return fmt.Errorf("%w: %w", ErrNotFound, err)
+	}
+	return nil
+}
+
+func matchTLSSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey, privateKey []byte) error {
+	secretCR, err := getSecret(clnt, secretObjKey)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(secretCR.Data[apicorev1.TLSPrivateKeyKey], privateKey) {
+		return ErrPrivateKeyNotMatching
+	}
+	return nil
+}

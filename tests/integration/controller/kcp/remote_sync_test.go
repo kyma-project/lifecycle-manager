@@ -27,16 +27,12 @@ var (
 	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
 )
 
-var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
-	kyma := NewTestKyma("kyma")
-	//err := testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
+	kyma := NewTestKyma("kyma-1")
 	skrKyma := buildSkrKyma()
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
-
-	var skrClient client.Client
-	var err error
 	SKRTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
@@ -47,13 +43,16 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 		WithChannel(moduleInKCP.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
-
+	var skrClient client.Client
+	var err error
 	BeforeAll(func() {
-		//err = testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
-		//Expect(err).NotTo(HaveOccurred())
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -70,10 +69,7 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Kyma CR should be synchronized in both clusters", func() {
-		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
-			return err
-		}, Timeout, Interval).Should(Succeed())
+
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(ctx).
@@ -87,10 +83,6 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("ModuleTemplates should be synchronized in both clusters", func() {
-		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
-			return err
-		}, Timeout, Interval).Should(Succeed())
 		By("Module Template created")
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(KCPTemplate).
@@ -140,10 +132,6 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Enable module in SKR Kyma CR", func() {
-		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
-			return err
-		}, Timeout, Interval).Should(Succeed())
 		By("add module to remote Kyma")
 		Eventually(EnableModule, Timeout, Interval).
 			WithContext(ctx).
@@ -179,10 +167,6 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Synced Module Template should get reset after changed", func() {
-		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
-			return err
-		}, Timeout, Interval).Should(Succeed())
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(UpdateModuleTemplateSpec, Timeout, Interval).
 			WithContext(ctx).
@@ -197,10 +181,6 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Remote SKR Kyma get regenerated after it gets deleted", func() {
-		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
-			return err
-		}, Timeout, Interval).Should(Succeed())
 		By("Delete SKR Kyma")
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
@@ -214,10 +194,6 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Remote SKR Kyma get deleted when KCP Kyma get deleted", func() {
-		Eventually(func() error {
-			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
-			return err
-		}, Timeout, Interval).Should(Succeed())
 		By("Delete KCP Kyma")
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
@@ -253,20 +229,19 @@ func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
 }
 
 var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
-	kyma := NewTestKyma("kyma-integration-test-1")
-	//err := testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	kyma := NewTestKyma("kyma-2")
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
 	skrKyma := buildSkrKyma()
 	var skrClient client.Client
 	var err error
+	registerControlPlaneLifecycleForKyma(kyma)
 	BeforeAll(func() {
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})
-	registerControlPlaneLifecycleForKyma(kyma)
 
 	It("Kyma CR default module list should be copied to remote Kyma", func() {
 		By("Remote Kyma created")
@@ -326,20 +301,18 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
-	//err := testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
 	skrKyma := buildSkrKyma()
 	var skrClient client.Client
 	var err error
-
+	registerControlPlaneLifecycleForKyma(kyma)
 	BeforeAll(func() {
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
 	})
-	registerControlPlaneLifecycleForKyma(kyma)
 
 	annotations := []string{
 		"moduletemplate-skr-crd-generation",

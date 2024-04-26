@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
@@ -334,11 +333,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
 	}
 
-	kcpClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
-	if err != nil {
-		return nil, fmt.Errorf("can't create kcpClient: %w", err)
-	}
-	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(kcpClient)
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
 	if err != nil {
 		return nil, err
 	}

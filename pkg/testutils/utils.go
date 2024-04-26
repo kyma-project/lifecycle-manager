@@ -144,6 +144,9 @@ func (f *IntegrationTestSkrContextFactory) Init(ctx context.Context, kyma types.
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 	}
 	err = skrClient.Create(ctx, namespace)
+	if err != nil {
+		return err
+	}
 
 	newClient := remote.NewClientWithConfig(skrClient, authUser.Config())
 	f.clients.Store(kyma.Name, newClient)
@@ -157,11 +160,11 @@ func (f *IntegrationTestSkrContextFactory) Get(kyma types.NamespacedName) (*remo
 	if !ok {
 		return nil, errSkrEnvNotStarted
 	}
-	skrClient, ok := value.(remote.ConfigAndClient)
+	skrClient, ok := value.(*remote.ConfigAndClient)
 	if !ok {
 		return nil, errSkrEnvNotStarted
 	}
-	return &remote.SkrContext{Client: &skrClient}, nil
+	return &remote.SkrContext{Client: skrClient}, nil
 }
 
 //func NewSKRCluster(scheme *machineryruntime.Scheme) (remote.Client, *envtest.Environment, error) {

@@ -73,14 +73,12 @@ var (
 	kcpClient             client.Client
 	kcpEnv                *envtest.Environment
 	testSkrContextFactory *IntegrationTestSkrContextFactory
-	//skrClient         client.Client
-	//skrEnv            *envtest.Environment
-	suiteCtx          context.Context
-	cancel            context.CancelFunc
-	restCfg           *rest.Config
-	istioResources    []*unstructured.Unstructured
-	remoteClientCache *remote.ClientCache
-	logger            logr.Logger
+	suiteCtx              context.Context
+	cancel                context.CancelFunc
+	restCfg               *rest.Config
+	istioResources        []*unstructured.Unstructured
+	remoteClientCache     *remote.ClientCache
+	logger                logr.Logger
 )
 
 const (
@@ -200,10 +198,13 @@ var _ = BeforeSuite(func() {
 	}
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
-		restCfg, k8sclientscheme.Scheme,
+		kcpClient,
+		testSkrContextFactory,
 		caCertCache,
-		skrChartCfg, certificateConfig, gatewayConfig)
+		skrChartCfg, certificateConfig, resolvedKcpAddr)
 	Expect(err).ToNot(HaveOccurred())
 
 	testSkrContextFactory = NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
@@ -256,8 +257,6 @@ var _ = AfterSuite(func() {
 
 	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
-	//err = skrEnv.Stop()
-	//Expect(err).NotTo(HaveOccurred())
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {

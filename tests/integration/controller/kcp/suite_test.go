@@ -65,12 +65,10 @@ import (
 const UseRandomPort = "0"
 
 var (
-	k8sManager manager.Manager
-	kcpClient  client.Client
-	//skrClient             client.Client
+	k8sManager            manager.Manager
+	kcpClient             client.Client
 	testSkrContextFactory *IntegrationTestSkrContextFactory
 	kcpEnv                *envtest.Environment
-	skrEnv                *envtest.Environment
 	ctx                   context.Context
 	cancel                context.CancelFunc
 	cfg                   *rest.Config

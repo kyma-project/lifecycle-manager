@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strconv"
 
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -20,7 +21,11 @@ type GatewayConfig struct {
 	LocalGatewayPortOverwrite string
 }
 
-func (g GatewayConfig) ResolveKcpAddr(kcpClient client.Client) (string, error) { // Get public KCP DNS name and port from the Gateway
+func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (string, error) { // Get public KCP DNS name and port from the Gateway
+	kcpClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	if err != nil {
+		return "", fmt.Errorf("can't create kcpClient: %w", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
