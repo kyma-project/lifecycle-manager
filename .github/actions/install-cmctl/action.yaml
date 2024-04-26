@@ -8,7 +8,7 @@ runs:
       run: |
         OS=$(go env GOOS)
         ARCH=$(go env GOARCH)
-        
-        curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
-        tar xzf cmctl.tar.gz
+    
+        curl -fsSL -o cmctl https://github.com/cert-manager/cmctl/releases/latest/download/cmctl_${OS}_${ARCH}
+        chmod +x cmctl
         sudo mv cmctl /usr/local/bin
