@@ -31,7 +31,7 @@ var (
 
 const (
 	localHostname         = "0.0.0.0"
-	k3dHostname           = "host.k3d.internal"
+	skrHostname           = "skr.cluster.local"
 	defaultRemoteKymaName = "default"
 	EventuallyTimeout     = 10 * time.Second
 	ConsistentDuration    = 20 * time.Second
@@ -97,7 +97,7 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
+	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, skrHostname)
 	secret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      kymaName,

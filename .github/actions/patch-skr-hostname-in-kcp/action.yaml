@@ -1,0 +1,9 @@
+name: Patch SKR hostname in the KCP cluster
+description: Redirects hostname "skr.cluster.local" to the SKR cluster in the KCP cluster
+runs:
+  using: composite
+  steps:
+    - name: Patch SKR hostname in the KCP cluster
+      working-directory: ./lifecycle-manager
+      shell: bash
+      run: ./scripts/tests/add_skr_host_to_coredns.sh
