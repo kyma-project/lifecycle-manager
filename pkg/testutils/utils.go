@@ -8,29 +8,21 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 const (
@@ -44,7 +36,6 @@ var (
 	ErrNotFound                   = errors.New("resource does not exist")
 	ErrNotDeleted                 = errors.New("resource has not been deleted")
 	ErrDeletionTimestampFound     = errors.New("deletion timestamp not nil")
-	ErrEmptyRestConfig            = errors.New("rest.Config is nil")
 	ErrSampleCrNotInExpectedState = errors.New("resource not in expected state")
 	ErrFetchingStatus             = errors.New("could not fetch status from resource")
 )
@@ -89,114 +80,6 @@ func NewTestNamespace(namespace string) *apicorev1.Namespace {
 		},
 	}
 }
-
-type IntegrationTestSkrContextFactory struct {
-	clients sync.Map
-	scheme  *machineryruntime.Scheme
-}
-
-func NewIntegrationTestSkrContextFactory(scheme *machineryruntime.Scheme) *IntegrationTestSkrContextFactory {
-	return &IntegrationTestSkrContextFactory{
-		clients: sync.Map{},
-		scheme:  scheme,
-	}
-}
-
-func (f *IntegrationTestSkrContextFactory) Init(ctx context.Context, kyma types.NamespacedName) error {
-	_, ok := f.clients.Load(kyma.Name)
-	if ok {
-		return nil
-	}
-
-	skrEnv := &envtest.Environment{
-		ErrorIfCRDPathMissing: true,
-		// Scheme: scheme,
-	}
-	cfg, err := skrEnv.Start()
-	if err != nil {
-		return err
-	}
-	if cfg == nil {
-		return ErrEmptyRestConfig
-	}
-
-	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(envtest.User{
-		Name:   "skr-admin-account",
-		Groups: []string{"system:masters"},
-	}, cfg)
-	if err != nil {
-		return err
-	}
-
-	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: f.scheme})
-	if err != nil {
-		return err
-	}
-	namespace := &apicorev1.Namespace{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: shared.DefaultRemoteNamespace,
-			Labels: map[string]string{
-				shared.ManagedBy:  shared.OperatorName,
-				"istio-injection": "enabled",
-				"namespaces.warden.kyma-project.io/validate": "enabled",
-			},
-		},
-		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-	}
-	err = skrClient.Create(ctx, namespace)
-	if err != nil {
-		return err
-	}
-
-	newClient := remote.NewClientWithConfig(skrClient, authUser.Config())
-	f.clients.Store(kyma.Name, newClient)
-	return err
-}
-
-var errSkrEnvNotStarted = errors.New("SKR envtest environment not started")
-
-func (f *IntegrationTestSkrContextFactory) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
-	value, ok := f.clients.Load(kyma.Name)
-	if !ok {
-		return nil, errSkrEnvNotStarted
-	}
-	skrClient, ok := value.(*remote.ConfigAndClient)
-	if !ok {
-		return nil, errSkrEnvNotStarted
-	}
-	return &remote.SkrContext{Client: skrClient}, nil
-}
-
-//func NewSKRCluster(scheme *machineryruntime.Scheme) (remote.Client, *envtest.Environment, error) {
-//	skrEnv := &envtest.Environment{
-//		ErrorIfCRDPathMissing: true,
-//		// Scheme: scheme,
-//	}
-//	cfg, err := skrEnv.Start()
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//	if cfg == nil {
-//		return nil, nil, ErrEmptyRestConfig
-//	}
-//
-//	var authUser *envtest.AuthenticatedUser
-//	authUser, err = skrEnv.AddUser(envtest.User{
-//		Name:   "skr-admin-account",
-//		Groups: []string{"system:masters"},
-//	}, cfg)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//	// TODO: replace with interface in Reconcilers
-//	//remote.LocalClient = func() *rest.Config {
-//	//	return authUser.Config()
-//	//}
-//
-//	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
-//	return remote.NewClientWithConfig(skrClient, authUser.Config()), skrEnv, err
-//}
 
 func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.CustomResourceDefinition, error) {
 	var crds []*apiextensionsv1.CustomResourceDefinition

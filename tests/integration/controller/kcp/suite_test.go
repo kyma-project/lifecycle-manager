@@ -17,6 +17,7 @@ package kcp_test
 
 import (
 	"context"
+
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -67,7 +69,7 @@ const UseRandomPort = "0"
 var (
 	k8sManager            manager.Manager
 	kcpClient             client.Client
-	testSkrContextFactory *IntegrationTestSkrContextFactory
+	testSkrContextFactory *testskrcontext.DualClusterFactory
 	kcpEnv                *envtest.Environment
 	ctx                   context.Context
 	cancel                context.CancelFunc
@@ -139,7 +141,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(err).NotTo(HaveOccurred())
 
-	testSkrContextFactory = NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
 
 	remoteClientCache := remote.NewClientCache()
 	descriptorCache = cache.NewDescriptorCache()

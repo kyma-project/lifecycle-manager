@@ -18,6 +18,7 @@ package purge_test
 
 import (
 	"context"
+
 	"path/filepath"
 	"testing"
 	"time"
@@ -39,6 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -93,7 +95,7 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sManager, err := ctrl.NewManager(
+	mgr, err := ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: useRandomPort,
@@ -103,25 +105,25 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	kcpClient = k8sManager.GetClient()
-	testSkContextFactory := NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+	kcpClient = mgr.GetClient()
+	testSkContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
 	purgeReconciler = &controller.PurgeReconciler{
 		Client:                kcpClient,
-		SkrContextFactory:     testSkContextFactory,
-		EventRecorder:         k8sManager.GetEventRecorderFor(shared.OperatorName),
+		SkrContextFactory:     &testSkContextFactory,
+		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		PurgeFinalizerTimeout: time.Second,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
 		Metrics:               metrics.NewPurgeMetrics(),
 	}
 
-	err = purgeReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
+	err = purgeReconciler.SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
-	kcpClient = k8sManager.GetClient()
+	kcpClient = mgr.GetClient()
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })

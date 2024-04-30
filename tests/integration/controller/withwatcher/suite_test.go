@@ -17,6 +17,7 @@ package withwatcher_test
 
 import (
 	"context"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"os"
 	"path/filepath"
 	"testing"
@@ -72,7 +73,7 @@ var (
 	k8sManager            manager.Manager
 	kcpClient             client.Client
 	kcpEnv                *envtest.Environment
-	testSkrContextFactory *IntegrationTestSkrContextFactory
+	testSkrContextFactory *testskrcontext.DualClusterFactory
 	suiteCtx              context.Context
 	cancel                context.CancelFunc
 	restCfg               *rest.Config
@@ -207,7 +208,7 @@ var _ = BeforeSuite(func() {
 		skrChartCfg, certificateConfig, resolvedKcpAddr)
 	Expect(err).ToNot(HaveOccurred())
 
-	testSkrContextFactory = NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
