@@ -35,8 +35,10 @@ func NewKymaSkrContextFactory(kcpClient Client, clientCache *ClientCache) *KymaS
 
 const KubeConfigKey = "config"
 
-var ErrAccessSecretNotFound = errors.New("access secret not found")
-var ErrSkrClientContextNotFound = errors.New("skr client context not found")
+var (
+	ErrAccessSecretNotFound     = errors.New("access secret not found")
+	ErrSkrClientContextNotFound = errors.New("skr client context not found")
+)
 
 func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma types.NamespacedName) error {
 	if k.clientCache.Contains(kyma) {

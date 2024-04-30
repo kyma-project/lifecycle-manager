@@ -69,7 +69,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Kyma CR should be synchronized in both clusters", func() {
-
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(ctx).

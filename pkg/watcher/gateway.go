@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"strconv"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
