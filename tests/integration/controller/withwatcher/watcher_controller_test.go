@@ -21,6 +21,91 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
+var _ = Describe("Watcher CR scenarios", Ordered, func() {
+	var customIstioClient *istio.Client
+	var err error
+	BeforeAll(func() {
+		customIstioClient, err = istio.NewIstioClient(restCfg,
+			k8sManager.GetEventRecorderFor(controller.WatcherControllerName), ctrl.Log.WithName("istioClient"))
+		Expect(err).ToNot(HaveOccurred())
+		// create Watcher CRs
+		for idx, component := range centralComponents {
+			watcherCR := createWatcherCR(component, isEven(idx))
+			Expect(kcpClient.Create(suiteCtx, watcherCR)).To(Succeed())
+		}
+	})
+
+	It("All created Watcher CRs are in Ready state", func() {
+		Eventually(expectWatchersAreReady, Timeout, Interval).
+			WithArguments([]string{}).Should(Succeed())
+	})
+
+	allVirtualServicesDeleted := allVirtualServicesDeletedForNs(kcpSystemNs)
+
+	DescribeTable("Test VirtualService",
+		func(
+			timeout, interval time.Duration,
+			givenCondition func(istioClt *istio.Client) error,
+			expectedVirtualServiceBehavior func(istioClt *istio.Client, namespace string) error,
+			expectedWatcherCRBehavior func(watcherNames []string) error,
+			watcherNames []string,
+		) {
+			Eventually(givenCondition, timeout, interval).
+				WithArguments(customIstioClient).Should(Succeed())
+			Eventually(expectedVirtualServiceBehavior, timeout, interval).
+				WithArguments(customIstioClient, kcpSystemNs).Should(Succeed())
+			Eventually(expectedWatcherCRBehavior, timeout, interval).
+				WithArguments(watcherNames).Should(Succeed())
+		},
+		Entry("when watcherCR specs are updated, "+
+			"expect VirtualService configured correctly",
+			Timeout,
+			Interval,
+			crSpecUpdates,
+			expectVirtualServiceConfiguredCorrectly,
+			expectWatchersAreReady,
+			nil,
+		),
+		Entry("when gateway specs are updated, "+
+			"expect VirtualService configured correctly",
+			Timeout,
+			Interval,
+			gatewayUpdated,
+			expectVirtualServiceConfiguredCorrectly,
+			expectWatchersAreReady,
+			nil,
+		),
+		Entry("when all VirtualServices are deleted, "+
+			"expect VirtualServices recreated",
+			Timeout,
+			Interval,
+			allVirtualServicesDeleted,
+			expectVirtualServiceConfiguredCorrectly,
+			expectWatchersAreReady,
+			nil,
+		),
+		Entry("when one WatcherCR is deleted, "+
+			"expect related VirtualService http route removed"+
+			"and watcher finalizer is removed",
+			Timeout,
+			Interval,
+			deleteOneWatcherCR,
+			expectHTTPRouteRemoved,
+			expectWatchersDeleted,
+			[]string{componentToBeRemoved},
+		),
+		Entry("when all WatcherCRs are deleted,"+
+			"expect VirtualService removed",
+			Timeout,
+			Interval,
+			allCRsDeleted,
+			expectVirtualServiceRemoved,
+			expectWatchersDeleted,
+			nil,
+		),
+	)
+})
+
 func crSpecUpdates(_ *istio.Client) error {
 	for _, component := range centralComponents {
 		watcherCR, err := getWatcher(component)
@@ -187,88 +272,3 @@ func expectWatchersDeleted(watcherNames []string) error {
 	}
 	return nil
 }
-
-var _ = Describe("Watcher CR scenarios", Ordered, func() {
-	var customIstioClient *istio.Client
-	var err error
-	BeforeAll(func() {
-		customIstioClient, err = istio.NewIstioClient(restCfg,
-			k8sManager.GetEventRecorderFor(controller.WatcherControllerName), ctrl.Log.WithName("istioClient"))
-		Expect(err).ToNot(HaveOccurred())
-		// create Watcher CRs
-		for idx, component := range centralComponents {
-			watcherCR := createWatcherCR(component, isEven(idx))
-			Expect(kcpClient.Create(suiteCtx, watcherCR)).To(Succeed())
-		}
-	})
-
-	It("All created Watcher CRs are in Ready state", func() {
-		Eventually(expectWatchersAreReady, Timeout, Interval).
-			WithArguments([]string{}).Should(Succeed())
-	})
-
-	allVirtualServicesDeleted := allVirtualServicesDeletedForNs(kcpSystemNs)
-
-	DescribeTable("Test VirtualService",
-		func(
-			timeout, interval time.Duration,
-			givenCondition func(istioClt *istio.Client) error,
-			expectedVirtualServiceBehavior func(istioClt *istio.Client, namespace string) error,
-			expectedWatcherCRBehavior func(watcherNames []string) error,
-			watcherNames []string,
-		) {
-			Eventually(givenCondition, timeout, interval).
-				WithArguments(customIstioClient).Should(Succeed())
-			Eventually(expectedVirtualServiceBehavior, timeout, interval).
-				WithArguments(customIstioClient, kcpSystemNs).Should(Succeed())
-			Eventually(expectedWatcherCRBehavior, timeout, interval).
-				WithArguments(watcherNames).Should(Succeed())
-		},
-		Entry("when watcherCR specs are updated, "+
-			"expect VirtualService configured correctly",
-			Timeout,
-			Interval,
-			crSpecUpdates,
-			expectVirtualServiceConfiguredCorrectly,
-			expectWatchersAreReady,
-			nil,
-		),
-		Entry("when gateway specs are updated, "+
-			"expect VirtualService configured correctly",
-			Timeout,
-			Interval,
-			gatewayUpdated,
-			expectVirtualServiceConfiguredCorrectly,
-			expectWatchersAreReady,
-			nil,
-		),
-		Entry("when all VirtualServices are deleted, "+
-			"expect VirtualServices recreated",
-			Timeout,
-			Interval,
-			allVirtualServicesDeleted,
-			expectVirtualServiceConfiguredCorrectly,
-			expectWatchersAreReady,
-			nil,
-		),
-		Entry("when one WatcherCR is deleted, "+
-			"expect related VirtualService http route removed"+
-			"and watcher finalizer is removed",
-			Timeout,
-			Interval,
-			deleteOneWatcherCR,
-			expectHTTPRouteRemoved,
-			expectWatchersDeleted,
-			[]string{componentToBeRemoved},
-		),
-		Entry("when all WatcherCRs are deleted,"+
-			"expect VirtualService removed",
-			Timeout,
-			Interval,
-			allCRsDeleted,
-			expectVirtualServiceRemoved,
-			expectWatchersDeleted,
-			nil,
-		),
-	)
-})

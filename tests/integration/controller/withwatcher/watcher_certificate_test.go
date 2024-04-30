@@ -23,7 +23,7 @@ import (
 var ErrPrivateKeyNotMatching = errors.New("private Key for the TLS secret doesn't match")
 
 var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordered, func() {
-	kyma := NewTestKyma("kyma-remote-sync")
+	kyma := NewTestKyma("kyma-remote-sync-cert")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(istioSystemNs)
@@ -36,8 +36,10 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	var skrClient client.Client
 	var err error
 	BeforeAll(func() {
-		skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
 	})
 
 	It("remote kyma created on SKR", func() {

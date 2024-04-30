@@ -200,6 +200,7 @@ var _ = BeforeSuite(func() {
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
 	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(k8sManager)
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
 	Expect(err).ToNot(HaveOccurred())
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
 		kcpClient,
@@ -208,7 +209,6 @@ var _ = BeforeSuite(func() {
 		skrChartCfg, certificateConfig, resolvedKcpAddr)
 	Expect(err).ToNot(HaveOccurred())
 
-	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
