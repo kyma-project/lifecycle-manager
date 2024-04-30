@@ -26,6 +26,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X 'main.buildVersi
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY skr-webhook skr-webhook/
+RUN chmod 644 skr-webhook/
+
 COPY --from=builder /workspace/manager .
 USER 65532:65532
 
