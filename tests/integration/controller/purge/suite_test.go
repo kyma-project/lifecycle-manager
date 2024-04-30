@@ -106,10 +106,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
-	testSkContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
+	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
 	purgeReconciler = &controller.PurgeReconciler{
 		Client:                kcpClient,
-		SkrContextFactory:     &testSkContextFactory,
+		SkrContextFactory:     testSkrContextFactory,
 		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		PurgeFinalizerTimeout: time.Second,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),

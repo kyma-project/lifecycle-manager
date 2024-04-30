@@ -15,8 +15,8 @@ type SingleClusterFactory struct {
 	context remote.SkrContext
 }
 
-func NewSingleClusterFactory(clnt client.Client, cfg *rest.Config) SingleClusterFactory {
-	return SingleClusterFactory{context: remote.SkrContext{Client: remote.NewClientWithConfig(clnt, cfg)}}
+func NewSingleClusterFactory(clnt client.Client, cfg *rest.Config) *SingleClusterFactory {
+	return &SingleClusterFactory{context: remote.SkrContext{Client: remote.NewClientWithConfig(clnt, cfg)}}
 }
 
 func (f *SingleClusterFactory) Init(ctx context.Context, _ types.NamespacedName) error {

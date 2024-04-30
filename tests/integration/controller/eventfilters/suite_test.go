@@ -17,6 +17,7 @@ package eventfilters_test
 
 import (
 	"context"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"os"
 	"path/filepath"
 	"testing"
@@ -67,12 +68,12 @@ const (
 )
 
 var (
-	kcpClient  client.Client
-	k8sManager manager.Manager
-	kcpEnv     *envtest.Environment
-	ctx        context.Context
-	cancel     context.CancelFunc
-	cfg        *rest.Config
+	kcpClient client.Client
+	mgr       manager.Manager
+	kcpEnv    *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+	cfg       *rest.Config
 )
 
 func TestAPIs(t *testing.T) {
@@ -117,7 +118,7 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sManager, err = ctrl.NewManager(
+	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: randomPort,
@@ -134,13 +135,13 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	kcpClient = k8sManager.GetClient()
-	testSkrContextFactory := NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+	kcpClient = mgr.GetClient()
+	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
 	remoteClientCache := remote.NewClientCache()
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
-		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
@@ -148,13 +149,13 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.ReconcilerSetupSettings{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })

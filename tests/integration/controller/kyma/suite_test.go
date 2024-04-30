@@ -17,6 +17,7 @@ package kyma_test
 
 import (
 	"context"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"os"
 	"path/filepath"
 	"testing"
@@ -63,7 +64,7 @@ const randomPort = "0"
 
 var (
 	kcpClient          client.Client
-	k8sManager         manager.Manager
+	mgr                manager.Manager
 	controlPlaneEnv    *envtest.Environment
 	ctx                context.Context
 	cancel             context.CancelFunc
@@ -112,7 +113,7 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sManager, err = ctrl.NewManager(
+	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: randomPort,
@@ -131,11 +132,11 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
-	kcpClient = k8sManager.GetClient()
-	testSkrContextFactory := NewIntegrationTestSkrContextFactory(kcpClient.Scheme())
+	kcpClient = mgr.GetClient()
+	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
-		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider:  descriptorProvider,
 		SkrContextFactory:   testSkrContextFactory,
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
@@ -144,13 +145,13 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.ReconcilerSetupSettings{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })
