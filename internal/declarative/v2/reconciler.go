@@ -120,7 +120,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.initialize(obj); err != nil {
-		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestInit, currentObjStatus)
+		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestInit, currentObjStatus, err)
 	}
 
 	if obj.GetLabels() != nil && obj.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
@@ -142,9 +142,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if !obj.GetDeletionTimestamp().IsZero() {
 			r.ManifestMetrics.RemoveManifestDuration(req.Name)
 			r.cleanUpMandatoryModuleMetrics(obj)
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec)
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec,
+				err)
 		}
-		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestParseSpec, currentObjStatus)
+		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestParseSpec, currentObjStatus, err)
 	}
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
@@ -157,29 +158,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
 			r.cleanUpMandatoryModuleMetrics(obj)
 			r.ManifestMetrics.RemoveManifestDuration(req.Name)
-			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone)
+			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone, err)
 		}
 
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestClientInit, currentObjStatus)
+		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestClientInit, currentObjStatus, err)
 	}
 
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
 			r.invalidateClientCache(ctx, obj)
-			return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestUnauthorized, currentObjStatus)
+			return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestUnauthorized, currentObjStatus, err)
 		}
 
-		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestRenderResources, currentObjStatus)
+		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestRenderResources, currentObjStatus, err)
 	}
 
 	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
-		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestPruneDiff, currentObjStatus)
+		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestPruneDiff, currentObjStatus, err)
 	}
 
 	if err := r.removeModuleCR(ctx, clnt, obj); err != nil {
@@ -187,7 +188,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
-		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestPreDelete, currentObjStatus)
+		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestPreDelete, currentObjStatus, err)
 	}
 
 	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
@@ -198,7 +199,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if errors.Is(err, ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, obj)
 		}
-		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestSyncResources, currentObjStatus)
+		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestSyncResources, currentObjStatus, err)
 	}
 
 	// This situation happens when manifest get new installation layer to update resources,
@@ -211,7 +212,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if !obj.GetDeletionTimestamp().IsZero() {
 		r.cleanUpMandatoryModuleMetrics(obj)
 		r.ManifestMetrics.RemoveManifestDuration(req.Name)
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting)
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting, nil)
 	}
 
 	if err = r.handleStatusPatch(ctx, obj, currentObjStatus); err != nil {
@@ -234,7 +235,7 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
 }
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string,
-	requeueReason metrics.ManifestRequeueReason,
+	requeueReason metrics.ManifestRequeueReason, err error,
 ) (ctrl.Result, error) {
 	currentObjStatus := obj.GetStatus()
 	finalizerRemoved := false
@@ -253,7 +254,7 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
 	}
 
-	return r.ssaStatusIfDiffExist(ctx, obj, requeueReason, currentObjStatus)
+	return r.ssaStatusIfDiffExist(ctx, obj, requeueReason, currentObjStatus, err)
 }
 
 func (r *Reconciler) partialObjectMetadata(obj Object) *apimetav1.PartialObjectMetadata {
@@ -640,7 +641,7 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 }
 
 func (r *Reconciler) ssaStatusIfDiffExist(ctx context.Context, obj Object,
-	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status,
+	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 
@@ -649,7 +650,7 @@ func (r *Reconciler) ssaStatusIfDiffExist(ctx context.Context, obj Object,
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
 
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, originalErr
 }
 
 func (r *Reconciler) handleStatusPatch(ctx context.Context, obj Object, previousStatus shared.Status) error {
