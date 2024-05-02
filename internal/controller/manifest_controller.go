@@ -82,10 +82,6 @@ func SetupWithManager(mgr manager.Manager,
 	return nil
 }
 
-func createSource() source.Source {
-	return nil
-}
-
 func ManifestReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
 	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 ) *declarativev2.Reconciler {
