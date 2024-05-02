@@ -1,7 +1,7 @@
 # Build the manager binary
 FROM golang:1.22.2-alpine as builder
 
-WORKDIR /workspace
+WORKDIR /lifecycle-manager
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
@@ -30,8 +30,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X 'main.buildVersi
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 
-COPY --chown=65532:65532 --from=builder /workspace/manager .
-COPY --chown=65532:65532 --from=builder /workspace/skr-webhook skr-webhook/
+COPY --chown=65532:65532 --from=builder /lifecycle-manager/manager .
+COPY --chown=65532:65532 --from=builder /lifecycle-manager/skr-webhook skr-webhook/
 
 USER 65532:65532
 
