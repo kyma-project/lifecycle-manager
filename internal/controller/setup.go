@@ -70,7 +70,6 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
 	var runnableListener *watcherevent.SKREventListener
-	var eventChannel *source.Channel
 	var verifyFunc watcherevent.Verify
 
 	if settings.EnableDomainNameVerification {
@@ -82,14 +81,16 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		}
 	}
 	// register listener component incl. domain name verification
-	runnableListener, eventChannel = watcherevent.RegisterListenerComponent(
+	runnableListener = watcherevent.RegisterListenerComponent(
 		settings.ListenerAddr,
 		shared.OperatorName,
 		verifyFunc,
 	)
+	eventsSource := r.wireSKREvent(runnableListener)
 
 	// watch event channel
-	r.watchEventChannel(controllerBuilder, eventChannel)
+	controllerBuilder.WatchesRawSource(eventsSource)
+
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
@@ -102,9 +103,10 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	return nil
 }
 
-func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
-	controllerBuilder.WatchesRawSource(eventChannel, &handler.Funcs{
-		GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+func (r *KymaReconciler) wireSKREvent(runnableListener *watcherevent.SKREventListener) source.Source {
+
+	hFunc := handler.Funcs{
+		GenericFunc: func(ctx context.Context, event event.TypedGenericEvent[client.Object], queue workqueue.RateLimitingInterface) {
 			logger := ctrl.Log.WithName("listener")
 			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
 			if !conversionOk {
@@ -134,7 +136,9 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 				NamespacedName: ownerObjectKey,
 			})
 		},
-	})
+	}
+
+	return source.Channel(runnableListener.ReceivedEvents, hFunc)
 }
 
 // SetupWithManager sets up the Watcher controller with the Manager.
