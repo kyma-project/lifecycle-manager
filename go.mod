@@ -4,8 +4,6 @@ go 1.22.2
 
 replace github.com/kyma-project/lifecycle-manager/api => ./api
 
-replace github.com/kyma-project/runtime-watcher/listener => ../runtime-watcher/listener
-
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/cert-manager/cert-manager v1.14.4
@@ -16,7 +14,7 @@ require (
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240404131948-84f05fb48fc1
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240502124257-9d96561ef070
 	github.com/onsi/ginkgo/v2 v2.17.2
 	github.com/onsi/gomega v1.33.1
 	github.com/open-component-model/ocm v0.8.0
@@ -26,7 +24,7 @@ require (
 	golang.org/x/sync v0.7.0
 	golang.org/x/time v0.5.0
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
-	sigs.k8s.io/controller-runtime v0.18.0
+	sigs.k8s.io/controller-runtime v0.18.1
 	sigs.k8s.io/yaml v1.4.0
 )
 

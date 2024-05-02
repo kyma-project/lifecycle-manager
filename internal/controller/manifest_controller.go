@@ -42,7 +42,7 @@ func SetupWithManager(mgr manager.Manager,
 		}
 	}
 
-	runnableListener := watcherevent.RegisterListenerComponent(
+	runnableListener := watcherevent.NewSKREventListener(
 		settings.ListenerAddr, strings.ToLower(declarativev2.OperatorName),
 		verifyFunc,
 	)
@@ -53,16 +53,16 @@ func SetupWithManager(mgr manager.Manager,
 	}
 
 	addSkrEventToQueueFunc := &handler.Funcs{
-		GenericFunc: func(ctx context.Context, event event.TypedGenericEvent[client.Object],
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
 			queue workqueue.RateLimitingInterface,
 		) {
 			ctrl.Log.WithName("listener").Info(
 				fmt.Sprintf(
 					"event coming from SKR, adding %s to queue",
-					client.ObjectKeyFromObject(event.Object).String(),
+					client.ObjectKeyFromObject(evnt.Object).String(),
 				),
 			)
-			queue.Add(ctrl.Request{NamespacedName: client.ObjectKeyFromObject(event.Object)})
+			queue.Add(ctrl.Request{NamespacedName: client.ObjectKeyFromObject(evnt.Object)})
 		},
 	}
 

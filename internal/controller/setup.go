@@ -81,7 +81,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		}
 	}
 	// register listener component incl. domain name verification
-	runnableListener = watcherevent.RegisterListenerComponent(
+	runnableListener = watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
 		verifyFunc,
@@ -104,13 +104,12 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 }
 
 func (r *KymaReconciler) wireSKREvent(runnableListener *watcherevent.SKREventListener) source.Source {
-
 	hFunc := handler.Funcs{
-		GenericFunc: func(ctx context.Context, event event.TypedGenericEvent[client.Object], queue workqueue.RateLimitingInterface) {
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			logger := ctrl.Log.WithName("listener")
-			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
+			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
 			if !conversionOk {
-				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", event.Object))
+				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", evnt.Object))
 				return
 			}
 
