@@ -86,10 +86,9 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		shared.OperatorName,
 		verifyFunc,
 	)
-	eventsSource := r.wireSKREvent(runnableListener)
 
 	// watch event channel
-	controllerBuilder.WatchesRawSource(eventsSource)
+	controllerBuilder.WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler()))
 
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
@@ -103,8 +102,8 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	return nil
 }
 
-func (r *KymaReconciler) wireSKREvent(runnableListener *watcherevent.SKREventListener) source.Source {
-	hFunc := handler.Funcs{
+func (r *KymaReconciler) skrEventHandler() *handler.Funcs {
+	return &handler.Funcs{
 		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			logger := ctrl.Log.WithName("listener")
 			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
@@ -136,8 +135,6 @@ func (r *KymaReconciler) wireSKREvent(runnableListener *watcherevent.SKREventLis
 			})
 		},
 	}
-
-	return source.Channel(runnableListener.ReceivedEvents, hFunc)
 }
 
 // SetupWithManager sets up the Watcher controller with the Manager.
