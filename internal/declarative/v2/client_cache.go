@@ -30,11 +30,11 @@ func NewMemoryClientCache() *MemoryClientCache {
 }
 
 func (m *MemoryClientCache) GetClient(key string) Client {
-	ok := m.internal.Has(key)
-	if !ok {
-		return nil
+	cachedClient := m.internal.Get(key)
+	if cachedClient != nil {
+		return cachedClient.Value()
 	}
-	return m.internal.Get(key).Value()
+	return nil
 }
 
 func (m *MemoryClientCache) AddClient(key string, value Client) {
