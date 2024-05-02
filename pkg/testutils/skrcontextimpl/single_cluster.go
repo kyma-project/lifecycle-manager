@@ -5,6 +5,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -31,7 +32,12 @@ func (f *SingleClusterFactory) Init(ctx context.Context, _ types.NamespacedName)
 		},
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 	}
-	return f.context.Client.Create(ctx, namespace)
+
+	err := f.context.Client.Create(ctx, namespace)
+	if errors.IsAlreadyExists(err) {
+		return nil
+	}
+	return err
 }
 
 func (f *SingleClusterFactory) Get(_ types.NamespacedName) (*remote.SkrContext, error) {
