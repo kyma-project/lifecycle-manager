@@ -117,32 +117,34 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
-	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
-	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
-		logger.Info("access secret not found for kyma, assuming already deleted cluster")
-		r.Metrics.CleanupMetrics(kyma.Name)
-		r.removeAllFinalizers(kyma)
+	if r.SyncKymaEnabled(kyma) {
+		err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+		if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
+			logger.Info("access secret not found for kyma, assuming already deleted cluster")
+			r.Metrics.CleanupMetrics(kyma.Name)
+			r.removeAllFinalizers(kyma)
 
-		if err := r.updateKyma(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
-			return ctrl.Result{}, err
+			if err := r.updateKyma(ctx, kyma); err != nil {
+				r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
+				return ctrl.Result{}, err
+			}
+			r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
+			return ctrl.Result{Requeue: true}, nil
 		}
-		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
-		return ctrl.Result{Requeue: true}, nil
-	}
 
-	// Prevent ETCD load bursts during secret rotation
-	if apierrors.IsUnauthorized(err) {
-		r.deleteRemoteClientCache(ctx, kyma)
-		r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, queue.UnexpectedRequeue)
-		return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
-	}
+		// Prevent ETCD load bursts during secret rotation
+		if apierrors.IsUnauthorized(err) {
+			r.deleteRemoteClientCache(ctx, kyma)
+			r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, queue.UnexpectedRequeue)
+			return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
+		}
 
-	if err != nil {
-		r.deleteRemoteClientCache(ctx, kyma)
-		r.enqueueWarningEvent(kyma, syncContextError, err)
-		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
-		return r.requeueWithError(ctx, kyma, err)
+		if err != nil {
+			r.deleteRemoteClientCache(ctx, kyma)
+			r.enqueueWarningEvent(kyma, syncContextError, err)
+			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+			return r.requeueWithError(ctx, kyma, err)
+		}
 	}
 
 	return r.reconcile(ctx, kyma)
