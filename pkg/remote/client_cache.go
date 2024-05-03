@@ -25,11 +25,11 @@ type ClientCache struct {
 }
 
 func (c *ClientCache) Get(key client.ObjectKey) Client {
-	ok := c.internal.Has(key)
-	if !ok {
-		return nil
+	cachedClient := c.internal.Get(key)
+	if cachedClient != nil {
+		return cachedClient.Value()
 	}
-	return c.internal.Get(key).Value()
+	return nil
 }
 
 func (c *ClientCache) Add(key client.ObjectKey, value Client) {
