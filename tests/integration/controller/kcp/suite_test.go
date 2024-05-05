@@ -22,11 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-	"github.com/kyma-project/lifecycle-manager/internal/crd"
-
-	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -42,7 +37,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-
+	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -50,14 +47,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

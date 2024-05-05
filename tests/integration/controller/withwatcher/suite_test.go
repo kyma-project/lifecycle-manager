@@ -22,8 +22,6 @@ import (
 	"testing"
 	"time"
 
-	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
-
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -56,6 +54,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 

@@ -22,12 +22,6 @@ import (
 	"testing"
 	"time"
 
-	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -43,11 +37,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 

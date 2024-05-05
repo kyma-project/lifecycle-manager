@@ -131,6 +131,8 @@ linters-settings:
         alias: metricsserver
       - pkg: github.com/prometheus/client_model/go
         alias: prometheusclient
+      - pkg: github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl
+        alias: testskrcontext
   ireturn:
     allow:
       - anon

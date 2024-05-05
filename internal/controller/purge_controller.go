@@ -22,8 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-
 	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -40,6 +38,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -265,7 +264,7 @@ func getAllRemainingCRs(ctx context.Context, remoteClient client.Client,
 func dropFinalizers(ctx context.Context, remoteClient client.Client,
 	staleResources unstructured.UnstructuredList,
 ) ([]string, error) {
-	var handledResources []string
+	handledResources := make([]string, 0, len(staleResources.Items))
 	for index := range staleResources.Items {
 		resource := staleResources.Items[index]
 		resource.SetFinalizers(nil)

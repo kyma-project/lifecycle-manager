@@ -4,20 +4,20 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (

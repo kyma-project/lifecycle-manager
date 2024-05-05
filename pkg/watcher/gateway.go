@@ -6,9 +6,8 @@ import (
 	"net"
 	"strconv"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

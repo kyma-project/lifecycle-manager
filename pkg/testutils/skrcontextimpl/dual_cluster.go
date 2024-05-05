@@ -5,14 +5,15 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
 
 var (

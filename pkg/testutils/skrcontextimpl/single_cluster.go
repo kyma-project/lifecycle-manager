@@ -3,14 +3,15 @@ package skrcontextimpl
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
 
 type SingleClusterFactory struct {
@@ -35,7 +36,7 @@ func (f *SingleClusterFactory) Init(ctx context.Context, _ types.NamespacedName)
 	}
 
 	err := f.context.Client.Create(ctx, namespace)
-	if errors.IsAlreadyExists(err) {
+	if apierrors.IsAlreadyExists(err) {
 		return nil
 	}
 	return err

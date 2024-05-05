@@ -3,15 +3,16 @@ package controller
 import (
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/istio"
-	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 	apicorev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 )
 
 type SetupUpSetting struct {
