@@ -17,11 +17,12 @@ package withwatcher_test
 
 import (
 	"context"
-	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 

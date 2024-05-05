@@ -17,7 +17,6 @@ package kcp_test
 
 import (
 	"context"
-
 	"os"
 	"path/filepath"
 	"testing"

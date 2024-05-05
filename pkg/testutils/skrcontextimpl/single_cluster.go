@@ -2,6 +2,7 @@ package skrcontextimpl
 
 import (
 	"context"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	apicorev1 "k8s.io/api/core/v1"
