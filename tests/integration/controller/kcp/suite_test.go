@@ -17,6 +17,7 @@ package kcp_test
 
 import (
 	"context"
+	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,7 +47,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -139,7 +139,7 @@ var _ = BeforeSuite(func() {
 
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
 
-	remoteClientCache := remote.NewClientCache()
+	remoteClientCache := remote2.NewClientCache()
 	descriptorCache = cache.NewDescriptorCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)
 	crdCache = crd.NewCache(nil)
@@ -150,7 +150,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
+		SyncRemoteCrds:      remote2.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
 		InKCPMode:           true,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,

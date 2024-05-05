@@ -2,6 +2,7 @@ package skrcontextimpl
 
 import (
 	"context"
+	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -11,15 +12,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
 
 type SingleClusterFactory struct {
-	context remote.SkrContext
+	context remote2.SkrContext
 }
 
 func NewSingleClusterFactory(clnt client.Client, cfg *rest.Config) *SingleClusterFactory {
-	return &SingleClusterFactory{context: remote.SkrContext{Client: remote.NewClientWithConfig(clnt, cfg)}}
+	return &SingleClusterFactory{context: remote2.SkrContext{Client: remote2.NewClientWithConfig(clnt, cfg)}}
 }
 
 func (f *SingleClusterFactory) Init(ctx context.Context, _ types.NamespacedName) error {
@@ -42,6 +42,6 @@ func (f *SingleClusterFactory) Init(ctx context.Context, _ types.NamespacedName)
 	return err
 }
 
-func (f *SingleClusterFactory) Get(_ types.NamespacedName) (*remote.SkrContext, error) {
+func (f *SingleClusterFactory) Get(_ types.NamespacedName) (*remote2.SkrContext, error) {
 	return &f.context, nil
 }

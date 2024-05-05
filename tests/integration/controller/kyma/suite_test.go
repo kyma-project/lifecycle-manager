@@ -17,6 +17,7 @@ package kyma_test
 
 import (
 	"context"
+	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"os"
 	"path/filepath"
 	"testing"
@@ -47,7 +48,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -131,7 +131,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	remoteClientCache := remote.NewClientCache()
+	remoteClientCache := remote2.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	kcpClient = mgr.GetClient()
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
@@ -140,7 +140,7 @@ var _ = BeforeSuite(func() {
 		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider:  descriptorProvider,
 		SkrContextFactory:   testSkrContextFactory,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SyncRemoteCrds:      remote2.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		InKCPMode:           false,

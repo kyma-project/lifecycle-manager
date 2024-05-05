@@ -1,13 +1,12 @@
 package remote_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
 
 func TestNewClientCache(t *testing.T) {

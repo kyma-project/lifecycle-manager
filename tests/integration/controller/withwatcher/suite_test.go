@@ -17,6 +17,7 @@ package withwatcher_test
 
 import (
 	"context"
+	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,7 +54,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -78,7 +78,7 @@ var (
 	cancel                context.CancelFunc
 	restCfg               *rest.Config
 	istioResources        []*unstructured.Unstructured
-	remoteClientCache     *remote.ClientCache
+	remoteClientCache     *remote2.ClientCache
 	logger                logr.Logger
 )
 
@@ -175,7 +175,7 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	remoteClientCache = remote.NewClientCache()
+	remoteClientCache = remote2.NewClientCache()
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
@@ -216,7 +216,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SyncRemoteCrds:      remote2.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteClientCache:   remoteClientCache,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
