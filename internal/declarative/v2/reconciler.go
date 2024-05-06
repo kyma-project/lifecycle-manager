@@ -161,7 +161,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone, err)
 		}
 
-		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
 		return r.ssaStatusIfDiffExist(ctx, obj, metrics.ManifestClientInit, currentObjStatus, err)
 	}
@@ -247,11 +246,10 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 	if finalizerRemoved {
 		return r.updateObject(ctx, obj, requeueReason, queue.IntendedRequeue)
 	}
-	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
-	r.Event(obj, "Normal", "FinalizerRemoval", msg)
 
 	if obj.GetStatus().State != shared.StateWarning {
-		obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
+		obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).
+			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())))
 	}
 
 	return r.ssaStatusIfDiffExist(ctx, obj, requeueReason, currentObjStatus, err)
@@ -295,7 +293,6 @@ func (r *Reconciler) initialize(obj Object) error {
 func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 	spec, err := r.SpecResolver.Spec(ctx, obj)
 	if err != nil {
-		r.Event(obj, "Warning", "Spec", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
 	}
 	return spec, err
@@ -322,13 +319,11 @@ func (r *Reconciler) renderResources(
 
 	current, err = converter.ResourcesToInfos(status.Synced)
 	if err != nil {
-		r.Event(obj, "Warning", "CurrentResourceParsing", err.Error())
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
 
 	if !meta.IsStatusConditionTrue(status.Conditions, resourceCondition.Type) {
-		r.Event(obj, "Normal", resourceCondition.Reason, resourceCondition.Message)
 		resourceCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, resourceCondition)
 		obj.SetStatus(status.WithOperation(resourceCondition.Message))
@@ -343,7 +338,6 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	status := obj.GetStatus()
 
 	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
-		r.Event(obj, "Warning", "ServerSideApply", err.Error())
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -363,7 +357,6 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 
 	for i := range r.PostRuns {
 		if err := r.PostRuns[i](ctx, clnt, r.Client, obj); err != nil {
-			r.Event(obj, "Warning", "PostRun", err.Error())
 			obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 			return err
 		}
@@ -402,21 +395,18 @@ func (r *Reconciler) checkTargetReadiness(
 
 	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
-		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
 	if crStateInfo.State == shared.StateProcessing {
 		waitingMsg := "waiting for resources to become ready: " + crStateInfo.Info
-		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
 		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
 	installationCondition := newInstallationCondition(manifest)
 	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
-		r.Event(manifest, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
 		manifest.SetStatus(status.WithState(crStateInfo.State).
@@ -438,7 +428,6 @@ func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object
 	if !obj.GetDeletionTimestamp().IsZero() {
 		for _, preDelete := range r.PreDeletes {
 			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
-				r.Event(obj, "Warning", "PreDelete", err.Error())
 				// we do not set a status here since it will be deleting if timestamp is set.
 				obj.SetStatus(obj.GetStatus().WithErr(err))
 				return err
@@ -469,14 +458,12 @@ func (r *Reconciler) renderTargetResources(
 
 	targetResources, err := r.ManifestParser.Parse(spec)
 	if err != nil {
-		r.Event(obj, "Warning", "ManifestParsing", err.Error())
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
 
 	for _, transform := range r.PostRenderTransforms {
 		if err := transform(ctx, obj, targetResources.Items); err != nil {
-			r.Event(obj, "Warning", "PostRenderTransform", err.Error())
 			obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 			return nil, err
 		}
@@ -484,11 +471,6 @@ func (r *Reconciler) renderTargetResources(
 
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
-		// Prevent ETCD load bursts during secret rotation
-		if !util.IsConnectionRelatedError(err) {
-			r.Event(obj, "Warning", "TargetResourceParsing", err.Error())
-		}
-
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
@@ -515,7 +497,6 @@ func (r *Reconciler) pruneDiff(
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
-		r.Event(obj, "Warning", "PruneDiff", ErrResourceSyncDiffInSameOCILayer.Error())
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
@@ -657,7 +638,6 @@ func (r *Reconciler) handleStatusPatch(ctx context.Context, obj Object, previous
 	if hasStatusDiff(obj.GetStatus(), previousStatus) {
 		resetNonPatchableField(obj)
 		if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
-			r.Event(obj, "Warning", "PatchStatus", err.Error())
 			return fmt.Errorf("failed to patch status: %w", err)
 		}
 	}
