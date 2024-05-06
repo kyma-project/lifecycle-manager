@@ -87,12 +87,9 @@ func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Cli
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma, err := s.getRemoteKyma(ctx)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
-		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
-
-		if err = s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
+		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
-
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
 	}
 
@@ -101,14 +98,12 @@ func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Cli
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
 		}
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
-
 		err = s.Client.Create(ctx, remoteKyma)
 		if err != nil {
-			recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
 			return nil, fmt.Errorf("failed to create remote kyma: %w", err)
 		}
+		recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
 	} else if err != nil {
-		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
 		return nil, fmt.Errorf("failed to fetch remote kyma: %w", err)
 	}
 

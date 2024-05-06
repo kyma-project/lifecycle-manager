@@ -50,18 +50,15 @@ import (
 
 type (
 	EventReasonError string
-	EventReasonInfo  string
 )
 
 var ErrManifestsStillExist = errors.New("manifests still exist")
 
 const (
 	moduleReconciliationError EventReasonError = "ModuleReconciliationError"
-	syncContextError          EventReasonError = "SyncContextError"
 	metricsError              EventReasonError = "MetricsError"
-	deletionError             EventReasonError = "DeletionError"
-	updateStatus              EventReasonInfo  = "StatusUpdate"
-	webhookChartRemoval       EventReasonInfo  = "WebhookChartRemoval"
+	updateSpecError           EventReasonError = "UpdateSpecError"
+	updateStatusError         EventReasonError = "UpdateStatusError"
 )
 
 type Reconciler struct {
@@ -136,12 +133,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if apierrors.IsUnauthorized(err) {
 			r.deleteRemoteClientCache(ctx, kyma)
 			r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, queue.UnexpectedRequeue)
-			return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
+			return r.requeueWithError(ctx, kyma, err)
 		}
 
 		if err != nil {
 			r.deleteRemoteClientCache(ctx, kyma)
-			r.enqueueWarningEvent(kyma, syncContextError, err)
 			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
@@ -234,20 +230,11 @@ func (r *Reconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) e
 }
 
 func (r *Reconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
-	updateErr := r.updateStatusWithError(ctx, kyma, err)
-	if updateErr == nil {
-		r.enqueueWarningEvent(kyma, moduleReconciliationError, err)
-	}
-
-	return ctrl.Result{Requeue: true}, updateErr
+	return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
 }
 
 func (r *Reconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReasonError, err error) {
 	r.Event(kyma, "Warning", string(reason), err.Error())
-}
-
-func (r *Reconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReasonInfo, message string) {
-	r.Event(kyma, "Normal", string(reason), message)
 }
 
 func (r *Reconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
@@ -318,12 +305,10 @@ func (r *Reconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (
 }
 
 func (r *Reconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	const msg = "started processing"
-	if err := r.updateStatus(ctx, kyma, shared.StateProcessing, msg); err != nil {
+	if err := r.updateStatus(ctx, kyma, shared.StateProcessing, "started processing"); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, queue.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
-	r.enqueueNormalEvent(kyma, updateStatus, msg)
 	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, queue.IntendedRequeue)
 	return ctrl.Result{Requeue: true}, nil
 }
@@ -394,9 +379,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 
 	if r.WatcherEnabled(kyma) {
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
-			// error is expected, try again
-			r.enqueueNormalEvent(kyma, webhookChartRemoval, err.Error())
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+			return ctrl.Result{}, err
 		}
 		r.SKRWebhookManager.WatcherMetrics.CleanupMetrics(kyma.Name)
 	}
@@ -405,27 +388,24 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		if err := remote.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace).
 			Delete(ctx, kyma.GetNamespacedName()); err != nil {
 			err = fmt.Errorf("could not delete remote module catalog: %w", err)
-			r.enqueueWarningEvent(kyma, deletionError, err)
 			r.Metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, queue.UnexpectedRequeue)
-			return ctrl.Result{}, err
+			return r.requeueWithError(ctx, kyma, err)
 		}
 		skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to get skrContext: %w", err)
 		}
-		if err := skrContext.RemoveFinalizersFromKyma(ctx); client.IgnoreNotFound(err) != nil {
-			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
-			r.enqueueWarningEvent(kyma, deletionError, err)
+
+		r.RemoteClientCache.Delete(client.ObjectKeyFromObject(kyma))
+		if err = skrContext.RemoveFinalizersFromKyma(ctx); client.IgnoreNotFound(err) != nil {
 			r.Metrics.RecordRequeueReason(metrics.FinalizersRemovalFromRemoteKyma, queue.UnexpectedRequeue)
-			return ctrl.Result{}, err
+			return r.requeueWithError(ctx, kyma, err)
 		}
 
 		logger.Info("removed remote finalizers")
 	}
 
-	err := r.cleanupManifestCRs(ctx, kyma)
-	if err != nil {
-		r.enqueueWarningEvent(kyma, deletionError, err)
+	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, queue.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
@@ -491,7 +471,7 @@ func (r *Reconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
 func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 	if err := r.Update(ctx, kyma); err != nil {
 		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
-		r.enqueueWarningEvent(kyma, deletionError, err)
+		r.enqueueWarningEvent(kyma, updateSpecError, err)
 		return err
 	}
 
@@ -542,6 +522,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
 	state shared.State, message string,
 ) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
+		r.Event(kyma, "Warning", "PatchStatus", err.Error())
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
 	}
 	return nil
@@ -549,9 +530,9 @@ func (r *Reconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
 
 func (r *Reconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, shared.StateError, err.Error()); err != nil {
+		r.enqueueWarningEvent(kyma, updateStatusError, err)
 		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, err)
 	}
-
 	return nil
 }
 
