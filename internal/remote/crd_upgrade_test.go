@@ -1,7 +1,6 @@
 package remote_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +8,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 func TestShouldPatchRemoteCRD(t *testing.T) {

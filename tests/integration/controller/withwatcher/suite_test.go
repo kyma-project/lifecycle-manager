@@ -17,16 +17,10 @@ package withwatcher_test
 
 import (
 	"context"
-	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-
-	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
@@ -49,9 +43,13 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
@@ -78,7 +76,7 @@ var (
 	cancel                context.CancelFunc
 	restCfg               *rest.Config
 	istioResources        []*unstructured.Unstructured
-	remoteClientCache     *remote2.ClientCache
+	remoteClientCache     *remote.ClientCache
 	logger                logr.Logger
 )
 
@@ -175,7 +173,7 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	remoteClientCache = remote2.NewClientCache()
+	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
@@ -216,7 +214,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote2.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteClientCache:   remoteClientCache,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,

@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,6 +35,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -68,11 +68,11 @@ type Reconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
-	SkrContextFactory   remote2.SkrContextFactory
+	SkrContextFactory   remote.SkrContextFactory
 	DescriptorProvider  *provider.CachedDescriptorProvider
-	SyncRemoteCrds      remote2.SyncCrdsUseCase
+	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
-	RemoteClientCache   *remote2.ClientCache
+	RemoteClientCache   *remote.ClientCache
 	InKCPMode           bool
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
@@ -119,7 +119,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if r.SyncKymaEnabled(kyma) {
 		err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
-		if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote2.ErrAccessSecretNotFound) {
+		if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 			logger.Info("access secret not found for kyma, assuming already deleted cluster")
 			r.Metrics.CleanupMetrics(kyma.Name)
 			r.removeAllFinalizers(kyma)
@@ -257,7 +257,7 @@ func (r *Reconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma)
 	}
 	remoteKyma, err := syncContext.CreateOrFetchKyma(ctx, r.Client, kcpKyma)
 	if err != nil {
-		if errors.Is(err, remote2.ErrNotFoundAndKCPKymaUnderDeleting) {
+		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			return nil, err
 		}
 		return nil, fmt.Errorf("could not create or fetch remote kyma: %w", err)
@@ -269,7 +269,7 @@ func (r *Reconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma)
 func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Kyma) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, kcpKyma)
 	if err != nil {
-		if errors.Is(err, remote2.ErrNotFoundAndKCPKymaUnderDeleting) {
+		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			// remote kyma not found because it's deleted, should not continue
 			return nil
 		}
@@ -290,13 +290,13 @@ func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Ky
 func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
 	if err != nil {
-		if errors.Is(err, remote2.ErrNotFoundAndKCPKymaUnderDeleting) {
+		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			// remote kyma not found because it's deleted, should not continue
 			return nil
 		}
 		return err
 	}
-	remote2.ReplaceModules(controlPlaneKyma, remoteKyma)
+	remote.ReplaceModules(controlPlaneKyma, remoteKyma)
 	return nil
 }
 
@@ -402,7 +402,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 	}
 
 	if r.SyncKymaEnabled(kyma) {
-		if err := remote2.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace).
+		if err := remote.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace).
 			Delete(ctx, kyma.GetNamespacedName()); err != nil {
 			err = fmt.Errorf("could not delete remote module catalog: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
@@ -530,7 +530,7 @@ func (r *Reconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) 
 			modulesToSync = append(modulesToSync, mt)
 		}
 	}
-	remoteCatalog := remote2.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace)
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace)
 	if err := remoteCatalog.CreateOrUpdate(ctx, kyma.GetNamespacedName(), modulesToSync); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}

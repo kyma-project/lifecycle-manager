@@ -3,7 +3,6 @@ package skrcontextimpl
 import (
 	"context"
 	"errors"
-	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"sync"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -14,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 var (
@@ -80,19 +80,19 @@ func (f *DualClusterFactory) Init(ctx context.Context, kyma types.NamespacedName
 		return err
 	}
 
-	newClient := remote2.NewClientWithConfig(skrClient, authUser.Config())
+	newClient := remote.NewClientWithConfig(skrClient, authUser.Config())
 	f.clients.Store(kyma.Name, newClient)
 	return err
 }
 
-func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote2.SkrContext, error) {
+func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
 	value, ok := f.clients.Load(kyma.Name)
 	if !ok {
 		return nil, errSkrEnvNotStarted
 	}
-	skrClient, ok := value.(*remote2.ConfigAndClient)
+	skrClient, ok := value.(*remote.ConfigAndClient)
 	if !ok {
 		return nil, errSkrEnvNotStarted
 	}
-	return &remote2.SkrContext{Client: skrClient}, nil
+	return &remote.SkrContext{Client: skrClient}, nil
 }
