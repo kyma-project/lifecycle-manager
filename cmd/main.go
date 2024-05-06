@@ -21,7 +21,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -56,6 +55,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -161,9 +161,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(bootstrapFailedExitCode)
 	}
 	kcpRestConfig := mgr.GetConfig()
-	remoteClientCache := remote2.NewClientCache()
-	kcpClient := remote2.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
-	skrContextFactory := remote2.NewKymaSkrContextFactory(kcpClient, remoteClientCache)
+	remoteClientCache := remote.NewClientCache()
+	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
+	skrContextFactory := remote.NewKymaSkrContextFactory(kcpClient, remoteClientCache)
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.EnableKcpWatcher {
@@ -273,8 +273,8 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote2.ClientCache,
-	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote2.SkrContextFactory, flagVar *flags.FlagVar, options ctrlruntime.Options,
+func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
+	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote.SkrContextFactory, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
@@ -285,7 +285,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote2.ClientCach
 		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
 		RemoteClientCache:  remoteClientCache,
 		DescriptorProvider: descriptorProvider,
-		SyncRemoteCrds:     remote2.NewSyncCrdsUseCase(mgr.GetClient(), skrContextFactory, nil),
+		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(mgr.GetClient(), skrContextFactory, nil),
 		SKRWebhookManager:  skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
@@ -309,7 +309,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote2.ClientCach
 	}
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote2.SkrContextFactory, flagVar *flags.FlagVar) (*watcher.SKRWebhookManifestManager, error) {
+func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextFactory, flagVar *flags.FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.CaCertCacheTTL)
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
@@ -357,13 +357,13 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.WatcherImageTag)
 }
 
-func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote2.ClientCache, flagVar *flags.FlagVar,
+func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *flags.FlagVar,
 	options ctrlruntime.Options, setupLog logr.Logger,
 ) {
-	kcpClient := remote2.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
+	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		SkrContextFactory:     remote2.NewKymaSkrContextFactory(kcpClient, remoteClientCache),
+		SkrContextFactory:     remote.NewKymaSkrContextFactory(kcpClient, remoteClientCache),
 		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),

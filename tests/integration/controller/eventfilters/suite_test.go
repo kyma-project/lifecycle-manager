@@ -17,7 +17,6 @@ package eventfilters_test
 
 import (
 	"context"
-	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,6 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
@@ -135,7 +135,7 @@ var _ = BeforeSuite(func() {
 
 	kcpClient = mgr.GetClient()
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
-	remoteClientCache := remote2.NewClientCache()
+	remoteClientCache := remote.NewClientCache()
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
@@ -143,7 +143,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote2.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),

@@ -17,15 +17,10 @@ package kyma_test
 
 import (
 	"context"
-	remote2 "github.com/kyma-project/lifecycle-manager/internal/remote"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -43,11 +38,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -131,7 +129,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	remoteClientCache := remote2.NewClientCache()
+	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	kcpClient = mgr.GetClient()
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
@@ -140,7 +138,7 @@ var _ = BeforeSuite(func() {
 		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider:  descriptorProvider,
 		SkrContextFactory:   testSkrContextFactory,
-		SyncRemoteCrds:      remote2.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RequeueIntervals:    intervals,
 		RemoteClientCache:   remoteClientCache,
 		InKCPMode:           false,

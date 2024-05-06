@@ -19,10 +19,9 @@ package v1beta2
 import (
 	"strings"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
