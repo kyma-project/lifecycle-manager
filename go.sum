@@ -209,8 +209,8 @@ github.com/bwesterb/go-ristretto v1.2.3/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7N
 github.com/cenkalti/backoff/v3 v3.2.2 h1:cfUAAO3yvKMYKPrvhDuHSwQnhZNk/RMHKdZqKTxfm6M=
 github.com/cenkalti/backoff/v3 v3.2.2/go.mod h1:cIeZDE3IrqwwJl6VUwCN6trj1oXrTS4rc0ij+ULvLYs=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
-github.com/cert-manager/cert-manager v1.14.4 h1:DLXIZHx3jhkViYfobXo+N7/od/oj4YgG6AJw4ORJnYs=
-github.com/cert-manager/cert-manager v1.14.4/go.mod h1:d+CBeRu5MbpHTfXkkiiamUhnfdvhbThoOPwilU4UM98=
+github.com/cert-manager/cert-manager v1.14.5 h1:uuM1O2g2S80nxiH3eW2cZYMGiL2zmDFVdAzg8sibWuc=
+github.com/cert-manager/cert-manager v1.14.5/go.mod h1:fmr/cU5jiLxWj69CroDggSOa49RljUK+dU583TaQUXM=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589 h1:krfRl01rzPzxSxyLyrChD+U+MzsBXbm0OwYYB67uF+4=
@@ -1181,8 +1181,8 @@ honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 istio.io/api v1.21.2 h1:rnMcWXez7JIpfQjhYQMCkSGoie9U0hCq9lFEo2jP11w=
 istio.io/api v1.21.2/go.mod h1:TFCMUCAHRjxBv1CsIsFCsYHPHi4axVI4vdIzVr8eFjY=
-istio.io/client-go v1.21.1 h1:gAZCeG4pV2o2L6WaD/MLruNB+tBxa+Y21BuRJmFYlAI=
-istio.io/client-go v1.21.1/go.mod h1:mqwsapfu4b1FG47puY9H8y4+ga1+d+hxfdosNQ1HclY=
+istio.io/client-go v1.21.2 h1:8uS4hUj7LaK2XRmflJuRGtNsPh64abzE9DjAYUSvlyM=
+istio.io/client-go v1.21.2/go.mod h1:mqwsapfu4b1FG47puY9H8y4+ga1+d+hxfdosNQ1HclY=
 k8s.io/api v0.30.0 h1:siWhRq7cNjy2iHssOB9SCGNCl2spiF1dO3dABqZ8niA=
 k8s.io/api v0.30.0/go.mod h1:OPlaYhoHs8EQ1ql0R/TsUgaRPhpKNxIMrKQfWUp8QSE=
 k8s.io/apiextensions-apiserver v0.30.0 h1:jcZFKMqnICJfRxTgnC4E+Hpcq8UEhT8B2lhBcQ+6uAs=
