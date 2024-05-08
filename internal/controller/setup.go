@@ -70,7 +70,6 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
 	var runnableListener *watcherevent.SKREventListener
-	var eventChannel *source.Channel
 	var verifyFunc watcherevent.Verify
 
 	if settings.EnableDomainNameVerification {
@@ -82,14 +81,15 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		}
 	}
 	// register listener component incl. domain name verification
-	runnableListener, eventChannel = watcherevent.RegisterListenerComponent(
+	runnableListener = watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
 		verifyFunc,
 	)
 
 	// watch event channel
-	r.watchEventChannel(controllerBuilder, eventChannel)
+	controllerBuilder.WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler()))
+
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
@@ -102,13 +102,13 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	return nil
 }
 
-func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
-	controllerBuilder.WatchesRawSource(eventChannel, &handler.Funcs{
-		GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+func (r *KymaReconciler) skrEventHandler() *handler.Funcs {
+	return &handler.Funcs{
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			logger := ctrl.Log.WithName("listener")
-			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
+			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
 			if !conversionOk {
-				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", event.Object))
+				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", evnt.Object))
 				return
 			}
 
@@ -134,7 +134,7 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 				NamespacedName: ownerObjectKey,
 			})
 		},
-	})
+	}
 }
 
 // SetupWithManager sets up the Watcher controller with the Manager.

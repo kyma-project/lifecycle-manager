@@ -14,7 +14,7 @@ require (
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240404131948-84f05fb48fc1
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240502124257-9d96561ef070
 	github.com/onsi/ginkgo/v2 v2.17.2
 	github.com/onsi/gomega v1.33.1
 	github.com/open-component-model/ocm v0.8.0
@@ -24,7 +24,7 @@ require (
 	golang.org/x/sync v0.7.0
 	golang.org/x/time v0.5.0
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
-	sigs.k8s.io/controller-runtime v0.17.3
+	sigs.k8s.io/controller-runtime v0.18.1
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -38,10 +38,10 @@ require (
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.1
 	k8s.io/api v0.30.0
-	k8s.io/apiextensions-apiserver v0.29.3
+	k8s.io/apiextensions-apiserver v0.30.0
 	k8s.io/apimachinery v0.30.0
 	k8s.io/cli-runtime v0.29.3
-	k8s.io/client-go v0.29.3
+	k8s.io/client-go v0.30.0
 	k8s.io/kubectl v0.29.3
 )
 
@@ -306,7 +306,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.14.3 // indirect
-	k8s.io/component-base v0.29.3 // indirect
+	k8s.io/component-base v0.30.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	oras.land/oras-go v1.2.4 // indirect
