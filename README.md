@@ -36,7 +36,9 @@ To use Lifecycle Manager in a local setup, install the following:
 1. To set up the environment, provision a local k3d cluster and install Kyma. Run:
 
   ```bash
-  kyma provision k3d
+  k3d registry create kyma-registry --port 5001
+  k3d cluster create kyma --kubeconfig-switch-context -p 80:80@loadbalancer -p 443:443@loadbalancer --registry-use kyma-registry
+  kubectl create ns kyma-system
   kyma alpha deploy
   ```
 
