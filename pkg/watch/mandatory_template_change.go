@@ -6,7 +6,6 @@ import (
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -17,11 +16,10 @@ import (
 
 type MandatoryTemplateChangeHandler struct {
 	client.Reader
-	record.EventRecorder
 }
 
 func NewMandatoryTemplateChangeHandler(handlerClient ChangeHandlerClient) *MandatoryTemplateChangeHandler {
-	return &MandatoryTemplateChangeHandler{Reader: handlerClient, EventRecorder: handlerClient}
+	return &MandatoryTemplateChangeHandler{Reader: handlerClient}
 }
 
 func (h *MandatoryTemplateChangeHandler) Watch() handler.MapFunc {

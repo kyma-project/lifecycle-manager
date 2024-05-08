@@ -3,7 +3,6 @@ package watch
 import (
 	"context"
 
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -13,11 +12,10 @@ import (
 
 type TemplateChangeHandler struct {
 	client.Reader
-	record.EventRecorder
 }
 
 func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChangeHandler {
-	return &TemplateChangeHandler{Reader: handlerClient, EventRecorder: handlerClient}
+	return &TemplateChangeHandler{Reader: handlerClient}
 }
 
 func (h *TemplateChangeHandler) Watch() handler.MapFunc {
@@ -41,7 +39,7 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 }
 
 func filterKymasWithTemplate(kymas *v1beta2.KymaList, template *v1beta2.ModuleTemplate) []v1beta2.Kyma {
-	items := []v1beta2.Kyma{}
+	var items []v1beta2.Kyma
 	for _, kyma := range kymas.Items {
 		templateUsed := false
 		for _, moduleStatus := range kyma.Status.Modules {

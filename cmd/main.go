@@ -278,9 +278,11 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
 
+	kymaEvent := controller.NewKymaEvent(mgr.GetEventRecorderFor(shared.OperatorName))
+
 	if err := (&controller.KymaReconciler{
 		Client:             mgr.GetClient(),
-		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:              kymaEvent,
 		KcpRestConfig:      kcpRestConfig,
 		RemoteClientCache:  remoteClientCache,
 		DescriptorProvider: descriptorProvider,

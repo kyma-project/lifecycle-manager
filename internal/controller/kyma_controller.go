@@ -26,7 +26,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -36,7 +35,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
@@ -49,22 +47,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-type (
-	EventReasonError string
-)
-
 var ErrManifestsStillExist = errors.New("manifests still exist")
 
 const (
-	moduleReconciliationError EventReasonError = "ModuleReconciliationError"
-	metricsError              EventReasonError = "MetricsError"
-	updateSpecError           EventReasonError = "UpdateSpecError"
-	updateStatusError         EventReasonError = "UpdateStatusError"
+	moduleReconciliationError eventReason = "ModuleReconciliationError"
+	metricsError              eventReason = "MetricsError"
+	updateSpecError           eventReason = "UpdateSpecError"
+	updateStatusError         eventReason = "UpdateStatusError"
+	patchStatusError          eventReason = "PatchStatus"
 )
 
 type KymaReconciler struct {
 	client.Client
-	record.EventRecorder
+	Event[v1beta2.Kyma]
 	queue.RequeueIntervals
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	SyncRemoteCrds      remote.SyncCrdsUseCase
@@ -94,8 +89,6 @@ type KymaReconciler struct {
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Kyma reconciliation started")
-
-	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
@@ -261,10 +254,6 @@ func (r *KymaReconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kym
 
 func (r *KymaReconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
 	return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
-}
-
-func (r *KymaReconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReasonError, err error) {
-	r.Event(kyma, "Warning", string(reason), err.Error())
 }
 
 func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
@@ -498,7 +487,7 @@ func (r *KymaReconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
 func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 	if err := r.Update(ctx, kyma); err != nil {
 		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
-		r.enqueueWarningEvent(kyma, updateSpecError, err)
+		r.Event.Warning(kyma, updateSpecError, err)
 		return err
 	}
 
@@ -549,7 +538,7 @@ func (r *KymaReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
 	state shared.State, message string,
 ) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
-		r.Event(kyma, "Warning", "PatchStatus", err.Error())
+		r.Event.Warning(kyma, patchStatusError, err)
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
 	}
 	return nil
@@ -557,7 +546,7 @@ func (r *KymaReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
 
 func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, shared.StateError, err.Error()); err != nil {
-		r.enqueueWarningEvent(kyma, updateStatusError, err)
+		r.Event.Warning(kyma, updateStatusError, err)
 		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, err)
 	}
 	return nil
@@ -568,7 +557,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	templates := lookup.GetRegularTemplates(ctx, kyma)
 	for _, template := range templates {
 		if template.Err != nil {
-			r.enqueueWarningEvent(kyma, moduleReconciliationError, template.Err)
+			r.Event.Warning(kyma, moduleReconciliationError, template.Err)
 		}
 	}
 	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
@@ -611,7 +600,7 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 	if err := r.Metrics.UpdateAll(kyma); err != nil {
 		if metrics.IsMissingMetricsAnnotationOrLabel(err) {
-			r.enqueueWarningEvent(kyma, metricsError, err)
+			r.Event.Warning(kyma, metricsError, err)
 		}
 		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
 	}
