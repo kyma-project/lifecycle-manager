@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -41,8 +42,9 @@ func SetupWithManager(mgr manager.Manager,
 		}
 	}
 
-	runnableListener, eventChannel := watcherevent.RegisterListenerComponent(
-		settings.ListenerAddr, strings.ToLower(declarativev2.OperatorName), verifyFunc,
+	runnableListener := watcherevent.NewSKREventListener(
+		settings.ListenerAddr, strings.ToLower(declarativev2.OperatorName),
+		verifyFunc,
 	)
 
 	// start listener as a manager runnable
@@ -50,25 +52,28 @@ func SetupWithManager(mgr manager.Manager,
 		return fmt.Errorf("failed to add to listener to manager: %w", err)
 	}
 
+	addSkrEventToQueueFunc := &handler.Funcs{
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
+			queue workqueue.RateLimitingInterface,
+		) {
+			ctrl.Log.WithName("listener").Info(
+				fmt.Sprintf(
+					"event coming from SKR, adding %s to queue",
+					client.ObjectKeyFromObject(evnt.Object).String(),
+				),
+			)
+			queue.Add(ctrl.Request{NamespacedName: client.ObjectKeyFromObject(evnt.Object)})
+		},
+	}
+
+	skrEventChannel := source.Channel(runnableListener.ReceivedEvents, addSkrEventToQueueFunc)
+
 	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Named(ManifestControllerName).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
-		WatchesRawSource(
-			eventChannel, &handler.Funcs{
-				GenericFunc: func(ctx context.Context, event event.GenericEvent,
-					queue workqueue.RateLimitingInterface,
-				) {
-					ctrl.Log.WithName("listener").Info(
-						fmt.Sprintf(
-							"event coming from SKR, adding %s to queue",
-							client.ObjectKeyFromObject(event.Object).String(),
-						),
-					)
-					queue.Add(ctrl.Request{NamespacedName: client.ObjectKeyFromObject(event.Object)})
-				},
-			},
-		).WithOptions(options)
+		WatchesRawSource(skrEventChannel).
+		WithOptions(options)
 
 	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, requeueIntervals,
 		manifestMetrics, mandatoryModulesMetrics)); err != nil {

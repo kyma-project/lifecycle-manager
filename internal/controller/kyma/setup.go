@@ -57,10 +57,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
-	var runnableListener *watcherevent.SKREventListener
-	var eventChannel *source.Channel
 	var verifyFunc watcherevent.Verify
-
 	if settings.EnableDomainNameVerification {
 		// Verifier used to verify incoming listener requests
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
@@ -69,14 +66,16 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 			return nil
 		}
 	}
+
 	// register listener component incl. domain name verification
-	runnableListener, eventChannel = watcherevent.RegisterListenerComponent(
+	runnableListener := watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
 		verifyFunc,
 	)
 
-	r.watchEventChannel(controllerBuilder, eventChannel)
+	controllerBuilder.WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler()))
+
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
@@ -89,13 +88,13 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 	return nil
 }
 
-func (r *Reconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
-	controllerBuilder.WatchesRawSource(eventChannel, &handler.Funcs{
-		GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+func (r *Reconciler) skrEventHandler() *handler.Funcs {
+	return &handler.Funcs{
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			logger := ctrl.Log.WithName("listener")
-			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
+			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
 			if !conversionOk {
-				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", event.Object))
+				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", evnt.Object))
 				return
 			}
 
@@ -121,5 +120,5 @@ func (r *Reconciler) watchEventChannel(controllerBuilder *builder.Builder, event
 				NamespacedName: ownerObjectKey,
 			})
 		},
-	})
+	}
 }
