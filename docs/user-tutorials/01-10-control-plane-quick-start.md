@@ -23,8 +23,8 @@ To use Lifecycle Manager in a local setup, you need the following prerequisites:
 1. Provision a local k3d cluster as KCP. By default, a cluster named `k3d-kyma` is created. Run:
 
    ```bash
-   k3d cluster create k3d-kyma
-   kubectl create ns kyma-system
+   k3d registry create kyma-registry --port 5001
+   k3d cluster create k3d-kyma --kubeconfig-switch-context -p 80:80@loadbalancer -p 443:443@loadbalancer --registry-use kyma-registry
    ```
 
 2. Because the services deployed in KCP are managed by Istio, you need to install Istio on the local k3d cluster. Run:
