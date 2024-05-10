@@ -206,9 +206,10 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 	}
 	resources := make([]client.Object, 0)
 	for _, baseRes := range m.baseResources {
-		configuredResource, err := configureUnstructuredObject(cfg, baseRes)
+		resource := baseRes.DeepCopy()
+		configuredResource, err := configureUnstructuredObject(cfg, resource)
 		if err != nil {
-			return nil, fmt.Errorf("failed to configure %s resource: %w", baseRes.GetKind(), err)
+			return nil, fmt.Errorf("failed to configure %s resource: %w", resource.GetKind(), err)
 		}
 		resources = append(resources, configuredResource)
 	}
@@ -251,7 +252,8 @@ func (m *SKRWebhookManifestManager) getBaseClientObjects() []client.Object {
 	}
 	baseClientObjects := make([]client.Object, 0)
 	for _, res := range m.baseResources {
-		baseClientObjects = append(baseClientObjects, res)
+		resCopy := res.DeepCopy()
+		baseClientObjects = append(baseClientObjects, resCopy)
 	}
 	return baseClientObjects
 }
