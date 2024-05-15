@@ -714,7 +714,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\", job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\", job=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -725,19 +725,11 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"kyma\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"kyma\", job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"kyma\", job=\"klm-metrics-service\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "reconcile_duration_seconds",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Manifest: {{manifest_name}}",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1300,7 +1292,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"manifest\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{name}}",
           "refId": "A"
@@ -1311,7 +1303,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"kyma\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1995,7 +1987,7 @@
     "list": []
   },
   "time": {
-    "from": "now-7d",
+    "from": "now-2d",
     "to": "now"
   },
   "timepicker": {},
