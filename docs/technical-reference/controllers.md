@@ -35,6 +35,10 @@ it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandato
 [Manifest Controller](../../internal/controller/manifest_controller.go) deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
 Since it mainly is a delegation to the [declarative reconciliation library](../../internal/declarative/README.md) with certain [internal implementation additions](../../internal/manifest/README.md), please look at the respective documentation for these parts to understand them more.
 
+## Purge Controller
+[Purge Controller](../../internal/controller/purge_controller.go) is responsible for handling the forced cleanup of deployed resources in a remote cluster when its Kyma CR is marked for deletion.
+If a Kyma CR has been marked for deletion for longer than the grace period (default is 5 minutes), the controller resolves the remote client for the cluster, retrieves all relevant CRs deployed on the cluster, and removes finalizers, allowing the resources to be garbage collected. This ensures that all associated resources are properly purged, maintaining the integrity and cleanliness of the cluster.
+
 ## Watcher Controller
 
 [Watcher Controller](../../internal/controller/watcher_controller.go) deals with the update of VirtualService rules derived from the [Watcher CR](../../api/v1beta2/watcher_types.go). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime, a small component initialized to propagate changes from the runtime (remote) clusters back to react to changes that can affect the Manifest CR integrity.
