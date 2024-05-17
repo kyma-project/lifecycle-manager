@@ -714,7 +714,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -725,19 +725,11 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"kyma\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "reconcile_duration_seconds",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Manifest: {{manifest_name}}",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -928,7 +920,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "controller_runtime_active_workers{controller=\"kyma\"}",
+          "expr": "controller_runtime_active_workers{controller=\"kyma\",job=\"klm-metrics-service\"}",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -939,7 +931,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "controller_runtime_active_workers{controller=\"manifest\"}",
+          "expr": "controller_runtime_active_workers{controller=\"manifest\",job=\"klm-metrics-service\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
@@ -1190,7 +1182,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"manifest\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"manifest\"}[$__rate_interval])",
+          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{name}}",
           "refId": "A"
@@ -1201,7 +1193,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"kyma\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"kyma\"}[$__rate_interval])",
+          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1300,7 +1292,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"manifest\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{name}}",
           "refId": "A"
@@ -1311,7 +1303,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"kyma\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1410,7 +1402,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_depth{name=\"manifest\"}",
+          "expr": "workqueue_depth{name=\"manifest\",job=\"klm-metrics-service\"}",
           "interval": "",
           "legendFormat": "{{name}}",
           "refId": "A"
@@ -1421,7 +1413,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_depth{name=\"kyma\"}",
+          "expr": "workqueue_depth{name=\"kyma\",job=\"klm-metrics-service\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1523,7 +1515,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(workqueue_adds_total{name=\"manifest\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_adds_total{name=\"manifest\",job=\"klm-metrics-service\"}[$__rate_interval])) by (name)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1536,7 +1528,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(workqueue_adds_total{name=\"kyma\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_adds_total{name=\"kyma\",job=\"klm-metrics-service\"}[$__rate_interval])) by (name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",

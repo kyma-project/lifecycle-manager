@@ -15,13 +15,13 @@ const (
 )
 
 func NewClientCache() *ClientCache {
-	cache := &ClientCache{internal: *ttlcache.New[client.ObjectKey, Client]()}
+	cache := &ClientCache{internal: ttlcache.New[client.ObjectKey, Client]()}
 	go cache.internal.Start()
 	return cache
 }
 
 type ClientCache struct {
-	internal ttlcache.Cache[client.ObjectKey, Client]
+	internal *ttlcache.Cache[client.ObjectKey, Client]
 }
 
 func (c *ClientCache) Get(key client.ObjectKey) Client {
