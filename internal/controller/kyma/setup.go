@@ -42,6 +42,7 @@ var (
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Options, settings ReconcilerSetupSettings) error {
 	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
+
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(options).
@@ -51,13 +52,15 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
 			builder.WithPredicates(predicates),
 		).
-		// Watch secrets in lifecycle-manager so that cache notices changes
+		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&apicorev1.Secret{}, handler.Funcs{})
 
 	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
+	var runnableListener *watcherevent.SKREventListener
 	var verifyFunc watcherevent.Verify
+
 	if settings.EnableDomainNameVerification {
 		// Verifier used to verify incoming listener requests
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
@@ -66,14 +69,14 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 			return nil
 		}
 	}
-
 	// register listener component incl. domain name verification
-	runnableListener := watcherevent.NewSKREventListener(
+	runnableListener = watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
 		verifyFunc,
 	)
 
+	// watch event channel
 	controllerBuilder.WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler()))
 
 	// start listener as a manager runnable
