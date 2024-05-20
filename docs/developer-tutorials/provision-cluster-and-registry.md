@@ -108,10 +108,10 @@ Learn how to use a Gardener cluster for testing.
    EOF
 
    echo "waiting fo cluster to be ready..."
-   kubectl wait --for=condition=EveryNodeReady shoot/${name} --timeout=17m
+   kubectl wait --kubeconfig="${gardener_account_kubeconfig}" --for=condition=EveryNodeReady shoot/${name} --timeout=17m
 
    # create kubeconfig request, that creates a Kubeconfig, which is valid for one day
-   kubectl create \
+   kubectl create -kubeconfig="${gardener_account_kubeconfig}" \
       -f <(printf '{"spec":{"expirationSeconds":86400}}') \
       --raw /apis/core.gardener.cloud/v1beta1/namespaces/garden-${gardener_project}/shoots/${name}/adminkubeconfig | \
       jq -r ".status.kubeconfig" | \
