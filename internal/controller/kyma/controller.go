@@ -116,16 +116,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if r.SyncKymaEnabled(kyma) {
 		err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 		if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
-			logger.Info("access secret not found for kyma, assuming already deleted cluster")
-			r.Metrics.CleanupMetrics(kyma.Name)
-			r.removeAllFinalizers(kyma)
-
-			if err := r.updateKyma(ctx, kyma); err != nil {
-				r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
-				return ctrl.Result{}, err
-			}
-			r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
-			return ctrl.Result{Requeue: true}, nil
+			return r.handleDeletedSkr(ctx, kyma)
 		}
 
 		skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
@@ -135,7 +126,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 
 		err = skrContext.CreateKymaNamespace(ctx)
-		// Prevent ETCD load bursts during secret rotation
 		if apierrors.IsUnauthorized(err) {
 			r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 			logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
@@ -150,6 +140,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	return r.reconcile(ctx, kyma)
+}
+
+func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
+	r.Metrics.CleanupMetrics(kyma.Name)
+	r.removeAllFinalizers(kyma)
+
+	if err := r.updateKyma(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
+	r.Metrics.RecordRequeueReason(metrics.KymaUnderDeletionAndAccessSecretNotFound, queue.IntendedRequeue)
+	return ctrl.Result{Requeue: true}, nil
 }
 
 func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
