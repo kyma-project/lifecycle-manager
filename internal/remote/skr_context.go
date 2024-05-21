@@ -1,13 +1,17 @@
 package remote
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
+	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -49,6 +53,31 @@ func (s *SkrContext) DeleteKyma(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete remote kyma: %w", err)
 	}
+	return nil
+}
+
+func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
+	namespace := &apicorev1.Namespace{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:   shared.DefaultRemoteNamespace,
+			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+		},
+		// setting explicit type meta is required for SSA on Namespaces
+		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(namespace); err != nil {
+		return fmt.Errorf("failed to encode namespace: %w", err)
+	}
+
+	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
+	force := true
+	patchOpts := &client.PatchOptions{Force: &force, FieldManager: "kyma-sync-context"}
+	if err := s.Client.Patch(ctx, namespace, patch, patchOpts); err != nil {
+		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
+	}
+
 	return nil
 }
 

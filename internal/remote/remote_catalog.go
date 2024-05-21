@@ -28,7 +28,7 @@ type Settings struct {
 
 type RemoteCatalog struct {
 	kcpClient         client.Client
-	skrContextFactory SkrContextFactory
+	skrContextFactory SkrContextProvider
 	settings          Settings
 }
 
@@ -37,7 +37,7 @@ type Catalog interface {
 	Delete(ctx context.Context) error
 }
 
-func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextFactory, remoteSyncNamespace string) *RemoteCatalog {
+func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider, remoteSyncNamespace string) *RemoteCatalog {
 	force := true
 	return NewRemoteCatalog(kcpClient, skrContextFactory,
 		Settings{
@@ -47,7 +47,7 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 	)
 }
 
-func NewRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextFactory, settings Settings) *RemoteCatalog {
+func NewRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
 	return &RemoteCatalog{
 		kcpClient:         kcpClient,
 		skrContextFactory: skrContextFactory,

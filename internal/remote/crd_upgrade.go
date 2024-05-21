@@ -20,11 +20,11 @@ import (
 
 type SyncCrdsUseCase struct {
 	kcpClient         client.Client
-	skrContextFactory SkrContextFactory
+	skrContextFactory SkrContextProvider
 	crdCache          *crd.Cache
 }
 
-func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextFactory, cache *crd.Cache) SyncCrdsUseCase {
+func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextProvider, cache *crd.Cache) SyncCrdsUseCase {
 	if cache == nil {
 		return SyncCrdsUseCase{
 			kcpClient:         kcpClient,

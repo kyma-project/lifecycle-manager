@@ -163,7 +163,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kcpRestConfig := mgr.GetConfig()
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
-	skrContextFactory := remote.NewKymaSkrContextFactory(kcpClient, remoteClientCache)
+	skrContextFactory := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache)
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.EnableKcpWatcher {
@@ -274,7 +274,7 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 }
 
 func setupKymaReconciler(mgr ctrl.Manager,
-	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote.SkrContextFactory, flagVar *flags.FlagVar, options ctrlruntime.Options,
+	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote.SkrContextProvider, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
@@ -308,7 +308,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	}
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextFactory, flagVar *flags.FlagVar) (*watcher.SKRWebhookManifestManager, error) {
+func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider, flagVar *flags.FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.CaCertCacheTTL)
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
@@ -362,7 +362,7 @@ func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCach
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		SkrContextFactory:     remote.NewKymaSkrContextFactory(kcpClient, remoteClientCache),
+		SkrContextFactory:     remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache),
 		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),

@@ -23,7 +23,7 @@ import (
 
 type SKRWebhookManifestManager struct {
 	kcpClient          client.Client
-	skrContextFactory  remote.SkrContextFactory
+	skrContextFactory  remote.SkrContextProvider
 	config             SkrWebhookManagerConfig
 	kcpAddr            string
 	baseResources      []*unstructured.Unstructured
@@ -46,7 +46,7 @@ const rawManifestFilePathTpl = "%s/resources.yaml"
 
 func NewSKRWebhookManifestManager(
 	kcpClient client.Client,
-	skrContextFactory remote.SkrContextFactory,
+	skrContextFactory remote.SkrContextProvider,
 	caCertificateCache *CACertificateCache,
 	managerConfig SkrWebhookManagerConfig,
 	certificateConfig CertificateConfig,

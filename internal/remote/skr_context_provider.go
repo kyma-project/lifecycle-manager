@@ -1,14 +1,11 @@
 package remote
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
 	apicorev1 "k8s.io/api/core/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
@@ -17,32 +14,32 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-type SkrContextFactory interface {
+type SkrContextProvider interface {
 	Get(kyma types.NamespacedName) (*SkrContext, error)
 	Init(ctx context.Context, kyma types.NamespacedName) error
 	InvalidateCache(kyma types.NamespacedName)
 }
 
-type KymaSkrContextFactory struct {
+type KymaSkrContextProvider struct {
 	clientCache *ClientCache
 	kcpClient   Client
 }
 
-func NewKymaSkrContextFactory(kcpClient Client, clientCache *ClientCache) *KymaSkrContextFactory {
-	return &KymaSkrContextFactory{
+func NewKymaSkrContextProvider(kcpClient Client, clientCache *ClientCache) *KymaSkrContextProvider {
+	return &KymaSkrContextProvider{
 		clientCache: clientCache,
 		kcpClient:   kcpClient,
 	}
 }
 
-const KubeConfigKey = "config"
+const kubeConfigKey = "config"
 
 var (
 	ErrAccessSecretNotFound     = errors.New("access secret not found")
 	ErrSkrClientContextNotFound = errors.New("skr client context not found")
 )
 
-func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma types.NamespacedName) error {
+func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.NamespacedName) error {
 	if k.clientCache.Contains(kyma) {
 		return nil
 	}
@@ -58,7 +55,7 @@ func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma types.NamespacedN
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 
-	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigSecret.Data[KubeConfigKey])
+	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigSecret.Data[kubeConfigKey])
 	if err != nil {
 		return fmt.Errorf("failed to create rest config from kubeconfig: %w", err)
 	}
@@ -72,33 +69,12 @@ func (k *KymaSkrContextFactory) Init(ctx context.Context, kyma types.NamespacedN
 	}
 
 	skrClient := NewClientWithConfig(clnt, restConfig)
-
-	namespace := &apicorev1.Namespace{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:   shared.DefaultRemoteNamespace,
-			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
-		},
-		// setting explicit type meta is required for SSA on Namespaces
-		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-	}
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(namespace); err != nil {
-		return fmt.Errorf("failed to encode namespace: %w", err)
-	}
-
-	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
-	force := true
-	patchOpts := &client.PatchOptions{Force: &force, FieldManager: "kyma-sync-context"}
-	if err := skrClient.Patch(ctx, namespace, patch, patchOpts); err != nil {
-		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
-	}
-
 	k.clientCache.Add(kyma, skrClient)
+
 	return nil
 }
 
-func (k *KymaSkrContextFactory) Get(kyma types.NamespacedName) (*SkrContext, error) {
+func (k *KymaSkrContextProvider) Get(kyma types.NamespacedName) (*SkrContext, error) {
 	skrClient := k.clientCache.Get(kyma)
 	if skrClient == nil {
 		return nil, ErrSkrClientContextNotFound
@@ -107,6 +83,6 @@ func (k *KymaSkrContextFactory) Get(kyma types.NamespacedName) (*SkrContext, err
 	return &SkrContext{Client: skrClient}, nil
 }
 
-func (k *KymaSkrContextFactory) InvalidateCache(kyma types.NamespacedName) {
+func (k *KymaSkrContextProvider) InvalidateCache(kyma types.NamespacedName) {
 	k.clientCache.Delete(kyma)
 }

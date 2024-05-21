@@ -46,7 +46,7 @@ import (
 type PurgeReconciler struct {
 	client.Client
 	record.EventRecorder
-	SkrContextFactory     remote.SkrContextFactory
+	SkrContextFactory     remote.SkrContextProvider
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
 	IsManagedKyma         bool

@@ -65,7 +65,7 @@ type Reconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
-	SkrContextFactory   remote.SkrContextFactory
+	SkrContextFactory   remote.SkrContextProvider
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
@@ -128,6 +128,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{Requeue: true}, nil
 		}
 
+		skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+		if err != nil {
+			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+			return r.requeueWithError(ctx, kyma, err)
+		}
+
+		err = skrContext.CreateKymaNamespace(ctx)
 		// Prevent ETCD load bursts during secret rotation
 		if apierrors.IsUnauthorized(err) {
 			r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
@@ -135,7 +142,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
-
 		if err != nil {
 			r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
