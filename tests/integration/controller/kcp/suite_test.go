@@ -139,7 +139,6 @@ var _ = BeforeSuite(func() {
 
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
 
-	remoteClientCache := remote.NewClientCache()
 	descriptorCache = cache.NewDescriptorCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)
 	crdCache = crd.NewCache(nil)
@@ -148,7 +147,6 @@ var _ = BeforeSuite(func() {
 		SkrContextFactory:   testSkrContextFactory,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
-		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  descriptorProvider,
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
 		InKCPMode:           true,

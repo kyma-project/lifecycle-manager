@@ -20,6 +20,7 @@ import (
 type SkrContextFactory interface {
 	Get(kyma types.NamespacedName) (*SkrContext, error)
 	Init(ctx context.Context, kyma types.NamespacedName) error
+	InvalidateCache(kyma types.NamespacedName)
 }
 
 type KymaSkrContextFactory struct {
@@ -104,4 +105,8 @@ func (k *KymaSkrContextFactory) Get(kyma types.NamespacedName) (*SkrContext, err
 	}
 
 	return &SkrContext{Client: skrClient}, nil
+}
+
+func (k *KymaSkrContextFactory) InvalidateCache(kyma types.NamespacedName) {
+	k.clientCache.Delete(kyma)
 }

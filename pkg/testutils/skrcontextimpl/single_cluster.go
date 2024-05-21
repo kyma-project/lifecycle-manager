@@ -45,3 +45,7 @@ func (f *SingleClusterFactory) Init(ctx context.Context, _ types.NamespacedName)
 func (f *SingleClusterFactory) Get(_ types.NamespacedName) (*remote.SkrContext, error) {
 	return &f.context, nil
 }
+
+func (f *SingleClusterFactory) InvalidateCache(_ types.NamespacedName) {
+	// no-op
+}

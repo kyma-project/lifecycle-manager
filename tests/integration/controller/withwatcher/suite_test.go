@@ -76,7 +76,6 @@ var (
 	cancel                context.CancelFunc
 	restCfg               *rest.Config
 	istioResources        []*unstructured.Unstructured
-	remoteClientCache     *remote.ClientCache
 	logger                logr.Logger
 )
 
@@ -173,7 +172,6 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
@@ -215,7 +213,6 @@ var _ = BeforeSuite(func() {
 		SKRWebhookManager:   skrWebhookChartManager,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
-		RemoteClientCache:   remoteClientCache,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),

@@ -129,7 +129,6 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	kcpClient = mgr.GetClient()
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
@@ -140,7 +139,6 @@ var _ = BeforeSuite(func() {
 		SkrContextFactory:   testSkrContextFactory,
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RequeueIntervals:    intervals,
-		RemoteClientCache:   remoteClientCache,
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),

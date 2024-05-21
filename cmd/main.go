@@ -178,7 +178,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, skrContextFactory, flagVar, options, skrWebhookManager, kymaMetrics,
+	setupKymaReconciler(mgr, descriptorProvider, skrContextFactory, flagVar, options, skrWebhookManager, kymaMetrics,
 		setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
@@ -273,7 +273,7 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
+func setupKymaReconciler(mgr ctrl.Manager,
 	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote.SkrContextFactory, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger,
 ) {
@@ -283,7 +283,6 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		Client:             mgr.GetClient(),
 		SkrContextFactory:  skrContextFactory,
 		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
-		RemoteClientCache:  remoteClientCache,
 		DescriptorProvider: descriptorProvider,
 		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(mgr.GetClient(), skrContextFactory, nil),
 		SKRWebhookManager:  skrWebhookManager,

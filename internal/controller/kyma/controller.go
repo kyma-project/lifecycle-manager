@@ -69,7 +69,6 @@ type Reconciler struct {
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
-	RemoteClientCache   *remote.ClientCache
 	InKCPMode           bool
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
@@ -131,25 +130,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		// Prevent ETCD load bursts during secret rotation
 		if apierrors.IsUnauthorized(err) {
-			r.deleteRemoteClientCache(ctx, kyma)
+			r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
+			logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
 			r.Metrics.RecordRequeueReason(metrics.KymaUnauthorized, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
 
 		if err != nil {
-			r.deleteRemoteClientCache(ctx, kyma)
+			r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
 
 	return r.reconcile(ctx, kyma)
-}
-
-func (r *Reconciler) deleteRemoteClientCache(ctx context.Context, kyma *v1beta2.Kyma) {
-	logger := logf.FromContext(ctx)
-	logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
-	r.RemoteClientCache.Delete(client.ObjectKeyFromObject(kyma))
 }
 
 func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -396,7 +390,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 			return ctrl.Result{}, fmt.Errorf("failed to get skrContext: %w", err)
 		}
 
-		r.RemoteClientCache.Delete(client.ObjectKeyFromObject(kyma))
+		r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 		if err = skrContext.RemoveFinalizersFromKyma(ctx); client.IgnoreNotFound(err) != nil {
 			r.Metrics.RecordRequeueReason(metrics.FinalizersRemovalFromRemoteKyma, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)

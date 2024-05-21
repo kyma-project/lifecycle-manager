@@ -96,3 +96,7 @@ func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext,
 	}
 	return &remote.SkrContext{Client: skrClient}, nil
 }
+
+func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
+	// no-op
+}

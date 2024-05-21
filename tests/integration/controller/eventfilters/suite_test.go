@@ -135,13 +135,11 @@ var _ = BeforeSuite(func() {
 
 	kcpClient = mgr.GetClient()
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
-	remoteClientCache := remote.NewClientCache()
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
 		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
-		RemoteClientCache:   remoteClientCache,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		InKCPMode:           false,
