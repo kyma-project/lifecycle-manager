@@ -41,7 +41,7 @@ For more details about Lifecycle Manager controllers, read the [Controllers](con
 
 The architecture is based on Kubernetes API and resources, and on best practices for building Kubernetes operators. To learn more, read the following:
 
-- [Kubebuilder book](https://book.kubebuilder.io/)
+- [Kubebuilder](https://kubebuilder.io/)
 - [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/golang/)
 - [Best practices for building Kubernetes Operators and stateful apps](https://cloud.google.com/blog/products/containers-kubernetes/best-practices-for-building-kubernetes-operators-and-stateful-apps)
 - [Operator SDK - Best Practices](https://sdk.operatorframework.io/docs/best-practices/).
