@@ -9,4 +9,5 @@ type Event[T any] interface {
 
 const (
 	typeNormal  = "Normal"
+	typeWarning = "Warning"
 )
