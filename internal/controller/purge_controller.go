@@ -73,6 +73,10 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	start := time.Now()
+	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	if err != nil {
+		return r.handleSkrNotFoundError(ctx, kyma, err)
+	}
 
 	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
 	if err != nil {

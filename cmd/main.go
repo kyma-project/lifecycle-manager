@@ -163,11 +163,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kcpRestConfig := mgr.GetConfig()
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
-	skrContextFactory := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache)
+	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache)
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.EnableKcpWatcher {
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextFactory, flagVar); err != nil {
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
 			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
@@ -178,13 +178,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupKymaReconciler(mgr, descriptorProvider, skrContextFactory, flagVar, options, skrWebhookManager, kymaMetrics,
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, flagVar, options, skrWebhookManager, kymaMetrics,
 		setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options, setupLog)
 	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, setupLog)
+		setupPurgeReconciler(mgr, skrContextProvider, flagVar, options, setupLog)
 	}
 	if flagVar.EnableWebhooks {
 		enableWebhooks(mgr, setupLog)
@@ -356,13 +356,12 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.WatcherImageTag)
 }
 
-func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *flags.FlagVar,
+func setupPurgeReconciler(mgr ctrl.Manager, skrContextProvider remote.SkrContextProvider, flagVar *flags.FlagVar,
 	options ctrlruntime.Options, setupLog logr.Logger,
 ) {
-	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		SkrContextFactory:     remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache),
+		SkrContextFactory:     skrContextProvider,
 		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),
