@@ -1,13 +1,12 @@
-package controlplane_test
+package kcp_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Manifest.Spec.Remote in KCP mode", Ordered, func() {
@@ -20,7 +19,7 @@ var _ = Describe("Manifest.Spec.Remote in KCP mode", Ordered, func() {
 
 	It("expect Manifest.Spec.Remote=true", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeTrue())
 	})
 })

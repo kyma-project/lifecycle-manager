@@ -15,19 +15,18 @@ import (
 )
 
 var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given Kyma deployed in KCP", func() {
 		It("When self signed certificate exists", func() {
-			namespacedCertName := types.NamespacedName{
+			certName := types.NamespacedName{
 				Name:      watcher.ResolveTLSCertName(kyma.Name),
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {
-				_, err := GetCACertificate(ctx, namespacedCertName, controlPlaneClient)
+				_, err := GetCACertificate(ctx, certName, controlPlaneClient)
 				return err
 			}).Should(Succeed())
 		})

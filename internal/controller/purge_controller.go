@@ -35,6 +35,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -42,12 +43,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type RemoteClientResolver func(context.Context, client.ObjectKey) (client.Client, error)
-
 type PurgeReconciler struct {
 	client.Client
 	record.EventRecorder
-	ResolveRemoteClient   RemoteClientResolver
+	SkrContextFactory     remote.SkrContextProvider
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
 	IsManagedKyma         bool
@@ -74,17 +73,20 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	start := time.Now()
-
-	remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
+	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if err != nil {
-		return r.handleRemoteClientNotFoundError(ctx, kyma, err)
+		return r.handleSkrNotFoundError(ctx, kyma, err)
 	}
 
-	return r.handlePurge(ctx, kyma, remoteClient, start)
+	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+	if err != nil {
+		return r.handleSkrNotFoundError(ctx, kyma, err)
+	}
+
+	return r.handlePurge(ctx, kyma, skrContext.Client, start)
 }
 
-func (r *PurgeReconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state shared.State, message string,
-) error {
+func (r *PurgeReconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state shared.State, message string) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("failed updating status to %s because of %s: %w", state, message, err)
 	}
@@ -126,7 +128,7 @@ func (r *PurgeReconciler) handleRemovingPurgeFinalizerFailedError(ctx context.Co
 	return ctrl.Result{}, err
 }
 
-func (r *PurgeReconciler) handleRemoteClientNotFoundError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
+func (r *PurgeReconciler) handleSkrNotFoundError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
 	if util.IsNotFound(err) {
 		dropped, err := r.dropPurgeFinalizer(ctx, kyma)
 		if err != nil {
@@ -208,7 +210,7 @@ func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient clien
 		return nil, fmt.Errorf("failed fetching CRDs from remote cluster: %w", err)
 	}
 
-	allHandledResources := []string{}
+	var allHandledResources []string
 	for _, crd := range crdList.Items {
 		if shouldSkip(crd, r.SkipCRDs) {
 			continue
@@ -266,7 +268,7 @@ func getAllRemainingCRs(ctx context.Context, remoteClient client.Client,
 func dropFinalizers(ctx context.Context, remoteClient client.Client,
 	staleResources unstructured.UnstructuredList,
 ) ([]string, error) {
-	handledResources := []string{}
+	handledResources := make([]string, 0, len(staleResources.Items))
 	for index := range staleResources.Items {
 		resource := staleResources.Items[index]
 		resource.SetFinalizers(nil)

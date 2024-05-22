@@ -28,13 +28,13 @@ const (
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployMandatoryModuleTemplate(ctx, controlPlaneClient)
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
+		DeployMandatoryModuleTemplate(ctx, kcpClient)
+		DeployModuleTemplates(ctx, kcpClient, kyma)
 	})
 
 	AfterAll(func() {
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
-		DeleteMandatoryModuleTemplate(ctx, controlPlaneClient)
+		DeleteModuleTemplates(ctx, kcpClient, kyma)
+		DeleteMandatoryModuleTemplate(ctx, kcpClient)
 	})
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 }
@@ -43,19 +43,19 @@ func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 
 	AfterAll(func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
 		Eventually(SyncKyma, Timeout, Interval).
-			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 }
 
@@ -113,7 +113,7 @@ func newMandatoryModuleTemplate() *v1beta2.ModuleTemplate {
 }
 
 func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) string {
-	moduleInCluster, err := GetManifest(ctx, controlPlaneClient,
+	moduleInCluster, err := GetManifest(ctx, kcpClient,
 		kyma.GetName(), kyma.GetNamespace(), module.Name)
 	Expect(err).ToNot(HaveOccurred())
 	manifestSpec := moduleInCluster.Spec
@@ -127,12 +127,12 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 
 func UpdateAllManifestState(kymaName, kymaNamespace string, state shared.State) func() error {
 	return func() error {
-		kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, kymaNamespace)
+		kyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
 		if err != nil {
 			return err
 		}
 		for _, module := range kyma.Spec.Modules {
-			if err := UpdateManifestState(ctx, controlPlaneClient,
+			if err := UpdateManifestState(ctx, kcpClient,
 				kyma.GetName(), kyma.GetNamespace(), module.Name, state); err != nil {
 				return err
 			}

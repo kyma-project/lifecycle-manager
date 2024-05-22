@@ -110,7 +110,7 @@ This allows users to be fully flexible in regard to when and how to initialize t
 
 The **state** attribute is a simple representation of the state of the entire Kyma CR installation. It is defined as an aggregated status that is either `Ready`, `Processing`, `Warning`, `Error`, or `Deleting`, based on the status of all Manifest CRs on top of the validity/integrity of the synchronization to a remote cluster if enabled.
 
-The **state** is always reported based on the last reconciliation loop of the [Kyma controller](../../../internal/controller/kyma_controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
+The **state** is always reported based on the last reconciliation loop of the [Kyma controller](../../../internal/controller/kyma/controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
 
 ### **.status.conditions**
 

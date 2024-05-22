@@ -22,9 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -46,12 +43,16 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -67,17 +68,15 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	controlPlaneClient client.Client
-	runtimeClient      client.Client
-	k8sManager         manager.Manager
-	controlPlaneEnv    *envtest.Environment
-	runtimeEnv         *envtest.Environment
-	suiteCtx           context.Context
-	cancel             context.CancelFunc
-	restCfg            *rest.Config
-	istioResources     []*unstructured.Unstructured
-	remoteClientCache  *remote.ClientCache
-	logger             logr.Logger
+	k8sManager            manager.Manager
+	kcpClient             client.Client
+	kcpEnv                *envtest.Environment
+	testSkrContextFactory *testskrcontext.DualClusterFactory
+	suiteCtx              context.Context
+	cancel                context.CancelFunc
+	restCfg               *rest.Config
+	istioResources        []*unstructured.Unstructured
+	logger                logr.Logger
 )
 
 const (
@@ -118,13 +117,13 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
-	controlPlaneEnv = &envtest.Environment{
+	kcpEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
 		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	restCfg, err = controlPlaneEnv.Start()
+	restCfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restCfg).NotTo(BeNil())
 
@@ -150,9 +149,7 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	controlPlaneClient = k8sManager.GetClient()
-	runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
-	Expect(err).ToNot(HaveOccurred())
+	kcpClient = k8sManager.GetClient()
 
 	intervals := queue.RequeueIntervals{
 		Success: 1 * time.Second,
@@ -166,8 +163,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	Expect(createNamespace(suiteCtx, istioSystemNs, controlPlaneClient)).To(Succeed())
-	Expect(createNamespace(suiteCtx, kcpSystemNs, controlPlaneClient)).To(Succeed())
+	Expect(createNamespace(suiteCtx, istioSystemNs, kcpClient)).To(Succeed())
+	Expect(createNamespace(suiteCtx, kcpSystemNs, kcpClient)).To(Succeed())
 
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
@@ -175,7 +172,6 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
@@ -199,25 +195,28 @@ var _ = BeforeSuite(func() {
 	}
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
-
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
-		restCfg, k8sclientscheme.Scheme,
-		caCertCache,
-		skrChartCfg, certificateConfig, gatewayConfig)
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(k8sManager)
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
 	Expect(err).ToNot(HaveOccurred())
-	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
+		kcpClient,
+		testSkrContextFactory,
+		caCertCache,
+		skrChartCfg, certificateConfig, resolvedKcpAddr)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&kyma.Reconciler{
+		Client:              kcpClient,
+		SkrContextFactory:   testSkrContextFactory,
 		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
-		RemoteClientCache:   remoteClientCache,
-		KcpRestConfig:       k8sManager.GetConfig(),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
+	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, kyma.ReconcilerSetupSettings{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controller.WatcherReconciler{
@@ -247,14 +246,12 @@ var _ = AfterSuite(func() {
 	for _, istioResource := range istioResources {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(controlPlaneClient, istioResource).Should(Succeed())
+			WithArguments(kcpClient, istioResource).Should(Succeed())
 	}
 	// cancel environment context
 	cancel()
 
-	err := controlPlaneEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-	err = runtimeEnv.Stop()
+	err := kcpEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
 

@@ -40,7 +40,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -51,14 +50,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -160,29 +160,31 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
 	}
-
+	kcpRestConfig := mgr.GetConfig()
+	remoteClientCache := remote.NewClientCache()
+	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
+	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache)
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.EnableKcpWatcher {
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
 			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
 		setupKcpWatcherReconciler(mgr, options, flagVar, setupLog)
 	}
 
-	remoteClientCache := remote.NewClientCache()
 	sharedMetrics := metrics.NewSharedMetrics()
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupKymaReconciler(mgr, remoteClientCache, descriptorProvider, flagVar, options, skrWebhookManager, kymaMetrics,
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, flagVar, options, skrWebhookManager, kymaMetrics,
 		setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options, setupLog)
 	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, setupLog)
+		setupPurgeReconciler(mgr, skrContextProvider, flagVar, options, setupLog)
 	}
 	if flagVar.EnableWebhooks {
 		enableWebhooks(mgr, setupLog)
@@ -271,20 +273,18 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache,
-	descriptorProvider *provider.CachedDescriptorProvider, flagVar *flags.FlagVar, options ctrlruntime.Options,
+func setupKymaReconciler(mgr ctrl.Manager,
+	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote.SkrContextProvider, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
-	kcpRestConfig := mgr.GetConfig()
 
-	if err := (&controller.KymaReconciler{
+	if err := (&kyma.Reconciler{
 		Client:             mgr.GetClient(),
+		SkrContextFactory:  skrContextFactory,
 		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
-		KcpRestConfig:      kcpRestConfig,
-		RemoteClientCache:  remoteClientCache,
 		DescriptorProvider: descriptorProvider,
-		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(nil),
+		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(mgr.GetClient(), skrContextFactory, nil),
 		SKRWebhookManager:  skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
@@ -297,7 +297,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
 	}).SetupWithManager(
-		mgr, options, controller.SetupUpSetting{
+		mgr, options, kyma.ReconcilerSetupSettings{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 			IstioNamespace:               flagVar.IstioNamespace,
@@ -308,7 +308,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 	}
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, flagVar *flags.FlagVar) (*watcher.SKRWebhookManifestManager, error) {
+func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider, flagVar *flags.FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.CaCertCacheTTL)
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
@@ -330,13 +330,18 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *flags.FlagVar) (*watcher
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
 		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
 	}
+
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
+	if err != nil {
+		return nil, err
+	}
 	return watcher.NewSKRWebhookManifestManager(
-		mgr.GetConfig(),
-		mgr.GetScheme(),
+		mgr.GetClient(),
+		skrContextFactory,
 		caCertificateCache,
 		config,
 		certConfig,
-		gatewayConfig)
+		resolvedKcpAddr)
 }
 
 const (
@@ -351,18 +356,13 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.WatcherImageTag)
 }
 
-func setupPurgeReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *flags.FlagVar,
+func setupPurgeReconciler(mgr ctrl.Manager, skrContextProvider remote.SkrContextProvider, flagVar *flags.FlagVar,
 	options ctrlruntime.Options, setupLog logr.Logger,
 ) {
-	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
-		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
-		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
-	}
-
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
+		SkrContextFactory:     skrContextProvider,
 		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
-		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),
 		IsManagedKyma:         flagVar.IsKymaManaged,

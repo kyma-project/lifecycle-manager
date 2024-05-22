@@ -15,14 +15,12 @@ import (
 
 var (
 	errOldCreationTime = errors.New("certificate has an old creation timestamp")
-	errNotSynedSecret  = errors.New("secret is not synced to skr cluster")
+	errNotSyncedSecret = errors.New("secret is not synced to skr cluster")
 )
 
-func CertificateSecretExists(ctx context.Context,
-	namespacedSecretName types.NamespacedName, k8sClient client.Client,
-) error {
+func CertificateSecretExists(ctx context.Context, secretName types.NamespacedName, k8sClient client.Client) error {
 	certificateSecret := &apicorev1.Secret{}
-	err := k8sClient.Get(ctx, namespacedSecretName, certificateSecret)
+	err := k8sClient.Get(ctx, secretName, certificateSecret)
 	if err != nil {
 		return fmt.Errorf("failed to get certificate secret %w", err)
 	}
@@ -31,9 +29,9 @@ func CertificateSecretExists(ctx context.Context,
 }
 
 func CertificateSecretIsCreatedAfter(ctx context.Context,
-	namespacedSecretName types.NamespacedName, k8sClient client.Client, notBeforeTime *apimetav1.Time,
+	secretName types.NamespacedName, k8sClient client.Client, notBeforeTime *apimetav1.Time,
 ) error {
-	certificateSecret, err := fetchCertificateSecret(ctx, namespacedSecretName, k8sClient)
+	certificateSecret, err := fetchCertificateSecret(ctx, secretName, k8sClient)
 	if err != nil {
 		return fmt.Errorf("failed to fetch certificate secret %w", err)
 	}
@@ -46,33 +44,33 @@ func CertificateSecretIsCreatedAfter(ctx context.Context,
 }
 
 func CertificateSecretIsSyncedToSkrCluster(ctx context.Context,
-	kcpNamespacedSecretName types.NamespacedName, controlPlaneClient client.Client,
-	skrNamespacedSecretName types.NamespacedName, runtimeClient client.Client,
+	kcpSecretName types.NamespacedName, kcpClient client.Client,
+	skrSecretName types.NamespacedName, skrClient client.Client,
 ) error {
-	kcpCertificateSecret, err := fetchCertificateSecret(ctx, kcpNamespacedSecretName, controlPlaneClient)
+	kcpCertificateSecret, err := fetchCertificateSecret(ctx, kcpSecretName, kcpClient)
 	if err != nil {
 		return fmt.Errorf("failed to fetch kcp certificate secret %w", err)
 	}
 
-	skrCertificateSecret, err := fetchCertificateSecret(ctx, skrNamespacedSecretName, runtimeClient)
+	skrCertificateSecret, err := fetchCertificateSecret(ctx, skrSecretName, skrClient)
 	if err != nil {
 		return fmt.Errorf("failed to fetch kcp certificate secret %w", err)
 	}
 
 	for k, d := range kcpCertificateSecret.Data {
 		if !bytes.Equal(d, skrCertificateSecret.Data[k]) {
-			return errNotSynedSecret
+			return errNotSyncedSecret
 		}
 	}
 
 	return nil
 }
 
-func fetchCertificateSecret(ctx context.Context, namespacedSecretName types.NamespacedName, k8sClient client.Client,
+func fetchCertificateSecret(ctx context.Context, secretName types.NamespacedName, k8sClient client.Client,
 ) (*apicorev1.Secret, error) {
 	certificateSecret := &apicorev1.Secret{}
 	if err := k8sClient.Get(ctx,
-		namespacedSecretName,
+		secretName,
 		certificateSecret,
 	); err != nil {
 		return nil, fmt.Errorf("failed to fetch kcp certificate secret %w", err)
@@ -81,12 +79,12 @@ func fetchCertificateSecret(ctx context.Context, namespacedSecretName types.Name
 	return certificateSecret, nil
 }
 
-func DeleteCertificateSecret(ctx context.Context, namespacedSecretName types.NamespacedName, k8sClient client.Client,
+func DeleteCertificateSecret(ctx context.Context, secret types.NamespacedName, k8sClient client.Client,
 ) error {
 	certificateSecret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      namespacedSecretName.Name,
-			Namespace: namespacedSecretName.Namespace,
+			Name:      secret.Name,
+			Namespace: secret.Namespace,
 		},
 	}
 	err := k8sClient.Delete(ctx, certificateSecret)

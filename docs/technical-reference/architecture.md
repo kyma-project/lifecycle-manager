@@ -30,7 +30,7 @@ To run, Lifecycle Manager uses the following workflow:
 
 Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest, and Watcher controllers:
 
-- [Kyma controller](../../internal/controller/kyma_controller.go) - reconciles the Kyma CR which means creating Manifest CRs for each Kyma module enabled in the Kyma CR and deleting them when modules are disabled in the Kyma CR. It is also responsible for synchronising ModuleTemplate CRs between KCP and Kyma runtimes.
+- [Kyma controller](../../internal/controller/kyma/controller.go) - reconciles the Kyma CR which means creating Manifest CRs for each Kyma module enabled in the Kyma CR and deleting them when modules are disabled in the Kyma CR. It is also responsible for synchronising ModuleTemplate CRs between KCP and Kyma runtimes.
 - [Manifest controller](../../internal/controller/manifest_controller.go) - reconciles the Manifest CRs created by the Kyma controller, which means, installing components specified in the Manifest CR on the target SKR cluster and removing them when the Manifest CRs are flagged for deletion.
 - [Purge controller](../../internal/controller/purge_controller.go) - reconciles the Kyma CRs which are marked for deletion longer than the grace period, which means purging all the resources deployed by the Lifecycle Manager on the target SKR cluster.
 - [Watcher controller](../../internal/controller/watcher_controller.go) - reconciles the Watcher CR which means creating Istio Virtual Service resources on KCP when a Watcher CR is created and removing the same resources when it is deleted. This is done in order to configure the routing of the messages coming from the watcher agent installed on each Kyma runtime and going to a listener agent deployed on KCP.
