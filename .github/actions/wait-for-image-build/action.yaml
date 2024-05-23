@@ -10,7 +10,7 @@ inputs:
   timeoutSeconds:
     description: The number of seconds to wait for the status check to complete.
     required: false
-    default: "900"
+    default: "1200"
   intervalSeconds:
     description: The number of seconds to wait before each poll of the GitHub API.
     required: false

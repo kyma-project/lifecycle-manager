@@ -1,14 +1,22 @@
-package controller
+package event
 
 import (
 	"k8s.io/client-go/tools/record"
-	
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type KymaEvent struct {
 	record.EventRecorder
 }
+
+const (
+	ModuleReconciliationError eventReason = "ModuleReconciliationError"
+	MetricsError              eventReason = "MetricsError"
+	UpdateSpecError           eventReason = "UpdateSpecError"
+	UpdateStatusError         eventReason = "UpdateStatusError"
+	PatchStatusError          eventReason = "PatchStatus"
+)
 
 func NewKymaEvent(recorder record.EventRecorder) *KymaEvent {
 	return &KymaEvent{recorder}

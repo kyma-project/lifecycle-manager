@@ -7,7 +7,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 func TestNewClientCache(t *testing.T) {

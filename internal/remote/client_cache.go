@@ -15,13 +15,13 @@ const (
 )
 
 func NewClientCache() *ClientCache {
-	cache := &ClientCache{internal: *ttlcache.New[client.ObjectKey, Client]()}
+	cache := &ClientCache{internal: ttlcache.New[client.ObjectKey, Client]()}
 	go cache.internal.Start()
 	return cache
 }
 
 type ClientCache struct {
-	internal ttlcache.Cache[client.ObjectKey, Client]
+	internal *ttlcache.Cache[client.ObjectKey, Client]
 }
 
 func (c *ClientCache) Get(key client.ObjectKey) Client {
@@ -34,6 +34,10 @@ func (c *ClientCache) Get(key client.ObjectKey) Client {
 
 func (c *ClientCache) Add(key client.ObjectKey, value Client) {
 	c.internal.Set(key, value, getRandomTTL())
+}
+
+func (c *ClientCache) Contains(key client.ObjectKey) bool {
+	return c.internal.Has(key)
 }
 
 func (c *ClientCache) Delete(key client.ObjectKey) {

@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -106,11 +107,6 @@ const (
 // SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
 // lookup, or other behavioral patterns when interacting with the remote cluster.
 type SyncStrategy string
-
-const (
-	SyncStrategyLocalSecret = "local-secret"
-	SyncStrategyLocalClient = "local-client"
-)
 
 func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 	moduleStatusMap := make(map[string]*ModuleStatus)
@@ -441,4 +437,11 @@ func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 		updateRequired = true
 	}
 	return updateRequired
+}
+
+func (kyma *Kyma) GetNamespacedName() types.NamespacedName {
+	return types.NamespacedName{
+		Namespace: kyma.GetNamespace(),
+		Name:      kyma.GetName(),
+	}
 }

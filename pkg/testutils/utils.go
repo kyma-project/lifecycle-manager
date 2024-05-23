@@ -16,17 +16,13 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -38,10 +34,9 @@ const (
 )
 
 var (
-	ErrNotFound                   = errors.New("resource not exists")
-	ErrNotDeleted                 = errors.New("resource not deleted")
+	ErrNotFound                   = errors.New("resource does not exist")
+	ErrNotDeleted                 = errors.New("resource has not been deleted")
 	ErrDeletionTimestampFound     = errors.New("deletion timestamp not nil")
-	ErrEmptyRestConfig            = errors.New("rest.Config is nil")
 	ErrSampleCrNotInExpectedState = errors.New("resource not in expected state")
 	ErrFetchingStatus             = errors.New("could not fetch status from resource")
 )
@@ -85,36 +80,6 @@ func NewTestNamespace(namespace string) *apicorev1.Namespace {
 			Name: namespace,
 		},
 	}
-}
-
-func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Environment, error) {
-	skrEnv := &envtest.Environment{
-		ErrorIfCRDPathMissing: true,
-	}
-	cfg, err := skrEnv.Start()
-	if err != nil {
-		return nil, nil, err
-	}
-	if cfg == nil {
-		return nil, nil, ErrEmptyRestConfig
-	}
-
-	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(envtest.User{
-		Name:   "skr-admin-account",
-		Groups: []string{"system:masters"},
-	}, cfg)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	remote.LocalClient = func() *rest.Config {
-		return authUser.Config()
-	}
-
-	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
-
-	return skrClient, skrEnv, err
 }
 
 func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.CustomResourceDefinition, error) {

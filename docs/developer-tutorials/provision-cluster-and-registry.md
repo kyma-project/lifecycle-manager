@@ -53,16 +53,75 @@ Learn how to use a Gardener cluster for testing.
 
 1. Go to the [Gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account) and download your `Access Kubeconfig`.
 
-2. Provision a compliant remote cluster using [Kyma CLI](https://github.com/kyma-project/cli):
+2. Provision a compliant remote cluster:
 
    ```sh
+   # name - name of the cluster
    # gardener_project - Gardener project name
    # gcp_secret - Cloud provider secret name (e.g. GCP)
    # gardener_account_kubeconfig - path to Access Kubeconfig from Step 1
-   kyma provision gardener gcp --name op-kcpskr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
-   ```
+   cat << EOF | kubectl apply --kubeconfig="${gardener_account_kubeconfig}" -f -
+   apiVersion: core.gardener.cloud/v1beta1
+   kind: Shoot
+   metadata:
+   name: ${name}
+   spec:
+   secretBindingName: ${gcp_secret}
+   cloudProfileName: gcp
+   region: europe-west3
+   purpose: evaluation
+   provider:
+      type: gcp
+      infrastructureConfig:
+         apiVersion: gcp.provider.extensions.gardener.cloud/v1alpha1
+         kind: InfrastructureConfig
+         networks:
+         workers: 10.250.0.0/16
+      controlPlaneConfig:
+         apiVersion: gcp.provider.extensions.gardener.cloud/v1alpha1
+         kind: ControlPlaneConfig
+         zone:  europe-west3-a
+      workers:
+      - name: cpu-worker
+         minimum: 1
+         maximum: 3
+         machine:
+         type: n1-standard-4
+         volume:
+         type: pd-standard
+         size: 50Gi
+         zones:
+         - europe-west3-a
+   networking:
+      type: calico
+      pods: 100.96.0.0/11
+      nodes: 10.250.0.0/16
+      services: 100.64.0.0/13
+   hibernation:
+      enabled: false
+      schedules:
+      - start: "00 14 * * ?"
+         location: "Europe/Berlin"
+   addons:
+      nginxIngress:
+         enabled: false
+   EOF
 
-   For example, this could look like `kyma provision gardener gcp --name op-kcpskr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml`.
+   echo "waiting fo cluster to be ready..."
+   kubectl wait --kubeconfig="${gardener_account_kubeconfig}" --for=condition=EveryNodeReady shoot/${name} --timeout=17m
+
+   # create kubeconfig request, that creates a Kubeconfig, which is valid for one day
+   kubectl create -kubeconfig="${gardener_account_kubeconfig}" \
+      -f <(printf '{"spec":{"expirationSeconds":86400}}') \
+      --raw /apis/core.gardener.cloud/v1beta1/namespaces/garden-${gardener_project}/shoots/${name}/adminkubeconfig | \
+      jq -r ".status.kubeconfig" | \
+      base64 -d > ${name}_kubeconfig.yaml
+
+   # merge with the existing kubeconfig settings
+   mkdir -p ~/.kube
+   KUBECONFIG="~/.kube/config:${name}_kubeconfig.yaml" kubectl config view --merge > merged_kubeconfig.yaml
+   mv merged_kubeconfig.yaml ~/.kube/config
+   ```
 
 3. Create an external registry.
 

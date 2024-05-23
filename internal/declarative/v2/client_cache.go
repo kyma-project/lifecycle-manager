@@ -20,11 +20,11 @@ const (
 )
 
 type MemoryClientCache struct {
-	internal ttlcache.Cache[string, Client]
+	internal *ttlcache.Cache[string, Client]
 }
 
 func NewMemoryClientCache() *MemoryClientCache {
-	cache := &MemoryClientCache{internal: *ttlcache.New[string, Client]()}
+	cache := &MemoryClientCache{internal: ttlcache.New[string, Client]()}
 	go cache.internal.Start()
 	return cache
 }

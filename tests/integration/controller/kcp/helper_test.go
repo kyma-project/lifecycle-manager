@@ -1,4 +1,4 @@
-package controlplane_test
+package kcp_test
 
 import (
 	"context"
@@ -14,10 +14,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -34,23 +33,23 @@ const (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
+		DeployModuleTemplates(ctx, kcpClient, kyma)
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 
 	AfterAll(func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
+			WithArguments(kcpClient, kyma).Should(Succeed())
+		DeleteModuleTemplates(ctx, kcpClient, kyma)
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
 		Eventually(SyncKyma, Timeout, Interval).
-			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 }
 

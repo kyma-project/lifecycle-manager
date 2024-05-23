@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -59,12 +58,7 @@ func getKymaList(ctx context.Context, clnt client.Reader) (*v1beta2.KymaList, er
 func getRequestItems(items []v1beta2.Kyma) []reconcile.Request {
 	requests := make([]reconcile.Request, 0)
 	for _, kyma := range items {
-		kymaName := types.NamespacedName{
-			Namespace: kyma.GetNamespace(),
-			Name:      kyma.GetName(),
-		}
-
-		requests = append(requests, reconcile.Request{NamespacedName: kymaName})
+		requests = append(requests, reconcile.Request{NamespacedName: kyma.GetNamespacedName()})
 	}
 	return requests
 }
