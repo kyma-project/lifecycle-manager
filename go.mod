@@ -15,7 +15,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240502124257-9d96561ef070
-	github.com/onsi/ginkgo/v2 v2.17.3
+	github.com/onsi/ginkgo/v2 v2.18.0
 	github.com/onsi/gomega v1.33.1
 	github.com/open-component-model/ocm v0.10.0
 	github.com/prometheus/client_golang v1.19.1
@@ -302,7 +302,7 @@ require (
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
-	golang.org/x/tools v0.20.0 // indirect
+	golang.org/x/tools v0.21.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/api v0.172.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
