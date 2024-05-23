@@ -48,7 +48,6 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	}
 
 	lbls[shared.ModuleName] = m.ModuleName
-	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
 	lbls[shared.ManagedBy] = shared.OperatorName
 	if m.Template.Spec.Mandatory {
 		lbls[shared.IsMandatoryModule] = "true"
