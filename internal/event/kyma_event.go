@@ -16,6 +16,7 @@ const (
 	UpdateSpecError           eventReason = "UpdateSpecError"
 	UpdateStatusError         eventReason = "UpdateStatusError"
 	PatchStatusError          eventReason = "PatchStatus"
+	maxErrorLength            int         = 50
 )
 
 func NewKymaEvent(recorder record.EventRecorder) *KymaEvent {
@@ -33,5 +34,16 @@ func (e *KymaEvent) Warning(obj *v1beta2.Kyma, reason eventReason, err error) {
 	if obj == nil || err == nil {
 		return
 	}
-	e.EventRecorder.Event(obj, typeWarning, string(reason), err.Error())
+	e.EventRecorder.Event(obj, typeWarning, string(reason), truncatedErrMsg(err))
+}
+
+func truncatedErrMsg(err error) string {
+	msg := err.Error()
+	length := len(msg)
+
+	if length <= maxErrorLength {
+		return msg
+	}
+
+	return msg[length-maxErrorLength:]
 }
