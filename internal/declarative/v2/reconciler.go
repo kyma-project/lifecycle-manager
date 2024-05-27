@@ -163,24 +163,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
-		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
-		return ctrl.Result{Requeue: true}, nil
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestPruneDiffNotFinished, currentObjStatus,
+			nil)
 	} else if err != nil {
 		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestPruneDiff, currentObjStatus, err)
 	}
 
 	if err := r.removeModuleCR(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
-			return ctrl.Result{Requeue: true}, nil
+			return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestPreDeleteEnqueueRequired, currentObjStatus,
+				nil)
 		}
 		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestPreDelete, currentObjStatus, err)
 	}
 
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
-			return ctrl.Result{Requeue: true}, nil
+			return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestSyncResourcesEnqueueRequired, currentObjStatus,
+				err)
 		}
 		if errors.Is(err, ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, obj)
@@ -209,7 +209,7 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
 	}
 }
 
-func (r *Reconciler) updateRequiredAfterRemoveFinalizers(obj Object, finalizersToRemove []string) bool {
+func updateRequiredAfterRemoveFinalizers(obj Object, finalizersToRemove []string) bool {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
 		if controllerutil.RemoveFinalizer(obj, f) {
@@ -591,7 +591,7 @@ func (r *Reconciler) finishReconcile(ctx context.Context, requestName string, ob
 	if !obj.GetDeletionTimestamp().IsZero() {
 		r.ManifestMetrics.RemoveManifestDuration(requestName)
 		r.cleanUpMandatoryModuleMetrics(obj)
-		if r.updateRequiredAfterRemoveFinalizers(obj, r.finalizerToRemove(originalErr, obj)) {
+		if updateRequiredAfterRemoveFinalizers(obj, r.finalizerToRemove(originalErr, obj)) {
 			return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerInDeleting)
 		}
 		if obj.GetStatus().State != shared.StateWarning {
