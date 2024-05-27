@@ -120,7 +120,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.initialize(obj); err != nil {
-		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestInit, currentObjStatus, err)
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestInit, currentObjStatus, err)
 	}
 
 	if obj.GetLabels() != nil && obj.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
@@ -139,7 +139,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
-		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestParseSpec, currentObjStatus, err)
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestParseSpec, currentObjStatus, err)
 	}
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
@@ -150,23 +150,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestClientInit, currentObjStatus, err)
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestClientInit, currentObjStatus, err)
 	}
 
 	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
 			r.invalidateClientCache(ctx, obj)
-			return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestUnauthorized, currentObjStatus, err)
+			return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestUnauthorized, currentObjStatus, err)
 		}
-		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestRenderResources, currentObjStatus, err)
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestRenderResources, currentObjStatus, err)
 	}
 
 	if err := r.pruneDiff(ctx, clnt, obj, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
-		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestPruneDiff, currentObjStatus, err)
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestPruneDiff, currentObjStatus, err)
 	}
 
 	if err := r.removeModuleCR(ctx, clnt, obj); err != nil {
@@ -174,10 +174,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
-		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestPreDelete, currentObjStatus, err)
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestPreDelete, currentObjStatus, err)
 	}
 
-	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
+	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
@@ -185,7 +185,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if errors.Is(err, ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, obj)
 		}
-		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestSyncResources, currentObjStatus, err)
+		return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestSyncResources, currentObjStatus, err)
 	}
 
 	// This situation happens when manifest get new installation layer to update resources,
@@ -195,18 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateObject(ctx, obj, metrics.ManifestUpdateSyncedOCIRef)
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		if r.cleanupUnderDeleting(req.Name, obj, []string{r.Finalizer}) {
-			return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerInDeleting)
-		}
-	}
-
-	if err = r.patchStatusIfDiffExist(ctx, obj, currentObjStatus); err != nil {
-		r.Event(obj, "Warning", "PatchStatus", err.Error())
-		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
-	}
-
-	return ctrl.Result{RequeueAfter: r.Success}, nil
+	return r.finishReconcile(ctx, req.Name, obj, metrics.ManifestReconcileFinished, currentObjStatus, nil)
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
@@ -604,7 +593,7 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, erro
 	return clnt, nil
 }
 
-func (r *Reconciler) dealWithReconcileError(ctx context.Context, requestName string, obj Object,
+func (r *Reconciler) finishReconcile(ctx context.Context, requestName string, obj Object,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
 	if !obj.GetDeletionTimestamp().IsZero() {
@@ -617,12 +606,16 @@ func (r *Reconciler) dealWithReconcileError(ctx context.Context, requestName str
 		}
 	}
 
-	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 	if err := r.patchStatusIfDiffExist(ctx, obj, previousStatus); err != nil {
 		r.Event(obj, "Warning", "PatchStatus", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
-	return ctrl.Result{}, originalErr
+	if originalErr != nil {
+		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
+		return ctrl.Result{}, originalErr
+	}
+	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
+	return ctrl.Result{RequeueAfter: r.Success}, nil
 }
 
 func (r *Reconciler) cleanupUnderDeleting(requestName string, obj Object, finalizersToBeRemoved []string) bool {
