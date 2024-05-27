@@ -209,22 +209,14 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
 	}
 }
 
-func (r *Reconciler) removeFinalizers(obj Object, finalizersToRemove []string) bool {
+func (r *Reconciler) updateRequiredAfterRemoveFinalizers(obj Object, finalizersToRemove []string) bool {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
 		if controllerutil.RemoveFinalizer(obj, f) {
 			finalizerRemoved = true
 		}
 	}
-	if finalizerRemoved {
-		return true
-	}
-
-	if obj.GetStatus().State != shared.StateWarning {
-		obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).
-			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())))
-	}
-	return false
+	return finalizerRemoved
 }
 
 func (r *Reconciler) partialObjectMetadata(obj Object) *apimetav1.PartialObjectMetadata {
@@ -597,12 +589,18 @@ func (r *Reconciler) finishReconcile(ctx context.Context, requestName string, ob
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
 	if !obj.GetDeletionTimestamp().IsZero() {
-		finalizersToBeRemoved := []string{r.Finalizer}
+		r.ManifestMetrics.RemoveManifestDuration(requestName)
+		r.cleanUpMandatoryModuleMetrics(obj)
+		finalizersToRemove := []string{r.Finalizer}
 		if errors.Is(originalErr, ErrAccessSecretNotFound) {
-			finalizersToBeRemoved = obj.GetFinalizers()
+			finalizersToRemove = obj.GetFinalizers()
 		}
-		if r.cleanupUnderDeleting(requestName, obj, finalizersToBeRemoved) {
+		if r.updateRequiredAfterRemoveFinalizers(obj, finalizersToRemove) {
 			return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerInDeleting)
+		}
+		if obj.GetStatus().State != shared.StateWarning {
+			obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).
+				WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())))
 		}
 	}
 
@@ -616,12 +614,6 @@ func (r *Reconciler) finishReconcile(ctx context.Context, requestName string, ob
 	}
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
 	return ctrl.Result{RequeueAfter: r.Success}, nil
-}
-
-func (r *Reconciler) cleanupUnderDeleting(requestName string, obj Object, finalizersToBeRemoved []string) bool {
-	r.ManifestMetrics.RemoveManifestDuration(requestName)
-	r.cleanUpMandatoryModuleMetrics(obj)
-	return r.removeFinalizers(obj, finalizersToBeRemoved)
 }
 
 func (r *Reconciler) patchStatusIfDiffExist(ctx context.Context, obj Object, previousStatus shared.Status) error {
