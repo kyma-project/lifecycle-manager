@@ -104,7 +104,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(BeTrue())
 			Eventually(IsManifestRequeueReasonCountIncreased).
 				WithContext(ctx).
-				WithArguments(string(metrics.ManifestRemoveFinalizerInDeleting), string(queue.IntendedRequeue)).
+				WithArguments(string(metrics.ManifestReconcileFinished), string(queue.IntendedRequeue)).
 				Should(BeTrue())
 		})
 
