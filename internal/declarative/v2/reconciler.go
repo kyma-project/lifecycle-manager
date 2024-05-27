@@ -96,7 +96,7 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 	}
 }
 
-//nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
+//nolint:funlen,cyclop // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
@@ -591,11 +591,7 @@ func (r *Reconciler) finishReconcile(ctx context.Context, requestName string, ob
 	if !obj.GetDeletionTimestamp().IsZero() {
 		r.ManifestMetrics.RemoveManifestDuration(requestName)
 		r.cleanUpMandatoryModuleMetrics(obj)
-		finalizersToRemove := []string{r.Finalizer}
-		if errors.Is(originalErr, ErrAccessSecretNotFound) {
-			finalizersToRemove = obj.GetFinalizers()
-		}
-		if r.updateRequiredAfterRemoveFinalizers(obj, finalizersToRemove) {
+		if r.updateRequiredAfterRemoveFinalizers(obj, r.finalizerToRemove(originalErr, obj)) {
 			return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerInDeleting)
 		}
 		if obj.GetStatus().State != shared.StateWarning {
@@ -614,6 +610,14 @@ func (r *Reconciler) finishReconcile(ctx context.Context, requestName string, ob
 	}
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
 	return ctrl.Result{RequeueAfter: r.Success}, nil
+}
+
+func (r *Reconciler) finalizerToRemove(originalErr error, obj Object) []string {
+	finalizersToRemove := []string{r.Finalizer}
+	if errors.Is(originalErr, ErrAccessSecretNotFound) {
+		finalizersToRemove = obj.GetFinalizers()
+	}
+	return finalizersToRemove
 }
 
 func (r *Reconciler) patchStatusIfDiffExist(ctx context.Context, obj Object, previousStatus shared.Status) error {
