@@ -149,6 +149,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
+		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
 		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestClientInit, currentObjStatus, err)
 	}
 
@@ -158,7 +159,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.invalidateClientCache(ctx, obj)
 			return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestUnauthorized, currentObjStatus, err)
 		}
-
 		return r.dealWithReconcileError(ctx, req.Name, obj, metrics.ManifestRenderResources, currentObjStatus, err)
 	}
 
@@ -196,9 +196,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		r.cleanUpMandatoryModuleMetrics(obj)
-		r.ManifestMetrics.RemoveManifestDuration(req.Name)
-		if removed := r.removeFinalizers(obj, []string{r.Finalizer}); removed {
+		if r.cleanupUnderDeleting(req.Name, obj, []string{r.Finalizer}) {
 			return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerInDeleting)
 		}
 	}
@@ -610,23 +608,27 @@ func (r *Reconciler) dealWithReconcileError(ctx context.Context, requestName str
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
 	if !obj.GetDeletionTimestamp().IsZero() {
-		r.ManifestMetrics.RemoveManifestDuration(requestName)
-		r.cleanUpMandatoryModuleMetrics(obj)
 		finalizersToBeRemoved := []string{r.Finalizer}
 		if errors.Is(originalErr, ErrAccessSecretNotFound) {
 			finalizersToBeRemoved = obj.GetFinalizers()
 		}
-		if removed := r.removeFinalizers(obj, finalizersToBeRemoved); removed {
+		if r.cleanupUnderDeleting(requestName, obj, finalizersToBeRemoved) {
 			return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerInDeleting)
 		}
 	}
-	obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(originalErr))
+
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 	if err := r.patchStatusIfDiffExist(ctx, obj, previousStatus); err != nil {
 		r.Event(obj, "Warning", "PatchStatus", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
 	return ctrl.Result{}, originalErr
+}
+
+func (r *Reconciler) cleanupUnderDeleting(requestName string, obj Object, finalizersToBeRemoved []string) bool {
+	r.ManifestMetrics.RemoveManifestDuration(requestName)
+	r.cleanUpMandatoryModuleMetrics(obj)
+	return r.removeFinalizers(obj, finalizersToBeRemoved)
 }
 
 func (r *Reconciler) patchStatusIfDiffExist(ctx context.Context, obj Object, previousStatus shared.Status) error {
