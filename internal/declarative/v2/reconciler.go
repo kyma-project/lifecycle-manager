@@ -142,8 +142,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if !obj.GetDeletionTimestamp().IsZero() {
 			r.ManifestMetrics.RemoveManifestDuration(req.Name)
 			r.cleanUpMandatoryModuleMetrics(obj)
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerWhenParseSpec,
-				err)
+			if removed := r.removeFinalizers(obj, []string{r.Finalizer}); removed {
+				return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerWhenParseSpec, queue.IntendedRequeue)
+			}
+			return r.ssaStatusWithError(ctx, obj, metrics.ManifestRemoveFinalizerWhenParseSpec, currentObjStatus, err)
 		}
 		return r.ssaStatusWithError(ctx, obj, metrics.ManifestParseSpec, currentObjStatus, err)
 	}
@@ -158,7 +160,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
 			r.cleanUpMandatoryModuleMetrics(obj)
 			r.ManifestMetrics.RemoveManifestDuration(req.Name)
-			return r.removeFinalizers(ctx, obj, obj.GetFinalizers(), metrics.ManifestRemoveFinalizerWhenSecretGone, err)
+			if removed := r.removeFinalizers(obj, obj.GetFinalizers()); removed {
+				return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerWhenSecretGone, queue.IntendedRequeue)
+			}
+			return r.ssaStatusWithError(ctx, obj, metrics.ManifestRemoveFinalizerWhenSecretGone, currentObjStatus, err)
 		}
 
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -211,7 +216,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if !obj.GetDeletionTimestamp().IsZero() {
 		r.cleanUpMandatoryModuleMetrics(obj)
 		r.ManifestMetrics.RemoveManifestDuration(req.Name)
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer}, metrics.ManifestRemoveFinalizerInDeleting, nil)
+		if removed := r.removeFinalizers(obj, []string{r.Finalizer}); removed {
+			return r.updateObject(ctx, obj, metrics.ManifestRemoveFinalizerInDeleting, queue.IntendedRequeue)
+		}
 	}
 
 	if err = r.patchStatusIfDiffExist(ctx, obj, currentObjStatus); err != nil {
@@ -233,10 +240,7 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
 	}
 }
 
-func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string,
-	requeueReason metrics.ManifestRequeueReason, err error,
-) (ctrl.Result, error) {
-	currentObjStatus := obj.GetStatus()
+func (r *Reconciler) removeFinalizers(obj Object, finalizersToRemove []string) bool {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
 		if controllerutil.RemoveFinalizer(obj, f) {
@@ -244,15 +248,14 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 		}
 	}
 	if finalizerRemoved {
-		return r.updateObject(ctx, obj, requeueReason, queue.IntendedRequeue)
+		return true
 	}
 
 	if obj.GetStatus().State != shared.StateWarning {
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).
 			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())))
 	}
-
-	return r.ssaStatusWithError(ctx, obj, requeueReason, currentObjStatus, err)
+	return false
 }
 
 func (r *Reconciler) partialObjectMetadata(obj Object) *apimetav1.PartialObjectMetadata {
