@@ -34,13 +34,13 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 		It("Then Kyma CR should result in a ready state immediately as there are no modules", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
 		It("And Kyma CR should contain empty status.modules", func() {
 			Eventually(func() error {
-				createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				if err != nil {
 					return err
 				}
@@ -86,36 +86,36 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		Eventually(CreateCR).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, template).Should(Succeed())
+			WithArguments(kcpClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		Eventually(CreateCR).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(SetKymaState).
 			WithContext(ctx).
-			WithArguments(kyma, mandatoryModuleReconciler, shared.StateReady).Should(Succeed())
+			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
 	})
 
 	AfterAll(func() {
 		Eventually(DeleteCR).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(DeleteCR).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, template).Should(Succeed())
+			WithArguments(kcpClient, template).Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
 		Eventually(SyncKyma).
-			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 }
 
 func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := mandatoryModuleReconciler.List(ctx, &manifestList, &client.ListOptions{
+	if err := reconciler.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
 	}); err != nil {
 		return err

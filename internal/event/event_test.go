@@ -1,4 +1,4 @@
-package event
+package event_test
 
 import (
 	"errors"
@@ -8,58 +8,59 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
 
 func TestKymaEvent_Normal(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
-	kymaEvent := NewKymaEvent(fakeRecorder)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
-	kymaEvent.Normal(k, "test")
+	eventRec.Normal(k, "test", "")
 
-	event := <-fakeRecorder.Events
+	events := <-fakeRecorder.Events
 	expected := "Normal test"
-	assert.Contains(t, event, expected)
+	assert.Contains(t, events, expected)
 }
 
 func TestKymaEvent_Normal_NoKyma(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
-	kymaEvent := NewKymaEvent(fakeRecorder)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
-	kymaEvent.Normal(nil, "test")
+	eventRec.Normal(nil, "test", "")
 
-	assert.Equal(t, 0, len(fakeRecorder.Events))
+	assert.Empty(t, fakeRecorder.Events)
 }
 
 func TestKymaEvent_Warning(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
-	kymaEvent := NewKymaEvent(fakeRecorder)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
 	err := errors.New("error")
-	kymaEvent.Warning(k, "test", err)
+	eventRec.Warning(k, "test", err)
 
-	event := <-fakeRecorder.Events
+	events := <-fakeRecorder.Events
 	expected := "Warning test error"
-	assert.Contains(t, event, expected)
+	assert.Contains(t, events, expected)
 }
 
 func TestKymaEvent_Warning_NoKyma(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
-	kymaEvent := NewKymaEvent(fakeRecorder)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	err := errors.New("error")
-	kymaEvent.Warning(nil, "test", err)
+	eventRec.Warning(nil, "test", err)
 
-	assert.Equal(t, 0, len(fakeRecorder.Events))
+	assert.Empty(t, fakeRecorder.Events)
 }
 
 func TestKymaEvent_Warning_NoError(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
-	kymaEvent := NewKymaEvent(fakeRecorder)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
 	k := &v1beta2.Kyma{}
-	kymaEvent.Warning(k, "test", nil)
+	eventRec.Warning(k, "test", nil)
 
-	assert.Equal(t, 0, len(fakeRecorder.Events))
+	assert.Empty(t, fakeRecorder.Events)
 }

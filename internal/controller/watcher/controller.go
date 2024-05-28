@@ -102,48 +102,46 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.stateHandling(ctx, watcher)
 }
 
-func (r *Reconciler) updateFinalizer(ctx context.Context, watcherCR *v1beta2.Watcher) error {
-	err := r.Client.Update(ctx, watcherCR)
+func (r *Reconciler) updateFinalizer(ctx context.Context, watcher *v1beta2.Watcher) error {
+	err := r.Client.Update(ctx, watcher)
 	if err != nil {
-		r.Event.Warning(watcherCR, updateFinalizerFailure, err)
+		r.Event.Warning(watcher, updateFinalizerFailure, err)
 		return fmt.Errorf("failed to update finalizer: %w", err)
 	}
 	return nil
 }
 
-func (r *Reconciler) stateHandling(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
-	switch watcherCR.Status.State {
+func (r *Reconciler) stateHandling(ctx context.Context, watcher *v1beta2.Watcher) (ctrl.Result, error) {
+	switch watcher.Status.State {
 	case "":
-		return r.updateWatcherState(ctx, watcherCR, shared.StateProcessing, nil)
+		return r.updateWatcherState(ctx, watcher, shared.StateProcessing, nil)
 	case shared.StateProcessing:
-		return r.handleProcessingState(ctx, watcherCR)
+		return r.handleProcessingState(ctx, watcher)
 	case shared.StateDeleting:
-		return r.handleDeletingState(ctx, watcherCR)
+		return r.handleDeletingState(ctx, watcher)
 	case shared.StateError:
-		return r.handleProcessingState(ctx, watcherCR)
+		return r.handleProcessingState(ctx, watcher)
 	case shared.StateReady, shared.StateWarning:
-		return r.handleProcessingState(ctx, watcherCR)
+		return r.handleProcessingState(ctx, watcher)
 	}
 
 	return ctrl.Result{Requeue: false}, nil
 }
 
-func (r *Reconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
-	err := r.IstioClient.DeleteVirtualService(ctx, watcherCR.GetName(), watcherCR.GetNamespace())
+func (r *Reconciler) handleDeletingState(ctx context.Context, watcher *v1beta2.Watcher) (ctrl.Result, error) {
+	err := r.IstioClient.DeleteVirtualService(ctx, watcher.GetName(), watcher.GetNamespace())
 	if err != nil {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
-		return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsConfigDelErr)
+		return r.updateWatcherState(ctx, watcher, shared.StateError, vsConfigDelErr)
 	}
-	finalizerRemoved := controllerutil.RemoveFinalizer(watcherCR, shared.WatcherFinalizer)
+	finalizerRemoved := controllerutil.RemoveFinalizer(watcher, shared.WatcherFinalizer)
 	if !finalizerRemoved {
-		return r.updateWatcherState(ctx, watcherCR, shared.StateError, errFinalizerRemove)
+		return r.updateWatcherState(ctx, watcher, shared.StateError, errFinalizerRemove)
 	}
-	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherCR)
+	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcher)
 }
 
-func (r *Reconciler) handleProcessingState(ctx context.Context,
-	watcherCR *v1beta2.Watcher,
-) (ctrl.Result, error) {
+func (r *Reconciler) handleProcessingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
 	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
 		r.IstioGatewayNamespace)
 	if err != nil || len(gateways.Items) == 0 {
@@ -177,27 +175,27 @@ func (r *Reconciler) handleProcessingState(ctx context.Context,
 	return r.updateWatcherState(ctx, watcherCR, shared.StateReady, nil)
 }
 
-func (r *Reconciler) updateWatcherState(ctx context.Context, cr *v1beta2.Watcher, state shared.State, err error) (ctrl.Result, error) {
-	cr.Status.State = state
+func (r *Reconciler) updateWatcherState(ctx context.Context, watcher *v1beta2.Watcher, state shared.State, err error) (ctrl.Result, error) {
+	watcher.Status.State = state
 	if state == shared.StateReady {
-		cr.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
+		watcher.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
 	} else if state == shared.StateError {
-		cr.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
+		watcher.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
 	}
 	if err != nil {
-		r.Event.Warning(cr, watcherStatusUpdateFailure, err)
+		r.Event.Warning(watcher, watcherStatusUpdateFailure, err)
 	}
 	requeueInterval := queue.DetermineRequeueInterval(state, r.RequeueIntervals)
-	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, cr)
+	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, watcher)
 }
 
-func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, cr *v1beta2.Watcher) error {
-	cr.ManagedFields = nil
-	err := r.Client.Status().Patch(ctx, cr, client.Apply, client.FieldOwner(shared.OperatorName),
+func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
+	watcher.ManagedFields = nil
+	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
 		status.SubResourceOpts(client.ForceOwnership))
 	if err != nil {
 		err = fmt.Errorf("watcher status update failed: %w", err)
-		r.Event.Warning(cr, watcherStatusUpdateFailure, err)
+		r.Event.Warning(watcher, watcherStatusUpdateFailure, err)
 		return err
 	}
 	return nil

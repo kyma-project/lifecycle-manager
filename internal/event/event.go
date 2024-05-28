@@ -1,13 +1,13 @@
 package event
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 )
 
 type Event interface {
-	Normal(object runtime.Object, reason Reason, msg string)
-	Warning(object runtime.Object, reason Reason, err error)
+	Normal(object machineryruntime.Object, reason Reason, msg string)
+	Warning(object machineryruntime.Object, reason Reason, err error)
 }
 
 type Reason string
@@ -26,14 +26,14 @@ func NewRecorderWrapper(recorder record.EventRecorder) *RecorderWrapper {
 	return &RecorderWrapper{recorder}
 }
 
-func (e *RecorderWrapper) Normal(obj runtime.Object, reason Reason, msg string) {
+func (e *RecorderWrapper) Normal(obj machineryruntime.Object, reason Reason, msg string) {
 	if obj == nil {
 		return
 	}
 	e.recorder.Event(obj, typeNormal, string(reason), msg)
 }
 
-func (e *RecorderWrapper) Warning(obj runtime.Object, reason Reason, err error) {
+func (e *RecorderWrapper) Warning(obj machineryruntime.Object, reason Reason, err error) {
 	if obj == nil || err == nil {
 		return
 	}

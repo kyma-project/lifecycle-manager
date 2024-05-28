@@ -35,16 +35,16 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 			func() {
 				Eventually(KymaIsInState).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 				Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
+					WithArguments(kcpClient, shared.FQDN, "kyma-project.io/template-operator").
 					Should(Succeed())
 				By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
 					Eventually(mandatoryModuleTemplateFinalizerExists).
 						WithContext(ctx).
-						WithArguments(controlPlaneClient, client.ObjectKey{
+						WithArguments(kcpClient, client.ObjectKey{
 							Namespace: apimetav1.NamespaceDefault,
 							Name:      "mandatory-module",
 						}).
@@ -56,18 +56,18 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 		It("When mandatory ModuleTemplate marked for deletion", func() {
 			Eventually(deleteMandatoryModuleTemplates).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient).
+				WithArguments(kcpClient).
 				Should(Succeed())
 		})
 		It("Then mandatory Manifest is deleted", func() {
 			Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, shared.FQDN, "kyma-project.io/template-operator").
+				WithArguments(kcpClient, shared.FQDN, "kyma-project.io/template-operator").
 				Should(Not(Succeed()))
 			By("And finalizer is removed from mandatory ModuleTemplate", func() {
 				Eventually(mandatoryModuleTemplateFinalizerExists).
 					WithContext(ctx).
-					WithArguments(controlPlaneClient, client.ObjectKey{
+					WithArguments(kcpClient, client.ObjectKey{
 						Namespace: apimetav1.NamespaceDefault,
 						Name:      "mandatory-module",
 					}).
@@ -90,15 +90,15 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		Eventually(CreateCR).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, template).Should(Succeed())
+			WithArguments(kcpClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		Eventually(CreateCR).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(SetKymaState).
 			WithContext(ctx).
-			WithArguments(kyma, mandatoryModuleDeletionReconciler, shared.StateReady).Should(Succeed())
+			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
 
 		installName := filepath.Join("main-dir", "installs")
 		mandatoryManifest.Annotations = map[string]string{shared.FQDN: "kyma-project.io/template-operator"}
@@ -109,20 +109,20 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(InstallManifest).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, mandatoryManifest, imageSpecByte, false).
+			WithArguments(kcpClient, mandatoryManifest, imageSpecByte, false).
 			Should(Succeed())
 	})
 
 	AfterAll(func() {
 		Eventually(DeleteCR).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
 		Eventually(SyncKyma).
-			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 }
 

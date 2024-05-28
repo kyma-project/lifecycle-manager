@@ -28,10 +28,14 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 		return fmt.Errorf("unable to set VirtualService service for watcher controller: %w", err)
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	if err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
 		Named(controllerName).
 		WithOptions(options).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Complete(r)
+		Complete(r); err != nil {
+		return fmt.Errorf("failed to setup manager for watcher controller: %w", err)
+	}
+
+	return nil
 }

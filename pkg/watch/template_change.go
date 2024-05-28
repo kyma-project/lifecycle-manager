@@ -39,7 +39,7 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 }
 
 func filterKymasWithTemplate(kymas *v1beta2.KymaList, template *v1beta2.ModuleTemplate) []v1beta2.Kyma {
-	var items []v1beta2.Kyma
+	items := make([]v1beta2.Kyma, 0, len(kymas.Items))
 	for _, kyma := range kymas.Items {
 		templateUsed := false
 		for _, moduleStatus := range kyma.Status.Modules {

@@ -22,8 +22,6 @@ import (
 	"testing"
 	"time"
 
-	watcher2 "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -46,9 +44,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -70,7 +69,7 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	k8sManager            manager.Manager
+	mgr                   manager.Manager
 	kcpClient             client.Client
 	kcpEnv                *envtest.Environment
 	testSkrContextFactory *testskrcontext.DualClusterFactory
@@ -141,7 +140,7 @@ var _ = BeforeSuite(func() {
 		metricsBindAddress = ":0"
 	}
 
-	k8sManager, err = ctrl.NewManager(
+	mgr, err = ctrl.NewManager(
 		restCfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: metricsBindAddress,
@@ -151,7 +150,7 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	kcpClient = k8sManager.GetClient()
+	kcpClient = mgr.GetClient()
 
 	intervals := queue.RequeueIntervals{
 		Success: 1 * time.Second,
@@ -197,8 +196,9 @@ var _ = BeforeSuite(func() {
 	}
 
 	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
-	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(k8sManager)
-	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme())
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	Expect(err).ToNot(HaveOccurred())
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
 		kcpClient,
@@ -210,7 +210,7 @@ var _ = BeforeSuite(func() {
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
-		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+		Event:               testEventRec,
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
@@ -218,18 +218,18 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
+	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&watcher2.Reconciler{
-		Client:                k8sManager.GetClient(),
-		RestConfig:            k8sManager.GetConfig(),
-		EventRecorder:         k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
+	err = (&watcherctrl.Reconciler{
+		Client:                mgr.GetClient(),
+		RestConfig:            mgr.GetConfig(),
+		Event:                 event.NewRecorderWrapper(mgr.GetEventRecorderFor("watcher")),
 		Scheme:                k8sclientscheme.Scheme,
 		RequeueIntervals:      intervals,
 		IstioGatewayNamespace: kcpSystemNs,
 	}).SetupWithManager(
-		k8sManager, ctrlruntime.Options{
+		mgr, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,
 		},
 	)
@@ -237,7 +237,7 @@ var _ = BeforeSuite(func() {
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(suiteCtx)
+		err = mgr.Start(suiteCtx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })

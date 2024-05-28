@@ -62,7 +62,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 			err := kcpClient.Delete(ctx, kyma)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(updateKymaStatus(ctx, kcpClient, purgeReconciler.UpdateStatus,
+			Eventually(updateKymaStatus(ctx, kcpClient, reconciler.UpdateStatus,
 				client.ObjectKeyFromObject(kyma), shared.StateDeleting), Timeout, Interval).
 				Should(Succeed())
 		})

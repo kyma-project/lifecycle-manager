@@ -11,7 +11,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
@@ -25,8 +24,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
 	BeforeAll(func() {
-		customIstioClient, err = istio.NewIstioClient(restCfg,
-			k8sManager.GetEventRecorderFor(controller.WatcherControllerName), ctrl.Log.WithName("istioClient"))
+		customIstioClient, err = istio.NewIstioClient(restCfg, ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		// create Watcher CRs
 		for idx, component := range centralComponents {
