@@ -43,7 +43,7 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When Module Distribution Channel is changed", func() {
+		It("When upgrade version by switch Channel", func() {
 			Eventually(UpdateKymaModuleChannel).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, "fast").
@@ -72,6 +72,38 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("When downgrade version by switch Channel", func() {
+			Eventually(UpdateKymaModuleChannel).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, "regular").
+				Should(Succeed())
+		})
+
+		It("Then Module stay in newer version", func() {
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, moduleCR).
+				Should(Succeed())
+
+			By("And new Module Operator Deployment exists")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(runtimeClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				Should(Succeed())
+
+			By("And old Module Operator Deployment does not exist")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+
+			By("And KCP Kyma CR is in \"Warning\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 				Should(Succeed())
 		})
 	})
