@@ -11,7 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
 
-func TestKymaEvent_Normal(t *testing.T) {
+func TestNormalEvent_CalledWithObject(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
@@ -23,7 +23,7 @@ func TestKymaEvent_Normal(t *testing.T) {
 	assert.Contains(t, events, expected)
 }
 
-func TestKymaEvent_Normal_NoKyma(t *testing.T) {
+func TestNormalEvent_CalledWithNilObject(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
@@ -32,7 +32,7 @@ func TestKymaEvent_Normal_NoKyma(t *testing.T) {
 	assert.Empty(t, fakeRecorder.Events)
 }
 
-func TestKymaEvent_Warning(t *testing.T) {
+func TestWarningEvent_CalledWithObject(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
@@ -45,7 +45,7 @@ func TestKymaEvent_Warning(t *testing.T) {
 	assert.Contains(t, events, expected)
 }
 
-func TestKymaEvent_Warning_NoKyma(t *testing.T) {
+func TestWarningEvent_CalledWithNilObject(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
@@ -55,7 +55,7 @@ func TestKymaEvent_Warning_NoKyma(t *testing.T) {
 	assert.Empty(t, fakeRecorder.Events)
 }
 
-func TestKymaEvent_Warning_NoError(t *testing.T) {
+func TestWarningEvent_CalledWithNilError(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)
 
@@ -63,4 +63,43 @@ func TestKymaEvent_Warning_NoError(t *testing.T) {
 	eventRec.Warning(k, "test", nil)
 
 	assert.Empty(t, fakeRecorder.Events)
+}
+
+func TestWarningEvent_CalledWithErrorMsg50(t *testing.T) {
+	fakeRecorder := record.NewFakeRecorder(1)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
+
+	k := &v1beta2.Kyma{}
+	err := errors.New("12345678901234567890123456789012345678901234567890")
+	eventRec.Warning(k, "test", err)
+
+	events := <-fakeRecorder.Events
+	expected := "Warning test 12345678901234567890123456789012345678901234567890"
+	assert.Contains(t, events, expected)
+}
+
+func TestWarningEvent_CalledWithErrorMsgLongerThanMax(t *testing.T) {
+	fakeRecorder := record.NewFakeRecorder(1)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
+
+	k := &v1beta2.Kyma{}
+	err := errors.New("this is a very long error message that should be truncated at the end")
+	eventRec.Warning(k, "test", err)
+
+	events := <-fakeRecorder.Events
+	expected := "Warning test  error message that should be truncated at the end"
+	assert.Contains(t, events, expected)
+}
+
+func TestWarningEvent_CalledWithEmptyErrorMsg(t *testing.T) {
+	fakeRecorder := record.NewFakeRecorder(1)
+	eventRec := event.NewRecorderWrapper(fakeRecorder)
+
+	k := &v1beta2.Kyma{}
+	err := errors.New("")
+	eventRec.Warning(k, "test", err)
+
+	events := <-fakeRecorder.Events
+	expected := "Warning test"
+	assert.Contains(t, events, expected)
 }
