@@ -17,6 +17,7 @@ package eventfilters_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"os"
 	"path/filepath"
 	"testing"
@@ -135,10 +136,11 @@ var _ = BeforeSuite(func() {
 
 	kcpClient = mgr.GetClient()
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
+	kymaEvents := event.NewKymaEvent(mgr.GetEventRecorderFor(shared.OperatorName))
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
-		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:               kymaEvents,
 		RequeueIntervals:    intervals,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
@@ -146,7 +148,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
-		kyma.ReconcilerSetupSettings{ListenerAddr: randomPort})
+		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

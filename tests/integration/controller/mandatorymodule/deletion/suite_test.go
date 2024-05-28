@@ -38,7 +38,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -58,7 +57,7 @@ const (
 )
 
 var (
-	mandatoryModuleDeletionReconciler *controller.MandatoryModuleDeletionReconciler
+	mandatoryModuleDeletionReconciler *mandatory_module.DeletionReconciler
 	controlPlaneClient                client.Client
 	singleClusterEnv                  *envtest.Environment
 	ctx                               context.Context
@@ -116,7 +115,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	mandatoryModuleDeletionReconciler = &controller.MandatoryModuleDeletionReconciler{
+	mandatoryModuleDeletionReconciler = &mandatory_module.DeletionReconciler{
 		Client:             k8sManager.GetClient(),
 		EventRecorder:      k8sManager.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider: descriptorProvider,

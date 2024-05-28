@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package mandatorymodule
 
 import (
 	"context"
@@ -38,7 +38,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type MandatoryModuleReconciler struct {
+type InstallationReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
@@ -48,7 +48,7 @@ type MandatoryModuleReconciler struct {
 	Metrics             *metrics.MandatoryModulesMetrics
 }
 
-func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Reconciliation started")
 
@@ -88,7 +88,7 @@ func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, nil
 }
 
-func (r *MandatoryModuleReconciler) GenerateModulesFromTemplate(ctx context.Context,
+func (r *InstallationReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
 	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package mandatorymodule
 
 import (
 	"context"
@@ -42,14 +42,14 @@ const (
 	deletingManifestError = "DeletingMandatoryModuleManifestError"
 )
 
-type MandatoryModuleDeletionReconciler struct {
+type DeletionReconciler struct {
 	client.Client
 	record.EventRecorder
 	queue.RequeueIntervals
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
-func (r *MandatoryModuleDeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
 
@@ -99,7 +99,7 @@ func (r *MandatoryModuleDeletionReconciler) Reconcile(ctx context.Context, req c
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *MandatoryModuleDeletionReconciler) updateTemplateFinalizer(ctx context.Context,
+func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 	template *v1beta2.ModuleTemplate,
 ) (ctrl.Result, error) {
 	if err := r.Update(ctx, template); err != nil {
@@ -109,7 +109,7 @@ func (r *MandatoryModuleDeletionReconciler) updateTemplateFinalizer(ctx context.
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *MandatoryModuleDeletionReconciler) getCorrespondingManifests(ctx context.Context,
+func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
 	error,
 ) {
@@ -130,7 +130,7 @@ func (r *MandatoryModuleDeletionReconciler) getCorrespondingManifests(ctx contex
 	return filtered, nil
 }
 
-func (r *MandatoryModuleDeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
+func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for _, manifest := range manifests {
 		manifest := manifest
 		if err := r.Delete(ctx, &manifest); err != nil {
@@ -141,9 +141,7 @@ func (r *MandatoryModuleDeletionReconciler) removeManifests(ctx context.Context,
 	return nil
 }
 
-func filterManifestsByAnnotation(manifests []v1beta2.Manifest,
-	annotationKey, annotationValue string,
-) []v1beta2.Manifest {
+func filterManifestsByAnnotation(manifests []v1beta2.Manifest, annotationKey, annotationValue string) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
 		if manifest.Annotations[annotationKey] == annotationValue {

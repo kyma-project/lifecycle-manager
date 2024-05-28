@@ -49,8 +49,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
+	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
@@ -83,12 +86,9 @@ var (
 func registerSchemas(scheme *machineryruntime.Scheme) {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
-
 	machineryutilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	machineryutilruntime.Must(certmanagerv1.AddToScheme(scheme))
-
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
-
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
@@ -298,7 +298,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
 	}).SetupWithManager(
-		mgr, options, kyma.ReconcilerSetupSettings{
+		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 			IstioNamespace:               flagVar.IstioNamespace,
@@ -360,7 +360,7 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 func setupPurgeReconciler(mgr ctrl.Manager, skrContextProvider remote.SkrContextProvider, flagVar *flags.FlagVar,
 	options ctrlruntime.Options, setupLog logr.Logger,
 ) {
-	if err := (&controller.PurgeReconciler{
+	if err := (&purge.Reconciler{
 		Client:                mgr.GetClient(),
 		SkrContextFactory:     skrContextProvider,
 		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
@@ -384,11 +384,11 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 
-	if err := controller.SetupWithManager(
+	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
 			Success: flagVar.ManifestRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
-		}, controller.SetupUpSetting{
+		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
@@ -403,7 +403,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
-	if err := (&controller.WatcherReconciler{
+	if err := (&watcherctrl.Reconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
 		Scheme:        mgr.GetScheme(),
@@ -416,7 +416,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 		},
 		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
+		setupLog.Error(err, "unable to create watcher controller")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }
@@ -427,7 +427,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provid
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	if err := (&controller.MandatoryModuleReconciler{
+	if err := (&mandatorymodule.InstallationReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
 		RequeueIntervals: queue.RequeueIntervals{
@@ -451,7 +451,7 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
-	if err := (&controller.MandatoryModuleDeletionReconciler{
+	if err := (&mandatorymodule.DeletionReconciler{
 		Client:             mgr.GetClient(),
 		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
 		DescriptorProvider: descriptorProvider,

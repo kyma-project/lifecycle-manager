@@ -8,6 +8,18 @@ type Event[T any] interface {
 }
 
 const (
-	typeNormal  = "Normal"
-	typeWarning = "Warning"
+	typeNormal         = "Normal"
+	typeWarning        = "Warning"
+	maxErrorLength int = 50
 )
+
+func truncatedErrMsg(err error) string {
+	msg := err.Error()
+	length := len(msg)
+
+	if length <= maxErrorLength {
+		return msg
+	}
+
+	return msg[length-maxErrorLength:]
+}

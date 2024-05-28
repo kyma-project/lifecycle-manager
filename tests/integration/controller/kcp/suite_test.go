@@ -154,7 +154,7 @@ var _ = BeforeSuite(func() {
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		kyma.ReconcilerSetupSettings{ListenerAddr: UseRandomPort})
+		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

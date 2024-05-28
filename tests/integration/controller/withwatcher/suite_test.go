@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	watcher2 "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -216,10 +218,10 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, kyma.ReconcilerSetupSettings{ListenerAddr: listenerAddr})
+	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&controller.WatcherReconciler{
+	err = (&watcher2.Reconciler{
 		Client:                k8sManager.GetClient(),
 		RestConfig:            k8sManager.GetConfig(),
 		EventRecorder:         k8sManager.GetEventRecorderFor(controller.WatcherControllerName),

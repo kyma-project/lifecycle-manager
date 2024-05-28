@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package watcher
 
 import (
 	"context"
@@ -45,8 +45,7 @@ var (
 	errAddingFinalizer    = errors.New("error adding finalizer")
 )
 
-// WatcherReconciler reconciles a Watcher object.
-type WatcherReconciler struct {
+type Reconciler struct {
 	client.Client
 	record.EventRecorder
 	IstioClient           *istio.Client
@@ -65,9 +64,7 @@ type WatcherReconciler struct {
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.V(log.DebugLevel).Info("Reconciliation loop starting")
 
@@ -84,7 +81,6 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return r.updateWatcherState(ctx, watcherObj, shared.StateDeleting, nil)
 	}
 
-	// check finalizer on native object
 	if !controllerutil.ContainsFinalizer(watcherObj, shared.WatcherFinalizer) {
 		finalizerAdded := controllerutil.AddFinalizer(watcherObj, shared.WatcherFinalizer)
 		if !finalizerAdded {
@@ -100,7 +96,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return r.stateHandling(ctx, watcherObj)
 }
 
-func (r *WatcherReconciler) updateFinalizer(ctx context.Context, watcherCR *v1beta2.Watcher) error {
+func (r *Reconciler) updateFinalizer(ctx context.Context, watcherCR *v1beta2.Watcher) error {
 	err := r.Client.Update(ctx, watcherCR)
 	if err != nil {
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherFinalizerErr",
@@ -110,7 +106,7 @@ func (r *WatcherReconciler) updateFinalizer(ctx context.Context, watcherCR *v1be
 	return nil
 }
 
-func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
+func (r *Reconciler) stateHandling(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
 	switch watcherCR.Status.State {
 	case "":
 		return r.updateWatcherState(ctx, watcherCR, shared.StateProcessing, nil)
@@ -127,7 +123,7 @@ func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta
 	return ctrl.Result{Requeue: false}, nil
 }
 
-func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
+func (r *Reconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
 	err := r.IstioClient.DeleteVirtualService(ctx, watcherCR.GetName(), watcherCR.GetNamespace())
 	if err != nil {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
@@ -140,7 +136,7 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherCR)
 }
 
-func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
+func (r *Reconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
 	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
@@ -177,7 +173,7 @@ func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	return r.updateWatcherState(ctx, watcherCR, shared.StateReady, nil)
 }
 
-func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v1beta2.Watcher,
+func (r *Reconciler) updateWatcherState(ctx context.Context, watcherCR *v1beta2.Watcher,
 	state shared.State, err error,
 ) (ctrl.Result, error) {
 	watcherCR.Status.State = state
@@ -193,7 +189,7 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, watcherCR)
 }
 
-func (r *WatcherReconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
+func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
 	watcher.ManagedFields = nil
 	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
 		status.SubResourceOpts(client.ForceOwnership))

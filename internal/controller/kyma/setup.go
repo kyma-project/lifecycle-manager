@@ -26,7 +26,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 )
 
-type ReconcilerSetupSettings struct {
+type SetupOptions struct {
 	ListenerAddr                 string
 	EnableDomainNameVerification bool
 	IstioNamespace               string
@@ -40,12 +40,12 @@ var (
 	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
 )
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Options, settings ReconcilerSetupSettings) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
 	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+	ctrlBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
-		WithOptions(options).
+		WithOptions(opts).
 		WithEventFilter(predicates).
 		Watches(
 			&v1beta2.ModuleTemplate{},
@@ -55,7 +55,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&apicorev1.Secret{}, handler.Funcs{})
 
-	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
+	ctrlBuilder = ctrlBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
 	var runnableListener *watcherevent.SKREventListener
@@ -77,14 +77,14 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Opti
 	)
 
 	// watch event channel
-	controllerBuilder.WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler()))
+	ctrlBuilder.WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler()))
 
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
 
-	if err := controllerBuilder.Complete(r); err != nil {
+	if err := ctrlBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
 	}
 

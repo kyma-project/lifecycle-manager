@@ -1,4 +1,4 @@
-package controller
+package manifest
 
 import (
 	"context"
@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 	apicorev1 "k8s.io/api/core/v1"
@@ -13,24 +16,29 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
+const controllerName = "manifest"
+
+type SetupOptions struct {
+	ListenerAddr                 string
+	EnableDomainNameVerification bool
+}
+
 func SetupWithManager(mgr manager.Manager,
-	options ctrlruntime.Options,
+	opts ctrlruntime.Options,
 	requeueIntervals queue.RequeueIntervals,
-	settings SetupUpSetting,
-	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	settings SetupOptions,
+	manifestMetrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -53,9 +61,7 @@ func SetupWithManager(mgr manager.Manager,
 	}
 
 	addSkrEventToQueueFunc := &handler.Funcs{
-		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
-			queue workqueue.RateLimitingInterface,
-		) {
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			ctrl.Log.WithName("listener").Info(
 				fmt.Sprintf(
 					"event coming from SKR, adding %s to queue",
@@ -67,40 +73,11 @@ func SetupWithManager(mgr manager.Manager,
 	}
 
 	skrEventChannel := source.Channel(runnableListener.ReceivedEvents, addSkrEventToQueueFunc)
-
-	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
+	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
-		Named(ManifestControllerName).
+		Named(controllerName).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		WatchesRawSource(skrEventChannel).
-		WithOptions(options)
-
-	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, requeueIntervals,
-		manifestMetrics, mandatoryModulesMetrics)); err != nil {
-		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
-	}
-	return nil
-}
-
-func ManifestReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
-	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-) *declarativev2.Reconciler {
-	kcp := &declarativev2.ClusterInfo{
-		Client: mgr.GetClient(),
-		Config: mgr.GetConfig(),
-	}
-	extractor := manifest.NewPathExtractor(nil)
-	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
-	return declarativev2.NewFromManager(
-		mgr, &v1beta2.Manifest{}, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-		declarativev2.WithSpecResolver(
-			manifest.NewSpecResolver(kcp, extractor),
-		),
-		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
-		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
-		manifest.WithClientCacheKey(),
-		declarativev2.WithPostRun{manifest.PostRunCreateCR},
-		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithModuleCRDeletionCheck(manifest.NewModuleCRDeletionCheck()),
-	)
+		WithOptions(opts).
+		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics))
 }
