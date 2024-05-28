@@ -29,7 +29,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		// create Watcher CRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
-			Expect(kcpClient.Create(suiteCtx, watcherCR)).To(Succeed())
+			Expect(kcpClient.Create(ctx, watcherCR)).To(Succeed())
 		}
 	})
 
@@ -112,7 +112,7 @@ func crSpecUpdates(_ *istio.Client) error {
 		}
 		watcherCR.Spec.ServiceInfo.Port = 9090
 		watcherCR.Spec.Field = v1beta2.StatusField
-		if err := kcpClient.Update(suiteCtx, watcherCR); err != nil {
+		if err := kcpClient.Update(ctx, watcherCR); err != nil {
 			return err
 		}
 	}
@@ -124,7 +124,7 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	if err != nil {
 		return err
 	}
-	gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcher.Spec.Gateway.LabelSelector,
+	gateways, err := customIstioClient.ListGatewaysByLabelSelector(ctx, &watcher.Spec.Gateway.LabelSelector,
 		kcpSystemNs)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	Expect(gateway.Spec.GetServers()).To(HaveLen(1))
 	Expect(gateway.Spec.GetServers()[0].GetHosts()).To(HaveLen(1))
 	gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
-	return kcpClient.Update(suiteCtx, gateway)
+	return kcpClient.Update(ctx, gateway)
 }
 
 func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, namespace string) error {
@@ -143,21 +143,21 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 		if err != nil {
 			return err
 		}
-		if err := isListenerHTTPRouteConfigured(suiteCtx, customIstioClient, namespace, watcherCR); err != nil {
+		if err := isListenerHTTPRouteConfigured(ctx, customIstioClient, namespace, watcherCR); err != nil {
 			return err
 		}
-		gateways, err := customIstioClient.ListGatewaysByLabelSelector(suiteCtx, &watcherCR.Spec.Gateway.LabelSelector,
+		gateways, err := customIstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
 			namespace)
 		if err != nil {
 			return err
 		}
 		Expect(gateways.Items).To(HaveLen(1))
-		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, namespace, customIstioClient,
+		if err := isVirtualServiceHostsConfigured(ctx, watcherCR.Name, namespace, customIstioClient,
 			gateways.Items[0]); err != nil {
 			return err
 		}
 
-		if err := verifyWatcherConfiguredAsVirtualServiceOwner(suiteCtx, watcherCR.Name, namespace, watcherCR,
+		if err := verifyWatcherConfiguredAsVirtualServiceOwner(ctx, watcherCR.Name, namespace, watcherCR,
 			customIstioClient); err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func deleteOneWatcherCR(_ *istio.Client) error {
 }
 
 func expectHTTPRouteRemoved(customIstioClient *istio.Client, namespace string) error {
-	err := listenerHTTPRouteExists(suiteCtx, customIstioClient, namespace,
+	err := listenerHTTPRouteExists(ctx, customIstioClient, namespace,
 		client.ObjectKey{
 			Name:      componentToBeRemoved,
 			Namespace: apimetav1.NamespaceDefault,
@@ -190,7 +190,7 @@ func expectWatcherCRRemoved(watcherName string) error {
 }
 
 func expectVirtualServiceRemoved(customIstioClient *istio.Client, namespace string) error {
-	listVirtualServices, err := customIstioClient.ListVirtualServices(suiteCtx, namespace)
+	listVirtualServices, err := customIstioClient.ListVirtualServices(ctx, namespace)
 	if !util.IsNotFound(err) {
 		return err
 	}
@@ -205,7 +205,7 @@ func deleteWatcher(name string) error {
 	if util.IsNotFound(err) {
 		return nil
 	}
-	return kcpClient.Delete(suiteCtx, watcher)
+	return kcpClient.Delete(ctx, watcher)
 }
 
 func allCRsDeleted(_ *istio.Client) error {
@@ -225,7 +225,7 @@ func allVirtualServicesDeletedForNs(namespace string) func(customIstioClient *is
 			if err != nil {
 				return err
 			}
-			err = customIstioClient.DeleteVirtualService(suiteCtx, watcherCR.GetName(), namespace)
+			err = customIstioClient.DeleteVirtualService(ctx, watcherCR.GetName(), namespace)
 			if err != nil {
 				return err
 			}

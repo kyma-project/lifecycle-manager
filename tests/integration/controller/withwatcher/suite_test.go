@@ -73,7 +73,7 @@ var (
 	kcpClient             client.Client
 	kcpEnv                *envtest.Environment
 	testSkrContextFactory *testskrcontext.DualClusterFactory
-	suiteCtx              context.Context
+	ctx                   context.Context
 	cancel                context.CancelFunc
 	restCfg               *rest.Config
 	istioResources        []*unstructured.Unstructured
@@ -100,7 +100,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	suiteCtx, cancel = context.WithCancel(context.TODO())
+	ctx, cancel = context.WithCancel(context.TODO())
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 	By("bootstrapping test environment")
@@ -164,13 +164,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	Expect(createNamespace(suiteCtx, istioSystemNs, kcpClient)).To(Succeed())
-	Expect(createNamespace(suiteCtx, kcpSystemNs, kcpClient)).To(Succeed())
+	Expect(createNamespace(ctx, istioSystemNs, kcpClient)).To(Succeed())
+	Expect(createNamespace(ctx, kcpSystemNs, kcpClient)).To(Succeed())
 
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
 	for _, istioResource := range istioResources {
-		Expect(k8sClient.Create(suiteCtx, istioResource)).To(Succeed())
+		Expect(k8sClient.Create(ctx, istioResource)).To(Succeed())
 	}
 
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
@@ -237,7 +237,7 @@ var _ = BeforeSuite(func() {
 
 	go func() {
 		defer GinkgoRecover()
-		err = mgr.Start(suiteCtx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })
@@ -247,7 +247,7 @@ var _ = AfterSuite(func() {
 	// clean up istio resources
 	for _, istioResource := range istioResources {
 		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(kcpClient, istioResource).Should(Succeed())
 	}
 	// cancel environment context
