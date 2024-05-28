@@ -47,10 +47,9 @@ const (
 )
 
 var (
-	errRestConfigIsNotSet = errors.New("reconciler rest config is not set")
-	errFinalizerRemove    = errors.New("error removing finalizer")
-	errFinalizerAdd       = errors.New("error adding finalizer")
-	errGateway            = errors.New("gateway for the VirtualService not found")
+	errFinalizerRemove = errors.New("error removing finalizer")
+	errFinalizerAdd    = errors.New("error adding finalizer")
+	errGateway         = errors.New("gateway for the VirtualService not found")
 )
 
 type Reconciler struct {

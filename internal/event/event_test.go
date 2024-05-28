@@ -32,19 +32,6 @@ func TestNormalEvent_CalledWithNilObject(t *testing.T) {
 	assert.Empty(t, fakeRecorder.Events)
 }
 
-func TestWarningEvent_CalledWithObject(t *testing.T) {
-	fakeRecorder := record.NewFakeRecorder(1)
-	eventRec := event.NewRecorderWrapper(fakeRecorder)
-
-	k := &v1beta2.Kyma{}
-	err := errors.New("error")
-	eventRec.Warning(k, "test", err)
-
-	events := <-fakeRecorder.Events
-	expected := "Warning test error"
-	assert.Contains(t, events, expected)
-}
-
 func TestWarningEvent_CalledWithNilObject(t *testing.T) {
 	fakeRecorder := record.NewFakeRecorder(1)
 	eventRec := event.NewRecorderWrapper(fakeRecorder)

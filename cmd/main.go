@@ -173,7 +173,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
-		setupKcpWatcherReconciler(mgr, options, flagVar, setupLog)
+		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLog)
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
@@ -408,14 +408,14 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	}
 }
 
-func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *flags.FlagVar,
+func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, event event.Event, flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	if err := (&watcherctrl.Reconciler{
 		Client:     mgr.GetClient(),
-		Event:      event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)),
+		Event:      event,
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),
 		RequeueIntervals: queue.RequeueIntervals{

@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"errors"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -12,6 +13,8 @@ import (
 )
 
 const controllerName = "watcher"
+
+var errRestConfigIsNotSet = errors.New("reconciler rest config is not set")
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Options) error {
 	if r.RestConfig == nil {
