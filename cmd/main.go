@@ -164,7 +164,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kcpRestConfig := mgr.GetConfig()
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
-	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache)
+	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder)
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.EnableKcpWatcher {
@@ -179,13 +180,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, flagVar, options, skrWebhookManager, kymaMetrics,
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager, kymaMetrics,
 		setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
-	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options, setupLog)
+	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, setupLog)
 	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, skrContextProvider, flagVar, options, setupLog)
+		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLog)
 	}
 	if flagVar.EnableWebhooks {
 		enableWebhooks(mgr, setupLog)
@@ -275,15 +276,20 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 }
 
 func setupKymaReconciler(mgr ctrl.Manager,
-	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote.SkrContextProvider, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	skrContextFactory remote.SkrContextProvider,
+	event event.Event,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	skrWebhookManager *watcher.SKRWebhookManifestManager,
+	kymaMetrics *metrics.KymaMetrics,
+	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
-	kymaEvent := event.NewKymaEvent(mgr.GetEventRecorderFor(shared.OperatorName))
 	if err := (&kyma.Reconciler{
 		Client:             mgr.GetClient(),
 		SkrContextFactory:  skrContextFactory,
-		Event:              kymaEvent,
+		Event:              event,
 		DescriptorProvider: descriptorProvider,
 		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(mgr.GetClient(), skrContextFactory, nil),
 		SKRWebhookManager:  skrWebhookManager,
@@ -357,13 +363,17 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.WatcherImageTag)
 }
 
-func setupPurgeReconciler(mgr ctrl.Manager, skrContextProvider remote.SkrContextProvider, flagVar *flags.FlagVar,
-	options ctrlruntime.Options, setupLog logr.Logger,
+func setupPurgeReconciler(mgr ctrl.Manager,
+	skrContextProvider remote.SkrContextProvider,
+	event event.Event,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	setupLog logr.Logger,
 ) {
 	if err := (&purge.Reconciler{
 		Client:                mgr.GetClient(),
 		SkrContextFactory:     skrContextProvider,
-		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:                 event,
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),
 		IsManagedKyma:         flagVar.IsKymaManaged,
@@ -404,10 +414,10 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	if err := (&watcherctrl.Reconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
-		Scheme:        mgr.GetScheme(),
-		RestConfig:    mgr.GetConfig(),
+		Client:     mgr.GetClient(),
+		Event:      event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)),
+		Scheme:     mgr.GetScheme(),
+		RestConfig: mgr.GetConfig(),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.WatcherRequeueSuccessInterval,
 			Busy:    flags.DefaultKymaRequeueBusyInterval,
@@ -421,15 +431,17 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	}
 }
 
-func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options, metrics *metrics.MandatoryModulesMetrics,
+func setupMandatoryModuleReconciler(mgr ctrl.Manager,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
 	if err := (&mandatorymodule.InstallationReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
+		Client: mgr.GetClient(),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
@@ -446,14 +458,18 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provid
 	}
 }
 
-func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger,
+func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	event event.Event,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
 	if err := (&mandatorymodule.DeletionReconciler{
 		Client:             mgr.GetClient(),
-		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:              event,
 		DescriptorProvider: descriptorProvider,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,

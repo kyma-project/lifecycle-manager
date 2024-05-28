@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -23,12 +24,14 @@ type SkrContextProvider interface {
 type KymaSkrContextProvider struct {
 	clientCache *ClientCache
 	kcpClient   Client
+	event       event.Event
 }
 
-func NewKymaSkrContextProvider(kcpClient Client, clientCache *ClientCache) *KymaSkrContextProvider {
+func NewKymaSkrContextProvider(kcpClient Client, clientCache *ClientCache, event event.Event) *KymaSkrContextProvider {
 	return &KymaSkrContextProvider{
 		clientCache: clientCache,
 		kcpClient:   kcpClient,
+		event:       event,
 	}
 }
 
@@ -80,7 +83,7 @@ func (k *KymaSkrContextProvider) Get(kyma types.NamespacedName) (*SkrContext, er
 		return nil, ErrSkrClientContextNotFound
 	}
 
-	return &SkrContext{Client: skrClient}, nil
+	return NewSkrContext(skrClient, k.event), nil
 }
 
 func (k *KymaSkrContextProvider) InvalidateCache(kyma types.NamespacedName) {

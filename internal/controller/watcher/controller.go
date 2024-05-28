@@ -24,7 +24,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -32,6 +31,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -39,15 +39,23 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+const (
+	addFinalizerFailure        event.Reason = "AddFinalizerErr"
+	updateFinalizerFailure     event.Reason = "WatcherFinalizerErr"
+	gatewayNotFoundFailure     event.Reason = "WatcherGatewayNotFound"
+	watcherStatusUpdateFailure event.Reason = "WatcherStatusUpdate"
+)
+
 var (
 	errRestConfigIsNotSet = errors.New("reconciler rest config is not set")
-	errRemovingFinalizer  = errors.New("error removing finalizer")
-	errAddingFinalizer    = errors.New("error adding finalizer")
+	errFinalizerRemove    = errors.New("error removing finalizer")
+	errFinalizerAdd       = errors.New("error adding finalizer")
+	errGateway            = errors.New("gateway for the VirtualService not found")
 )
 
 type Reconciler struct {
 	client.Client
-	record.EventRecorder
+	event.Event
 	IstioClient           *istio.Client
 	VirtualServiceFactory istio.VirtualServiceFactory
 	RestConfig            *rest.Config
@@ -68,8 +76,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	logger := logf.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.V(log.DebugLevel).Info("Reconciliation loop starting")
 
-	watcherObj := &v1beta2.Watcher{}
-	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
+	watcher := &v1beta2.Watcher{}
+	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcher); err != nil {
 		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")
 		if !util.IsNotFound(err) {
 			return ctrl.Result{}, fmt.Errorf("watcherController: %w", err)
@@ -77,30 +85,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{Requeue: false}, nil
 	}
 
-	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != shared.StateDeleting {
-		return r.updateWatcherState(ctx, watcherObj, shared.StateDeleting, nil)
+	if !watcher.DeletionTimestamp.IsZero() && watcher.Status.State != shared.StateDeleting {
+		return r.updateWatcherState(ctx, watcher, shared.StateDeleting, nil)
 	}
 
-	if !controllerutil.ContainsFinalizer(watcherObj, shared.WatcherFinalizer) {
-		finalizerAdded := controllerutil.AddFinalizer(watcherObj, shared.WatcherFinalizer)
-		if !finalizerAdded {
-			r.EventRecorder.Event(watcherObj, "Warning", "AddFinalizerErr",
-				errAddingFinalizer.Error())
-			return ctrl.Result{}, errAddingFinalizer
+	if !controllerutil.ContainsFinalizer(watcher, shared.WatcherFinalizer) {
+		if !controllerutil.AddFinalizer(watcher, shared.WatcherFinalizer) {
+			r.Event.Warning(watcher, addFinalizerFailure, errFinalizerAdd)
+			return ctrl.Result{}, errFinalizerAdd
 		}
-		return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherObj)
+		return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcher)
 	}
 
-	watcherObj.InitializeConditions()
+	watcher.InitializeConditions()
 
-	return r.stateHandling(ctx, watcherObj)
+	return r.stateHandling(ctx, watcher)
 }
 
 func (r *Reconciler) updateFinalizer(ctx context.Context, watcherCR *v1beta2.Watcher) error {
 	err := r.Client.Update(ctx, watcherCR)
 	if err != nil {
-		r.EventRecorder.Event(watcherCR, "Warning", "WatcherFinalizerErr",
-			err.Error())
+		r.Event.Warning(watcherCR, updateFinalizerFailure, err)
 		return fmt.Errorf("failed to update finalizer: %w", err)
 	}
 	return nil
@@ -131,7 +136,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2
 	}
 	finalizerRemoved := controllerutil.RemoveFinalizer(watcherCR, shared.WatcherFinalizer)
 	if !finalizerRemoved {
-		return r.updateWatcherState(ctx, watcherCR, shared.StateError, errRemovingFinalizer)
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, errFinalizerRemove)
 	}
 	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherCR)
 }
@@ -142,8 +147,7 @@ func (r *Reconciler) handleProcessingState(ctx context.Context,
 	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
 		r.IstioGatewayNamespace)
 	if err != nil || len(gateways.Items) == 0 {
-		r.EventRecorder.Event(watcherCR, "Warning", "WatcherGatewayNotFound",
-			"Watcher: Gateway for the VirtualService not found")
+		r.Event.Warning(watcherCR, gatewayNotFoundFailure, errGateway)
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 
@@ -173,30 +177,28 @@ func (r *Reconciler) handleProcessingState(ctx context.Context,
 	return r.updateWatcherState(ctx, watcherCR, shared.StateReady, nil)
 }
 
-func (r *Reconciler) updateWatcherState(ctx context.Context, watcherCR *v1beta2.Watcher,
-	state shared.State, err error,
-) (ctrl.Result, error) {
-	watcherCR.Status.State = state
+func (r *Reconciler) updateWatcherState(ctx context.Context, cr *v1beta2.Watcher, state shared.State, err error) (ctrl.Result, error) {
+	cr.Status.State = state
 	if state == shared.StateReady {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
+		cr.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
 	} else if state == shared.StateError {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
+		cr.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
 	}
 	if err != nil {
-		r.EventRecorder.Event(watcherCR, "Warning", "WatcherStatusUpdate", err.Error())
+		r.Event.Warning(cr, watcherStatusUpdateFailure, err)
 	}
 	requeueInterval := queue.DetermineRequeueInterval(state, r.RequeueIntervals)
-	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, watcherCR)
+	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, cr)
 }
 
-func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
-	watcher.ManagedFields = nil
-	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
+func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, cr *v1beta2.Watcher) error {
+	cr.ManagedFields = nil
+	err := r.Client.Status().Patch(ctx, cr, client.Apply, client.FieldOwner(shared.OperatorName),
 		status.SubResourceOpts(client.ForceOwnership))
 	if err != nil {
-		reason := "WatcherStatusUpdate"
-		r.EventRecorder.Event(watcher, "Warning", reason, err.Error())
-		return fmt.Errorf("%s failed: %w", reason, err)
+		err = fmt.Errorf("watcher status update failed: %w", err)
+		r.Event.Warning(cr, watcherStatusUpdateFailure, err)
+		return err
 	}
 	return nil
 }

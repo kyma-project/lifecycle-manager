@@ -26,7 +26,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -34,18 +33,23 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+const (
+	setFinalizerFailure    event.Reason = "SettingPurgeFinalizerFailed"
+	removeFinalizerFailure event.Reason = "RemovingPurgeFinalizerFailed"
+)
+
 type Reconciler struct {
 	client.Client
-	record.EventRecorder
+	event.Event
 	SkrContextFactory     remote.SkrContextProvider
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
@@ -56,8 +60,6 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Purge reconciliation started")
-
-	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
@@ -110,7 +112,7 @@ func handleKymaNotFoundError(logger logr.Logger, kyma *v1beta2.Kyma, err error) 
 func (r *Reconciler) handleKymaNotMarkedForDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if err := r.ensurePurgeFinalizer(ctx, kyma); err != nil {
 		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Failed setting purge finalizer for Kyma %s: %s", kyma.GetName(), err))
-		r.raiseSettingPurgeFinalizerFailedEvent(kyma, err)
+		r.Event.Warning(kyma, setFinalizerFailure, err)
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
@@ -123,7 +125,7 @@ func handlePurgeNotDue(logger logr.Logger, kyma *v1beta2.Kyma, requeueAfter time
 
 func (r *Reconciler) handleRemovingPurgeFinalizerFailedError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
 	logf.FromContext(ctx).Error(err, fmt.Sprintf("Failed removing purge finalizer from Kyma %s/%s", kyma.GetNamespace(), kyma.GetName()))
-	r.raiseRemovingPurgeFinalizerFailedEvent(kyma, err)
+	r.Event.Warning(kyma, removeFinalizerFailure, err)
 	r.Metrics.SetPurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 	return ctrl.Result{}, err
 }
@@ -278,12 +280,4 @@ func dropFinalizers(ctx context.Context, remoteClient client.Client,
 		handledResources = append(handledResources, fmt.Sprintf("%s/%s", resource.GetNamespace(), resource.GetName()))
 	}
 	return handledResources, nil
-}
-
-func (r *Reconciler) raiseSettingPurgeFinalizerFailedEvent(kyma *v1beta2.Kyma, err error) {
-	r.Event(kyma, "Warning", "SettingPurgeFinalizerFailed", err.Error())
-}
-
-func (r *Reconciler) raiseRemovingPurgeFinalizerFailedEvent(kyma *v1beta2.Kyma, err error) {
-	r.Event(kyma, "Warning", "RemovingPurgeFinalizerFailed", err.Error())
 }

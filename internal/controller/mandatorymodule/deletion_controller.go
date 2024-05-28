@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -30,21 +29,20 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
-	warningEvent          = "Warning"
-	settingFinalizerError = "SettingMandatoryModuleTemplateFinalizerError"
-	deletingManifestError = "DeletingMandatoryModuleManifestError"
+	settingFinalizerError event.Reason = "SettingMandatoryModuleTemplateFinalizerError"
+	deletingManifestError event.Reason = "DeletingMandatoryModuleManifestError"
 )
 
 type DeletionReconciler struct {
 	client.Client
-	record.EventRecorder
+	event.Event
 	queue.RequeueIntervals
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
@@ -52,8 +50,6 @@ type DeletionReconciler struct {
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
-
-	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	template := &v1beta2.ModuleTemplate{}
 	if err := r.Get(ctx, req.NamespacedName, template); err != nil {
@@ -92,7 +88,7 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	if err := r.removeManifests(ctx, manifests); err != nil {
-		r.Event(template, warningEvent, deletingManifestError, err.Error())
+		r.Event.Warning(template, deletingManifestError, err)
 		return ctrl.Result{}, fmt.Errorf("failed to remove MandatoryModule Manifest: %w", err)
 	}
 
@@ -103,7 +99,7 @@ func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 	template *v1beta2.ModuleTemplate,
 ) (ctrl.Result, error) {
 	if err := r.Update(ctx, template); err != nil {
-		r.Event(template, warningEvent, settingFinalizerError, err.Error())
+		r.Event.Warning(template, settingFinalizerError, err)
 		return ctrl.Result{}, fmt.Errorf("failed to update MandatoryModuleTemplate finalizer: %w", err)
 	}
 	return ctrl.Result{Requeue: true}, nil
