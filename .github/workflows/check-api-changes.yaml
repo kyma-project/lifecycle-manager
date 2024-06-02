@@ -30,17 +30,40 @@ jobs:
       - name: Copy main CRDs to temp dir
         run: mkdir -p /tmp/main-branch-crds && cp ./config/crd/bases/* /tmp/main-branch-crds/
 
-
-      - name: Compare CRD files
+      - name: Compare Number of CRD files
         working-directory: /tmp
         run: |
           pr_files=$(ls ./pr-crds)
           main_files=$(ls ./main-branch-crds)
           
           if [[ "$pr_files" != "$main_files" ]]; then
-            echo "CRD files do not match"
+            echo "Number of CRD files do not match"
             echo "Differences between pr-crds and main-branch-crds:"
             diff -r pr-crds main-branch-crds || true
             exit 1
           fi
-          echo "CRD files match"
+          echo "Number of CRD files match"
+
+      - name: Compare API versions in CRD files
+        working-directory: /tmp
+        run: |
+          compare_versions() {
+            pr_file=$1
+            main_file=$2
+
+            pr_versions=$(yq e '.spec.versions[].name' "$pr_file" | sort)
+            main_versions=$(yq e '.spec.versions[].name' "$main_file" | sort)
+
+            if [[ "$pr_versions" != "$main_versions" ]]; then
+              echo "API versions do not match in $pr_file"
+              echo "Versions in PR: $pr_versions"
+              echo "Versions on main: $main_versions"
+              exit 1
+            fi
+          }
+
+          for file in $(ls ./pr-crds); do
+            compare_versions "./pr-crds/$file" "./main-branch-crds/$file"
+          done
+
+          echo "API versions match in all CRD files"
