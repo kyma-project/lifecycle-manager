@@ -42,3 +42,4 @@ jobs:
             echo "Differences:"
             diff -r ./pr-crds ./main-crds || true
             exit 1
+          fi
