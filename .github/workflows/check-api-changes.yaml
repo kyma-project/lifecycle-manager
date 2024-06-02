@@ -36,5 +36,6 @@ jobs:
           main_files=$(ls /tmp/main-crds)
           if [[ "$pr_files" != "$main_files" ]]; then
             echo "CRD files do not match"
+            echo "Differences:"
+            diff /tmp/pr-crds /tmp/main-crds || true
             exit 1
-          fi
