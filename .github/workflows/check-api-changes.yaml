@@ -30,21 +30,15 @@ jobs:
       - name: Copy main CRDs to temp dir
         run: mkdir -p /tmp/main-crds && cp ./config/crd/bases/* /tmp/main-crds/
 
+
       - name: Compare CRD files
+        working-directory: /tmp
         run: |
-          pr_files=$(ls /tmp/pr-crds)
-          main_files=$(ls /tmp/main-crds)
+          pr_files=$(ls ./pr-crds)
+          main_files=$(ls ./main-crds)
+          
           if [[ "$pr_files" != "$main_files" ]]; then
-            for file in $pr_files; do
-              if [[ ! " $main_files " =~ " $file " ]]; then
-                echo "File $file is present in PR but not in main."
-                exit 1
-              fi
-            done
-  
-            for file in $main_files; do
-              if [[ ! " $pr_files " =~ " $file " ]]; then
-                echo "File $file is present in main but not in PR."
-                exit 1
-              fi
-            done
+            echo "CRD files do not match"
+            echo "Differences:"
+            diff -r ./pr-crds ./main-crds || true
+            exit 1
