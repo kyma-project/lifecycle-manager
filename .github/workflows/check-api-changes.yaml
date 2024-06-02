@@ -2,7 +2,7 @@ name: "Check for changes in Controller APIs"
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "api-changes-pipeline-test" ]
     types:
       - "opened"
       - "reopened"
