@@ -51,8 +51,8 @@ jobs:
             pr_file=$1
             main_file=$2
 
-            pr_versions=$(yq e '.spec.versions[].name' "$pr_file" | sort)
-            main_versions=$(yq e '.spec.versions[].name' "$main_file" | sort)
+            pr_versions=$(yq e '.spec.versions[].name' "$pr_file" | sort | tr '\n' ' ')
+            main_versions=$(yq e '.spec.versions[].name' "$main_file" | sort | tr '\n' ' ')
 
             if [[ "$pr_versions" != "$main_versions" ]]; then
               echo "API versions do not match in $pr_file"
