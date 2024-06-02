@@ -1,0 +1,40 @@
+name: "Check for changes in Controller APIs"
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    types:
+      - "opened"
+      - "reopened"
+      - "synchronize"
+      - "labeled"
+      - "unlabeled"
+
+jobs:
+  check-api-diff:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'confirm/api-changes') }}
+    name: Check API diff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR ref of lifecycle-manager
+        uses: actions/checkout@v4
+
+      - name: Copy PR CRDs to temp dir
+        run: mkdir -p /tmp/pr-crds && cp ./config/crd/bases/* /tmp/pr-crds/
+
+      - name: Checkout main of lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Copy main CRDs to temp dir
+        run: mkdir -p /tmp/main-crds && cp ./config/crd/bases/* /tmp/main-crds/
+
+      - name: Compare CRD files
+        run: |
+          pr_files=$(ls /tmp/pr-crds)
+          main_files=$(ls /tmp/main-crds)
+          if [[ "$pr_files" != "$main_files" ]]; then
+            echo "CRD files do not match"
+            exit 1
+          fi
