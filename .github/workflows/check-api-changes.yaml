@@ -33,13 +33,13 @@ jobs:
       - name: Compare names and number of CRD files
         working-directory: /tmp
         run: |
-          pr_files=$(ls ./pr-crds)
           main_files=$(ls ./main-branch-crds)
+          pr_files=$(ls ./pr-crds)
           
           if [[ "$pr_files" != "$main_files" ]]; then
             echo "Number of CRD files do not match"
-            echo "Differences between pr-crds and main-branch-crds:"
-            diff -r pr-crds main-branch-crds || true
+            echo "Differences between main-branch-crds and pr-crds:"
+            diff -r main-branch-crds pr-crds || true
             exit 1
           fi
           echo "Number of CRD files match"
@@ -48,22 +48,22 @@ jobs:
         working-directory: /tmp
         run: |
           compare_versions() {
-            pr_file=$1
-            main_file=$2
+            main_file=$1
+            pr_file=$2
 
-            pr_versions=$(yq e '.spec.versions[].name' "$pr_file" | sort | tr '\n' ' ')
             main_versions=$(yq e '.spec.versions[].name' "$main_file" | sort | tr '\n' ' ')
+            pr_versions=$(yq e '.spec.versions[].name' "$pr_file" | sort | tr '\n' ' ')
 
             if [[ "$pr_versions" != "$main_versions" ]]; then
               echo "API versions do not match in $pr_file"
-              echo "Versions in PR: $pr_versions"
               echo "Versions on main: $main_versions"
+              echo "Versions in PR: $pr_versions"
               exit 1
             fi
           }
 
           for file in $(ls ./pr-crds); do
-            compare_versions "./pr-crds/$file" "./main-branch-crds/$file"
+            compare_versions "./main-branch-crds/$file" "./pr-crds/$file"
           done
 
           echo "Name of API versions match in all CRD files"
@@ -76,11 +76,11 @@ jobs:
             pr_file=$2
             version=$3
 
-            pr_schema_file="/tmp/pr-crds-schema-${version}.yaml"
             main_schema_file="/tmp/main-crds-schema-${version}.yaml"
+            pr_schema_file="/tmp/pr-crds-schema-${version}.yaml"
 
-            yq '.spec.versions[] | select(.name == "'$version'") | .schema.openAPIV3Schema.properties | del(.. | select(has("description")).description)' "$pr_file" > "$pr_schema_file"
             yq '.spec.versions[] | select(.name == "'$version'") | .schema.openAPIV3Schema.properties | del(.. | select(has("description")).description)' "$main_file" > "$main_schema_file"
+            yq '.spec.versions[] | select(.name == "'$version'") | .schema.openAPIV3Schema.properties | del(.. | select(has("description")).description)' "$pr_file" > "$pr_schema_file"
 
             if ! diff "$main_schema_file" "$pr_schema_file" ; then
               echo "Schema differences found for version $version in $main_file and $pr_file"
@@ -89,8 +89,8 @@ jobs:
           }
 
           for file in $(ls ./pr-crds); do
-            pr_file="./pr-crds/$file"
             main_file="./main-branch-crds/$file"
+            pr_file="./pr-crds/$file"
             versions=$(yq e '.spec.versions[].name' "$pr_file")
 
             for version in $versions; do
