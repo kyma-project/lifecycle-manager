@@ -72,8 +72,8 @@ jobs:
         working-directory: /tmp
         run: |
           compare_schemas() {
-            pr_file=$1
-            main_file=$2
+            main_file=$1
+            pr_file=$2
             version=$3
 
             pr_schema_file="/tmp/pr-crds-schema-${version}.yaml"
@@ -94,7 +94,7 @@ jobs:
             versions=$(yq e '.spec.versions[].name' "$pr_file")
 
             for version in $versions; do
-              compare_schemas "$pr_file" "$main_file" "$version"
+              compare_schemas "$main_file" "$pr_file" "$version"
             done
           done
 
