@@ -7,11 +7,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"time"
-)
-
-const (
-	DefaultInMemoryParseTTL = 24 * time.Hour
 )
 
 func NewReconciler(mgr manager.Manager,
@@ -31,7 +26,7 @@ func NewReconciler(mgr manager.Manager,
 		requeueIntervals,
 		manifestMetrics,
 		mandatoryModulesMetrics,
-		declarativev2.NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL),
+		declarativev2.NewInMemoryCachedManifestParser(),
 		manifest.NewCustomResourceReadyCheck(),
 		// Options
 		declarativev2.WithSpecResolver(

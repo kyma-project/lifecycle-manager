@@ -2,8 +2,6 @@ package v2
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,12 +16,6 @@ const (
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
-		WithPostRenderTransform(
-			ManagedByDeclarativeV2,
-			watchedByOwnedBy,
-			KymaComponentTransform,
-			DisclaimerTransform,
-		),
 		WithSingletonClientCache(NewMemoryClientCache()),
 	)
 }
@@ -37,10 +29,6 @@ type Options struct {
 	SpecResolver
 	ClientCache
 	ClientCacheKeyFn
-
-	ServerSideApply bool
-
-	PostRenderTransforms []ObjectTransform
 }
 
 type Option interface {
@@ -68,25 +56,6 @@ func (o WithManagerOption) Apply(options *Options) {
 	options.Client = o.GetClient()
 }
 
-type WithCustomResourceLabels k8slabels.Set
-
-func (o WithCustomResourceLabels) Apply(options *Options) {
-	labelTransform := func(ctx context.Context, object Object, resources []*unstructured.Unstructured) error {
-		for _, targetResource := range resources {
-			lbls := targetResource.GetLabels()
-			if lbls == nil {
-				lbls = k8slabels.Set{}
-			}
-			for s := range o {
-				lbls[s] = o[s]
-			}
-			targetResource.SetLabels(lbls)
-		}
-		return nil
-	}
-	options.PostRenderTransforms = append(options.PostRenderTransforms, labelTransform)
-}
-
 func WithSpecResolver(resolver SpecResolver) SpecResolverOption {
 	return SpecResolverOption{resolver}
 }
@@ -97,20 +66,6 @@ type SpecResolverOption struct {
 
 func (o SpecResolverOption) Apply(options *Options) {
 	options.SpecResolver = o
-}
-
-type ObjectTransform = func(context.Context, Object, []*unstructured.Unstructured) error
-
-func WithPostRenderTransform(transforms ...ObjectTransform) PostRenderTransformOption {
-	return PostRenderTransformOption{transforms}
-}
-
-type PostRenderTransformOption struct {
-	ObjectTransforms []ObjectTransform
-}
-
-func (o PostRenderTransformOption) Apply(options *Options) {
-	options.PostRenderTransforms = append(options.PostRenderTransforms, o.ObjectTransforms...)
 }
 
 type WithSingletonClientCacheOption struct {

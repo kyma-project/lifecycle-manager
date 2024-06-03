@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strconv"
 	"time"
 
@@ -184,7 +185,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, obj, metrics.ManifestClientInit, currentObjStatus, err)
 	}
 
-	target, current, err := r.renderResources(ctx, clnt, obj, spec)
+	target, current, err := r.renderResources(clnt, obj, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
 			r.invalidateClientCache(ctx, obj)
@@ -323,7 +324,6 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 }
 
 func (r *Reconciler) renderResources(
-	ctx context.Context,
 	clnt Client,
 	obj Object,
 	spec *Spec,
@@ -336,7 +336,7 @@ func (r *Reconciler) renderResources(
 
 	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), apimetav1.NamespaceDefault)
 
-	if target, err = r.renderTargetResources(ctx, converter, obj, spec); err != nil {
+	if target, err = r.renderTargetResources(converter, obj, spec); err != nil {
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
@@ -399,8 +399,8 @@ func (r *Reconciler) doPostRun(ctx context.Context, skrClient Client, obj Object
 		return nil
 	}
 
-	resource := manifest.Spec.Resource.DeepCopy()
-	err := skrClient.Create(ctx, resource, client.FieldOwner(CustomResourceManager))
+	res := manifest.Spec.Resource.DeepCopy()
+	err := skrClient.Create(ctx, res, client.FieldOwner(CustomResourceManager))
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
@@ -533,7 +533,6 @@ func (r *Reconciler) preDeleteDeleteCR(
 }
 
 func (r *Reconciler) renderTargetResources(
-	ctx context.Context,
 	converter ResourceToInfoConverter,
 	obj Object,
 	spec *Spec,
@@ -550,12 +549,7 @@ func (r *Reconciler) renderTargetResources(
 		return nil, err
 	}
 
-	for _, transform := range r.PostRenderTransforms {
-		if err := transform(ctx, obj, targetResources.Items); err != nil {
-			obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
-			return nil, err
-		}
-	}
+	doPostRenderTransforms(obj, targetResources.Items)
 
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
@@ -564,6 +558,35 @@ func (r *Reconciler) renderTargetResources(
 	}
 
 	return target, nil
+}
+
+func doPostRenderTransforms(obj Object, resources []*unstructured.Unstructured) {
+	for _, res := range resources {
+		lbls := res.GetLabels()
+		if lbls == nil {
+			lbls = make(map[string]string)
+		}
+
+		lbls[shared.ManagedBy] = ManagedByLabelValue
+		lbls[shared.WatchedByLabel] = OperatorName
+		lbls["app.kubernetes.io/component"] = obj.GetName()
+		lbls["app.kubernetes.io/part-of"] = "Kyma"
+		res.SetLabels(lbls)
+
+		// TODO this part actually has no effect because we didn't set annotations in default transforms
+		//annotations := resource.GetAnnotations()
+		//if annotations == nil {
+		//	annotations = make(map[string]string)
+		//}
+		//annotations[shared.OwnedByAnnotation] = fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName())
+
+		annotations := res.GetAnnotations()
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+		annotations[DisclaimerAnnotation] = DisclaimerAnnotationValue
+		res.SetAnnotations(annotations)
+	}
 }
 
 func (r *Reconciler) pruneDiff(
