@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -38,10 +37,11 @@ var (
 )
 
 const (
-	namespaceNotBeRemoved  = "kyma-system"
-	CustomResourceManager  = "resource.kyma-project.io/finalizer"
-	SyncedOCIRefAnnotation = "sync-oci-ref"
-	finalizerDefault       = "declarative.kyma-project.io/finalizer"
+	namespaceNotBeRemoved                    = "kyma-system"
+	CustomResourceManager                    = "resource.kyma-project.io/finalizer"
+	SyncedOCIRefAnnotation                   = "sync-oci-ref"
+	finalizerDefault                         = "declarative.kyma-project.io/finalizer"
+	fieldOwnerDefault      client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
 func NewFromManager(mgr manager.Manager,
@@ -330,7 +330,7 @@ func (r *Reconciler) renderResources(
 	var err error
 	var target, current ResourceList
 
-	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), r.Namespace)
+	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), apimetav1.NamespaceDefault)
 
 	if target, err = r.renderTargetResources(ctx, converter, obj, spec); err != nil {
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
@@ -357,7 +357,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 ) error {
 	status := obj.GetStatus()
 
-	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
+	if err := ConcurrentSSA(clnt, fieldOwnerDefault).Run(ctx, target); err != nil {
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -596,18 +596,6 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 		r.AddClient(clientsCacheKey, clnt)
 	}
 
-	if r.Namespace != apimetav1.NamespaceNone && r.Namespace != apimetav1.NamespaceDefault {
-		err := clnt.Patch(
-			ctx, &apicorev1.Namespace{
-				TypeMeta:   apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-				ObjectMeta: apimetav1.ObjectMeta{Name: r.Namespace},
-			}, client.Apply, client.ForceOwnership, r.FieldOwner,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to patch namespace: %w", err)
-		}
-	}
-
 	return clnt, nil
 }
 
@@ -652,7 +640,7 @@ func (r *Reconciler) finishReconcile(ctx context.Context, obj Object,
 func (r *Reconciler) patchStatusIfDiffExist(ctx context.Context, obj Object, previousStatus shared.Status) error {
 	if hasStatusDiff(obj.GetStatus(), previousStatus) {
 		resetNonPatchableField(obj)
-		if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
+		if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, fieldOwnerDefault); err != nil {
 			return fmt.Errorf("failed to patch status: %w", err)
 		}
 	}
@@ -669,7 +657,7 @@ func (r *Reconciler) ssaSpec(ctx context.Context, obj client.Object,
 ) (ctrl.Result, error) {
 	resetNonPatchableField(obj)
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	if err := r.Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
+	if err := r.Patch(ctx, obj, client.Apply, client.ForceOwnership, fieldOwnerDefault); err != nil {
 		r.Event(obj, "Warning", "PatchObject", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to patch object: %w", err)
 	}

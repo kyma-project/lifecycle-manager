@@ -2,7 +2,6 @@ package v2
 
 import (
 	"context"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
@@ -12,7 +11,6 @@ import (
 )
 
 const (
-	FieldOwnerDefault    = "declarative.kyma-project.io/applier"
 	EventRecorderDefault = "declarative.kyma-project.io/events"
 )
 
@@ -20,8 +18,6 @@ const (
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
-		WithNamespace(apimetav1.NamespaceDefault, false),
-		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(
 			ManagedByDeclarativeV2,
 			watchedByOwnedBy,
@@ -44,11 +40,7 @@ type Options struct {
 
 	CustomReadyCheck ReadyCheck
 
-	Namespace       string
-	CreateNamespace bool
-
 	ServerSideApply bool
-	FieldOwner      client.FieldOwner
 
 	PostRenderTransforms []ObjectTransform
 
@@ -67,29 +59,6 @@ func (o *Options) Apply(options ...Option) *Options {
 		options[i].Apply(o)
 	}
 	return o
-}
-
-type WithNamespaceOption struct {
-	name            string
-	createIfMissing bool
-}
-
-func WithNamespace(name string, createIfMissing bool) WithNamespaceOption {
-	return WithNamespaceOption{
-		name:            name,
-		createIfMissing: createIfMissing,
-	}
-}
-
-func (o WithNamespaceOption) Apply(options *Options) {
-	options.Namespace = o.name
-	options.CreateNamespace = o.createIfMissing
-}
-
-type WithFieldOwner client.FieldOwner
-
-func (o WithFieldOwner) Apply(options *Options) {
-	options.FieldOwner = client.FieldOwner(o)
 }
 
 type WithManagerOption struct {
