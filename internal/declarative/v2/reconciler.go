@@ -446,13 +446,54 @@ func generateOperationMessage(installationCondition apimetav1.Condition, stateIn
 
 func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object) error {
 	if !obj.GetDeletionTimestamp().IsZero() {
-		for _, preDelete := range r.PreDeletes {
-			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
-				// we do not set a status here since it will be deleting if timestamp is set.
-				obj.SetStatus(obj.GetStatus().WithErr(err))
-				return err
-			}
+		if err := preDeleteDeleteCR(ctx, clnt, r.Client, obj); err != nil {
+			// we do not set a status here since it will be deleting if timestamp is set.
+			obj.SetStatus(obj.GetStatus().WithErr(err))
+			return err
 		}
+
+	}
+	return nil
+}
+
+// PreDeleteDeleteCR is a hook for deleting the module CR if available in the cluster.
+// It uses DeletePropagationBackground to delete module CR.
+// Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
+// and we consider the CR removal successful.
+func preDeleteDeleteCR(
+	ctx context.Context, skr Client, kcp client.Client, obj Object,
+) error {
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return nil
+	}
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+
+	resourceCopy := manifest.Spec.Resource.DeepCopy()
+	propagation := apimetav1.DeletePropagationBackground
+	err := skr.Delete(ctx, resourceCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
+
+	if !util.IsNotFound(err) {
+		return nil
+	}
+
+	onCluster := manifest.DeepCopy()
+	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
+	if util.IsNotFound(err) {
+		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to fetch resource: %w", err)
+	}
+	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManager); removed {
+		if err := kcp.Update(
+			ctx, onCluster, client.FieldOwner(CustomResourceManager),
+		); err != nil {
+			return fmt.Errorf("failed to update resource: %w", err)
+		}
+		return ErrRequeueRequired
 	}
 	return nil
 }

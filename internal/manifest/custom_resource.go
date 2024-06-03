@@ -11,7 +11,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 // PostRunCreateCR is a hook for creating the manifest default custom resource if not available in the cluster
@@ -46,48 +45,6 @@ func PostRunCreateCR(
 			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarativev2.CustomResourceManager),
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
-		}
-		return declarativev2.ErrRequeueRequired
-	}
-	return nil
-}
-
-// PreDeleteDeleteCR is a hook for deleting the module CR if available in the cluster.
-// It uses DeletePropagationBackground to delete module CR.
-// Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
-// and we consider the CR removal successful.
-func PreDeleteDeleteCR(
-	ctx context.Context, skr declarativev2.Client, kcp client.Client, obj declarativev2.Object,
-) error {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return nil
-	}
-	if manifest.Spec.Resource == nil {
-		return nil
-	}
-
-	resource := manifest.Spec.Resource.DeepCopy()
-	propagation := apimetav1.DeletePropagationBackground
-	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-
-	if !util.IsNotFound(err) {
-		return nil
-	}
-
-	onCluster := manifest.DeepCopy()
-	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
-	if util.IsNotFound(err) {
-		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to fetch resource: %w", err)
-	}
-	if removed := controllerutil.RemoveFinalizer(onCluster, declarativev2.CustomResourceManager); removed {
-		if err := kcp.Update(
-			ctx, onCluster, client.FieldOwner(declarativev2.CustomResourceManager),
-		); err != nil {
-			return fmt.Errorf("failed to update resource: %w", err)
 		}
 		return declarativev2.ErrRequeueRequired
 	}

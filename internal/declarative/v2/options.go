@@ -44,10 +44,7 @@ type Options struct {
 
 	PostRenderTransforms []ObjectTransform
 
-	PostRuns   []PostRun
-	PreDeletes []PreDelete
-
-	DeletePrerequisites bool
+	PostRuns []PostRun
 }
 
 type Option interface {
@@ -141,13 +138,6 @@ type WithPostRun []PostRun
 
 func (o WithPostRun) Apply(options *Options) {
 	options.PostRuns = append(options.PostRuns, o...)
-}
-
-// WithPreDelete applies PreDelete.
-type WithPreDelete []PreDelete
-
-func (o WithPreDelete) Apply(options *Options) {
-	options.PreDeletes = append(options.PreDeletes, o...)
 }
 
 type WithSingletonClientCacheOption struct {
