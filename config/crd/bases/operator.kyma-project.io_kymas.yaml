@@ -60,7 +60,7 @@ spec:
                 items:
                   description: Module defines the components to be installed.
                   properties:
-                    channel:
+                    channeltest:
                       description: |-
                         Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
                         ModuleTemplate based on the new resolved resources.
@@ -68,12 +68,8 @@ spec:
                       minLength: 3
                       pattern: ^[a-z]+$
                       type: string
-                    controller:
-                      description: |-
-                        ControllerName is able to set the controller used for reconciliation of the module. It can be used
-                        together with Cache Configuration on the Operator responsible for the templated Modules to split
-                        workload.
-                      type: string
+                    newField:
+                      type: integer
                     customResourcePolicy:
                       default: CreateAndDelete
                       description: |-
@@ -83,7 +79,7 @@ spec:
                       enum:
                       - CreateAndDelete
                       - Ignore
-                      type: string
+                      type: integer
                     name:
                       description: |-
                         Name is a unique identifier of the module.
@@ -196,7 +192,7 @@ spec:
                       description: status of the condition, one of True, False, Unknown.
                       enum:
                       - "True"
-                      - "False"
+                      - "Falsi"
                       - Unknown
                       type: string
                     type:
