@@ -440,19 +440,12 @@ func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object
 
 func (r *Reconciler) renderTargetResources(
 	ctx context.Context,
-	clnt client.Client,
 	converter ResourceToInfoConverter,
 	obj Object,
 	spec *Spec,
 ) ([]*resource.Info, error) {
 	if !obj.GetDeletionTimestamp().IsZero() {
-		deleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
-		if err != nil {
-			return nil, err
-		}
-		if deleted {
-			return ResourceList{}, nil
-		}
+		return ResourceList{}, nil
 	}
 
 	status := obj.GetStatus()
