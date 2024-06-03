@@ -53,7 +53,7 @@ type Options struct {
 	SpecResolver
 	ClientCache
 	ClientCacheKeyFn
-	ManifestParser
+
 	ManifestCache
 	CustomReadyCheck ReadyCheck
 
@@ -222,18 +222,6 @@ type WithManifestCache ManifestCache
 
 func (o WithManifestCache) Apply(options *Options) {
 	options.ManifestCache = ManifestCache(o)
-}
-
-func WithManifestParser(parser ManifestParser) WithManifestParserOption {
-	return WithManifestParserOption{ManifestParser: parser}
-}
-
-type WithManifestParserOption struct {
-	ManifestParser
-}
-
-func (o WithManifestParserOption) Apply(options *Options) {
-	options.ManifestParser = o.ManifestParser
 }
 
 type WithCustomReadyCheckOption struct {

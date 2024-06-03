@@ -42,16 +42,22 @@ const (
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
-func NewFromManager(mgr manager.Manager, prototype Object, requeueIntervals queue.RequeueIntervals,
-	metrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, options ...Option,
+func NewFromManager(mgr manager.Manager,
+	prototype Object,
+	requeueIntervals queue.RequeueIntervals,
+	metrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	manifestParser ManifestParser,
+	options ...Option,
 ) *Reconciler {
-	reconciler := &Reconciler{}
-	reconciler.prototype = prototype
-	reconciler.ManifestMetrics = metrics
-	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
-	reconciler.RequeueIntervals = requeueIntervals
-	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
-	return reconciler
+	return &Reconciler{
+		prototype:              prototype,
+		RequeueIntervals:       requeueIntervals,
+		ManifestMetrics:        metrics,
+		MandatoryModuleMetrics: mandatoryModulesMetrics,
+		manifestParser:         manifestParser,
+		Options:                DefaultOptions().Apply(WithManager(mgr)).Apply(options...),
+	}
 }
 
 type Reconciler struct {
@@ -60,6 +66,7 @@ type Reconciler struct {
 	*Options
 	ManifestMetrics        *metrics.ManifestMetrics
 	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
+	manifestParser         ManifestParser
 }
 
 type ConditionType string
@@ -313,7 +320,7 @@ func (r *Reconciler) renderResources(
 
 	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), r.Namespace)
 
-	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil {
+	if target, err = r.renderTargetResources(ctx, converter, obj, spec); err != nil {
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
@@ -450,7 +457,7 @@ func (r *Reconciler) renderTargetResources(
 
 	status := obj.GetStatus()
 
-	targetResources, err := r.ManifestParser.Parse(spec)
+	targetResources, err := r.manifestParser.Parse(spec)
 	if err != nil {
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
@@ -492,7 +499,7 @@ func (r *Reconciler) pruneDiff(
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
-		r.ManifestParser.EvictCache(spec)
+		r.manifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 
