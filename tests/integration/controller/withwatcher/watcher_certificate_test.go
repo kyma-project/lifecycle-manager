@@ -44,7 +44,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(skrClient, shared.DefaultRemoteKymaName, flags.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
@@ -58,7 +58,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		certificateCR, err := getCertificate(kcpClient, kyma.Name)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(skrClient, certificateCR).Should(Succeed())
 
 		By("Certificate CR recreated on KCP")
@@ -76,7 +76,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		secret, err := getSecret(skrClient, skrTLSSecretObjKey)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(skrClient, secret).Should(Succeed())
 
 		By("recreated Certificate Secret on SKR")
@@ -90,7 +90,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 
 		By("changing the TLS secret on KCP")
 		tlsSecret.Data[apicorev1.TLSPrivateKeyKey] = []byte(newKey)
-		Expect(kcpClient.Update(suiteCtx, tlsSecret)).To(Succeed())
+		Expect(kcpClient.Update(ctx, tlsSecret)).To(Succeed())
 
 		By("updates the TLS secret on SKR")
 		Eventually(matchTLSSecretPrivateKey, Timeout, Interval).
@@ -99,13 +99,13 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	})
 
 	AfterAll(func() {
-		Expect(kcpClient.Delete(suiteCtx, kyma)).To(Succeed())
+		Expect(kcpClient.Delete(ctx, kyma)).To(Succeed())
 	})
 })
 
 func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
 	certificateCR := &certmanagerv1.Certificate{}
-	err := clnt.Get(suiteCtx,
+	err := clnt.Get(ctx,
 		client.ObjectKey{Name: watcher.ResolveTLSCertName(kymaName), Namespace: istioSystemNs},
 		certificateCR)
 	return certificateCR, err
@@ -113,7 +113,7 @@ func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certifi
 
 func getSecret(clnt client.Client, objKey client.ObjectKey) (*apicorev1.Secret, error) {
 	secretCR := &apicorev1.Secret{}
-	err := clnt.Get(suiteCtx, objKey, secretCR)
+	err := clnt.Get(ctx, objKey, secretCR)
 	return secretCR, err
 }
 

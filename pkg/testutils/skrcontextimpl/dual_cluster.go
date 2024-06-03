@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
@@ -21,12 +22,14 @@ var (
 type DualClusterFactory struct {
 	clients sync.Map
 	scheme  *machineryruntime.Scheme
+	event   event.Event
 }
 
-func NewDualClusterFactory(scheme *machineryruntime.Scheme) *DualClusterFactory {
+func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *DualClusterFactory {
 	return &DualClusterFactory{
 		clients: sync.Map{},
 		scheme:  scheme,
+		event:   event,
 	}
 }
 
@@ -73,7 +76,7 @@ func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext,
 	if !ok {
 		return nil, errSkrEnvNotStarted
 	}
-	return &remote.SkrContext{Client: skrClient}, nil
+	return remote.NewSkrContext(skrClient, f.event), nil
 }
 
 func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {

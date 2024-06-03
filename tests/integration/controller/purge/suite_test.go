@@ -35,7 +35,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -54,7 +55,7 @@ import (
 const useRandomPort = "0"
 
 var (
-	purgeReconciler             *controller.PurgeReconciler
+	reconciler                  *purge.Reconciler
 	kcpClient                   client.Client
 	kcpEnv                      *envtest.Environment
 	ctx                         context.Context
@@ -105,17 +106,18 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
-	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
-	purgeReconciler = &controller.PurgeReconciler{
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
+	reconciler = &purge.Reconciler{
 		Client:                kcpClient,
 		SkrContextFactory:     testSkrContextFactory,
-		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:                 testEventRec,
 		PurgeFinalizerTimeout: time.Second,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
 		Metrics:               metrics.NewPurgeMetrics(),
 	}
 
-	err = purgeReconciler.SetupWithManager(mgr, ctrlruntime.Options{})
+	err = reconciler.SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()

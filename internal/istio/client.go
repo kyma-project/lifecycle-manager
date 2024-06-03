@@ -10,26 +10,21 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 )
 
 type Client struct {
 	istioclient.Interface
-	eventRecorder record.EventRecorder
-	logger        logr.Logger
+	logger logr.Logger
 }
 
-func NewIstioClient(cfg *rest.Config, recorder record.EventRecorder,
-	logger logr.Logger,
-) (*Client, error) {
+func NewIstioClient(cfg *rest.Config, logger logr.Logger) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
 		return nil, errors.Join(ErrFailedToCreateIstioClient, err)
 	}
 	return &Client{
-		Interface:     cs,
-		eventRecorder: recorder,
-		logger:        logger,
+		Interface: cs,
+		logger:    logger,
 	}, nil
 }
 

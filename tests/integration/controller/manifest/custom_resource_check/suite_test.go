@@ -54,15 +54,15 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	testEnv            *envtest.Environment
-	k8sManager         ctrl.Manager
-	reconciler         *declarativev2.Reconciler
-	cfg                *rest.Config
-	ctx                context.Context
-	cancel             context.CancelFunc
-	controlPlaneClient client.Client
-	server             *httptest.Server
-	manifestFilePath   string
+	testEnv          *envtest.Environment
+	mgr              ctrl.Manager
+	reconciler       *declarativev2.Reconciler
+	cfg              *rest.Config
+	ctx              context.Context
+	cancel           context.CancelFunc
+	kcpClient        client.Client
+	server           *httptest.Server
+	manifestFilePath string
 )
 
 const (
@@ -111,7 +111,7 @@ var _ = BeforeSuite(func() {
 	syncPeriod := 2 * time.Second
 	cacheOpts.SyncPeriod = &syncPeriod
 
-	k8sManager, err = ctrl.NewManager(
+	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: metricsBindAddress,
@@ -121,7 +121,7 @@ var _ = BeforeSuite(func() {
 		},
 	)
 
-	k8sManager.GetControllerOptions()
+	mgr.GetControllerOptions()
 	Expect(err).ToNot(HaveOccurred())
 
 	authUser, err := testEnv.AddUser(
@@ -132,11 +132,11 @@ var _ = BeforeSuite(func() {
 	)
 	Expect(err).NotTo(HaveOccurred())
 
-	controlPlaneClient = k8sManager.GetClient()
+	kcpClient = mgr.GetClient()
 
-	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: controlPlaneClient}
+	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
 	extractor := manifest.NewPathExtractor(nil)
-	reconciler = declarativev2.NewFromManager(k8sManager, &v1beta2.Manifest{}, queue.RequeueIntervals{
+	reconciler = declarativev2.NewFromManager(mgr, &v1beta2.Manifest{}, queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Error:   1 * time.Second,
 	},
@@ -151,7 +151,7 @@ var _ = BeforeSuite(func() {
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
 		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()))
 
-	err = ctrl.NewControllerManagedBy(k8sManager).
+	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		WithOptions(
@@ -167,7 +167,7 @@ var _ = BeforeSuite(func() {
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 },

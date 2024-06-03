@@ -38,26 +38,26 @@ var _ = Describe(
 				func() {
 					manifest := testutils.NewTestManifest("oci")
 
-					Eventually(testutils.WithValidInstallImageSpec(ctx, controlPlaneClient, installName,
+					Eventually(testutils.WithValidInstallImageSpec(ctx, kcpClient, installName,
 						manifestFilePath,
 						serverAddress, false, false), standardTimeout, standardInterval).
 						WithArguments(manifest).
 						Should(Succeed())
 					By("Then Manifest CR is in Ready State", func() {
-						Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady),
+						Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).
 							Should(Succeed())
 					})
 					By("And OCI-Sync-Ref Annotation exists", func() {
-						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, controlPlaneClient, true),
+						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, kcpClient, true),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).
 							Should(Succeed())
 					})
-					Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, manifest), standardTimeout,
+					Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, manifest), standardTimeout,
 						standardInterval).Should(Succeed())
 				},
 			)
@@ -65,32 +65,32 @@ var _ = Describe(
 				func() {
 					manifest := testutils.NewTestManifest("oci")
 
-					Eventually(testutils.WithValidInstallImageSpec(ctx, controlPlaneClient, installName,
+					Eventually(testutils.WithValidInstallImageSpec(ctx, kcpClient, installName,
 						manifestFilePath,
 						serverAddress, true, false), standardTimeout, standardInterval).
 						WithArguments(manifest).
 						Should(Succeed())
 					Eventually(func() error {
 						var err error
-						validManifest, err = testutils.GetManifestWithName(ctx, controlPlaneClient, manifest.GetName())
+						validManifest, err = testutils.GetManifestWithName(ctx, kcpClient, manifest.GetName())
 						return err
 					}).Should(Succeed())
 
 					By("Then Manifest CR is in Ready State", func() {
-						Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady),
+						Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).
 							Should(Succeed())
 					})
 					By("And OCI-Sync-Ref Annotation exists", func() {
-						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, controlPlaneClient, true),
+						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, kcpClient, true),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).
 							Should(Succeed())
 					})
-					Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, manifest), standardTimeout,
+					Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, manifest), standardTimeout,
 						standardInterval).Should(Succeed())
 				},
 			)
@@ -98,18 +98,18 @@ var _ = Describe(
 				func() {
 					manifest := testutils.NewTestManifest("oci")
 
-					Eventually(testutils.WithInvalidInstallImageSpec(ctx, controlPlaneClient, false, manifestFilePath),
+					Eventually(testutils.WithInvalidInstallImageSpec(ctx, kcpClient, false, manifestFilePath),
 						standardTimeout, standardInterval).
 						WithArguments(manifest).
 						Should(Succeed())
 					By("Then Manifest CR is in Error State", func() {
-						Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateError),
+						Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateError),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).Should(Succeed())
 					})
 					By("And OCI-Sync-Ref Annotation does not exist", func() {
-						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, controlPlaneClient, false),
+						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, kcpClient, false),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).Should(Succeed())
@@ -119,7 +119,7 @@ var _ = Describe(
 							standardTimeout,
 							standardInterval).
 							WithContext(ctx).
-							WithArguments(controlPlaneClient, manifest.GetName(),
+							WithArguments(kcpClient, manifest.GetName(),
 								"failed to extract raw manifest from layer digest").
 							Should(Succeed())
 					})
@@ -127,12 +127,12 @@ var _ = Describe(
 					By("When OCI Image is corrected", func() {
 						Eventually(testutils.UpdateManifestSpec, standardTimeout, standardInterval).
 							WithContext(ctx).
-							WithArguments(controlPlaneClient, manifest.GetName(), validManifest.Spec).
+							WithArguments(kcpClient, manifest.GetName(), validManifest.Spec).
 							Should(Succeed())
 					})
 
 					By("The Manifest CR is in Ready State and lastOperation is updated correctly", func() {
-						Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateError),
+						Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateError),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).Should(Succeed())
@@ -142,12 +142,12 @@ var _ = Describe(
 							standardTimeout,
 							standardInterval).
 							WithContext(ctx).
-							WithArguments(controlPlaneClient, manifest.GetName(),
+							WithArguments(kcpClient, manifest.GetName(),
 								"installation is ready and resources can be used").
 							Should(Succeed())
 					})
 
-					Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, manifest), standardTimeout,
+					Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, manifest), standardTimeout,
 						standardInterval).Should(Succeed())
 				},
 			)
@@ -174,13 +174,13 @@ var _ = Describe(
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
 			manifestWithInstall := testutils.NewTestManifest("private-oci-registry")
-			Eventually(testutils.WithValidInstallImageSpec(ctx, controlPlaneClient, installName, manifestFilePath,
+			Eventually(testutils.WithValidInstallImageSpec(ctx, kcpClient, installName, manifestFilePath,
 				server.Listener.Addr().String(), false, true),
 				standardTimeout,
 				standardInterval).
 				WithArguments(manifestWithInstall).Should(Succeed())
 			Eventually(func() string {
-				status, err := testutils.GetManifestStatus(ctx, controlPlaneClient, manifestWithInstall.GetName())
+				status, err := testutils.GetManifestStatus(ctx, kcpClient, manifestWithInstall.GetName())
 				if err != nil {
 					return err.Error()
 				}

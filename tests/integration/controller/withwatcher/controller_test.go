@@ -57,30 +57,30 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 
 	It("kyma reconciliation installs watcher with correct webhook config", func() {
-		Eventually(latestWebhookIsConfigured(suiteCtx, skrClient, watcherCrForKyma,
+		Eventually(latestWebhookIsConfigured(ctx, skrClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
 	It("kyma reconciliation replaces webhook-config when a new watcher is created and deleted", func() {
 		secondWatcher := createWatcherCR("second-manager", false)
 		By("Creating second watcher CR")
-		Expect(kcpClient.Create(suiteCtx, secondWatcher)).To(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, skrClient, watcherCrForKyma, kymaObjKey),
+		Expect(kcpClient.Create(ctx, secondWatcher)).To(Succeed())
+		Eventually(latestWebhookIsConfigured(ctx, skrClient, watcherCrForKyma, kymaObjKey),
 			Timeout, Interval).Should(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, skrClient, secondWatcher, kymaObjKey),
+		Eventually(latestWebhookIsConfigured(ctx, skrClient, secondWatcher, kymaObjKey),
 			Timeout, Interval).Should(Succeed())
 		By("Deleting second watcher CR")
 		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(kcpClient, secondWatcher).Should(Succeed())
 		By("Ensuring second watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(secondWatcher).
 			Should(BeTrue())
 		By("ensuring skr resources are configured for the non-removed watcher CRs")
-		Eventually(latestWebhookIsConfigured(suiteCtx, skrClient, watcherCrForKyma, kymaObjKey),
+		Eventually(latestWebhookIsConfigured(ctx, skrClient, watcherCrForKyma, kymaObjKey),
 			Timeout, Interval).Should(Succeed())
 		By("ensuring skr resources are not configured for the removed watcher CR")
-		Eventually(latestWebhookIsConfigured(suiteCtx, skrClient, secondWatcher, kymaObjKey),
+		Eventually(latestWebhookIsConfigured(ctx, skrClient, secondWatcher, kymaObjKey),
 			Timeout, Interval).ShouldNot(Succeed())
 	})
 
@@ -88,19 +88,19 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		labelKey := "new-key"
 		labelValue := "new-value"
 		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
-		Expect(kcpClient.Update(suiteCtx, watcherCrForKyma)).To(Succeed())
+		Expect(kcpClient.Update(ctx, watcherCrForKyma)).To(Succeed())
 		By("waiting for watcher CR labelsToWatch to be updated")
 		Eventually(isWatcherCrLabelUpdated(client.ObjectKeyFromObject(watcherCrForKyma),
 			labelKey, labelValue), Timeout, Interval).Should(BeTrue())
-		Eventually(latestWebhookIsConfigured(suiteCtx, skrClient, watcherCrForKyma,
+		Eventually(latestWebhookIsConfigured(ctx, skrClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
 	It("kyma reconciliation removes watcher from SKR cluster when kyma is deleted", func() {
 		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
-		Eventually(getSkrChartDeployment(suiteCtx, skrClient, kymaObjKey), Timeout, Interval).
+		Eventually(getSkrChartDeployment(ctx, skrClient, kymaObjKey), Timeout, Interval).
 			ShouldNot(Succeed())
 		Eventually(isKymaCrDeletionFinished, Timeout, Interval).
 			WithArguments(client.ObjectKeyFromObject(kyma)).Should(BeTrue())
@@ -110,7 +110,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedLabelValue string) func() bool {
 	return func() bool {
 		watcherCR := &v1beta2.Watcher{}
-		err := kcpClient.Get(suiteCtx, watcherObjKey, watcherCR)
+		err := kcpClient.Get(ctx, watcherObjKey, watcherCR)
 		if err != nil {
 			return false
 		}
@@ -123,7 +123,7 @@ func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedL
 }
 
 func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) bool {
-	err := kcpClient.Get(suiteCtx, kymaObjKey, &v1beta2.Kyma{})
+	err := kcpClient.Get(ctx, kymaObjKey, &v1beta2.Kyma{})
 	return util.IsNotFound(err)
 }
 
@@ -230,6 +230,6 @@ func verifyWebhookConfig(
 }
 
 func isWatcherCrDeletionFinished(watcherCR client.Object) bool {
-	err := kcpClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCR), watcherCR)
+	err := kcpClient.Get(ctx, client.ObjectKeyFromObject(watcherCR), watcherCR)
 	return util.IsNotFound(err)
 }
