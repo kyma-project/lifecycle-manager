@@ -2,34 +2,25 @@ package v2
 
 import (
 	"context"
-	"os"
-	"strconv"
-	"time"
-
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
 const (
-	FinalizerDefault        = "declarative.kyma-project.io/finalizer"
-	FieldOwnerDefault       = "declarative.kyma-project.io/applier"
-	EventRecorderDefault    = "declarative.kyma-project.io/events"
-	DefaultInMemoryParseTTL = 24 * time.Hour
+	FieldOwnerDefault    = "declarative.kyma-project.io/applier"
+	EventRecorderDefault = "declarative.kyma-project.io/events"
 )
+
+// TODO: os.TempDir()
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
 		WithNamespace(apimetav1.NamespaceDefault, false),
-		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(
 			ManagedByDeclarativeV2,
@@ -38,9 +29,6 @@ func DefaultOptions() *Options {
 			DisclaimerTransform,
 		),
 		WithSingletonClientCache(NewMemoryClientCache()),
-		WithManifestCache(os.TempDir()),
-		WithSkipReconcileOn(SkipReconcileOnDefaultLabelPresentAndTrue),
-		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
 	)
 }
 
@@ -54,13 +42,10 @@ type Options struct {
 	ClientCache
 	ClientCacheKeyFn
 
-	ManifestCache
 	CustomReadyCheck ReadyCheck
 
 	Namespace       string
 	CreateNamespace bool
-
-	Finalizer string
 
 	ServerSideApply bool
 	FieldOwner      client.FieldOwner
@@ -71,8 +56,6 @@ type Options struct {
 	PreDeletes []PreDelete
 
 	DeletePrerequisites bool
-
-	ShouldSkip SkipReconcile
 }
 
 type Option interface {
@@ -107,12 +90,6 @@ type WithFieldOwner client.FieldOwner
 
 func (o WithFieldOwner) Apply(options *Options) {
 	options.FieldOwner = client.FieldOwner(o)
-}
-
-type WithFinalizer string
-
-func (o WithFinalizer) Apply(options *Options) {
-	options.Finalizer = string(o)
 }
 
 type WithManagerOption struct {
@@ -216,14 +193,6 @@ func (o WithSingletonClientCacheOption) Apply(options *Options) {
 	options.ClientCache = o
 }
 
-type ManifestCache string
-
-type WithManifestCache ManifestCache
-
-func (o WithManifestCache) Apply(options *Options) {
-	options.ManifestCache = ManifestCache(o)
-}
-
 type WithCustomReadyCheckOption struct {
 	ReadyCheck
 }
@@ -248,31 +217,6 @@ type WithRemoteTargetClusterOption struct {
 
 func (o WithRemoteTargetClusterOption) Apply(options *Options) {
 	options.TargetCluster = o.ClusterFn
-}
-
-func WithSkipReconcileOn(skipReconcile SkipReconcile) WithSkipReconcileOnOption {
-	return WithSkipReconcileOnOption{skipReconcile: skipReconcile}
-}
-
-type SkipReconcile func(context.Context, Object) (skip bool)
-
-// SkipReconcileOnDefaultLabelPresentAndTrue determines SkipReconcile by checking if DefaultSkipReconcileLabel is true.
-func SkipReconcileOnDefaultLabelPresentAndTrue(ctx context.Context, object Object) bool {
-	if object.GetLabels() != nil && object.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true) {
-		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
-			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
-		return true
-	}
-
-	return false
-}
-
-type WithSkipReconcileOnOption struct {
-	skipReconcile SkipReconcile
-}
-
-func (o WithSkipReconcileOnOption) Apply(options *Options) {
-	options.ShouldSkip = o.skipReconcile
 }
 
 type ClientCacheKeyFn func(ctx context.Context, obj Object) (string, bool)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"strconv"
 	"time"
 
@@ -40,6 +41,7 @@ const (
 	namespaceNotBeRemoved  = "kyma-system"
 	CustomResourceManager  = "resource.kyma-project.io/finalizer"
 	SyncedOCIRefAnnotation = "sync-oci-ref"
+	finalizerDefault       = "declarative.kyma-project.io/finalizer"
 )
 
 func NewFromManager(mgr manager.Manager,
@@ -83,6 +85,16 @@ const (
 	ConditionReasonReady                 ConditionReason = "Ready"
 )
 
+func (r *Reconciler) shouldSkipReconcile(ctx context.Context, object Object) bool {
+	if object.GetLabels() != nil && object.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true) {
+		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
+			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
+		return true
+	}
+
+	return false
+}
+
 func newInstallationCondition(obj Object) apimetav1.Condition {
 	return apimetav1.Condition{
 		Type:               string(ConditionTypeInstallation),
@@ -122,7 +134,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	currentObjStatus := obj.GetStatus()
 
-	if r.ShouldSkip(ctx, obj) {
+	if r.shouldSkipReconcile(ctx, obj) {
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
@@ -139,7 +151,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if obj.GetDeletionTimestamp().IsZero() {
 		objMeta := r.partialObjectMetadata(obj)
-		if controllerutil.AddFinalizer(objMeta, r.Finalizer) {
+		if controllerutil.AddFinalizer(objMeta, finalizerDefault) {
 			return r.ssaSpec(ctx, objMeta, metrics.ManifestAddFinalizer)
 		}
 	}
@@ -234,7 +246,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, obj 
 }
 
 func (r *Reconciler) finalizerToRemove(originalErr error, obj Object) []string {
-	finalizersToRemove := []string{r.Finalizer}
+	finalizersToRemove := []string{finalizerDefault}
 	if errors.Is(originalErr, ErrAccessSecretNotFound) {
 		finalizersToRemove = obj.GetFinalizers()
 	}
