@@ -26,7 +26,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 )
 
-type ReconcilerSetupSettings struct {
+type SetupOptions struct {
 	ListenerAddr                 string
 	EnableDomainNameVerification bool
 	IstioNamespace               string
@@ -40,52 +40,38 @@ var (
 	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
 )
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Options, settings ReconcilerSetupSettings) error {
-	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
-
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
-		Named(controllerName).
-		WithOptions(options).
-		WithEventFilter(predicates).
-		Watches(
-			&v1beta2.ModuleTemplate{},
-			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
-			builder.WithPredicates(predicates),
-		).
-		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
-		Watches(&apicorev1.Secret{}, handler.Funcs{})
-
-	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
-		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
-
-	var runnableListener *watcherevent.SKREventListener
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
 	var verifyFunc watcherevent.Verify
-
 	if settings.EnableDomainNameVerification {
-		// Verifier used to verify incoming listener requests
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
 	} else {
 		verifyFunc = func(r *http.Request, watcherEvtObject *types.WatchEvent) error {
 			return nil
 		}
 	}
-	// register listener component incl. domain name verification
-	runnableListener = watcherevent.NewSKREventListener(
+	runnableListener := watcherevent.NewSKREventListener(
 		settings.ListenerAddr,
 		shared.OperatorName,
 		verifyFunc,
 	)
-
-	// watch event channel
-	controllerBuilder.WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler()))
-
-	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
 
-	if err := controllerBuilder.Complete(r); err != nil {
-		return fmt.Errorf("error occurred while building controller: %w", err)
+	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
+	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+		Named(controllerName).
+		WithOptions(opts).
+		WithEventFilter(predicates).
+		Watches(&v1beta2.ModuleTemplate{},
+			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
+			builder.WithPredicates(predicates)).
+		Watches(&apicorev1.Secret{}, handler.Funcs{}).
+		Watches(&v1beta2.Manifest{},
+			&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true}).
+		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler())).
+		Complete(r); err != nil {
+		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
 	}
 
 	return nil

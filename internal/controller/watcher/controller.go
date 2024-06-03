@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package watcher
 
 import (
 	"context"
@@ -24,7 +24,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -32,6 +31,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -39,16 +39,22 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	errRestConfigIsNotSet = errors.New("reconciler rest config is not set")
-	errRemovingFinalizer  = errors.New("error removing finalizer")
-	errAddingFinalizer    = errors.New("error adding finalizer")
+const (
+	addFinalizerFailure        event.Reason = "AddFinalizerErr"
+	updateFinalizerFailure     event.Reason = "WatcherFinalizerErr"
+	gatewayNotFoundFailure     event.Reason = "WatcherGatewayNotFound"
+	watcherStatusUpdateFailure event.Reason = "WatcherStatusUpdate"
 )
 
-// WatcherReconciler reconciles a Watcher object.
-type WatcherReconciler struct {
+var (
+	errFinalizerRemove = errors.New("error removing finalizer")
+	errFinalizerAdd    = errors.New("error adding finalizer")
+	errGateway         = errors.New("gateway for the VirtualService not found")
+)
+
+type Reconciler struct {
 	client.Client
-	record.EventRecorder
+	event.Event
 	IstioClient           *istio.Client
 	VirtualServiceFactory istio.VirtualServiceFactory
 	RestConfig            *rest.Config
@@ -65,14 +71,12 @@ type WatcherReconciler struct {
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.V(log.DebugLevel).Info("Reconciliation loop starting")
 
-	watcherObj := &v1beta2.Watcher{}
-	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
+	watcher := &v1beta2.Watcher{}
+	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcher); err != nil {
 		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")
 		if !util.IsNotFound(err) {
 			return ctrl.Result{}, fmt.Errorf("watcherController: %w", err)
@@ -80,74 +84,67 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: false}, nil
 	}
 
-	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != shared.StateDeleting {
-		return r.updateWatcherState(ctx, watcherObj, shared.StateDeleting, nil)
+	if !watcher.DeletionTimestamp.IsZero() && watcher.Status.State != shared.StateDeleting {
+		return r.updateWatcherState(ctx, watcher, shared.StateDeleting, nil)
 	}
 
-	// check finalizer on native object
-	if !controllerutil.ContainsFinalizer(watcherObj, shared.WatcherFinalizer) {
-		finalizerAdded := controllerutil.AddFinalizer(watcherObj, shared.WatcherFinalizer)
-		if !finalizerAdded {
-			r.EventRecorder.Event(watcherObj, "Warning", "AddFinalizerErr",
-				errAddingFinalizer.Error())
-			return ctrl.Result{}, errAddingFinalizer
+	if !controllerutil.ContainsFinalizer(watcher, shared.WatcherFinalizer) {
+		if !controllerutil.AddFinalizer(watcher, shared.WatcherFinalizer) {
+			r.Event.Warning(watcher, addFinalizerFailure, errFinalizerAdd)
+			return ctrl.Result{}, errFinalizerAdd
 		}
-		return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherObj)
+		return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcher)
 	}
 
-	watcherObj.InitializeConditions()
+	watcher.InitializeConditions()
 
-	return r.stateHandling(ctx, watcherObj)
+	return r.stateHandling(ctx, watcher)
 }
 
-func (r *WatcherReconciler) updateFinalizer(ctx context.Context, watcherCR *v1beta2.Watcher) error {
-	err := r.Client.Update(ctx, watcherCR)
+func (r *Reconciler) updateFinalizer(ctx context.Context, watcher *v1beta2.Watcher) error {
+	err := r.Client.Update(ctx, watcher)
 	if err != nil {
-		r.EventRecorder.Event(watcherCR, "Warning", "WatcherFinalizerErr",
-			err.Error())
+		r.Event.Warning(watcher, updateFinalizerFailure, err)
 		return fmt.Errorf("failed to update finalizer: %w", err)
 	}
 	return nil
 }
 
-func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
-	switch watcherCR.Status.State {
+func (r *Reconciler) stateHandling(ctx context.Context, watcher *v1beta2.Watcher) (ctrl.Result, error) {
+	switch watcher.Status.State {
 	case "":
-		return r.updateWatcherState(ctx, watcherCR, shared.StateProcessing, nil)
+		return r.updateWatcherState(ctx, watcher, shared.StateProcessing, nil)
 	case shared.StateProcessing:
-		return r.handleProcessingState(ctx, watcherCR)
+		return r.handleProcessingState(ctx, watcher)
 	case shared.StateDeleting:
-		return r.handleDeletingState(ctx, watcherCR)
+		return r.handleDeletingState(ctx, watcher)
 	case shared.StateError:
-		return r.handleProcessingState(ctx, watcherCR)
+		return r.handleProcessingState(ctx, watcher)
 	case shared.StateReady, shared.StateWarning:
-		return r.handleProcessingState(ctx, watcherCR)
+		return r.handleProcessingState(ctx, watcher)
 	}
 
 	return ctrl.Result{Requeue: false}, nil
 }
 
-func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
-	err := r.IstioClient.DeleteVirtualService(ctx, watcherCR.GetName(), watcherCR.GetNamespace())
+func (r *Reconciler) handleDeletingState(ctx context.Context, watcher *v1beta2.Watcher) (ctrl.Result, error) {
+	err := r.IstioClient.DeleteVirtualService(ctx, watcher.GetName(), watcher.GetNamespace())
 	if err != nil {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
-		return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsConfigDelErr)
+		return r.updateWatcherState(ctx, watcher, shared.StateError, vsConfigDelErr)
 	}
-	finalizerRemoved := controllerutil.RemoveFinalizer(watcherCR, shared.WatcherFinalizer)
+	finalizerRemoved := controllerutil.RemoveFinalizer(watcher, shared.WatcherFinalizer)
 	if !finalizerRemoved {
-		return r.updateWatcherState(ctx, watcherCR, shared.StateError, errRemovingFinalizer)
+		return r.updateWatcherState(ctx, watcher, shared.StateError, errFinalizerRemove)
 	}
-	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherCR)
+	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcher)
 }
 
-func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
-	watcherCR *v1beta2.Watcher,
-) (ctrl.Result, error) {
+func (r *Reconciler) handleProcessingState(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
 	gateways, err := r.IstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
 		r.IstioGatewayNamespace)
 	if err != nil || len(gateways.Items) == 0 {
-		r.EventRecorder.Event(watcherCR, "Warning", "WatcherGatewayNotFound",
-			"Watcher: Gateway for the VirtualService not found")
+		r.Event.Warning(watcherCR, gatewayNotFoundFailure, errGateway)
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 
@@ -177,30 +174,28 @@ func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	return r.updateWatcherState(ctx, watcherCR, shared.StateReady, nil)
 }
 
-func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v1beta2.Watcher,
-	state shared.State, err error,
-) (ctrl.Result, error) {
-	watcherCR.Status.State = state
+func (r *Reconciler) updateWatcherState(ctx context.Context, watcher *v1beta2.Watcher, state shared.State, err error) (ctrl.Result, error) {
+	watcher.Status.State = state
 	if state == shared.StateReady {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
+		watcher.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
 	} else if state == shared.StateError {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
+		watcher.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
 	}
 	if err != nil {
-		r.EventRecorder.Event(watcherCR, "Warning", "WatcherStatusUpdate", err.Error())
+		r.Event.Warning(watcher, watcherStatusUpdateFailure, err)
 	}
 	requeueInterval := queue.DetermineRequeueInterval(state, r.RequeueIntervals)
-	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, watcherCR)
+	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, watcher)
 }
 
-func (r *WatcherReconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
+func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
 	watcher.ManagedFields = nil
 	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
 		status.SubResourceOpts(client.ForceOwnership))
 	if err != nil {
-		reason := "WatcherStatusUpdate"
-		r.EventRecorder.Event(watcher, "Warning", reason, err.Error())
-		return fmt.Errorf("%s failed: %w", reason, err)
+		err = fmt.Errorf("watcher status update failed: %w", err)
+		r.Event.Warning(watcher, watcherStatusUpdateFailure, err)
+		return err
 	}
 	return nil
 }

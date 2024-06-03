@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/registry"
-
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,8 +37,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -58,13 +58,13 @@ const (
 )
 
 var (
-	mandatoryModuleDeletionReconciler *controller.MandatoryModuleDeletionReconciler
-	controlPlaneClient                client.Client
-	singleClusterEnv                  *envtest.Environment
-	ctx                               context.Context
-	cancel                            context.CancelFunc
-	manifestFilePath                  string
-	server                            *httptest.Server
+	reconciler       *mandatorymodule.DeletionReconciler
+	kcpClient        client.Client
+	singleClusterEnv *envtest.Environment
+	ctx              context.Context
+	cancel           context.CancelFunc
+	manifestFilePath string
+	server           *httptest.Server
 )
 
 func TestAPIs(t *testing.T) {
@@ -98,7 +98,7 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sManager, err := ctrl.NewManager(
+	mgr, err := ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: useRandomPort,
@@ -116,17 +116,17 @@ var _ = BeforeSuite(func() {
 	}
 
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	mandatoryModuleDeletionReconciler = &controller.MandatoryModuleDeletionReconciler{
-		Client:             k8sManager.GetClient(),
-		EventRecorder:      k8sManager.GetEventRecorderFor(shared.OperatorName),
+	reconciler = &mandatorymodule.DeletionReconciler{
+		Client:             mgr.GetClient(),
+		Event:              event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)),
 		DescriptorProvider: descriptorProvider,
 		RequeueIntervals:   intervals,
 	}
 
-	err = mandatoryModuleDeletionReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
+	err = reconciler.SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
-	controlPlaneClient = k8sManager.GetClient()
+	kcpClient = mgr.GetClient()
 
 	SetDefaultEventuallyPollingInterval(Interval)
 	SetDefaultEventuallyTimeout(Timeout)
@@ -135,7 +135,7 @@ var _ = BeforeSuite(func() {
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })

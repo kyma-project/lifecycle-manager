@@ -49,10 +49,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
+	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -82,12 +86,9 @@ var (
 func registerSchemas(scheme *machineryruntime.Scheme) {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
-
 	machineryutilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	machineryutilruntime.Must(certmanagerv1.AddToScheme(scheme))
-
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
-
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
@@ -163,7 +164,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kcpRestConfig := mgr.GetConfig()
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
-	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache)
+	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder)
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	options := controllerOptionsFromFlagVar(flagVar)
 	if flagVar.EnableKcpWatcher {
@@ -171,20 +173,20 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			setupLog.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
-		setupKcpWatcherReconciler(mgr, options, flagVar, setupLog)
+		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLog)
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, flagVar, options, skrWebhookManager, kymaMetrics,
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager, kymaMetrics,
 		setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
-	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, flagVar, options, setupLog)
+	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, setupLog)
 	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, skrContextProvider, flagVar, options, setupLog)
+		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLog)
 	}
 	if flagVar.EnableWebhooks {
 		enableWebhooks(mgr, setupLog)
@@ -274,15 +276,20 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 }
 
 func setupKymaReconciler(mgr ctrl.Manager,
-	descriptorProvider *provider.CachedDescriptorProvider, skrContextFactory remote.SkrContextProvider, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	skrContextFactory remote.SkrContextProvider,
+	event event.Event,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	skrWebhookManager *watcher.SKRWebhookManifestManager,
+	kymaMetrics *metrics.KymaMetrics,
+	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
-
 	if err := (&kyma.Reconciler{
 		Client:             mgr.GetClient(),
 		SkrContextFactory:  skrContextFactory,
-		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:              event,
 		DescriptorProvider: descriptorProvider,
 		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(mgr.GetClient(), skrContextFactory, nil),
 		SKRWebhookManager:  skrWebhookManager,
@@ -297,7 +304,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
 	}).SetupWithManager(
-		mgr, options, kyma.ReconcilerSetupSettings{
+		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 			IstioNamespace:               flagVar.IstioNamespace,
@@ -356,13 +363,17 @@ func getWatcherImg(flagVar *flags.FlagVar) string {
 	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.WatcherImageTag)
 }
 
-func setupPurgeReconciler(mgr ctrl.Manager, skrContextProvider remote.SkrContextProvider, flagVar *flags.FlagVar,
-	options ctrlruntime.Options, setupLog logr.Logger,
+func setupPurgeReconciler(mgr ctrl.Manager,
+	skrContextProvider remote.SkrContextProvider,
+	event event.Event,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	setupLog logr.Logger,
 ) {
-	if err := (&controller.PurgeReconciler{
+	if err := (&purge.Reconciler{
 		Client:                mgr.GetClient(),
 		SkrContextFactory:     skrContextProvider,
-		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:                 event,
 		PurgeFinalizerTimeout: flagVar.PurgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.SkipPurgingFor),
 		IsManagedKyma:         flagVar.IsKymaManaged,
@@ -383,11 +394,11 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 
-	if err := controller.SetupWithManager(
+	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
 			Success: flagVar.ManifestRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
-		}, controller.SetupUpSetting{
+		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
@@ -397,16 +408,16 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	}
 }
 
-func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *flags.FlagVar,
+func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, event event.Event, flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
-	if err := (&controller.WatcherReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
-		Scheme:        mgr.GetScheme(),
-		RestConfig:    mgr.GetConfig(),
+	if err := (&watcherctrl.Reconciler{
+		Client:     mgr.GetClient(),
+		Event:      event,
+		Scheme:     mgr.GetScheme(),
+		RestConfig: mgr.GetConfig(),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.WatcherRequeueSuccessInterval,
 			Busy:    flags.DefaultKymaRequeueBusyInterval,
@@ -415,20 +426,22 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 		},
 		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
+		setupLog.Error(err, "unable to create watcher controller")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
-func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options, metrics *metrics.MandatoryModulesMetrics,
+func setupMandatoryModuleReconciler(mgr ctrl.Manager,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	if err := (&controller.MandatoryModuleReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(shared.OperatorName),
+	if err := (&mandatorymodule.InstallationReconciler{
+		Client: mgr.GetClient(),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
@@ -445,14 +458,18 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager, descriptorProvider *provid
 	}
 }
 
-func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger,
+func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	event event.Event,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
-	if err := (&controller.MandatoryModuleDeletionReconciler{
+	if err := (&mandatorymodule.DeletionReconciler{
 		Client:             mgr.GetClient(),
-		EventRecorder:      mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:              event,
 		DescriptorProvider: descriptorProvider,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,

@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package mandatorymodule
 
 import (
 	"context"
 	"fmt"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -30,30 +29,27 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
-	warningEvent          = "Warning"
-	settingFinalizerError = "SettingMandatoryModuleTemplateFinalizerError"
-	deletingManifestError = "DeletingMandatoryModuleManifestError"
+	settingFinalizerError event.Reason = "SettingMandatoryModuleTemplateFinalizerError"
+	deletingManifestError event.Reason = "DeletingMandatoryModuleManifestError"
 )
 
-type MandatoryModuleDeletionReconciler struct {
+type DeletionReconciler struct {
 	client.Client
-	record.EventRecorder
+	event.Event
 	queue.RequeueIntervals
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
-func (r *MandatoryModuleDeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
-
-	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	template := &v1beta2.ModuleTemplate{}
 	if err := r.Get(ctx, req.NamespacedName, template); err != nil {
@@ -92,24 +88,24 @@ func (r *MandatoryModuleDeletionReconciler) Reconcile(ctx context.Context, req c
 	}
 
 	if err := r.removeManifests(ctx, manifests); err != nil {
-		r.Event(template, warningEvent, deletingManifestError, err.Error())
+		r.Event.Warning(template, deletingManifestError, err)
 		return ctrl.Result{}, fmt.Errorf("failed to remove MandatoryModule Manifest: %w", err)
 	}
 
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *MandatoryModuleDeletionReconciler) updateTemplateFinalizer(ctx context.Context,
+func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 	template *v1beta2.ModuleTemplate,
 ) (ctrl.Result, error) {
 	if err := r.Update(ctx, template); err != nil {
-		r.Event(template, warningEvent, settingFinalizerError, err.Error())
+		r.Event.Warning(template, settingFinalizerError, err)
 		return ctrl.Result{}, fmt.Errorf("failed to update MandatoryModuleTemplate finalizer: %w", err)
 	}
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *MandatoryModuleDeletionReconciler) getCorrespondingManifests(ctx context.Context,
+func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
 	error,
 ) {
@@ -130,7 +126,7 @@ func (r *MandatoryModuleDeletionReconciler) getCorrespondingManifests(ctx contex
 	return filtered, nil
 }
 
-func (r *MandatoryModuleDeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
+func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for _, manifest := range manifests {
 		manifest := manifest
 		if err := r.Delete(ctx, &manifest); err != nil {
@@ -141,9 +137,7 @@ func (r *MandatoryModuleDeletionReconciler) removeManifests(ctx context.Context,
 	return nil
 }
 
-func filterManifestsByAnnotation(manifests []v1beta2.Manifest,
-	annotationKey, annotationValue string,
-) []v1beta2.Manifest {
+func filterManifestsByAnnotation(manifests []v1beta2.Manifest, annotationKey, annotationValue string) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
 		if manifest.Annotations[annotationKey] == annotationValue {
