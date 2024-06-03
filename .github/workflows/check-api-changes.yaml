@@ -82,7 +82,7 @@ jobs:
             yq '.spec.versions[] | select(.name == "'$version'") | .schema.openAPIV3Schema.properties | del(.. | select(has("description")).description)' "$pr_file" > "$pr_schema_file"
             yq '.spec.versions[] | select(.name == "'$version'") | .schema.openAPIV3Schema.properties | del(.. | select(has("description")).description)' "$main_file" > "$main_schema_file"
 
-            if ! diff -u "$pr_schema_file" "$main_schema_file"; then
+            if ! diff "$pr_schema_file" "$main_schema_file"; then
               echo "Schema differences found for version $version in $pr_file and $main_file"
               exit 1
             fi
