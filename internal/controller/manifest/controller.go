@@ -26,14 +26,18 @@ func NewReconciler(mgr manager.Manager,
 	extractor := manifest.NewPathExtractor(nil)
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
-		mgr, &v1beta2.Manifest{}, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
+		mgr,
+		&v1beta2.Manifest{},
+		requeueIntervals,
+		manifestMetrics,
+		mandatoryModulesMetrics,
 		declarativev2.NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL),
+		// Options
 		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp, extractor),
 		),
 		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
-		declarativev2.WithPostRun{manifest.PostRunCreateCR},
 	)
 }

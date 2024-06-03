@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"strconv"
 	"time"
 
@@ -375,14 +376,46 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		return ErrWarningResourceSyncStateDiff
 	}
 
-	for i := range r.PostRuns {
-		if err := r.PostRuns[i](ctx, clnt, r.Client, obj); err != nil {
-			obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
-			return err
-		}
+	if err := r.doPostRun(ctx, clnt, obj); err != nil {
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		return err
 	}
 
 	return r.checkTargetReadiness(ctx, clnt, obj, target)
+}
+
+func (r *Reconciler) doPostRun(ctx context.Context, skrClient Client, obj Object) error {
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return nil
+	}
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
+
+	resource := manifest.Spec.Resource.DeepCopy()
+	err := skrClient.Create(ctx, resource, client.FieldOwner(CustomResourceManager))
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	oMeta := &apimetav1.PartialObjectMetadata{}
+	oMeta.SetName(obj.GetName())
+	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+	oMeta.SetNamespace(obj.GetNamespace())
+	oMeta.SetFinalizers(obj.GetFinalizers())
+	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManager); added {
+		if err := r.Client.Patch(
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(CustomResourceManager),
+		); err != nil {
+			return fmt.Errorf("failed to patch resource: %w", err)
+		}
+		return ErrRequeueRequired
+	}
+	return nil
 }
 
 func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
@@ -446,7 +479,7 @@ func generateOperationMessage(installationCondition apimetav1.Condition, stateIn
 
 func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object) error {
 	if !obj.GetDeletionTimestamp().IsZero() {
-		if err := preDeleteDeleteCR(ctx, clnt, r.Client, obj); err != nil {
+		if err := r.preDeleteDeleteCR(ctx, clnt, obj); err != nil {
 			// we do not set a status here since it will be deleting if timestamp is set.
 			obj.SetStatus(obj.GetStatus().WithErr(err))
 			return err
@@ -456,12 +489,12 @@ func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object
 	return nil
 }
 
-// PreDeleteDeleteCR is a hook for deleting the module CR if available in the cluster.
+// preDeleteDeleteCR is a hook for deleting the module CR if available in the cluster.
 // It uses DeletePropagationBackground to delete module CR.
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
 // and we consider the CR removal successful.
-func preDeleteDeleteCR(
-	ctx context.Context, skr Client, kcp client.Client, obj Object,
+func (r *Reconciler) preDeleteDeleteCR(
+	ctx context.Context, skr Client, obj Object,
 ) error {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
@@ -480,7 +513,7 @@ func preDeleteDeleteCR(
 	}
 
 	onCluster := manifest.DeepCopy()
-	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
+	err = r.Client.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
 	if util.IsNotFound(err) {
 		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
 	}
@@ -488,7 +521,7 @@ func preDeleteDeleteCR(
 		return fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManager); removed {
-		if err := kcp.Update(
+		if err := r.Client.Update(
 			ctx, onCluster, client.FieldOwner(CustomResourceManager),
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
