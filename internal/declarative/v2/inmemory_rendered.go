@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	ManifestFilePrefix      = "manifest"
-	DefaultInMemoryParseTTL = 24 * time.Hour
+	ManifestFilePrefix = "manifest"
 )
 
 type ManifestParser interface {
@@ -21,10 +20,10 @@ type ManifestParser interface {
 	EvictCache(spec *Spec)
 }
 
-func NewInMemoryCachedManifestParser() *InMemoryManifestCache {
+func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
 	cache := ttlcache.New[string, internal.ManifestResources]()
 	go cache.Start()
-	return &InMemoryManifestCache{Cache: cache, TTL: DefaultInMemoryParseTTL}
+	return &InMemoryManifestCache{Cache: cache, TTL: ttl}
 }
 
 func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
