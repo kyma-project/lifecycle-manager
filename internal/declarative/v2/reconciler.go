@@ -46,14 +46,6 @@ const (
 	fieldOwnerDefault      client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
-const (
-	OperatorName              = "module-manager"
-	ManagedByLabelValue       = "declarative-v2"
-	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
-	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
-		"Any modifications are discarded and the resource is reverted to the original state."
-)
-
 func NewFromManager(mgr manager.Manager,
 	prototype Object,
 	requeueIntervals queue.RequeueIntervals,
@@ -586,7 +578,7 @@ func doPostRenderTransforms(obj Object, resources []*unstructured.Unstructured) 
 		//if annotations == nil {
 		//	annotations = make(map[string]string)
 		//}
-		//annotations[shared.OwnedByAnnotation] = fmt.Sprintf("%s/%s", obj.GetNamespace(), obj.GetName())
+		//annotations[shared.OwnedByAnnotation] = fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName())
 
 		annotations := res.GetAnnotations()
 		if annotations == nil {
