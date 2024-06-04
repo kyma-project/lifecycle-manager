@@ -1,4 +1,4 @@
-# Provision a cluster and OCI registry
+# Provision a Cluster and OCI Registry
 
 ## Context
 
@@ -8,7 +8,7 @@ For the control-plane mode, with Kyma Control Plane (KCP) and Kyma runtime (SKR)
 
 ## Procedure
 
-### Local cluster setup
+### Local Cluster Setup
 
 1. Create a `k3d` cluster:
 
@@ -31,14 +31,14 @@ For the control-plane mode, with Kyma Control Plane (KCP) and Kyma runtime (SKR)
 
 3. Set the `IMG` environment variable for the `docker-build` and `docker-push` commands, to make sure images are accessible by local k3d clusters.
 
-   - For the **single-cluster mode**:
+   * For the **single-cluster mode**:
 
       ```sh
       # pointing to KCP registry in dual cluster mode  
       export IMG=op-kcp-registry.localhost:8888/unsigned/operator-images
       ```
 
-   - For the **control-plane mode**:
+   * For the **control-plane mode**:
 
       ```sh
       # pointing to SKR registry in dual cluster mode
@@ -47,7 +47,7 @@ For the control-plane mode, with Kyma Control Plane (KCP) and Kyma runtime (SKR)
 
 4. Once you pushed your image, verify the content. For browsing through the content of the local container registry, use, for example, `http://op-kcp-registry.localhost:8888/v2/_catalog?n=100`.
 
-### Remote cluster setup
+### Remote Cluster Setup
 
 Learn how to use a Gardener cluster for testing.
 

@@ -1,4 +1,4 @@
-# Create a test environment on Google Container Registry (GCR)
+# Create a test Environment on Google Container Registry (GCR)
 
 ## Context
 
@@ -10,7 +10,7 @@ This tutorial assumes that you have a GCP project called `sap-kyma-jellyfish-dev
 
 ## Procedure
 
-### Create your repository
+### Create your Repository
 
 1. Create an Artifact Registry repository. For tutorial purposes, call it `operator-test`.
 
@@ -27,7 +27,7 @@ This tutorial assumes that you have a GCP project called `sap-kyma-jellyfish-dev
     --location=europe-west3 --member=allUsers --role=roles/artifactregistry.reader
    ```
 
-### Authenticate locally and create a service account in Google Cloud
+### Authenticate Locally and Create a Service Account in Google Cloud
 
 1. Under the assumption you're [creating and using a service account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) called `operator-test-sa`, authenticate against your registry:
 
