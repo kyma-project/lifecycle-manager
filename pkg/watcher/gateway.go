@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -20,16 +21,20 @@ type GatewayConfig struct {
 	LocalGatewayPortOverwrite string
 }
 
-func resolveKcpAddr(ctx context.Context, kcpClient client.Client,
-	gatewayConfig GatewayConfig,
-) (string, error) { // Get public KCP DNS name and port from the Gateway
-	gateway := &istioclientapiv1beta1.Gateway{}
+func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (string, error) { // Get public KCP DNS name and port from the Gateway
+	kcpClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	if err != nil {
+		return "", fmt.Errorf("can't create kcpClient: %w", err)
+	}
 
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+	gateway := &istioclientapiv1beta1.Gateway{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
-		Namespace: gatewayConfig.IstioGatewayNamespace,
-		Name:      gatewayConfig.IstioGatewayName,
+		Namespace: g.IstioGatewayNamespace,
+		Name:      g.IstioGatewayName,
 	}, gateway); err != nil {
-		return "", fmt.Errorf("failed to get istio gateway %s: %w", gatewayConfig.IstioGatewayName, err)
+		return "", fmt.Errorf("failed to get istio gateway %s: %w", g.IstioGatewayName, err)
 	}
 
 	if len(gateway.Spec.GetServers()) != 1 || len(gateway.Spec.GetServers()[0].GetHosts()) != 1 {
@@ -38,8 +43,8 @@ func resolveKcpAddr(ctx context.Context, kcpClient client.Client,
 	host := gateway.Spec.GetServers()[0].GetHosts()[0]
 	port := gateway.Spec.GetServers()[0].GetPort().GetNumber()
 
-	if gatewayConfig.LocalGatewayPortOverwrite != "" {
-		return net.JoinHostPort(host, gatewayConfig.LocalGatewayPortOverwrite), nil
+	if g.LocalGatewayPortOverwrite != "" {
+		return net.JoinHostPort(host, g.LocalGatewayPortOverwrite), nil
 	}
 
 	return net.JoinHostPort(host, strconv.Itoa(int(port))), nil

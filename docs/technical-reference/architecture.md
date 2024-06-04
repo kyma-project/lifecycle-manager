@@ -6,9 +6,9 @@ You can compare it with [Operator Lifecycle Manager](https://olm.operatorframewo
 
 Lifecycle Manager:
 
-- manages a set of independent operators
-- reconciles many remote clusters at a time while operating in Kyma Control Plane (KCP)
-- uses the release channels concept to manage operators' delivery
+* manages a set of independent operators
+* reconciles many remote clusters at a time while operating in Kyma Control Plane (KCP)
+* uses the release channels concept to manage operators' delivery
 
 The diagram shows a sample deployment of KCP in interaction with a Kyma runtime.
 
@@ -30,10 +30,10 @@ To run, Lifecycle Manager uses the following workflow:
 
 Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest, and Watcher controllers:
 
-- [Kyma controller](../../internal/controller/kyma_controller.go) - reconciles the Kyma CR which means creating Manifest CRs for each Kyma module enabled in the Kyma CR and deleting them when modules are disabled in the Kyma CR. It is also responsible for synchronising ModuleTemplate CRs between KCP and Kyma runtimes.
-- [Manifest controller](../../internal/controller/manifest_controller.go) - reconciles the Manifest CRs created by the Kyma controller, which means, installing components specified in the Manifest CR on the target SKR cluster and removing them when the Manifest CRs are flagged for deletion.
-- [Purge controller](../../internal/controller/purge_controller.go) - reconciles the Kyma CRs which are marked for deletion longer than the grace period, which means purging all the resources deployed by the Lifecycle Manager on the target SKR cluster.
-- [Watcher controller](../../internal/controller/watcher_controller.go) - reconciles the Watcher CR which means creating Istio Virtual Service resources on KCP when a Watcher CR is created and removing the same resources when it is deleted. This is done in order to configure the routing of the messages coming from the watcher agent installed on each Kyma runtime and going to a listener agent deployed on KCP.
+* [Kyma controller](../../internal/controller/kyma/controller.go) - reconciles the Kyma CR which means creating Manifest CRs for each Kyma module enabled in the Kyma CR and deleting them when modules are disabled in the Kyma CR. It is also responsible for synchronising ModuleTemplate CRs between KCP and Kyma runtimes.
+* [Manifest controller](../../internal/controller/manifest/controller.go) - reconciles the Manifest CRs created by the Kyma controller, which means, installing components specified in the Manifest CR in the target SKR cluster and removing them when the Manifest CRs are flagged for deletion.
+* [Purge controller](../../internal/controller/purge/controller.go) - reconciles the Kyma CRs that are marked for deletion longer than the grace period, which means purging all the resources deployed by Lifecycle Manager in the target SKR cluster.
+* [Watcher controller](../../internal/controller/watcher/controller.go) - reconciles the Watcher CR which means creating Istio Virtual Service resources in KCP when a Watcher CR is created and removing the same resources when the Watcher CR is deleted. This is done to configure the routing of the messages that come from the watcher agent, installed on each Kyma runtime, and go to a listener agent deployed in KCP.
 
 For more details about Lifecycle Manager controllers, read the [Controllers](controllers.md) document.
 
@@ -41,7 +41,7 @@ For more details about Lifecycle Manager controllers, read the [Controllers](con
 
 The architecture is based on Kubernetes API and resources, and on best practices for building Kubernetes operators. To learn more, read the following:
 
-- [Kubebuilder](https://kubebuilder.io/)
-- [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/golang/)
-- [Best practices for building Kubernetes Operators and stateful apps](https://cloud.google.com/blog/products/containers-kubernetes/best-practices-for-building-kubernetes-operators-and-stateful-apps)
-- [Operator SDK - Best Practices](https://sdk.operatorframework.io/docs/best-practices/).
+* [Kubebuilder](https://kubebuilder.io/)
+* [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/golang/)
+* [Best practices for building Kubernetes Operators and stateful apps](https://cloud.google.com/blog/products/containers-kubernetes/best-practices-for-building-kubernetes-operators-and-stateful-apps)
+* [Operator SDK - Best Practices](https://sdk.operatorframework.io/docs/best-practices/).

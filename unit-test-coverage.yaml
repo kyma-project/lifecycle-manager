@@ -2,7 +2,8 @@ packages:
   internal/crd: 92
   internal/descriptor/cache: 93
   internal/descriptor/provider: 68
+  internal/event: 100
   internal/manifest/filemutex: 100
   internal/istio: 63
   internal/pkg/resources: 85
-  pkg/remote: 5
+  internal/remote: 5

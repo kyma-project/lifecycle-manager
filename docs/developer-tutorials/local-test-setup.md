@@ -1,26 +1,26 @@
-# Local test setup in the control-plane mode using k3d
+# Local test Setup in the control-plane Mode Using k3d
 
 ## Context
 
 This tutorial shows how to configure a fully working e2e test setup including the following components:
 
-- Lifecycle Manager
-- Runtime Watcher on a remote cluster
-- `template-operator` on a remote cluster as an example
+* Lifecycle Manager
+* Runtime Watcher on a remote cluster
+* `template-operator` on a remote cluster as an example
 
 This setup is deployed with the following security features enabled:
 
-- Strict mTLS connection between Kyma Control Plane (KCP) and SKR clusters
-- SAN Pinning (SAN of client TLS certificate needs to match the DNS annotation of a corresponding Kyma CR)
+* Strict mTLS connection between Kyma Control Plane (KCP) and SKR clusters
+* SAN Pinning (SAN of client TLS certificate needs to match the DNS annotation of a corresponding Kyma CR)
 
 > **NOTE:** If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
 >
-> - [Provision cluster and OCI registry](provision-cluster-and-registry.md)
-> - [Create a test environment on Google Container Registry (GCR)](prepare-gcr-registry.md)
+> * [Provision cluster and OCI registry](provision-cluster-and-registry.md)
+> * [Create a test environment on Google Container Registry (GCR)](prepare-gcr-registry.md)
 
 ## Procedure
 
-### KCP cluster setup
+### KCP Cluster Setup
 
 1. Create a local KCP cluster:
 
@@ -137,7 +137,7 @@ This setup is deployed with the following security features enabled:
    kubectl apply -f ./template.yaml
    ```
 
-### SKR cluster setup
+### SKR Cluster Setup
 
 Create a local Kyma runtime (SKR) cluster:
 
@@ -145,7 +145,7 @@ Create a local Kyma runtime (SKR) cluster:
 k3d cluster create skr-local
 ```
 
-### Create a Kyma CR and a remote Secret
+### Create a Kyma CR and a Remote Secret
 
 1. Switch the context for using the KCP cluster:
 
@@ -216,7 +216,7 @@ k3d cluster create skr-local
 
    </details>
 
-### Watcher and module installation verification
+### Watcher and Module Installation Verification
 
 Check the Kyma CR events to verify if the `SKRWebhookIsReady` condition is set to `True`.
 Also make sure if the state of the `template-operator` is `Ready` and check the overall `state`.
@@ -257,7 +257,7 @@ status:
    state: Ready
 ```
 
-### (Optional) Check the functionality of the Watcher component
+### (Optional) Check the Functionality of the Watcher Component
 
 1. Switch the context to use the SKR cluster:
 

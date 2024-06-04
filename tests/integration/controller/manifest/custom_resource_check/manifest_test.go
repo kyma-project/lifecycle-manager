@@ -49,23 +49,23 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(testutils.InstallManifest(ctx, controlPlaneClient, testManifest, imageSpecByte, true)).To(Succeed())
+		Expect(testutils.InstallManifest(ctx, kcpClient, testManifest, imageSpecByte, true)).To(Succeed())
 
 		By("Ensure that deployment and Sample CR are deployed and ready")
 		deploy := &apiappsv1.Deployment{}
-		Eventually(setDeploymentStatus(ctx, controlPlaneClient, deploymentName, deploy), standardTimeout,
+		Eventually(setDeploymentStatus(ctx, kcpClient, deploymentName, deploy), standardTimeout,
 			standardInterval).Should(Succeed())
 		sampleCR := emptySampleCR(manifestName)
-		Eventually(setCRStatus(ctx, controlPlaneClient, sampleCR, shared.StateReady), standardTimeout,
+		Eventually(setCRStatus(ctx, kcpClient, sampleCR, shared.StateReady), standardTimeout,
 			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR is in the \"Ready\" state")
-		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady), standardTimeout,
+		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("Verify manifest status list all resources correctly")
-		status, err := testutils.GetManifestStatus(ctx, controlPlaneClient, manifestName)
+		status, err := testutils.GetManifestStatus(ctx, kcpClient, manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 		expectedDeployment := asResource(deploymentName, "default", "apps", "v1", "Deployment")
@@ -75,41 +75,41 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Expect(status.Synced).To(ContainElement(expectedCRD))
 
 		By("When the Module CR state is changed to \"Warning\"")
-		Eventually(setCRStatus(ctx, controlPlaneClient, sampleCR, shared.StateWarning), standardTimeout,
+		Eventually(setCRStatus(ctx, kcpClient, sampleCR, shared.StateWarning), standardTimeout,
 			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state also changes to \"Warning\"")
-		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateWarning), standardTimeout,
+		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateWarning), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("When the Module CR state is changed back to \"Ready\"")
-		Eventually(setCRStatus(ctx, controlPlaneClient, sampleCR, shared.StateReady), standardTimeout,
+		Eventually(setCRStatus(ctx, kcpClient, sampleCR, shared.StateReady), standardTimeout,
 			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state changes back to \"Ready\"")
-		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady), standardTimeout,
+		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("cleaning up the manifest")
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedDeployment.ToUnstructured()), standardTimeout,
 			standardInterval).
 			Should(BeTrue())
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedCRD.ToUnstructured()), standardTimeout,
 			standardInterval).Should(BeTrue())
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, sampleCR), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, sampleCR), standardTimeout,
 			standardInterval).Should(BeTrue())
 
-		Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, testManifest), standardTimeout,
+		Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, testManifest), standardTimeout,
 			standardInterval).Should(Succeed())
 
 		By("verify target resources got deleted")
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, sampleCR), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, sampleCR), standardTimeout,
 			standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedCRD.ToUnstructured()), standardTimeout,
 			standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedDeployment.ToUnstructured()), standardTimeout,
 			standardInterval).
 			Should(BeFalse())
 	})

@@ -38,13 +38,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -61,8 +63,8 @@ import (
 const randomPort = "0"
 
 var (
-	controlPlaneClient client.Client
-	k8sManager         manager.Manager
+	kcpClient          client.Client
+	mgr                manager.Manager
 	controlPlaneEnv    *envtest.Environment
 	ctx                context.Context
 	cancel             context.CancelFunc
@@ -111,7 +113,7 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sManager, err = ctrl.NewManager(
+	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
 				BindAddress: randomPort,
@@ -128,28 +130,27 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	remoteClientCache := remote.NewClientCache()
 	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
-	err = (&controller.KymaReconciler{
-		Client:              k8sManager.GetClient(),
-		EventRecorder:       k8sManager.GetEventRecorderFor(shared.OperatorName),
+	kcpClient = mgr.GetClient()
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
+	err = (&kyma.Reconciler{
+		Client:              kcpClient,
+		Event:               testEventRec,
 		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(nil),
+		SkrContextFactory:   testSkrContextFactory,
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RequeueIntervals:    intervals,
-		RemoteClientCache:   remoteClientCache,
-		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
-		controller.SetupUpSetting{ListenerAddr: randomPort})
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
+		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
-
-	controlPlaneClient = k8sManager.GetClient()
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })

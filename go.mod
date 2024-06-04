@@ -7,7 +7,7 @@ replace github.com/kyma-project/lifecycle-manager/api => ./api
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/cert-manager/cert-manager v1.14.5
-	github.com/go-logr/logr v1.4.1
+	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-containerregistry v0.19.1
@@ -15,7 +15,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240502124257-9d96561ef070
-	github.com/onsi/ginkgo/v2 v2.17.3
+	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	github.com/open-component-model/ocm v0.10.0
 	github.com/prometheus/client_golang v1.19.1
@@ -24,7 +24,7 @@ require (
 	golang.org/x/sync v0.7.0
 	golang.org/x/time v0.5.0
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
-	sigs.k8s.io/controller-runtime v0.18.2
+	sigs.k8s.io/controller-runtime v0.18.3
 	sigs.k8s.io/yaml v1.4.0
 )
 

@@ -24,13 +24,13 @@ var _ = Describe(
 			"should fetch authnKeyChain from secret correctly", FlakeAttempts(5), func() {
 				By("install secret")
 				const CredSecretLabelValue = "test-operator"
-				Eventually(installCredSecret(controlPlaneClient, CredSecretLabelValue), standardTimeout,
+				Eventually(installCredSecret(kcpClient, CredSecretLabelValue), standardTimeout,
 					standardInterval).Should(Succeed())
 				const repo = "test.registry.io"
 				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
 					"digest", CredSecretLabelValue)
 				keychain, err := ocmextensions.GetAuthnKeychain(ctx,
-					imageSpecWithCredSelect.CredSecretSelector, controlPlaneClient)
+					imageSpecWithCredSelect.CredSecretSelector, kcpClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)

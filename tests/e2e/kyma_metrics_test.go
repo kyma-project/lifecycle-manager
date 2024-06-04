@@ -15,8 +15,7 @@ import (
 )
 
 var _ = Describe("Manage Module Metrics", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel,
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
@@ -105,7 +104,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(BeTrue())
 			Eventually(IsManifestRequeueReasonCountIncreased).
 				WithContext(ctx).
-				WithArguments(string(metrics.ManifestRemoveFinalizerInDeleting), string(queue.IntendedRequeue)).
+				WithArguments(string(metrics.ManifestReconcileFinished), string(queue.IntendedRequeue)).
 				Should(BeTrue())
 		})
 
