@@ -74,8 +74,12 @@ func (s *SkrContext) DeleteKyma(ctx context.Context) error {
 func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:   shared.DefaultRemoteNamespace,
-			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+			Name: shared.DefaultRemoteNamespace,
+			Labels: map[string]string{
+				shared.ManagedBy:           shared.OperatorName,
+				shared.IstioInjectionLabel: shared.EnabledValue,
+				shared.WardenLabel:         shared.EnabledValue,
+			},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -127,7 +131,9 @@ func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Cli
 	return nil
 }
 
-func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
+func (s *SkrContext) CreateOrFetchKyma(
+	ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma,
+) (*v1beta2.Kyma, error) {
 	remoteKyma, err := s.getRemoteKyma(ctx)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {

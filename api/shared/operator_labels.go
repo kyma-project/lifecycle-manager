@@ -8,10 +8,13 @@ const (
 	// ManagedBy defines the controller managing the resource.
 	ManagedBy = OperatorGroup + Separator + "managed-by"
 
-	KymaName          = OperatorGroup + Separator + "kyma-name"
-	Signature         = OperatorGroup + Separator + "signature"
-	ModuleName        = OperatorGroup + Separator + "module-name"
-	IsMandatoryModule = OperatorGroup + Separator + "mandatory-module"
+	IstioInjectionLabel = "istio-injection"
+	WardenLabel         = "namespaces.warden.kyma-project.io/validate"
+	EnabledValue        = "enabled"
+	KymaName            = OperatorGroup + Separator + "kyma-name"
+	Signature           = OperatorGroup + Separator + "signature"
+	ModuleName          = OperatorGroup + Separator + "module-name"
+	IsMandatoryModule   = OperatorGroup + Separator + "mandatory-module"
 
 	//nolint:gosec // OCI registry credits label, no confidential content
 	OCIRegistryCredLabel = "oci-registry-cred"

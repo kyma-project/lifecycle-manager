@@ -27,6 +27,7 @@ import (
 var (
 	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
 	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
+	errLabelNotExist          = errors.New("label does not exist on namespace")
 )
 
 const (
@@ -60,6 +61,13 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(RemoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
 			Should(Succeed())
+		By("And Remote Namespace is labelled correctly")
+		Eventually(EnsureNamespaceHasCorrectLabels).
+			WithContext(ctx).
+			WithArguments(runtimeClient, RemoteNamespace, map[string]string{
+				"istio-injection": "enabled",
+				"namespaces.warden.kyma-project.io/validate": "enabled",
+			}).Should(Succeed())
 	})
 }
 
@@ -152,6 +160,27 @@ func CheckRemoteKymaCR(ctx context.Context,
 		return fmt.Errorf("%w: expect %s, but in %s",
 			errKymaNotInExpectedState, expectedState, kyma.Status.State)
 	}
+	return nil
+}
+
+func EnsureNamespaceHasCorrectLabels(ctx context.Context, clnt client.Client, kymaNamespace string,
+	labels map[string]string,
+) error {
+	var namespace apicorev1.Namespace
+	if err := clnt.Get(ctx, client.ObjectKey{Name: kymaNamespace}, &namespace); err != nil {
+		return fmt.Errorf("failed to get namespace %s: %w", kymaNamespace, err)
+	}
+
+	if namespace.Labels == nil {
+		return errLabelNotExist
+	}
+
+	for k, v := range labels {
+		if namespace.Labels[k] != v {
+			return fmt.Errorf("label %s has value %s, expected %s", k, namespace.Labels[k], v)
+		}
+	}
+
 	return nil
 }
 
