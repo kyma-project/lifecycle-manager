@@ -28,11 +28,11 @@ func NewReconciler(mgr manager.Manager,
 		mandatoryModulesMetrics,
 		declarativev2.NewInMemoryCachedManifestParser(),
 		manifest.NewCustomResourceReadyCheck(),
-		declarativev2.NewMemoryClientCache(),
 		// Options
 		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp, extractor),
 		),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
+		manifest.WithClientCacheKey(),
 	)
 }

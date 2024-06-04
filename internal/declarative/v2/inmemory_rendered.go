@@ -28,7 +28,7 @@ func NewInMemoryCachedManifestParser() *InMemoryManifestCache {
 }
 
 func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
-	key := generateManifestCacheKey(spec)
+	key := generateCacheKey(spec)
 	c.Cache.Delete(key)
 }
 
@@ -39,7 +39,7 @@ type InMemoryManifestCache struct {
 
 func (c *InMemoryManifestCache) Parse(spec *Spec,
 ) (internal.ManifestResources, error) {
-	key := generateManifestCacheKey(spec)
+	key := generateCacheKey(spec)
 
 	var err error
 	item := c.Cache.Get(key)
@@ -62,7 +62,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 	return *copied, nil
 }
 
-func generateManifestCacheKey(spec *Spec) string {
+func generateCacheKey(spec *Spec) string {
 	file := filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
 	return fmt.Sprintf("%s-%s", file, spec.Mode)
 }

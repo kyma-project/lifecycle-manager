@@ -5,13 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/record"
 	"strconv"
-	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -56,8 +52,6 @@ const (
 	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
 	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
-
-	EventRecorderDefault = "declarative.kyma-project.io/events"
 )
 
 func NewFromManager(mgr manager.Manager,
@@ -67,7 +61,6 @@ func NewFromManager(mgr manager.Manager,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	manifestParser ManifestParser,
 	crReadyCheck ReadyCheck,
-	clientCache ClientCache,
 	options ...Option,
 ) *Reconciler {
 	return &Reconciler{
@@ -77,10 +70,7 @@ func NewFromManager(mgr manager.Manager,
 		MandatoryModuleMetrics: mandatoryModulesMetrics,
 		manifestParser:         manifestParser,
 		crReadyCheck:           crReadyCheck,
-		ClientCache:            clientCache,
-		EventRecorder:          mgr.GetEventRecorderFor(EventRecorderDefault),
-		Config:                 mgr.GetConfig(),
-		Client:                 mgr.GetClient(),
+		Options:                DefaultOptions().Apply(WithManager(mgr)).Apply(options...),
 	}
 }
 
@@ -88,10 +78,6 @@ type Reconciler struct {
 	prototype Object
 	queue.RequeueIntervals
 	*Options
-	ClientCache
-	record.EventRecorder
-	Config *rest.Config
-	client.Client
 	ManifestMetrics        *metrics.ManifestMetrics
 	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
 	manifestParser         ManifestParser
@@ -140,30 +126,6 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 		Message:            "resources are parsed and ready for use",
 		ObservedGeneration: obj.GetGeneration(),
 	}
-}
-
-func getClientCacheKey(ctx context.Context, resource Object) (string, bool) {
-	logger := logf.FromContext(ctx)
-	manifest, ok := resource.(*v1beta2.Manifest)
-	if !ok {
-		return "", false
-	}
-
-	labelValue, err := internal.GetResourceLabel(resource, shared.KymaName)
-	var labelErr *types.LabelNotFoundError
-	if errors.As(err, &labelErr) {
-		objectKey := client.ObjectKeyFromObject(resource)
-		logger.V(internal.DebugLogLevel).Info(
-			"client can not been cached due to lack of expected label",
-			"resource", objectKey)
-		return "", false
-	}
-	cacheKey := generateClientCacheKey(labelValue, strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
-	return cacheKey, true
-}
-
-func generateClientCacheKey(values ...string) string {
-	return strings.Join(values, "|")
 }
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
@@ -305,11 +267,13 @@ func (r *Reconciler) finalizerToRemove(originalErr error, obj Object) []string {
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, obj Object) {
-	clientsCacheKey, ok := getClientCacheKey(ctx, obj)
-	if ok {
-		logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
-			clientsCacheKey))
-		r.ClientCache.DeleteClient(clientsCacheKey)
+	if r.ClientCacheKeyFn != nil {
+		clientsCacheKey, ok := r.ClientCacheKeyFn(ctx, obj)
+		if ok {
+			logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
+				clientsCacheKey))
+			r.ClientCache.DeleteClient(clientsCacheKey)
+		}
 	}
 }
 
@@ -721,13 +685,11 @@ func pruneResource(diff []*resource.Info, resourceType string, resourceName stri
 func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, error) {
 	var err error
 	var clnt Client
+	if r.ClientCacheKeyFn == nil {
+		return r.configClient(ctx, obj)
+	}
 
-	// TODO clientCacheKeyFn is never nil
-	//if r.ClientCacheKeyFn == nil {
-	//	return r.configClient(ctx, obj)
-	//}
-
-	clientsCacheKey, found := getClientCacheKey(ctx, obj)
+	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
 	if found {
 		clnt = r.GetClient(clientsCacheKey)
 	}
