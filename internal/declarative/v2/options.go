@@ -38,6 +38,8 @@ type Options struct {
 	ClientCache
 	ClientCacheKeyFn
 
+	CustomReadyCheck ReadyCheck
+
 	ServerSideApply bool
 
 	PostRenderTransforms []ObjectTransform
@@ -123,6 +125,18 @@ func WithSingletonClientCache(cache ClientCache) WithSingletonClientCacheOption 
 
 func (o WithSingletonClientCacheOption) Apply(options *Options) {
 	options.ClientCache = o
+}
+
+type WithCustomReadyCheckOption struct {
+	ReadyCheck
+}
+
+func WithCustomReadyCheck(check ReadyCheck) WithCustomReadyCheckOption {
+	return WithCustomReadyCheckOption{ReadyCheck: check}
+}
+
+func (o WithCustomReadyCheckOption) Apply(options *Options) {
+	options.CustomReadyCheck = o
 }
 
 type ClusterFn func(context.Context, Object) (*ClusterInfo, error)

@@ -51,7 +51,6 @@ func NewFromManager(mgr manager.Manager,
 	metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	manifestParser ManifestParser,
-	crReadyCheck ReadyCheck,
 	options ...Option,
 ) *Reconciler {
 	return &Reconciler{
@@ -60,7 +59,6 @@ func NewFromManager(mgr manager.Manager,
 		ManifestMetrics:        metrics,
 		MandatoryModuleMetrics: mandatoryModulesMetrics,
 		manifestParser:         manifestParser,
-		crReadyCheck:           crReadyCheck,
 		Options:                DefaultOptions().Apply(WithManager(mgr)).Apply(options...),
 	}
 }
@@ -72,7 +70,6 @@ type Reconciler struct {
 	ManifestMetrics        *metrics.ManifestMetrics
 	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
 	manifestParser         ManifestParser
-	crReadyCheck           ReadyCheck
 }
 
 type ConditionType string
@@ -447,7 +444,9 @@ func (r *Reconciler) checkTargetReadiness(
 ) error {
 	status := manifest.GetStatus()
 
-	crStateInfo, err := r.crReadyCheck.Run(ctx, clnt, manifest, target)
+	resourceReadyCheck := r.CustomReadyCheck
+
+	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
