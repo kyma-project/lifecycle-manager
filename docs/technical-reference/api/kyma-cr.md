@@ -2,9 +2,9 @@
 
 The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to declare the desired state of a cluster. **.spec.channel**, **.spec.modules[].channel**, and **.spec.modules** are the basic fields that are used together to define the cluster state.
 
-- **.spec.channel** - defines a release channel that should be used by default for all modules that are to be installed in the cluster.
-- **.spec.modules[].channel** - defines a release channel other than the default channel (**.spec.channel**) for a given module that is to be installed in the cluster.
-- **.spec.modules** - specifies modules that should be added to the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
+* **.spec.channel** - defines a release channel that should be used by default for all modules that are to be installed in the cluster.
+* **.spec.modules[].channel** - defines a release channel other than the default channel (**.spec.channel**) for a given module that is to be installed in the cluster.
+* **.spec.modules** - specifies modules that should be added to the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
 Additionally, you can add a specific channel if **.spec.channel** should not be used.
 On top of that, you can specify a **controller**, which serves as a Multi-Tenant Enabler.
 It can be used to only listen to ModuleTemplate CRs provided under the same controller name. Last but not least, it includes a **customResourcePolicy** which can be used for specifying default behavior when initializing modules in a cluster.
@@ -64,7 +64,7 @@ spec:
 
 The module mentioned above can be referenced in one of the following ways:
 
-- The label value of `operator.kyma-project.io/module-name`:
+* The label value of `operator.kyma-project.io/module-name`:
 
     ```yaml
     spec:
@@ -73,7 +73,7 @@ The module mentioned above can be referenced in one of the following ways:
       - name: module-name-from-label
     ```
 
-- The name or namespace/name of a ModuleTemplate CR:
+* The name or namespace/name of a ModuleTemplate CR:
 
     ```yaml
     spec:
@@ -91,7 +91,7 @@ The module mentioned above can be referenced in one of the following ways:
       - name: default/moduletemplate-sample
     ```
 
-- The fully qualified name of the descriptor as located in **.spec.descriptor.component.name**:
+* The fully qualified name of the descriptor as located in **.spec.descriptor.component.name**:
 
     ```yaml
     spec:
@@ -118,9 +118,9 @@ The conditions represent individual elements of the reconciliation that can eith
 
 Currently, we maintain conditions for:
 
-- Module (Manifest CR) synchronization
-- Module Catalog (ModuleTemplate CR) synchronization
-- Watcher Installation Consistency
+* Module (Manifest CR) synchronization
+* Module Catalog (ModuleTemplate CR) synchronization
+* Watcher Installation Consistency
 
 We also calculate the **.status.state** readiness based on all the conditions available.
 
@@ -165,18 +165,18 @@ To observe not only how the state of the `synchronization` but the entire reconc
 
 In addition, we also regularly issue Events for important things happening at specific time intervals, e.g. critical errors that ease observability.
 
-## `operator.kyma-project.io` labels
+## `operator.kyma-project.io` Labels
 
 Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the Kyma CR and its related resources. For better understanding, use the matching [API label reference](/api/shared/operator_labels.go).
 
 The most important labels include, but are not limited to:
 
-- `operator.kyma-project.io/Kyma`: the [finalizer](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) set by Lifecycle Manager to deal with the Kyma CR cleanup
-- `operator.kyma-project.io/kyma-name`: An identifier that can be set on a Secret to identify correct cluster access kubeconfigs to be used during reconciliation.
-- `operator.kyma-project.io/signature`: An identifier that can be set on a Secret to identify correct signature X.509 Secrets that contain a key called `key` which contains a X.509 PKIX PublicKey or an PKCS1 Public Key. Used in conjunction with the label-value for templates signed with a signature in the descriptor.
-- `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to completely disable reconciliation for a Kyma CR. Can also be used on the Manifest CR to disable a specific module. This will avoid all reconciliations for the entire Kyma or Manifest CRs. Note that even though reconciliation for the Kyma CR might be disabled, the Manifest CR in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
-- `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
-- `operator.kyma-project.io/purpose`: Can be used to identify resources by their intended purpose inside Lifecycle Manager. Useful meta-information for cluster managers.
-- `operator.kyma-project.io/sync`: A boolean value. If set to `false`, the Module Catalog synchronization is disabled for a given Kyma CR, and for the related remote cluster (Managed Kyma Runtime). The default value is `true`.
-- `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
-- `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules are also synchronized with the remote cluster. The default value is `false`.
+* `operator.kyma-project.io/Kyma`: the [finalizer](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) set by Lifecycle Manager to deal with the Kyma CR cleanup
+* `operator.kyma-project.io/kyma-name`: An identifier that can be set on a Secret to identify correct cluster access kubeconfigs to be used during reconciliation.
+* `operator.kyma-project.io/signature`: An identifier that can be set on a Secret to identify correct signature X.509 Secrets that contain a key called `key` which contains a X.509 PKIX PublicKey or an PKCS1 Public Key. Used in conjunction with the label-value for templates signed with a signature in the descriptor.
+* `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to completely disable reconciliation for a Kyma CR. Can also be used on the Manifest CR to disable a specific module. This will avoid all reconciliations for the entire Kyma or Manifest CRs. Note that even though reconciliation for the Kyma CR might be disabled, the Manifest CR in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
+* `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
+* `operator.kyma-project.io/purpose`: Can be used to identify resources by their intended purpose inside Lifecycle Manager. Useful meta-information for cluster managers.
+* `operator.kyma-project.io/sync`: A boolean value. If set to `false`, the Module Catalog synchronization is disabled for a given Kyma CR, and for the related remote cluster (Managed Kyma Runtime). The default value is `true`.
+* `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
+* `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules are also synchronized with the remote cluster. The default value is `false`.
