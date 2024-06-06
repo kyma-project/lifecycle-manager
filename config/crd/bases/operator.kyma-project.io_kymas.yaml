@@ -176,7 +176,7 @@ spec:
                         with respect to the current state of the instance.
                       format: int64
                       minimum: 0
-                      type: integer
+                      type: string
                     reason:
                       description: |-
                         description change
