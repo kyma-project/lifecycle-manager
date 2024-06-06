@@ -48,49 +48,49 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 ) {
 	BeforeAll(func() {
 		By("Creating watcher CR")
-		Expect(kcpClient.Create(suiteCtx, watcher)).To(Succeed())
+		Expect(kcpClient.Create(ctx, watcher)).To(Succeed())
 		By("Creating kyma CR")
-		Expect(kcpClient.Create(suiteCtx, kyma)).To(Succeed())
+		Expect(kcpClient.Create(ctx, kyma)).To(Succeed())
 		By("Creating TLS Secret")
-		Expect(kcpClient.Create(suiteCtx, tlsSecret)).To(Succeed())
+		Expect(kcpClient.Create(ctx, tlsSecret)).To(Succeed())
 		By("Creating Cert-Manager Issuer")
-		Expect(kcpClient.Create(suiteCtx, issuer)).To(Succeed())
+		Expect(kcpClient.Create(ctx, issuer)).To(Succeed())
 		By("Creating CA Certificate")
-		Expect(kcpClient.Create(suiteCtx, caCert)).To(Succeed())
+		Expect(kcpClient.Create(ctx, caCert)).To(Succeed())
 	})
 
 	AfterAll(func() {
 		By("Deleting watcher CR")
 		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(kcpClient, watcher).Should(Succeed())
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
 			Should(BeTrue())
 		By("Deleting Cert-Manager Issuer")
-		Expect(kcpClient.Delete(suiteCtx, issuer)).To(Succeed())
+		Expect(kcpClient.Delete(ctx, issuer)).To(Succeed())
 		By("Deleting CA Certificate")
-		Expect(kcpClient.Delete(suiteCtx, caCert)).To(Succeed())
+		Expect(kcpClient.Delete(ctx, caCert)).To(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("asserting only one kyma CR exists")
 		kcpKymas := &v1beta2.KymaList{}
 		Eventually(kcpClient.List, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(kcpKymas).Should(Succeed())
 		Expect(kcpKymas.Items).NotTo(BeEmpty())
 		By("get latest kyma CR")
 		Eventually(kcpClient.Get, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(client.ObjectKeyFromObject(kyma), kyma).Should(Succeed())
 		By("get latest watcher CR")
 		Eventually(kcpClient.Get, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(client.ObjectKeyFromObject(watcher), watcher).Should(Succeed())
 		By("get latest TLS secret")
 		Eventually(kcpClient.Get, Timeout, Interval).
-			WithContext(suiteCtx).
+			WithContext(ctx).
 			WithArguments(client.ObjectKeyFromObject(tlsSecret), tlsSecret).Should(Succeed())
 	})
 }
@@ -212,7 +212,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 
 func getWatcher(name string) (*v1beta2.Watcher, error) {
 	watcherCR := &v1beta2.Watcher{}
-	err := kcpClient.Get(suiteCtx,
+	err := kcpClient.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: kcpSystemNs},
 		watcherCR)
 	return watcherCR, err

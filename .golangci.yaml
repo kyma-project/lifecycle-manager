@@ -133,6 +133,8 @@ linters-settings:
         alias: prometheusclient
       - pkg: github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl
         alias: testskrcontext
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
+        alias: watcherctrl
   ireturn:
     allow:
       - anon

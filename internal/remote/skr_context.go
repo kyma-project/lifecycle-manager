@@ -17,14 +17,29 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
+const (
+	crdInstallation     event.Reason = "CRDInstallation"
+	remoteInstallation  event.Reason = "RemoteInstallation"
+	remoteUpdateFailure event.Reason = "RemoteSynchronization"
+	statusUpdateFailure event.Reason = "UpdateRuntimeStatus"
+)
+
 type SkrContext struct {
 	Client
+	event event.Event
+}
+
+func NewSkrContext(client Client, event event.Event) *SkrContext {
+	return &SkrContext{
+		Client: client,
+		event:  event,
+	}
 }
 
 func (s *SkrContext) RemoveFinalizersFromKyma(ctx context.Context) error {
@@ -59,8 +74,12 @@ func (s *SkrContext) DeleteKyma(ctx context.Context) error {
 func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:   shared.DefaultRemoteNamespace,
-			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+			Name: shared.DefaultRemoteNamespace,
+			Labels: map[string]string{
+				shared.ManagedBy:           shared.OperatorName,
+				shared.IstioInjectionLabel: shared.EnabledValue,
+				shared.WardenLabel:         shared.EnabledValue,
+			},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -112,14 +131,15 @@ func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Cli
 	return nil
 }
 
-func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
-	recorder := adapter.RecorderFromContext(ctx)
+func (s *SkrContext) CreateOrFetchKyma(
+	ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma,
+) (*v1beta2.Kyma, error) {
 	remoteKyma, err := s.getRemoteKyma(ctx)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
-		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
+		s.event.Normal(kyma, crdInstallation, "CRDs were installed to SKR")
 	}
 
 	if util.IsNotFound(err) {
@@ -131,7 +151,7 @@ func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Cli
 		if err != nil {
 			return nil, fmt.Errorf("failed to create remote kyma: %w", err)
 		}
-		recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
+		s.event.Normal(kyma, remoteInstallation, "Kyma was installed to SKR")
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to fetch remote kyma: %w", err)
 	}
@@ -139,23 +159,23 @@ func (s *SkrContext) CreateOrFetchKyma(ctx context.Context, kcpClient client.Cli
 	return remoteKyma, nil
 }
 
-func (s *SkrContext) SynchronizeKyma(ctx context.Context, controlPlaneKyma, remoteKyma *v1beta2.Kyma) error {
+func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, remoteKyma *v1beta2.Kyma) error {
 	if !remoteKyma.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
-	recorder := adapter.RecorderFromContext(ctx)
 
-	s.syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
+	s.syncWatcherLabelsAnnotations(kcpKyma, remoteKyma)
 	if err := s.Client.Update(ctx, remoteKyma); err != nil {
-		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not synchronise runtime kyma "+
-			"spec, watcher labels and annotations")
-		return fmt.Errorf("failed to synchronise runtime kyma: %w", err)
+		err = fmt.Errorf("failed to synchronise runtime kyma: %w", err)
+		s.event.Warning(kcpKyma, remoteUpdateFailure, err)
+		return err
 	}
 
-	remoteKyma.Status = controlPlaneKyma.Status
+	remoteKyma.Status = kcpKyma.Status
 	if err := s.Client.Status().Update(ctx, remoteKyma); err != nil {
-		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
-		return fmt.Errorf("failed to update runtime kyma status: %w", err)
+		err = fmt.Errorf("failed to update runtime kyma status: %w", err)
+		s.event.Warning(kcpKyma, statusUpdateFailure, err)
+		return err
 	}
 	return nil
 }

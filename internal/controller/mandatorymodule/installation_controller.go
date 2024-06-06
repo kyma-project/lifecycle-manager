@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package mandatorymodule
 
 import (
 	"context"
 	"fmt"
 
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -28,7 +27,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
@@ -38,9 +36,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type MandatoryModuleReconciler struct {
+type InstallationReconciler struct {
 	client.Client
-	record.EventRecorder
 	queue.RequeueIntervals
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	RemoteSyncNamespace string
@@ -48,11 +45,9 @@ type MandatoryModuleReconciler struct {
 	Metrics             *metrics.MandatoryModulesMetrics
 }
 
-func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Reconciliation started")
-
-	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
@@ -88,7 +83,7 @@ func (r *MandatoryModuleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, nil
 }
 
-func (r *MandatoryModuleReconciler) GenerateModulesFromTemplate(ctx context.Context,
+func (r *InstallationReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
 	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)

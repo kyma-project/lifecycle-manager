@@ -39,6 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -134,11 +135,12 @@ var _ = BeforeSuite(func() {
 	}
 
 	kcpClient = mgr.GetClient()
-	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig())
+	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
+	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
-		EventRecorder:       mgr.GetEventRecorderFor(shared.OperatorName),
+		Event:               testEventRec,
 		RequeueIntervals:    intervals,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
@@ -146,7 +148,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
-		kyma.ReconcilerSetupSettings{ListenerAddr: randomPort})
+		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

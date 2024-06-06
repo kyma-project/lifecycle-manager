@@ -47,20 +47,20 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(testutils.InstallManifest(ctx, controlPlaneClient, testManifest, imageSpecByte, false)).To(Succeed())
+		Expect(testutils.InstallManifest(ctx, kcpClient, testManifest, imageSpecByte, false)).To(Succeed())
 
-		Eventually(testutils.ExpectManifestStateIn(ctx, controlPlaneClient, shared.StateReady), standardTimeout,
+		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
-		testClient, err := declarativeTestClient(controlPlaneClient)
+		testClient, err := declarativeTestClient(kcpClient)
 		Expect(err).ToNot(HaveOccurred())
 		By("Verifying that deployment is deployed and ready")
 		deploy := &apiappsv1.Deployment{}
-		Expect(verifyDeploymentInstallation(ctx, controlPlaneClient, deploy)).To(Succeed())
+		Expect(verifyDeploymentInstallation(ctx, kcpClient, deploy)).To(Succeed())
 
 		By("Verifying manifest status contains all resources")
-		status, err := testutils.GetManifestStatus(ctx, controlPlaneClient, manifestName)
+		status, err := testutils.GetManifestStatus(ctx, kcpClient, manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 
@@ -82,19 +82,19 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(stateInfo.State).To(Equal(shared.StateReady))
 
 		By("cleaning up the manifest")
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedDeployment.ToUnstructured()), standardTimeout,
 			standardInterval).
 			Should(BeTrue())
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedCRD.ToUnstructured()), standardTimeout,
 			standardInterval).Should(BeTrue())
 
-		Eventually(testutils.DeleteManifestAndVerify(ctx, controlPlaneClient, testManifest), standardTimeout,
+		Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, testManifest), standardTimeout,
 			standardInterval).Should(Succeed())
 
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedDeployment.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedDeployment.ToUnstructured()), standardTimeout,
 			standardInterval).
 			Should(BeFalse())
-		Eventually(verifyObjectExists(ctx, controlPlaneClient, expectedCRD.ToUnstructured()), standardTimeout,
+		Eventually(verifyObjectExists(ctx, kcpClient, expectedCRD.ToUnstructured()), standardTimeout,
 			standardInterval).
 			Should(BeFalse())
 	})
