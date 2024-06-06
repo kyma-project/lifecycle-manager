@@ -11,11 +11,11 @@ on:
       - "unlabeled"
 
 jobs:
-  check-api-diff:
-    name: Diff APIs
+  check-api-version-diff:
+    name: Diff API Versions
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR ref of lifecycle-manager
+      - name: Checkout lifecycle-manager
         uses: actions/checkout@v4
 
       - name: Install Dependencies
@@ -38,17 +38,17 @@ jobs:
               exclusions_v1=$(yq e ".\"$(basename $file)\".exclusions.$v1[]" $CONFIG_FILE)
               exclusions_v2=$(yq e ".\"$(basename $file)\".exclusions.$v2[]" $CONFIG_FILE)
               
-              yq e ".spec.versions.[] | select(.name == \"$v1\") | .schema.openAPIV3Schema.properties" "$file" > 1.yaml
+              yq e ".spec.versions.[] | select(.name == \"$v1\") | .schema.openAPIV3Schema.properties" "$file" > "${filename}_${v1}.yaml"
               for exclusion in $exclusions_v1; do
-                yq e "del($exclusion)" -i 1.yaml
+                yq e "del($exclusion)" -i "${filename}_${v1}.yaml"
               done
-              
-              yq e ".spec.versions.[] | select(.name == \"$v2\") | .schema.openAPIV3Schema.properties" "$file" > 2.yaml
+          
+              yq e ".spec.versions.[] | select(.name == \"$v2\") | .schema.openAPIV3Schema.properties" "$file" > "${filename}_${v2}.yaml"
               for exclusion in $exclusions_v2; do
-                yq e "del($exclusion)" -i 2.yaml
+                yq e "del($exclusion)" -i "${filename}_${v2}.yaml"
               done
-              
-              if ! dyff between 1.yaml 2.yaml --exclude-regexp ".*description" --set-exit-code; then
+          
+              if ! dyff between "${filename}_${v1}.yaml" "${filename}_${v2}.yaml" --exclude-regexp ".*description" --set-exit-code; then
                 echo "Difference found between versions $v1 and $v2 in $file"
                 echo "To add an exclusion, update $CONFIG_FILE with the necessary exclusions."
                 exit 1
