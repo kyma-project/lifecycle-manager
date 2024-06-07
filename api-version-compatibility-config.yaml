@@ -8,4 +8,5 @@ operator.kyma-project.io_kymas.yaml:
 operator.kyma-project.io_moduletemplates.yaml:
   exclusions:
     v1beta1:
-      - .spec.target
+      - .spec.properties.target
+      - .spec.required.target
