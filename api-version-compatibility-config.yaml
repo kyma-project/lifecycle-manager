@@ -9,4 +9,4 @@ operator.kyma-project.io_moduletemplates.yaml:
   exclusions:
     v1beta1:
       - .spec.properties.target
-      - .spec.required[] | select(. == "target"))
+      - ".spec.required[] | select(. == 'target'))"
