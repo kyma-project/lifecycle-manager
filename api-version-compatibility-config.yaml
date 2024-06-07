@@ -5,3 +5,8 @@ operator.kyma-project.io_kymas.yaml:
     v1beta2:
       - .spec.properties.modules.x-kubernetes-list-map-keys
       - .spec.properties.modules.x-kubernetes-list-type
+operator.kyma-project.io_moduletemplates.yaml:
+  exclusions:
+    v1beta1:
+      - .spec.properties
+      - .spec.required
