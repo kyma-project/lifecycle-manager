@@ -33,8 +33,8 @@ jobs:
             versions=$(yq e '.spec.versions[].name' "$file" | sort -r)
             versions=($versions)
             for ((i=0; i<${#versions[@]}-1; i++)); do
-              v1=${versions[i]}
-              v2=${versions[i+1]}
+              v1=${versions[i+1]}
+              v2=${versions[i]}
           
               exclusions_v1=$(yq e ".\"$(basename $file)\".exclusions.$v1[]" $CONFIG_FILE)
               exclusions_v2=$(yq e ".\"$(basename $file)\".exclusions.$v2[]" $CONFIG_FILE)
