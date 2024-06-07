@@ -29,7 +29,7 @@ jobs:
           CRD_PATH=./config/crd/bases
           
           for file in $CRD_PATH/*.yaml; do
-            filename=$(basename $file | cut -d. -f1)
+            filename=$(basename $file | sed 's/.yaml//')
             versions=$(yq e '.spec.versions[].name' "$file")
             versions=($versions)
             for ((i=0; i<${#versions[@]}-1; i++)); do
