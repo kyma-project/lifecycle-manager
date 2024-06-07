@@ -29,7 +29,7 @@ jobs:
           CRD_PATH=./config/crd/bases
           
           for file in $CRD_PATH/*.yaml; do
-            filename=$(basename $file)
+            filename=$(basename $file | cut -d. -f1)
             versions=$(yq e '.spec.versions[].name' "$file")
             versions=($versions)
             for ((i=0; i<${#versions[@]}-1; i++)); do
@@ -56,7 +56,3 @@ jobs:
               fi
               done
           done
-
-      - name: Cleanup
-        run: |
-          rm -f 1.yaml 2.yaml
