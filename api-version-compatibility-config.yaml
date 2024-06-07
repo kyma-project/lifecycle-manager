@@ -6,7 +6,7 @@
 # <crd-filename>:
 #   exclusions:
 #     <version>:
-#       - <exclusion-path>
+#       - <exclusion-path> (may be a yq operator without spaces)
 
 operator.kyma-project.io_kymas.yaml:
   exclusions:
@@ -19,6 +19,4 @@ operator.kyma-project.io_moduletemplates.yaml:
   exclusions:
     v1beta1:
       - .spec.properties.target
-      - .spec.required
-    v1beta2:
-      - .spec.required
+      - .spec.required[]|select(.=="target")
