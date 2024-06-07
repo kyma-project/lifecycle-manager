@@ -13,7 +13,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: ./lifecycle-manager/.github/actions/configure-hosts
     - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
       with:
         cluster_name: skr
@@ -23,7 +22,7 @@ runs:
       with:
         cluster_name: kcp
         k8s_version: ${{ inputs.k8s_version }}
-        args: "-p 9443:443@loadbalancer;-p 9080:80@loadbalancer;-p 9081:8080@loadbalancer;--registry-create k3d-kcp-registry:5111"
+        args: "-p 9443:443@loadbalancer;-p 9080:80@loadbalancer;-p 9081:8080@loadbalancer;--registry-create k3d-kcp-registry.localhost:5111"
     - uses: ./lifecycle-manager/.github/actions/export-kubeconfigs
     - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
       with:
