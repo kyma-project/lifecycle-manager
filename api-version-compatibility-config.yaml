@@ -7,6 +7,6 @@ operator.kyma-project.io_kymas.yaml:
       - .spec.properties.modules.x-kubernetes-list-type
 operator.kyma-project.io_moduletemplates.yaml:
   exclusions:
-    v1beta1:
+    v1beta2:
       - .spec.properties
       - .spec.required
