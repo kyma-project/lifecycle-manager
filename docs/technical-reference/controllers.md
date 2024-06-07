@@ -24,8 +24,8 @@ The Kyma CR in Kyma Control Plane shows the initial specification and the curren
 
 Lifecycle Manager uses two Mandatory Modules Controllers:
 
-- [Mandatory modules installation controller](../../internal/controller/mandatorymodule/installation_controller.go) deals with the reconciliation of mandatory modules
-- [Mandatory modules deletion controller](../../internal/controller/mandatorymodule/deletion_controller.go) deals with the deletion of mandatory modules
+* [Mandatory modules installation controller](../../internal/controller/mandatorymodule/installation_controller.go) deals with the reconciliation of mandatory modules
+* [Mandatory modules deletion controller](../../internal/controller/mandatorymodule/deletion_controller.go) deals with the deletion of mandatory modules
 
 Since the channel concept does not apply to mandatory modules, the Mandatory Modules Installation Controller fetches all the Mandatory ModuleTemplate CRs without any channel filtering. It then translates the ModuleTemplate CR for the mandatory module to a [Manifest CR](../../api/v1beta2/manifest_types.go) with an OwnerReference to the Kyma CR. Similarly to the [Kyma Controller](../../internal/controller/kyma/controller.go),
 it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandatory ModuleTemplate CR is not synchronized to the remote cluster and the module status does not appear in the Kyma CR status. If a mandatory module needs to be removed from all clusters, the corresponding ModuleTemplate CR needs to be deleted. The Mandatory Module Deletion Controller picks this event up and marks all associated Manifest CRs for deletion. To ensure that the ModuleTemplate CR is not removed immediately, the controller adds a finalizer to the ModuleTemplate CR. Once all associated Manifest CRs are deleted, the finalizer is removed and the ModuleTemplate CR is deleted.
@@ -36,8 +36,10 @@ it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandato
 Since it mainly is a delegation to the [declarative reconciliation library](../../internal/declarative/README.md) with certain [internal implementation additions](../../internal/manifest/README.md), please look at the respective documentation for these parts to understand them more.
 
 ## Purge Controller
+
 [Purge controller](../../internal/controller/purge/controller.go) is responsible for handling the forced cleanup of deployed resources in a remote cluster when its Kyma CR is marked for deletion.
 Suppose a Kyma CR has been marked for deletion for longer than the grace period (default is 5 minutes). In that case, the controller resolves the remote client for the cluster, retrieves all relevant CRs deployed on the cluster, and removes finalizers, allowing the resources to be garbage collected. This ensures that all associated resources are properly purged, maintaining the integrity and cleanliness of the cluster.
+
 ## Watcher Controller
 
 [Watcher controller](../../internal/controller/watcher/controller.go) deals with the update of VirtualService rules derived from the [Watcher CR](../../api/v1beta2/watcher_types.go). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime, a small component initialized to propagate changes from the runtime (remote) clusters back to react to changes that can affect the Manifest CR integrity.

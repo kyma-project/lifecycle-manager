@@ -14,11 +14,11 @@ Additionally, we maintain the [Watcher CR](/api/v1beta2/watcher_types.go) to def
 
 Read more about the custom resource definitions (CRDs) in the respective documents:
 
-- [Kyma CR](kyma-cr.md)
-- [Manifest CR](manifest-cr.md)
-- [ModuleTemplate CR](moduleTemplate-cr.md)
+* [Kyma CR](kyma-cr.md)
+* [Manifest CR](manifest-cr.md)
+* [ModuleTemplate CR](moduleTemplate-cr.md)
 
-## Synchronization of Module Catalog with remote clusters
+## Synchronization of Module Catalog with Remote Clusters
 
 Lifecycle Manager ensures the Module Catalog is correctly synchronized with users' runtimes.
 The Module Catalog consists of all modules, represented by ModuleTemplates CR, that are available for a user. The Module Catalog portfolio may vary for different users.
@@ -26,9 +26,9 @@ The synchronization mechanism described below is essential to allow users to ena
 The mechanism is controlled by the set of labels that are configured on Kyma and ModuleTemplate CRs in the Control Plane. The labels are: `operator.kyma-project.io/sync`, `operator.kyma-project.io/internal`, and `operator.kyma-project.io/beta`.
 The v1beta2 API introduces three groups of modules:
 
-- Default modules, synchronized by default.
-- Internal modules, synchronized per-cluster only if configured explicitly on the corresponding Kyma CRs. To mark a ModuleTemplate CR as `internal`, use the `operator.kyma-project.io/internal` label and set it to `true`.
-- Beta modules, synchronized per-cluster only if configured explicitly on the corresponding Kyma CRs. To mark a ModuleTemplate CR as `beta`, use the `operator.kyma-project.io/beta` label and set it to `true`.
+* Default modules, synchronized by default.
+* Internal modules, synchronized per-cluster only if configured explicitly on the corresponding Kyma CRs. To mark a ModuleTemplate CR as `internal`, use the `operator.kyma-project.io/internal` label and set it to `true`.
+* Beta modules, synchronized per-cluster only if configured explicitly on the corresponding Kyma CRs. To mark a ModuleTemplate CR as `beta`, use the `operator.kyma-project.io/beta` label and set it to `true`.
 
 By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with remote clusters.
 
