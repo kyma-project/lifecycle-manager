@@ -9,4 +9,3 @@ operator.kyma-project.io_moduletemplates.yaml:
   exclusions:
     v1beta1:
       - .spec.target
-      - .spec.required
