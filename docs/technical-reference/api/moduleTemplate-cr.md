@@ -96,10 +96,10 @@ By default, it will most likely be easiest to use [Kyma CLI](https://github.com/
 The `mandatory` field indicates whether the module is installed in all runtime clusters without any interaction from the user.
 Mandatory modules do not appear in the Kyma CR `.status` and `.spec.modules`, furthermore they have the same configuration across all runtime clusters.
 
-## `operator.kyma-project.io` labels
+## `operator.kyma-project.io` Labels
 
 These are the synchronization labels available on the ModuleTemplate CR:
 
-- `operator.kyma-project.io/sync`: A boolean value. If set to `false`, this ModuleTemplate CR is not synchronized with any remote cluster. The default value is `true`.
-- `operator.kyma-project.io/internal`: A boolean value. If set to `true`, marks the ModuleTemplate CR as an `internal` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/internal` label explicitly set to `true`. The default value is `false`.
-- `operator.kyma-project.io/beta` A boolean value. If set to `true`, marks the ModuleTemplate CR as a `beta` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/beta` label explicitly set to `true`. The default value is `false`.
+* `operator.kyma-project.io/sync`: A boolean value. If set to `false`, this ModuleTemplate CR is not synchronized with any remote cluster. The default value is `true`.
+* `operator.kyma-project.io/internal`: A boolean value. If set to `true`, marks the ModuleTemplate CR as an `internal` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/internal` label explicitly set to `true`. The default value is `false`.
+* `operator.kyma-project.io/beta` A boolean value. If set to `true`, marks the ModuleTemplate CR as a `beta` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/beta` label explicitly set to `true`. The default value is `false`.
