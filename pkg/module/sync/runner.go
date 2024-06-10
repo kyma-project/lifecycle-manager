@@ -64,7 +64,7 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 				results <- nil
 				return
 			}
-			if err := r.updateManifests(ctx, kyma, module); err != nil {
+			if err := r.updateManifest(ctx, kyma, module); err != nil {
 				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 				return
 			}
@@ -95,7 +95,7 @@ func (r *Runner) getModule(ctx context.Context, module client.Object) error {
 	return nil
 }
 
-func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
+func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	module *common.Module,
 ) error {
 	if err := r.setupModule(module, kyma); err != nil {
@@ -110,8 +110,9 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		return commonerrs.ErrTypeAssert
 	}
 
+	moduleStatus := kyma.GetModuleStatusMap()[module.ModuleName]
 	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled,
-		manifestObj); err != nil {
+		manifestObj, moduleStatus); err != nil {
 		return err
 	}
 	module.Manifest = manifestObj
@@ -119,13 +120,25 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 }
 
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
-	manifestObj *v1beta2.Manifest,
+	manifestObj *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
+	manifestInCluster := &v1beta2.Manifest{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(),
+		Name: manifestObj.GetName()}, manifestInCluster); err != nil {
+		if !util.IsNotFound(err) {
+			return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+		}
+		manifestInCluster = nil
+	}
+
+	if !needToUpdate(manifestInCluster, manifestObj, kymaModuleStatus) {
+		return nil
+	}
 	if isEnabledModule {
 		return r.patchManifest(ctx, owner, manifestObj)
 	}
 	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
-	if err := r.updateAvailableManifestSpec(ctx, manifestObj); err != nil && !util.IsNotFound(err) {
+	if err := r.updateAvailableManifestSpec(ctx, manifestInCluster, manifestObj); err != nil && !util.IsNotFound(err) {
 		return err
 	}
 	return nil
@@ -142,15 +155,10 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 	return nil
 }
 
-func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v1beta2.Manifest) error {
-	manifestInCluster := &v1beta2.Manifest{}
-
-	if err := r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(), Name: manifestObj.GetName()},
-		manifestInCluster); err != nil {
-		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
-	}
-	if !needToUpdate(manifestInCluster, manifestObj) {
-		return nil
+func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
+	manifestInCluster, manifestObj *v1beta2.Manifest) error {
+	if manifestInCluster == nil {
+		return fmt.Errorf("error get manifest %s: manifest not found", client.ObjectKeyFromObject(manifestObj))
 	}
 	manifestInCluster.Spec = manifestObj.Spec
 	if err := r.Update(ctx, manifestInCluster); err != nil {
@@ -159,8 +167,14 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v
 	return nil
 }
 
-func needToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest) bool {
-	return manifestInCluster.Spec.Version != manifestObj.Spec.Version
+func needToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus) bool {
+	if manifestInCluster == nil {
+		return true
+	}
+
+	return manifestObj.Spec.Version != moduleStatus.Version ||
+		manifestObj.Labels[shared.ChannelLabel] != moduleStatus.Channel ||
+		moduleStatus.State != manifestInCluster.Status.State
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
