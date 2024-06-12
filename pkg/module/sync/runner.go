@@ -130,7 +130,7 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabl
 		manifestInCluster = nil
 	}
 
-	if !needToUpdate(manifestInCluster, manifestObj, kymaModuleStatus) {
+	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus) {
 		return nil
 	}
 	if isEnabledModule {
@@ -177,7 +177,7 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 	return nil
 }
 
-func needToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus) bool {
+func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus) bool {
 	if manifestInCluster == nil {
 		return true
 	}

@@ -2,6 +2,8 @@ package sync_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 	"strings"
 	"testing"
@@ -184,5 +186,74 @@ func configureModuleInKyma(
 			Manifest: manifest,
 		}
 		kyma.Status.Modules = append(kyma.Status.Modules, module)
+	}
+}
+
+func TestNeedToUpdate(t *testing.T) {
+	type args struct {
+		manifestInCluster *v1beta2.Manifest
+		manifestObj       *v1beta2.Manifest
+		moduleStatus      *v1beta2.ModuleStatus
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			"When manifest in cluster is nil, expect need to update",
+			args{nil, &v1beta2.Manifest{}, &v1beta2.ModuleStatus{}},
+			true,
+		},
+		{
+			"When new module version available, expect need to update",
+			args{&v1beta2.Manifest{},
+				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{shared.ChannelLabel: "regular"},
+					},
+					Spec: v1beta2.ManifestSpec{Version: "0.2"},
+				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"}},
+			true,
+		},
+		{
+			"When channel switch, expect need to update",
+			args{&v1beta2.Manifest{},
+				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{shared.ChannelLabel: "fast"},
+					},
+					Spec: v1beta2.ManifestSpec{Version: "0.1"},
+				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"}},
+			true,
+		},
+		{
+			"When cluster Manifest in divergent state, expect need to update",
+			args{&v1beta2.Manifest{Status: shared.Status{
+				State: "Warning",
+			}},
+				&v1beta2.Manifest{},
+				&v1beta2.ModuleStatus{State: "Ready"}},
+			true,
+		},
+		{
+			"When no update required, expect no update",
+			args{&v1beta2.Manifest{Status: shared.Status{
+				State: "Ready",
+			}},
+				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{shared.ChannelLabel: "regular"},
+					},
+					Spec: v1beta2.ManifestSpec{Version: "0.1"},
+				},
+				&v1beta2.ModuleStatus{State: "Ready", Version: "0.1", Channel: "regular"}},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.manifestObj, tt.args.moduleStatus), "needToUpdate(%v, %v, %v)", tt.args.manifestInCluster, tt.args.manifestObj, tt.args.moduleStatus)
+		})
 	}
 }
