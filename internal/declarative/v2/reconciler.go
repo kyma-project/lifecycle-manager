@@ -394,7 +394,7 @@ func (r *Reconciler) checkTargetReadiness(
 
 	resourceReadyCheck := r.CustomReadyCheck
 
-	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
+	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
