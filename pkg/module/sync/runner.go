@@ -122,9 +122,8 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
 	manifestObj *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
-	manifestInCluster := &v1beta2.Manifest{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(),
-		Name: manifestObj.GetName()}, manifestInCluster); err != nil {
+	manifestInCluster, err := r.getManifestFromCluster(ctx, manifestObj)
+	if err != nil {
 		if !util.IsNotFound(err) {
 			return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
 		}
@@ -144,6 +143,15 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabl
 	return nil
 }
 
+func (r *Runner) getManifestFromCluster(ctx context.Context, manifestObj *v1beta2.Manifest) (*v1beta2.Manifest, error) {
+	manifestInCluster := &v1beta2.Manifest{}
+	err := r.Get(ctx, client.ObjectKey{
+		Namespace: manifestObj.GetNamespace(),
+		Name:      manifestObj.GetName(),
+	}, manifestInCluster)
+	return manifestInCluster, err
+}
+
 func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v1beta2.Manifest) error {
 	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
@@ -156,9 +164,11 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 }
 
 func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
-	manifestInCluster, manifestObj *v1beta2.Manifest) error {
-	if manifestInCluster == nil {
-		return fmt.Errorf("error get manifest %s: manifest not found", client.ObjectKeyFromObject(manifestObj))
+	manifestInCluster, manifestObj *v1beta2.Manifest,
+) error {
+	manifestInCluster, err := r.getManifestFromCluster(ctx, manifestObj)
+	if err != nil {
+		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
 	}
 	manifestInCluster.Spec = manifestObj.Spec
 	if err := r.Update(ctx, manifestInCluster); err != nil {
