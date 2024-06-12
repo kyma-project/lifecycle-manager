@@ -2,8 +2,6 @@ package sync_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 	"strings"
 	"testing"
@@ -11,9 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -207,47 +207,55 @@ func TestNeedToUpdate(t *testing.T) {
 		},
 		{
 			"When new module version available, expect need to update",
-			args{&v1beta2.Manifest{},
+			args{
+				&v1beta2.Manifest{},
 				&v1beta2.Manifest{
 					ObjectMeta: apimetav1.ObjectMeta{
 						Labels: map[string]string{shared.ChannelLabel: "regular"},
 					},
 					Spec: v1beta2.ManifestSpec{Version: "0.2"},
-				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"}},
+				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"},
+			},
 			true,
 		},
 		{
 			"When channel switch, expect need to update",
-			args{&v1beta2.Manifest{},
+			args{
+				&v1beta2.Manifest{},
 				&v1beta2.Manifest{
 					ObjectMeta: apimetav1.ObjectMeta{
 						Labels: map[string]string{shared.ChannelLabel: "fast"},
 					},
 					Spec: v1beta2.ManifestSpec{Version: "0.1"},
-				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"}},
+				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"},
+			},
 			true,
 		},
 		{
 			"When cluster Manifest in divergent state, expect need to update",
-			args{&v1beta2.Manifest{Status: shared.Status{
-				State: "Warning",
-			}},
+			args{
+				&v1beta2.Manifest{Status: shared.Status{
+					State: "Warning",
+				}},
 				&v1beta2.Manifest{},
-				&v1beta2.ModuleStatus{State: "Ready"}},
+				&v1beta2.ModuleStatus{State: "Ready"},
+			},
 			true,
 		},
 		{
 			"When no update required, expect no update",
-			args{&v1beta2.Manifest{Status: shared.Status{
-				State: "Ready",
-			}},
+			args{
+				&v1beta2.Manifest{Status: shared.Status{
+					State: "Ready",
+				}},
 				&v1beta2.Manifest{
 					ObjectMeta: apimetav1.ObjectMeta{
 						Labels: map[string]string{shared.ChannelLabel: "regular"},
 					},
 					Spec: v1beta2.ManifestSpec{Version: "0.1"},
 				},
-				&v1beta2.ModuleStatus{State: "Ready", Version: "0.1", Channel: "regular"}},
+				&v1beta2.ModuleStatus{State: "Ready", Version: "0.1", Channel: "regular"},
+			},
 			false,
 		},
 	}
