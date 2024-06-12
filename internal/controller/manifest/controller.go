@@ -26,7 +26,7 @@ func NewReconciler(mgr manager.Manager,
 		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp, extractor),
 		),
-		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
+		declarativev2.WithCustomReadyCheck(manifest.NewDeploymentReadyCheck()),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
 		declarativev2.WithPostRun{manifest.PostRunCreateCR},

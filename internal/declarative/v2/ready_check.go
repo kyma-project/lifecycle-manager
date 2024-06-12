@@ -19,7 +19,7 @@ type StateInfo struct {
 }
 
 type ReadyCheck interface {
-	Run(ctx context.Context, clnt Client, obj Object, resources []*resource.Info) (StateInfo, error)
+	Run(ctx context.Context, clnt Client, resources []*resource.Info) (StateInfo, error)
 }
 
 func NewExistsReadyCheck() *ExistsReadyCheck {
@@ -31,7 +31,6 @@ type ExistsReadyCheck struct{}
 func (c *ExistsReadyCheck) Run(
 	ctx context.Context,
 	clnt Client,
-	_ Object,
 	resources []*resource.Info,
 ) (StateInfo, error) {
 	for i := range resources {
