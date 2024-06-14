@@ -3,16 +3,18 @@ package manifest
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/kubectl/pkg/util/deployment"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 const (
@@ -30,9 +32,7 @@ func NewDeploymentReadyCheck() *DeploymentReadyCheck {
 
 type DeploymentReadyCheck struct{}
 
-var (
-	ErrNotSupportedState = errors.New("module CR state not support")
-)
+var ErrNotSupportedState = errors.New("module CR state not support")
 
 func (c *DeploymentReadyCheck) Run(ctx context.Context,
 	clnt declarativev2.Client,
@@ -91,7 +91,7 @@ func getPodsForDeployment(clt declarativev2.Client, deploy *apiappsv1.Deployment
 		LabelSelector: k8slabels.SelectorFromSet(deploy.Spec.Selector.MatchLabels),
 	}
 	if err := clt.List(context.TODO(), podList, listOptions); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list pods: %w", err)
 	}
 	return podList, nil
 }
@@ -99,11 +99,12 @@ func getPodsForDeployment(clt declarativev2.Client, deploy *apiappsv1.Deployment
 func getPodsState(podList *apicorev1.PodList) shared.State {
 	for _, pod := range podList.Items {
 		for _, condition := range pod.Status.ContainerStatuses {
-			if *condition.Started && condition.Ready {
+			switch {
+			case *condition.Started && condition.Ready:
 				return shared.StateReady
-			} else if *condition.Started && !condition.Ready {
+			case *condition.Started && !condition.Ready:
 				return shared.StateProcessing
-			} else if !*condition.Started && !condition.Ready {
+			case !*condition.Started && !condition.Ready:
 				return shared.StateError
 			}
 		}
