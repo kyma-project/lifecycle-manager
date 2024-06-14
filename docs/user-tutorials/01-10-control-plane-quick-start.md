@@ -4,17 +4,17 @@
 
 This quick start guide shows how to:
 
-- provision a Kyma Control Plane (KCP) cluster and deploy Lifecycle Manager using Kyma CLI
-- deploy a ModuleTemplate CR
-- manage modules using Kyma CLI
+* provision a Kyma Control Plane (KCP) cluster and deploy Lifecycle Manager using Kyma CLI
+* deploy a ModuleTemplate CR
+* manage modules using Kyma CLI
 
 ## Prerequisites
 
 To use Lifecycle Manager in a local setup, you need the following prerequisites:
 
-- [k3d](https://k3d.io/)
-- [istioctl](https://istio.io/latest/docs/setup/install/istioctl/)
-- [Kyma CLI](https://kyma-project.io/#/04-operation-guides/operations/01-install-kyma-CLI)
+* [k3d](https://k3d.io/)
+* [istioctl](https://istio.io/latest/docs/setup/install/istioctl/)
+* [Kyma CLI](https://kyma-project.io/#/04-operation-guides/operations/01-install-kyma-CLI)
 
 ## Procedure
 
@@ -56,8 +56,8 @@ We recommend deploying Lifecycle Manager with the KCP kustomize profile. You mus
 
 If the deployment was successful, you should see all the required resources. For example:
 
-- The `klm-controller-manager` Pod in the `kcp-system` Namespace
-- A Kyma CR that uses the `regular` channel but without any module configured, sync disabled, named `default-kyma` under `kyma-system` Namespace
+* The `klm-controller-manager` Pod in the `kcp-system` Namespace
+* A Kyma CR that uses the `regular` channel but without any module configured, sync disabled, named `default-kyma` under `kyma-system` Namespace
 
 ### Manage Modules in the Control-Plane Mode
 
@@ -88,5 +88,5 @@ After the successful deployment of the access Secrete, you can start to use Kyma
 
 ## Next Steps
 
-- To learn how to publish ModuleTemplate CRs in a private OCI registry, refer to the [Provide credentials for private OCI registry authentication](../developer-tutorials/config-private-registry.md) tutorial
-- To learn how to manage module enablement with the provided strategies, refer to the [Manage module enablement with CustomResourcePolicy](02-10-manage-module-with-custom-resource-policy.md) tutorial
+* To learn how to publish ModuleTemplate CRs in a private OCI registry, refer to the [Provide credentials for private OCI registry authentication](../developer-tutorials/config-private-registry.md) tutorial
+* To learn how to manage module enablement with the provided strategies, refer to the [Manage module enablement with CustomResourcePolicy](02-10-manage-module-with-custom-resource-policy.md) tutorial

@@ -1,4 +1,4 @@
-# Provide credentials for private OCI registry authentication
+# Provide Credentials for Private OCI Registry Authentication
 
 ## Context
 
@@ -16,7 +16,7 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
 
 ## Procedure
 
-### Prepare a docker-registry Secret manifest
+### Prepare a docker-registry Secret Manifest
 
 1. Create a docker-registry Secret manifest. Run:
 
@@ -39,7 +39,7 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
 
 3. Deploy the Secret on the same cluster where the ModuleTemplate CR is to be located. For example, if the ModuleTemplate CR is on the SKR cluster, then the Secret should be deployed to the SKR. Otherwise, it should be deployed to the KCP cluster.
 
-### Generate a ModuleTemplate CR with the `oci-registry-cred` label
+### Generate a ModuleTemplate CR with the `oci-registry-cred` Label
 
 The `oci-registry-cred` label in a ModuleTemplate CR allows Lifecycle Manager to parse the Secret label selector and propagate it to the Manifest CR so that Lifecycle Manager knows which credentials Secret to look up.
 

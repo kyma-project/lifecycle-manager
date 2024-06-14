@@ -18,8 +18,8 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure
-        sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
     - name: Create Template Operator Module for regular and fast channels
@@ -62,8 +62,8 @@ runs:
         cat warning_patch.yaml
         kustomize edit add patch --path warning_patch.yaml --kind Deployment
         popd
-        kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 1.1.1 --path . --registry k3d-kcp-registry:5111 --insecure --module-archive-version-overwrite /
-        sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+        kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 1.1.1 --path . --registry localhost:5111 --insecure --module-archive-version-overwrite /
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
     - name: Create Template Operator Module without default CR and apply
@@ -82,9 +82,9 @@ runs:
         kyma alpha create module \
         --module-config-file ./module-config-no-cr.yaml \
         --path . \
-        --registry k3d-kcp-registry:5111 \
+        --registry localhost:5111 \
         --insecure
-        sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
 
