@@ -163,7 +163,7 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v
 		Namespace: manifestObj.GetNamespace(),
 		Name:      manifestObj.GetName(),
 	}, manifestInCluster); err != nil {
-		return err
+		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
 	}
 	manifestInCluster.Spec = manifestObj.Spec
 	if err := r.Update(ctx, manifestInCluster); err != nil {
