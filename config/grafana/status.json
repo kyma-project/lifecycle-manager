@@ -33,6 +33,62 @@
       "type": "row"
     },
     {
+      "datasource": null,
+      "description": "This panel provides information on which modules are enabled on the KCP and their respective instance counts.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.31",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum by (module_name) (lifecycle_mgr_module_state)",
+          "interval": "",
+          "legendFormat": "{{module_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Enabled Modules",
+      "type": "stat"
+    },
+    {
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -48,7 +104,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 1
+        "y": 11
       },
       "hiddenSeries": false,
       "id": 2,
@@ -68,7 +124,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.31",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -176,7 +232,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 21
       },
       "hiddenSeries": false,
       "id": 5,
@@ -196,7 +252,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.31",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -304,7 +360,7 @@
         "h": 10,
         "w": 18,
         "x": 0,
-        "y": 21
+        "y": 31
       },
       "hiddenSeries": false,
       "id": 6,
@@ -324,7 +380,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.31",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -440,7 +496,7 @@
         "h": 10,
         "w": 6,
         "x": 18,
-        "y": 21
+        "y": 31
       },
       "id": 8,
       "options": {
@@ -455,7 +511,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.31",
       "targets": [
         {
           "exemplar": true,
