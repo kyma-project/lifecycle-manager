@@ -34,7 +34,7 @@
     },
     {
       "datasource": null,
-      "description": "This panel provides information on Which modules are enabled on the KCP and the number of their respective instances.",
+      "description": "This panel provides information on which modules are enabled on the KCP and their respective instance counts.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -47,10 +47,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 250
               }
             ]
           }
