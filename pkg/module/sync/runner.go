@@ -134,7 +134,7 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabl
 	}
 
 	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus) {
-		manifestObj = manifestInCluster
+		manifestObj = manifestInCluster //nolint:staticcheck
 		return nil
 	}
 	if isEnabledModule {
