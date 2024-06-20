@@ -2,9 +2,7 @@ package manifest
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"time"
 
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -17,13 +15,6 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-const (
-	ToWarningDuration                = 5 * time.Minute
-	customResourceStatePath          = "status.state"
-	ModuleCRWithCustomCheckWarning   = "module CR state not found or given customStateCheck.jsonPath is not exists"
-	ModuleCRWithNoCustomCheckWarning = "module CR state not found"
-)
-
 // NewDeploymentReadyCheck creates a readiness check that verifies that the Resource in the Manifest
 // returns the ready state, if not it returns not ready.
 func NewDeploymentReadyCheck() *DeploymentReadyCheck {
@@ -31,8 +22,6 @@ func NewDeploymentReadyCheck() *DeploymentReadyCheck {
 }
 
 type DeploymentReadyCheck struct{}
-
-var ErrNotSupportedState = errors.New("module CR state not support")
 
 func (c *DeploymentReadyCheck) Run(ctx context.Context,
 	clnt declarativev2.Client,

@@ -48,7 +48,7 @@ runs:
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
     - name: Create Template Operator Module with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'module-status-propagation'}}
+      if: ${{ matrix.e2e-test == 'module-status-decoupling'}}
       shell: bash
       run: |
         pushd config/default

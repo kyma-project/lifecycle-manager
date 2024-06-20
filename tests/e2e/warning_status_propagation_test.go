@@ -14,7 +14,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Warning Status Propagation", Ordered, func() {
+var _ = Describe("Module Status Decoupling", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
@@ -54,10 +54,10 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 					module.Name, shared.StateWarning).
 				Should(Succeed())
 
-			By("And KCP kyma CR is in \"Warning\" State")
+			By("And KCP kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 
@@ -74,17 +74,17 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 
-			By("And KCP Kyma CR is in \"Warning\" State")
+			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 			Consistently(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 
-			By("And Module Manifest CR is in a \"Warning\" State")
+			By("And Module Manifest CR is in a \"Ready\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
