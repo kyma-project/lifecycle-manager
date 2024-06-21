@@ -47,11 +47,11 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Expect(resource.GroupVersionKind().Kind).To(Equal(moduleCR.GroupVersionKind().Kind))
 			}).WithContext(ctx).Should(Succeed())
 
-			By("And Module in KCP Kyma CR is in \"Warning\" State")
+			By("And Module in KCP Kyma CR is in \"Ready\" State")
 			Eventually(CheckModuleState).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
-					module.Name, shared.StateWarning).
+					module.Name, shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP kyma CR is in \"Ready\" State")
@@ -68,13 +68,7 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then there is no Module in KCP Kyma CR spec", func() {
-			Eventually(NotContainsModuleInSpec, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
-				Should(Succeed())
-
-			By("And KCP Kyma CR is in \"Ready\" State")
+		It("Then KCP Kyma CR is in \"Ready\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
