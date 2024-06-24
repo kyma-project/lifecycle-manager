@@ -174,7 +174,7 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v
 }
 
 func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus) bool {
-	if manifestInCluster == nil {
+	if manifestInCluster == nil || moduleStatus == nil { // moduleStatus is nil in case of mandatory module
 		return true
 	}
 
