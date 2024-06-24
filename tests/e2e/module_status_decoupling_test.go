@@ -68,27 +68,27 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+		It("Then KCP Kyma CR is in a \"Processing\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 				Should(Succeed())
 			Consistently(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 				Should(Succeed())
 
-			By("And Module Manifest CR is in a \"Ready\" State")
+			By("And Module Manifest CR is in a \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
-					shared.StateReady).
+					shared.StateDeleting).
 				Should(Succeed())
 
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
-					shared.StateReady).
+					shared.StateDeleting).
 				Should(Succeed())
 		})
 
