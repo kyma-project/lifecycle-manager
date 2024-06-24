@@ -406,6 +406,10 @@ func (r *Reconciler) checkTargetReadiness(
 		return ErrInstallationConditionRequiresUpdate
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		crStateInfo.State = shared.StateDeleting
+	}
+
 	installationCondition := newInstallationCondition(manifest)
 	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
 		installationCondition.Status = apimetav1.ConditionTrue
