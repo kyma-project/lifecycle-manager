@@ -82,13 +82,13 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
-					shared.StateWarning).
+					shared.StateReady).
 				Should(Succeed())
 
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
-					shared.StateWarning).
+					shared.StateReady).
 				Should(Succeed())
 		})
 
