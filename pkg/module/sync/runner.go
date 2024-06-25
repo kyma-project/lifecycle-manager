@@ -134,6 +134,7 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabl
 	}
 
 	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus) {
+		// Point to the current state from the cluster for the outside sync of the manifest
 		*manifestObj = *manifestInCluster
 		return nil
 	}
