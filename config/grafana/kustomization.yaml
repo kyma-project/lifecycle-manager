@@ -11,6 +11,9 @@ configMapGenerator:
   - name: dashboard-watcher
     files:
       - watcher.json
+  - name: dashboard-mandatory-modules
+    files:
+      - mandatory-modules.json
 
 generatorOptions:
   disableNameSuffixHash: true
