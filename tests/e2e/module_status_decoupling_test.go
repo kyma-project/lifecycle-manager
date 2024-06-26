@@ -143,7 +143,7 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 			By("And resource is defined in Manifest CR")
 			Eventually(func(g Gomega, ctx context.Context) {
 				resource, err := GetManifestResource(ctx, controlPlaneClient,
-					kyma.GetName(), kyma.GetNamespace(), module.Name)
+					kyma.GetName(), kyma.GetNamespace(), moduleWrongConfig.Name)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resource.GetName()).To(Equal(moduleCR.GetName()))
 				Expect(resource.GetNamespace()).To(Equal(moduleCR.GetNamespace()))
@@ -156,7 +156,7 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
-					module.Name, shared.StateError).
+					moduleWrongConfig.Name, shared.StateError).
 				Should(Succeed())
 
 			By("And KCP kyma CR is in \"Error\" State")
@@ -169,7 +169,7 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, moduleWrongConfig.Name).
 				Should(Succeed())
 		})
 
@@ -186,12 +186,12 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 			By("And Module Manifest CR is in a \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), moduleWrongConfig.Name, controlPlaneClient,
 					shared.StateDeleting).
 				Should(Succeed())
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), moduleWrongConfig.Name, controlPlaneClient,
 					shared.StateDeleting).
 				Should(Succeed())
 		})
