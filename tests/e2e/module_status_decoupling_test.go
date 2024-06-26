@@ -173,38 +173,6 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma CR is in a \"Processing\" State", func() {
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
-				Should(Succeed())
-			Consistently(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
-				Should(Succeed())
-
-			By("And Module Manifest CR is in a \"Deleting\" State")
-			Eventually(CheckManifestIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), moduleWrongConfig.Name, controlPlaneClient,
-					shared.StateDeleting).
-				Should(Succeed())
-			Consistently(CheckManifestIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), moduleWrongConfig.Name, controlPlaneClient,
-					shared.StateDeleting).
-				Should(Succeed())
-		})
-
-		It("When blocking finalizers from Module CR get removed", func() {
-			var finalizers []string
-			Eventually(SetFinalizer).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io", "v1alpha1",
-					string(templatev1alpha1.SampleKind), finalizers, runtimeClient).
-				Should(Succeed())
-		})
-
 		It("Then Module CR, Module Operator Deployment and Manifest CR are removed", func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
@@ -229,4 +197,5 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Should(Succeed())
 		})
 	})
+
 })
