@@ -17,6 +17,7 @@ import (
 var _ = Describe("Module Status Decoupling", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	moduleWrongConfig := NewTestModuleWithFixName("template-operator-misconfigured", "regular")
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -129,7 +130,7 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 		It("When Kyma Module with wrong configured image is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, moduleWrongConfig).
 				Should(Succeed())
 		})
 
