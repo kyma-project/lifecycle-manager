@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -180,13 +179,9 @@ func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus
 		return true
 	}
 
-	if manifestObj.Spec.Version != moduleStatus.Version ||
+	return manifestObj.Spec.Version != moduleStatus.Version ||
 		manifestObj.Labels[shared.ChannelLabel] != moduleStatus.Channel ||
-		moduleStatus.State != manifestInCluster.Status.State {
-		return true
-	}
-
-	return !reflect.DeepEqual(manifestInCluster.Spec, manifestObj.Spec)
+		moduleStatus.State != manifestInCluster.Status.State
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {

@@ -209,6 +209,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 		manifestImageSpec.Repo = updateRepositoryURL
+		manifest.Spec.Version = "v1.7.0" // required to allow for SSA of manifest
 
 		// is there a simpler way to update manifest.Spec.Install?
 		updatedBytes, err := json.Marshal(manifestImageSpec)

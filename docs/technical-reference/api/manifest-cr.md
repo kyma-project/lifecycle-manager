@@ -2,6 +2,16 @@
 
 The [Manifest custom resource (CR)](../../../api/v1beta2/manifest_types.go) is our internal representation of what results from the resolution of a ModuleTemplate CR in the context of a single cluster represented by a Kyma CR. Thus, a lot of configuration elements are similar or entirely equivalent to the data layer found in a ModuleTemplate CR.
 
+## Patching
+
+The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and updating manifests via Server Side Apply (SSA). An update is only performed when one of the following conditions is met:
+
+1. The version of the manifest object is different from the version in the Kyma module status.
+2. The channel of the manifest object is different from the channel in the Kyma module status.
+3. The state of the manifest object is different from the state in the Kyma module status.
+
+*NOTE:* The module status is not present in Kyma for mandatory modules, hence their manifest is updated via SSA in every reconcile loop.
+
 ## Configuration
 
 ### **.spec.remote**

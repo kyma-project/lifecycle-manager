@@ -243,31 +243,6 @@ func TestNeedToUpdate(t *testing.T) {
 			true,
 		},
 		{
-			"When spec diff is present, expect update",
-			args{
-				&v1beta2.Manifest{
-					Status: shared.Status{
-						State: "Ready",
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "0.1",
-						Remote:  true,
-					},
-				},
-				&v1beta2.Manifest{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{shared.ChannelLabel: "regular"},
-					},
-					Spec: v1beta2.ManifestSpec{
-						Version: "0.1",
-						Remote:  false,
-					},
-				},
-				&v1beta2.ModuleStatus{State: "Ready", Version: "0.1", Channel: "regular"},
-			},
-			true,
-		},
-		{
 			"When no update required, expect no update",
 			args{
 				&v1beta2.Manifest{
