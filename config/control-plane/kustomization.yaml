@@ -150,6 +150,16 @@ transformers:
   apiVersion: builtin
   kind: PatchTransformer
   metadata:
+    name: fix-dashboard-mandatory-modules-cm
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
+  target:
+    kind: ConfigMap
+    name: klm-dashboard-mandatory-modules
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
     name: fix-cert-dns-names
   patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
   target:
