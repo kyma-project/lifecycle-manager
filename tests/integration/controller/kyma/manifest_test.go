@@ -43,6 +43,7 @@ const (
 var (
 	ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
 	ErrVersionMismatch         = errors.New("manifest spec.version mismatch with module template")
+	ErrChannelMismatch         = errors.New("manifest spec.channel mismatch with module template")
 	ErrInvalidManifest         = errors.New("invalid ManifestResource")
 )
 
@@ -187,6 +188,15 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 			return nil
 		}
 		Eventually(expectManifest(hasValidSpecVersion), Timeout, Interval).Should(Succeed())
+
+		By("checking Spec.Channel")
+		hasValidSpecChannel := func(manifest *v1beta2.Manifest) error {
+			if manifest.Spec.Channel != moduleTemplate.Spec.Channel {
+				return ErrChannelMismatch
+			}
+			return nil
+		}
+		Eventually(expectManifest(hasValidSpecChannel), Timeout, Interval).Should(Succeed())
 	})
 })
 
