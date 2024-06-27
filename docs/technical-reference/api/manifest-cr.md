@@ -87,7 +87,16 @@ The resource is the default data that should be initialized for the module and i
 
 ### **.status**
 
-The Manifest CR status is an unmodified version of the [declarative status](../../../internal/declarative/README.md#resource-tracking), so the tracking process of the library applies. There is no custom API for this.
+The status of the Manifest Custom Resource (CR) is a direct, unaltered reflection of the [declarative status](../../../internal/declarative/README.md#resource-tracking), which means it follows the tracking process implemented by the internal library. There isn't a custom API specifically designed for this status tracking. Instead, the existing mechanisms provided by the library are utilized to monitor and update the status of the Manifest CR.  
+
+The Manifest CR status is set based on the following logic, managed by the manifest reconciler: 
+
+- If the Module defined in the Manifest CR is successfully applied and the deployed Module is up and running, the status of the Manifest CR is set to `Ready`.
+- While the Manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
+- If the Deployment is unable to start (for example, due to an `ImagePullBackOff` error) or if the application of the Manifest fails, the status of the Manifest CR is set to `Error`.
+- If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleted`.
+
+This status provides a reliable way to track the state of the Manifest CR and the associated Module, offering insights into the deployment process and any potential issues, while being decoupled of the Module business logic.
 
 ### **.metadata.labels**
 
