@@ -73,7 +73,8 @@ func isDeploymentReady(deploy *apiappsv1.Deployment) bool {
 }
 
 func getPodsForDeployment(ctx context.Context, clt declarativev2.Client,
-	deploy *apiappsv1.Deployment) (*apicorev1.PodList, error) {
+	deploy *apiappsv1.Deployment,
+) (*apicorev1.PodList, error) {
 	podList := &apicorev1.PodList{}
 	listOptions := &client.ListOptions{
 		Namespace:     deploy.Namespace,
