@@ -363,7 +363,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		}
 	}
 
-	deploymentState, err := r.checkDeploymentState(ctx, clnt, obj, target)
+	deploymentState, err := r.checkDeploymentState(ctx, clnt, target)
 	if err != nil {
 		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
@@ -393,7 +393,7 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 }
 
 func (r *Reconciler) checkDeploymentState(
-	ctx context.Context, clnt Client, obj Object, target []*resource.Info,
+	ctx context.Context, clnt Client, target []*resource.Info,
 ) (shared.State, error) {
 	resourceReadyCheck := r.CustomReadyCheck
 
