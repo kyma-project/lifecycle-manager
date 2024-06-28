@@ -406,10 +406,6 @@ func (r *Reconciler) checkDeploymentState(
 		return shared.StateProcessing, nil
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		return shared.StateDeleting, nil
-	}
-
 	return deploymentStateInfo.State, nil
 }
 
