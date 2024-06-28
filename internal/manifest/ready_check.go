@@ -15,8 +15,7 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-// NewDeploymentReadyCheck creates a readiness check that verifies that the Resource in the Manifest
-// returns the ready state, if not it returns not ready.
+// NewDeploymentReadyCheck creates a readiness check that verifies if a Deployment is ready.
 func NewDeploymentReadyCheck() *DeploymentReadyCheck {
 	return &DeploymentReadyCheck{}
 }
@@ -27,11 +26,11 @@ func (c *DeploymentReadyCheck) Run(ctx context.Context,
 	clnt declarativev2.Client,
 	resources []*resource.Info,
 ) (declarativev2.StateInfo, error) {
-	deploymentState := getDeploymentState(clnt, resources)
+	deploymentState := getDeploymentState(ctx, clnt, resources)
 	return declarativev2.StateInfo{State: deploymentState}, nil
 }
 
-func getDeploymentState(clt declarativev2.Client, resources []*resource.Info) shared.State {
+func getDeploymentState(ctx context.Context, clt declarativev2.Client, resources []*resource.Info) shared.State {
 	deploy, found := findDeployment(clt, resources)
 	// Not every module operator use Deployment by default, e.g: StatefulSet also a valid approach
 	if !found {
@@ -44,7 +43,7 @@ func getDeploymentState(clt declarativev2.Client, resources []*resource.Info) sh
 
 	// Since deployment is not ready check if pods are ready or in error state
 	// Get all Pods associated with the Deployment
-	podList, err := getPodsForDeployment(clt, deploy)
+	podList, err := getPodsForDeployment(ctx, clt, deploy)
 	if err != nil {
 		return shared.StateError
 	}
@@ -73,13 +72,14 @@ func isDeploymentReady(deploy *apiappsv1.Deployment) bool {
 	return false
 }
 
-func getPodsForDeployment(clt declarativev2.Client, deploy *apiappsv1.Deployment) (*apicorev1.PodList, error) {
+func getPodsForDeployment(ctx context.Context, clt declarativev2.Client,
+	deploy *apiappsv1.Deployment) (*apicorev1.PodList, error) {
 	podList := &apicorev1.PodList{}
 	listOptions := &client.ListOptions{
 		Namespace:     deploy.Namespace,
 		LabelSelector: k8slabels.SelectorFromSet(deploy.Spec.Selector.MatchLabels),
 	}
-	if err := clt.List(context.TODO(), podList, listOptions); err != nil {
+	if err := clt.List(ctx, podList, listOptions); err != nil {
 		return nil, fmt.Errorf("failed to list pods: %w", err)
 	}
 	return podList, nil
