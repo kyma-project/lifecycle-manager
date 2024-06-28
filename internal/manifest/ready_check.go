@@ -37,7 +37,7 @@ func getDeploymentState(ctx context.Context, clt declarativev2.Client, resources
 		return shared.StateReady
 	}
 
-	if isDeploymentReady(deploy) {
+	if IsDeploymentReady(deploy) {
 		return shared.StateReady
 	}
 
@@ -48,7 +48,7 @@ func getDeploymentState(ctx context.Context, clt declarativev2.Client, resources
 		return shared.StateError
 	}
 
-	return getPodsState(podList)
+	return GetPodsState(podList)
 }
 
 func findDeployment(clt declarativev2.Client, resources []*resource.Info) (*apiappsv1.Deployment, bool) {
@@ -61,7 +61,7 @@ func findDeployment(clt declarativev2.Client, resources []*resource.Info) (*apia
 	return nil, false
 }
 
-func isDeploymentReady(deploy *apiappsv1.Deployment) bool {
+func IsDeploymentReady(deploy *apiappsv1.Deployment) bool {
 	availableCond := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentAvailable)
 	if availableCond != nil && availableCond.Status == apicorev1.ConditionTrue {
 		return true
@@ -86,7 +86,7 @@ func getPodsForDeployment(ctx context.Context, clt declarativev2.Client,
 	return podList, nil
 }
 
-func getPodsState(podList *apicorev1.PodList) shared.State {
+func GetPodsState(podList *apicorev1.PodList) shared.State {
 	for _, pod := range podList.Items {
 		for _, condition := range pod.Status.ContainerStatuses {
 			if condition.Started == nil {
