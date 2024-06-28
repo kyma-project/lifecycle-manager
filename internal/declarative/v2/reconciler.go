@@ -399,7 +399,7 @@ func (r *Reconciler) checkDeploymentState(
 
 	deploymentStateInfo, err := resourceReadyCheck.Run(ctx, clnt, target)
 	if err != nil {
-		return "", err
+		return shared.StateError, err
 	}
 
 	if deploymentStateInfo.State == shared.StateProcessing {

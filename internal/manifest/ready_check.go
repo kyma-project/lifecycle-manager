@@ -89,12 +89,15 @@ func getPodsForDeployment(ctx context.Context, clt declarativev2.Client,
 func getPodsState(podList *apicorev1.PodList) shared.State {
 	for _, pod := range podList.Items {
 		for _, condition := range pod.Status.ContainerStatuses {
+			if condition.Started == nil {
+				return shared.StateError
+			}
 			switch {
 			case *condition.Started && condition.Ready:
 				return shared.StateReady
 			case *condition.Started && !condition.Ready:
 				return shared.StateProcessing
-			case !*condition.Started && !condition.Ready:
+			default:
 				return shared.StateError
 			}
 		}
