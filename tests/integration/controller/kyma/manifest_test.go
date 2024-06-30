@@ -112,6 +112,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 					Fail("Can't find \"baseUrl\" property in ModuleTemplate spec")
 				}
 				repositoryContext["baseUrl"] = updateRepositoryURL
+				descriptor.Version = "v1.7.3" // required to allow for SSA of manifest
 
 				newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
 				Expect(err).ToNot(HaveOccurred())
