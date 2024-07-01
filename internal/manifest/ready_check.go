@@ -25,9 +25,9 @@ type DeploymentReadyCheck struct{}
 func (c *DeploymentReadyCheck) Run(ctx context.Context,
 	clnt declarativev2.Client,
 	resources []*resource.Info,
-) (declarativev2.StateInfo, error) {
+) (shared.State, error) {
 	deploymentState := getDeploymentState(ctx, clnt, resources)
-	return declarativev2.StateInfo{State: deploymentState}, nil
+	return deploymentState, nil
 }
 
 func getDeploymentState(ctx context.Context, clt declarativev2.Client, resources []*resource.Info) shared.State {

@@ -397,16 +397,16 @@ func (r *Reconciler) checkDeploymentState(
 ) (shared.State, error) {
 	resourceReadyCheck := r.CustomReadyCheck
 
-	deploymentStateInfo, err := resourceReadyCheck.Run(ctx, clnt, target)
+	deploymentState, err := resourceReadyCheck.Run(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}
 
-	if deploymentStateInfo.State == shared.StateProcessing {
+	if deploymentState == shared.StateProcessing {
 		return shared.StateProcessing, nil
 	}
 
-	return deploymentStateInfo.State, nil
+	return deploymentState, nil
 }
 
 func (r *Reconciler) setManifestState(manifest Object, state shared.State) error {
@@ -428,18 +428,11 @@ func (r *Reconciler) setManifestState(manifest Object, state shared.State) error
 		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
 		manifest.SetStatus(status.WithState(state).
-			WithOperation(generateOperationMessage(installationCondition, StateInfo{State: state})))
+			WithOperation(installationCondition.Message))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
 	return nil
-}
-
-func generateOperationMessage(installationCondition apimetav1.Condition, stateInfo StateInfo) string {
-	if stateInfo.Info != "" {
-		return stateInfo.Info
-	}
-	return installationCondition.Message
 }
 
 func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object) error {

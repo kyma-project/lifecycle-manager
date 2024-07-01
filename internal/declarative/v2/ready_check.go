@@ -13,13 +13,8 @@ import (
 
 var ErrNotValidClientObject = errors.New("object in resource info is not a valid client object")
 
-type StateInfo struct {
-	shared.State
-	Info string
-}
-
 type ReadyCheck interface {
-	Run(ctx context.Context, clnt Client, resources []*resource.Info) (StateInfo, error)
+	Run(ctx context.Context, clnt Client, resources []*resource.Info) (shared.State, error)
 }
 
 func NewExistsReadyCheck() *ExistsReadyCheck {
@@ -32,15 +27,15 @@ func (c *ExistsReadyCheck) Run(
 	ctx context.Context,
 	clnt Client,
 	resources []*resource.Info,
-) (StateInfo, error) {
+) (shared.State, error) {
 	for i := range resources {
 		obj, ok := resources[i].Object.(client.Object)
 		if !ok {
-			return StateInfo{State: shared.StateError}, ErrNotValidClientObject
+			return shared.StateError, ErrNotValidClientObject
 		}
 		if err := clnt.Get(ctx, client.ObjectKeyFromObject(obj), obj); client.IgnoreNotFound(err) != nil {
-			return StateInfo{State: shared.StateError}, fmt.Errorf("failed to fetch object by key: %w", err)
+			return shared.StateError, fmt.Errorf("failed to fetch object by key: %w", err)
 		}
 	}
-	return StateInfo{State: shared.StateReady}, nil
+	return shared.StateReady, nil
 }
