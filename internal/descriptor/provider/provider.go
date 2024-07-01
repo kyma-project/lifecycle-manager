@@ -12,7 +12,6 @@ import (
 var (
 	ErrTypeAssert    = errors.New("failed to convert to v1beta2.Descriptor")
 	ErrDecode        = errors.New("failed to decode to descriptor target")
-	ErrEncode        = errors.New("failed to encode the descriptor")
 	ErrTemplateNil   = errors.New("module template is nil")
 	ErrDescriptorNil = errors.New("module template contains nil descriptor")
 )
@@ -69,20 +68,6 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 	}
 
 	return descriptor, nil
-}
-
-func (c *CachedDescriptorProvider) SetDescriptor(template *v1beta2.ModuleTemplate, descriptor *v1beta2.Descriptor,
-) error {
-	if template == nil {
-		return ErrTemplateNil
-	}
-	template.Spec.Descriptor.Object = descriptor
-	encoded, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
-	template.Spec.Descriptor.Raw = encoded
-	if err != nil {
-		return errors.Join(ErrEncode, err)
-	}
-	return nil
 }
 
 func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
