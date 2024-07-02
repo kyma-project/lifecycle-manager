@@ -112,6 +112,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 					Fail("Can't find \"baseUrl\" property in ModuleTemplate spec")
 				}
 				repositoryContext["baseUrl"] = updateRepositoryURL
+				descriptor.Version = "v1.7.3" // required to allow for SSA of manifest
 
 				newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
 				Expect(err).ToNot(HaveOccurred())
@@ -209,6 +210,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 		manifestImageSpec.Repo = updateRepositoryURL
+		manifest.Spec.Version = "v1.7.0" // required to allow for SSA of manifest
 
 		// is there a simpler way to update manifest.Spec.Install?
 		updatedBytes, err := json.Marshal(manifestImageSpec)

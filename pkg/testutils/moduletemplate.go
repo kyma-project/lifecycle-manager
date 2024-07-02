@@ -27,6 +27,16 @@ func GetModuleTemplate(ctx context.Context,
 	return templateInfo.ModuleTemplate, nil
 }
 
+func UpdateModuleTemplate(ctx context.Context,
+	clnt client.Client,
+	moduleTemplate *v1beta2.ModuleTemplate,
+) error {
+	if err := clnt.Update(ctx, moduleTemplate); err != nil {
+		return fmt.Errorf("update module tempate: %w", err)
+	}
+	return nil
+}
+
 func ModuleTemplateExists(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
@@ -65,8 +75,8 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 		return ErrManifestResourceIsNil
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{key: newValue}
-	if err := clnt.Update(ctx, moduleTemplate); err != nil {
-		return fmt.Errorf("update module tempate: %w", err)
+	if err := UpdateModuleTemplate(ctx, clnt, moduleTemplate); err != nil {
+		return err
 	}
 	return nil
 }
@@ -101,4 +111,19 @@ func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client
 	}
 
 	return ocmDesc.Version, nil
+}
+
+func ModifyModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate, newVersion string) error {
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	ocmDesc, err := descriptorProvider.GetDescriptor(moduleTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to get descriptor: %w", err)
+	}
+	ocmDesc.Version = newVersion
+	err = descriptorProvider.SetDescriptor(moduleTemplate, ocmDesc)
+	if err != nil {
+		return fmt.Errorf("failed to set descriptor: %w", err)
+	}
+
+	return nil
 }

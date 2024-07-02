@@ -514,9 +514,33 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			return UpdateModuleTemplateSpec(ctx, kcpClient,
+			err := UpdateModuleTemplateSpec(ctx, kcpClient,
 				activeModule, InitSpecKey, valueUpdated, createdKyma.Spec.Channel)
+			if err != nil {
+				return err
+			}
+			err = changeKCPModuleTemplateVersion(ctx, activeModule, createdKyma.Spec.Channel, "v1.7.2") // required to allow SSA for manifest
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	}
+}
+
+func changeKCPModuleTemplateVersion(ctx context.Context,
+	module v1beta2.Module, channel, version string,
+) error {
+	moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, channel)
+	if err != nil {
+		return err
+	}
+	err = ModifyModuleTemplateVersion(moduleTemplate, version)
+	if err != nil {
+		return err
+	}
+	if err := UpdateModuleTemplate(ctx, kcpClient, moduleTemplate); err != nil {
+		return err
+	}
+	return nil
 }
