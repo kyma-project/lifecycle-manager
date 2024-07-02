@@ -78,8 +78,8 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Eventually(setCRStatus(ctx, kcpClient, sampleCR, shared.StateWarning), standardTimeout,
 			standardInterval).Should(Succeed())
 
-		By("Verify the Manifest CR state also changes to \"Warning\"")
-		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateWarning), standardTimeout,
+		By("Verify the Manifest CR stays in the \"Ready\" state")
+		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
@@ -87,7 +87,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Eventually(setCRStatus(ctx, kcpClient, sampleCR, shared.StateReady), standardTimeout,
 			standardInterval).Should(Succeed())
 
-		By("Verify the Manifest CR state changes back to \"Ready\"")
+		By("Verify the Manifest CR stays in the \"Ready\"")
 		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())

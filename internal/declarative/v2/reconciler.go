@@ -363,7 +363,12 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		}
 	}
 
-	return r.checkTargetReadiness(ctx, clnt, obj, target)
+	deploymentState, err := r.checkDeploymentState(ctx, clnt, target)
+	if err != nil {
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		return err
+	}
+	return r.setManifestState(obj, deploymentState)
 }
 
 func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
@@ -387,42 +392,47 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 	return false
 }
 
-func (r *Reconciler) checkTargetReadiness(
-	ctx context.Context, clnt Client, manifest Object, target []*resource.Info,
-) error {
-	status := manifest.GetStatus()
-
+func (r *Reconciler) checkDeploymentState(
+	ctx context.Context, clnt Client, target []*resource.Info,
+) (shared.State, error) {
 	resourceReadyCheck := r.CustomReadyCheck
 
-	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
+	deploymentState, err := resourceReadyCheck.Run(ctx, clnt, target)
 	if err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
-		return err
+		return shared.StateError, err
 	}
 
-	if crStateInfo.State == shared.StateProcessing {
-		waitingMsg := "waiting for resources to become ready: " + crStateInfo.Info
+	if deploymentState == shared.StateProcessing {
+		return shared.StateProcessing, nil
+	}
+
+	return deploymentState, nil
+}
+
+func (r *Reconciler) setManifestState(manifest Object, state shared.State) error {
+	status := manifest.GetStatus()
+
+	if state == shared.StateProcessing {
+		waitingMsg := "waiting for resources to become ready"
 		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		state = shared.StateDeleting
+	}
+
 	installationCondition := newInstallationCondition(manifest)
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
+	if !meta.IsStatusConditionTrue(status.Conditions,
+		installationCondition.Type) || status.State != state {
 		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		manifest.SetStatus(status.WithState(crStateInfo.State).
-			WithOperation(generateOperationMessage(installationCondition, crStateInfo)))
+		manifest.SetStatus(status.WithState(state).
+			WithOperation(installationCondition.Message))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
 	return nil
-}
-
-func generateOperationMessage(installationCondition apimetav1.Condition, stateInfo StateInfo) string {
-	if stateInfo.Info != "" {
-		return stateInfo.Info
-	}
-	return installationCondition.Message
 }
 
 func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, obj Object) error {
