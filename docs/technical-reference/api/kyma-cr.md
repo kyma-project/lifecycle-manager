@@ -100,11 +100,38 @@ The module mentioned above can be referenced in one of the following ways:
       - name: kyma-project.io/module/sample
     ```
 
+### **.spec.modules[].managed**
+
+For each module, it must be defined whether it is `managed` or `unmanaged`.
+If it is `managed`, the Lifecycle Manager will take care of the lifecycle (creating, updating, deleting) the module.
+If it is `unmanaged`, the Lifecycle Manager will ignore the module and the users must take care of the lifecycle themselves.
+To define this, the **managed** flag must be set to either `true` or `false`.
+By default, the **managed** flag is set to `true` and the module is therefore `managed` by Lifecycle Manager.
+
+```yaml
+spec:
+  channel: regular
+  modules:
+  - name: module-name-from-label
+    managed: true
+```
+
 ### **.spec.modules[].customResourcePolicy**
 
-In addition to this very flexible way of referencing modules, there is also another flag that can be important for users requiring more flexibility during module initialization. The `customResourcePolicy` flag is used to define one of `CreateAndDelete` and `Ignore`.
+A module may be initialized with preconfigured default data.
+To control this, the **customResourcePolicy** flag is used.
+It can either be `CreateAndDelete` or `Ignore`.
 While `CreateAndDelete` causes the ModuleTemplate CR's **.spec.data** to be created and deleted to initialize a module with preconfigured defaults, `Ignore` can be used to only initialize the operator without initializing any default data.
 This allows users to be fully flexible in regard to when and how to initialize their module.
+By default, the **customResourcePolicy** flag is `CreateAndDelete` and the module is therefore preconfigured.
+
+```yaml
+spec:
+  channel: regular
+  modules:
+  - name: module-name-from-label
+    customResourcePolicy: CreateAndDelete
+```
 
 ### **.status.state**
 
