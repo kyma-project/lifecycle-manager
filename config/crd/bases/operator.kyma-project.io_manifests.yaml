@@ -138,8 +138,8 @@ spec:
                 type: object
               managedResources:
                 description: |-
-                  ManagedResources specifies a list of resources which are managed manually by the user. The resources have the
-                  following format: <group>/<version>/<kind>.
+                  ManagedResources specifies a list of resources which are managed
+                  manually by the user. The resources have the following format: <group>/<version>/<kind>.
                 items:
                   type: string
                 type: array
@@ -415,8 +415,8 @@ spec:
                 type: object
               managedResources:
                 description: |-
-                  ManagedResources specifies a list of resources which are managed manually by the user. The resources have the
-                  following format: <group>/<version>/<kind>.
+                  ManagedResources specifies a list of resources which are managed
+                  manually by the user. The resources have the following format: <group>/<version>/<kind>.
                 items:
                   type: string
                 type: array
