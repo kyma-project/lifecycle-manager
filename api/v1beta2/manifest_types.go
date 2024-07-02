@@ -63,8 +63,8 @@ type ManifestSpec struct {
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 
-	// ManagedResources specifies a list of resources that are managed. The resources have the following format:
-	// <group>/<version>/<kind>.
+	// ManagedResources specifies a list of resources which are managed manually by the user. The resources have the
+	// following format: <group>/<version>/<kind>.
 	ManagedResources []string `json:"managedResources,omitempty"`
 }
 
