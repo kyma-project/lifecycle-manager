@@ -136,6 +136,13 @@ spec:
                 - name
                 - source
                 type: object
+              managedResources:
+                description: |-
+                  ManagedResources specifies a list of resources that are managed. The resources have the following format:
+                  <group>/<version>/<kind>.
+                items:
+                  type: string
+                type: array
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster
@@ -406,6 +413,13 @@ spec:
                 - name
                 - source
                 type: object
+              managedResources:
+                description: |-
+                  ManagedResources specifies a list of resources that are managed. The resources have the following format:
+                  <group>/<version>/<kind>.
+                items:
+                  type: string
+                type: array
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster
