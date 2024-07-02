@@ -143,6 +143,11 @@ func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) 
 	return moduleTemplate.Spec.Descriptor
 }
 
+func ReadComponentDescriptorFromFile(template string, moduleTemplate *v1beta2.ModuleTemplate) {
+	// needs to be encapsulated in an outside call to make the runtime.Caller(1) find the proper path
+	readComponentDescriptorFromYaml(template, moduleTemplate)
+}
+
 func readComponentDescriptorFromYaml(template string, moduleTemplate *v1beta2.ModuleTemplate) {
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
