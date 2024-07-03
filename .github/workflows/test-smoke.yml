@@ -2,7 +2,9 @@ name: TestSuite Smoke
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - feat/**
 jobs:
   wait-for-image-build:
     name: Wait for image build

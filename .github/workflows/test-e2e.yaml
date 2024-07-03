@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/**
   workflow_dispatch:
     inputs:
       k8s_version:
