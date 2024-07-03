@@ -106,28 +106,3 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 	assert.NotNil(t, entry)
 	assert.Equal(t, expected.Name, entry.Name)
 }
-
-func TestSetDescriptor_OnEmptyTemplate_ReturnsErrTemplateNil(t *testing.T) {
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-
-	err := descriptorProvider.SetDescriptor(nil, nil)
-
-	require.Error(t, err)
-	require.ErrorIs(t, err, provider.ErrTemplateNil)
-}
-
-func TestSetDescriptor_OnProvidedDescriptor_ReturnsNoError(t *testing.T) {
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	descriptorBefore := &v1beta2.Descriptor{
-		ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{ConfiguredVersion: "v1"}},
-	}
-	template := builder.NewModuleTemplateBuilder().WithDescriptor(descriptorBefore).Build()
-
-	descriptorAfter := &v1beta2.Descriptor{
-		ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{ConfiguredVersion: "v2"}},
-	}
-	err := descriptorProvider.SetDescriptor(template, descriptorAfter)
-
-	require.NoError(t, err)
-	assert.Equal(t, descriptorAfter, template.Spec.Descriptor.Object)
-}
