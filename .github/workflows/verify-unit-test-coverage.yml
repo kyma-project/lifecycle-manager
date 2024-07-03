@@ -2,7 +2,9 @@ name: Verify Unit Test Coverage
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - feat/**
 
 env:
   coverage_guard: ${{ github.workspace }}/scripts/coverage-metrics/bin/utils/unit-test-coverage/coverage_guard.py
