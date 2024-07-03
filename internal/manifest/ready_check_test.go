@@ -1,445 +1,172 @@
 package manifest_test
 
 import (
-	"encoding/json"
-	"reflect"
 	"testing"
-	"time"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/stretchr/testify/require"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-func TestHandleState(t *testing.T) {
-	t.Parallel()
-	type moduleCheck struct {
-		fields []string
-		value  string
-	}
-	definedValueForError := "customStateForError"
-	definedValueForReady := "customStateForReady"
+func Test_getPodsState(t *testing.T) {
 	tests := []struct {
-		name                string
-		customState         []*v1beta2.CustomStateCheck
-		customStateExpected bool
-		checkInModuleCR     []moduleCheck
-		want                declarativev2.StateInfo
-		wantErr             bool
+		name    string
+		podList *apicorev1.PodList
+		want    shared.State
 	}{
 		{
-			"kyma module with Ready state, expected mapped to StateReady",
-			nil,
-			false,
-			[]moduleCheck{
-				{
-					[]string{"status", "state"},
-					string(shared.StateReady),
+			name: "Test Ready State",
+			podList: &apicorev1.PodList{
+				Items: []apicorev1.Pod{
+					{
+						Status: apicorev1.PodStatus{
+							ContainerStatuses: []apicorev1.ContainerStatus{
+								{
+									Ready:   true,
+									Started: ptr.To(true),
+								},
+							},
+						},
+					},
 				},
 			},
-			declarativev2.StateInfo{State: shared.StateReady},
-			false,
+			want: shared.StateReady,
 		},
 		{
-			"kyma module with unsupported State, expected mapped to StateWarning",
-			nil,
-			false,
-			[]moduleCheck{
-				{
-					[]string{"status", "state"},
-					"not support state",
+			name: "Test Processing State",
+			podList: &apicorev1.PodList{
+				Items: []apicorev1.Pod{
+					{
+						Status: apicorev1.PodStatus{
+							ContainerStatuses: []apicorev1.ContainerStatus{
+								{
+									Ready:   false,
+									Started: ptr.To(true),
+								},
+							},
+						},
+					},
 				},
 			},
-			declarativev2.StateInfo{State: shared.StateWarning, Info: manifest.ErrNotSupportedState.Error()},
-			false,
+			want: shared.StateProcessing,
 		},
 		{
-			"custom module with no CustomStateCheckAnnotation, expected mapped to StateProcessing",
-			nil,
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					"customState",
+			name: "Test Error State",
+			podList: &apicorev1.PodList{
+				Items: []apicorev1.Pod{
+					{
+						Status: apicorev1.PodStatus{
+							ContainerStatuses: []apicorev1.ContainerStatus{
+								{
+									Ready:   false,
+									Started: ptr.To(false),
+								},
+							},
+						},
+					},
 				},
 			},
-			declarativev2.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
-			false,
+			want: shared.StateError,
 		},
 		{
-			"custom module with not all required StateCheck, expected mapped to StateError with error",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       "customState",
-					MappedState: shared.StateReady,
+			name: "Test Empty State",
+			podList: &apicorev1.PodList{
+				Items: []apicorev1.Pod{
+					{
+						Status: apicorev1.PodStatus{},
+					},
 				},
 			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					"customState",
-				},
-			},
-			declarativev2.StateInfo{State: shared.StateError},
-			true,
+			want: shared.StateError,
 		},
 		{
-			"custom module found mapped value with StateReady, expected mapped to StateReady",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					definedValueForReady,
+			name: "Test Empty Started Condition",
+			podList: &apicorev1.PodList{
+				Items: []apicorev1.Pod{
+					{
+						Status: apicorev1.PodStatus{
+							ContainerStatuses: []apicorev1.ContainerStatus{
+								{
+									Ready: false,
+								},
+							},
+						},
+					},
 				},
 			},
-			declarativev2.StateInfo{State: shared.StateReady},
-			false,
-		},
-		{
-			"custom module found mapped value with StateError, expected mapped to StateError",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					definedValueForError,
-				},
-			},
-			declarativev2.StateInfo{State: shared.StateError},
-			false,
-		},
-		{
-			"custom module with additional StateCheck, expected mapped to correct state",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-				{
-					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
-					Value:       "customStateForWarning",
-					MappedState: shared.StateWarning,
-				},
-			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					"customStateWithOtherValue",
-				},
-				{
-					[]string{"fieldLevel3", "fieldLevel4", "fieldLevel5"},
-					"customStateForWarning",
-				},
-			},
-			declarativev2.StateInfo{State: shared.StateWarning},
-			false,
-		},
-		{
-			"custom module with multiple StateReady condition, expected mapped to StateReady when all condition matched",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-				{
-					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					definedValueForReady,
-				},
-				{
-					[]string{"fieldLevel3", "fieldLevel4", "fieldLevel5"},
-					definedValueForReady,
-				},
-			},
-			declarativev2.StateInfo{State: shared.StateReady},
-			false,
-		},
-		{
-			"custom module with multiple StateReady condition, expected " +
-				"mapped to StateProcessing when not all condition matched",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-				{
-					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					"not in defined value",
-				},
-				{
-					[]string{"fieldLevel3", "fieldLevel4", "fieldLevel5"},
-					definedValueForReady,
-				},
-			},
-			declarativev2.StateInfo{State: shared.StateProcessing},
-			false,
-		},
-		{
-			"custom module with additional StateCheck but no mapped value found, expected mapped to StateProcessing",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-				{
-					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
-					Value:       "customStateForWarning",
-					MappedState: shared.StateWarning,
-				},
-			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					"customStateWithOtherValue",
-				},
-				{
-					[]string{"fieldLevel3", "fieldLevel4", "fieldLevel5"},
-					"customStateWithOtherValue",
-				},
-			},
-			declarativev2.StateInfo{State: shared.StateProcessing},
-			false,
-		},
-		{
-			"custom module not in mapped value, expected mapped to StateProcessing",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
-				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-			},
-			true,
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel2"},
-					"customStateWithOtherValue",
-				},
-			},
-			declarativev2.StateInfo{State: shared.StateProcessing},
-			false,
+			want: shared.StateError,
 		},
 	}
-	for _, testCase := range tests {
-		testCase := testCase
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			manifestCR := testutils.NewTestManifest("test")
-			if testCase.customStateExpected {
-				if testCase.customState != nil {
-					marshal, err := json.Marshal(testCase.customState)
-					if err != nil {
-						t.Errorf("HandleState() error = %v", err)
-						return
-					}
-					manifestCR.Annotations[shared.CustomStateCheckAnnotation] = string(marshal)
-				}
-			}
-			manifestCR.CreationTimestamp = apimetav1.Now()
-			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(apimetav1.NamespaceDefault).
-				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
-			for _, check := range testCase.checkInModuleCR {
-				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
-				if err != nil {
-					t.Errorf("HandleState() error = %v", err)
-					return
-				}
-			}
-			got, err := manifest.HandleState(manifestCR, moduleCR)
-			if !reflect.DeepEqual(got, testCase.want) {
-				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
-			}
-			if (err != nil) != testCase.wantErr {
-				t.Errorf("HandleState() error = %v, wantErr %v", err, testCase.wantErr)
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, manifest.GetPodsState(tt.podList))
 		})
 	}
 }
 
-func TestHandleStateWithDuration(t *testing.T) {
-	t.Parallel()
-	type moduleCheck struct {
-		fields []string
-		value  string
-	}
-	definedValueForError := "customStateForError"
-	definedValueForReady := "customStateForReady"
+func Test_IsDeploymentReady(t *testing.T) {
 	tests := []struct {
-		name                string
-		customState         []*v1beta2.CustomStateCheck
-		customStateExpected bool
-		manifestCreatedAt   apimetav1.Time
-		checkInModuleCR     []moduleCheck
-		want                declarativev2.StateInfo
-		wantErr             bool
+		name     string
+		deploy   *apiappsv1.Deployment
+		expected bool
 	}{
 		{
-			"kyma module just created with no state, expected to StateProcessing",
-			nil,
-			false,
-			apimetav1.Now(),
-			nil,
-			declarativev2.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
-			false,
-		},
-		{
-			"kyma module with state updated, expected to StateReady",
-			nil,
-			false,
-			apimetav1.Now(),
-			[]moduleCheck{
-				{
-					[]string{"status", "state"},
-					string(shared.StateReady),
+			name: "Test Deployment Ready",
+			deploy: &apiappsv1.Deployment{
+				Status: apiappsv1.DeploymentStatus{
+					Conditions: []apiappsv1.DeploymentCondition{
+						{
+							Type:   apiappsv1.DeploymentAvailable,
+							Status: apicorev1.ConditionTrue,
+						},
+					},
+					ReadyReplicas: 1,
+				},
+				Spec: apiappsv1.DeploymentSpec{
+					Replicas: ptr.To(int32(1)),
 				},
 			},
-			declarativev2.StateInfo{State: shared.StateReady},
-			false,
+			expected: true,
 		},
 		{
-			"kyma module with no state after certain time, expected to StateWarning",
-			nil,
-			false,
-			apimetav1.NewTime(apimetav1.Now().Add(-10 * time.Minute)),
-			nil,
-			declarativev2.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithNoCustomCheckWarning},
-			false,
+			name: "Test Deployment Ready using Conditions",
+			deploy: &apiappsv1.Deployment{
+				Status: apiappsv1.DeploymentStatus{
+					ReadyReplicas: 1,
+				},
+				Spec: apiappsv1.DeploymentSpec{
+					Replicas: ptr.To(int32(1)),
+				},
+			},
+			expected: true,
 		},
 		{
-			"custom module with wrong JSON path after certain time, expected to StateWarning",
-			[]*v1beta2.CustomStateCheck{
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForReady,
-					MappedState: shared.StateReady,
+			name: "Test Deployment Not Ready",
+			deploy: &apiappsv1.Deployment{
+				Status: apiappsv1.DeploymentStatus{
+					Conditions: []apiappsv1.DeploymentCondition{
+						{
+							Type:   apiappsv1.DeploymentAvailable,
+							Status: apicorev1.ConditionFalse,
+						},
+					},
+					ReadyReplicas: 0,
 				},
-				{
-					JSONPath:    "fieldLevel1.fieldLevel2",
-					Value:       definedValueForError,
-					MappedState: shared.StateError,
-				},
-			},
-			true,
-			apimetav1.NewTime(apimetav1.Now().Add(-10 * time.Minute)),
-			[]moduleCheck{
-				{
-					[]string{"fieldLevel1", "fieldLevel3"},
-					definedValueForReady,
+				Spec: apiappsv1.DeploymentSpec{
+					Replicas: ptr.To(int32(1)),
 				},
 			},
-			declarativev2.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithCustomCheckWarning},
-			false,
+			expected: false,
 		},
 	}
-	for _, testCase := range tests {
-		testCase := testCase
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			manifestCR := testutils.NewTestManifest("test")
-			if testCase.customStateExpected {
-				if testCase.customState != nil {
-					marshal, err := json.Marshal(testCase.customState)
-					if err != nil {
-						t.Errorf("HandleState() error = %v", err)
-						return
-					}
-					manifestCR.Annotations[shared.CustomStateCheckAnnotation] = string(marshal)
-				}
-			}
-			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
-			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(apimetav1.NamespaceDefault).
-				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
-			for _, check := range testCase.checkInModuleCR {
-				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
-				if err != nil {
-					t.Errorf("HandleState() error = %v", err)
-					return
-				}
-			}
-			got, err := manifest.HandleState(manifestCR, moduleCR)
-			if !reflect.DeepEqual(got, testCase.want) {
-				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
-			}
-			if (err != nil) != testCase.wantErr {
-				t.Errorf("HandleState() error = %v, wantErr %v", err, testCase.wantErr)
-			}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, manifest.IsDeploymentReady(tt.deploy))
 		})
 	}
 }

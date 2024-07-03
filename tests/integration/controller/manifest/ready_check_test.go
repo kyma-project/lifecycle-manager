@@ -76,10 +76,10 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(resources).ToNot(BeEmpty())
 
 		By("Executing the CR readiness check")
-		customReadyCheck := manifest.NewCustomResourceReadyCheck()
-		stateInfo, err := customReadyCheck.Run(ctx, testClient, testManifest, resources)
+		customReadyCheck := manifest.NewDeploymentReadyCheck()
+		state, err := customReadyCheck.Run(ctx, testClient, resources)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(stateInfo.State).To(Equal(shared.StateReady))
+		Expect(state).To(Equal(shared.StateReady))
 
 		By("cleaning up the manifest")
 		Eventually(verifyObjectExists(ctx, kcpClient, expectedDeployment.ToUnstructured()), standardTimeout,
