@@ -39,7 +39,7 @@ To use Lifecycle Manager in a local setup, you need the following prerequisites:
    kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml
    ```
 
-You can also follow the official [Prometheus Operator quick start](https://prometheus-operator.dev/docs/prologue/quick-start/) guide to deploy a full set of Prometheus Operator features into your cluster.
+You can also follow the official [Prometheus Operator quick start](https://prometheus-operator.dev/docs/getting-started/quick-start/) guide to deploy a full set of Prometheus Operator features into your cluster.
 
 ### Deploy Lifecycle Manager
 
