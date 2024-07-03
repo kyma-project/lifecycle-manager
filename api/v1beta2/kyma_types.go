@@ -85,6 +85,11 @@ type Module struct {
 
 	// +kubebuilder:default:=CreateAndDelete
 	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
+	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
+	// for the lifecycle of the module.
+	// +kubebuilder:default:=true
+	Managed bool `json:"managed"`
 }
 
 // CustomResourcePolicy determines how a ModuleTemplate should be parsed. When CustomResourcePolicy is set to
