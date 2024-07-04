@@ -87,8 +87,8 @@ The resource is the default data that should be initialized for the module and i
 
 ### **.spec.managedResources**
 
-The managedResources are the resources which are managed manually by the user. They are represented by the `group/version/kind` format. 
-If the module is managed and gets deleted from the Kyma CR, module deletion is suspended until all custom resources with GVK listed in the spec.managedResources are removed manually by the user.   
+The managed resources are the resources that are handled manually by the user. They are represented by the `group/version/kind` format.  
+Suppose the module is managed and gets deleted from the Kyma CR. In that case, the module deletion is suspended until all custom resources with GVK listed in the **spec.managedResources** are removed manually by the user.   
 ```yaml
 spec:
   managedResources: 
