@@ -2,7 +2,9 @@ name: Lint golangci
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - feat/**
   workflow_dispatch:
 jobs:
   golangci:
