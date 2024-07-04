@@ -65,6 +65,7 @@ type ManifestSpec struct {
 
 	// ManagedResources specifies a list of resources which are managed
 	// manually by the user. The resources have the following format: <group>/<version>/<kind>.
+	// +optional
 	ManagedResources []string `json:"managedResources,omitempty"`
 }
 
