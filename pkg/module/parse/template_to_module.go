@@ -17,9 +17,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"os"
+	"strings"
 )
 
-var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
+var (
+	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
+	ErrManagedResourcesParsing = errors.New("managed resources could not be parsed")
+)
 
 type Parser struct {
 	client.Client
@@ -228,6 +233,12 @@ func insertLayerIntoManifest(
 			Type:               v1beta2.OciRefType,
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
+	case img.ManagedResourcesLayer:
+		managedResources, err := ReadManagedResourcesField(layer)
+		if err != nil {
+			return err
+		}
+		manifest.Spec.ManagedResources = managedResources
 	default:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
@@ -240,4 +251,17 @@ func insertLayerIntoManifest(
 	}
 
 	return nil
+}
+
+func ReadManagedResourcesField(layer img.Layer) ([]string, error) {
+	managedResources, ok := layer.LayerRepresentation.(*img.OCI)
+	if !ok {
+		return nil, fmt.Errorf("%w: not an OCIImage", ErrManagedResourcesParsing)
+	}
+	managedResourcesContent, err := os.ReadFile(managedResources.Ref)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %v", err)
+	}
+
+	return strings.Split(string(managedResourcesContent), "\n"), nil
 }
