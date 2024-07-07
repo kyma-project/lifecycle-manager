@@ -100,7 +100,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
 		err := kcpClient.Get(ctx, client.ObjectKey{
 			Name:      createModuleTemplateName(module),
-			Namespace: kyma.GetNamespace()}, moduleTemplateInCluster)
+			Namespace: kyma.GetNamespace(),
+		}, moduleTemplateInCluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		moduleTemplateInCluster.Spec = moduleTemplateFromFile.Spec
