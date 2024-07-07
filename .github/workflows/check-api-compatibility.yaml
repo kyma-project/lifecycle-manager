@@ -2,7 +2,9 @@ name: "Check API Version Compatibility"
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - feat/**
 
 jobs:
   check-api-version-diff:
