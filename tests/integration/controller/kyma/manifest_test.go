@@ -16,6 +16,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg/componentmapping"
 	"github.com/open-component-model/ocm/pkg/runtime"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -25,6 +26,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 const (
@@ -91,41 +93,26 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 			Should(Succeed())
 
-		By("Update Module Template spec.data.spec field")
-		valueUpdated := "valueUpdated"
-		Eventually(updateKCPModuleTemplateSpecData(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
+		By("Update Module Template spec")
+		var moduleTemplateFromFile v1beta2.ModuleTemplate
+		builder.ReadComponentDescriptorFromFile("operator_v1beta2_moduletemplate_kcp-module_updated.yaml", &moduleTemplateFromFile)
+
+		moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
+		err := kcpClient.Get(ctx, client.ObjectKey{
+			Name:      createModuleTemplateName(module),
+			Namespace: kyma.GetNamespace(),
+		}, moduleTemplateInCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		moduleTemplateInCluster.Spec = moduleTemplateFromFile.Spec
+
+		Eventually(kcpClient.Update, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(moduleTemplateInCluster).
+			Should(Succeed())
 
 		By("CR updated with new value in spec.resource.spec")
-		Eventually(expectManifestSpecDataEquals(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
-
-		By("Update Module Template spec.descriptor.component values")
-		{
-			newComponentDescriptorRepositoryURL := func(moduleTemplate *v1beta2.ModuleTemplate) error {
-				descriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
-				if err != nil {
-					return err
-				}
-
-				repositoryContext := descriptor.GetEffectiveRepositoryContext().Object
-				_, ok := repositoryContext["baseUrl"].(string)
-				if !ok {
-					Fail("Can't find \"baseUrl\" property in ModuleTemplate spec")
-				}
-				repositoryContext["baseUrl"] = updateRepositoryURL
-
-				newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
-				Expect(err).ToNot(HaveOccurred())
-				moduleTemplate.Spec.Descriptor.Raw = newDescriptorRaw
-
-				return nil
-			}
-
-			updateKCPModuleTemplateWith := updateKCPModuleTemplate(module, kyma.Spec.Channel)
-			update := func() error {
-				return updateKCPModuleTemplateWith(newComponentDescriptorRepositoryURL)
-			}
-			Eventually(update, Timeout, Interval).Should(Succeed())
-		}
+		Eventually(expectManifestSpecDataEquals(kyma.Name, "valueUpdated"), Timeout, Interval).Should(Succeed())
 
 		By("Manifest is updated with new value in spec.install.source")
 		{
@@ -209,6 +196,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 		manifestImageSpec.Repo = updateRepositoryURL
+		manifest.Spec.Version = "v1.7.0" // required to allow for SSA of manifest
 
 		// is there a simpler way to update manifest.Spec.Install?
 		updatedBytes, err := json.Marshal(manifestImageSpec)
