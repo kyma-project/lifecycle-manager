@@ -4,13 +4,14 @@ The [Manifest custom resource (CR)](../../../api/v1beta2/manifest_types.go) is o
 
 ## Patching
 
-The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and updating manifests via Server Side Apply (SSA). An update is only performed when one of the following conditions is met:
+The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and updating Manifest CRs using Server Side Apply (SSA). An update is only performed when one of the following conditions is met:
 
-1. The version of the manifest object is different from the version in the Kyma module status.
-2. The channel of the manifest object is different from the channel in the Kyma module status.
-3. The state of the manifest object is different from the state in the Kyma module status.
+1. The Manifest CR version differs from the Kyma CR's module status version.
+2. The Manifest CR channel differs from the Kyma CR's module status channel.
+3. The Manifest CR state differs from the Kyma CR's module status state.
 
-*NOTE:* The module status is not present in Kyma for mandatory modules, hence their manifest is updated via SSA in every reconcile loop.
+>[!NOTE] 
+>The module status is not present in the Kyma CR for mandatory modules, hence their Manifest CR is updated using SSA in every reconcile loop.
 
 ## Configuration
 
