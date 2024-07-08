@@ -64,7 +64,7 @@ type ManifestSpec struct {
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 
 	// AssociatedResources specifies a list of resources which are not managed
-	// by the lifecycle manager. The resources have the following format: <group>/<version>/<kind>.
+	// by Lifecycle Manager. The resources have the following format: <group>/<version>/<kind>.
 	// +optional
 	AssociatedResources []string `json:"associatedResources,omitempty"`
 }

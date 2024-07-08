@@ -52,7 +52,7 @@ spec:
               associatedResources:
                 description: |-
                   AssociatedResources specifies a list of resources which are not managed
-                  by the lifecycle manager. The resources have the following format: <group>/<version>/<kind>.
+                  by Lifecycle Manager. The resources have the following format: <group>/<version>/<kind>.
                 items:
                   type: string
                 type: array
@@ -329,7 +329,7 @@ spec:
               associatedResources:
                 description: |-
                   AssociatedResources specifies a list of resources which are not managed
-                  by the lifecycle manager. The resources have the following format: <group>/<version>/<kind>.
+                  by Lifecycle Manager. The resources have the following format: <group>/<version>/<kind>.
                 items:
                   type: string
                 type: array
