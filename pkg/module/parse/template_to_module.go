@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
-	ErrManagedResourcesParsing = errors.New("managed resources could not be parsed")
+	ErrDefaultConfigParsing       = errors.New("defaultConfig could not be parsed")
+	ErrAssociatedResourcesParsing = errors.New("associated resources could not be parsed")
 )
 
 type Parser struct {
@@ -233,12 +233,12 @@ func insertLayerIntoManifest(
 			Type:               v1beta2.OciRefType,
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
-	case img.ManagedResourcesLayer:
-		managedResources, err := ReadManagedResourcesField(layer)
+	case img.AssociatedResourcesLayer:
+		associatedResources, err := ReadAssociatedResourcesField(layer)
 		if err != nil {
 			return err
 		}
-		manifest.Spec.ManagedResources = managedResources
+		manifest.Spec.AssociatedResources = associatedResources
 	default:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
@@ -253,15 +253,15 @@ func insertLayerIntoManifest(
 	return nil
 }
 
-func ReadManagedResourcesField(layer img.Layer) ([]string, error) {
-	managedResources, ok := layer.LayerRepresentation.(*img.OCI)
+func ReadAssociatedResourcesField(layer img.Layer) ([]string, error) {
+	associatedResources, ok := layer.LayerRepresentation.(*img.OCI)
 	if !ok {
-		return nil, fmt.Errorf("%w: not an OCIImage", ErrManagedResourcesParsing)
+		return nil, fmt.Errorf("%w: not an OCIImage", ErrAssociatedResourcesParsing)
 	}
-	managedResourcesContent, err := os.ReadFile(managedResources.Ref)
+	associatedResourcesContent, err := os.ReadFile(associatedResources.Ref)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %v", err)
 	}
 
-	return strings.Split(string(managedResourcesContent), "\n"), nil
+	return strings.Split(string(associatedResourcesContent), "\n"), nil
 }

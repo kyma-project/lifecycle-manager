@@ -10,9 +10,9 @@ import (
 type LayerName string
 
 const (
-	ConfigLayer           LayerName = "config"
-	CRDsLayer             LayerName = "crds"
-	ManagedResourcesLayer LayerName = "managed-resources"
+	ConfigLayer              LayerName = "config"
+	CRDsLayer                LayerName = "crds"
+	AssociatedResourcesLayer LayerName = "associated-resources"
 )
 
 type LayerRepresentation interface {
