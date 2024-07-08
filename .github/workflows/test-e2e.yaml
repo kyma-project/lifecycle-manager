@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/**
   workflow_dispatch:
     inputs:
       k8s_version:
@@ -29,7 +30,7 @@ jobs:
           - watcher-enqueue
           - kyma-deprovision-with-foreground-propagation
           - kyma-deprovision-with-background-propagation
-          - module-status-propagation
+          - module-status-decoupling
           - kyma-metrics
           - module-without-default-cr
           - module-consistency
