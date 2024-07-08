@@ -63,10 +63,10 @@ type ManifestSpec struct {
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 
-	// ManagedResources specifies a list of resources which are managed
-	// manually by the user. The resources have the following format: <group>/<version>/<kind>.
+	// AssociatedResources specifies a list of resources which are not managed
+	// by Lifecycle Manager. The resources have the following format: <group>/<version>/<kind>.
 	// +optional
-	ManagedResources []string `json:"managedResources,omitempty"`
+	AssociatedResources []string `json:"associatedResources,omitempty"`
 }
 
 // ImageSpec defines OCI Image specifications.
