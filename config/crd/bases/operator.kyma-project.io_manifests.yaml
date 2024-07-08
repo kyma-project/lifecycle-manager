@@ -49,6 +49,13 @@ spec:
           spec:
             description: ManifestSpec defines the desired state of Manifest.
             properties:
+              associatedResources:
+                description: |-
+                  AssociatedResources specifies a list of resources which are not managed
+                  by the lifecycle manager. The resources have the following format: <group>/<version>/<kind>.
+                items:
+                  type: string
+                type: array
               config:
                 description: Config specifies OCI image configuration for Manifest
                 properties:
@@ -136,13 +143,6 @@ spec:
                 - name
                 - source
                 type: object
-              managedResources:
-                description: |-
-                  ManagedResources specifies a list of resources which are managed
-                  manually by the user. The resources have the following format: <group>/<version>/<kind>.
-                items:
-                  type: string
-                type: array
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster
@@ -326,6 +326,13 @@ spec:
           spec:
             description: ManifestSpec defines the desired state of Manifest.
             properties:
+              associatedResources:
+                description: |-
+                  AssociatedResources specifies a list of resources which are not managed
+                  by the lifecycle manager. The resources have the following format: <group>/<version>/<kind>.
+                items:
+                  type: string
+                type: array
               config:
                 description: Config specifies OCI image configuration for Manifest
                 properties:
@@ -413,13 +420,6 @@ spec:
                 - name
                 - source
                 type: object
-              managedResources:
-                description: |-
-                  ManagedResources specifies a list of resources which are managed
-                  manually by the user. The resources have the following format: <group>/<version>/<kind>.
-                items:
-                  type: string
-                type: array
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster

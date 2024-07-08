@@ -85,13 +85,13 @@ The [internal spec resolver](../../../internal/manifest/spec_resolver.go) uses t
 
 The resource is the default data that should be initialized for the module and is directly copied from **.spec.data** of the ModuleTemplate CR after normalizing it with the **namespace** for the synchronized module.
 
-### **.spec.managedResources**
+### **.spec.associatedResources**
 
-The managed resources are the resources that are handled manually by the user. They are represented by the `group/version/kind` format.  
+The associated resources are the resources that are not managed by the lifecycle manager. They are represented by the `group/version/kind` format.  
 Suppose the module is managed and gets deleted from the Kyma CR. In that case, the module deletion is suspended until all custom resources with GVK listed in the **spec.managedResources** are removed manually by the user.   
 ```yaml
 spec:
-  managedResources: 
+  associatedResources: 
   - serverless.kyma-project.io/v1alpha2/functions
   - operator.kyma-project.io/v1alpha1/serverlesses
 ```

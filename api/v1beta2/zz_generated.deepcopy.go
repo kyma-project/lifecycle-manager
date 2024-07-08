@@ -289,8 +289,8 @@ func (in *ManifestSpec) DeepCopyInto(out *ManifestSpec) {
 		in, out := &in.Resource, &out.Resource
 		*out = (*in).DeepCopy()
 	}
-	if in.ManagedResources != nil {
-		in, out := &in.ManagedResources, &out.ManagedResources
+	if in.AssociatedResources != nil {
+		in, out := &in.AssociatedResources, &out.AssociatedResources
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
