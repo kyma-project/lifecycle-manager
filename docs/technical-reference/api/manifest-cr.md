@@ -88,7 +88,7 @@ The resource is the default data that should be initialized for the module and i
 ### **.spec.associatedResources**
 
 Associated resources are resources that are not managed by Lifecycle Manager. They are represented by the `group/version/kind` format.  
-Suppose the module is managed and gets deleted from the Kyma CR. In that case, the module deletion is suspended until all custom resources with GVK listed in the **spec.managedResources** are removed manually by the user.   
+Suppose the module is managed and gets deleted from the Kyma CR. In that case, the module deletion is suspended until all custom resources with GVK listed in the **spec.associatedResources** are removed manually by the user.   
 ```yaml
 spec:
   associatedResources: 
