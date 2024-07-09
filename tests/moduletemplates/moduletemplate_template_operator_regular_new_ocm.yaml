@@ -14,7 +14,7 @@ spec:
   descriptor:
     component:
       componentReferences: []
-      creationTime: "2024-07-09T12:03:05Z"
+      creationTime: "2024-07-09T12:22:30Z"
       name: kyma-project.io/module/template-operator
       provider: kyma-project.io
       repositoryContexts:
@@ -59,13 +59,13 @@ spec:
           type: directory
           version: 1.0.0
         - access:
-            localReference: sha256.89256dd62ebab4f7f02482084b91301087a084426752b00754e14afd3575e019
+            localReference: sha256.b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd
             mediaType: application/octet-stream
             type: localBlob
           digest:
             hashAlgorithm: SHA-256
             normalisationAlgorithm: genericBlobDigest/v1
-            value: 89256dd62ebab4f7f02482084b91301087a084426752b00754e14afd3575e019
+            value: b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd
           name: associated-resources
           relation: local
           type: plainText
