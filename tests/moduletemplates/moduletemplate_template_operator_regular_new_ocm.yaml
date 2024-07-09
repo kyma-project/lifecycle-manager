@@ -66,7 +66,7 @@ spec:
             hashAlgorithm: SHA-256
             normalisationAlgorithm: genericBlobDigest/v1
             value: 89256dd62ebab4f7f02482084b91301087a084426752b00754e14afd3575e019
-          name: managed-resources
+          name: associated-resources
           relation: local
           type: plainText
           version: 1.0.0
