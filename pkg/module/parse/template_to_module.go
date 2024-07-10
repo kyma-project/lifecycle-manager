@@ -241,7 +241,7 @@ func (p *Parser) insertLayerIntoManifest(
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	case img.AssociatedResourcesLayer:
-		associatedResources, err := p.ReadAssociatedResourcesField(ctx, layer, version)
+		associatedResources, err := p.fetchAssociatedResourcesField(ctx, layer, version)
 		if err != nil {
 			return err
 		}
@@ -260,7 +260,7 @@ func (p *Parser) insertLayerIntoManifest(
 	return nil
 }
 
-func (p *Parser) ReadAssociatedResourcesField(ctx context.Context, layer img.Layer, version string) ([]string,
+func (p *Parser) fetchAssociatedResourcesField(ctx context.Context, layer img.Layer, version string) ([]string,
 	error) {
 	associatedResourcesLayer, ok := layer.LayerRepresentation.(*img.OCI)
 
@@ -297,7 +297,16 @@ func (p *Parser) ReadAssociatedResourcesField(ctx context.Context, layer img.Lay
 		return nil, fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
 	}
 
-	associatedResourcesContent, err := io.ReadAll(blobReader)
+	associatedResourcesList, err := ReadAssociatedResources(blobReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed fetching associated resources: %w", err)
+	}
+
+	return associatedResourcesList, nil
+}
+
+func ReadAssociatedResources(associatedResourcesFile io.ReadCloser) ([]string, error) {
+	associatedResourcesContent, err := io.ReadAll(associatedResourcesFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading associated resources: %w", err)
 	}

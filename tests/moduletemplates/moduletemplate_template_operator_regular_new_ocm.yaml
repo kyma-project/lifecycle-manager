@@ -35,7 +35,7 @@ spec:
           type: ociArtifact
           version: 1.0.0
         - access:
-            localReference: sha256.d2cc278224a71384b04963a83e784da311a268a2b3fa8732bc31e70ca0c5bc52
+            localReference: sha256:d2cc278224a71384b04963a83e784da311a268a2b3fa8732bc31e70ca0c5bc52
             mediaType: application/x-tar
             type: localBlob
           digest:
@@ -47,7 +47,7 @@ spec:
           type: directory
           version: 1.0.0
         - access:
-            localReference: sha256.9230471fa6a62ff7b1549e8d0e9ccb545896fabadf82d2ec4503fc798d2bcd8a
+            localReference: sha256:9230471fa6a62ff7b1549e8d0e9ccb545896fabadf82d2ec4503fc798d2bcd8a
             mediaType: application/x-tar
             type: localBlob
           digest:
@@ -59,7 +59,7 @@ spec:
           type: directory
           version: 1.0.0
         - access:
-            localReference: sha256.b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd
+            localReference: sha256:b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd
             mediaType: application/octet-stream
             type: localBlob
           digest:
