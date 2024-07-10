@@ -4,23 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
+	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
-
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/crane"
-	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
-
-var ErrImageLayerPull = errors.New("failed to pull layer")
 
 type PathExtractor struct {
 	fileMutexCache *filemutex.MutexCache
@@ -58,7 +51,7 @@ func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
 	}
 
 	// pull image layer
-	layer, err := pullLayer(ctx, imageRef, keyChain)
+	layer, err := img.PullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return "", err
 	}
@@ -89,27 +82,6 @@ func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
 		return manifestPath, fmt.Errorf("failed to close io: %w", err)
 	}
 	return manifestPath, nil
-}
-
-func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
-	noSchemeImageRef := ocmextensions.NoSchemeURL(imageRef)
-	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
-	if err != nil {
-		return nil, fmt.Errorf("invalid imageRef: %w", err)
-	}
-
-	if isInsecureLayer {
-		imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
-		if err != nil {
-			return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
-		}
-		return imgLayer, nil
-	}
-	imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
-	if err != nil {
-		return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
-	}
-	return imgLayer, nil
 }
 
 func getFsChartPath(imageSpec v1beta2.ImageSpec) string {

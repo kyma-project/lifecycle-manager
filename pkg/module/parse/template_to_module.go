@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/v1/google"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -186,7 +185,7 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(ctx, manifest, layers, descriptor.Version); err != nil {
+	if err := translateLayersAndMergeIntoManifest(ctx, manifest, layers, descriptor.Version, p.Client); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
@@ -213,10 +212,10 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 }
 
 func translateLayersAndMergeIntoManifest(
-	ctx context.Context, manifest *v1beta2.Manifest, layers img.Layers, version string,
+	ctx context.Context, manifest *v1beta2.Manifest, layers img.Layers, version string, clnt client.Client,
 ) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(ctx, manifest, layer, version); err != nil {
+		if err := insertLayerIntoManifest(ctx, manifest, layer, version, clnt); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
@@ -224,7 +223,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	ctx context.Context, manifest *v1beta2.Manifest, layer img.Layer, version string,
+	ctx context.Context, manifest *v1beta2.Manifest, layer img.Layer, version string, clnt client.Client,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -242,7 +241,7 @@ func insertLayerIntoManifest(
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	case img.AssociatedResourcesLayer:
-		associatedResources, err := ReadAssociatedResourcesField(ctx, layer, version)
+		associatedResources, err := ReadAssociatedResourcesField(ctx, layer, version, clnt)
 		if err != nil {
 			return err
 		}
@@ -261,8 +260,17 @@ func insertLayerIntoManifest(
 	return nil
 }
 
-func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer, version string) ([]string, error) {
+func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer, version string, clnt client.Client) ([]string,
+	error) {
 	associatedResourcesLayer, ok := layer.LayerRepresentation.(*img.OCI)
+
+	// associatedResourcesLayer := v1beta2.ImageSpec{
+	// 	Repo:               associatedResourcesLayer.Repo,
+	// 	Name:               associatedResourcesLayer.Name,
+	// 	Ref:                associatedResourcesLayer.Ref,
+	// 	CredSecretSelector: associatedResourcesLayer.CredSecretSelector,
+	// 	Type:               associatedResourcesLayer.Type,
+	// }
 	if !ok {
 		return nil, fmt.Errorf("%w: not an OCIImage", ErrAssociatedResourcesParsing)
 	}
@@ -274,9 +282,10 @@ func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer, version 
 	// 	"sap-kyma-jellyfish-dev/template-operator/component-descriptors/kyma-project.io/module/template-operator:1.0.0-new-ocm-format",
 	// 	"sha256:b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd")
 
+	// keyChain, err := ocmextensions.LookupKeyChain(ctx, associatedResourcesLayer, clnt)
 	keyChain := authn.NewMultiKeychain(google.Keychain, authn.DefaultKeychain)
 
-	imgLayer, err := crane.PullLayer(imageRef, crane.WithAuthFromKeychain(keyChain))
+	imgLayer, err := img.PullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("failed to pull layer %s: %v", imageRef, err))
 

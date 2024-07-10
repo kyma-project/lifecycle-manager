@@ -7,8 +7,6 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/v1/google"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -84,7 +82,7 @@ func (s *SpecResolver) getRawManifestForInstall(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	targetClient client.Client,
 ) (*RawManifestInfo, error) {
-	keyChain, err := s.lookupKeyChain(ctx, imageSpec, targetClient)
+	keyChain, err := ocmextensions.LookupKeyChain(ctx, imageSpec, targetClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
@@ -97,19 +95,4 @@ func (s *SpecResolver) getRawManifestForInstall(ctx context.Context,
 		Path:   rawManifestPath,
 		OCIRef: imageSpec.Ref,
 	}, nil
-}
-
-func (s *SpecResolver) lookupKeyChain(
-	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient client.Client,
-) (authn.Keychain, error) {
-	var keyChain authn.Keychain
-	var err error
-	if imageSpec.CredSecretSelector != nil {
-		if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, targetClient); err != nil {
-			return nil, err
-		}
-	} else {
-		keyChain = authn.DefaultKeychain
-	}
-	return authn.NewMultiKeychain(google.Keychain, keyChain), nil
 }

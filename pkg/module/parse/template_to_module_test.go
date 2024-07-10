@@ -21,7 +21,7 @@ func Test_ReadAssociatedResourcesField(t *testing.T) {
 		LayerName:           img.AssociatedResourcesLayer,
 		LayerRepresentation: &layerRepresentation,
 	}
-	got, err := parse.ReadAssociatedResourcesField(context.TODO(), layer)
+	got, err := parse.ReadAssociatedResourcesField(context.TODO(), layer, "0.2.2")
 	assert.NoError(t, err)
 	expectedResources := []string{
 		"serverless.kyma-project.io/v1alpha2/functions",

@@ -9,12 +9,29 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/kubernetes"
+	"github.com/google/go-containerregistry/pkg/v1/google"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var ErrNoAuthSecretFound = errors.New("no auth secret found")
+
+func LookupKeyChain(
+	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient client.Client,
+) (authn.Keychain, error) {
+	var keyChain authn.Keychain
+	var err error
+	if imageSpec.CredSecretSelector != nil {
+		if keyChain, err = GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, targetClient); err != nil {
+			return nil, err
+		}
+	} else {
+		keyChain = authn.DefaultKeychain
+	}
+	return authn.NewMultiKeychain(google.Keychain, keyChain), nil
+}
 
 func GetAuthnKeychain(ctx context.Context,
 	credSecretSelector *apimetav1.LabelSelector,
