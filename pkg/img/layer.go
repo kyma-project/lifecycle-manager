@@ -1,17 +1,18 @@
 package img
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"regexp"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
 type LayerName string

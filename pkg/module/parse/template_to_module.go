@@ -5,21 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/v1/google"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/yaml"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"io"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -241,7 +241,11 @@ func (p *Parser) insertLayerIntoManifest(
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	case img.AssociatedResourcesLayer:
-		associatedResources, err := p.fetchAssociatedResourcesField(ctx, layer, version)
+		associatedResourcesLayer, ok := layer.LayerRepresentation.(*img.OCI)
+		if !ok {
+			return fmt.Errorf("%w: not an OCIImage", ErrAssociatedResourcesParsing)
+		}
+		associatedResources, err := p.fetchAssociatedResourcesField(ctx, associatedResourcesLayer, version)
 		if err != nil {
 			return err
 		}
@@ -260,31 +264,24 @@ func (p *Parser) insertLayerIntoManifest(
 	return nil
 }
 
-func (p *Parser) fetchAssociatedResourcesField(ctx context.Context, layer img.Layer, version string) ([]string,
-	error) {
-	associatedResourcesLayer, ok := layer.LayerRepresentation.(*img.OCI)
-
-	// associatedResourcesLayer := v1beta2.ImageSpec{
-	// 	Repo:               associatedResourcesLayer.Repo,
-	// 	Name:               associatedResourcesLayer.Name,
-	// 	Ref:                associatedResourcesLayer.Ref,
-	// 	CredSecretSelector: associatedResourcesLayer.CredSecretSelector,
-	// 	Type:               associatedResourcesLayer.Type,
-	// }
-	if !ok {
-		return nil, fmt.Errorf("%w: not an OCIImage", ErrAssociatedResourcesParsing)
+func (p *Parser) fetchAssociatedResourcesField(ctx context.Context, layer *img.OCI, version string) ([]string,
+	error,
+) {
+	associatedResourcesLayer := v1beta2.ImageSpec{
+		Repo:               layer.Repo,
+		Name:               layer.Name,
+		Ref:                layer.Ref,
+		CredSecretSelector: layer.CredSecretSelector,
+		Type:               v1beta2.OciRefType,
 	}
+
 	imageRef := fmt.Sprintf("%s/%s:%s@%s", associatedResourcesLayer.Repo, associatedResourcesLayer.Name, version,
 		associatedResourcesLayer.Ref)
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("imageRef: %s", imageRef))
 
-	// imageRef := fmt.Sprintf("%s/%s@%s", "europe-west3-docker.pkg.dev",
-	// 	"sap-kyma-jellyfish-dev/template-operator/component-descriptors/kyma-project.io/module/template-operator:1.0.0-new-ocm-format",
-	// 	"sha256:b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd")
-
-	// keyChain, err := ocmextensions.LookupKeyChain(ctx, associatedResourcesLayer, p.Client)
-	keyChain := authn.NewMultiKeychain(google.Keychain, authn.DefaultKeychain)
-
+	keyChain, err := ocmextensions.LookupKeyChain(ctx, associatedResourcesLayer, p.Client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
+	}
 	imgLayer, err := img.PullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("failed to pull layer %s: %v", imageRef, err))

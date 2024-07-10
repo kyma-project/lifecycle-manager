@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"k8s.io/utils/strings/slices"
-	"os"
 )
 
 const (

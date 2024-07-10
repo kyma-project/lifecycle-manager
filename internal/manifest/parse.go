@@ -4,15 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
-	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/google/go-containerregistry/pkg/authn"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
+	"github.com/kyma-project/lifecycle-manager/pkg/img"
 )
 
 type PathExtractor struct {
