@@ -16,6 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"io"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -273,19 +274,19 @@ func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer) ([]strin
 		return nil, fmt.Errorf("failed to pull associated resources layer, %w", err)
 	}
 
-	blobReadCompressed, err := imgLayer.Compressed()
+	blobReader, err := imgLayer.Uncompressed()
 	if err != nil {
 		return nil, fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
 	}
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Compressed: %v", blobReadCompressed))
-	defer blobReadCompressed.Close()
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Uncompressed====: %v", blobReader))
+	defer blobReader.Close()
 
-	blobReadUncompressed, err := imgLayer.Uncompressed()
+	associatedResourcesContent, err := io.ReadAll(blobReader)
 	if err != nil {
-		return nil, fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
+		logf.FromContext(ctx).V(log.InfoLevel).Info("failed to read associated resources")
+		return nil, fmt.Errorf("failed reading associated resources: %w", err)
 	}
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Uncompressed====: %v", blobReadUncompressed))
-	defer blobReadUncompressed.Close()
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("CONTENT: %s", string(associatedResourcesContent)))
 
 	// filePath := fmt.Sprintf("%s/%s:%s/%s", associatedResources.Repo, associatedResources.Name, descriptorVersion,
 	// 	img.AssociatedResourcesLayer)
