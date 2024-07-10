@@ -273,12 +273,19 @@ func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer) ([]strin
 		return nil, fmt.Errorf("failed to pull associated resources layer, %w", err)
 	}
 
-	blobReadCloser, err := imgLayer.Compressed()
+	blobReadCompressed, err := imgLayer.Compressed()
 	if err != nil {
 		return nil, fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
 	}
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("blobReadCloser: %v", blobReadCloser))
-	defer blobReadCloser.Close()
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Compressed: %v", blobReadCompressed))
+	defer blobReadCompressed.Close()
+
+	blobReadUncompressed, err := imgLayer.Uncompressed()
+	if err != nil {
+		return nil, fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
+	}
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Uncompressed====: %v", blobReadUncompressed))
+	defer blobReadUncompressed.Close()
 
 	// filePath := fmt.Sprintf("%s/%s:%s/%s", associatedResources.Repo, associatedResources.Name, descriptorVersion,
 	// 	img.AssociatedResourcesLayer)
