@@ -115,11 +115,6 @@ func (m ModuleTemplateBuilder) WithOCM(schemaVersion compdesc.SchemaVersion) Mod
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithNewOCM() ModuleTemplateBuilder {
-	m.moduleTemplate.Spec.Descriptor = ComponentDescriptorFactoryForNewOCM()
-	return m
-}
-
 func (m ModuleTemplateBuilder) WithOCMPrivateRepo() ModuleTemplateBuilder {
 	if m.moduleTemplate.Labels == nil {
 		m.moduleTemplate.Labels = make(map[string]string)
@@ -133,13 +128,6 @@ func (m ModuleTemplateBuilder) WithOCMPrivateRepo() ModuleTemplateBuilder {
 
 func (m ModuleTemplateBuilder) Build() *v1beta2.ModuleTemplate {
 	return m.moduleTemplate
-}
-
-func ComponentDescriptorFactoryForNewOCM() machineryruntime.RawExtension {
-	var moduleTemplate v1beta2.ModuleTemplate
-	template := "moduletemplate_template_operator_regular_new_ocm.yaml"
-	readComponentDescriptorFromYaml(template, &moduleTemplate)
-	return moduleTemplate.Spec.Descriptor
 }
 
 func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) machineryruntime.RawExtension {
