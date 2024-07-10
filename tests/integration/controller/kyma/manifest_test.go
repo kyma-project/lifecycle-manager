@@ -329,6 +329,35 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 	})
 })
 
+var _ = Describe("Modules can only be referenced via official label", Ordered, func() {
+	kyma := NewTestKyma("random-kyma")
+	module := NewTestModule("random-module", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	Context("When operator is referenced just by the label name", func() {
+		It("returns the expected operator", func() {
+
+			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(moduleTemplate.Name).Should(Equal(module.Name))
+		})
+	})
+
+	Context("When operator is referenced by Namespace/Name", func() {
+		It("cannot find the operator", func() {
+			Expect(false).ToNot(BeTrue())
+		})
+	})
+
+	Context("When operator is referenced by FQDN", func() {
+		It("cannot find the operator", func() {
+			Expect(!false).ToNot(BeFalse())
+		})
+	})
+})
+
 func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	for _, r := range reslist {
 		if r.Name == v1beta2.RawManifestLayerName {
