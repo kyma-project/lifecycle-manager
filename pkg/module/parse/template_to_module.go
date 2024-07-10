@@ -185,7 +185,7 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(ctx, manifest, layers, descriptor.Version, p.Client); err != nil {
+	if err := p.translateLayersAndMergeIntoManifest(ctx, manifest, layers, descriptor.Version); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
@@ -211,19 +211,19 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 	return nil
 }
 
-func translateLayersAndMergeIntoManifest(
-	ctx context.Context, manifest *v1beta2.Manifest, layers img.Layers, version string, clnt client.Client,
+func (p *Parser) translateLayersAndMergeIntoManifest(
+	ctx context.Context, manifest *v1beta2.Manifest, layers img.Layers, version string,
 ) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(ctx, manifest, layer, version, clnt); err != nil {
+		if err := p.insertLayerIntoManifest(ctx, manifest, layer, version); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
 	return nil
 }
 
-func insertLayerIntoManifest(
-	ctx context.Context, manifest *v1beta2.Manifest, layer img.Layer, version string, clnt client.Client,
+func (p *Parser) insertLayerIntoManifest(
+	ctx context.Context, manifest *v1beta2.Manifest, layer img.Layer, version string,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -241,7 +241,7 @@ func insertLayerIntoManifest(
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	case img.AssociatedResourcesLayer:
-		associatedResources, err := ReadAssociatedResourcesField(ctx, layer, version, clnt)
+		associatedResources, err := p.ReadAssociatedResourcesField(ctx, layer, version)
 		if err != nil {
 			return err
 		}
@@ -260,7 +260,7 @@ func insertLayerIntoManifest(
 	return nil
 }
 
-func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer, version string, clnt client.Client) ([]string,
+func (p *Parser) ReadAssociatedResourcesField(ctx context.Context, layer img.Layer, version string) ([]string,
 	error) {
 	associatedResourcesLayer, ok := layer.LayerRepresentation.(*img.OCI)
 
@@ -282,7 +282,7 @@ func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer, version 
 	// 	"sap-kyma-jellyfish-dev/template-operator/component-descriptors/kyma-project.io/module/template-operator:1.0.0-new-ocm-format",
 	// 	"sha256:b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd")
 
-	// keyChain, err := ocmextensions.LookupKeyChain(ctx, associatedResourcesLayer, clnt)
+	// keyChain, err := ocmextensions.LookupKeyChain(ctx, associatedResourcesLayer, p.Client)
 	keyChain := authn.NewMultiKeychain(google.Keychain, authn.DefaultKeychain)
 
 	imgLayer, err := img.PullLayer(ctx, imageRef, keyChain)
