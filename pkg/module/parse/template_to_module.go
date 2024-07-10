@@ -6,10 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/v1/google"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -17,8 +16,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"os"
-	"strings"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -46,7 +46,8 @@ func NewParser(clnt client.Client,
 	}
 }
 
-func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates templatelookup.ModuleTemplatesByModuleName,
+func (p *Parser) GenerateModulesFromTemplates(ctx context.Context, kyma *v1beta2.Kyma,
+	templates templatelookup.ModuleTemplatesByModuleName,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -54,7 +55,7 @@ func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates temp
 
 	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
-		modules = p.appendModuleWithInformation(module, kyma, template, modules)
+		modules = p.appendModuleWithInformation(ctx, module, kyma, template, modules)
 	}
 	return modules
 }
@@ -74,7 +75,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			moduleName = template.Name
 		}
 
-		modules = p.appendModuleWithInformation(v1beta2.AvailableModule{
+		modules = p.appendModuleWithInformation(ctx, v1beta2.AvailableModule{
 			Module: v1beta2.Module{
 				Name:                 moduleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
@@ -86,7 +87,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	return modules
 }
 
-func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
+func (p *Parser) appendModuleWithInformation(ctx context.Context, module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
 	template *templatelookup.ModuleTemplateInfo, modules common.Modules,
 ) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
@@ -111,7 +112,7 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 	name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
-	if manifest, err = p.newManifestFromTemplate(module.Module,
+	if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
 		template.ModuleTemplate); err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
@@ -150,6 +151,7 @@ func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateInfo, nam
 }
 
 func (p *Parser) newManifestFromTemplate(
+	ctx context.Context,
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.Manifest, error) {
@@ -178,7 +180,7 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(manifest, layers); err != nil {
+	if err := translateLayersAndMergeIntoManifest(ctx, manifest, layers); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
@@ -205,10 +207,10 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *v1beta2.Manifest, layers img.Layers,
+	ctx context.Context, manifest *v1beta2.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(manifest, layer); err != nil {
+		if err := insertLayerIntoManifest(ctx, manifest, layer); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
@@ -216,7 +218,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *v1beta2.Manifest, layer img.Layer,
+	ctx context.Context, manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -234,7 +236,7 @@ func insertLayerIntoManifest(
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	case img.AssociatedResourcesLayer:
-		associatedResources, err := ReadAssociatedResourcesField(layer)
+		associatedResources, err := ReadAssociatedResourcesField(ctx, layer)
 		if err != nil {
 			return err
 		}
@@ -253,15 +255,39 @@ func insertLayerIntoManifest(
 	return nil
 }
 
-func ReadAssociatedResourcesField(layer img.Layer) ([]string, error) {
-	associatedResources, ok := layer.LayerRepresentation.(*img.OCI)
-	if !ok {
-		return nil, fmt.Errorf("%w: not an OCIImage", ErrAssociatedResourcesParsing)
-	}
-	associatedResourcesContent, err := os.ReadFile(associatedResources.Ref)
+func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer) ([]string, error) {
+	// associatedResources, ok := layer.LayerRepresentation.(*img.OCI)
+	// if !ok {
+	// 	return nil, fmt.Errorf("%w: not an OCIImage", ErrAssociatedResourcesParsing)
+	// }
+	imageRef := fmt.Sprintf("%s/%s@%s", "europe-west3-docker.pkg.dev",
+		"sap-kyma-jellyfish-dev/template-operator/component-descriptors/kyma-project.io/module/template-operator:1.0.0-new-ocm-format",
+		"sha256:b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd")
+
+	keyChain := authn.NewMultiKeychain(google.Keychain, authn.DefaultKeychain)
+
+	imgLayer, err := crane.PullLayer(imageRef, crane.WithAuthFromKeychain(keyChain))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %v", err)
+		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("failed to pull layer %s: %v", imageRef, err))
+
+		return nil, fmt.Errorf("failed to pull associated resources layer, %w", err)
 	}
 
-	return strings.Split(string(associatedResourcesContent), "\n"), nil
+	blobReadCloser, err := imgLayer.Compressed()
+	if err != nil {
+		return nil, fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
+	}
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("blobReadCloser: %v", blobReadCloser))
+	defer blobReadCloser.Close()
+
+	// filePath := fmt.Sprintf("%s/%s:%s/%s", associatedResources.Repo, associatedResources.Name, descriptorVersion,
+	// 	img.AssociatedResourcesLayer)
+	// associatedResourcesContent, err := os.ReadFile(filePath)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to read file: %v", err)
+	// }
+
+	// return strings.Split(string(associatedResourcesContent), "\n"), nil
+
+	return nil, nil
 }

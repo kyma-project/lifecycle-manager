@@ -1,6 +1,7 @@
 package parse_test
 
 import (
+	"context"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
@@ -20,7 +21,7 @@ func Test_ReadAssociatedResourcesField(t *testing.T) {
 		LayerName:           img.AssociatedResourcesLayer,
 		LayerRepresentation: &layerRepresentation,
 	}
-	got, err := parse.ReadAssociatedResourcesField(layer)
+	got, err := parse.ReadAssociatedResourcesField(context.TODO(), layer)
 	assert.NoError(t, err)
 	expectedResources := []string{
 		"serverless.kyma-project.io/v1alpha2/functions",

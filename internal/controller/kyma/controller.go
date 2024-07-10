@@ -538,7 +538,7 @@ func (r *Reconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1be
 		}
 	}
 	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
-	return parser.GenerateModulesFromTemplates(kyma, templates), nil
+	return parser.GenerateModulesFromTemplates(ctx, kyma, templates), nil
 }
 
 func (r *Reconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {

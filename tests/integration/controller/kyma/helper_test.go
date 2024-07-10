@@ -39,6 +39,17 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 }
 
+func RegisterDefaultLifecycleForKymaWithNewOCMModuleTemplates(kyma *v1beta2.Kyma) {
+	BeforeAll(func() {
+		DeployModuleTemplateWithNewOcm(ctx, kcpClient, kyma)
+	})
+
+	AfterAll(func() {
+		DeleteModuleTemplatesWithNewOCM(ctx, kcpClient, kyma)
+	})
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+}
+
 func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		Eventually(CreateCR, Timeout, Interval).
@@ -69,6 +80,32 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
+	}
+}
+
+func DeleteModuleTemplatesWithNewOCM(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template := builder.NewModuleTemplateBuilder().
+			WithName(createModuleTemplateName(module)).
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithNewOCM().Build()
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, template).Should(Succeed())
+	}
+}
+
+func DeployModuleTemplateWithNewOcm(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template := builder.NewModuleTemplateBuilder().
+			WithName(createModuleTemplateName(module)).
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithNewOCM().Build()
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
 	}
 }
 

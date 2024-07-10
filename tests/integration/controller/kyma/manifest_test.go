@@ -24,7 +24,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"k8s.io/utils/strings/slices"
+	"os"
 )
 
 const (
@@ -41,9 +44,11 @@ const (
 )
 
 var (
-	ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
-	ErrVersionMismatch         = errors.New("manifest spec.version mismatch with module template")
-	ErrInvalidManifest         = errors.New("invalid ManifestResource")
+	ErrEmptyModuleTemplateData          = errors.New("module template spec.data is empty")
+	ErrVersionMismatch                  = errors.New("manifest spec.version mismatch with module template")
+	ErrInvalidManifest                  = errors.New("invalid ManifestResource")
+	ErrIncorrectAssociatedResources     = errors.New("incorrect associated resources")
+	ErrAssociatedResourcesLayerNotFound = errors.New("associated resources layer not found")
 )
 
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
@@ -187,6 +192,30 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 			return nil
 		}
 		Eventually(expectManifest(hasValidSpecVersion), Timeout, Interval).Should(Succeed())
+	})
+})
+
+var _ = FDescribe("Manifest.Spec is rendered correctly for the new OCM format", Ordered, func() {
+	kyma := NewTestKyma("kyma")
+	module := NewTestModule("test-module-new-ocm", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+	RegisterDefaultLifecycleForKymaWithNewOCMModuleTemplates(kyma)
+
+	It("validate Manifest", func() {
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel)
+		Expect(err).NotTo(HaveOccurred())
+
+		expectManifest := expectManifestFor(kyma)
+		By("checking Spec.AssociatedResources")
+		hasValidSpecAssociatedResources := func(manifest *v1beta2.Manifest) error {
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+			if err != nil {
+				return err
+			}
+
+			return validateManifestSpecAssociatedResources(manifest.Spec.AssociatedResources, moduleTemplateDescriptor)
+		}
+		Eventually(expectManifest(hasValidSpecAssociatedResources), Timeout, Interval).Should(Succeed())
 	})
 })
 
@@ -367,6 +396,38 @@ func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
 	}
 
 	return validateManifestSpecInstallSourceType(manifestImageSpec)
+}
+
+func validateManifestSpecAssociatedResources(associatedResources []string,
+	moduleTemplateDescriptor *v1beta2.Descriptor,
+) error {
+	moduleTemplateResources := moduleTemplateDescriptor.Resources
+	for _, res := range moduleTemplateResources {
+		if res.Name == string(img.AssociatedResourcesLayer) {
+			aspec, err := ocm.DefaultContext().AccessSpecForSpec(res.Access)
+			if err != nil {
+				return err
+			}
+			concreteAccessSpec, ok := aspec.(*localblob.AccessSpec)
+			if !ok {
+				return fmt.Errorf("Unexpected Resource Access Type: %T", aspec)
+			}
+
+			associatedResourcesContent, err := os.ReadFile(concreteAccessSpec.LocalReference)
+			if err != nil {
+				return fmt.Errorf("failed to read associated resources contentq: %w", err)
+			}
+
+			expectedAssociatedResources := strings.Split(string(associatedResourcesContent), "\n")
+			if !slices.Equal(expectedAssociatedResources, associatedResources) {
+				return ErrIncorrectAssociatedResources
+			}
+
+			return nil
+		}
+	}
+
+	return ErrAssociatedResourcesLayerNotFound
 }
 
 func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,

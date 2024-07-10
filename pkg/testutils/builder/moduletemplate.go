@@ -39,9 +39,11 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Data: data,
 				Descriptor: machineryruntime.RawExtension{
 					Object: &v1beta2.Descriptor{
-						ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{
-							ConfiguredVersion: compdescv2.SchemaVersion,
-						}},
+						ComponentDescriptor: &compdesc.ComponentDescriptor{
+							Metadata: compdesc.Metadata{
+								ConfiguredVersion: compdescv2.SchemaVersion,
+							},
+						},
 					},
 				},
 			},
@@ -113,6 +115,11 @@ func (m ModuleTemplateBuilder) WithOCM(schemaVersion compdesc.SchemaVersion) Mod
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithNewOCM() ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.Descriptor = ComponentDescriptorFactoryForNewOCM()
+	return m
+}
+
 func (m ModuleTemplateBuilder) WithOCMPrivateRepo() ModuleTemplateBuilder {
 	if m.moduleTemplate.Labels == nil {
 		m.moduleTemplate.Labels = make(map[string]string)
@@ -126,6 +133,13 @@ func (m ModuleTemplateBuilder) WithOCMPrivateRepo() ModuleTemplateBuilder {
 
 func (m ModuleTemplateBuilder) Build() *v1beta2.ModuleTemplate {
 	return m.moduleTemplate
+}
+
+func ComponentDescriptorFactoryForNewOCM() machineryruntime.RawExtension {
+	var moduleTemplate v1beta2.ModuleTemplate
+	template := "moduletemplate_template_operator_regular_new_ocm.yaml"
+	readComponentDescriptorFromYaml(template, &moduleTemplate)
+	return moduleTemplate.Spec.Descriptor
 }
 
 func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) machineryruntime.RawExtension {
@@ -149,7 +163,7 @@ func readComponentDescriptorFromYaml(template string, moduleTemplate *v1beta2.Mo
 		panic("Can't capture current filename!")
 	}
 	modulePath := filepath.Join(
-		filepath.Dir(filename), "../../../config/samples/component-integration-installed", template,
+		filepath.Dir(filename), "../../../tests/moduletemplates", template,
 	)
 
 	moduleFile, err := os.ReadFile(modulePath)
