@@ -118,7 +118,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if r.ShouldSkip(ctx, obj) {
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
-
 	if err := r.initialize(obj); err != nil {
 		return r.finishReconcile(ctx, obj, metrics.ManifestInit, currentObjStatus, err)
 	}
