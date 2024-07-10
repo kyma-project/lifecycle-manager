@@ -20,7 +20,6 @@ import (
 )
 
 const (
-	FinalizerDefault        = "declarative.kyma-project.io/finalizer"
 	FieldOwnerDefault       = "declarative.kyma-project.io/applier"
 	EventRecorderDefault    = "declarative.kyma-project.io/events"
 	DefaultInMemoryParseTTL = 24 * time.Hour
@@ -29,7 +28,6 @@ const (
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
 		WithNamespace(apimetav1.NamespaceDefault, false),
-		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(
 			ManagedByDeclarativeV2,
@@ -60,8 +58,6 @@ type Options struct {
 
 	Namespace       string
 	CreateNamespace bool
-
-	Finalizer string
 
 	ServerSideApply bool
 	FieldOwner      client.FieldOwner
@@ -110,12 +106,6 @@ type WithFieldOwner client.FieldOwner
 
 func (o WithFieldOwner) Apply(options *Options) {
 	options.FieldOwner = client.FieldOwner(o)
-}
-
-type WithFinalizer string
-
-func (o WithFinalizer) Apply(options *Options) {
-	options.Finalizer = string(o)
 }
 
 type WithManagerOption struct {

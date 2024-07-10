@@ -37,9 +37,10 @@ var (
 )
 
 const (
-	namespaceNotBeRemoved  = "kyma-system"
-	CustomResourceManager  = "resource.kyma-project.io/finalizer"
-	SyncedOCIRefAnnotation = "sync-oci-ref"
+	namespaceNotBeRemoved          = "kyma-system"
+	CustomResourceManagerFinalizer = "resource.kyma-project.io/finalizer"
+	SyncedOCIRefAnnotation         = "sync-oci-ref"
+	defaultFinalizer               = "declarative.kyma-project.io/finalizer"
 )
 
 func NewFromManager(mgr manager.Manager, prototype Object, requeueIntervals queue.RequeueIntervals,
@@ -132,7 +133,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if obj.GetDeletionTimestamp().IsZero() {
 		objMeta := r.partialObjectMetadata(obj)
-		if controllerutil.AddFinalizer(objMeta, r.Finalizer) {
+		if controllerutil.AddFinalizer(objMeta, defaultFinalizer) {
 			return r.ssaSpec(ctx, objMeta, metrics.ManifestAddFinalizer)
 		}
 	}
@@ -227,7 +228,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, obj 
 }
 
 func (r *Reconciler) finalizerToRemove(originalErr error, obj Object) []string {
-	finalizersToRemove := []string{r.Finalizer}
+	finalizersToRemove := []string{defaultFinalizer}
 	if errors.Is(originalErr, ErrAccessSecretNotFound) {
 		finalizersToRemove = obj.GetFinalizers()
 	}
