@@ -18,14 +18,18 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"io"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
-	ErrDefaultConfigParsing       = errors.New("defaultConfig could not be parsed")
-	ErrAssociatedResourcesParsing = errors.New("associated resources could not be parsed")
+	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 )
+
+type AssociatedResourcesContent struct {
+	AssociatedResources []string `yaml:"associatedResources"`
+}
 
 type Parser struct {
 	client.Client
@@ -257,10 +261,13 @@ func insertLayerIntoManifest(
 }
 
 func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer) ([]string, error) {
-	// associatedResources, ok := layer.LayerRepresentation.(*img.OCI)
+	// associatedResourcesLayer, ok := layer.LayerRepresentation.(*img.OCI)
 	// if !ok {
 	// 	return nil, fmt.Errorf("%w: not an OCIImage", ErrAssociatedResourcesParsing)
 	// }
+	// imageRef := fmt.Sprintf("%s/%s:%s/%s", associatedResources.Repo, associatedResources.Name, descriptorVersion,
+	// 	img.AssociatedResourcesLayer)
+
 	imageRef := fmt.Sprintf("%s/%s@%s", "europe-west3-docker.pkg.dev",
 		"sap-kyma-jellyfish-dev/template-operator/component-descriptors/kyma-project.io/module/template-operator:1.0.0-new-ocm-format",
 		"sha256:b46281580f6377bf10672b5a8f156d183d47c0ec3bcda8b807bd8c5d520884bd")
@@ -278,24 +285,24 @@ func ReadAssociatedResourcesField(ctx context.Context, layer img.Layer) ([]strin
 	if err != nil {
 		return nil, fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
 	}
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Uncompressed====: %v", blobReader))
-	defer blobReader.Close()
 
 	associatedResourcesContent, err := io.ReadAll(blobReader)
 	if err != nil {
-		logf.FromContext(ctx).V(log.InfoLevel).Info("failed to read associated resources")
 		return nil, fmt.Errorf("failed reading associated resources: %w", err)
 	}
-	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("CONTENT: %s", string(associatedResourcesContent)))
 
-	// filePath := fmt.Sprintf("%s/%s:%s/%s", associatedResources.Repo, associatedResources.Name, descriptorVersion,
-	// 	img.AssociatedResourcesLayer)
-	// associatedResourcesContent, err := os.ReadFile(filePath)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to read file: %v", err)
-	// }
+	var associatedResourcesList AssociatedResourcesContent
+	err = yaml.Unmarshal(associatedResourcesContent, &associatedResourcesList)
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("RESOURCESSS: %s", associatedResourcesList))
+	logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("RESOURCESSS LIST: %s",
+		associatedResourcesList.AssociatedResources))
+	if err != nil {
+		return nil, fmt.Errorf("failed unmarshalling associated resources: %w", err)
+	}
 
-	// return strings.Split(string(associatedResourcesContent), "\n"), nil
+	for _, resource := range associatedResourcesList.AssociatedResources {
+		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("RESOURCE: %s", resource))
+	}
 
-	return nil, nil
+	return associatedResourcesList.AssociatedResources, nil
 }
