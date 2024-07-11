@@ -62,43 +62,14 @@ spec:
       name: kyma-project.io/module/sample
 ```
 
-The module mentioned above can be referenced in one of the following ways:
-
-* The label value of `operator.kyma-project.io/module-name`:
-
-    ```yaml
-    spec:
-      channel: regular
-      modules:
-      - name: module-name-from-label
-    ```
-
-* The name or namespace/name of a ModuleTemplate CR:
-
-    ```yaml
-    spec:
-      channel: regular
-      modules:
-      - name: moduletemplate-sample
-    ```
-
-   or
-
-    ```yaml
-    spec:
-      channel: regular
-      modules:
-      - name: default/moduletemplate-sample
-    ```
-
-* The fully qualified name of the descriptor as located in **.spec.descriptor.component.name**:
-
-    ```yaml
-    spec:
-      channel: regular
-      modules:
-      - name: kyma-project.io/module/sample
-    ```
+The module mentioned above can *only* be referenced via the label value of `operator.kyma-project.io/module-name`:
+```yaml
+spec:
+  channel: regular
+  modules:
+  - name: module-name-from-label
+```
+*Module referencing via NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.*
 
 ### **.spec.modules[].customResourcePolicy**
 
