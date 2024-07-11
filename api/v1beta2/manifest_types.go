@@ -17,10 +17,11 @@ limitations under the License.
 package v1beta2
 
 import (
+	"strconv"
+
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
