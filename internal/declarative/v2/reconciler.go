@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"strconv"
 	"time"
 
@@ -340,12 +341,12 @@ func (r *Reconciler) renderResources(
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
+func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
 	target []*resource.Info,
 ) error {
 	status := manifest.GetStatus()
 
-	if err := ConcurrentSSA(clnt, defaultFieldOwner).Run(ctx, target); err != nil {
+	if err := ConcurrentSSA(skrClient, defaultFieldOwner).Run(ctx, target); err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -363,19 +364,47 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v
 		return ErrWarningResourceSyncStateDiff
 	}
 
-	for i := range r.PostRuns {
-		if err := r.PostRuns[i](ctx, clnt, r.Client, manifest); err != nil {
-			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
-			return err
-		}
+	if err := r.postRunCreateCR(ctx, skrClient, manifest); err != nil {
+		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		return err
+
 	}
 
-	deploymentState, err := r.checkDeploymentState(ctx, clnt, target)
+	deploymentState, err := r.checkDeploymentState(ctx, skrClient, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 	return r.setManifestState(manifest, deploymentState)
+}
+
+func (r *Reconciler) postRunCreateCR(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest) error {
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
+
+	err := skrClient.Create(ctx, manifest.Spec.Resource.DeepCopy(), client.FieldOwner(CustomResourceManagerFinalizer))
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	oMeta := &apimetav1.PartialObjectMetadata{}
+	oMeta.SetName(manifest.GetName())
+	oMeta.SetGroupVersionKind(manifest.GetObjectKind().GroupVersionKind())
+	oMeta.SetNamespace(manifest.GetNamespace())
+	oMeta.SetFinalizers(manifest.GetFinalizers())
+	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
+		if err := r.Client.Patch(
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(CustomResourceManagerFinalizer),
+		); err != nil {
+			return fmt.Errorf("failed to patch resource: %w", err)
+		}
+		return ErrRequeueRequired
+	}
+	return nil
 }
 
 func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
@@ -440,15 +469,48 @@ func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, state shared.S
 	return nil
 }
 
-func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, manifest *v1beta2.Manifest) error {
+func (r *Reconciler) removeModuleCR(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest) error {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		for _, preDelete := range r.PreDeletes {
-			if err := preDelete(ctx, clnt, r.Client, manifest); err != nil {
-				// we do not set a status here since it will be deleting if timestamp is set.
-				manifest.SetStatus(manifest.GetStatus().WithErr(err))
-				return err
-			}
+		if err := r.preDeleteCR(ctx, skrClient, manifest); err != nil {
+			// we do not set a status here since it will be deleting if timestamp is set.
+			manifest.SetStatus(manifest.GetStatus().WithErr(err))
+			return err
 		}
+	}
+	return nil
+}
+
+// preDeleteCR is a hook for deleting the module CR if available in the cluster.
+// It uses DeletePropagationBackground to delete module CR.
+// Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
+// and we consider the CR removal successful.
+func (r *Reconciler) preDeleteCR(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest) error {
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+
+	propagation := apimetav1.DeletePropagationBackground
+	err := skrClient.Delete(ctx, manifest.Spec.Resource.DeepCopy(), &client.DeleteOptions{PropagationPolicy: &propagation})
+
+	if !util.IsNotFound(err) {
+		return nil
+	}
+
+	onCluster := manifest.DeepCopy()
+	err = r.Client.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster)
+	if util.IsNotFound(err) {
+		return fmt.Errorf("preDeleteCR: %w", err)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to fetch resource: %w", err)
+	}
+	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
+		if err := r.Client.Update(
+			ctx, onCluster, client.FieldOwner(CustomResourceManagerFinalizer),
+		); err != nil {
+			return fmt.Errorf("failed to update resource: %w", err)
+		}
+		return ErrRequeueRequired
 	}
 	return nil
 }

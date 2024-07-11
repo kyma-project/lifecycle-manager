@@ -26,7 +26,5 @@ func NewReconciler(mgr manager.Manager,
 		manifest.NewDeploymentReadyCheck(),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
-		declarativev2.WithPostRun{manifest.PostRunCreateCR},
-		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
 	)
 }
