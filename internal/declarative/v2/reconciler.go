@@ -114,8 +114,7 @@ func newResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	startTime := time.Now()
-	defer r.recordReconciliationDuration(startTime, req.Name)
+	defer r.recordReconciliationDuration(time.Now(), req.Name)
 
 	manifest := &v1beta2.Manifest{}
 	if err := r.Get(ctx, req.NamespacedName, manifest); err != nil {
@@ -126,7 +125,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
-	manifestStatus := manifest.GetStatus()
 
 	if manifest.SkipReconciliation() {
 		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
@@ -134,6 +132,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
+	manifestStatus := manifest.GetStatus()
 	if err := r.initialize(manifest); err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
