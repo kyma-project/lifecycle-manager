@@ -62,5 +62,5 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 }
 
 func generateCacheKey(spec *Spec) string {
-	return filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName) + "-raw"
+	return filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
 }
