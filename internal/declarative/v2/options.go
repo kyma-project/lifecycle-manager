@@ -29,7 +29,6 @@ func DefaultOptions() *Options {
 		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
-		WithModuleCRDeletionCheck(NewDefaultDeletionCheck()),
 	)
 }
 
@@ -50,10 +49,6 @@ type Options struct {
 
 	PostRuns   []PostRun
 	PreDeletes []PreDelete
-
-	DeletionCheck ModuleCRDeletionCheck
-
-	DeletePrerequisites bool
 }
 
 type Option interface {
@@ -154,18 +149,6 @@ type WithPreDelete []PreDelete
 
 func (o WithPreDelete) Apply(options *Options) {
 	options.PreDeletes = append(options.PreDeletes, o...)
-}
-
-func WithModuleCRDeletionCheck(deletionCheckFn ModuleCRDeletionCheck) WithModuleCRDeletionCheckOption {
-	return WithModuleCRDeletionCheckOption{ModuleCRDeletionCheck: deletionCheckFn}
-}
-
-type WithModuleCRDeletionCheckOption struct {
-	ModuleCRDeletionCheck
-}
-
-func (o WithModuleCRDeletionCheckOption) Apply(options *Options) {
-	options.DeletionCheck = o
 }
 
 type WithSingletonClientCacheOption struct {

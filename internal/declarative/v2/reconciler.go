@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strconv"
 	"time"
 
@@ -45,11 +47,10 @@ const (
 	defaultFieldOwner              client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
-func NewFromManager(mgr manager.Manager, prototype Object, requeueIntervals queue.RequeueIntervals,
+func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
 	metrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
-	reconciler.prototype = prototype
 	reconciler.ManifestMetrics = metrics
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
 	reconciler.RequeueIntervals = requeueIntervals
@@ -58,7 +59,6 @@ func NewFromManager(mgr manager.Manager, prototype Object, requeueIntervals queu
 }
 
 type Reconciler struct {
-	prototype Object
 	queue.RequeueIntervals
 	*Options
 	ManifestMetrics        *metrics.ManifestMetrics
@@ -99,16 +99,6 @@ func newResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 	}
 }
 
-func hasSkipReconcileLabel(ctx context.Context, manifest *v1beta2.Manifest) bool {
-	if manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true) {
-		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
-			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
-		return true
-	}
-
-	return false
-}
-
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
@@ -125,7 +115,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	manifestStatus := manifest.GetStatus()
 
-	if hasSkipReconcileLabel(ctx, manifest) {
+	if manifest.SkipReconciliation() {
+		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
+			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
@@ -160,7 +152,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateObject(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
-	clnt, err := r.getTargetClient(ctx, manifest)
+	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
 		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
 			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit,
@@ -171,7 +163,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err)
 	}
 
-	target, current, err := r.renderResources(ctx, clnt, manifest, spec)
+	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
 			r.invalidateClientCache(ctx, manifest)
@@ -181,14 +173,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
-	if err := r.pruneDiff(ctx, clnt, manifest, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
 
-	if err := r.removeModuleCR(ctx, clnt, manifest); err != nil {
+	if err := r.removeModuleCR(ctx, skrClient, manifest); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
@@ -196,7 +188,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 	}
 
-	if err = r.syncResources(ctx, clnt, manifest, target); err != nil {
+	if err = r.syncResources(ctx, skrClient, manifest, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
@@ -311,7 +303,7 @@ func (r *Reconciler) Spec(ctx context.Context, manifest *v1beta2.Manifest) (*Spe
 
 func (r *Reconciler) renderResources(
 	ctx context.Context,
-	clnt Client,
+	skrClient Client,
 	manifest *v1beta2.Manifest,
 	spec *Spec,
 ) ([]*resource.Info, []*resource.Info, error) {
@@ -321,9 +313,9 @@ func (r *Reconciler) renderResources(
 	var err error
 	var target, current ResourceList
 
-	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), apimetav1.NamespaceDefault)
+	converter := NewResourceToInfoConverter(ResourceInfoConverter(skrClient), apimetav1.NamespaceDefault)
 
-	if target, err = r.renderTargetResources(ctx, clnt, converter, manifest, spec); err != nil {
+	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
@@ -460,13 +452,13 @@ func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, manifest *
 
 func (r *Reconciler) renderTargetResources(
 	ctx context.Context,
-	clnt client.Client,
+	skrClient client.Client,
 	converter ResourceToInfoConverter,
 	manifest *v1beta2.Manifest,
 	spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		deleted, err := r.DeletionCheck.Run(ctx, clnt, manifest)
+		deleted, err := checkCRDeletion(ctx, skrClient, manifest)
 		if err != nil {
 			return nil, err
 		}
@@ -497,6 +489,32 @@ func (r *Reconciler) renderTargetResources(
 	}
 
 	return target, nil
+}
+
+func checkCRDeletion(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (bool, error) {
+	if manifest.Spec.Resource == nil {
+		return true, nil
+	}
+
+	name := manifest.Spec.Resource.GetName()
+	namespace := manifest.Spec.Resource.GetNamespace()
+	gvk := manifest.Spec.Resource.GroupVersionKind()
+
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
+	})
+
+	if err := skrClient.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
+		if util.IsNotFound(err) {
+			return true, nil
+		}
+		return false, fmt.Errorf("%w: failed to fetch default resource CR", err)
+	}
+	return false, nil
 }
 
 func (r *Reconciler) pruneDiff(
