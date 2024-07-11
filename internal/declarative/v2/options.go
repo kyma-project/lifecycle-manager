@@ -46,8 +46,6 @@ type Options struct {
 	ManifestCache
 	CustomReadyCheck ReadyCheck
 
-	ServerSideApply bool
-
 	PostRenderTransforms []ObjectTransform
 
 	PostRuns   []PostRun
