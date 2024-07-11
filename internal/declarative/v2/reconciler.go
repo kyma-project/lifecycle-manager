@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"strconv"
 	"time"
 
@@ -98,6 +99,16 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 	}
 }
 
+func hasSkipReconcileLabel(ctx context.Context, object Object) bool {
+	if object.GetLabels() != nil && object.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true) {
+		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
+			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
+		return true
+	}
+
+	return false
+}
+
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
@@ -117,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	currentObjStatus := obj.GetStatus()
 
-	if r.ShouldSkip(ctx, obj) {
+	if hasSkipReconcileLabel(ctx, obj) {
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 

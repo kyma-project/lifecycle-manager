@@ -3,7 +3,6 @@ package v2
 import (
 	"context"
 	"os"
-	"strconv"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -11,11 +10,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
 const (
@@ -33,7 +28,6 @@ func DefaultOptions() *Options {
 		),
 		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
-		WithSkipReconcileOn(SkipReconcileOnDefaultLabelPresentAndTrue),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
 		WithModuleCRDeletionCheck(NewDefaultDeletionCheck()),
 	)
@@ -62,8 +56,6 @@ type Options struct {
 	DeletionCheck ModuleCRDeletionCheck
 
 	DeletePrerequisites bool
-
-	ShouldSkip SkipReconcile
 }
 
 type Option interface {
@@ -234,31 +226,6 @@ type WithRemoteTargetClusterOption struct {
 
 func (o WithRemoteTargetClusterOption) Apply(options *Options) {
 	options.TargetCluster = o.ClusterFn
-}
-
-func WithSkipReconcileOn(skipReconcile SkipReconcile) WithSkipReconcileOnOption {
-	return WithSkipReconcileOnOption{skipReconcile: skipReconcile}
-}
-
-type SkipReconcile func(context.Context, Object) (skip bool)
-
-// SkipReconcileOnDefaultLabelPresentAndTrue determines SkipReconcile by checking if DefaultSkipReconcileLabel is true.
-func SkipReconcileOnDefaultLabelPresentAndTrue(ctx context.Context, object Object) bool {
-	if object.GetLabels() != nil && object.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true) {
-		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
-			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
-		return true
-	}
-
-	return false
-}
-
-type WithSkipReconcileOnOption struct {
-	skipReconcile SkipReconcile
-}
-
-func (o WithSkipReconcileOnOption) Apply(options *Options) {
-	options.ShouldSkip = o.skipReconcile
 }
 
 type ClientCacheKeyFn func(ctx context.Context, obj Object) (string, bool)
