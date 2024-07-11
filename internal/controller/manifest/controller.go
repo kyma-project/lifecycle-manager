@@ -22,9 +22,7 @@ func NewReconciler(mgr manager.Manager,
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-		declarativev2.WithSpecResolver(
-			manifest.NewSpecResolver(kcp, extractor),
-		),
+		manifest.NewSpecResolver(kcp.Client, extractor),
 		declarativev2.WithCustomReadyCheck(manifest.NewDeploymentReadyCheck()),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),

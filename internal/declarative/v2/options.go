@@ -38,7 +38,6 @@ type Options struct {
 	client.Client
 	TargetCluster ClusterFn
 
-	SpecResolver
 	ClientCache
 	ClientCacheKeyFn
 	ManifestParser
@@ -93,18 +92,6 @@ func (o WithCustomResourceLabels) Apply(options *Options) {
 		return nil
 	}
 	options.PostRenderTransforms = append(options.PostRenderTransforms, labelTransform)
-}
-
-func WithSpecResolver(resolver SpecResolver) SpecResolverOption {
-	return SpecResolverOption{resolver}
-}
-
-type SpecResolverOption struct {
-	SpecResolver
-}
-
-func (o SpecResolverOption) Apply(options *Options) {
-	options.SpecResolver = o
 }
 
 type ObjectTransform = func(context.Context, Object, []*unstructured.Unstructured) error

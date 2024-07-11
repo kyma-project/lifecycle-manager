@@ -47,13 +47,18 @@ const (
 	defaultFieldOwner              client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
-func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
-	metrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, options ...Option,
+func NewFromManager(mgr manager.Manager,
+	requeueIntervals queue.RequeueIntervals,
+	metrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	specResolver SpecResolver,
+	options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
 	reconciler.RequeueIntervals = requeueIntervals
+	reconciler.specResolver = specResolver
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -63,6 +68,7 @@ type Reconciler struct {
 	*Options
 	ManifestMetrics        *metrics.ManifestMetrics
 	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
+	specResolver           SpecResolver
 }
 
 type ConditionType string
@@ -139,8 +145,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
-	spec, err := r.Spec(ctx, manifest)
+	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
 		if !manifest.GetDeletionTimestamp().IsZero() {
 			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestParseSpec, err)
 		}
@@ -291,14 +298,6 @@ func (r *Reconciler) initialize(manifest *v1beta2.Manifest) error {
 	manifest.SetStatus(status)
 
 	return nil
-}
-
-func (r *Reconciler) Spec(ctx context.Context, manifest *v1beta2.Manifest) (*Spec, error) {
-	spec, err := r.SpecResolver.Spec(ctx, manifest)
-	if err != nil {
-		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-	}
-	return spec, err
 }
 
 func (r *Reconciler) renderResources(
