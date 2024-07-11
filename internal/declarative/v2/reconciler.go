@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -613,18 +612,6 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 			return nil, err
 		}
 		r.AddClient(clientsCacheKey, clnt)
-	}
-
-	if apimetav1.NamespaceDefault != apimetav1.NamespaceNone && apimetav1.NamespaceDefault != apimetav1.NamespaceDefault {
-		err := clnt.Patch(
-			ctx, &apicorev1.Namespace{
-				TypeMeta:   apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-				ObjectMeta: apimetav1.ObjectMeta{Name: apimetav1.NamespaceDefault},
-			}, client.Apply, client.ForceOwnership, defaultFieldOwner,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to patch namespace: %w", err)
-		}
 	}
 
 	return clnt, nil
