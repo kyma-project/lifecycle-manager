@@ -24,13 +24,13 @@ func LookupKeyChain(
 ) (authn.Keychain, error) {
 	var keyChain authn.Keychain
 	var err error
-	if imageSpec.CredSecretSelector != nil {
-		if keyChain, err = GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, targetClient); err != nil {
-			return nil, err
-		}
-	} else {
+	if imageSpec.CredSecretSelector == nil {
 		keyChain = authn.DefaultKeychain
+	} else if keyChain, err = GetAuthnKeychain(ctx, imageSpec.CredSecretSelector,
+		targetClient); err != nil {
+		return nil, err
 	}
+
 	return authn.NewMultiKeychain(google.Keychain, keyChain), nil
 }
 

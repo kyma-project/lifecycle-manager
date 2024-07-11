@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"reflect"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -15,74 +13,32 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
-// RawManifestInfo defines raw manifest information.
-type RawManifestInfo struct {
-	Path   string
-	OCIRef string
-}
-
 type SpecResolver struct {
-	KCP                   *declarativev2.ClusterInfo
+	kcpClient             client.Client
 	manifestPathExtractor *PathExtractor
-	ChartCache            string
-	cachedCharts          map[string]string
 }
 
-func NewSpecResolver(kcp *declarativev2.ClusterInfo, extractor *PathExtractor) *SpecResolver {
+func NewSpecResolver(kcpClient client.Client, extractor *PathExtractor) *SpecResolver {
 	return &SpecResolver{
-		KCP:                   kcp,
+		kcpClient:             kcpClient,
 		manifestPathExtractor: extractor,
-		ChartCache:            os.TempDir(),
-		cachedCharts:          make(map[string]string),
 	}
 }
 
-var (
-	ErrRenderModeInvalid                   = errors.New("render mode is invalid")
-	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
-)
+var errRenderModeInvalid = errors.New("render mode is invalid")
 
-func (s *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object) (*declarativev2.Spec, error) {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return nil, fmt.Errorf(
-			"invalid type %s: %w", reflect.TypeOf(obj),
-			ErrInvalidObjectPassedToSpecResolution,
-		)
-	}
-
+func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*declarativev2.Spec, error) {
 	var imageSpec v1beta2.ImageSpec
 	if err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	var mode declarativev2.RenderMode
-	switch imageSpec.Type {
-	case v1beta2.OciRefType:
-		mode = declarativev2.RenderModeRaw
-	default:
+	if imageSpec.Type != v1beta2.OciRefType {
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
-			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
+			client.ObjectKeyFromObject(manifest), errRenderModeInvalid)
 	}
 
-	rawManifestInfo, err := s.getRawManifestForInstall(ctx, imageSpec, s.KCP.Client)
-	if err != nil {
-		return nil, err
-	}
-
-	return &declarativev2.Spec{
-		ManifestName: manifest.Spec.Install.Name,
-		Path:         rawManifestInfo.Path,
-		OCIRef:       rawManifestInfo.OCIRef,
-		Mode:         mode,
-	}, nil
-}
-
-func (s *SpecResolver) getRawManifestForInstall(ctx context.Context,
-	imageSpec v1beta2.ImageSpec,
-	targetClient client.Client,
-) (*RawManifestInfo, error) {
-	keyChain, err := ocmextensions.LookupKeyChain(ctx, imageSpec, targetClient)
+	keyChain, err := ocmextensions.LookupKeyChain(ctx, imageSpec, s.kcpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
@@ -91,8 +47,10 @@ func (s *SpecResolver) getRawManifestForInstall(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
 	}
-	return &RawManifestInfo{
-		Path:   rawManifestPath,
-		OCIRef: imageSpec.Ref,
+
+	return &declarativev2.Spec{
+		ManifestName: manifest.Spec.Install.Name,
+		Path:         rawManifestPath,
+		OCIRef:       imageSpec.Ref,
 	}, nil
 }
