@@ -46,11 +46,16 @@ const (
 	defaultFieldOwner              client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
+type ReadyCheck interface {
+	Run(ctx context.Context, clnt Client, resources []*resource.Info) (shared.State, error)
+}
+
 func NewFromManager(mgr manager.Manager,
 	requeueIntervals queue.RequeueIntervals,
 	metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	specResolver SpecResolver,
+	readyCheck ReadyCheck,
 	options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
@@ -58,6 +63,7 @@ func NewFromManager(mgr manager.Manager,
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
+	reconciler.readyCheck = readyCheck
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -68,6 +74,7 @@ type Reconciler struct {
 	ManifestMetrics        *metrics.ManifestMetrics
 	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
 	specResolver           SpecResolver
+	readyCheck             ReadyCheck
 }
 
 type ConditionType string
@@ -395,9 +402,7 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 func (r *Reconciler) checkDeploymentState(
 	ctx context.Context, clnt Client, target []*resource.Info,
 ) (shared.State, error) {
-	resourceReadyCheck := r.CustomReadyCheck
-
-	deploymentState, err := resourceReadyCheck.Run(ctx, clnt, target)
+	deploymentState, err := r.readyCheck.Run(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}

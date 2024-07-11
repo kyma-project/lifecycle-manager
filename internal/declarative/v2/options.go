@@ -42,7 +42,6 @@ type Options struct {
 	ClientCacheKeyFn
 	ManifestParser
 	ManifestCache
-	CustomReadyCheck ReadyCheck
 
 	PostRenderTransforms []ObjectTransform
 
@@ -168,18 +167,6 @@ type WithManifestParserOption struct {
 
 func (o WithManifestParserOption) Apply(options *Options) {
 	options.ManifestParser = o.ManifestParser
-}
-
-type WithCustomReadyCheckOption struct {
-	ReadyCheck
-}
-
-func WithCustomReadyCheck(check ReadyCheck) WithCustomReadyCheckOption {
-	return WithCustomReadyCheckOption{ReadyCheck: check}
-}
-
-func (o WithCustomReadyCheckOption) Apply(options *Options) {
-	options.CustomReadyCheck = o
 }
 
 type ClusterFn func(context.Context, Object) (*ClusterInfo, error)

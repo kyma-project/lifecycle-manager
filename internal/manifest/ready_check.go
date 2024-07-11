@@ -15,12 +15,11 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-// NewDeploymentReadyCheck creates a readiness check that verifies if a Deployment is ready.
+type DeploymentReadyCheck struct{}
+
 func NewDeploymentReadyCheck() *DeploymentReadyCheck {
 	return &DeploymentReadyCheck{}
 }
-
-type DeploymentReadyCheck struct{}
 
 func (c *DeploymentReadyCheck) Run(ctx context.Context,
 	clnt declarativev2.Client,
@@ -41,8 +40,7 @@ func getDeploymentState(ctx context.Context, clt declarativev2.Client, resources
 		return shared.StateReady
 	}
 
-	// Since deployment is not ready check if pods are ready or in error state
-	// Get all Pods associated with the Deployment
+	// When deployment is not ready, check if associated pods are ready or in error state
 	podList, err := getPodsForDeployment(ctx, clt, deploy)
 	if err != nil {
 		return shared.StateError

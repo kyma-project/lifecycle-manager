@@ -17,6 +17,7 @@ package manifest_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/readycheck"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -138,13 +139,14 @@ var _ = BeforeSuite(func() {
 	},
 		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
 		manifest.NewSpecResolver(kcp.Client, extractor),
+		readycheck.NewExistsReadyCheck(),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
 		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithCustomReadyCheck(declarativev2.NewExistsReadyCheck()))
+	)
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
