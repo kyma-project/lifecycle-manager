@@ -6,16 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http/httptest"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/name"
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/partial"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -376,51 +371,6 @@ func (m mockLayer) MediaType() (types.MediaType, error) {
 
 func (m mockLayer) DiffID() (containerregistryv1.Hash, error) {
 	return containerregistryv1.Hash{Algorithm: "fake", Hex: "diff id"}, nil
-}
-
-func CreateImageSpecLayer(manifestFilePath string) (containerregistryv1.Layer, error) {
-	return partial.UncompressedToLayer(mockLayer{filePath: manifestFilePath})
-}
-
-func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerName string) error {
-	layer, err := CreateImageSpecLayer(manifestFilePath)
-	if err != nil {
-		return err
-	}
-	digest, err := layer.Digest()
-	if err != nil {
-		return err
-	}
-
-	// Set up a fake registry and write what we pulled to it.
-	u, err := url.Parse(server.URL)
-	if err != nil {
-		return err
-	}
-
-	dst := fmt.Sprintf("%s/%s@%s", u.Host, layerName, digest)
-	ref, err := name.NewDigest(dst)
-	if err != nil {
-		return err
-	}
-
-	err = remote.WriteLayer(ref.Context(), layer)
-	if err != nil {
-		return err
-	}
-
-	got, err := remote.Layer(ref)
-	if err != nil {
-		return err
-	}
-	gotHash, err := got.Digest()
-	if err != nil {
-		return err
-	}
-	if gotHash != digest {
-		return errors.New("has not equal to digest")
-	}
-	return nil
 }
 
 func CreateOCIImageSpec(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec, error) {

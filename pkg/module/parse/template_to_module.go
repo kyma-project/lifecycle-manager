@@ -284,8 +284,6 @@ func (p *Parser) fetchAssociatedResourcesField(ctx context.Context, layer *img.O
 	}
 	imgLayer, err := img.PullLayer(ctx, imageRef, keyChain)
 	if err != nil {
-		logf.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("failed to pull layer %s: %v", imageRef, err))
-
 		return nil, fmt.Errorf("failed to pull associated resources layer, %w", err)
 	}
 

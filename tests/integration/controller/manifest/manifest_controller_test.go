@@ -16,7 +16,7 @@ import (
 
 func setupTestEnvironment(ociTempDir, installName string) {
 	It("setup OCI", func() {
-		err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+		_, err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	BeforeEach(
@@ -162,7 +162,7 @@ var _ = Describe(
 		It(
 			"setup remote oci Registry",
 			func() {
-				err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+				_, err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
 				Expect(err).NotTo(HaveOccurred())
 			},
 		)

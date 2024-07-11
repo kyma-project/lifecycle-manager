@@ -6,11 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/google/go-containerregistry/pkg/name"
+	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/partial"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -169,4 +175,50 @@ func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstruc
 		resources = append(resources, obj)
 	}
 	return resources, nil
+}
+
+func CreateImageSpecLayer(filePath string) (containerregistryv1.Layer, error) {
+	return partial.UncompressedToLayer(mockLayer{filePath: filePath})
+}
+
+func PushToRemoteOCIRegistry(server *httptest.Server, filePath, layerName string) (string, error) {
+	layer, err := CreateImageSpecLayer(filePath)
+	if err != nil {
+		return "", err
+	}
+	digest, err := layer.Digest()
+	if err != nil {
+		return "", err
+	}
+
+	// Set up a fake registry and write what we pulled to it.
+	u, err := url.Parse(server.URL)
+	if err != nil {
+		return "", err
+	}
+
+	dst := fmt.Sprintf("%s/%s@%s", u.Host, layerName, digest)
+	ref, err := name.NewDigest(dst)
+	if err != nil {
+		return "", err
+	}
+
+	err = remote.WriteLayer(ref.Context(), layer)
+	if err != nil {
+		return "", err
+	}
+
+	got, err := remote.Layer(ref)
+	if err != nil {
+		return "", err
+	}
+	gotHash, err := got.Digest()
+	if err != nil {
+		return "", err
+	}
+	if gotHash != digest {
+		return "", errors.New("has not equal to digest")
+	}
+
+	return digest.String(), nil
 }

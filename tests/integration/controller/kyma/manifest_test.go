@@ -4,26 +4,38 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
+	"k8s.io/utils/strings/slices"
+
+	"sigs.k8s.io/yaml"
+
+	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg/componentmapping"
 	"github.com/open-component-model/ocm/pkg/runtime"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/tests/integration"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -40,9 +52,10 @@ const (
 )
 
 var (
-	ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
-	ErrVersionMismatch         = errors.New("manifest spec.version mismatch with module template")
-	ErrInvalidManifest         = errors.New("invalid ManifestResource")
+	ErrEmptyModuleTemplateData      = errors.New("module template spec.data is empty")
+	ErrVersionMismatch              = errors.New("manifest spec.version mismatch with module template")
+	ErrInvalidManifest              = errors.New("invalid ManifestResource")
+	ErrIncorrectAssociatedResources = errors.New("incorrect associated resources")
 )
 
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
@@ -186,6 +199,90 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 			return nil
 		}
 		Eventually(expectManifest(hasValidSpecVersion), Timeout, Interval).Should(Succeed())
+	})
+})
+
+var _ = Describe("Manifest.Spec.AssociatedResources is rendered correctly", Ordered, func() {
+	kyma := NewTestKyma("kyma")
+	module := NewTestModule("test-associated-resources", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+	var serverAddress string
+	var template *v1beta2.ModuleTemplate
+	associatedResourcesFilePath := filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
+		"associated-resources.yaml")
+	BeforeAll(func() {
+		newReg := registry.New()
+		server := httptest.NewServer(newReg)
+		serverAddress = fmt.Sprintf("%s/%s", server.Listener.Addr().String(), "component-descriptors")
+		digest, err := PushToRemoteOCIRegistry(server, associatedResourcesFilePath, "associated-resources")
+		Expect(err).NotTo(HaveOccurred())
+
+		descriptor := &v1beta2.Descriptor{
+			ComponentDescriptor: &compdesc.ComponentDescriptor{
+				Metadata: compdesc.Metadata{
+					ConfiguredVersion: compdescv2.SchemaVersion,
+				},
+				ComponentSpec: compdesc.ComponentSpec{
+					ObjectMeta: compdesc.ObjectMeta{
+						Name:    "associated-resources",
+						Version: "1.0.0-new-ocm",
+					},
+					RepositoryContexts: []*runtime.UnstructuredTypedObject{
+						{
+							Object: runtime.UnstructuredMap{
+								"baseUrl":              serverAddress,
+								"componentNameMapping": "urlPath",
+								"type":                 "OCIRegistry",
+							},
+						},
+					},
+					Resources: []compdesc.Resource{
+						{
+							ResourceMeta: compdesc.ResourceMeta{
+								ElementMeta: compdesc.ElementMeta{
+									Name:    "associated-resources",
+									Version: "1.0.0",
+								},
+							},
+							Access: localblob.New(digest, "test1", "application/octet-stream", nil),
+						},
+						{
+							ResourceMeta: compdesc.ResourceMeta{
+								ElementMeta: compdesc.ElementMeta{
+									Name:    "raw-manifest",
+									Version: "1.0.0",
+								},
+							},
+							Access: localblob.New(digest, "test1", "application/octet-stream", nil),
+						},
+					},
+				},
+			},
+		}
+
+		rawDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
+		Expect(err).ToNot(HaveOccurred())
+
+		template = builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(v1beta2.DefaultChannel).WithDescriptor(descriptor).WithRawDescriptor(rawDescriptor).Build()
+	})
+
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+
+	It("Deploy ModuleTemplate", func() {
+		Expect(kcpClient.Create(ctx, template)).To(Succeed())
+	})
+
+	It("validate Manifest", func() {
+		expectManifest := expectManifestFor(kyma)
+
+		By("checking Spec.AssociatedResources")
+		hasValidSpecAssociatedResources := func(manifest *v1beta2.Manifest) error {
+			return validateManifestSpecAssociatedResources(manifest.Spec.AssociatedResources,
+				associatedResourcesFilePath)
+		}
+		Eventually(expectManifest(hasValidSpecAssociatedResources), Timeout, Interval).Should(Succeed())
 	})
 })
 
@@ -366,6 +463,25 @@ func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
 	}
 
 	return validateManifestSpecInstallSourceType(manifestImageSpec)
+}
+
+func validateManifestSpecAssociatedResources(associatedResources []string, associatedResourcesFilePath string) error {
+	associatedResourcesBytes, err := os.ReadFile(associatedResourcesFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read associated resources file: %w", err)
+	}
+
+	var expectedAssociatedResourcesList parse.AssociatedResourcesContent
+	err = yaml.Unmarshal(associatedResourcesBytes, &expectedAssociatedResourcesList)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal associated resources: %w", err)
+	}
+
+	if !slices.Equal(expectedAssociatedResourcesList.AssociatedResources, associatedResources) {
+		return ErrIncorrectAssociatedResources
+	}
+
+	return nil
 }
 
 func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,

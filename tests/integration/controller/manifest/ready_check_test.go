@@ -29,7 +29,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	installName := filepath.Join(customDir, "installs")
 	It(
 		"setup OCI", func() {
-			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			_, err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
 			Expect(err).NotTo(HaveOccurred())
 		},
 	)

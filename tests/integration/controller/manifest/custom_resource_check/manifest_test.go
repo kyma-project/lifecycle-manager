@@ -29,7 +29,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 
 	It(
 		"setup OCI", func() {
-			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			_, err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
 			Expect(err).NotTo(HaveOccurred())
 		},
 	)
