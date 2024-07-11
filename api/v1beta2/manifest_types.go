@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
+	"strconv"
+
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -129,4 +131,8 @@ type ManifestList struct {
 //nolint:gochecknoinits // registers Manifest CRD on startup
 func init() {
 	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
+}
+
+func (manifest *Manifest) SkipReconciliation() bool {
+	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true)
 }

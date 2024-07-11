@@ -31,7 +31,7 @@ func PostRunCreateCR(
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	err := skr.Create(ctx, resource, client.FieldOwner(declarativev2.CustomResourceManager))
+	err := skr.Create(ctx, resource, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer))
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
@@ -41,9 +41,9 @@ func PostRunCreateCR(
 	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	oMeta.SetNamespace(obj.GetNamespace())
 	oMeta.SetFinalizers(obj.GetFinalizers())
-	if added := controllerutil.AddFinalizer(oMeta, declarativev2.CustomResourceManager); added {
+	if added := controllerutil.AddFinalizer(oMeta, declarativev2.CustomResourceManagerFinalizer); added {
 		if err := kcp.Patch(
-			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarativev2.CustomResourceManager),
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer),
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
@@ -83,9 +83,9 @@ func PreDeleteDeleteCR(
 	if err != nil {
 		return fmt.Errorf("failed to fetch resource: %w", err)
 	}
-	if removed := controllerutil.RemoveFinalizer(onCluster, declarativev2.CustomResourceManager); removed {
+	if removed := controllerutil.RemoveFinalizer(onCluster, declarativev2.CustomResourceManagerFinalizer); removed {
 		if err := kcp.Update(
-			ctx, onCluster, client.FieldOwner(declarativev2.CustomResourceManager),
+			ctx, onCluster, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer),
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}
