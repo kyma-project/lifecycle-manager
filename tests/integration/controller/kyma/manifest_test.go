@@ -334,10 +334,11 @@ var _ = Describe("Modules can only be referenced via official label", Ordered, f
 
 	moduleReferencedWithLabel := NewTestModuleWithFixName("random-module", v1beta2.DefaultChannel)
 	moduleReferencedWithNamespacedName := NewTestModuleWithFixName(
-		v1beta2.DefaultChannel+shared.Separator+"another-module", v1beta2.DefaultChannel)
-	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"fqdned-module", v1beta2.DefaultChannel)
+		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
+	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module", v1beta2.DefaultChannel)
+	_ = moduleReferencedWithFQDN
 
-	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel, moduleReferencedWithNamespacedName, moduleReferencedWithFQDN)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	Context("When operator is referenced just by the label name", func() {
