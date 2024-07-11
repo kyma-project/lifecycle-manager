@@ -141,9 +141,8 @@ var _ = BeforeSuite(func() {
 		Error:   1 * time.Second,
 	},
 		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		declarativev2.WithSpecResolver(
-			manifest.NewSpecResolver(kcp, extractor),
-		), declarativev2.WithRemoteTargetCluster(
+		manifest.NewSpecResolver(kcp.Client, extractor),
+		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
