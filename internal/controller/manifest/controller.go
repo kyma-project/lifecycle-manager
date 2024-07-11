@@ -3,7 +3,6 @@ package manifest
 import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -22,15 +21,12 @@ func NewReconciler(mgr manager.Manager,
 	extractor := manifest.NewPathExtractor(nil)
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
-		mgr, &v1beta2.Manifest{}, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-		declarativev2.WithSpecResolver(
-			manifest.NewSpecResolver(kcp, extractor),
-		),
+		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
+		manifest.NewSpecResolver(kcp.Client, extractor),
 		declarativev2.WithCustomReadyCheck(manifest.NewDeploymentReadyCheck()),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
 		declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithModuleCRDeletionCheck(manifest.NewModuleCRDeletionCheck()),
 	)
 }
