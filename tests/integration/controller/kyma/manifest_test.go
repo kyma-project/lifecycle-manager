@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"reflect"
 	"strings"
 
@@ -336,7 +337,6 @@ var _ = Describe("Modules can only be referenced via official label", Ordered, f
 	moduleReferencedWithNamespacedName := NewTestModuleWithFixName(
 		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
 	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module", v1beta2.DefaultChannel)
-	_ = moduleReferencedWithFQDN
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -354,14 +354,14 @@ var _ = Describe("Modules can only be referenced via official label", Ordered, f
 	Context("When operator is referenced by Namespace/Name", func() {
 		It("cannot find the operator", func() {
 			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithNamespacedName, kyma.Spec.Channel)
-			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
 		})
 	})
 
 	Context("When operator is referenced by FQDN", func() {
 		It("cannot find the operator", func() {
 			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithFQDN, kyma.Spec.Channel)
-			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
 		})
 	})
 })
