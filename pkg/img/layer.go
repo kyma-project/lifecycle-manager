@@ -50,8 +50,7 @@ func (o *OCI) String() string {
 }
 
 type (
-	LayerType string
-	Layer     struct {
+	Layer struct {
 		LayerName
 		LayerRepresentation
 	}

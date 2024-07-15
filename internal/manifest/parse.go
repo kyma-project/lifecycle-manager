@@ -52,7 +52,6 @@ func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
 		return manifestPath, nil
 	}
 
-	// pull image layer
 	layer, err := img.PullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return "", err
@@ -65,7 +64,6 @@ func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
 	}
 	defer blobReadCloser.Close()
 
-	// create dir for uncompressed manifest
 	if err := os.MkdirAll(installPath, fs.ModePerm); err != nil {
 		return "", fmt.Errorf(
 			"failure while creating installPath directory for layer %s: %w",
