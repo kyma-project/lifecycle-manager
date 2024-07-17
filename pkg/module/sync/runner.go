@@ -116,7 +116,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 
 	moduleStatus := kyma.GetModuleStatusMap()[module.ModuleName]
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module.Enabled,
+	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
 		manifestObj, moduleStatus); err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	return nil
 }
 
-func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
+func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
 	manifestObj *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
 	manifestInCluster := &v1beta2.Manifest{}
@@ -138,12 +138,12 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabl
 		manifestInCluster = nil
 	}
 
-	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus) {
+	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus, module.Template.GetGeneration()) {
 		// Point to the current state from the cluster for the outside sync of the manifest
 		*manifestObj = *manifestInCluster
 		return nil
 	}
-	if isEnabledModule {
+	if module.Enabled {
 		return r.patchManifest(ctx, owner, manifestObj)
 	}
 	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
@@ -179,11 +179,15 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v
 	return nil
 }
 
-func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus) bool {
+func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus,
+	moduleTemplateGeneration int64,
+) bool {
 	if manifestInCluster == nil || moduleStatus == nil { // moduleStatus is nil in case of mandatory module
 		return true
 	}
-
+	if moduleStatus.Template != nil && moduleStatus.Template.GetGeneration() != moduleTemplateGeneration {
+		return true
+	}
 	return manifestObj.Spec.Version != moduleStatus.Version ||
 		manifestObj.Labels[shared.ChannelLabel] != moduleStatus.Channel ||
 		moduleStatus.State != manifestInCluster.Status.State
@@ -268,8 +272,12 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.
 			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		moduleResource = &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject.Spec.Resource),
-			TypeMeta:    apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
+			PartialMeta: v1beta2.PartialMeta{
+				Name:       manifestObject.Spec.Resource.GetName(),
+				Namespace:  manifestObject.Spec.Resource.GetNamespace(),
+				Generation: manifestObject.Spec.Resource.GetGeneration(),
+			},
+			TypeMeta: apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
 		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == shared.EnableLabelValue {
@@ -284,12 +292,20 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		Channel: module.Template.Spec.Channel,
 		Version: manifestObject.Spec.Version,
 		Manifest: &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject),
-			TypeMeta:    apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
+			PartialMeta: v1beta2.PartialMeta{
+				Name:       manifestObject.GetName(),
+				Namespace:  manifestObject.GetNamespace(),
+				Generation: manifestObject.GetGeneration(),
+			},
+			TypeMeta: apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
 		Template: &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
-			TypeMeta:    apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
+			PartialMeta: v1beta2.PartialMeta{
+				Name:       module.Template.GetName(),
+				Namespace:  module.Template.GetNamespace(),
+				Generation: module.Template.GetGeneration(),
+			},
+			TypeMeta: apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
 		Resource: moduleResource,
 	}

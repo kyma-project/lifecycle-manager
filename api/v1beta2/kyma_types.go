@@ -219,14 +219,6 @@ type PartialMeta struct {
 
 const DefaultChannel = "regular"
 
-func PartialMetaFromObject(object apimetav1.Object) PartialMeta {
-	return PartialMeta{
-		Name:       object.GetName(),
-		Namespace:  object.GetNamespace(),
-		Generation: object.GetGeneration(),
-	}
-}
-
 func (m PartialMeta) GetName() string {
 	return m.Name
 }

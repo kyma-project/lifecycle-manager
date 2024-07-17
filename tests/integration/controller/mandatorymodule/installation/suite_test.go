@@ -106,7 +106,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	reconciler = &mandatorymodule.InstallationReconciler{
 		Client:              mgr.GetClient(),
 		DescriptorProvider:  descriptorProvider,
