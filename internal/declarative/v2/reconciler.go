@@ -179,7 +179,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
-	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err, resources.ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
+		resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
@@ -219,7 +220,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
 }
 
-func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, manifest *v1beta2.Manifest, manifestStatus shared.Status,
+func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, manifest *v1beta2.Manifest,
+	manifestStatus shared.Status,
 	requeueReason metrics.ManifestRequeueReason, originalErr error,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
@@ -652,10 +654,13 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 		return ctrl.Result{}, originalErr
 	}
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.Success}, nil
+	requeueAfter := queue.DetermineRequeueInterval(manifest.GetStatus().State, r.RequeueIntervals)
+	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
-func (r *Reconciler) patchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest, previousStatus shared.Status) error {
+func (r *Reconciler) patchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest,
+	previousStatus shared.Status,
+) error {
 	if hasStatusDiff(manifest.GetStatus(), previousStatus) {
 		resetNonPatchableField(manifest)
 		if err := r.Status().Patch(ctx, manifest, client.Apply, client.ForceOwnership, defaultFieldOwner); err != nil {
