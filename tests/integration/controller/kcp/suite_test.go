@@ -53,9 +53,10 @@ import (
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -141,7 +142,7 @@ var _ = BeforeSuite(func() {
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	descriptorCache = cache.NewDescriptorCache()
-	descriptorProvider = provider.NewCachedDescriptorProvider(descriptorCache)
+	descriptorProvider = provider.NewCachedDescriptorProvider()
 	crdCache = crd.NewCache(nil)
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
