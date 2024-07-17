@@ -22,6 +22,7 @@ var (
 	ErrTemplateMarkedAsMandatory = errors.New("template marked as mandatory")
 	ErrTemplateNotAllowed        = errors.New("module template not allowed")
 	ErrTemplateUpdateNotAllowed  = errors.New("module template update not allowed")
+	ErrTemplateNotValid          = errors.New("given module template is not valid")
 )
 
 type ModuleTemplateInfo struct {
@@ -33,13 +34,13 @@ type ModuleTemplateInfo struct {
 func NewTemplateLookup(reader client.Reader, descriptorProvider *provider.CachedDescriptorProvider) *TemplateLookup {
 	return &TemplateLookup{
 		Reader:             reader,
-		descriptorProvider: descriptorProvider,
+		DescriptorProvider: descriptorProvider,
 	}
 }
 
 type TemplateLookup struct {
 	client.Reader
-	descriptorProvider *provider.CachedDescriptorProvider
+	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
@@ -51,45 +52,41 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		if found {
 			continue
 		}
+		if !module.Valid {
+			templates[module.Name] = &ModuleTemplateInfo{Err: fmt.Errorf("%w: invalid module", ErrTemplateNotValid)}
+			continue
+		}
 		template := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
-		if template.Err != nil {
-			templates[module.Name] = &template
-			continue
-		}
-		if err := t.descriptorProvider.Add(template.ModuleTemplate); err != nil {
-			template.Err = fmt.Errorf("failed to get descriptor: %w", err)
-		}
-
-		templates[module.Name] = &template
-	}
-
-	for moduleName, moduleTemplate := range templates {
-		if moduleTemplate.Err != nil {
-			continue
-		}
-
-		if moduleTemplate.IsInternal() && !kyma.IsInternal() {
-			moduleTemplate.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
-			templates[moduleName] = moduleTemplate
-		}
-		if moduleTemplate.IsBeta() && !kyma.IsBeta() {
-			moduleTemplate.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
-			templates[moduleName] = moduleTemplate
-		}
-	}
-
-	for moduleName, moduleTemplate := range templates {
-		template := moduleTemplate
+		templates[module.Name] = FilterTemplate(template, kyma, t.DescriptorProvider)
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
-			if moduleMatch(moduleStatus, moduleName) && template.ModuleTemplate != nil {
-				t.checkValidTemplateUpdate(ctx, template, moduleStatus)
+			if moduleMatch(moduleStatus, module.Name) && template.ModuleTemplate != nil {
+				checkValidTemplateUpdate(ctx, &template, moduleStatus, t.DescriptorProvider)
 			}
 		}
-		templates[moduleName] = template
+		templates[module.Name] = &template
 	}
-
 	return templates
+}
+
+func FilterTemplate(template ModuleTemplateInfo, kyma *v1beta2.Kyma,
+	descriptorProvider *provider.CachedDescriptorProvider,
+) *ModuleTemplateInfo {
+	if template.Err != nil {
+		return &template
+	}
+	if err := descriptorProvider.Add(template.ModuleTemplate); err != nil {
+		template.Err = fmt.Errorf("failed to get descriptor: %w", err)
+	}
+	if template.IsInternal() && !kyma.IsInternal() {
+		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
+		return &template
+	}
+	if template.IsBeta() && !kyma.IsBeta() {
+		template.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
+		return &template
+	}
+	return &template
 }
 
 func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
@@ -98,7 +95,7 @@ func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defa
 		DesiredChannel: desiredChannel,
 	}
 
-	template, err := t.getTemplate(ctx, t, name, desiredChannel)
+	template, err := t.getTemplate(ctx, name, desiredChannel)
 	if err != nil {
 		info.Err = err
 		return info
@@ -146,8 +143,8 @@ func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
 // It does this by looking into selected key properties:
 // 1. If the generation of ModuleTemplate changes, it means the spec is outdated
 // 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
-func (t *TemplateLookup) checkValidTemplateUpdate(
-	ctx context.Context, moduleTemplate *ModuleTemplateInfo, moduleStatus *v1beta2.ModuleStatus,
+func checkValidTemplateUpdate(ctx context.Context, moduleTemplate *ModuleTemplateInfo,
+	moduleStatus *v1beta2.ModuleStatus, descriptorProvider *provider.CachedDescriptorProvider,
 ) {
 	if moduleStatus.Template == nil {
 		return
@@ -164,7 +161,7 @@ func (t *TemplateLookup) checkValidTemplateUpdate(
 	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
-		descriptor, err := t.descriptorProvider.GetDescriptor(moduleTemplate.ModuleTemplate)
+		descriptor, err := descriptorProvider.GetDescriptor(moduleTemplate.ModuleTemplate)
 		if err != nil {
 			msg := "could not handle channel skew as descriptor from template cannot be fetched"
 			checkLog.Error(err, msg)
@@ -237,11 +234,11 @@ func getDesiredChannel(moduleChannel, globalChannel string) string {
 	return desiredChannel
 }
 
-func (t *TemplateLookup) getTemplate(ctx context.Context, clnt client.Reader, name, desiredChannel string) (
+func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel string) (
 	*v1beta2.ModuleTemplate, error,
 ) {
 	templateList := &v1beta2.ModuleTemplateList{}
-	err := clnt.List(ctx, templateList)
+	err := t.List(ctx, templateList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}
@@ -262,7 +259,7 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, clnt client.Reader, na
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
-		descriptor, err := t.descriptorProvider.GetDescriptor(&template)
+		descriptor, err := t.DescriptorProvider.GetDescriptor(&template)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
 		}

@@ -54,6 +54,11 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	results := make(chan error, len(modules))
 	for _, module := range modules {
 		go func(module *common.Module) {
+			// Should not happen, but in case of NPE, we should stop process further.
+			if module.Template == nil {
+				results <- nil
+				return
+			}
 			// Due to module template visibility change, some module previously deployed should be removed.
 			if errors.Is(module.Template.Err, templatelookup.ErrTemplateNotAllowed) {
 				results <- r.deleteManifest(ctx, module)
