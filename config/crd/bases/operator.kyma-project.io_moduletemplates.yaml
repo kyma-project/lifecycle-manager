@@ -222,6 +222,12 @@ spec:
                   Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
                   its configuration in all runtime clusters.
                 type: boolean
+              moduleName:
+                type: string
+              version:
+                description: Version identifies the version of the ModuleTemplate
+                pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$
+                type: string
             required:
             - channel
             - descriptor

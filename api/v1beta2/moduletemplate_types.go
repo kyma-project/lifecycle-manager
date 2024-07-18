@@ -78,6 +78,14 @@ type ModuleTemplateSpec struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
+	// Version identifies the version of the ModuleTemplate
+	// +kubebuilder:validation:Pattern:=^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$
+	// +optional
+	Version string `json:"version"`
+
+	// +optional
+	ModuleName string `json:"moduleName"`
+
 	// Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
 	// its configuration in all runtime clusters.
 	// +optional
