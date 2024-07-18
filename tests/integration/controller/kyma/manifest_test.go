@@ -330,7 +330,7 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 	})
 })
 
-var _ = Describe("Modules can only be referenced via official label", Ordered, func() {
+var _ = Describe("Modules can only be referenced via module name", Ordered, func() {
 	kyma := NewTestKyma("random-kyma")
 
 	moduleReferencedWithLabel := NewTestModuleWithFixName("random-module", v1beta2.DefaultChannel)
