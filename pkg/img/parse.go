@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
@@ -17,7 +18,6 @@ import (
 	"github.com/open-component-model/ocm/pkg/runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
@@ -77,7 +77,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 			if !ok {
 				return nil, common.ErrTypeAssert
 			}
-			layerRef, err := getOCIRef(repo, descriptor, accessSpec.LocalReference, resource.Labels)
+			layerRef, err := getOCIRef(repo, descriptor, accessSpec, resource.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
@@ -111,19 +111,26 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 func getOCIRef(
 	repo *genericocireg.RepositorySpec,
 	descriptor *compdesc.ComponentDescriptor,
-	ref string,
+	accessSpec *localblob.AccessSpec,
 	labels ocmmetav1.Labels,
 ) (*OCI, error) {
-	layerRef := OCI{
-		Type: string(v1beta2.OciRefType),
+	layerRef := OCI{}
+
+	switch accessSpec.MediaType {
+	case string(v1beta2.MediaTypeDir):
+		layerRef.Type = string(v1beta2.OciDirType)
+	case string(v1beta2.MediaTypeFile):
+		fallthrough
+	default:
+		layerRef.Type = string(v1beta2.OciRefType)
 	}
 
 	// if ref is not provided, we simply use the version of the descriptor, this will usually default
 	// to a component version that is valid
-	if ref == "" {
+	if accessSpec.LocalReference == "" {
 		layerRef.Ref = descriptor.GetVersion()
 	} else {
-		layerRef.Ref = ref
+		layerRef.Ref = accessSpec.LocalReference
 	}
 	if registryCredValue, found := labels.Get(shared.OCIRegistryCredLabel); found {
 		credSecretSelector, err := ocmextensions.GenerateLabelSelector(registryCredValue)

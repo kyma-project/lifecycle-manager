@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"archive/tar"
 	"context"
 	"errors"
 	"fmt"
@@ -20,7 +21,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
-var ErrImageLayerPull = errors.New("failed to pull layer")
+var (
+	ErrImageLayerPull       = errors.New("failed to pull layer")
+	ErrInvalidImageSpecType = errors.New("invalid image spec type provided, only 'oci-ref' 'oci-dir' are allowed")
+)
 
 type PathExtractor struct {
 	fileMutexCache *filemutex.MutexCache
@@ -33,14 +37,40 @@ func NewPathExtractor(cache *filemutex.MutexCache) *PathExtractor {
 	return &PathExtractor{fileMutexCache: cache}
 }
 
-func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
+func (p PathExtractor) FetchLayerToFile(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
+	layerName string,
+) (string, error) {
+	switch imageSpec.Type {
+	case v1beta2.OciRefType:
+		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain,
+			fmt.Sprintf("%s.yaml", v1beta2.RawManifestLayerName))
+	case v1beta2.OciDirType:
+		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain,
+			fmt.Sprintf("%s.tar", layerName))
+		if err != nil {
+			return "", err
+		}
+		extractedFile, err := untarLayer(tarFile)
+		if err != nil {
+			return "", err
+		}
+		return extractedFile, nil
+	default:
+		return "", ErrInvalidImageSpecType
+	}
+}
+
+func (p PathExtractor) getPathForFetchedLayer(ctx context.Context,
+	imageSpec v1beta2.ImageSpec,
+	keyChain authn.Keychain,
+	filename string,
 ) (string, error) {
 	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
 
 	installPath := getFsChartPath(imageSpec)
-	manifestPath := path.Join(installPath, v1beta2.RawManifestLayerName+".yaml")
+	manifestPath := path.Join(installPath, filename)
 
 	fileMutex, err := p.fileMutexCache.GetLocker(installPath)
 	if err != nil {
@@ -114,4 +144,36 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (c
 
 func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 	return filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
+}
+
+func untarLayer(tarPath string) (string, error) {
+	tarFile, err := os.Open(tarPath)
+	if err != nil {
+		return "", err
+	}
+	defer tarFile.Close()
+
+	tarReader := tar.NewReader(tarFile)
+	header, err := tarReader.Next()
+	if err != nil {
+		return "", err
+	}
+
+	extractedFilePath := filepath.Join(filepath.Dir(tarPath), header.Name)
+
+	if _, err := os.Stat(extractedFilePath); err == nil {
+		return extractedFilePath, nil
+	}
+
+	outFile, err := os.Create(extractedFilePath)
+	if err != nil {
+		return "", err
+	}
+	defer outFile.Close()
+
+	if _, err := io.Copy(outFile, tarReader); err != nil {
+		return "", err
+	}
+
+	return extractedFilePath, nil
 }

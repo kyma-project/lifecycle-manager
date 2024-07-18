@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"os"
+	"sigs.k8s.io/yaml"
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -151,17 +155,6 @@ func (p *Parser) newManifestFromTemplate(
 	manifest := &v1beta2.Manifest{}
 	manifest.Spec.Remote = p.inKCPMode
 
-	switch module.CustomResourcePolicy {
-	case v1beta2.CustomResourcePolicyIgnore:
-		manifest.Spec.Resource = nil
-	case v1beta2.CustomResourcePolicyCreateAndDelete:
-		fallthrough
-	default:
-		if template.Spec.Data != nil {
-			manifest.Spec.Resource = template.Spec.Data.DeepCopy()
-		}
-	}
-
 	var layers img.Layers
 	var err error
 	descriptor, err := p.descriptorProvider.GetDescriptor(template)
@@ -173,8 +166,19 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(manifest, layers); err != nil {
+	if err := translateLayersAndMergeIntoManifest(manifest, layers, p.Client); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
+	}
+
+	switch module.CustomResourcePolicy {
+	case v1beta2.CustomResourcePolicyIgnore:
+		manifest.Spec.Resource = nil
+	case v1beta2.CustomResourcePolicyCreateAndDelete:
+		fallthrough
+	default:
+		if manifest.Spec.Resource == nil && template.Spec.Data != nil {
+			manifest.Spec.Resource = template.Spec.Data.DeepCopy()
+		}
 	}
 
 	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
@@ -200,10 +204,10 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *v1beta2.Manifest, layers img.Layers,
+	manifest *v1beta2.Manifest, layers img.Layers, clnt client.Client,
 ) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(manifest, layer); err != nil {
+		if err := insertLayerIntoManifest(manifest, layer, clnt); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
@@ -211,23 +215,23 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *v1beta2.Manifest, layer img.Layer,
+	manifest *v1beta2.Manifest, layer img.Layer, clnt client.Client,
 ) error {
 	switch layer.LayerName {
+	case img.DefaultCRLayer:
+		defaultCR, err := getDefaultCRFromOCILayer(layer, clnt)
+		if err != nil {
+			return fmt.Errorf("error while parsing default CR layer: %w", err)
+		}
+		manifest.Spec.Resource = defaultCR
 	case img.CRDsLayer:
 		fallthrough
 	case img.ConfigLayer:
-		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
-		if !ok {
-			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
+		imageSpec, err := getImageSpecFromLayer(layer)
+		if err != nil {
+			return fmt.Errorf("error while parsing config layer: %w", err)
 		}
-		manifest.Spec.Config = &v1beta2.ImageSpec{
-			Repo:               ociImage.Repo,
-			Name:               ociImage.Name,
-			Ref:                ociImage.Ref,
-			Type:               v1beta2.OciRefType,
-			CredSecretSelector: ociImage.CredSecretSelector,
-		}
+		manifest.Spec.Config = imageSpec
 	default:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
@@ -240,4 +244,54 @@ func insertLayerIntoManifest(
 	}
 
 	return nil
+}
+
+func getImageSpecFromLayer(layer img.Layer) (*v1beta2.ImageSpec, error) {
+	ociImage, ok := layer.LayerRepresentation.(*img.OCI)
+	if !ok {
+		return nil, fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
+	}
+	return &v1beta2.ImageSpec{
+		Repo:               ociImage.Repo,
+		Name:               ociImage.Name,
+		Ref:                ociImage.Ref,
+		Type:               v1beta2.RefTypeMetadata(ociImage.Type),
+		CredSecretSelector: ociImage.CredSecretSelector,
+	}, nil
+}
+
+func getDefaultCRFromOCILayer(layer img.Layer, clnt client.Client) (*unstructured.Unstructured, error) {
+	imageSpec, err := getImageSpecFromLayer(layer)
+	if err != nil {
+		return nil, err
+	}
+	extractor := manifest.NewPathExtractor(nil)
+	ctx := context.TODO()
+	keyChain, err := manifest.LookupKeyChain(ctx, *imageSpec, clnt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get keychain: %w", err)
+	}
+	manifest, err := extractor.FetchLayerToFile(ctx, *imageSpec, keyChain, "default-cr")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get default CR: %w", err)
+	}
+	defaultCR, err := readYamlToUnstructured(manifest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert to unstructured: %w", err)
+	}
+	return defaultCR, nil
+}
+
+func readYamlToUnstructured(filePath string) (*unstructured.Unstructured, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	var content map[string]interface{}
+	if err := yaml.Unmarshal(data, &content); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal yaml: %w", err)
+	}
+
+	return &unstructured.Unstructured{Object: content}, nil
 }
