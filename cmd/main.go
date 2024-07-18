@@ -177,7 +177,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,

@@ -15,9 +15,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -223,7 +224,7 @@ func buildSkrKyma() *v1beta2.Kyma {
 
 func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
 	key := cache.GenerateDescriptorKey(template)
-	result := descriptorCache.Get(key)
+	result := descriptorProvider.DescriptorCache.Get(key)
 	return result != nil
 }
 
