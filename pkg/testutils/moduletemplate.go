@@ -18,7 +18,7 @@ func GetModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	defaultChannel string,
 ) (*v1beta2.ModuleTemplate, error) {
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider)
 	templateInfo := templateLookup.GetAndValidate(ctx, module.Name, module.Channel, defaultChannel)
 	if templateInfo.Err != nil {
@@ -94,7 +94,7 @@ func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client
 		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	ocmDesc, err := descriptorProvider.GetDescriptor(moduleTemplate)
 	if err != nil {
 		return "", fmt.Errorf("failed to get descriptor: %w", err)
