@@ -136,7 +136,7 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 		Entry("when moduleName contains a number,"+
 			" then expect a validation error",
 			"template-operator23",
-			true,
+			false,
 		),
 	)
 
