@@ -97,7 +97,7 @@ func givenKymaAndModuleTemplateCondition(
 		}
 		for _, module := range kyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
-				WithModuleName(module.Name).
+				WithLabelModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion)
 			if isModuleTemplateInternal {
