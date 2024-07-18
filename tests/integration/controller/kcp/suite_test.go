@@ -40,7 +40,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -71,7 +70,6 @@ var (
 	ctx                   context.Context
 	cancel                context.CancelFunc
 	cfg                   *rest.Config
-	descriptorCache       *cache.DescriptorCache
 	descriptorProvider    *provider.CachedDescriptorProvider
 	crdCache              *crd.Cache
 )
