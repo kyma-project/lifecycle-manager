@@ -35,17 +35,17 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	if imageSpec.Type != v1beta2.OciRefType {
+	if imageSpec.Type != v1beta2.OciRefType && imageSpec.Type != v1beta2.OciDirType {
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
 			client.ObjectKeyFromObject(manifest), errRenderModeInvalid)
 	}
 
-	keyChain, err := s.lookupKeyChain(ctx, imageSpec)
+	keyChain, err := LookupKeyChain(ctx, imageSpec, s.kcpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
 
-	rawManifestPath, err := s.manifestPathExtractor.GetPathFromRawManifest(ctx, imageSpec, keyChain)
+	rawManifestPath, err := s.manifestPathExtractor.FetchLayerToFile(ctx, imageSpec, keyChain, "raw-manifest")
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
 	}
@@ -57,12 +57,13 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 	}, nil
 }
 
-func (s *SpecResolver) lookupKeyChain(ctx context.Context, imageSpec v1beta2.ImageSpec) (authn.Keychain, error) {
+func LookupKeyChain(ctx context.Context, imageSpec v1beta2.ImageSpec,
+	targetClient client.Client) (authn.Keychain, error) {
 	var keyChain authn.Keychain
 	var err error
 	if imageSpec.CredSecretSelector == nil {
 		keyChain = authn.DefaultKeychain
-	} else if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, s.kcpClient); err != nil {
+	} else if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, targetClient); err != nil {
 		return nil, err
 	}
 
