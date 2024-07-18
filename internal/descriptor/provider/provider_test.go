@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetDescriptor_OnEmptySpec_ReturnsErrDecode(t *testing.T) {
-	descriptorProvider := provider.NewCachedDescriptorProvider() // assuming it handles nil cache internally
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	template := &v1beta2.ModuleTemplate{}
 
 	_, err := descriptorProvider.GetDescriptor(template)
