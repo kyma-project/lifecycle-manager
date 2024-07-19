@@ -92,7 +92,7 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
+	descriptorProvider = provider.NewCachedDescriptorProvider()
 	kcpClient = mgr.GetClient()
 
 	go func() {
