@@ -1,4 +1,4 @@
-package moduletemplate
+package moduletemplate_test
 
 import (
 	"fmt"
@@ -8,14 +8,17 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+)
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+const (
+	thenNoErrors               = " then expect no validation errors"
+	thenExpectAValidationError = " then expect a validation error"
 )
 
 var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
-
 	module := NewTestModule("invalid-module", v1beta2.DefaultChannel)
 
 	DescribeTable("Validate version",
@@ -32,51 +35,51 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 
 			err := kcpClient.Create(ctx, template)
 			if shouldSucceed {
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 				err = kcpClient.Delete(ctx, template)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			} else {
-				Expect(err).ToNot(BeNil())
+				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("spec.version: Invalid value: \"%s\"", givenVersion)))
 			}
 		},
 		Entry("when version is empty,"+
-			" then expect no validation errors",
+			thenNoErrors,
 			"",
 			true,
 		),
 		Entry("when version contains one number,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"1",
 			false,
 		),
 		Entry("when version contains two numbers,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"1.2",
 			false,
 		),
 		Entry("when version contains three numbers,"+
-			" then expect no validation errors",
+			thenNoErrors,
 			"1.2.3",
 			true,
 		),
 		Entry("when version is a word,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"foo",
 			false,
 		),
 		Entry("when version contains word and then semver,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"foo-1.2.3",
 			false,
 		),
 		Entry("when version contains semver and then word,"+
-			" then expect no validation errors",
+			thenNoErrors,
 			"1.2.3-foo",
 			true,
 		),
 		Entry("when version contains semver and few words,"+
-			" then expect no validation errors",
+			thenNoErrors,
 			"2.4.2-e2e-test",
 			true,
 		),
@@ -95,49 +98,48 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 
 			err := kcpClient.Create(ctx, template)
 			if shouldSucceed {
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 				err = kcpClient.Delete(ctx, template)
-				Expect(err).To(BeNil())
+				Expect(err).NotTo(HaveOccurred())
 			} else {
-				Expect(err).ToNot(BeNil())
+				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("spec.moduleName: Invalid value: \"%s\"", givenModuleName)))
 			}
 		},
 		Entry("when moduleName is empty,"+
-			" then expect no validation errors",
+			thenNoErrors,
 			"",
 			true,
 		),
 		Entry("when moduleName is a single letter,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"a",
 			false,
 		),
 		Entry("when moduleName is a two-letter word,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"ab",
 			false,
 		),
 		Entry("when moduleName is a three-letter word,"+
-			" then expect no validation errors",
+			thenNoErrors,
 			"abc",
 			true,
 		),
 		Entry("when moduleName contains a two-letter word,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"abc-def-gh",
 			false,
 		),
 		Entry("when moduleName contains two words,"+
-			" then expect no validation errors",
+			thenNoErrors,
 			"template-operator",
 			true,
 		),
 		Entry("when moduleName contains a number,"+
-			" then expect a validation error",
+			thenExpectAValidationError,
 			"template-operator23",
-			false,
+			true,
 		),
 	)
-
 })

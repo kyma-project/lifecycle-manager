@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package moduletemplate
+package moduletemplate_test
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -54,7 +53,6 @@ var (
 	controlPlaneEnv    *envtest.Environment
 	ctx                context.Context
 	cancel             context.CancelFunc
-	cfg                *rest.Config
 	descriptorProvider *provider.CachedDescriptorProvider
 )
 
