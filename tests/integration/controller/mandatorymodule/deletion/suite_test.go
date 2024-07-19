@@ -115,7 +115,7 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	reconciler = &mandatorymodule.DeletionReconciler{
 		Client:             mgr.GetClient(),
 		Event:              event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)),
