@@ -62,14 +62,16 @@ spec:
       name: kyma-project.io/module/sample
 ```
 
-The module mentioned above can *only* be referenced via the label value of `operator.kyma-project.io/module-name`:
+The module mentioned above can *only* be referenced using the label value of `operator.kyma-project.io/module-name`:
 ```yaml
 spec:
   channel: regular
   modules:
   - name: module-name-from-label
 ```
-*Module referencing via NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.*
+
+> **CAUTION:**
+> Module referencing using NamespacedName and FQDN (Fully Qualified Domain Name) has been deprecated.
 
 ### **.spec.modules[].customResourcePolicy**
 
