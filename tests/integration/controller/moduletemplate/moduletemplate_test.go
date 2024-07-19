@@ -73,15 +73,45 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 			"foo-1.2.3",
 			false,
 		),
-		Entry("when version contains semver and then word,"+
+		Entry("when version contains semver and then a word,"+
 			thenNoErrors,
 			"1.2.3-foo",
 			true,
 		),
-		Entry("when version contains semver and few words,"+
+		Entry("when version contains semver and two words,"+
 			thenNoErrors,
 			"2.4.2-e2e-test",
 			true,
+		),
+		Entry("when version contains semver and three words,"+
+			thenNoErrors,
+			"2.4.2-e2e-test-foo",
+			true,
+		),
+		Entry("when version contains lots of dashes"+
+			thenNoErrors,
+			"1.2.3-----foo--bar-----baz",
+			true,
+		),
+		Entry("when version contains semver with leading zero in the major"+
+			thenExpectAValidationError,
+			"01.1.1",
+			false,
+		),
+		Entry("when version contains semver with leading zero in the minor"+
+			thenExpectAValidationError,
+			"0.01.1",
+			false,
+		),
+		Entry("when version contains semver with leading zero in the patch"+
+			thenExpectAValidationError,
+			"0.0.01",
+			false,
+		),
+		Entry("when version contains semver with trailing letters in the patch"+
+			thenExpectAValidationError,
+			"0.0.1asdf",
+			false,
 		),
 	)
 	DescribeTable("Validate moduleName",

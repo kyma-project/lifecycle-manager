@@ -80,13 +80,13 @@ type ModuleTemplateSpec struct {
 
 	// Version identifies the version of the Module. It can be empty, or a semantic version.
 	// +optional
-	// +kubebuilder:validation:Pattern:=^((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)?)?$
+	// +kubebuilder:validation:Pattern:=`^((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[a-zA-Z-][0-9a-zA-Z-]*)?)?$`
 	// +kubebuilder:validation:MaxLength:=32
 	Version string `json:"version"`
 
 	// ModuleName is the name of the Module. Can be empty.
 	// +optional
-	// +kubebuilder:validation:Pattern:=^([a-z][a-z][a-z]+(-[a-z][a-z][a-z]+)*)?$
+	// +kubebuilder:validation:Pattern:=`^([a-z]{3,}(-[a-z]{3,})*)?$`
 	// +kubebuilder:validation:MaxLength:=64
 	ModuleName string `json:"moduleName"`
 
