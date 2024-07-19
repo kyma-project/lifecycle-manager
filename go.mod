@@ -37,11 +37,11 @@ require (
 	github.com/go-co-op/gocron v1.37.0
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.1
-	k8s.io/api v0.30.2
+	k8s.io/api v0.30.3
 	k8s.io/apiextensions-apiserver v0.30.2
-	k8s.io/apimachinery v0.30.2
-	k8s.io/cli-runtime v0.30.2
-	k8s.io/client-go v0.30.2
+	k8s.io/apimachinery v0.30.3
+	k8s.io/cli-runtime v0.30.3
+	k8s.io/client-go v0.30.3
 	k8s.io/kubectl v0.30.2
 )
 
