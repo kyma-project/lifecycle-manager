@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"hash/fnv"
+	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -20,7 +21,8 @@ type (
 		FQDN       string
 		Template   *templatelookup.ModuleTemplateInfo
 		*v1beta2.Manifest
-		Enabled bool
+		Enabled   bool
+		Unmanaged bool
 	}
 )
 
@@ -33,27 +35,22 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 	)
 }
 
-func (m *Module) ApplyLabelsAndAnnotations(
-	kyma *v1beta2.Kyma,
-) {
+func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
 	lbls := m.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
 	lbls[shared.KymaName] = kyma.Name
-
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
 		lbls[shared.ControllerName] = m.Template.GetLabels()[shared.ControllerName]
 	}
-
 	lbls[shared.ModuleName] = m.ModuleName
 	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
 	lbls[shared.ManagedBy] = shared.OperatorName
 	if m.Template.Spec.Mandatory {
-		lbls[shared.IsMandatoryModule] = "true"
+		lbls[shared.IsMandatoryModule] = shared.EnableLabelValue
 	}
-
 	m.SetLabels(lbls)
 
 	anns := m.GetAnnotations()
@@ -61,6 +58,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 		anns = make(map[string]string)
 	}
 	anns[shared.FQDN] = m.FQDN
+	anns[shared.Unmanaged] = strconv.FormatBool(m.Unmanaged)
 	m.SetAnnotations(anns)
 }
 

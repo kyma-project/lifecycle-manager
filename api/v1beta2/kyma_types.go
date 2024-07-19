@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -373,24 +371,25 @@ func (kyma *Kyma) AllModulesReady() bool {
 
 func (kyma *Kyma) HasSyncLabelEnabled() bool {
 	if sync, found := kyma.Labels[shared.SyncLabel]; found {
-		return strings.ToLower(sync) == shared.EnableLabelValue
+		return shared.IsEnabled(sync)
 	}
+
 	return true // missing label defaults to enabled sync
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
 	skip, found := kyma.Labels[shared.SkipReconcileLabel]
-	return found && strings.ToLower(skip) == shared.EnableLabelValue
+	return found && shared.IsEnabled(skip)
 }
 
 func (kyma *Kyma) IsInternal() bool {
 	internal, found := kyma.Labels[shared.InternalLabel]
-	return found && strings.ToLower(internal) == shared.EnableLabelValue
+	return found && shared.IsEnabled(internal)
 }
 
 func (kyma *Kyma) IsBeta() bool {
 	beta, found := kyma.Labels[shared.BetaLabel]
-	return found && strings.ToLower(beta) == shared.EnableLabelValue
+	return found && shared.IsEnabled(beta)
 }
 
 type AvailableModule struct {

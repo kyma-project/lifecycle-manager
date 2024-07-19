@@ -122,13 +122,11 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, isEnabledModule bool,
 	manifestObj *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
+	objKey := client.ObjectKeyFromObject(manifestObj)
 	manifestInCluster := &v1beta2.Manifest{}
-	if err := r.Get(ctx, client.ObjectKey{
-		Namespace: manifestObj.GetNamespace(),
-		Name:      manifestObj.GetName(),
-	}, manifestInCluster); err != nil {
+	if err := r.Get(ctx, objKey, manifestInCluster); err != nil {
 		if !util.IsNotFound(err) {
-			return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+			return fmt.Errorf("error getting manifest %s before update: %w", objKey, err)
 		}
 		manifestInCluster = nil
 	}

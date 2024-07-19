@@ -1,5 +1,7 @@
 package shared
 
+import "strings"
+
 const (
 	OperatorGroup  = "operator.kyma-project.io"
 	Separator      = "/"
@@ -41,3 +43,7 @@ const (
 	EnableLabelValue  = "true"
 	DisableLabelValue = "false"
 )
+
+func IsEnabled(value string) bool {
+	return strings.ToLower(value) == EnabledValue
+}
