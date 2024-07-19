@@ -37,17 +37,11 @@ type Options struct {
 	Config *rest.Config
 	client.Client
 	TargetCluster ClusterFn
-
 	ClientCache
 	ClientCacheKeyFn
 	ManifestParser
 	ManifestCache
-	CustomReadyCheck ReadyCheck
-
 	PostRenderTransforms []ObjectTransform
-
-	PostRuns   []PostRun
-	PreDeletes []PreDelete
 }
 
 type Option interface {
@@ -108,36 +102,6 @@ func (o PostRenderTransformOption) Apply(options *Options) {
 	options.PostRenderTransforms = append(options.PostRenderTransforms, o.ObjectTransforms...)
 }
 
-// Hook defines a Hook into the declarative reconciliation
-// skr is the runtime cluster
-// kcp is the control-plane cluster
-// obj is guaranteed to be the reconciled object and also to always preside in kcp.
-type Hook func(ctx context.Context, skr Client, kcp client.Client, obj Object) error
-
-// WARNING: DO NOT USE THESE HOOKS IF YOU DO NOT KNOW THE RECONCILIATION LIFECYCLE OF THE DECLARATIVE API.
-// IT CAN BREAK YOUR RECONCILIATION AND IF YOU ADJUST THE OBJECT, ALSO LEAD TO
-// INVALID STATES.
-type (
-	// PostRun is executed after every successful render+reconciliation of the manifest.
-	PostRun Hook
-	// PreDelete is executed before any deletion of resources calculated from the status.
-	PreDelete Hook
-)
-
-// WithPostRun applies PostRun.
-type WithPostRun []PostRun
-
-func (o WithPostRun) Apply(options *Options) {
-	options.PostRuns = append(options.PostRuns, o...)
-}
-
-// WithPreDelete applies PreDelete.
-type WithPreDelete []PreDelete
-
-func (o WithPreDelete) Apply(options *Options) {
-	options.PreDeletes = append(options.PreDeletes, o...)
-}
-
 type WithSingletonClientCacheOption struct {
 	ClientCache
 }
@@ -168,18 +132,6 @@ type WithManifestParserOption struct {
 
 func (o WithManifestParserOption) Apply(options *Options) {
 	options.ManifestParser = o.ManifestParser
-}
-
-type WithCustomReadyCheckOption struct {
-	ReadyCheck
-}
-
-func WithCustomReadyCheck(check ReadyCheck) WithCustomReadyCheckOption {
-	return WithCustomReadyCheckOption{ReadyCheck: check}
-}
-
-func (o WithCustomReadyCheckOption) Apply(options *Options) {
-	options.CustomReadyCheck = o
 }
 
 type ClusterFn func(context.Context, Object) (*ClusterInfo, error)

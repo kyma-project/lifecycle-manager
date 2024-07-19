@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"strconv"
 	"time"
 
@@ -46,11 +47,16 @@ const (
 	defaultFieldOwner              client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
+type ReadyCheck interface {
+	Run(ctx context.Context, clnt Client, resources []*resource.Info) (shared.State, error)
+}
+
 func NewFromManager(mgr manager.Manager,
 	requeueIntervals queue.RequeueIntervals,
 	metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	specResolver SpecResolver,
+	readyCheck ReadyCheck,
 	options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
@@ -58,6 +64,7 @@ func NewFromManager(mgr manager.Manager,
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
+	reconciler.readyCheck = readyCheck
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -68,6 +75,7 @@ type Reconciler struct {
 	ManifestMetrics        *metrics.ManifestMetrics
 	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
 	specResolver           SpecResolver
+	readyCheck             ReadyCheck
 }
 
 type ConditionType string
@@ -106,8 +114,7 @@ func newResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	startTime := time.Now()
-	defer r.recordReconciliationDuration(startTime, req.Name)
+	defer r.recordReconciliationDuration(time.Now(), req.Name)
 
 	manifest := &v1beta2.Manifest{}
 	if err := r.Get(ctx, req.NamespacedName, manifest); err != nil {
@@ -118,7 +125,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
-	manifestStatus := manifest.GetStatus()
 
 	if manifest.SkipReconciliation() {
 		logf.FromContext(ctx, "skip-label", shared.SkipReconcileLabel).
@@ -126,6 +132,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
+	manifestStatus := manifest.GetStatus()
 	if err := r.initialize(manifest); err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
@@ -333,12 +340,12 @@ func (r *Reconciler) renderResources(
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
+func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
 	target []*resource.Info,
 ) error {
 	status := manifest.GetStatus()
 
-	if err := ConcurrentSSA(clnt, defaultFieldOwner).Run(ctx, target); err != nil {
+	if err := ConcurrentSSA(skrClient, defaultFieldOwner).Run(ctx, target); err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -356,19 +363,47 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v
 		return ErrWarningResourceSyncStateDiff
 	}
 
-	for i := range r.PostRuns {
-		if err := r.PostRuns[i](ctx, clnt, r.Client, manifest); err != nil {
-			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
-			return err
-		}
+	if err := r.postRunCreateCR(ctx, skrClient, manifest); err != nil {
+		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		return err
+
 	}
 
-	deploymentState, err := r.checkDeploymentState(ctx, clnt, target)
+	deploymentState, err := r.checkDeploymentState(ctx, skrClient, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 	return r.setManifestState(manifest, deploymentState)
+}
+
+func (r *Reconciler) postRunCreateCR(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest) error {
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
+
+	err := skrClient.Create(ctx, manifest.Spec.Resource.DeepCopy(), client.FieldOwner(CustomResourceManagerFinalizer))
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	oMeta := &apimetav1.PartialObjectMetadata{}
+	oMeta.SetName(manifest.GetName())
+	oMeta.SetGroupVersionKind(manifest.GetObjectKind().GroupVersionKind())
+	oMeta.SetNamespace(manifest.GetNamespace())
+	oMeta.SetFinalizers(manifest.GetFinalizers())
+	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
+		if err := r.Client.Patch(
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(CustomResourceManagerFinalizer),
+		); err != nil {
+			return fmt.Errorf("failed to patch resource: %w", err)
+		}
+		return ErrRequeueRequired
+	}
+	return nil
 }
 
 func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
@@ -395,9 +430,7 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 func (r *Reconciler) checkDeploymentState(
 	ctx context.Context, clnt Client, target []*resource.Info,
 ) (shared.State, error) {
-	resourceReadyCheck := r.CustomReadyCheck
-
-	deploymentState, err := resourceReadyCheck.Run(ctx, clnt, target)
+	deploymentState, err := r.readyCheck.Run(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}
@@ -435,15 +468,48 @@ func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, state shared.S
 	return nil
 }
 
-func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, manifest *v1beta2.Manifest) error {
+func (r *Reconciler) removeModuleCR(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest) error {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		for _, preDelete := range r.PreDeletes {
-			if err := preDelete(ctx, clnt, r.Client, manifest); err != nil {
-				// we do not set a status here since it will be deleting if timestamp is set.
-				manifest.SetStatus(manifest.GetStatus().WithErr(err))
-				return err
-			}
+		if err := r.preDeleteCR(ctx, skrClient, manifest); err != nil {
+			// we do not set a status here since it will be deleting if timestamp is set.
+			manifest.SetStatus(manifest.GetStatus().WithErr(err))
+			return err
 		}
+	}
+	return nil
+}
+
+// preDeleteCR is a hook for deleting the module CR if available in the cluster.
+// It uses DeletePropagationBackground to delete module CR.
+// Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
+// and we consider the CR removal successful.
+func (r *Reconciler) preDeleteCR(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest) error {
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+
+	propagation := apimetav1.DeletePropagationBackground
+	err := skrClient.Delete(ctx, manifest.Spec.Resource.DeepCopy(), &client.DeleteOptions{PropagationPolicy: &propagation})
+
+	if !util.IsNotFound(err) {
+		return nil
+	}
+
+	onCluster := manifest.DeepCopy()
+	err = r.Client.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster)
+	if util.IsNotFound(err) {
+		return fmt.Errorf("preDeleteCR: %w", err)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to fetch resource: %w", err)
+	}
+	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
+		if err := r.Client.Update(
+			ctx, onCluster, client.FieldOwner(CustomResourceManagerFinalizer),
+		); err != nil {
+			return fmt.Errorf("failed to update resource: %w", err)
+		}
+		return ErrRequeueRequired
 	}
 	return nil
 }
