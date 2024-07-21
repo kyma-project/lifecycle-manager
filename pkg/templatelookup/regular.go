@@ -136,7 +136,7 @@ func logUsedChannel(ctx context.Context, name string, actualChannel string, defa
 }
 
 func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
-	return moduleStatus.FQDN == moduleName || moduleStatus.Name == moduleName
+	return moduleStatus.Name == moduleName
 }
 
 // MarkInvalidChannelSkewUpdate verifies if the given ModuleTemplate is invalid for update when channel switch is detected.
@@ -230,23 +230,6 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel s
 	for _, template := range templateList.Items {
 		template := template // capture unique address
 		if template.Labels[shared.ModuleName] == name && template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, &template)
-			continue
-		}
-		if fmt.Sprintf("%s/%s", template.Namespace, template.Name) == name &&
-			template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, &template)
-			continue
-		}
-		if template.ObjectMeta.Name == name && template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, &template)
-			continue
-		}
-		descriptor, err := t.descriptorProvider.GetDescriptor(&template)
-		if err != nil {
-			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
-		}
-		if descriptor.Name == name && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
