@@ -52,44 +52,42 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 		template := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
-		if template.Err != nil {
-			templates[module.Name] = &template
-			continue
-		}
-		if err := t.descriptorProvider.Add(template.ModuleTemplate); err != nil {
-			template.Err = fmt.Errorf("failed to get descriptor: %w", err)
-		}
-
-		templates[module.Name] = &template
-	}
-
-	for moduleName, moduleTemplate := range templates {
-		if moduleTemplate.Err != nil {
-			continue
-		}
-
-		if moduleTemplate.IsInternal() && !kyma.IsInternal() {
-			moduleTemplate.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
-			templates[moduleName] = moduleTemplate
-		}
-		if moduleTemplate.IsBeta() && !kyma.IsBeta() {
-			moduleTemplate.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
-			templates[moduleName] = moduleTemplate
-		}
-	}
-
-	for moduleName, moduleTemplate := range templates {
-		template := moduleTemplate
+		templates[module.Name] = FilterTemplate(template, kyma, t.descriptorProvider)
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
-			if moduleMatch(moduleStatus, moduleName) && template.ModuleTemplate != nil {
-				t.checkValidTemplateUpdate(ctx, template, moduleStatus)
+			if moduleMatch(moduleStatus, module.Name) {
+				descriptor, err := t.descriptorProvider.GetDescriptor(template.ModuleTemplate)
+				if err != nil {
+					msg := "could not handle channel skew as descriptor from template cannot be fetched"
+					template.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
+					continue
+				}
+				MarkInvalidChannelSkewUpdate(ctx, &template, moduleStatus, descriptor.Version)
 			}
 		}
-		templates[moduleName] = template
+		templates[module.Name] = &template
 	}
-
 	return templates
+}
+
+func FilterTemplate(template ModuleTemplateInfo, kyma *v1beta2.Kyma,
+	descriptorProvider *provider.CachedDescriptorProvider,
+) *ModuleTemplateInfo {
+	if template.Err != nil {
+		return &template
+	}
+	if err := descriptorProvider.Add(template.ModuleTemplate); err != nil {
+		template.Err = fmt.Errorf("failed to get descriptor: %w", err)
+	}
+	if template.IsInternal() && !kyma.IsInternal() {
+		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
+		return &template
+	}
+	if template.IsBeta() && !kyma.IsBeta() {
+		template.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
+		return &template
+	}
+	return &template
 }
 
 func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
@@ -98,7 +96,7 @@ func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defa
 		DesiredChannel: desiredChannel,
 	}
 
-	template, err := t.getTemplate(ctx, t, name, desiredChannel)
+	template, err := t.getTemplate(ctx, name, desiredChannel)
 	if err != nil {
 		info.Err = err
 		return info
@@ -141,84 +139,66 @@ func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
 	return moduleStatus.FQDN == moduleName || moduleStatus.Name == moduleName
 }
 
-// checkValidTemplateUpdate verifies if the given ModuleTemplate is valid for update and sets their IsValidUpdate Flag
-// based on provided Modules, provided by the Cluster as a status of the last known module state.
-// It does this by looking into selected key properties:
-// 1. If the generation of ModuleTemplate changes, it means the spec is outdated
-// 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
-func (t *TemplateLookup) checkValidTemplateUpdate(
-	ctx context.Context, moduleTemplate *ModuleTemplateInfo, moduleStatus *v1beta2.ModuleStatus,
+// MarkInvalidChannelSkewUpdate verifies if the given ModuleTemplate is invalid for update when channel switch is detected.
+func MarkInvalidChannelSkewUpdate(ctx context.Context, moduleTemplate *ModuleTemplateInfo,
+	moduleStatus *v1beta2.ModuleStatus, templateVersion string,
 ) {
 	if moduleStatus.Template == nil {
 		return
 	}
+	if moduleTemplate == nil || moduleTemplate.Err != nil {
+		return
+	}
+
 	logger := logf.FromContext(ctx)
 	checkLog := logger.WithValues("module", moduleStatus.FQDN,
 		"template", moduleTemplate.Name,
 		"newTemplateGeneration", moduleTemplate.GetGeneration(),
-		"previousTemplateGeneration", moduleStatus.Template.Generation,
+		"previousTemplateGeneration", moduleStatus.Template.GetGeneration(),
 		"newTemplateChannel", moduleTemplate.Spec.Channel,
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
-	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
-		checkLog.Info("outdated ModuleTemplate: channel skew")
-
-		descriptor, err := t.descriptorProvider.GetDescriptor(moduleTemplate.ModuleTemplate)
-		if err != nil {
-			msg := "could not handle channel skew as descriptor from template cannot be fetched"
-			checkLog.Error(err, msg)
-			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
-			return
-		}
-
-		versionInTemplate, err := semver.NewVersion(descriptor.Version)
-		if err != nil {
-			msg := "could not handle channel skew as descriptor from template contains invalid version"
-			checkLog.Error(err, msg)
-			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
-			return
-		}
-
-		versionInStatus, err := semver.NewVersion(moduleStatus.Version)
-		if err != nil {
-			msg := "could not handle channel skew as Modules contains invalid version"
-			checkLog.Error(err, msg)
-			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
-			return
-		}
-
-		checkLog = checkLog.WithValues(
-			"previousVersion", versionInTemplate.String(),
-			"newVersion", versionInStatus.String(),
-		)
-
-		// channel skews have to be handled with more detail. If a channel is changed this means
-		// that the downstream kyma might have changed its target channel for the module, meaning
-		// the old moduleStatus is reflecting the previous desired state.
-		// when increasing channel stability, this means we could potentially have a downgrade
-		// of module versions here (fast: v2.0.0 get downgraded to regular: v1.0.0). In this
-		// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
-		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
-		if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
-			msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
-				"as a higher version (%s) of the module was previously installed",
-				moduleStatus.Channel, moduleTemplate.Spec.Channel, versionInStatus.String())
-			checkLog.Info(msg)
-			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
-			return
-		}
-
+	if moduleTemplate.Spec.Channel == moduleStatus.Channel {
 		return
 	}
 
-	// generation skews always have to be handled. We are not in need of checking downgrades here,
-	// since these are caught by our validating webhook. We do not support downgrades of Versions
-	// in ModuleTemplates, meaning the only way the generation can be changed is by changing the target
-	// channel (valid change) or a version increase
-	if moduleTemplate.GetGeneration() != moduleStatus.Template.Generation {
-		checkLog.Info("outdated ModuleTemplate: generation skew")
+	checkLog.Info("outdated ModuleTemplate: channel skew")
+
+	versionInTemplate, err := semver.NewVersion(templateVersion)
+	if err != nil {
+		msg := "could not handle channel skew as descriptor from template contains invalid version"
+		checkLog.Error(err, msg)
+		moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 		return
+	}
+
+	versionInStatus, err := semver.NewVersion(moduleStatus.Version)
+	if err != nil {
+		msg := "could not handle channel skew as Modules contains invalid version"
+		checkLog.Error(err, msg)
+		moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
+		return
+	}
+
+	checkLog = checkLog.WithValues(
+		"previousVersion", versionInTemplate.String(),
+		"newVersion", versionInStatus.String(),
+	)
+
+	// channel skews have to be handled with more detail. If a channel is changed this means
+	// that the downstream kyma might have changed its target channel for the module, meaning
+	// the old moduleStatus is reflecting the previous desired state.
+	// when increasing channel stability, this means we could potentially have a downgrade
+	// of module versions here (fast: v2.0.0 get downgraded to regular: v1.0.0). In this
+	// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
+	// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
+	if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
+		msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
+			"as a higher version (%s) of the module was previously installed",
+			moduleStatus.Channel, moduleTemplate.Spec.Channel, versionInStatus.String())
+		checkLog.Info(msg)
+		moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 	}
 }
 
@@ -237,11 +217,11 @@ func getDesiredChannel(moduleChannel, globalChannel string) string {
 	return desiredChannel
 }
 
-func (t *TemplateLookup) getTemplate(ctx context.Context, clnt client.Reader, name, desiredChannel string) (
+func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel string) (
 	*v1beta2.ModuleTemplate, error,
 ) {
 	templateList := &v1beta2.ModuleTemplateList{}
-	err := clnt.List(ctx, templateList)
+	err := t.List(ctx, templateList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}
