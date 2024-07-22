@@ -42,17 +42,22 @@ var (
 )
 
 func NewTestModule(name, channel string) v1beta2.Module {
-	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel)
+	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel, "")
+}
+
+func NewTestModuleWithChannelVersion(name, channel, version string) v1beta2.Module {
+	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel, version)
 }
 
 func NewTemplateOperator(channel string) v1beta2.Module {
-	return NewTestModuleWithFixName("template-operator", channel)
+	return NewTestModuleWithFixName("template-operator", channel, "")
 }
 
-func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
+func NewTestModuleWithFixName(name, channel, version string) v1beta2.Module {
 	return v1beta2.Module{
 		Name:    name,
 		Channel: channel,
+		Version: version,
 	}
 }
 

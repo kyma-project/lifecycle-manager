@@ -399,7 +399,7 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 	modules := make([]AvailableModule, 0)
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
-		if module.Channel == string(shared.NoneChannel) {
+		if strings.ToLower(module.Channel) == string(shared.NoneChannel) {
 			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false})
 			continue
 		}
