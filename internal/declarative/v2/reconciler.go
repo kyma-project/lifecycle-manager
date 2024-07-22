@@ -221,8 +221,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 }
 
 func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, manifest *v1beta2.Manifest,
-	manifestStatus shared.Status,
-	requeueReason metrics.ManifestRequeueReason, originalErr error,
+	manifestStatus shared.Status, requeueReason metrics.ManifestRequeueReason, originalErr error,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
 	r.cleanUpMandatoryModuleMetrics(manifest)
@@ -301,12 +300,8 @@ func (r *Reconciler) initialize(manifest *v1beta2.Manifest) error {
 	return nil
 }
 
-func (r *Reconciler) renderResources(
-	ctx context.Context,
-	skrClient Client,
-	manifest *v1beta2.Manifest,
-	spec *Spec,
-) ([]*resource.Info, []*resource.Info, error) {
+func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
+	spec *Spec) ([]*resource.Info, []*resource.Info, error) {
 	resourceCondition := newResourcesCondition(manifest)
 	status := manifest.GetStatus()
 
@@ -394,9 +389,8 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 	return false
 }
 
-func (r *Reconciler) checkDeploymentState(
-	ctx context.Context, clnt Client, target []*resource.Info,
-) (shared.State, error) {
+func (r *Reconciler) checkDeploymentState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
+	error) {
 	resourceReadyCheck := r.CustomReadyCheck
 
 	deploymentState, err := resourceReadyCheck.Run(ctx, clnt, target)
@@ -450,12 +444,8 @@ func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, manifest *
 	return nil
 }
 
-func (r *Reconciler) renderTargetResources(
-	ctx context.Context,
-	skrClient client.Client,
-	converter ResourceToInfoConverter,
-	manifest *v1beta2.Manifest,
-	spec *Spec,
+func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client.Client,
+	converter ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		deleted, err := checkCRDeletion(ctx, skrClient, manifest)
@@ -517,12 +507,8 @@ func checkCRDeletion(ctx context.Context, skrClient client.Client, manifest *v1b
 	return false, nil
 }
 
-func (r *Reconciler) pruneDiff(
-	ctx context.Context,
-	clnt Client,
-	manifest *v1beta2.Manifest,
-	current, target []*resource.Info,
-	spec *Spec,
+func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
+	current, target []*resource.Info, spec *Spec,
 ) error {
 	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
 	if err != nil {
