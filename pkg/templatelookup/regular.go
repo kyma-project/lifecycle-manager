@@ -34,13 +34,13 @@ type ModuleTemplateInfo struct {
 func NewTemplateLookup(reader client.Reader, descriptorProvider *provider.CachedDescriptorProvider) *TemplateLookup {
 	return &TemplateLookup{
 		Reader:             reader,
-		DescriptorProvider: descriptorProvider,
+		descriptorProvider: descriptorProvider,
 	}
 }
 
 type TemplateLookup struct {
 	client.Reader
-	DescriptorProvider *provider.CachedDescriptorProvider
+	descriptorProvider *provider.CachedDescriptorProvider
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
@@ -57,11 +57,14 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 		template := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
-		templates[module.Name] = FilterTemplate(template, kyma, t.DescriptorProvider)
+		if err := t.descriptorProvider.Add(template.ModuleTemplate); err != nil {
+			template.Err = fmt.Errorf("failed to add descriptor to cache: %w", err)
+		}
+		templates[module.Name] = FilterTemplate(template, kyma)
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
 			if moduleMatch(moduleStatus, module.Name) {
-				descriptor, err := t.DescriptorProvider.GetDescriptor(template.ModuleTemplate)
+				descriptor, err := t.descriptorProvider.GetDescriptor(template.ModuleTemplate)
 				if err != nil {
 					msg := "could not handle channel skew as descriptor from template cannot be fetched"
 					template.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
@@ -75,15 +78,11 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 	return templates
 }
 
-func FilterTemplate(template ModuleTemplateInfo, kyma *v1beta2.Kyma,
-	descriptorProvider *provider.CachedDescriptorProvider,
-) *ModuleTemplateInfo {
+func FilterTemplate(template ModuleTemplateInfo, kyma *v1beta2.Kyma) *ModuleTemplateInfo {
 	if template.Err != nil {
 		return &template
 	}
-	if err := descriptorProvider.Add(template.ModuleTemplate); err != nil {
-		template.Err = fmt.Errorf("failed to get descriptor: %w", err)
-	}
+
 	if template.IsInternal() && !kyma.IsInternal() {
 		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
 		return &template
@@ -247,7 +246,7 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel s
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
-		descriptor, err := t.DescriptorProvider.GetDescriptor(&template)
+		descriptor, err := t.descriptorProvider.GetDescriptor(&template)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
 		}

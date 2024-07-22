@@ -49,10 +49,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(tt.name, func(t *testing.T) {
-			lookup := &templatelookup.TemplateLookup{
-				Reader:             nil,
-				DescriptorProvider: provider.NewCachedDescriptorProvider(),
-			}
+			lookup := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider())
 			kyma := &v1beta2.Kyma{
 				Spec:   test.KymaSpec,
 				Status: test.KymaStatus,
@@ -106,8 +103,7 @@ func TestFilterTemplate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := templatelookup.FilterTemplate(tt.template, tt.kyma,
-				provider.NewCachedDescriptorProvider()); !errors.Is(got.Err, tt.wantErr) {
+			if got := templatelookup.FilterTemplate(tt.template, tt.kyma); !errors.Is(got.Err, tt.wantErr) {
 				t.Errorf("FilterTemplate() = %v, want %v", got, tt.wantErr)
 			}
 		})
