@@ -78,7 +78,7 @@ type ModuleTemplateSpec struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
-	// Version identifies the version of the Module. It can be empty, or a semantic version.
+	// Version identifies the version of the Module. Can be empty, or a semantic version.
 	// +optional
 	// +kubebuilder:validation:Pattern:=`^((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[a-zA-Z-][0-9a-zA-Z-]*)?)?$`
 	// +kubebuilder:validation:MaxLength:=32
