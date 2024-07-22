@@ -301,7 +301,8 @@ func (r *Reconciler) initialize(manifest *v1beta2.Manifest) error {
 }
 
 func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
-	spec *Spec) ([]*resource.Info, []*resource.Info, error) {
+	spec *Spec,
+) ([]*resource.Info, []*resource.Info, error) {
 	resourceCondition := newResourcesCondition(manifest)
 	status := manifest.GetStatus()
 
@@ -390,7 +391,8 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 }
 
 func (r *Reconciler) checkDeploymentState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
-	error) {
+	error,
+) {
 	resourceReadyCheck := r.CustomReadyCheck
 
 	deploymentState, err := resourceReadyCheck.Run(ctx, clnt, target)

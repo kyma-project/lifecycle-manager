@@ -18,7 +18,7 @@ func DetermineRequeueInterval(state shared.State, intervals RequeueIntervals) ti
 	case shared.StateError:
 		return intervals.Error
 	case shared.StateDeleting:
-		fallthrough
+		return intervals.Busy
 	case shared.StateProcessing:
 		return intervals.Busy
 	case shared.StateWarning:
