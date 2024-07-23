@@ -2,8 +2,6 @@ package e2e_test
 
 import (
 	"context"
-
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -13,9 +11,17 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 )
 
-var _ = Describe("Module Status Decoupling", Ordered, func() {
+type ResourceKind string
+
+const (
+	DeploymentKind  ResourceKind = "Deployment"
+	StatefulSetKind ResourceKind = "StatefulSet"
+)
+
+func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleWrongConfig := NewTestModuleWithFixName("template-operator-misconfigured", "regular")
@@ -138,7 +144,7 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Should(Succeed())
 		})
 	})
-})
+}
 
 func checkModuleStatus(module v1beta2.Module, moduleCR *unstructured.Unstructured, kyma *v1beta2.Kyma,
 	expectedState shared.State,
