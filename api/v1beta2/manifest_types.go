@@ -141,3 +141,7 @@ func init() {
 func (manifest *Manifest) SkipReconciliation() bool {
 	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true)
 }
+
+func (manifest *Manifest) HasDeletionTimestamp() bool {
+	return !manifest.GetDeletionTimestamp().IsZero()
+}

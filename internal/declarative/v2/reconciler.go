@@ -137,6 +137,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
 	}
 
+	if controllerutil.ContainsFinalizer(manifest, shared.UnmanagedFinalizer) {
+		return r.deleteManifest(ctx, manifest)
+	}
+
+	if manifest.HasDeletionTimestamp() && controllerutil.ContainsFinalizer(manifest, shared.UnmanagedFinalizer) {
+		partialMeta := r.partialObjectMetadata(manifest)
+		partialMeta.SetFinalizers([]string{})
+		// TODO add specific metric
+		return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
+	}
+
 	if manifest.GetDeletionTimestamp().IsZero() {
 		partialMeta := r.partialObjectMetadata(manifest)
 		if controllerutil.AddFinalizer(partialMeta, defaultFinalizer) {
@@ -155,7 +166,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if notContainsSyncedOCIRefAnnotation(manifest) {
 		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
-		return r.updateObject(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
+		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
@@ -209,7 +220,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(manifest, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
-		return r.updateObject(ctx, manifest, metrics.ManifestUpdateSyncedOCIRef)
+		return r.updateManifest(ctx, manifest, metrics.ManifestUpdateSyncedOCIRef)
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
@@ -225,7 +236,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
 	r.cleanUpMandatoryModuleMetrics(manifest)
 	if removeFinalizers(manifest, r.finalizerToRemove(originalErr, manifest)) {
-		return r.updateObject(ctx, manifest, requeueReason)
+		return r.updateManifest(ctx, manifest, requeueReason)
 	}
 	if manifest.GetStatus().State != shared.StateWarning {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
@@ -688,15 +699,24 @@ func resetNonPatchableField(obj client.Object) {
 	obj.SetResourceVersion("")
 }
 
-func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
+func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	if err := r.Update(ctx, obj); err != nil {
-		r.Event(obj, "Warning", "UpdateObject", err.Error())
+	if err := r.Update(ctx, manifest); err != nil {
+		r.Event(manifest, "Warning", "UpdateObject", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to update object: %w", err)
 	}
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) deleteManifest(ctx context.Context, manifest *v1beta2.Manifest) (ctrl.Result, error) {
+	if err := r.Delete(ctx, manifest); err != nil {
+		return ctrl.Result{Requeue: true}, fmt.Errorf("failed to delete manifest when unmanaging: %w", err)
+	}
+
+	// TODO event, metrics, etc.
+	return ctrl.Result{}, nil
 }
 
 func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name string) {
