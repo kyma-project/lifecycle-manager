@@ -56,12 +56,22 @@ func (m ModuleTemplateBuilder) WithName(name string) ModuleTemplateBuilder {
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithVersion(version string) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.Version = version
+	return m
+}
+
+func (m ModuleTemplateBuilder) WithModuleName(moduleName string) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.ModuleName = moduleName
+	return m
+}
+
 func (m ModuleTemplateBuilder) WithGeneration(generation int) ModuleTemplateBuilder {
 	m.moduleTemplate.ObjectMeta.Generation = int64(generation)
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithModuleName(moduleName string) ModuleTemplateBuilder {
+func (m ModuleTemplateBuilder) WithLabelModuleName(moduleName string) ModuleTemplateBuilder {
 	if m.moduleTemplate.Labels == nil {
 		m.moduleTemplate.Labels = make(map[string]string)
 	}
