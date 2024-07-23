@@ -394,7 +394,8 @@ func (kyma *Kyma) IsBeta() bool {
 
 type AvailableModule struct {
 	Module
-	Enabled bool
+	Enabled   bool
+	Unmanaged bool
 }
 
 func (kyma *Kyma) GetAvailableModules() []AvailableModule {
@@ -402,7 +403,7 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 	modules := make([]AvailableModule, 0)
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
-		modules = append(modules, AvailableModule{Module: module, Enabled: true})
+		modules = append(modules, AvailableModule{Module: module, Enabled: true, Unmanaged: !module.Managed})
 	}
 
 	for _, module := range kyma.Status.Modules {
