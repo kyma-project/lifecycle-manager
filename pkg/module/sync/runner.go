@@ -191,7 +191,14 @@ func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) erro
 }
 
 func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
-	module.ApplyLabelsAndAnnotations(kyma)
+	module.ApplyDefaultMetaToManifest(kyma)
+
+	if module.IsUnmanaged {
+		if !controllerutil.AddFinalizer(module.Manifest, shared.UnmanagedFinalizer) {
+			return fmt.Errorf("error adding unmanaged finalizer to manifest %s", module.GetName())
+		}
+	}
+
 	refs := module.GetOwnerReferences()
 	if len(refs) == 0 {
 		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {

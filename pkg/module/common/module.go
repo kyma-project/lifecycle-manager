@@ -21,8 +21,8 @@ type (
 		FQDN       string
 		Template   *templatelookup.ModuleTemplateInfo
 		*v1beta2.Manifest
-		Enabled   bool
-		Unmanaged bool
+		Enabled     bool
+		IsUnmanaged bool
 	}
 )
 
@@ -58,7 +58,7 @@ func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
 		anns = make(map[string]string)
 	}
 	anns[shared.FQDN] = m.FQDN
-	anns[shared.Unmanaged] = strconv.FormatBool(m.Unmanaged)
+	anns[shared.Unmanaged] = strconv.FormatBool(m.IsUnmanaged)
 	m.SetAnnotations(anns)
 }
 
