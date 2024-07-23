@@ -46,12 +46,24 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
 
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
-	for _, module := range kyma.GetAvailableModules() {
+	for _, module := range FindAvailableModules(kyma) {
 		_, found := templates[module.Name]
 		if found {
 			continue
 		}
-		templateInfo := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
+		if module.ValidationError != nil {
+			templates[module.Name] = &ModuleTemplateInfo{Err: module.ValidationError}
+			continue
+		}
+
+		var templateInfo ModuleTemplateInfo
+
+		if module.IsInstalledByVersion() {
+			templateInfo = t.GetAndValidateByVersion(ctx, module.Name, module.Version)
+		} else {
+			templateInfo = t.GetAndValidateByChannel(ctx, module.Name, module.Channel, kyma.Spec.Channel)
+		}
+
 		templateInfo = ValidateTemplateMode(templateInfo, kyma)
 		if templateInfo.Err != nil {
 			templates[module.Name] = &templateInfo
@@ -94,13 +106,13 @@ func ValidateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 	return template
 }
 
-func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
+func (t *TemplateLookup) GetAndValidateByChannel(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
 	desiredChannel := getDesiredChannel(channel, defaultChannel)
 	info := ModuleTemplateInfo{
 		DesiredChannel: desiredChannel,
 	}
 
-	template, err := t.getTemplate(ctx, name, desiredChannel)
+	template, err := t.getTemplateByChannel(ctx, name, desiredChannel)
 	if err != nil {
 		info.Err = err
 		return info
@@ -116,6 +128,20 @@ func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defa
 	}
 
 	logUsedChannel(ctx, name, actualChannel, defaultChannel)
+	info.ModuleTemplate = template
+	return info
+}
+
+func (t *TemplateLookup) GetAndValidateByVersion(ctx context.Context, name, version string) ModuleTemplateInfo {
+	info := ModuleTemplateInfo{
+		DesiredChannel: string(shared.NoneChannel),
+	}
+	template, err := t.getTemplateByVersion(ctx, name, version)
+	if err != nil {
+		info.Err = err
+		return info
+	}
+
 	info.ModuleTemplate = template
 	return info
 }
@@ -163,10 +189,9 @@ func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *Modul
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
-	if moduleTemplateInfo.Spec.Channel == moduleStatus.Channel {
+	if moduleTemplateInfo.Spec.Channel == moduleStatus.Channel && moduleTemplateInfo.Spec.Channel != string(shared.NoneChannel) {
 		return
 	}
-
 	checkLog.Info("outdated ModuleTemplate: channel skew")
 
 	versionInTemplate, err := semver.NewVersion(templateVersion)
@@ -221,7 +246,7 @@ func getDesiredChannel(moduleChannel, globalChannel string) string {
 	return desiredChannel
 }
 
-func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel string) (
+func (t *TemplateLookup) getTemplateByChannel(ctx context.Context, name, desiredChannel string) (
 	*v1beta2.ModuleTemplate, error,
 ) {
 	templateList := &v1beta2.ModuleTemplateList{}
@@ -232,7 +257,7 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel s
 
 	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
-		if template.Labels[shared.ModuleName] == name && template.Spec.Channel == desiredChannel {
+		if TemplateNameMatch(&template, name) && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
@@ -241,15 +266,61 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel s
 	if len(filteredTemplates) > 1 {
 		return nil, NewMoreThanOneTemplateCandidateErr(name, templateList.Items)
 	}
+
 	if len(filteredTemplates) == 0 {
-		return nil, fmt.Errorf("%w: in channel %s for module %s",
-			ErrNoTemplatesInListResult, desiredChannel, name)
+		return nil, fmt.Errorf("%w: for module %s in channel %s ",
+			ErrNoTemplatesInListResult, name, desiredChannel)
+	}
+
+	if filteredTemplates[0].Spec.Mandatory {
+		return nil, fmt.Errorf("%w: for module %s in channel %s",
+			ErrTemplateMarkedAsMandatory, name, desiredChannel)
+	}
+
+	return filteredTemplates[0], nil
+}
+
+func (t *TemplateLookup) getTemplateByVersion(ctx context.Context, name, version string) (
+	*v1beta2.ModuleTemplate, error,
+) {
+	templateList := &v1beta2.ModuleTemplateList{}
+	err := t.List(ctx, templateList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
+	}
+
+	var filteredTemplates []*v1beta2.ModuleTemplate
+	for _, template := range templateList.Items {
+		template := template
+		if TemplateNameMatch(&template, name) && shared.NoneChannel.Equals(template.Spec.Channel) && template.Spec.Version == version {
+			filteredTemplates = append(filteredTemplates, &template)
+			continue
+		}
+	}
+	if len(filteredTemplates) > 1 {
+		return nil, NewMoreThanOneTemplateCandidateErr(name, templateList.Items)
+	}
+	if len(filteredTemplates) == 0 {
+		return nil, fmt.Errorf("%w: for module %s in version %s",
+			ErrNoTemplatesInListResult, name, version)
 	}
 	if filteredTemplates[0].Spec.Mandatory {
-		return nil, fmt.Errorf("%w: in channel %s for module %s",
-			ErrTemplateMarkedAsMandatory, desiredChannel, name)
+		return nil, fmt.Errorf("%w: for module %s in version %s",
+			ErrTemplateMarkedAsMandatory, name, version)
 	}
 	return filteredTemplates[0], nil
+}
+
+func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
+	if len(template.Spec.ModuleName) > 0 {
+		return template.Spec.ModuleName == name
+	}
+
+	// Drop the legacyCondition once the label 'shared.ModuleName' is removed: https://github.com/kyma-project/lifecycle-manager/issues/1796
+	if template.Labels == nil {
+		return false
+	}
+	return template.Labels[shared.ModuleName] == name
 }
 
 func NewMoreThanOneTemplateCandidateErr(moduleName string,

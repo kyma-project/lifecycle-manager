@@ -123,7 +123,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 
 	It("expect Manifest.Spec.installs contains credSecretSelector", func() {
 		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(module.Name).
+			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCMPrivateRepo().Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).

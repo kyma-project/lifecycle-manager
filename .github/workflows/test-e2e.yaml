@@ -34,6 +34,7 @@ jobs:
           - module-upgrade-channel-switch
           - module-upgrade-new-version
           - unmanage-module
+          - module-install-by-version
           - skip-manifest-reconciliation
           - ca-certificate-rotation
           - self-signed-certificate-rotation
