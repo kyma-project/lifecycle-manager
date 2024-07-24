@@ -49,7 +49,7 @@ If not specified, the **namespace** of the resource mentioned in **.spec.data** 
 
 ### **.spec.customStateCheck**
 
-**Warning** This field is deprecated and will be removed in the future. 
+> **CAUTION:** This field is deprecated and will be removed in the future. 
 
 The `.spec.customStateCheck` field in Kyma Lifecycle Manager is primarily designed for third-party modules. For non-Kyma modules, the `status.state` might not be present, which the Lifecycle Manager relies on to determine the module state. This field enables users to define custom fields in the module Custom Resource (CR) that can be mapped to valid states supported by Lifecycle Manager.
 
