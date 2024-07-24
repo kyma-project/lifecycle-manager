@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -24,6 +25,7 @@ import (
 var (
 	ErrImageLayerPull       = errors.New("failed to pull layer")
 	ErrInvalidImageSpecType = errors.New("invalid image spec type provided, only 'oci-ref' 'oci-dir' are allowed")
+	ErrTaintedArchive       = errors.New("content filepath tainted")
 )
 
 type PathExtractor struct {
@@ -149,17 +151,20 @@ func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 func untarLayer(tarPath string) (string, error) {
 	tarFile, err := os.Open(tarPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open file: %w", err)
 	}
 	defer tarFile.Close()
 
 	tarReader := tar.NewReader(tarFile)
 	header, err := tarReader.Next()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read tar: %w", err)
 	}
 
-	extractedFilePath := filepath.Join(filepath.Dir(tarPath), header.Name)
+	extractedFilePath, err := sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
+	if err != nil {
+		return "", fmt.Errorf("failed to read tar: %w", err)
+	}
 
 	if _, err := os.Stat(extractedFilePath); err == nil {
 		return extractedFilePath, nil
@@ -167,13 +172,23 @@ func untarLayer(tarPath string) (string, error) {
 
 	outFile, err := os.Create(extractedFilePath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to created extracted file: %w", err)
 	}
 	defer outFile.Close()
 
-	if _, err := io.Copy(outFile, tarReader); err != nil {
-		return "", err
+	var maxBytes int64 = 1024 * 1024
+	if _, err := io.CopyN(outFile, tarReader, maxBytes); err != nil {
+		return "", fmt.Errorf("failed to extract from tar: %w", err)
 	}
 
 	return extractedFilePath, nil
+}
+
+func sanitizeArchivePath(dir, path string) (string, error) {
+	joinedPath := filepath.Join(dir, path)
+	if strings.HasPrefix(joinedPath, filepath.Clean(dir)) {
+		return joinedPath, nil
+	}
+
+	return "", fmt.Errorf("%w: %s", ErrTaintedArchive, path)
 }

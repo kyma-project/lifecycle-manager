@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/img"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1/google"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
@@ -60,7 +60,8 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 }
 
 func LookupKeyChain(ctx context.Context, imageSpec v1beta2.ImageSpec,
-	targetClient client.Client) (authn.Keychain, error) {
+	targetClient client.Client,
+) (authn.Keychain, error) {
 	var keyChain authn.Keychain
 	var err error
 	if imageSpec.CredSecretSelector == nil {
