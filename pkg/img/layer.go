@@ -10,9 +10,10 @@ import (
 type LayerName string
 
 const (
-	ConfigLayer    LayerName = "config"
-	CRDsLayer      LayerName = "crds"
-	DefaultCRLayer LayerName = "default-cr"
+	ConfigLayer      LayerName = "config"
+	CRDsLayer        LayerName = "crds"
+	DefaultCRLayer   LayerName = "default-cr"
+	RawManifestLayer LayerName = "raw-manifest"
 )
 
 type LayerRepresentation interface {

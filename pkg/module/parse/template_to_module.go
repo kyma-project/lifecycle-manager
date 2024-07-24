@@ -232,7 +232,7 @@ func insertLayerIntoManifest(
 			return fmt.Errorf("error while parsing config layer: %w", err)
 		}
 		manifest.Spec.Config = imageSpec
-	default:
+	case img.RawManifestLayer:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
@@ -271,7 +271,7 @@ func getDefaultCRFromOCILayer(layer img.Layer, clnt client.Client) (*unstructure
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keychain: %w", err)
 	}
-	manifest, err := extractor.FetchLayerToFile(ctx, *imageSpec, keyChain, "default-cr")
+	manifest, err := extractor.FetchLayerToFile(ctx, *imageSpec, keyChain, string(img.DefaultCRLayer))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get default CR: %w", err)
 	}

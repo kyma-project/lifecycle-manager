@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/img"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1/google"
@@ -45,7 +46,8 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
 
-	rawManifestPath, err := s.manifestPathExtractor.FetchLayerToFile(ctx, imageSpec, keyChain, "raw-manifest")
+	rawManifestPath, err := s.manifestPathExtractor.FetchLayerToFile(ctx, imageSpec, keyChain,
+		string(img.RawManifestLayer))
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
 	}

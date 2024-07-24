@@ -143,10 +143,8 @@ func getOCIRef(
 	switch repo.ComponentNameMapping {
 	case genericocireg.OCIRegistryURLPathMapping:
 		repoSubpath := DefaultRepoSubdirectory
-		if ext, found := descriptor.GetLabels().Get(
-			fmt.Sprintf("%s%s", genericocireg.OCIRegistryURLPathMapping, "RepoSubpath"),
-		); found {
-			repoSubpath = string(ext)
+		if repo.SubPath != "" {
+			repoSubpath = fmt.Sprintf("%s/%s", repo.SubPath, DefaultRepoSubdirectory)
 		}
 
 		layerRef.Repo = fmt.Sprintf("%s/%s", repo.Name(), repoSubpath)
