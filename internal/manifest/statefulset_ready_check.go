@@ -2,10 +2,12 @@ package manifest
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 // NewStatefulSetReadyCheck creates a readiness check that verifies if a StatefulSet is ready.
@@ -24,7 +26,8 @@ func (c *StatefulSetReadyCheck) Run(ctx context.Context,
 }
 
 func getStatefulSetState(ctx context.Context, clt declarativev2.Client,
-	statefulSet *apiappsv1.StatefulSet) shared.State {
+	statefulSet *apiappsv1.StatefulSet,
+) shared.State {
 	if IsStatefulSetReady(statefulSet) {
 		return shared.StateReady
 	}

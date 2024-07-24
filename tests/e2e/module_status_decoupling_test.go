@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -38,6 +39,21 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 		})
 
 		checkModuleStatus(module, moduleCR, kyma, shared.StateReady)
+
+		It("And Module Resource is ready", func() {
+			switch resourceKind {
+			case DeploymentKind:
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Succeed())
+			case StatefulSetKind:
+				Eventually(StatefulSetIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Succeed())
+			}
+		})
 
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
@@ -78,17 +94,25 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				Should(Succeed())
 		})
 
-		It("Then Module CR, Module Operator Deployment and Manifest CR are removed", func() {
+		It("Then Module CR, Module Operator Resource and Manifest CR are removed", func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace,
 					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
 				Should(Equal(ErrNotFound))
 
-			Eventually(DeploymentIsReady).
-				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
-				Should(Equal(ErrNotFound))
+			switch resourceKind {
+			case DeploymentKind:
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			case StatefulSetKind:
+				Eventually(StatefulSetIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			}
 
 			Eventually(NoManifestExist).
 				WithContext(ctx).
@@ -127,10 +151,18 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
 				Should(Equal(ErrNotFound))
 
-			Eventually(DeploymentIsReady).
-				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
-				Should(Equal(ErrNotFound))
+			switch resourceKind {
+			case DeploymentKind:
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			case StatefulSetKind:
+				Eventually(StatefulSetIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			}
 
 			Eventually(NoManifestExist).
 				WithContext(ctx).

@@ -3,13 +3,15 @@ package manifest
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 func NewResourceReadyCheck() *ResourceReadyCheck {
@@ -77,7 +79,8 @@ func findResource(clt declarativev2.Client, resources []*resource.Info) *Resourc
 
 func getPodsList(ctx context.Context, clt declarativev2.Client, namespace string,
 	matchLabels map[string]string) (*apicorev1.PodList,
-	error) {
+	error,
+) {
 	podList := &apicorev1.PodList{}
 	listOptions := &client.ListOptions{
 		Namespace:     namespace,
