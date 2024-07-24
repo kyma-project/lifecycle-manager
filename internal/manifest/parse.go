@@ -46,11 +46,9 @@ func (p PathExtractor) FetchLayerToFile(ctx context.Context,
 ) (string, error) {
 	switch imageSpec.Type {
 	case v1beta2.OciRefType:
-		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain,
-			fmt.Sprintf("%s.yaml", v1beta2.RawManifestLayerName))
+		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain, v1beta2.RawManifestLayerName+".yaml")
 	case v1beta2.OciDirType:
-		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain,
-			fmt.Sprintf("%s.tar", layerName))
+		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".yaml")
 		if err != nil {
 			return "", err
 		}
