@@ -44,6 +44,21 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: (30 * time.Second).String(),
 		},
 		{
+			constName:     "DefaultManifestRequeueErrInterval",
+			constValue:    DefaultManifestRequeueErrInterval.String(),
+			expectedValue: (2 * time.Second).String(),
+		},
+		{
+			constName:     "DefaultManifestRequeueWarningInterval",
+			constValue:    DefaultManifestRequeueWarningInterval.String(),
+			expectedValue: (30 * time.Second).String(),
+		},
+		{
+			constName:     "DefaultManifestRequeueBusyInterval",
+			constValue:    DefaultManifestRequeueBusyInterval.String(),
+			expectedValue: (5 * time.Second).String(),
+		},
+		{
 			constName:     "DefaultMandatoryModuleRequeueSuccessInterval",
 			constValue:    DefaultMandatoryModuleRequeueSuccessInterval.String(),
 			expectedValue: (30 * time.Second).String(),

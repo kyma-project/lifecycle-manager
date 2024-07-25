@@ -16,7 +16,8 @@ func GenerateDescriptorKey(template *v1beta2.ModuleTemplate) DescriptorKey {
 		moduleVersion := template.Annotations[shared.ModuleVersionAnnotation]
 		_, err := semver.NewVersion(moduleVersion)
 		if moduleVersion != "" && err == nil {
-			return DescriptorKey(fmt.Sprintf("%s:%s:%s", template.Name, template.Spec.Channel, moduleVersion))
+			return DescriptorKey(fmt.Sprintf("%s:%s:%d:%s", template.Name, template.Spec.Channel, template.Generation,
+				moduleVersion))
 		}
 	}
 
