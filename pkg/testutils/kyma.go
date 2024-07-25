@@ -231,6 +231,11 @@ func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Clie
 		state)
 }
 
+func KymaIsReady(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
+	err := KymaIsInState(ctx, kyma.Name, kyma.Namespace, clnt, shared.StateReady)
+	return err
+}
+
 func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, state shared.State) error {
 	kyma.Status = v1beta2.KymaStatus{
 		State:         state,

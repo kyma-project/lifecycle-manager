@@ -258,19 +258,7 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 	}
 })
 
-func containsCondition(kyma *v1beta2.Kyma) error {
-	createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-	if err != nil {
-		return err
-	}
-	conditions := createdKyma.Status.Conditions
-	if len(conditions) == 0 {
-		return ErrWrongConditions
-	}
-	return nil
-}
-
-var _ = Describe("Kyma enable multiple modules", Ordered, func() {
+var _ = FDescribe("Kyma enable multiple modules", Ordered, func() {
 	var (
 		kyma      *v1beta2.Kyma
 		skrModule v1beta2.Module
@@ -499,6 +487,124 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		})
 	})
 
+var _ = Describe("Kyma unmanage multiple modules", Ordered, func() {
+	//var (
+	//	kyma    *v1beta2.Kyma
+	//	module1 v1beta2.Module
+	//	module2 v1beta2.Module
+	//)
+	kyma := NewTestKyma("test-kyma")
+	module := NewTestModule("module-1", v1beta2.DefaultChannel)
+	module.Managed = true
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("Kyma should be ready", func() {
+		Eventually(KymaIsReady, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).
+			Should(Succeed())
+
+		//By("Delete CR", func() {
+		//	for _, activeModule := range kyma.Spec.Modules {
+		//		Eventually(DeleteModule, Timeout, Interval).
+		//			WithContext(ctx).
+		//			WithArguments(kcpClient, kyma, activeModule.Name).Should(Succeed())
+		//	}
+		//})
+		//
+		//By("CR created again", func() {
+		//	for _, activeModule := range kyma.Spec.Modules {
+		//		Eventually(ManifestExists, Timeout, Interval).
+		//			WithContext(ctx).
+		//			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+		//			Should(Succeed())
+		//	}
+		//})
+	})
+
+	It("CR should be created", func() {
+		By("CR created", func() {
+			for _, activeModule := range kyma.Spec.Modules {
+				Eventually(ManifestExists, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+					Should(Succeed())
+			}
+		})
+		//By("Delete CR", func() {
+		//	for _, activeModule := range kyma.Spec.Modules {
+		//		Eventually(DeleteModule, Timeout, Interval).
+		//			WithContext(ctx).
+		//			WithArguments(kcpClient, kyma, activeModule.Name).Should(Succeed())
+		//	}
+		//})
+		//
+		//By("CR created again", func() {
+		//	for _, activeModule := range kyma.Spec.Modules {
+		//		Eventually(ManifestExists, Timeout, Interval).
+		//			WithContext(ctx).
+		//			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+		//			Should(Succeed())
+		//	}
+		//})
+	})
+
+	//It("CR should be deleted after removed from kyma.spec.modules", func() {
+	//	By("CR created", func() {
+	//		for _, activeModule := range kyma.Spec.Modules {
+	//			Eventually(ManifestExists, Timeout, Interval).
+	//				WithContext(ctx).
+	//				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+	//				Should(Succeed())
+	//		}
+	//	})
+	//	manifestForKcpModule, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
+	//		kcpModule.Name)
+	//	Expect(err).Should(Succeed())
+	//	By("Remove kcp-module from kyma.spec.modules", func() {
+	//		kyma.Spec.Modules = []v1beta2.Module{
+	//			skrModule,
+	//		}
+	//		Eventually(kcpClient.Update, Timeout, Interval).
+	//			WithContext(ctx).WithArguments(kyma).Should(Succeed())
+	//	})
+	//
+	//	By("kcp-module deleted", func() {
+	//		Eventually(ManifestExistsByMetadata, Timeout, Interval).
+	//			WithContext(ctx).
+	//			WithArguments(kcpClient, manifestForKcpModule.Namespace, manifestForKcpModule.Name).
+	//			Should(Equal(ErrNotFound))
+	//	})
+	//
+	//	By("skr-module exists", func() {
+	//		Eventually(ManifestExists, Timeout, Interval).
+	//			WithContext(ctx).
+	//			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), skrModule.Name).
+	//			Should(Succeed())
+	//	})
+	//})
+
+	It("Disabled module should be removed from status.modules", func() {
+		Eventually(func() error {
+			kyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return err
+			}
+			modulesStatus := kyma.Status.Modules
+			if len(modulesStatus) != 1 {
+				return ErrWrongModulesStatus
+			}
+
+			if modulesStatus[0].Name == module.Name {
+				return ErrWrongModulesStatus
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
+	})
+})
+
 func expectKymaStatusModules(ctx context.Context,
 	kyma *v1beta2.Kyma, moduleName string, state shared.State,
 ) func() error {
@@ -519,4 +625,16 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 		}
 		return nil
 	}
+}
+
+func containsCondition(kyma *v1beta2.Kyma) error {
+	createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+	conditions := createdKyma.Status.Conditions
+	if len(conditions) == 0 {
+		return ErrWrongConditions
+	}
+	return nil
 }
