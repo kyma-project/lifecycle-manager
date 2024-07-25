@@ -337,7 +337,6 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
 	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module",
 		v1beta2.DefaultChannel)
-
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
 	RegisterDefaultLifecycleForKyma(kyma)
 

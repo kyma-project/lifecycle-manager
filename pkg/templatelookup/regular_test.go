@@ -166,6 +166,7 @@ func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersi
 	templateList := v1beta2.ModuleTemplateList{}
 	templateList.Items = append(templateList.Items, *builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleName).
+		WithLabelModuleName(moduleName).
 		WithChannel(moduleChannel).
 		WithDescriptor(&v1beta2.Descriptor{
 			ComponentDescriptor: &compdesc.ComponentDescriptor{
@@ -227,6 +228,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 			for _, module := range testCase.kyma.GetAvailableModules() {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 					WithModuleName(module.Name).
+					WithLabelModuleName(module.Name).
 					WithChannel(module.Channel).
 					WithDescriptor(nil).
 					WithRawDescriptor([]byte("{invalid_json}")).Build())
@@ -361,6 +363,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			for _, module := range testCase.kyma.GetAvailableModules() {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 					WithModuleName(module.Name).
+					WithLabelModuleName(module.Name).
 					WithChannel(module.Channel).
 					WithOCM(compdescv2.SchemaVersion).Build())
 			}
