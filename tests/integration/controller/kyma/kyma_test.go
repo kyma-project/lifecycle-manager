@@ -504,23 +504,6 @@ var _ = Describe("Kyma unmanage multiple modules", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).
 			Should(Succeed())
-
-		//By("Delete CR", func() {
-		//	for _, activeModule := range kyma.Spec.Modules {
-		//		Eventually(DeleteModule, Timeout, Interval).
-		//			WithContext(ctx).
-		//			WithArguments(kcpClient, kyma, activeModule.Name).Should(Succeed())
-		//	}
-		//})
-		//
-		//By("CR created again", func() {
-		//	for _, activeModule := range kyma.Spec.Modules {
-		//		Eventually(ManifestExists, Timeout, Interval).
-		//			WithContext(ctx).
-		//			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
-		//			Should(Succeed())
-		//	}
-		//})
 	})
 
 	It("CR should be created", func() {
@@ -532,25 +515,9 @@ var _ = Describe("Kyma unmanage multiple modules", Ordered, func() {
 					Should(Succeed())
 			}
 		})
-		//By("Delete CR", func() {
-		//	for _, activeModule := range kyma.Spec.Modules {
-		//		Eventually(DeleteModule, Timeout, Interval).
-		//			WithContext(ctx).
-		//			WithArguments(kcpClient, kyma, activeModule.Name).Should(Succeed())
-		//	}
-		//})
-		//
-		//By("CR created again", func() {
-		//	for _, activeModule := range kyma.Spec.Modules {
-		//		Eventually(ManifestExists, Timeout, Interval).
-		//			WithContext(ctx).
-		//			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
-		//			Should(Succeed())
-		//	}
-		//})
 	})
 
-	//It("CR should be deleted after removed from kyma.spec.modules", func() {
+	//It("CR should be deleted after unmanaging in kyma.spec.modules", func() {
 	//	By("CR created", func() {
 	//		for _, activeModule := range kyma.Spec.Modules {
 	//			Eventually(ManifestExists, Timeout, Interval).
