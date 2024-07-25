@@ -400,7 +400,9 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
 			Success: flagVar.ManifestRequeueSuccessInterval,
-			Busy:    flagVar.KymaRequeueBusyInterval,
+			Busy:    flagVar.ManifestRequeueBusyInterval,
+			Error:   flagVar.ManifestRequeueErrInterval,
+			Warning: flagVar.ManifestRequeueWarningInterval,
 		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
