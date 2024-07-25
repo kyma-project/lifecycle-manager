@@ -31,7 +31,7 @@ var _ = Describe(
 					WithContext(webhookServerContext).
 					WithArguments(crd).Should(Succeed())
 				template := builder.NewModuleTemplateBuilder().
-					WithModuleName("test-module").
+					WithLabelModuleName("test-module").
 					WithChannel(v1beta2.DefaultChannel).
 					WithModuleCR(&data).
 					WithOCM(v3alpha1.SchemaVersion).Build()

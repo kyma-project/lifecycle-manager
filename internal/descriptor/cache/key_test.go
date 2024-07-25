@@ -18,16 +18,17 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 		want     cache.DescriptorKey
 	}{
 		{
-			name: "Annotations is not nil and valid semver",
+			name: "ModuleVersionAnnotation is not nil and valid semver",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
 				WithAnnotation(shared.ModuleVersionAnnotation, "1.0.0").
 				WithChannel("channel").
+				WithGeneration(1).
 				Build(),
-			want: "name:channel:1.0.0",
+			want: "name:channel:1:1.0.0",
 		},
 		{
-			name: "Annotations is not nil but invalid semver",
+			name: "ModuleVersionAnnotation is not nil but invalid semver",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
 				WithGeneration(1).
@@ -37,7 +38,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 			want: "name:channel:1",
 		},
 		{
-			name: "Annotations is not nil but module version is empty",
+			name: "ModuleVersionAnnotation is not nil but module version is empty",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
 				WithGeneration(2).
@@ -47,7 +48,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 			want: "name:channel:2",
 		},
 		{
-			name: "Annotations is nil",
+			name: "ModuleVersionAnnotation is nil",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
 				WithGeneration(3).

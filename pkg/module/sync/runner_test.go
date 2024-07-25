@@ -196,6 +196,8 @@ func TestNeedToUpdate(t *testing.T) {
 		moduleStatus       *v1beta2.ModuleStatus
 		templateGeneration int64
 	}
+	const trackedModuleTemplateGeneration = 1
+	const updatedModuleTemplateGeneration = 2
 	tests := []struct {
 		name string
 		args args
@@ -203,7 +205,7 @@ func TestNeedToUpdate(t *testing.T) {
 	}{
 		{
 			"When manifest in cluster is nil, expect need to update",
-			args{nil, &v1beta2.Manifest{}, &v1beta2.ModuleStatus{}, 1},
+			args{nil, &v1beta2.Manifest{}, &v1beta2.ModuleStatus{}, trackedModuleTemplateGeneration},
 			true,
 		},
 		{
@@ -221,11 +223,11 @@ func TestNeedToUpdate(t *testing.T) {
 					Channel: "regular",
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
+							Generation: trackedModuleTemplateGeneration,
 						},
 					},
 				},
-				1,
+				trackedModuleTemplateGeneration,
 			},
 			true,
 		},
@@ -241,11 +243,11 @@ func TestNeedToUpdate(t *testing.T) {
 				}, &v1beta2.ModuleStatus{
 					Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
+							Generation: trackedModuleTemplateGeneration,
 						},
 					},
 				},
-				1,
+				trackedModuleTemplateGeneration,
 			},
 			true,
 		},
@@ -261,10 +263,10 @@ func TestNeedToUpdate(t *testing.T) {
 				&v1beta2.ModuleStatus{
 					State: "Ready", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
+							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, 1,
+				}, trackedModuleTemplateGeneration,
 			},
 			true,
 		},
@@ -286,10 +288,10 @@ func TestNeedToUpdate(t *testing.T) {
 				&v1beta2.ModuleStatus{
 					State: "Ready", Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
+							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, 1,
+				}, trackedModuleTemplateGeneration,
 			},
 			false,
 		},
@@ -311,10 +313,10 @@ func TestNeedToUpdate(t *testing.T) {
 				&v1beta2.ModuleStatus{
 					State: "Ready", Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
+							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, 2,
+				}, updatedModuleTemplateGeneration,
 			},
 			true,
 		},

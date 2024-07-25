@@ -56,42 +56,48 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			templates[module.Name] = &ModuleTemplateInfo{Err: fmt.Errorf("%w: invalid module", ErrTemplateNotValid)}
 			continue
 		}
-		template := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
-		if err := t.descriptorProvider.Add(template.ModuleTemplate); err != nil {
-			template.Err = fmt.Errorf("failed to add descriptor to cache: %w", err)
+
+		templateInfo := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
+		templateInfo = ValidateTemplateMode(templateInfo, kyma)
+		if templateInfo.Err != nil {
+			templates[module.Name] = &templateInfo
+			continue
 		}
-		templates[module.Name] = FilterTemplate(template, kyma)
+		if err := t.descriptorProvider.Add(templateInfo.ModuleTemplate); err != nil {
+			templateInfo.Err = fmt.Errorf("failed to get descriptor: %w", err)
+			templates[module.Name] = &templateInfo
+			continue
+		}
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
 			if moduleMatch(moduleStatus, module.Name) {
-				descriptor, err := t.descriptorProvider.GetDescriptor(template.ModuleTemplate)
+				descriptor, err := t.descriptorProvider.GetDescriptor(templateInfo.ModuleTemplate)
 				if err != nil {
 					msg := "could not handle channel skew as descriptor from template cannot be fetched"
-					template.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
+					templateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 					continue
 				}
-				MarkInvalidChannelSkewUpdate(ctx, &template, moduleStatus, descriptor.Version)
+				markInvalidChannelSkewUpdate(ctx, &templateInfo, moduleStatus, descriptor.Version)
 			}
 		}
-		templates[module.Name] = &template
+		templates[module.Name] = &templateInfo
 	}
 	return templates
 }
 
-func FilterTemplate(template ModuleTemplateInfo, kyma *v1beta2.Kyma) *ModuleTemplateInfo {
+func ValidateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
 	if template.Err != nil {
-		return &template
+		return template
 	}
-
 	if template.IsInternal() && !kyma.IsInternal() {
 		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
-		return &template
+		return template
 	}
 	if template.IsBeta() && !kyma.IsBeta() {
 		template.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
-		return &template
+		return template
 	}
-	return &template
+	return template
 }
 
 func (t *TemplateLookup) GetAndValidate(ctx context.Context, name, channel, defaultChannel string) ModuleTemplateInfo {
@@ -140,30 +146,30 @@ func logUsedChannel(ctx context.Context, name string, actualChannel string, defa
 }
 
 func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
-	return moduleStatus.FQDN == moduleName || moduleStatus.Name == moduleName
+	return moduleStatus.Name == moduleName
 }
 
-// MarkInvalidChannelSkewUpdate verifies if the given ModuleTemplate is invalid for update when channel switch is detected.
-func MarkInvalidChannelSkewUpdate(ctx context.Context, moduleTemplate *ModuleTemplateInfo,
+// markInvalidChannelSkewUpdate verifies if the given ModuleTemplate is invalid for update when channel switch is detected.
+func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *ModuleTemplateInfo,
 	moduleStatus *v1beta2.ModuleStatus, templateVersion string,
 ) {
 	if moduleStatus.Template == nil {
 		return
 	}
-	if moduleTemplate == nil || moduleTemplate.Err != nil {
+	if moduleTemplateInfo == nil || moduleTemplateInfo.Err != nil {
 		return
 	}
 
 	logger := logf.FromContext(ctx)
 	checkLog := logger.WithValues("module", moduleStatus.FQDN,
-		"template", moduleTemplate.Name,
-		"newTemplateGeneration", moduleTemplate.GetGeneration(),
+		"template", moduleTemplateInfo.Name,
+		"newTemplateGeneration", moduleTemplateInfo.GetGeneration(),
 		"previousTemplateGeneration", moduleStatus.Template.GetGeneration(),
-		"newTemplateChannel", moduleTemplate.Spec.Channel,
+		"newTemplateChannel", moduleTemplateInfo.Spec.Channel,
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
-	if moduleTemplate.Spec.Channel == moduleStatus.Channel {
+	if moduleTemplateInfo.Spec.Channel == moduleStatus.Channel {
 		return
 	}
 
@@ -173,7 +179,7 @@ func MarkInvalidChannelSkewUpdate(ctx context.Context, moduleTemplate *ModuleTem
 	if err != nil {
 		msg := "could not handle channel skew as descriptor from template contains invalid version"
 		checkLog.Error(err, msg)
-		moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
+		moduleTemplateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 		return
 	}
 
@@ -181,7 +187,7 @@ func MarkInvalidChannelSkewUpdate(ctx context.Context, moduleTemplate *ModuleTem
 	if err != nil {
 		msg := "could not handle channel skew as Modules contains invalid version"
 		checkLog.Error(err, msg)
-		moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
+		moduleTemplateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 		return
 	}
 
@@ -200,9 +206,9 @@ func MarkInvalidChannelSkewUpdate(ctx context.Context, moduleTemplate *ModuleTem
 	if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
 		msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
 			"as a higher version (%s) of the module was previously installed",
-			moduleStatus.Channel, moduleTemplate.Spec.Channel, versionInStatus.String())
+			moduleStatus.Channel, moduleTemplateInfo.Spec.Channel, versionInStatus.String())
 		checkLog.Info(msg)
-		moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
+		moduleTemplateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 	}
 }
 
@@ -232,25 +238,8 @@ func (t *TemplateLookup) getTemplate(ctx context.Context, name, desiredChannel s
 
 	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
-		template := template // capture unique address
+		template := template
 		if template.Labels[shared.ModuleName] == name && template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, &template)
-			continue
-		}
-		if fmt.Sprintf("%s/%s", template.Namespace, template.Name) == name &&
-			template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, &template)
-			continue
-		}
-		if template.ObjectMeta.Name == name && template.Spec.Channel == desiredChannel {
-			filteredTemplates = append(filteredTemplates, &template)
-			continue
-		}
-		descriptor, err := t.descriptorProvider.GetDescriptor(&template)
-		if err != nil {
-			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
-		}
-		if descriptor.Name == name && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}

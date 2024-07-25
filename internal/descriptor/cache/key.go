@@ -11,7 +11,8 @@ type DescriptorKey string
 func GenerateDescriptorKey(template *v1beta2.ModuleTemplate) DescriptorKey {
 	version, err := template.GetVersion()
 	if err == nil {
-		return DescriptorKey(fmt.Sprintf("%s:%s:%s", template.Name, template.Spec.Channel, version.String()))
+		return DescriptorKey(fmt.Sprintf("%s:%s:%d:%s", template.Name, template.Spec.Channel, template.Generation,
+			version))
 	}
 
 	return DescriptorKey(fmt.Sprintf("%s:%s:%d", template.Name, template.Spec.Channel, template.Generation))

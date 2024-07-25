@@ -29,7 +29,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
-				Kind:       string(shared.KymaKind),
+				Kind:       string(shared.ModuleTemplateKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      random.Name(),
@@ -39,9 +39,11 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Data: data,
 				Descriptor: machineryruntime.RawExtension{
 					Object: &v1beta2.Descriptor{
-						ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{
-							ConfiguredVersion: compdescv2.SchemaVersion,
-						}},
+						ComponentDescriptor: &compdesc.ComponentDescriptor{
+							Metadata: compdesc.Metadata{
+								ConfiguredVersion: compdescv2.SchemaVersion,
+							},
+						},
 					},
 				},
 			},
@@ -54,12 +56,22 @@ func (m ModuleTemplateBuilder) WithName(name string) ModuleTemplateBuilder {
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithVersion(version string) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.Version = version
+	return m
+}
+
+func (m ModuleTemplateBuilder) WithModuleName(moduleName string) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.ModuleName = moduleName
+	return m
+}
+
 func (m ModuleTemplateBuilder) WithGeneration(generation int) ModuleTemplateBuilder {
 	m.moduleTemplate.ObjectMeta.Generation = int64(generation)
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithModuleName(moduleName string) ModuleTemplateBuilder {
+func (m ModuleTemplateBuilder) WithLabelModuleName(moduleName string) ModuleTemplateBuilder {
 	if m.moduleTemplate.Labels == nil {
 		m.moduleTemplate.Labels = make(map[string]string)
 	}
