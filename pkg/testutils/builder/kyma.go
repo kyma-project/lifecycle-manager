@@ -38,6 +38,15 @@ func (kb KymaBuilder) WithName(name string) KymaBuilder {
 	return kb
 }
 
+// WithEnabledModule append module to v1beta2.Kyma.Spec.Modules.
+func (kb KymaBuilder) WithEnabledModule(module v1beta2.Module) KymaBuilder {
+	if kb.kyma.Spec.Modules == nil {
+		kb.kyma.Spec.Modules = []v1beta2.Module{}
+	}
+	kb.kyma.Spec.Modules = append(kb.kyma.Spec.Modules, module)
+	return kb
+}
+
 // WithNamePrefix sets v1beta2.Kyma.ObjectMeta.Name.
 func (kb KymaBuilder) WithNamePrefix(prefix string) KymaBuilder {
 	kb.kyma.ObjectMeta.Name = fmt.Sprintf("%s-%s", prefix, random.Name())
@@ -80,6 +89,15 @@ func (kb KymaBuilder) WithCondition(condition apimetav1.Condition) KymaBuilder {
 		kb.kyma.Status.Conditions = []apimetav1.Condition{}
 	}
 	kb.kyma.Status.Conditions = append(kb.kyma.Status.Conditions, condition)
+	return kb
+}
+
+// WithCondition adds a ModuleStatus to v1beta2.Kyma.Status.Modules.
+func (kb KymaBuilder) WithModuleStatus(moduleStatus v1beta2.ModuleStatus) KymaBuilder {
+	if kb.kyma.Status.Modules == nil {
+		kb.kyma.Status.Modules = []v1beta2.ModuleStatus{}
+	}
+	kb.kyma.Status.Modules = append(kb.kyma.Status.Modules, moduleStatus)
 	return kb
 }
 
