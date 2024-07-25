@@ -7,3 +7,4 @@ packages:
   internal/istio: 63
   internal/pkg/resources: 85
   internal/remote: 5
+  pkg/templatelookup: 63
