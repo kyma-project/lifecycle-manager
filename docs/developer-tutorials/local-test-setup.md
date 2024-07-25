@@ -1,5 +1,17 @@
 # Local test Setup in the control-plane Mode Using k3d
 
+> ### Supported Versions
+> * Golang: `v1.22.5`
+> * k3d: `v5.6.0`
+> * k3s: `v1.27.4-k3s1 (default)`
+> * kubectl:
+>  * Client Version: `v1.30.2`
+>  * Server Version: `v1.27.4+k3s1`
+> * docker:
+>  * Client Version: `v26.1.4`
+>  * Server: `Docker Desktop v4.31.0`
+>  * Engine Version: `v26.1.4`
+
 ## Context
 
 This tutorial shows how to configure a fully working e2e test setup including the following components:
@@ -184,36 +196,33 @@ k3d cluster create skr-local
       <summary>Running Lifecycle Manager on a local machine and not on a cluster</summary>
       If you are running Lifecycle Manager on your local machine and not as a deployment on a cluster, use the following to create a Kyma CR and Secret:
 
-      ```shell  
-      cat << EOF | kubectl apply -f -
-      ---
-      apiVersion: v1
-      kind: Secret
-      metadata:
-         name: kyma-sample
-         namespace: kcp-system
-         labels:
+   ```shell  
+   cat << EOF | kubectl apply -f -
+   ---
+   apiVersion: v1
+   kind: Secret
+   metadata:
+      name: kyma-sample
+      namespace: kcp-system
+      labels:
          "operator.kyma-project.io/kyma-name": "kyma-sample"
          "operator.kyma-project.io/managed-by": "lifecycle-manager"
-      data:
-         config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
-      ---
-      apiVersion: operator.kyma-project.io/v1beta2
-      kind: Kyma
-      metadata:
-         annotations:
-         skr-domain: "example.domain.com"
-         name: kyma-sample
-         namespace: kcp-system
-      spec:
-         channel: regular
-         sync:
-         enabled: true
-         modules:
-         - name: template-operator
-      EOF
+   data:
+      config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
+   ---
+   apiVersion: operator.kyma-project.io/v1beta2
+   kind: Kyma
+   metadata:
+      annotations:
+        skr-domain: "example.domain.com"
+      name: kyma-sample
+      namespace: kcp-system
+   spec:
+      channel: regular
+      modules:
+      - name: template-operator
+   EOF
    ```
-
    </details>
 
 ### Watcher and Module Installation Verification
