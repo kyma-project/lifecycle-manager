@@ -18,15 +18,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -326,6 +326,42 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeTrue())
+	})
+})
+
+var _ = Describe("Modules can only be referenced via module name", Ordered, func() {
+	kyma := NewTestKyma("random-kyma")
+
+	moduleReferencedWithLabel := NewTestModuleWithFixName("random-module", v1beta2.DefaultChannel)
+	moduleReferencedWithNamespacedName := NewTestModuleWithFixName(
+		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
+	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module", v1beta2.DefaultChannel)
+
+	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	Context("When operator is referenced just by the label name", func() {
+		It("returns the expected operator", func() {
+			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, kyma.Spec.Channel)
+			Expect(err).ToNot(HaveOccurred())
+
+			foundModuleName := moduleTemplate.Labels[shared.ModuleName]
+			Expect(foundModuleName).To(Equal(moduleReferencedWithLabel.Name))
+		})
+	})
+
+	Context("When operator is referenced by Namespace/Name", func() {
+		It("cannot find the operator", func() {
+			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithNamespacedName, kyma.Spec.Channel)
+			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
+		})
+	})
+
+	Context("When operator is referenced by FQDN", func() {
+		It("cannot find the operator", func() {
+			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithFQDN, kyma.Spec.Channel)
+			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
+		})
 	})
 })
 

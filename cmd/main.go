@@ -177,10 +177,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
-	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
+	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager, kymaMetrics,
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
+		kymaMetrics,
 		setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
@@ -315,7 +316,9 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	}
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider, flagVar *flags.FlagVar) (*watcher.SKRWebhookManifestManager, error) {
+func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
+	flagVar *flags.FlagVar,
+) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.CaCertCacheTTL)
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
@@ -397,7 +400,9 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
 			Success: flagVar.ManifestRequeueSuccessInterval,
-			Busy:    flagVar.KymaRequeueBusyInterval,
+			Busy:    flagVar.ManifestRequeueBusyInterval,
+			Error:   flagVar.ManifestRequeueErrInterval,
+			Warning: flagVar.ManifestRequeueWarningInterval,
 		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,

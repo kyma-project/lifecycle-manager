@@ -29,7 +29,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
-				Kind:       string(shared.KymaKind),
+				Kind:       string(shared.ModuleTemplateKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      random.Name(),
@@ -39,9 +39,11 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Data: data,
 				Descriptor: machineryruntime.RawExtension{
 					Object: &v1beta2.Descriptor{
-						ComponentDescriptor: &compdesc.ComponentDescriptor{Metadata: compdesc.Metadata{
-							ConfiguredVersion: compdescv2.SchemaVersion,
-						}},
+						ComponentDescriptor: &compdesc.ComponentDescriptor{
+							Metadata: compdesc.Metadata{
+								ConfiguredVersion: compdescv2.SchemaVersion,
+							},
+						},
 					},
 				},
 			},
