@@ -12,5 +12,3 @@ resources:
   # subjects if changing service account names.
   - role_binding.yaml
   - metrics_role_binding.yaml
-  # Comment the following to disable manifest integration
-  - manifest_role_binding.yaml

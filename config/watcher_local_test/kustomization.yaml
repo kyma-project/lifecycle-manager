@@ -51,7 +51,7 @@ patches:
     group: security.istio.io
     version: v1beta1
     kind: AuthorizationPolicy
-    name: controller-manager
+    name: controller
 - patch: |-
     - op: replace
       path: /spec/servers/0/hosts/0

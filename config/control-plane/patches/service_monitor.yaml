@@ -3,7 +3,7 @@ kind: ServiceMonitor
 metadata:
   labels:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io
-  name: controller-manager-metrics-monitor
+  name: controller-metrics-monitor
 spec:
   endpoints:
     - path: /metrics
