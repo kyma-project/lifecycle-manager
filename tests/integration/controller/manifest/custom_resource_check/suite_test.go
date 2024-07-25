@@ -138,7 +138,9 @@ var _ = BeforeSuite(func() {
 	extractor := manifest.NewPathExtractor(nil)
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
+		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
+		Warning: 1 * time.Second,
 	},
 		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
 		manifest.NewSpecResolver(kcp.Client, extractor),
