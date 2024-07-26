@@ -34,7 +34,7 @@ var _ = Describe("RBAC Privileges", func() {
 			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(3))
+			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(2))
 
 			leaderElectionRoleRules := []apirbacv1.PolicyRule{
 				{
