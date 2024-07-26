@@ -45,5 +45,5 @@ const (
 )
 
 func IsEnabled(value string) bool {
-	return strings.ToLower(value) == EnabledValue
+	return strings.ToLower(value) == EnableLabelValue
 }
