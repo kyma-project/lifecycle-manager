@@ -18,6 +18,8 @@ rules:
   verbs:
     - list
     - watch
+    - delete
+    - get
 - apiGroups:
     - operator.kyma-project.io
   resources:
@@ -25,3 +27,4 @@ rules:
   verbs:
     - list
     - watch
+    - delete

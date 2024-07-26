@@ -11,11 +11,23 @@ rules:
   verbs:
     - list
     - watch
+    - create
+    - delete
 - apiGroups:
     - cert-manager.io
   resources:
     - certificates
   verbs:
     - patch
+    - list
+    - watch
+    - get
+    - create
+    - delete
+- apiGroups:
+    - cert-manager.io
+  resources:
+    - issuers
+  verbs:
     - list
     - watch

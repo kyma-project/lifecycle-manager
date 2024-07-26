@@ -177,12 +177,17 @@ var _ = Describe("RBAC Privileges", func() {
 				{
 					APIGroups: []string{""},
 					Resources: []string{"secrets"},
-					Verbs:     []string{"list", "watch"},
+					Verbs:     []string{"list", "watch", "create", "delete"},
 				},
 				{
 					APIGroups: []string{"cert-manager.io"},
 					Resources: []string{"certificates"},
-					Verbs:     []string{"patch", "list", "watch"},
+					Verbs:     []string{"patch", "list", "watch", "get", "create", "delete"},
+				},
+				{
+					APIGroups: []string{"cert-manager.io"},
+					Resources: []string{"issuers"},
+					Verbs:     []string{"list", "watch"},
 				},
 			}
 			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
@@ -203,12 +208,12 @@ var _ = Describe("RBAC Privileges", func() {
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"kymas"},
-					Verbs:     []string{"list", "watch"},
+					Verbs:     []string{"list", "watch", "delete", "create"},
 				},
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"moduletemplates"},
-					Verbs:     []string{"list", "watch"},
+					Verbs:     []string{"list", "watch", "delete", "get"},
 				},
 			}
 			kymaSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
