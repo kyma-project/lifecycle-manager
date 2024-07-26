@@ -10,7 +10,7 @@ import (
 )
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests/status,verbs=get;update;patch;watch
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests/finalizers,verbs=update
 
 func NewReconciler(mgr manager.Manager,

@@ -27,7 +27,7 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"update"},
 				},
 			}
-			Expect(GetClusterRoleBindingPolicyRules(ctx, controlPlaneClient, "klm-manager-role-crd",
+			Expect(GetClusterRoleBindingPolicyRules(ctx, controlPlaneClient, "klm-controller-role-crd",
 				klmClusterRoleBindings)).To(Equal(crdRoleRules))
 
 			By("And KLM Service Account has the correct RoleBindings in kcp-system namespaces")
@@ -125,6 +125,21 @@ var _ = Describe("RBAC Privileges", func() {
 				},
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"manifests"},
+					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"manifests/finalizers"},
+					Verbs:     []string{"update"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"manifests/status"},
+					Verbs:     []string{"get", "patch", "update"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"moduletemplates"},
 					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
 				},
@@ -146,21 +161,6 @@ var _ = Describe("RBAC Privileges", func() {
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"watchers/status"},
-					Verbs:     []string{"get", "patch", "update"},
-				},
-				{
-					APIGroups: []string{"operator.kyma-project.io"},
-					Resources: []string{"manifests"},
-					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
-				},
-				{
-					APIGroups: []string{"operator.kyma-project.io"},
-					Resources: []string{"manifests/finalizers"},
-					Verbs:     []string{"update"},
-				},
-				{
-					APIGroups: []string{"operator.kyma-project.io"},
-					Resources: []string{"manifests/status"},
 					Verbs:     []string{"get", "patch", "update"},
 				},
 			}
