@@ -5,7 +5,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: controller-leader-election-role
+  name: klm-controller-role-leader-election
 subjects:
 - kind: ServiceAccount
   name: controller
