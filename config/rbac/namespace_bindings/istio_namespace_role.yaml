@@ -14,12 +14,8 @@ rules:
 - apiGroups:
     - cert-manager.io
   resources:
-    - issuers
-  verbs:
-    - list
-- apiGroups:
-    - cert-manager.io
-  resources:
     - certificates
   verbs:
+    - patch
     - list
+    - watch
