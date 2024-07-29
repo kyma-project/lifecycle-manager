@@ -208,12 +208,22 @@ var _ = Describe("RBAC Privileges", func() {
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"kymas"},
-					Verbs:     []string{"list", "watch", "delete", "create"},
+					Verbs:     []string{"list", "watch", "delete", "get", "create", "patch", "update"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"kymas/finalizers"},
+					Verbs:     []string{"update"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"kymas/status"},
+					Verbs:     []string{"get", "patch", "update", "watch"},
 				},
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"moduletemplates"},
-					Verbs:     []string{"list", "watch", "delete", "get"},
+					Verbs:     []string{"list", "watch", "delete"},
 				},
 			}
 			kymaSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
