@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -69,10 +71,18 @@ type Module struct {
 
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
+	// The Version and Channel are mutually exclusive options.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel,omitempty"`
+
+	// Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
+	// ModuleTemplate based on this specific version.
+	// The Version and Channel are mutually exclusive options.
+	// The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	// +kubebuilder:validation:Pattern:=`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
+	Version string `json:"version,omitempty"`
 
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
@@ -210,14 +220,6 @@ type PartialMeta struct {
 }
 
 const DefaultChannel = "regular"
-
-func PartialMetaFromObject(object apimetav1.Object) PartialMeta {
-	return PartialMeta{
-		Name:       object.GetName(),
-		Namespace:  object.GetNamespace(),
-		Generation: object.GetGeneration(),
-	}
-}
 
 func (m PartialMeta) GetName() string {
 	return m.Name
@@ -393,6 +395,7 @@ type AvailableModule struct {
 	Module
 	Enabled   bool
 	Unmanaged bool
+	Valid     bool
 }
 
 func (kyma *Kyma) GetAvailableModules() []AvailableModule {
@@ -400,23 +403,41 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 	modules := make([]AvailableModule, 0)
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
-		modules = append(modules, AvailableModule{Module: module, Enabled: true, Unmanaged: !module.Managed})
+		if strings.ToLower(module.Channel) == string(shared.NoneChannel) {
+			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false, Unmanaged: !module.Managed})
+			continue
+		}
+		if module.Version != "" && module.Channel != "" {
+			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false, Unmanaged: !module.Managed})
+			continue
+		}
+		modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: true, Unmanaged: !module.Managed})
 	}
 
-	for _, module := range kyma.Status.Modules {
-		_, exist := moduleMap[module.Name]
+	for _, moduleInStatus := range kyma.Status.Modules {
+		_, exist := moduleMap[moduleInStatus.Name]
 		if exist {
 			continue
 		}
+
 		modules = append(modules, AvailableModule{
 			Module: Module{
-				Name:    module.Name,
-				Channel: module.Channel,
+				Name:    moduleInStatus.Name,
+				Channel: moduleInStatus.Channel,
+				Version: moduleInStatus.Version,
 			},
 			Enabled: false,
+			Valid:   determineModuleValidity(moduleInStatus),
 		})
 	}
 	return modules
+}
+
+func determineModuleValidity(moduleStatus ModuleStatus) bool {
+	if moduleStatus.Template == nil {
+		return false
+	}
+	return true
 }
 
 func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {

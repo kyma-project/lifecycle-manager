@@ -39,6 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -50,11 +51,10 @@ import (
 var ErrManifestsStillExist = errors.New("manifests still exist")
 
 const (
-	moduleReconciliationError event.Reason = "ModuleReconciliationError"
-	metricsError              event.Reason = "MetricsError"
-	updateSpecError           event.Reason = "UpdateSpecError"
-	updateStatusError         event.Reason = "UpdateStatusError"
-	patchStatusError          event.Reason = "PatchStatus"
+	metricsError      event.Reason = "MetricsError"
+	updateSpecError   event.Reason = "UpdateSpecError"
+	updateStatusError event.Reason = "UpdateStatusError"
+	patchStatusError  event.Reason = "PatchStatus"
 )
 
 type Reconciler struct {
@@ -475,17 +475,14 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 }
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
-	modules, err := r.GenerateModulesFromTemplate(ctx, kyma)
-	if err != nil {
-		return fmt.Errorf("error while fetching modules during processing: %w", err)
-	}
+	templates := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider).GetRegularTemplates(ctx, kyma)
+	parser := parse.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
+	modules := parser.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)
-
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
-
 	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {

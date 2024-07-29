@@ -77,7 +77,7 @@ var _ = Describe("module channel different from the global channel", func() {
 	})
 })
 
-var _ = Describe("Given invalid channel", func() {
+var _ = Describe("Given invalid channel which is rejected by CRD validation rules", func() {
 	DescribeTable(
 		"Test kyma CR, module template creation", func(givenCondition func() error) {
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())

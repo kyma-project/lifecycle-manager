@@ -17,8 +17,11 @@ limitations under the License.
 package v1beta2
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -182,6 +185,22 @@ func (m *ModuleTemplate) IsInternal() bool {
 		return strings.ToLower(isInternal) == shared.EnableLabelValue
 	}
 	return false
+}
+
+var ErrInvalidVersion = errors.New("can't find valid semantic version")
+
+func (m *ModuleTemplate) GetVersion() (*semver.Version, error) {
+	if m.Annotations != nil {
+		moduleVersion, found := m.Annotations[shared.ModuleVersionAnnotation]
+		if found {
+			version, err := semver.NewVersion(moduleVersion)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s", ErrInvalidVersion, err.Error())
+			}
+			return version, nil
+		}
+	}
+	return nil, ErrInvalidVersion
 }
 
 func (m *ModuleTemplate) IsBeta() bool {
