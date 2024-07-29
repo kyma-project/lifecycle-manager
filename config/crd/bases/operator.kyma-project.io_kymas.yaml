@@ -64,6 +64,7 @@ spec:
                       description: |-
                         Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
                         ModuleTemplate based on the new resolved resources.
+                        The Version and Channel are mutually exclusive options.
                       maxLength: 32
                       minLength: 3
                       pattern: ^[a-z]+$
@@ -96,6 +97,14 @@ spec:
                       description: |-
                         RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
                         It will be removed in the upcoming API version.
+                      type: string
+                    version:
+                      description: |-
+                        Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
+                        ModuleTemplate based on this specific version.
+                        The Version and Channel are mutually exclusive options.
+                        The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+                      pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
                       type: string
                   required:
                   - name
@@ -497,6 +506,7 @@ spec:
                       description: |-
                         Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
                         ModuleTemplate based on the new resolved resources.
+                        The Version and Channel are mutually exclusive options.
                       maxLength: 32
                       minLength: 3
                       pattern: ^[a-z]+$
@@ -529,6 +539,14 @@ spec:
                       description: |-
                         RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
                         It will be removed in the upcoming API version.
+                      type: string
+                    version:
+                      description: |-
+                        Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
+                        ModuleTemplate based on this specific version.
+                        The Version and Channel are mutually exclusive options.
+                        The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+                      pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
                       type: string
                   required:
                   - name

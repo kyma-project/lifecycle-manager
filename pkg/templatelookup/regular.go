@@ -22,6 +22,7 @@ var (
 	ErrTemplateMarkedAsMandatory = errors.New("template marked as mandatory")
 	ErrTemplateNotAllowed        = errors.New("module template not allowed")
 	ErrTemplateUpdateNotAllowed  = errors.New("module template update not allowed")
+	ErrTemplateNotValid          = errors.New("given module template is not valid")
 )
 
 type ModuleTemplateInfo struct {
@@ -51,6 +52,11 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		if found {
 			continue
 		}
+		if !module.Valid {
+			templates[module.Name] = &ModuleTemplateInfo{Err: fmt.Errorf("%w: invalid module", ErrTemplateNotValid)}
+			continue
+		}
+
 		templateInfo := t.GetAndValidate(ctx, module.Name, module.Channel, kyma.Spec.Channel)
 		templateInfo = ValidateTemplateMode(templateInfo, kyma)
 		if templateInfo.Err != nil {

@@ -18,7 +18,7 @@ import (
 var _ = Describe("Module Status Decoupling", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	moduleWrongConfig := NewTestModuleWithFixName("template-operator-misconfigured", "regular")
+	moduleWrongConfig := NewTestModuleWithFixName("template-operator-misconfigured", "regular", "")
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)

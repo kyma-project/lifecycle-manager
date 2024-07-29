@@ -79,8 +79,8 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
-		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-			WithArguments(template).
+		Eventually(CreateCR, Timeout, Interval).WithContext(ctx).
+			WithArguments(kcpClient, template).
 			Should(Succeed())
 	}
 }

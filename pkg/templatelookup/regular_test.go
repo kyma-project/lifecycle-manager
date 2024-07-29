@@ -92,6 +92,56 @@ func TestValidateTemplateMode(t *testing.T) {
 	}
 }
 
+func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
+	tests := []struct {
+		name       string
+		KymaSpec   v1beta2.KymaSpec
+		KymaStatus v1beta2.KymaStatus
+		wantErr    error
+	}{
+		{
+			name: "When Module in Spec contains both Channel and Version, Then result contains error",
+			KymaSpec: v1beta2.KymaSpec{
+				Modules: []v1beta2.Module{
+					{Name: "Module1", Channel: "regular", Version: "v1.0"},
+				},
+			},
+			wantErr: templatelookup.ErrTemplateNotValid,
+		},
+		{
+			name: "When Template not exists in Status, Then result contains error",
+			KymaStatus: v1beta2.KymaStatus{
+				Modules: []v1beta2.ModuleStatus{
+					{
+						Name:     "Module1",
+						Channel:  "regular",
+						Version:  "v1.0",
+						Template: nil,
+					},
+				},
+			},
+			wantErr: templatelookup.ErrTemplateNotValid,
+		},
+	}
+
+	for _, tt := range tests {
+		test := tt
+		t.Run(tt.name, func(t *testing.T) {
+			lookup := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider())
+			kyma := &v1beta2.Kyma{
+				Spec:   test.KymaSpec,
+				Status: test.KymaStatus,
+			}
+			got := lookup.GetRegularTemplates(context.TODO(), kyma)
+			for _, err := range got {
+				if !errors.Is(err.Err, test.wantErr) {
+					t.Errorf("GetRegularTemplates() = %v, want %v", got, test.wantErr)
+				}
+			}
+		})
+	}
+}
+
 func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T) {
 	testModule := testutils.NewTestModule("module1", "new_channel")
 

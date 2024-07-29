@@ -48,8 +48,10 @@ func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates temp
 	modules := make(common.Modules, 0)
 
 	for _, module := range kyma.GetAvailableModules() {
-		template := templates[module.Name]
-		modules = p.appendModuleWithInformation(module, kyma, template, modules)
+		template, found := templates[module.Name]
+		if found {
+			modules = p.appendModuleWithInformation(module, kyma, template, modules)
+		}
 	}
 	return modules
 }
@@ -81,51 +83,47 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	return modules
 }
 
-func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
+func (p *Parser) appendModuleWithInformation(availableModule v1beta2.AvailableModule, kyma *v1beta2.Kyma,
 	template *templatelookup.ModuleTemplateInfo, modules common.Modules,
 ) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
-		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
-		})
-		return modules
+		return appendInvalidModule(availableModule, modules, template)
 	}
 	descriptor, err := p.descriptorProvider.GetDescriptor(template.ModuleTemplate)
 	if err != nil {
 		template.Err = err
-		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
-		})
-		return modules
+		return appendInvalidModule(availableModule, modules, template)
 	}
 	fqdn := descriptor.GetName()
-	name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
+	name := common.CreateModuleName(fqdn, kyma.Name, availableModule.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
-	if manifest, err = p.newManifestFromTemplate(module.Module,
+	if manifest, err = p.newManifestFromTemplate(availableModule.Module,
 		template.ModuleTemplate); err != nil {
 		template.Err = err
-		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
-		})
-		return modules
+		return appendInvalidModule(availableModule, modules, template)
 	}
 	// we name the manifest after the module name
 	manifest.SetName(name)
 	// to have correct owner references, the manifest must always have the same namespace as kyma
 	manifest.SetNamespace(kyma.GetNamespace())
 	modules = append(modules, &common.Module{
-		ModuleName: module.Name,
+		ModuleName: availableModule.Name,
 		FQDN:       fqdn,
 		Template:   template,
 		Manifest:   manifest,
-		Enabled:    module.Enabled,
+		Enabled:    availableModule.Enabled,
+	})
+	return modules
+}
+
+func appendInvalidModule(availableModule v1beta2.AvailableModule, modules common.Modules,
+	template *templatelookup.ModuleTemplateInfo,
+) common.Modules {
+	modules = append(modules, &common.Module{
+		ModuleName: availableModule.Name,
+		Template:   template,
+		Enabled:    availableModule.Enabled,
 	})
 	return modules
 }
