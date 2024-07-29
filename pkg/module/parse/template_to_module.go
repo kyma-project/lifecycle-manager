@@ -155,6 +155,17 @@ func (p *Parser) newManifestFromTemplate(
 	manifest := &v1beta2.Manifest{}
 	manifest.Spec.Remote = p.inKCPMode
 
+	switch module.CustomResourcePolicy {
+	case v1beta2.CustomResourcePolicyIgnore:
+		manifest.Spec.Resource = nil
+	case v1beta2.CustomResourcePolicyCreateAndDelete:
+		fallthrough
+	default:
+		if template.Spec.Data != nil {
+			manifest.Spec.Resource = template.Spec.Data.DeepCopy()
+		}
+	}
+
 	var layers img.Layers
 	var err error
 	descriptor, err := p.descriptorProvider.GetDescriptor(template)
@@ -168,17 +179,6 @@ func (p *Parser) newManifestFromTemplate(
 
 	if err := translateLayersAndMergeIntoManifest(manifest, layers, p.Client); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
-	}
-
-	switch module.CustomResourcePolicy {
-	case v1beta2.CustomResourcePolicyIgnore:
-		manifest.Spec.Resource = nil
-	case v1beta2.CustomResourcePolicyCreateAndDelete:
-		fallthrough
-	default:
-		if manifest.Spec.Resource == nil && template.Spec.Data != nil {
-			manifest.Spec.Resource = template.Spec.Data.DeepCopy()
-		}
 	}
 
 	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
@@ -219,11 +219,13 @@ func insertLayerIntoManifest(
 ) error {
 	switch layer.LayerName {
 	case img.DefaultCRLayer:
-		defaultCR, err := getDefaultCRFromOCILayer(layer, clnt)
-		if err != nil {
-			return fmt.Errorf("error while parsing default CR layer: %w", err)
+		if manifest.Spec.Resource == nil {
+			defaultCR, err := getDefaultCRFromOCILayer(layer, clnt)
+			if err != nil {
+				return fmt.Errorf("error while parsing default CR layer: %w", err)
+			}
+			manifest.Spec.Resource = defaultCR
 		}
-		manifest.Spec.Resource = defaultCR
 	case img.CRDsLayer:
 		fallthrough
 	case img.ConfigLayer:
