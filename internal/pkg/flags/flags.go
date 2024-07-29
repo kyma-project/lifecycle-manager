@@ -16,6 +16,9 @@ const (
 	DefaultKymaRequeueWarningInterval                                   = 30 * time.Second
 	DefaultKymaRequeueBusyInterval                                      = 5 * time.Second
 	DefaultManifestRequeueSuccessInterval                               = 30 * time.Second
+	DefaultManifestRequeueErrInterval                                   = 2 * time.Second
+	DefaultManifestRequeueWarningInterval                               = 30 * time.Second
+	DefaultManifestRequeueBusyInterval                                  = 5 * time.Second
 	DefaultMandatoryModuleRequeueSuccessInterval                        = 30 * time.Second
 	DefaultMandatoryModuleDeletionRequeueSuccessInterval                = 30 * time.Second
 	DefaultWatcherRequeueSuccessInterval                                = 30 * time.Second
@@ -119,6 +122,15 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.ManifestRequeueSuccessInterval, "manifest-requeue-success-interval",
 		DefaultManifestRequeueSuccessInterval,
 		"determines the duration a Manifest in Ready state is enqueued for reconciliation.")
+	flag.DurationVar(&flagVar.ManifestRequeueErrInterval, "manifest-requeue-error-interval",
+		DefaultManifestRequeueErrInterval,
+		"determines the duration a Manifest in Error state is enqueued for reconciliation.")
+	flag.DurationVar(&flagVar.ManifestRequeueWarningInterval, "manifest-requeue-warning-interval",
+		DefaultManifestRequeueWarningInterval,
+		"determines the duration a Manifest in Warning state is enqueued for reconciliation.")
+	flag.DurationVar(&flagVar.ManifestRequeueBusyInterval, "manifest-requeue-busy-interval",
+		DefaultManifestRequeueBusyInterval,
+		"determines the duration a Manifest in Processing state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
 		"mandatory-module-deletion-requeue-success-interval",
 		DefaultMandatoryModuleDeletionRequeueSuccessInterval,
@@ -230,6 +242,9 @@ type FlagVar struct {
 	KymaRequeueBusyInterval                        time.Duration
 	KymaRequeueWarningInterval                     time.Duration
 	ManifestRequeueSuccessInterval                 time.Duration
+	ManifestRequeueErrInterval                     time.Duration
+	ManifestRequeueBusyInterval                    time.Duration
+	ManifestRequeueWarningInterval                 time.Duration
 	WatcherRequeueSuccessInterval                  time.Duration
 	MandatoryModuleRequeueSuccessInterval          time.Duration
 	MandatoryModuleDeletionRequeueSuccessInterval  time.Duration

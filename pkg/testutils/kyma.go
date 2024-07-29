@@ -139,6 +139,11 @@ func EnableModule(ctx context.Context,
 	if err != nil {
 		return err
 	}
+	for _, enabledModule := range kyma.Spec.Modules {
+		if enabledModule.Name == module.Name {
+			return nil
+		}
+	}
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
 	err = clnt.Update(ctx, kyma)

@@ -213,7 +213,7 @@ var _ = BeforeSuite(func() {
 		Event:               testEventRec,
 		RequeueIntervals:    intervals,
 		SKRWebhookManager:   skrWebhookChartManager,
-		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
+		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,

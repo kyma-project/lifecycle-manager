@@ -191,10 +191,13 @@ func configureModuleInKyma(
 
 func TestNeedToUpdate(t *testing.T) {
 	type args struct {
-		manifestInCluster *v1beta2.Manifest
-		manifestObj       *v1beta2.Manifest
-		moduleStatus      *v1beta2.ModuleStatus
+		manifestInCluster  *v1beta2.Manifest
+		manifestObj        *v1beta2.Manifest
+		moduleStatus       *v1beta2.ModuleStatus
+		templateGeneration int64
 	}
+	const trackedModuleTemplateGeneration = 1
+	const updatedModuleTemplateGeneration = 2
 	tests := []struct {
 		name string
 		args args
@@ -202,7 +205,7 @@ func TestNeedToUpdate(t *testing.T) {
 	}{
 		{
 			"When manifest in cluster is nil, expect need to update",
-			args{nil, &v1beta2.Manifest{}, &v1beta2.ModuleStatus{}},
+			args{nil, &v1beta2.Manifest{}, &v1beta2.ModuleStatus{}, trackedModuleTemplateGeneration},
 			true,
 		},
 		{
@@ -214,7 +217,17 @@ func TestNeedToUpdate(t *testing.T) {
 						Labels: map[string]string{shared.ChannelLabel: "regular"},
 					},
 					Spec: v1beta2.ManifestSpec{Version: "0.2"},
-				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"},
+				},
+				&v1beta2.ModuleStatus{
+					Version: "0.1",
+					Channel: "regular",
+					Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				},
+				trackedModuleTemplateGeneration,
 			},
 			true,
 		},
@@ -227,18 +240,33 @@ func TestNeedToUpdate(t *testing.T) {
 						Labels: map[string]string{shared.ChannelLabel: "fast"},
 					},
 					Spec: v1beta2.ManifestSpec{Version: "0.1"},
-				}, &v1beta2.ModuleStatus{Version: "0.1", Channel: "regular"},
+				}, &v1beta2.ModuleStatus{
+					Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				},
+				trackedModuleTemplateGeneration,
 			},
 			true,
 		},
 		{
 			"When cluster Manifest in divergent state, expect need to update",
 			args{
-				&v1beta2.Manifest{Status: shared.Status{
-					State: "Warning",
-				}},
+				&v1beta2.Manifest{
+					Status: shared.Status{
+						State: "Warning",
+					},
+				},
 				&v1beta2.Manifest{},
-				&v1beta2.ModuleStatus{State: "Ready"},
+				&v1beta2.ModuleStatus{
+					State: "Ready", Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				}, trackedModuleTemplateGeneration,
 			},
 			true,
 		},
@@ -257,14 +285,48 @@ func TestNeedToUpdate(t *testing.T) {
 					},
 					Spec: v1beta2.ManifestSpec{Version: "0.1"},
 				},
-				&v1beta2.ModuleStatus{State: "Ready", Version: "0.1", Channel: "regular"},
+				&v1beta2.ModuleStatus{
+					State: "Ready", Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				}, trackedModuleTemplateGeneration,
 			},
 			false,
+		},
+		{
+			"When moduleTemplate Generation updated, expect update",
+			args{
+				&v1beta2.Manifest{
+					Status: shared.Status{
+						State: "Ready",
+					},
+					Spec: v1beta2.ManifestSpec{Version: "0.1"},
+				},
+				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{shared.ChannelLabel: "regular"},
+					},
+					Spec: v1beta2.ManifestSpec{Version: "0.1"},
+				},
+				&v1beta2.ModuleStatus{
+					State: "Ready", Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				}, updatedModuleTemplateGeneration,
+			},
+			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.manifestObj, tt.args.moduleStatus), "needToUpdate(%v, %v, %v)", tt.args.manifestInCluster, tt.args.manifestObj, tt.args.moduleStatus)
+			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.manifestObj,
+				tt.args.moduleStatus, tt.args.templateGeneration), "needToUpdate(%v, %v, %v)",
+				tt.args.manifestInCluster, tt.args.manifestObj,
+				tt.args.moduleStatus)
 		})
 	}
 }

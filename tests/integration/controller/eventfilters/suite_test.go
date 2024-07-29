@@ -34,6 +34,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -47,7 +49,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 
@@ -142,7 +143,7 @@ var _ = BeforeSuite(func() {
 		SkrContextFactory:   testSkrContextFactory,
 		Event:               testEventRec,
 		RequeueIntervals:    intervals,
-		DescriptorProvider:  provider.NewCachedDescriptorProvider(nil),
+		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
