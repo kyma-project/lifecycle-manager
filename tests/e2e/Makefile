@@ -72,7 +72,8 @@ test: kyma-deprovision-with-foreground-propagation \
 	   kyma-metrics \
 	   mandatory-module-metrics \
 	   watcher-enqueue \
-	   module-status-decoupling \
+	   module-status-decoupling-with-deployment \
+	   module-status-decoupling-with-statefulset \
 	   module-without-default-cr \
 	   module-consistency \
 	   mandatory-module \
@@ -102,8 +103,11 @@ mandatory-module-metrics:
 watcher-enqueue:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 
-module-status-decoupling:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Status Decoupling"
+module-status-decoupling-with-statefulset:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Status Decoupling With StatefulSet"
+
+module-status-decoupling-with-deployment:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Status Decoupling With Deployment"
 
 module-without-default-cr:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
