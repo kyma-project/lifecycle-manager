@@ -128,7 +128,7 @@ jobs:
             name: kyma-cli-provisioned-wildcard
           subjects:
             - kind: ServiceAccount
-              name: lifecycle-manager-controller
+              name: klm-controller-manager
               namespace: kcp-system
           EOF
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
