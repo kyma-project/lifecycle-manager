@@ -109,6 +109,7 @@ type ModuleTemplateSpec struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
+	// CustomStateCheck is deprecated.
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
