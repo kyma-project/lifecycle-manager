@@ -6,13 +6,6 @@ metadata:
   namespace: kyma-system
 rules:
 - apiGroups:
-    - ""
-  resources:
-    - secrets
-  verbs:
-    - list
-    - watch
-- apiGroups:
     - operator.kyma-project.io
   resources:
     - kymas
