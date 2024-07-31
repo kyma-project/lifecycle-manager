@@ -58,7 +58,7 @@ We recommend deploying Lifecycle Manager with the KCP kustomize profile. You mus
 
 If the deployment was successful, you should see all the required resources. For example:
 
-* The `klm-controller` Pod in the `kcp-system` Namespace
+* The `klm-controller-manager` Pod in the `kcp-system` Namespace
 * A Kyma CR that uses the `regular` channel but without any module configured, sync disabled, named `default-kyma` under `kyma-system` Namespace
 
 ### Manage Modules in the Control-Plane Mode

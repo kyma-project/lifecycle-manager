@@ -46,7 +46,7 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=controller-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases output:rbac:dir=config/rbac/common
+	$(CONTROLLER_GEN) rbac:roleName=controller-manager crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases output:rbac:dir=config/rbac/common
 
 .PHONY: test-crd
 test-crd: controller-gen ## Generate crd for test

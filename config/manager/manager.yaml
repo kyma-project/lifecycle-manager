@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller
+  name: controller-manager
   labels:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io
 spec:
@@ -52,6 +52,6 @@ spec:
           requests:
             cpu:  10m
             memory: 64Mi
-      serviceAccountName: controller
+      serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
 ---

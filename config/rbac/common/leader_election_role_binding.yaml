@@ -1,11 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: controller-rolebinding-leader-election
+  name: controller-manager-leader-election
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: klm-controller-role-leader-election
+  name: controller-manager-leader-election
 subjects:
 - kind: ServiceAccount
-  name: controller
+  name: controller-manager
