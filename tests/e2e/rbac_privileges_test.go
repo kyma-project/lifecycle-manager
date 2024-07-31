@@ -11,7 +11,7 @@ import (
 var _ = Describe("RBAC Privileges", func() {
 	Context("Given KCP Cluster with KLM Service Account", func() {
 		It("Then KLM Service Account has the correct ClusterRoleBindings", func() {
-			klmClusterRoleBindings, err := ListKlmClusterRoleBindings(controlPlaneClient, ctx, "klm-controller")
+			klmClusterRoleBindings, err := ListKlmClusterRoleBindings(controlPlaneClient, ctx, "klm-controller-manager")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(klmClusterRoleBindings.Items).To(HaveLen(1))
 
