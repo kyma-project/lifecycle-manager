@@ -14,3 +14,7 @@ resources:
   - metrics_role_binding.yaml
   # Comment the following to disable manifest integration
   - manifest_role_binding.yaml
+  - istio_namespace_role.yaml
+  - remote_namespace_role.yaml
+  - istio_namespace_role_binding.yaml
+  - remote_namespace_role_binding.yaml
