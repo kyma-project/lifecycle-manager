@@ -88,6 +88,18 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 	})
 })
 
+var _ = Describe("Kyma with invalid kyma.spec.channel value", Ordered, func() {
+	kyma := NewTestKyma("invalid-channel-kyma")
+	kyma.Spec.Channel = InvalidNoneChannel
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It(" should result with an error in the Kyma status", func() {
+		Eventually(expectKymaStatusHasError, Timeout, Interval).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), "invalid kyma spec: value \"none\" is not allowed in spec.channel").
+			Should(Succeed())
+	})
+})
+
 var _ = Describe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
@@ -519,4 +531,21 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 		}
 		return nil
 	}
+}
+
+func expectKymaStatusHasError(kymaName, kymaNamespace, errMsg string) error {
+	kyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+
+	if kyma.Status.State != shared.StateError {
+		return fmt.Errorf("Kyma status mismatch: expected %s, got %s", shared.StateError, kyma.Status.State)
+	}
+
+	if kyma.Status.LastOperation.Operation != errMsg {
+		return fmt.Errorf("operation mismatch: expected %s, got %s", errMsg, kyma.Status.LastOperation.Operation)
+	}
+	// operation: 'invalid kyma spec: channel: value "none" is not allowed in spec.channel'
+	return nil
 }

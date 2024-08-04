@@ -22,6 +22,7 @@ import (
 const (
 	FastChannel             = "fast"
 	ValidChannel            = "valid"
+	InvalidNoneChannel      = string(shared.NoneChannel)
 	InValidChannel          = "Invalid01"                                       // lower case characters from a to z
 	InValidMinLengthChannel = "ch"                                              // minlength = 3
 	InValidMaxLengthChannel = "averylongchannelwhichlargerthanallowedmaxlength" // maxlength = 32

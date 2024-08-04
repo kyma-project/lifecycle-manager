@@ -14,6 +14,17 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 		want     []AvailableModule
 	}{
 		{
+			name: "When Channel \"none\" is used, then the module is invalid",
+			KymaSpec: KymaSpec{
+				Modules: []Module{
+					{Name: "Module1", Channel: "none"},
+				},
+			},
+			want: []AvailableModule{
+				{Module: Module{Name: "Module1", Channel: "none"}, Enabled: true, ValidationError: "Channel \"none\" is not allowed in the spec"},
+			},
+		},
+		{
 			name: "When Channel and Version are both set, then the module is invalid",
 			KymaSpec: KymaSpec{
 				Modules: []Module{
@@ -21,7 +32,7 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 				},
 			},
 			want: []AvailableModule{
-				{Module: Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: true, Valid: false},
+				{Module: Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: true, ValidationError: "version and channel are mutually exclusive options"},
 			},
 		},
 		{
@@ -32,7 +43,7 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 				},
 			},
 			want: []AvailableModule{
-				{Module: Module{Name: "Module1", Channel: "regular"}, Enabled: true, Valid: true},
+				{Module: Module{Name: "Module1", Channel: "regular"}, Enabled: true, ValidationError: ""},
 			},
 		},
 		{
@@ -43,7 +54,7 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 				},
 			},
 			want: []AvailableModule{
-				{Module: Module{Name: "Module1", Version: "v1.0"}, Enabled: true, Valid: true},
+				{Module: Module{Name: "Module1", Version: "v1.0"}, Enabled: true},
 			},
 		},
 	}
@@ -78,7 +89,7 @@ func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
 				},
 			},
 			want: []AvailableModule{
-				{Module: Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: false, Valid: true},
+				{Module: Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: false},
 			},
 		},
 		{
@@ -94,7 +105,7 @@ func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
 				},
 			},
 			want: []AvailableModule{
-				{Module: Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: false, Valid: false},
+				{Module: Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: false, ValidationError: "module listed in status doesn't have a template"},
 			},
 		},
 	}
@@ -133,7 +144,7 @@ func Test_GetAvailableModules_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 				},
 			},
 			want: []AvailableModule{
-				{Module: Module{Name: "Module1", Version: "v1.1"}, Enabled: true, Valid: true},
+				{Module: Module{Name: "Module1", Version: "v1.1"}, Enabled: true},
 			},
 		},
 	}
