@@ -106,7 +106,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 					{Name: "Module1", Channel: "regular", Version: "v1.0"},
 				},
 			},
-			wantErr: templatelookup.ErrTemplateNotValid,
+			wantErr: templatelookup.ErrModuleInSpecNotValid,
 		},
 		{
 			name: "When Template not exists in Status, Then result contains error",
@@ -120,7 +120,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 					},
 				},
 			},
-			wantErr: templatelookup.ErrTemplateNotValid,
+			wantErr: templatelookup.ErrModuleInStatusNotValid,
 		},
 	}
 
@@ -212,12 +212,85 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 	}
 }
 
+func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleVersion(t *testing.T) {
+	testModule := testutils.NewTestModuleWithChannelVersion("module1", "", "1.1.0")
+
+	tests := []struct {
+		name                    string
+		kyma                    *v1beta2.Kyma
+		availableModuleTemplate v1beta2.ModuleTemplateList
+		want                    templatelookup.ModuleTemplatesByModuleName
+	}{
+
+		{
+			name: "When upgrade version, then result contains no error",
+			kyma: builder.NewKymaBuilder().
+				WithEnabledModule(testModule).
+				WithModuleStatus(v1beta2.ModuleStatus{
+					Name:    testModule.Name,
+					Channel: string(shared.NoneChannel),
+					Version: "1.0.0",
+					Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: 1,
+						},
+					},
+				}).Build(),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, string(shared.NoneChannel), "1.1.0"),
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: string(shared.NoneChannel),
+					Err:            nil,
+				},
+			},
+		},
+		{
+			name: "When downgrade version, then result contains error",
+			kyma: builder.NewKymaBuilder().
+				WithEnabledModule(testModule).
+				WithModuleStatus(v1beta2.ModuleStatus{
+					Name:    testModule.Name,
+					Channel: string(shared.NoneChannel),
+					Version: "2.1.0",
+					Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: 1,
+						},
+					},
+				}).Build(),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, string(shared.NoneChannel), "1.1.0"),
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: string(shared.NoneChannel),
+					Err:            templatelookup.ErrTemplateUpdateNotAllowed,
+				},
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplate),
+				provider.NewCachedDescriptorProvider())
+			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			assert.Equal(t, len(got), len(testCase.want))
+			for key, module := range got {
+				wantModule, ok := testCase.want[key]
+				assert.True(t, ok)
+				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
+				require.ErrorIs(t, module.Err, wantModule.Err)
+			}
+		})
+	}
+}
+
 func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersion string) v1beta2.ModuleTemplateList {
 	templateList := v1beta2.ModuleTemplateList{}
 	templateList.Items = append(templateList.Items, *builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleName).
 		WithLabelModuleName(moduleName).
 		WithChannel(moduleChannel).
+		WithVersion(moduleVersion).
 		WithDescriptor(&v1beta2.Descriptor{
 			ComponentDescriptor: &compdesc.ComponentDescriptor{
 				Metadata: compdesc.Metadata{
