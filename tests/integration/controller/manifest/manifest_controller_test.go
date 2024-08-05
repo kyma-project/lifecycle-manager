@@ -14,9 +14,17 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func setupTestEnvironment(ociTempDir, installName string) {
+func setupTestEnvironment(ociTempDir, installName string, mediaType v1beta2.MediaTypeMetadata) {
 	It("setup OCI", func() {
-		err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+		var err error
+		switch mediaType {
+		case v1beta2.MediaTypeDir:
+			err = testutils.PushToRemoteOCIRegistry(server, manifestTarPath, installName)
+		case v1beta2.MediaTypeFile:
+			fallthrough
+		default:
+			err = testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+		}
 		Expect(err).NotTo(HaveOccurred())
 	})
 	BeforeEach(
@@ -27,18 +35,18 @@ func setupTestEnvironment(ociTempDir, installName string) {
 }
 
 var _ = Describe(
-	"Rendering manifest install layer", Ordered, func() {
+	"Rendering manifest install layer from raw file", Ordered, func() {
 		ociTempDir := "main-dir"
 		installName := filepath.Join(ociTempDir, "installs")
 		var validManifest *v1beta2.Manifest
-		setupTestEnvironment(ociTempDir, installName)
+		setupTestEnvironment(ociTempDir, installName, v1beta2.MediaTypeFile)
 
 		Context("Given a Manifest CR", func() {
 			It("When Manifest CR contains a valid install OCI image specification",
 				func() {
 					manifest := testutils.NewTestManifest("oci")
 
-					Eventually(testutils.WithValidInstallImageSpec(ctx, kcpClient, installName,
+					Eventually(testutils.WithValidInstallImageSpecFromFile(ctx, kcpClient, installName,
 						manifestFilePath,
 						serverAddress, false, false), standardTimeout, standardInterval).
 						WithArguments(manifest).
@@ -65,7 +73,7 @@ var _ = Describe(
 				func() {
 					manifest := testutils.NewTestManifest("oci")
 
-					Eventually(testutils.WithValidInstallImageSpec(ctx, kcpClient, installName,
+					Eventually(testutils.WithValidInstallImageSpecFromFile(ctx, kcpClient, installName,
 						manifestFilePath,
 						serverAddress, true, false), standardTimeout, standardInterval).
 						WithArguments(manifest).
@@ -156,6 +164,43 @@ var _ = Describe(
 )
 
 var _ = Describe(
+	"Rendering manifest install layer from tar", Ordered, func() {
+		ociTempDir := "main-dir"
+		installName := filepath.Join(ociTempDir, "installs")
+		setupTestEnvironment(ociTempDir, installName, v1beta2.MediaTypeDir)
+
+		Context("Given a Manifest CR", func() {
+			It("When Manifest CR contains a valid install OCI image specification",
+				func() {
+					manifest := testutils.NewTestManifest("oci")
+
+					Eventually(testutils.WithValidInstallImageSpecFromTar(ctx, kcpClient, installName,
+						manifestTarPath,
+						serverAddress, false, false), standardTimeout, standardInterval).
+						WithArguments(manifest).
+						Should(Succeed())
+					By("Then Manifest CR is in Ready State", func() {
+						Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady),
+							standardTimeout, standardInterval).
+							WithArguments(manifest.GetName()).
+							Should(Succeed())
+					})
+					By("And OCI-Sync-Ref Annotation exists", func() {
+						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, kcpClient, true),
+							standardTimeout,
+							standardInterval).
+							WithArguments(manifest.GetName()).
+							Should(Succeed())
+					})
+					Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, manifest), standardTimeout,
+						standardInterval).Should(Succeed())
+				},
+			)
+		})
+	},
+)
+
+var _ = Describe(
 	"Given manifest with private registry", func() {
 		mainOciTempDir := "private-oci"
 		installName := filepath.Join(mainOciTempDir, "crs")
@@ -174,7 +219,7 @@ var _ = Describe(
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
 			manifestWithInstall := testutils.NewTestManifest("private-oci-registry")
-			Eventually(testutils.WithValidInstallImageSpec(ctx, kcpClient, installName, manifestFilePath,
+			Eventually(testutils.WithValidInstallImageSpecFromFile(ctx, kcpClient, installName, manifestFilePath,
 				server.Listener.Addr().String(), false, true),
 				standardTimeout,
 				standardInterval).

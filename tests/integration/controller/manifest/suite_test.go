@@ -64,6 +64,7 @@ var (
 	server           *httptest.Server
 	serverAddress    string
 	manifestFilePath string
+	manifestTarPath  string
 )
 
 const (
@@ -82,6 +83,8 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 	manifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
 		"rendered.yaml")
+	manifestTarPath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
+		"rendered.tar")
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 	// create registry and server

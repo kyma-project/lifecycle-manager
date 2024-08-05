@@ -41,7 +41,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	It("Install OCI specs including an nginx deployment", func() {
 		testManifest := testutils.NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
-		validImageSpec, err := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(),
+		validImageSpec, err := testutils.CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath,
 			false)
 		Expect(err).NotTo(HaveOccurred())

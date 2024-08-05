@@ -26,6 +26,7 @@ var (
 	ErrImageLayerPull       = errors.New("failed to pull layer")
 	ErrInvalidImageSpecType = errors.New("invalid image spec type provided, only 'oci-ref' 'oci-dir' are allowed")
 	ErrTaintedArchive       = errors.New("content filepath tainted")
+	ErrNoFileInArchive      = errors.New("tar archive has no valid yaml file")
 )
 
 type PathExtractor struct {
@@ -48,7 +49,7 @@ func (p PathExtractor) FetchLayerToFile(ctx context.Context,
 	case v1beta2.OciRefType:
 		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain, v1beta2.RawManifestLayerName+".yaml")
 	case v1beta2.OciDirType:
-		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".yaml")
+		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".tar")
 		if err != nil {
 			return "", err
 		}
@@ -154,32 +155,44 @@ func untarLayer(tarPath string) (string, error) {
 	defer tarFile.Close()
 
 	tarReader := tar.NewReader(tarFile)
-	header, err := tarReader.Next()
-	if err != nil {
-		return "", fmt.Errorf("failed to read tar: %w", err)
-	}
 
-	extractedFilePath, err := sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
-	if err != nil {
-		return "", fmt.Errorf("failed to read tar: %w", err)
-	}
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return "", fmt.Errorf("failed to read tar: %w", err)
+		}
 
-	if _, err := os.Stat(extractedFilePath); err == nil {
+		if strings.HasPrefix(header.Name, "._") {
+			continue
+		}
+
+		extractedFilePath, err := sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
+		if err != nil {
+			return "", fmt.Errorf("failed to sanitize archive path: %w", err)
+		}
+
+		if _, err := os.Stat(extractedFilePath); err == nil {
+			return extractedFilePath, nil
+		}
+
+		outFile, err := os.Create(extractedFilePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to create extracted file: %w", err)
+		}
+		defer outFile.Close()
+
+		var maxBytes int64 = 1024 * 1024
+		if _, err := io.CopyN(outFile, tarReader, maxBytes); err != nil && !errors.Is(err, io.EOF) {
+			return "", fmt.Errorf("failed to extract from tar: %w", err)
+		}
+
 		return extractedFilePath, nil
 	}
 
-	outFile, err := os.Create(extractedFilePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to created extracted file: %w", err)
-	}
-	defer outFile.Close()
-
-	var maxBytes int64 = 1024 * 1024
-	if _, err := io.CopyN(outFile, tarReader, maxBytes); err != nil {
-		return "", fmt.Errorf("failed to extract from tar: %w", err)
-	}
-
-	return extractedFilePath, nil
+	return "", ErrNoFileInArchive
 }
 
 func sanitizeArchivePath(dir, path string) (string, error) {
