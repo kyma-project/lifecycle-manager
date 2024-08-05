@@ -19,4 +19,4 @@ spec:
       - name: cert
         secret:
           defaultMode: 420
-          secretName: controller-manager-webhook
+          secretName: klm-controller-manager-webhook
