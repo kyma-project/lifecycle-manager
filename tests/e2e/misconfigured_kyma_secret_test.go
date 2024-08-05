@@ -19,9 +19,9 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 		By("When a KCP Kyma CR is created on the KCP cluster with misconfigured Kyma Secret")
 		Eventually(CreateInvalidKymaSecret).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 			Should(Succeed())
-		Eventually(controlPlaneClient.Create).
+		Eventually(kcpClient.Create).
 			WithContext(ctx).
 			WithArguments(kyma).
 			Should(Succeed())
@@ -32,42 +32,42 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 		It("When Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module).
 				Should(Succeed())
 		})
 
 		It("Then Module is not created", func() {
 			Consistently(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Not(Succeed()))
 			By("No Manifest CR exists")
 			Eventually(NoManifestExist).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient).
+				WithArguments(kcpClient).
 				Should(Succeed())
 		})
 
 		It("When Kyma Secret is corrected", func() {
 			Eventually(DeleteKymaSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
 		})
 
 		It("Then Module is created", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 			By("Manifest CR is in \"Ready\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateReady).
 				Should(Succeed())
 		})

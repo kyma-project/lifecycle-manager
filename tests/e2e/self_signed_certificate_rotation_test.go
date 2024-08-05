@@ -26,14 +26,14 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {
-				_, err := GetCACertificate(ctx, certName, controlPlaneClient)
+				_, err := GetCACertificate(ctx, certName, kcpClient)
 				return err
 			}).Should(Succeed())
 		})
 		It("Then disable cert manager operator to prevent certificate auto renewed", func() {
 			Eventually(StopDeployment).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, "cert-manager", "cert-manager").
+				WithArguments(kcpClient, "cert-manager", "cert-manager").
 				Should(Succeed())
 		})
 		It(fmt.Sprintf("Then %s metric increased to 1", metrics.SelfSignedCertNotRenewMetrics), func() {
@@ -46,7 +46,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 		It("Then enable cert manager operator to renew certificate", func() {
 			Eventually(EnableDeployment).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, "cert-manager", "cert-manager").
+				WithArguments(kcpClient, "cert-manager", "cert-manager").
 				Should(Succeed())
 		})
 		It(fmt.Sprintf("Then %s metric deleted", metrics.SelfSignedCertNotRenewMetrics), func() {

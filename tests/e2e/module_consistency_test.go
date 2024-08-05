@@ -25,7 +25,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
@@ -33,23 +33,23 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 			By("And Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 			By("And Module Operator Deployment is ready")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
 		It("Then synced module resources remain consistent with the same resourceVersion", func() {
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
+			manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
 				module.Name)
 			Expect(err).Should(Succeed())
 			for _, resource := range manifest.Status.Synced {
@@ -59,13 +59,13 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 					Version: resource.Version,
 					Kind:    resource.Kind,
 				}
-				resourceInCluster, err := GetCR(ctx, runtimeClient,
+				resourceInCluster, err := GetCR(ctx, skrClient,
 					objectKey,
 					gvk)
 				Expect(err).Should(Succeed())
 				Consistently(IsResourceVersionSame).
 					WithContext(ctx).
-					WithArguments(runtimeClient, objectKey, gvk,
+					WithArguments(skrClient, objectKey, gvk,
 						resourceInCluster.GetResourceVersion()).Should(BeTrue())
 			}
 		})
@@ -73,24 +73,24 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 		It("When Stop Module Operator", func() {
 			Eventually(SetSkipLabelToManifest).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 				Should(Succeed())
 
 			Eventually(StopDeployment).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			Eventually(SetSkipLabelToManifest).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
 				Should(Succeed())
 		})
 
 		It("Then Module Operator has been reset", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
 				Should(Succeed())
 		})
 	})

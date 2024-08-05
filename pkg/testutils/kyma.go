@@ -168,6 +168,46 @@ func DisableModule(ctx context.Context, clnt client.Client,
 	return nil
 }
 
+func SetModuleUnmanaged(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules[i].Managed = false
+			break
+		}
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma failed: %w", err)
+	}
+	return nil
+}
+
+func SetModuleManaged(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules[i].Managed = true
+			break
+		}
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma failed: %w", err)
+	}
+	return nil
+}
+
 func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
 }
@@ -231,8 +271,8 @@ func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Clie
 		state)
 }
 
-func KymaIsReady(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
-	err := KymaIsInState(ctx, kyma.Name, kyma.Namespace, clnt, shared.StateReady)
+func DefaultKymaIsReady(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
+	err := KymaIsInState(ctx, kyma.GetName(), kyma.GetNamespace(), clnt, shared.StateReady)
 	return err
 }
 
