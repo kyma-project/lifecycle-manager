@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -13,9 +12,17 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 )
 
-var _ = Describe("Module Status Decoupling", Ordered, func() {
+type ResourceKind string
+
+const (
+	DeploymentKind  ResourceKind = "Deployment"
+	StatefulSetKind ResourceKind = "StatefulSet"
+)
+
+func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleWrongConfig := NewTestModuleWithFixName("template-operator-misconfigured", "regular")
@@ -32,6 +39,21 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 		})
 
 		checkModuleStatus(module, moduleCR, kyma, shared.StateReady)
+
+		It("And Module Resource is ready", func() {
+			switch resourceKind {
+			case DeploymentKind:
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Succeed())
+			case StatefulSetKind:
+				Eventually(StatefulSetIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Succeed())
+			}
+		})
 
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
@@ -72,17 +94,25 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then Module CR, Module Operator Deployment and Manifest CR are removed", func() {
+		It("Then Module CR, Module Operator Resource and Manifest CR are removed", func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace,
 					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
 				Should(Equal(ErrNotFound))
 
-			Eventually(DeploymentIsReady).
-				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
-				Should(Equal(ErrNotFound))
+			switch resourceKind {
+			case DeploymentKind:
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			case StatefulSetKind:
+				Eventually(StatefulSetIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			}
 
 			Eventually(NoManifestExist).
 				WithContext(ctx).
@@ -121,10 +151,18 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
 				Should(Equal(ErrNotFound))
 
-			Eventually(DeploymentIsReady).
-				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName, TestModuleResourceNamespace).
-				Should(Equal(ErrNotFound))
+			switch resourceKind {
+			case DeploymentKind:
+				Eventually(DeploymentIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			case StatefulSetKind:
+				Eventually(StatefulSetIsReady).
+					WithContext(ctx).
+					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					Should(Equal(ErrNotFound))
+			}
 
 			Eventually(NoManifestExist).
 				WithContext(ctx).
@@ -138,7 +176,7 @@ var _ = Describe("Module Status Decoupling", Ordered, func() {
 				Should(Succeed())
 		})
 	})
-})
+}
 
 func checkModuleStatus(module v1beta2.Module, moduleCR *unstructured.Unstructured, kyma *v1beta2.Kyma,
 	expectedState shared.State,
