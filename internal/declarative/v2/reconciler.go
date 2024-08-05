@@ -144,7 +144,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if manifest.HasDeletionTimestamp() && controllerutil.ContainsFinalizer(manifest, shared.UnmanagedFinalizer) {
 		partialMeta := r.partialObjectMetadata(manifest)
 		partialMeta.SetFinalizers([]string{})
-		// TODO add specific metric
+		// TODO add specific metric?
 		return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
 	}
 
