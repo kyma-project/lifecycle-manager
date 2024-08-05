@@ -59,10 +59,7 @@ type Module struct {
 	// Name is a unique identifier of the module.
 	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
 	//
-	// Name can be one of 3 kinds:
-	// - The ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
-	// - The Name or Namespace/Name of a ModuleTemplate, e.g. my-moduletemplate or kyma-system/my-moduletemplate
-	// - The FQDN, e.g. kyma-project.io/module/my-module as located in .spec.descriptor.component.name
+	// Name can only be the ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
 	Name string `json:"name"`
 
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used

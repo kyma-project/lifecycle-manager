@@ -17,17 +17,12 @@ var (
 )
 
 type CachedDescriptorProvider struct {
-	descriptorCache *cache.DescriptorCache
+	DescriptorCache *cache.DescriptorCache
 }
 
-func NewCachedDescriptorProvider(descriptorCache *cache.DescriptorCache) *CachedDescriptorProvider {
-	if descriptorCache != nil {
-		return &CachedDescriptorProvider{
-			descriptorCache: descriptorCache,
-		}
-	}
+func NewCachedDescriptorProvider() *CachedDescriptorProvider {
 	return &CachedDescriptorProvider{
-		descriptorCache: cache.NewDescriptorCache(),
+		DescriptorCache: cache.NewDescriptorCache(),
 	}
 }
 
@@ -49,7 +44,7 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 		return desc, nil
 	}
 	key := cache.GenerateDescriptorKey(template)
-	descriptor := c.descriptorCache.Get(key)
+	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
 		return descriptor, nil
 	}
@@ -75,7 +70,7 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 		return ErrTemplateNil
 	}
 	key := cache.GenerateDescriptorKey(template)
-	descriptor := c.descriptorCache.Get(key)
+	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
 		return nil
 	}
@@ -83,7 +78,7 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	if template.Spec.Descriptor.Object != nil {
 		desc, ok := template.Spec.Descriptor.Object.(*v1beta2.Descriptor)
 		if ok && desc != nil {
-			c.descriptorCache.Set(key, desc)
+			c.DescriptorCache.Set(key, desc)
 			return nil
 		}
 	}
@@ -101,6 +96,6 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 		return ErrTypeAssert
 	}
 
-	c.descriptorCache.Set(key, descriptor)
+	c.DescriptorCache.Set(key, descriptor)
 	return nil
 }
