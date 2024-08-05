@@ -28,7 +28,7 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"update"},
 				},
 			}
-			Expect(GetClusterRoleBindingPolicyRules(ctx, controlPlaneClient, "klm-controller-manager-crd",
+			Expect(GetClusterRoleBindingPolicyRules(ctx, controlPlaneClient, "klm-controller-manager-crds",
 				klmClusterRoleBindings)).To(Equal(crdRoleRules))
 
 			By("And KLM Service Account has the correct RoleBindings in kcp-system namespace")
