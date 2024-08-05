@@ -84,6 +84,12 @@ spec:
                       - CreateAndDelete
                       - Ignore
                       type: string
+                    managed:
+                      default: true
+                      description: |-
+                        Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
+                        for the lifecycle of the module.
+                      type: boolean
                     name:
                       description: |-
                         Name is a unique identifier of the module.
@@ -98,6 +104,7 @@ spec:
                         It will be removed in the upcoming API version.
                       type: string
                   required:
+                  - managed
                   - name
                   type: object
                 type: array
@@ -517,6 +524,12 @@ spec:
                       - CreateAndDelete
                       - Ignore
                       type: string
+                    managed:
+                      default: true
+                      description: |-
+                        Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
+                        for the lifecycle of the module.
+                      type: boolean
                     name:
                       description: |-
                         Name is a unique identifier of the module.
@@ -531,6 +544,7 @@ spec:
                         It will be removed in the upcoming API version.
                       type: string
                   required:
+                  - managed
                   - name
                   type: object
                 type: array
