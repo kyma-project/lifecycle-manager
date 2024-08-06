@@ -33,7 +33,8 @@ components:
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix
   - ../webhook
   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-  - ../prometheus
+  # KCP use VictoriaMetrics instead of prometheus
+  #  - ../prometheus
   # [GRAFANA] To enable grafana, uncomment all sections with 'GRAFANA'.
   - ../grafana
 
