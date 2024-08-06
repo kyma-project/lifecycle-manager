@@ -32,9 +32,6 @@ components:
   - ../watcher
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix
   - ../webhook
-  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-  # KCP use VictoriaMetrics instead of prometheus
-  #  - ../prometheus
   # [GRAFANA] To enable grafana, uncomment all sections with 'GRAFANA'.
   - ../grafana
 
@@ -69,8 +66,6 @@ patches:
         value: --is-kyma-managed
     target:
       kind: Deployment
-    # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
-  - path: patches/service_monitor.yaml
     # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
   - path: patches/unique_manager_webhook_patch.yaml
   - path: patches/adjust_resources_in_deployment.yaml
