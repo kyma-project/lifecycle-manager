@@ -30,7 +30,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 		It("Then Module Operator is deployed on SKR cluster", func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
-				WithArguments(ModuleDeploymentName, TestModuleResourceNamespace, "apps", "v1",
+				WithArguments(ModuleResourceName, TestModuleResourceNamespace, "apps", "v1",
 					"Deployment", skrClient).
 				Should(Succeed())
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -70,7 +70,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 			By("And Module Operator Deployment is not removed on SKR cluster")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
-				WithArguments(ModuleDeploymentName, TestModuleResourceNamespace,
+				WithArguments(ModuleResourceName, TestModuleResourceNamespace,
 					"apps", "v1", "Deployment", skrClient).
 				Should(Succeed())
 
