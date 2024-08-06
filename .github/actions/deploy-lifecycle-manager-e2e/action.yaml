@@ -72,7 +72,7 @@ runs:
           path: /spec/duration
           value: 1h">> certificate_renewal.yaml
         cat certificate_renewal.yaml
-        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving-cert
+        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
         popd
     - name: Deploy LM local testing kustomize
       uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
@@ -88,4 +88,4 @@ runs:
         }}
       shell: bash
       run: |
-        kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
+        kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
