@@ -38,7 +38,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 			By("And Module Operator Deployment is ready")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -78,7 +78,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 
 			Eventually(StopDeployment).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			Eventually(SetSkipLabelToManifest).
@@ -90,7 +90,7 @@ var _ = Describe("Module Keep Consistent After Deploy", Ordered, func() {
 		It("Then Module Operator has been reset", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 				Should(Succeed())
 		})
 	})

@@ -372,7 +372,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v
 		}
 	}
 
-	deploymentState, err := r.checkDeploymentState(ctx, clnt, target)
+	deploymentState, err := r.checkResourceState(ctx, clnt, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
@@ -401,21 +401,21 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 	return false
 }
 
-func (r *Reconciler) checkDeploymentState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
+func (r *Reconciler) checkResourceState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
 	error,
 ) {
 	resourceReadyCheck := r.CustomReadyCheck
 
-	deploymentState, err := resourceReadyCheck.Run(ctx, clnt, target)
+	resourceState, err := resourceReadyCheck.Run(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}
 
-	if deploymentState == shared.StateProcessing {
+	if resourceState == shared.StateProcessing {
 		return shared.StateProcessing, nil
 	}
 
-	return deploymentState, nil
+	return resourceState, nil
 }
 
 func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, state shared.State) error {

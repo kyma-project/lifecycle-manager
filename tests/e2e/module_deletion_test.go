@@ -32,7 +32,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		It("Then Module Operator is deployed on SKR cluster", func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
-				WithArguments(ModuleDeploymentName, TestModuleResourceNamespace, "apps", "v1",
+				WithArguments(ModuleResourceName, TestModuleResourceNamespace, "apps", "v1",
 					"Deployment", skrClient).
 				Should(Succeed())
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -89,7 +89,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("And Module Operator Deployment is not removed on SKR cluster")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
-				WithArguments(ModuleDeploymentName, TestModuleResourceNamespace,
+				WithArguments(ModuleResourceName, TestModuleResourceNamespace,
 					"apps", "v1", "Deployment", skrClient).
 				Should(Succeed())
 		})
@@ -111,11 +111,11 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("And old Module Operator Deployment is removed")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
 			By("And Module CR is in \"Deleting\" State")
