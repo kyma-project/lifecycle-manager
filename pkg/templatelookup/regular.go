@@ -197,6 +197,7 @@ func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *Modul
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
+	fmt.Println("markInvalidChannelSkewUpdate")
 	if moduleTemplateInfo.Spec.Channel == moduleStatus.Channel && moduleTemplateInfo.Spec.Channel != string(shared.NoneChannel) {
 		return
 	}
@@ -266,7 +267,7 @@ func (t *TemplateLookup) getTemplateByChannel(ctx context.Context, name, desired
 	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
 		template := template
-		if t.templateNameMatch(&template, name) && template.Spec.Channel == desiredChannel {
+		if TemplateNameMatch(&template, name) && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
@@ -303,7 +304,7 @@ func (t *TemplateLookup) getTemplateByVersion(ctx context.Context, name, version
 		template := template
 		tSer, _ := json.MarshalIndent(template, "->", "  ")
 		fmt.Println(string(tSer))
-		if t.templateNameMatch(&template, name) && shared.NoneChannel.Equals(template.Spec.Channel) && template.Spec.Version == version {
+		if TemplateNameMatch(&template, name) && shared.NoneChannel.Equals(template.Spec.Channel) && template.Spec.Version == version {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
@@ -324,12 +325,16 @@ func (t *TemplateLookup) getTemplateByVersion(ctx context.Context, name, version
 	return filteredTemplates[0], nil
 }
 
-// TODO: Provide unit test for the following scenarios: only label, only spec, both label and spec
-func (t *TemplateLookup) templateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
-	//Drop the legacyCondition once the label is shared.ModuleName is no longer supported
-	legacyCondition := template.Labels[shared.ModuleName] == name
-	matchCondition := template.Spec.ModuleName == name
-	return legacyCondition || matchCondition
+func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
+	if len(template.Spec.ModuleName) > 0 {
+		return template.Spec.ModuleName == name
+	}
+
+	//Drop the legacyCondition once the label 'shared.ModuleName' is removed
+	if template.Labels == nil {
+		return false
+	}
+	return template.Labels[shared.ModuleName] == name
 }
 
 func NewMoreThanOneTemplateCandidateErr(moduleName string,
