@@ -94,6 +94,7 @@ type RefTypeMetadata string
 
 const (
 	OciRefType RefTypeMetadata = "oci-ref"
+	OciDirType RefTypeMetadata = "oci-dir"
 )
 
 // +kubebuilder:object:root=true

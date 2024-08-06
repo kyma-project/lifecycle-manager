@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"archive/tar"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -20,7 +22,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
-var ErrImageLayerPull = errors.New("failed to pull layer")
+var (
+	ErrImageLayerPull       = errors.New("failed to pull layer")
+	ErrInvalidImageSpecType = errors.New("invalid image spec type provided, only 'oci-ref' 'oci-dir' are allowed")
+	ErrTaintedArchive       = errors.New("content filepath tainted")
+	ErrNoFileInArchive      = errors.New("tar archive has no valid yaml file")
+)
 
 type PathExtractor struct {
 	fileMutexCache *filemutex.MutexCache
@@ -33,14 +40,38 @@ func NewPathExtractor(cache *filemutex.MutexCache) *PathExtractor {
 	return &PathExtractor{fileMutexCache: cache}
 }
 
-func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
+func (p PathExtractor) FetchLayerToFile(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
+	layerName string,
+) (string, error) {
+	switch imageSpec.Type {
+	case v1beta2.OciRefType:
+		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain, v1beta2.RawManifestLayerName+".yaml")
+	case v1beta2.OciDirType:
+		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".tar")
+		if err != nil {
+			return "", err
+		}
+		extractedFile, err := untarLayer(tarFile)
+		if err != nil {
+			return "", err
+		}
+		return extractedFile, nil
+	default:
+		return "", ErrInvalidImageSpecType
+	}
+}
+
+func (p PathExtractor) getPathForFetchedLayer(ctx context.Context,
+	imageSpec v1beta2.ImageSpec,
+	keyChain authn.Keychain,
+	filename string,
 ) (string, error) {
 	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
 
 	installPath := getFsChartPath(imageSpec)
-	manifestPath := path.Join(installPath, v1beta2.RawManifestLayerName+".yaml")
+	manifestPath := path.Join(installPath, filename)
 
 	fileMutex, err := p.fileMutexCache.GetLocker(installPath)
 	if err != nil {
@@ -114,4 +145,61 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (c
 
 func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 	return filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
+}
+
+func untarLayer(tarPath string) (string, error) {
+	tarFile, err := os.Open(tarPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer tarFile.Close()
+
+	tarReader := tar.NewReader(tarFile)
+
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return "", fmt.Errorf("failed to read tar: %w", err)
+		}
+
+		if strings.HasPrefix(header.Name, "._") {
+			continue
+		}
+
+		extractedFilePath, err := sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
+		if err != nil {
+			return "", fmt.Errorf("failed to sanitize archive path: %w", err)
+		}
+
+		if _, err := os.Stat(extractedFilePath); err == nil {
+			return extractedFilePath, nil
+		}
+
+		outFile, err := os.Create(extractedFilePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to create extracted file: %w", err)
+		}
+		defer outFile.Close()
+
+		var maxBytes int64 = 1024 * 1024
+		if _, err := io.CopyN(outFile, tarReader, maxBytes); err != nil && !errors.Is(err, io.EOF) {
+			return "", fmt.Errorf("failed to extract from tar: %w", err)
+		}
+
+		return extractedFilePath, nil
+	}
+
+	return "", ErrNoFileInArchive
+}
+
+func sanitizeArchivePath(dir, path string) (string, error) {
+	joinedPath := filepath.Join(dir, path)
+	if strings.HasPrefix(joinedPath, filepath.Clean(dir)) {
+		return joinedPath, nil
+	}
+
+	return "", fmt.Errorf("%w: %s", ErrTaintedArchive, path)
 }

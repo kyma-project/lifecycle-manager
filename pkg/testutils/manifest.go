@@ -423,7 +423,7 @@ func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerNam
 	return nil
 }
 
-func CreateOCIImageSpec(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec, error) {
+func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec, error) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
@@ -444,11 +444,32 @@ func CreateOCIImageSpec(name, repo, manifestFilePath string, enableCredSecretSel
 	return imageSpec, nil
 }
 
+func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string, enableCredSecretSelector bool) (v1beta2.ImageSpec, error) {
+	imageSpec := v1beta2.ImageSpec{
+		Name: name,
+		Repo: repo,
+		Type: "oci-dir",
+	}
+	if enableCredSecretSelector {
+		imageSpec.CredSecretSelector = CredSecretLabelSelector("test-secret-label")
+	}
+	layer, err := CreateImageSpecLayer(manifestTarPath)
+	if err != nil {
+		return imageSpec, err
+	}
+	digest, err := layer.Digest()
+	if err != nil {
+		return imageSpec, err
+	}
+	imageSpec.Ref = digest.String()
+	return imageSpec, nil
+}
+
 func WithInvalidInstallImageSpec(ctx context.Context, clnt client.Client,
 	enableResource bool, manifestFilePath string,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		invalidImageSpec, err := CreateOCIImageSpec("invalid-image-spec", "domain.invalid", manifestFilePath, false)
+		invalidImageSpec, err := CreateOCIImageSpecFromFile("invalid-image-spec", "domain.invalid", manifestFilePath, false)
 		if err != nil {
 			return err
 		}
@@ -460,11 +481,27 @@ func WithInvalidInstallImageSpec(ctx context.Context, clnt client.Client,
 	}
 }
 
-func WithValidInstallImageSpec(ctx context.Context, clnt client.Client, name, manifestFilePath, serverURL string,
+func WithValidInstallImageSpecFromFile(ctx context.Context, clnt client.Client, name, manifestFilePath, serverURL string,
 	enableResource, enableCredSecretSelector bool,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		validImageSpec, err := CreateOCIImageSpec(name, serverURL, manifestFilePath, enableCredSecretSelector)
+		validImageSpec, err := CreateOCIImageSpecFromFile(name, serverURL, manifestFilePath, enableCredSecretSelector)
+		if err != nil {
+			return err
+		}
+		imageSpecByte, err := json.Marshal(validImageSpec)
+		if err != nil {
+			return err
+		}
+		return InstallManifest(ctx, clnt, manifest, imageSpecByte, enableResource)
+	}
+}
+
+func WithValidInstallImageSpecFromTar(ctx context.Context, clnt client.Client, name, manifestTarPath, serverURL string,
+	enableResource, enableCredSecretSelector bool,
+) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
+		validImageSpec, err := CreateOCIImageSpecFromTar(name, serverURL, manifestTarPath, enableCredSecretSelector)
 		if err != nil {
 			return err
 		}
