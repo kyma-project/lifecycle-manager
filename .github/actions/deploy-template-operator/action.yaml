@@ -46,12 +46,12 @@ runs:
       shell: bash
       run: |
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
-    - name: Create Template Operator Module with final state and final deletion state as `Warning` and apply
+    - name: Create Template Operator Module with Deployment, with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'module-status-decoupling'}}
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
       shell: bash
       run: |
-        pushd config/default
+        pushd config/overlays/deployment
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/args/1
@@ -62,16 +62,52 @@ runs:
         cat warning_patch.yaml
         kustomize edit add patch --path warning_patch.yaml --kind Deployment
         popd
-        kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 1.1.1 --path . --registry localhost:5111 --insecure --module-archive-version-overwrite /
+        make build-manifests
+        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
-    - name: Create Template Operator Module with non-working image and apply
+    - name: Create Template Operator Module with StatefulSet, with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'module-status-decoupling'}}
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
       shell: bash
       run: |
-        pushd config/default
+        pushd config/overlays/statefulset
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/args/1
+          value: --final-state=Warning
+        - op: replace
+          path: /spec/template/spec/containers/0/args/2
+          value: --final-deletion-state=Warning" >> warning_patch.yaml
+        cat warning_patch.yaml
+        kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
+        popd
+        make build-statefulset-manifests
+        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+    - name: Create non-working image patch for Template Operator Module and create associated module config file
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'||
+        matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
+      shell: bash
+      run: |
+        echo "name: kyma-project.io/module/template-operator-misconfigured
+        channel: regular
+        version: v1.1.1
+        manifest: template-operator.yaml
+        security: sec-scanners-config.yaml
+        defaultCR: ./config/samples/default-sample-cr.yaml
+        annotations:
+          operator.kyma-project.io/doc-url: https://kyma-project.io" >> misconfigured-module-config.yaml
+    - name: Create Template Operator Module with Deployment, with non-working image and apply
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
+      shell: bash
+      run: |
+        pushd config/overlays/deployment
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/image
@@ -79,7 +115,26 @@ runs:
         cat image_patch.yaml
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
-        kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator-misconfigured --version 1.1.1 --path . --registry localhost:5111 --insecure --module-archive-version-overwrite
+        make build-manifests
+        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+    - name: Create Template Operator Module with StatefulSet, with non-working image and apply
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
+      shell: bash
+      run: |
+        pushd config/overlays/statefulset
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/image
+          value: non-working-path" >> image_patch.yaml
+        cat image_patch.yaml
+        kustomize edit add patch --path image_patch.yaml --kind StatefulSet
+        popd
+        make build-statefulset-manifests
+        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
