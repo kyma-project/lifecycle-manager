@@ -39,8 +39,8 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
 			Eventually(CheckKLMLogs, 4*time.Minute).
 				WithContext(ctx).
-				WithArguments(expectedLogMessage, controlPlaneRESTConfig, runtimeRESTConfig,
-					controlPlaneClient, runtimeClient, timeNow).
+				WithArguments(expectedLogMessage, kcpRESTConfig, skrRESTConfig,
+					kcpClient, skrClient, timeNow).
 				Should(Succeed())
 
 			By("And new TLS Certificate is created")
@@ -49,17 +49,17 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 				Name:      caCertName,
 				Namespace: "istio-system",
 			}
-			caCertificate, err = GetCACertificate(ctx, namespacedCertName, controlPlaneClient)
+			caCertificate, err = GetCACertificate(ctx, namespacedCertName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(CertificateSecretIsCreatedAfter).
 				WithContext(ctx).
-				WithArguments(kcpSecretName, controlPlaneClient, caCertificate.Status.NotBefore).
+				WithArguments(kcpSecretName, kcpClient, caCertificate.Status.NotBefore).
 				Should(Succeed())
 
 			By("And new TLS Certificate is synced to SKR Cluster")
 			Eventually(CertificateSecretIsSyncedToSkrCluster).
 				WithContext(ctx).
-				WithArguments(kcpSecretName, controlPlaneClient, skrSecretName, runtimeClient).
+				WithArguments(kcpSecretName, kcpClient, skrSecretName, skrClient).
 				Should(Succeed())
 		})
 	})

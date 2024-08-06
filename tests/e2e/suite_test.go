@@ -37,13 +37,13 @@ const (
 var errEmptyEnvVar = errors.New("environment variable is empty")
 
 var (
-	controlPlaneClient     client.Client
-	controlPlaneRESTConfig *rest.Config
-	controlPlaneConfig     *[]byte
+	kcpClient     client.Client
+	kcpRESTConfig *rest.Config
+	kcpConfig     *[]byte
 
-	runtimeClient     client.Client
-	runtimeRESTConfig *rest.Config
-	runtimeConfig     *[]byte
+	skrClient     client.Client
+	skrRESTConfig *rest.Config
+	skrConfig     *[]byte
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -69,20 +69,20 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
-	controlPlaneConfig, runtimeConfig, err = getKubeConfigs()
+	kcpConfig, skrConfig, err = getKubeConfigs()
 	Expect(err).ToNot(HaveOccurred())
-	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*controlPlaneConfig)
-	controlPlaneRESTConfig.QPS = clientQPS
-	controlPlaneRESTConfig.Burst = clientBurst
+	kcpRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*kcpConfig)
+	kcpRESTConfig.QPS = clientQPS
+	kcpRESTConfig.Burst = clientBurst
 	Expect(err).ToNot(HaveOccurred())
-	runtimeRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*runtimeConfig)
-	runtimeRESTConfig.QPS = clientQPS
-	runtimeRESTConfig.Burst = clientBurst
+	skrRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*skrConfig)
+	skrRESTConfig.QPS = clientQPS
+	skrRESTConfig.Burst = clientBurst
 	Expect(err).ToNot(HaveOccurred())
 
-	controlPlaneClient, err = client.New(controlPlaneRESTConfig, client.Options{Scheme: k8sclientscheme.Scheme})
+	kcpClient, err = client.New(kcpRESTConfig, client.Options{Scheme: k8sclientscheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	runtimeClient, err = client.New(runtimeRESTConfig, client.Options{Scheme: k8sclientscheme.Scheme})
+	skrClient, err = client.New(skrRESTConfig, client.Options{Scheme: k8sclientscheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
@@ -103,14 +103,14 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("Print out all remaining resources for debugging")
 	kcpKymaList := v1beta2.KymaList{}
-	err := controlPlaneClient.List(ctx, &kcpKymaList)
+	err := kcpClient.List(ctx, &kcpKymaList)
 	if err == nil {
 		for _, kyma := range kcpKymaList.Items {
 			GinkgoWriter.Printf("kyma: %v\n", kyma)
 		}
 	}
 	manifestList := v1beta2.ManifestList{}
-	err = controlPlaneClient.List(ctx, &manifestList)
+	err = kcpClient.List(ctx, &manifestList)
 	if err == nil {
 		for _, manifest := range manifestList.Items {
 			GinkgoWriter.Printf("manifest: %v\n", manifest)

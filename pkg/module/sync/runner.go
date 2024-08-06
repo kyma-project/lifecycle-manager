@@ -127,13 +127,11 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
 	manifestObj *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
+	objKey := client.ObjectKeyFromObject(manifestObj)
 	manifestInCluster := &v1beta2.Manifest{}
-	if err := r.Get(ctx, client.ObjectKey{
-		Namespace: manifestObj.GetNamespace(),
-		Name:      manifestObj.GetName(),
-	}, manifestInCluster); err != nil {
+	if err := r.Get(ctx, objKey, manifestInCluster); err != nil {
 		if !util.IsNotFound(err) {
-			return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+			return fmt.Errorf("error getting manifest %s before update: %w", objKey, err)
 		}
 		manifestInCluster = nil
 	}
@@ -202,7 +200,14 @@ func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) erro
 }
 
 func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
-	module.ApplyLabelsAndAnnotations(kyma)
+	module.ApplyDefaultMetaToManifest(kyma)
+
+	if module.IsUnmanaged {
+		if !controllerutil.AddFinalizer(module.Manifest, shared.UnmanagedFinalizer) {
+			return fmt.Errorf("error adding unmanaged finalizer to manifest %s", module.GetName())
+		}
+	}
+
 	refs := module.GetOwnerReferences()
 	if len(refs) == 0 {
 		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {

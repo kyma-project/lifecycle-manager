@@ -25,7 +25,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
@@ -33,12 +33,12 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace, "apps", "v1",
-					"Deployment", runtimeClient).
+					"Deployment", skrClient).
 				Should(Succeed())
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
@@ -47,24 +47,24 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io", "v1alpha1",
 					string(templatev1alpha1.SampleKind),
-					[]string{"sample.kyma-project.io/finalizer", "blocking-finalizer"}, runtimeClient).
+					[]string{"sample.kyma-project.io/finalizer", "blocking-finalizer"}, skrClient).
 				Should(Succeed())
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 		})
 
 		It("Then KCP Kyma CR is in \"Processing\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
 				Should(Succeed())
 
 			By("And Manifest CR is in \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
 
@@ -72,14 +72,14 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io",
-					"v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
+					"v1alpha1", string(templatev1alpha1.SampleKind), skrClient).
 				Should(Equal(ErrDeletionTimestampFound))
 
 			By("And Module Operator Deployment is not removed on SKR Cluster")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace,
-					"apps", "v1", "Deployment", runtimeClient).
+					"apps", "v1", "Deployment", skrClient).
 				Should(Succeed())
 		})
 
@@ -94,29 +94,29 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 		It("Then Kyma Module is updated on SKR Cluster", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And old Module Operator Deployment is removed")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
 			By("And Module CR is in \"Deleting\" State")
 			Consistently(CheckSampleCRIsInState).
 				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, runtimeClient, shared.StateDeleting).
+				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.StateDeleting).
 				Should(Succeed())
 
 			By("And Manifest CR is still in \"Deleting\" State")
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
 		})
@@ -126,7 +126,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io", "v1alpha1",
 					string(templatev1alpha1.SampleKind),
-					[]string{}, runtimeClient).
+					[]string{}, skrClient).
 				Should(Succeed())
 		})
 
@@ -135,19 +135,19 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io", "v1alpha1",
 					string(templatev1alpha1.SampleKind),
-					runtimeClient).
+					skrClient).
 				Should(Equal(ErrNotFound))
 
 			By("And Module Operator Deployment is deleted")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})

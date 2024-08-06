@@ -34,7 +34,7 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
@@ -45,12 +45,12 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 			case DeploymentKind:
 				Eventually(DeploymentIsReady).
 					WithContext(ctx).
-					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 					Should(Succeed())
 			case StatefulSetKind:
 				Eventually(StatefulSetIsReady).
 					WithContext(ctx).
-					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 					Should(Succeed())
 			}
 		})
@@ -58,29 +58,29 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 		})
 
 		It("Then KCP Kyma CR is in a \"Processing\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
 				Should(Succeed())
 			Consistently(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
 				Should(Succeed())
 
 			By("And Module Manifest CR is in a \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
 		})
@@ -90,7 +90,7 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 			Eventually(SetFinalizer).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, "operator.kyma-project.io", "v1alpha1",
-					string(templatev1alpha1.SampleKind), finalizers, runtimeClient).
+					string(templatev1alpha1.SampleKind), finalizers, skrClient).
 				Should(Succeed())
 		})
 
@@ -98,31 +98,31 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace,
-					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
+					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), skrClient).
 				Should(Equal(ErrNotFound))
 
 			switch resourceKind {
 			case DeploymentKind:
 				Eventually(DeploymentIsReady).
 					WithContext(ctx).
-					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 					Should(Equal(ErrNotFound))
 			case StatefulSetKind:
 				Eventually(StatefulSetIsReady).
 					WithContext(ctx).
-					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 					Should(Equal(ErrNotFound))
 			}
 
 			Eventually(NoManifestExist).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient).
+				WithArguments(kcpClient).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
@@ -131,7 +131,7 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 		It("When Kyma Module with wrong configured image is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, moduleWrongConfig).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, moduleWrongConfig).
 				Should(Succeed())
 		})
 
@@ -140,7 +140,7 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, moduleWrongConfig.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, moduleWrongConfig.Name).
 				Should(Succeed())
 		})
 
@@ -148,31 +148,31 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace,
-					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), runtimeClient).
+					"operator.kyma-project.io", "v1alpha1", string(templatev1alpha1.SampleKind), skrClient).
 				Should(Equal(ErrNotFound))
 
 			switch resourceKind {
 			case DeploymentKind:
 				Eventually(DeploymentIsReady).
 					WithContext(ctx).
-					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 					Should(Equal(ErrNotFound))
 			case StatefulSetKind:
 				Eventually(StatefulSetIsReady).
 					WithContext(ctx).
-					WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
+					WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 					Should(Equal(ErrNotFound))
 			}
 
 			Eventually(NoManifestExist).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient).
+				WithArguments(kcpClient).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
@@ -184,12 +184,12 @@ func checkModuleStatus(module v1beta2.Module, moduleCR *unstructured.Unstructure
 	It("Then Module CR exists", func() {
 		Eventually(ModuleCRExists).
 			WithContext(ctx).
-			WithArguments(runtimeClient, moduleCR).
+			WithArguments(skrClient, moduleCR).
 			Should(Succeed())
 
 		By("And resource is defined in Manifest CR")
 		Eventually(func(g Gomega, ctx context.Context) {
-			resource, err := GetManifestResource(ctx, controlPlaneClient,
+			resource, err := GetManifestResource(ctx, kcpClient,
 				kyma.GetName(), kyma.GetNamespace(), module.Name)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.GetName()).To(Equal(moduleCR.GetName()))
@@ -202,14 +202,14 @@ func checkModuleStatus(module v1beta2.Module, moduleCR *unstructured.Unstructure
 		By("And Module in KCP Kyma CR is in " + string(expectedState) + " State")
 		Eventually(CheckModuleState).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(),
 				module.Name, expectedState).
 			Should(Succeed())
 
 		By("And KCP kyma CR is in " + string(expectedState) + " State")
 		Eventually(KymaIsInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, expectedState).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, expectedState).
 			Should(Succeed())
 	})
 }

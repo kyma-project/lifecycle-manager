@@ -22,19 +22,19 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 		It("Then mandatory module is installed on the SKR cluster", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, deployName,
+				WithArguments(skrClient, deployName,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State", func() {
 				Eventually(CheckSampleCRIsInState).
 					WithContext(ctx).
-					WithArguments("sample-yaml", "kyma-system", runtimeClient, shared.StateReady).
+					WithArguments("sample-yaml", "kyma-system", skrClient, shared.StateReady).
 					Should(Succeed())
 			})
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
 				Eventually(KymaIsInState).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 			})
 
@@ -55,7 +55,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 		It("When the mandatory ModuleTemplate is removed", func() {
 			Eventually(DeleteCR).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient,
+				WithArguments(kcpClient,
 					&v1beta2.ModuleTemplate{
 						ObjectMeta: apimetav1.ObjectMeta{
 							Name:      "template-operator-mandatory",
@@ -67,7 +67,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 		It("Then mandatory SKR module is removed", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, deployName,
+				WithArguments(skrClient, deployName,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
@@ -75,13 +75,13 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 				Eventually(CheckIfExists).
 					WithContext(ctx).
 					WithArguments("sample-yaml", "kyma-system",
-						"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
+						"operator.kyma-project.io", "v1alpha1", "Sample", skrClient).
 					Should(Equal(ErrNotFound))
 			})
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
 				Eventually(KymaIsInState).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 			})
 

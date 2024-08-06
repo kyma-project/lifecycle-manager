@@ -13,7 +13,8 @@ runs:
         matrix.e2e-test == 'kyma-deprovision-with-background-propagation' ||
         matrix.e2e-test == 'module-consistency' ||
         matrix.e2e-test == 'skip-manifest-reconciliation' ||
-        matrix.e2e-test == 'misconfigured-kyma-secret'
+        matrix.e2e-test == 'misconfigured-kyma-secret' ||
+        matrix.e2e-test == 'unmanage-module'
         }}
       shell: bash
       run: |

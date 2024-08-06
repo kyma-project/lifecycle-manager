@@ -25,38 +25,38 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 		It("When Kyma Module is enabled on SKR Cluster", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 
 			By("And finalizer is added to Module CR")
-			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
+			Expect(AddFinalizerToModuleCR(ctx, skrClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
 
 			By("And Kyma Module is disabled")
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 		})
 
 		It("Then Module CR stays in \"Deleting\" State", func() {
 			Eventually(ModuleCRIsInExpectedState).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR, shared.StateDeleting).
+				WithArguments(skrClient, moduleCR, shared.StateDeleting).
 				Should(BeTrue())
 			Consistently(ModuleCRIsInExpectedState).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR, shared.StateDeleting).
+				WithArguments(skrClient, moduleCR, shared.StateDeleting).
 				Should(BeTrue())
 
 			By("And Manifest CR is in \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
 		})
@@ -64,14 +64,14 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 		It("When KCP Kyma CR is deleted", func() {
 			Eventually(DeleteKyma).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma, deletionPropagation).
+				WithArguments(kcpClient, kyma, deletionPropagation).
 				Should(Succeed())
 		})
 
 		It("Then KCP Kyma CR still exists", func() {
 			Eventually(KymaExists).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace()).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace()).
 				Should(Equal(ErrDeletionTimestampFound))
 		})
 
@@ -89,27 +89,27 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 		It("Then KCP Kyma CR is in \"Error\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
 				Should(Succeed())
 		})
 
 		It("When Kubeconfig Secret is deleted", func() {
 			Eventually(DeleteKymaSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
 		})
 
 		It("Then Manifest CR is deleted", func() {
 			Eventually(ManifestExists).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is deleted")
 			Eventually(KymaDeleted).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
 		})
 	})

@@ -45,26 +45,26 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 		By("When a KCP Kyma CR is created on the KCP cluster")
 		Eventually(CreateKymaSecret).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 			Should(Succeed())
-		Eventually(controlPlaneClient.Create).
+		Eventually(kcpClient.Create).
 			WithContext(ctx).
 			WithArguments(kyma).
 			Should(Succeed())
 		By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
 		Eventually(KymaIsInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 			Should(Succeed())
 		By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
 		Eventually(CheckRemoteKymaCR).
 			WithContext(ctx).
-			WithArguments(RemoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
+			WithArguments(RemoteNamespace, []v1beta2.Module{}, skrClient, shared.StateReady).
 			Should(Succeed())
 		By("And Remote Namespace is labelled correctly")
 		Eventually(EnsureNamespaceHasCorrectLabels).
 			WithContext(ctx).
-			WithArguments(runtimeClient, RemoteNamespace, map[string]string{
+			WithArguments(skrClient, RemoteNamespace, map[string]string{
 				"istio-injection": "enabled",
 				"namespaces.warden.kyma-project.io/validate": "enabled",
 			}).Should(Succeed())
@@ -76,18 +76,18 @@ func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
 		By("When delete KCP Kyma")
 		Eventually(DeleteKymaByForceRemovePurgeFinalizer).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).
+			WithArguments(kcpClient, kyma).
 			Should(Succeed())
 
 		By("Then SKR Kyma deleted")
 		Eventually(KymaDeleted).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), runtimeClient).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), skrClient).
 			Should(Succeed())
 		By("Then KCP Kyma deleted")
 		Eventually(KymaDeleted).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 			Should(Succeed())
 	})
 }
@@ -105,7 +105,7 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, skrHostname)
+	patchedRuntimeConfig := strings.ReplaceAll(string(*skrConfig), localHostname, skrHostname)
 	secret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      kymaName,
@@ -120,7 +120,7 @@ func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 }
 
 func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	invalidRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, "non.existent.url")
+	invalidRuntimeConfig := strings.ReplaceAll(string(*skrConfig), localHostname, "non.existent.url")
 	secret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      kymaName,
