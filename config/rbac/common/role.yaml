@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  name: controller-manager
 rules:
 - apiGroups:
   - ""
@@ -123,6 +123,32 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - manifests
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - manifests/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - manifests/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - operator.kyma-project.io
   resources:

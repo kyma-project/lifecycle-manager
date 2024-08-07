@@ -3,7 +3,7 @@ kind: Service
 metadata:
   labels:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io
-  name: metrics-service
+  name: controller-manager-metrics
 spec:
   ports:
   - name: metrics

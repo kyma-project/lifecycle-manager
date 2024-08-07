@@ -60,7 +60,7 @@ patches:
     group: networking.istio.io
     version: v1beta1
     kind: Gateway
-    name: watcher-gateway
+    name: watcher
 - patch: |-
     - op: replace
       path: /spec/dnsNames/0
@@ -75,7 +75,7 @@ patches:
     group: cert-manager.io
     version: v1
     kind: Certificate
-    name: watcher-serving-cert
+    name: watcher-serving
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
