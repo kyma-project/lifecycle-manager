@@ -133,7 +133,7 @@ func createCaCertificate() *certmanagerv1.Certificate {
 			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      "klm-watcher-serving-cert",
+			Name:      "klm-watcher-serving",
 			Namespace: istioSystemNs,
 		},
 		Spec: certmanagerv1.CertificateSpec{
