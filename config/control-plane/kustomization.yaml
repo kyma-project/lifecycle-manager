@@ -110,7 +110,7 @@ transformers:
   metadata:
     name: add-ca-inject-annotation
   annotations:
-    cert-manager.io/inject-ca-from: kcp-system/klm-serving-cert
+    cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
   fieldSpecs:
   - kind: CustomResourceDefinition
     path: metadata/annotations
@@ -164,7 +164,7 @@ transformers:
   patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
   target:
     kind: Certificate
-    name: klm-serving-cert
+    name: klm-controller-manager-webhook-serving
     version: v1
     group: cert-manager.io
 - |-

@@ -12,7 +12,5 @@ resources:
   - leader_election_role.yaml
   - leader_election_role_binding.yaml
   - metrics_clusterrole.yaml
-  # Comment the following to disable manifest integration
-  - manifest_clusterrole.yaml
   - crd_clusterrole.yaml
   - crd_clusterrole_binding.yaml
