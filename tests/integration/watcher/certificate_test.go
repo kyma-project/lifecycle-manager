@@ -16,7 +16,7 @@ import (
 )
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
-	const caCertName = "klm-watcher-serving-cert"
+	const caCertName = "klm-watcher-serving"
 
 	tests := []struct {
 		name           string
