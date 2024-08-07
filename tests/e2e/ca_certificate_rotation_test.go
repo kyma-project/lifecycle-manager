@@ -22,7 +22,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	var caCertificate *certmanagerv1.Certificate
-	caCertName := "klm-watcher-serving-cert"
+	caCertName := "klm-watcher-serving"
 
 	Context("Given KCP Cluster and rotated CA certificate", func() {
 		kcpSecretName := types.NamespacedName{

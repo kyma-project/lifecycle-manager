@@ -1,8 +1,9 @@
 ---
+# Give controller-manager permissions to the resources residing in kyma-system namespace on the SKR cluster
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: manager-role-remote-namespace
+  name: controller-manager-skr
   namespace: kyma-system
 rules:
 - apiGroups:

@@ -1,7 +1,7 @@
 apiVersion: operator.kyma-project.io/v1beta2
 kind: Watcher
 metadata:
-  name: kyma-watcher
+  name: watcher
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
 spec:
@@ -13,7 +13,7 @@ spec:
     resource: kymas
   field: "spec"
   serviceInfo:
-    name: klm-event-service
+    name: klm-controller-manager-events
     port: 8082
     namespace: kcp-system
   gateway:
@@ -24,7 +24,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: event-service
+  name: controller-manager-events
 spec:
   selector:
     app.kubernetes.io/name: lifecycle-manager

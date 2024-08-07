@@ -156,7 +156,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultIstioGatewayName",
 			constValue:    DefaultIstioGatewayName,
-			expectedValue: "klm-watcher-gateway",
+			expectedValue: "klm-watcher",
 		},
 		{
 			constName:     "DefaultIstioGatewayNamespace",
@@ -171,7 +171,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultCaCertName",
 			constValue:    DefaultCaCertName,
-			expectedValue: "klm-watcher-serving-cert",
+			expectedValue: "klm-watcher-serving",
 		},
 		{
 			constName:     "DefaultCaCertCacheTTL",

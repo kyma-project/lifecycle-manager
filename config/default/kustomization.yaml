@@ -6,7 +6,7 @@ kind: Kustomization
 # "wordpress" becomes "alices-wordpress".
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
-namePrefix: lifecycle-manager-
+namePrefix: klm-
 
 # Labels to add to all resources and selectors.
 commonLabels:
@@ -61,7 +61,7 @@ transformers:
   metadata:
     name: add-ca-inject-annotation
   annotations:
-    cert-manager.io/inject-ca-from: kcp-system/lifecycle-manager-serving-cert
+    cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
   fieldSpecs:
   - kind: CustomResourceDefinition
     path: metadata/annotations
@@ -72,10 +72,10 @@ transformers:
   kind: PatchTransformer
   metadata:
     name: fix-cert-dns-names
-  patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "lifecycle-manager-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "lifecycle-manager-webhook-service.kcp-system.svc.cluster.local"}]'
+  patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
   target:
     kind: Certificate
-    name: lifecycle-manager-serving-cert
+    name: klm-controller-manager-webhook-serving
     version: v1
     group: cert-manager.io
 - |-
@@ -86,6 +86,6 @@ transformers:
   patch: '[{"op": "replace", "path": "/webhooks/0/clientConfig/service/namespace", "value": "kcp-system"}]'
   target:
     kind: ValidatingWebhookConfiguration
-    name: lifecycle-manager-validating-webhook-configuration
+    name: klm-validating-webhook-configuration
     version: v1
     group: admissionregistration.k8s.io
