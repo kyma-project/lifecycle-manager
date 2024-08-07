@@ -163,6 +163,7 @@ spec:
                 pattern: ^[a-z]+$
                 type: string
               customStateCheck:
+                description: CustomStateCheck is deprecated.
                 items:
                   properties:
                     jsonPath:

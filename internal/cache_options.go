@@ -41,9 +41,8 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 			&apicorev1.Secret{}: {
 				Label: k8slabels.Everything(),
 				Namespaces: map[string]cache.Config{
-					c.kcpNamespace:    {},
-					c.istioNamespace:  {},
-					c.remoteNamespace: {},
+					c.kcpNamespace:   {},
+					c.istioNamespace: {},
 				},
 			},
 			&v1beta2.Kyma{}: {

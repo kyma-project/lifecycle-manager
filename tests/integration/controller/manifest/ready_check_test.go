@@ -76,7 +76,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(resources).ToNot(BeEmpty())
 
 		By("Executing the CR readiness check")
-		customReadyCheck := manifest.NewDeploymentReadyCheck()
+		customReadyCheck := manifest.NewResourceReadyCheck()
 		state, err := customReadyCheck.Run(ctx, testClient, resources)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(state).To(Equal(shared.StateReady))
