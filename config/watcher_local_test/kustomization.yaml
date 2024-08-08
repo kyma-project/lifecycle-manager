@@ -20,7 +20,6 @@ generatorOptions:
 # and sets the namespace for the watcher resources to `kcp-system`.
 # When deployed on KCP it will be set by the default kustomize.
 patches:
-- path: patches/servicemonitor_delete.yaml
 - path: patches/adjust_resources_for_local_setup.yaml
 - patch: |-
     - op: add
