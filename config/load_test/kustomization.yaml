@@ -26,7 +26,7 @@ replacements:
 # substitutes CERTIFICATE_NAMESPACE, the namespace of the certificate CR
 - source:
     kind: Certificate
-    name: serving-cert # this name should match the one in certificate.yaml
+    name: controller-manager-webhook-serving # this name should match the one in certificate.yaml
     fieldPath: metadata.namespace
   targets:
   - select:
@@ -47,7 +47,7 @@ replacements:
 # substitutes CERTIFICATE_NAME, the name of the certificate CR
 - source:
     kind: Certificate
-    name: serving-cert # this name should match the one in certificate.yaml
+    name: controller-manager-webhook-serving # this name should match the one in certificate.yaml
     fieldPath: metadata.name
   targets:
   - select:
@@ -76,7 +76,7 @@ replacements:
       group: cert-manager.io
       version: v1
       kind: Certificate
-      name: serving-cert
+      name: controller-manager-webhook-serving
     fieldpaths:
     - spec.dnsNames.0
     - spec.dnsNames.1
@@ -94,7 +94,7 @@ replacements:
       group: cert-manager.io
       version: v1
       kind: Certificate
-      name: serving-cert
+      name: controller-manager-webhook-serving
     fieldpaths:
     - spec.dnsNames.0
     - spec.dnsNames.1

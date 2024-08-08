@@ -9,6 +9,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests/finalizers,verbs=update
+
 func NewReconciler(mgr manager.Manager,
 	requeueIntervals queue.RequeueIntervals,
 	manifestMetrics *metrics.ManifestMetrics,
@@ -23,7 +27,7 @@ func NewReconciler(mgr manager.Manager,
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
 		manifest.NewSpecResolver(kcp.Client, extractor),
-		declarativev2.WithCustomReadyCheck(manifest.NewDeploymentReadyCheck()),
+		declarativev2.WithCustomReadyCheck(manifest.NewResourceReadyCheck()),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
 		declarativev2.WithPostRun{manifest.PostRunCreateCR},

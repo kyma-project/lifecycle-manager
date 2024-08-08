@@ -29,7 +29,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("Then the Module Operator is deployed on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName,
+				WithArguments(runtimeClient, ModuleResourceName,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State")
@@ -64,13 +64,13 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				Should(Equal(ErrNotFound))
 
 			By("When deleting the SKR Module Manager Deployment")
-			err := DeleteCRWithGVK(ctx, runtimeClient, ModuleDeploymentName,
+			err := DeleteCRWithGVK(ctx, runtimeClient, ModuleResourceName,
 				TestModuleResourceNamespace, "apps", "v1", "Deployment")
 			Expect(err).ToNot(HaveOccurred())
 			By("Then Module Manager Deployment is not recreated on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName,
+				WithArguments(runtimeClient, ModuleResourceName,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 		})
@@ -90,7 +90,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("Then Module Deployment is recreated")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentName,
+				WithArguments(runtimeClient, ModuleResourceName,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 
