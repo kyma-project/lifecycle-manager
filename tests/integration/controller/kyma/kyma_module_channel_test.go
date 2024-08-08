@@ -328,21 +328,16 @@ func expectEveryManifestToHaveChannel(kymaName, kymaNamespace, channel string) e
 		if err != nil {
 			return err
 		}
-		manifestChannel, found := component.Labels[shared.ChannelLabel]
-		if found {
-			if manifestChannel != channel {
-				return fmt.Errorf(
-					"%w: %s should be %s",
-					errTemplateInfoChannelMismatch, manifestChannel, channel,
-				)
-			}
-			return nil
+		manifestChannel := component.Spec.Channel
+		if manifestChannel != channel {
+			return fmt.Errorf(
+				"%w: %s should be %s",
+				errTemplateInfoChannelMismatch, manifestChannel, channel,
+			)
 		}
 	}
-	return fmt.Errorf(
-		"%w: no %s found",
-		errTemplateInfoChannelMismatch, channel,
-	)
+
+	return nil
 }
 
 func expectModuleManifestToHaveChannel(kymaName, kymaNamespace, moduleName, channel string) error {
@@ -355,20 +350,15 @@ func expectModuleManifestToHaveChannel(kymaName, kymaNamespace, moduleName, chan
 	if err != nil {
 		return err
 	}
-	manifestChannel, found := component.Labels[shared.ChannelLabel]
-	if found {
-		if manifestChannel != channel {
-			return fmt.Errorf(
-				"%w: %s should be %s",
-				errTemplateInfoChannelMismatch, manifestChannel, channel,
-			)
-		}
-		return nil
+	manifestChannel := component.Spec.Channel
+	if manifestChannel != channel {
+		return fmt.Errorf(
+			"%w: %s should be %s",
+			errTemplateInfoChannelMismatch, manifestChannel, channel,
+		)
 	}
-	return fmt.Errorf(
-		"%w: no %s found",
-		errTemplateInfoChannelMismatch, channel,
-	)
+
+	return nil
 }
 
 func whenUpdatingEveryModuleChannel(kymaName, kymaNamespace, channel string) func() error {

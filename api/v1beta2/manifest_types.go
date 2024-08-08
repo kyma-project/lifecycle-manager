@@ -49,6 +49,9 @@ type ManifestSpec struct {
 	// Remote indicates if Manifest should be installed on a remote cluster
 	Remote bool `json:"remote"`
 
+	// Channel specifies the channel of the Module
+	Channel string `json:"channel,omitempty"`
+
 	// Version specifies current Resource version
 	// +optional
 	Version string `json:"version,omitempty"`
