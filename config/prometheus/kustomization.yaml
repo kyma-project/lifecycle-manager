@@ -6,6 +6,8 @@ configurations:
 
 resources:
   - monitor.yaml
+  - metrics_clusterrole.yaml
+  - metrics_role_binding.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

@@ -221,20 +221,11 @@ var _ = Describe("RBAC Privileges", func() {
 			kymaSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
 				"kyma-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kymaSystemKlmRoleBindings.Items).To(HaveLen(2))
+			Expect(kymaSystemKlmRoleBindings.Items).To(HaveLen(1))
 
 			Expect(GetRoleBindingRolePolicyRules(ctx, controlPlaneClient,
 				"klm-controller-manager-skr", "kyma-system",
 				kymaSystemKlmRoleBindings)).To(Equal(remoteNamespaceRoleRules))
-
-			metricsReaderRoleRules := []apirbacv1.PolicyRule{
-				{
-					NonResourceURLs: []string{"/metrics"},
-					Verbs:           []string{"get"},
-				},
-			}
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, controlPlaneClient, "klm-controller-manager-metrics",
-				kymaSystemKlmRoleBindings)).To(Equal(metricsReaderRoleRules))
 		})
 	})
 })

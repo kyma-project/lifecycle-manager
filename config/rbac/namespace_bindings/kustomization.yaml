@@ -11,7 +11,6 @@ resources:
   # runtime. Be sure to update RoleBinding and ClusterRoleBinding
   # subjects if changing service account names.
   - role_binding.yaml
-  - metrics_role_binding.yaml
   # Comment the following to disable manifest integration
   - watcher_certmanager_role.yaml
   - skr_role.yaml
