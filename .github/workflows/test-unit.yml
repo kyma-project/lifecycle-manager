@@ -7,7 +7,7 @@ on:
       - feat/**
 jobs:
   envtest-and-unittest:
-    name: "Run 'make test new'"
+    name: "Run 'make test'"
     runs-on: ubuntu-latest
     env:
       GOSUMDB: off
