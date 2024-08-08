@@ -23,3 +23,4 @@ operator.kyma-project.io_moduletemplates.yaml:
     v1beta2:
       - .spec.properties.version
       - .spec.properties.moduleName
+      - .spec.properties.customStateCheck.description
