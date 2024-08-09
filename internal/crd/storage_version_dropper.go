@@ -26,6 +26,7 @@ func DropStoredVersion(ctx context.Context, kcpClient client.Client, versionsToB
 	}
 
 	for _, crdItem := range crdList.Items {
+		addLabel(ctx, kcpClient, crdItem)
 		storedVersionToDrop, crdFound := versionsToBeDroppedMap[crdItem.Spec.Names.Kind]
 		if crdItem.Spec.Group != shared.OperatorGroup || !crdFound {
 			continue
@@ -46,6 +47,14 @@ func DropStoredVersion(ctx context.Context, kcpClient client.Client, versionsToB
 			logger.V(log.InfoLevel).Error(err, msg)
 		}
 	}
+}
+
+func addLabel(ctx context.Context, kcpClient client.Client, item apiextensionsv1.CustomResourceDefinition) {
+	if item.Labels == nil {
+		item.Labels = map[string]string{}
+	}
+	item.Labels["associated-by"] = "klm"
+	_ = kcpClient.Update(ctx, &item)
 }
 
 func ParseStorageVersionsMap(versions string) map[string]string {
