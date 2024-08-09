@@ -387,8 +387,26 @@ func (kyma *Kyma) IsBeta() bool {
 
 type AvailableModule struct {
 	Module
-	Enabled bool
-	Valid   bool
+	Enabled         bool
+	ValidationError string
+}
+
+func (a AvailableModule) IsValid() bool {
+	return a.ValidationError == ""
+}
+
+func (a AvailableModule) IsInstalledByVersion() bool {
+	return a.configuredWithVersionInSpec() || a.installedwithVersionInStatus()
+}
+
+// configuredWithVersionInSpec returns true if the Module is enabled in Spec using a specific version instead of a channel.
+func (a AvailableModule) configuredWithVersionInSpec() bool {
+	return a.Enabled && a.Version != "" && a.Channel == ""
+}
+
+// installedwithVersionInStatus returns true if the Module installed using a specific version (instead of a channel) is reported in Status.
+func (a AvailableModule) installedwithVersionInStatus() bool {
+	return a.Enabled == false && shared.NoneChannel.Equals(a.Channel) && a.Version != ""
 }
 
 func (kyma *Kyma) GetAvailableModules() []AvailableModule {
@@ -396,15 +414,15 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 	modules := make([]AvailableModule, 0)
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
-		if strings.ToLower(module.Channel) == string(shared.NoneChannel) {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false})
+		if shared.NoneChannel.Equals(module.Channel) {
+			modules = append(modules, AvailableModule{Module: module, Enabled: true, ValidationError: "Channel \"none\" is not allowed in spec.modules"})
 			continue
 		}
 		if module.Version != "" && module.Channel != "" {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false})
+			modules = append(modules, AvailableModule{Module: module, Enabled: true, ValidationError: "version and channel are mutually exclusive options in spec.modules"})
 			continue
 		}
-		modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: true})
+		modules = append(modules, AvailableModule{Module: module, Enabled: true})
 	}
 
 	for _, moduleInStatus := range kyma.Status.Modules {
@@ -419,18 +437,18 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 				Channel: moduleInStatus.Channel,
 				Version: moduleInStatus.Version,
 			},
-			Enabled: false,
-			Valid:   determineModuleValidity(moduleInStatus),
+			Enabled:         false,
+			ValidationError: determineModuleValidity(moduleInStatus),
 		})
 	}
 	return modules
 }
 
-func determineModuleValidity(moduleStatus ModuleStatus) bool {
+func determineModuleValidity(moduleStatus ModuleStatus) string {
 	if moduleStatus.Template == nil {
-		return false
+		return "no template defined"
 	}
-	return true
+	return ""
 }
 
 func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {

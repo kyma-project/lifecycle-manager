@@ -41,6 +41,7 @@ jobs:
           - purge-metrics
           - module-upgrade-channel-switch
           - module-upgrade-new-version
+          - module-install-by-version
           - skip-manifest-reconciliation
           - ca-certificate-rotation
           - self-signed-certificate-rotation
