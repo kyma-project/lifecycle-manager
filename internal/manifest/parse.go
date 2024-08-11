@@ -24,9 +24,10 @@ import (
 
 var (
 	ErrImageLayerPull       = errors.New("failed to pull layer")
-	ErrInvalidImageSpecType = errors.New("invalid image spec type provided, only 'oci-ref' 'oci-dir' are allowed")
-	ErrTaintedArchive       = errors.New("content filepath tainted")
-	ErrNoFileInArchive      = errors.New("tar archive has no valid yaml file")
+	ErrInvalidImageSpecType = errors.New(fmt.Sprintf("invalid image spec type provided,"+
+		" only '%s' '%s' are allowed", v1beta2.OciRefType, v1beta2.OciDirType))
+	ErrTaintedArchive          = errors.New("content filepath tainted")
+	ErrInvalidArchiveStructure = errors.New("tar archive has invalid structure, expected a single file")
 )
 
 type PathExtractor struct {
@@ -47,13 +48,13 @@ func (p PathExtractor) FetchLayerToFile(ctx context.Context,
 ) (string, error) {
 	switch imageSpec.Type {
 	case v1beta2.OciRefType:
-		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain, v1beta2.RawManifestLayerName+".yaml")
+		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".yaml")
 	case v1beta2.OciDirType:
 		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".tar")
 		if err != nil {
 			return "", err
 		}
-		extractedFile, err := untarLayer(tarFile)
+		extractedFile, err := p.untarLayer(tarFile)
 		if err != nil {
 			return "", err
 		}
@@ -122,6 +123,68 @@ func (p PathExtractor) getPathForFetchedLayer(ctx context.Context,
 	return manifestPath, nil
 }
 
+func (p PathExtractor) untarLayer(tarPath string) (string, error) {
+	fileMutex, err := p.fileMutexCache.GetLocker(tarPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to load locker from cache: %w", err)
+	}
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+
+	tarFile, err := os.Open(tarPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer tarFile.Close()
+
+	tarReader := tar.NewReader(tarFile)
+
+	extractedFilePath := ""
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return "", fmt.Errorf("failed to read tar: %w", err)
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			return "", ErrInvalidArchiveStructure
+		case tar.TypeReg:
+			if strings.HasPrefix(header.Name, "._") {
+				continue
+			}
+
+			extractedFilePath, err = sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
+			if err != nil {
+				return "", fmt.Errorf("failed to sanitize archive path: %w", err)
+			}
+
+			if _, err := os.Stat(extractedFilePath); err == nil {
+				return extractedFilePath, nil
+			}
+
+			outFile, err := os.Create(extractedFilePath)
+			if err != nil {
+				return "", fmt.Errorf("failed to create extracted file: %w", err)
+			}
+
+			var maxBytes int64 = 1024 * 1024
+			if _, err := io.CopyN(outFile, tarReader, maxBytes); err != nil && !errors.Is(err, io.EOF) {
+				outFile.Close()
+				return "", fmt.Errorf("failed to extract from tar: %w", err)
+			}
+			outFile.Close()
+		}
+
+		return extractedFilePath, nil
+	}
+
+	return "", ErrInvalidArchiveStructure
+}
+
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
 	noSchemeImageRef := ocmextensions.NoSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
@@ -147,54 +210,7 @@ func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 	return filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
 }
 
-func untarLayer(tarPath string) (string, error) {
-	tarFile, err := os.Open(tarPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open file: %w", err)
-	}
-	defer tarFile.Close()
-
-	tarReader := tar.NewReader(tarFile)
-
-	for {
-		header, err := tarReader.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return "", fmt.Errorf("failed to read tar: %w", err)
-		}
-
-		if strings.HasPrefix(header.Name, "._") {
-			continue
-		}
-
-		extractedFilePath, err := sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
-		if err != nil {
-			return "", fmt.Errorf("failed to sanitize archive path: %w", err)
-		}
-
-		if _, err := os.Stat(extractedFilePath); err == nil {
-			return extractedFilePath, nil
-		}
-
-		outFile, err := os.Create(extractedFilePath)
-		if err != nil {
-			return "", fmt.Errorf("failed to create extracted file: %w", err)
-		}
-		defer outFile.Close()
-
-		var maxBytes int64 = 1024 * 1024
-		if _, err := io.CopyN(outFile, tarReader, maxBytes); err != nil && !errors.Is(err, io.EOF) {
-			return "", fmt.Errorf("failed to extract from tar: %w", err)
-		}
-
-		return extractedFilePath, nil
-	}
-
-	return "", ErrNoFileInArchive
-}
-
+// sanitizeArchivePath ensures the path is within the intended directory to prevent path traversal attacks (gosec:G305)
 func sanitizeArchivePath(dir, path string) (string, error) {
 	joinedPath := filepath.Join(dir, path)
 	if strings.HasPrefix(joinedPath, filepath.Clean(dir)) {

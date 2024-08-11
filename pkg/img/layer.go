@@ -3,17 +3,9 @@ package img
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-type LayerName string
-
-const (
-	ConfigLayer      LayerName = "config"
-	CRDsLayer        LayerName = "crds"
-	DefaultCRLayer   LayerName = "default-cr"
-	RawManifestLayer LayerName = "raw-manifest"
 )
 
 type LayerRepresentation interface {
@@ -43,7 +35,7 @@ func (o *OCI) String() string {
 type (
 	LayerType string
 	Layer     struct {
-		LayerName
+		v1beta2.LayerName
 		LayerRepresentation
 	}
 )

@@ -448,7 +448,7 @@ func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string, enableCredSec
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
-		Type: "oci-dir",
+		Type: v1beta2.OciDirType,
 	}
 	if enableCredSecretSelector {
 		imageSpec.CredSecretSelector = CredSecretLabelSelector("test-secret-label")
@@ -534,7 +534,7 @@ func InstallManifest(ctx context.Context, clnt client.Client, manifest *v1beta2.
 			Source: machineryruntime.RawExtension{
 				Raw: installSpecByte,
 			},
-			Name: v1beta2.RawManifestLayerName,
+			Name: string(v1beta2.RawManifestLayer),
 		}
 	}
 	if enableResource {

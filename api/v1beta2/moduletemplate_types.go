@@ -69,13 +69,6 @@ func (d *Descriptor) DeepCopyObject() machineryruntime.Object {
 	return &Descriptor{ComponentDescriptor: d.Copy()}
 }
 
-type MediaTypeMetadata string
-
-const (
-	MediaTypeFile MediaTypeMetadata = "application/octet-stream"
-	MediaTypeDir  MediaTypeMetadata = "application/x-tar"
-)
-
 // ModuleTemplateSpec defines the desired state of ModuleTemplate.
 type ModuleTemplateSpec struct {
 	// Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template

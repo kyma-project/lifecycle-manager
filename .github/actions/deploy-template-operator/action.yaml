@@ -159,4 +159,10 @@ runs:
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
+    - name: Apply Template Operator Module in OCM format
+      working-directory: ./lifecycle-manager
+      if: ${{ matrix.e2e-test == 'ocm-compatible-module-template' }}
+      shell: bash
+      run: |
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular_new_ocm.yaml
 

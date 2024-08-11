@@ -26,8 +26,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
+type LayerName string
+
 const (
-	RawManifestLayerName = "raw-manifest"
+	ConfigLayer      LayerName = "config"
+	CRDsLayer        LayerName = "crds"
+	DefaultCRLayer   LayerName = "default-cr"
+	RawManifestLayer LayerName = "raw-manifest"
 )
 
 // InstallInfo defines installation information.

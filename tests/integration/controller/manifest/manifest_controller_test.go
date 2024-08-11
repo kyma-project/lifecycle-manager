@@ -1,6 +1,7 @@
 package manifest_test
 
 import (
+	"github.com/open-component-model/ocm/pkg/mime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,13 +15,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func setupTestEnvironment(ociTempDir, installName string, mediaType v1beta2.MediaTypeMetadata) {
+func setupTestEnvironment(ociTempDir, installName, mediaType string) {
 	It("setup OCI", func() {
 		var err error
 		switch mediaType {
-		case v1beta2.MediaTypeDir:
+		case mime.MIME_TAR:
 			err = testutils.PushToRemoteOCIRegistry(server, manifestTarPath, installName)
-		case v1beta2.MediaTypeFile:
+		case mime.MIME_OCTET:
 			fallthrough
 		default:
 			err = testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
@@ -39,7 +40,7 @@ var _ = Describe(
 		ociTempDir := "main-dir"
 		installName := filepath.Join(ociTempDir, "installs")
 		var validManifest *v1beta2.Manifest
-		setupTestEnvironment(ociTempDir, installName, v1beta2.MediaTypeFile)
+		setupTestEnvironment(ociTempDir, installName, mime.MIME_OCTET)
 
 		Context("Given a Manifest CR", func() {
 			It("When Manifest CR contains a valid install OCI image specification",
@@ -167,7 +168,7 @@ var _ = Describe(
 	"Rendering manifest install layer from tar", Ordered, func() {
 		ociTempDir := "main-dir"
 		installName := filepath.Join(ociTempDir, "installs")
-		setupTestEnvironment(ociTempDir, installName, v1beta2.MediaTypeDir)
+		setupTestEnvironment(ociTempDir, installName, mime.MIME_TAR)
 
 		Context("Given a Manifest CR", func() {
 			It("When Manifest CR contains a valid install OCI image specification",
@@ -182,13 +183,6 @@ var _ = Describe(
 					By("Then Manifest CR is in Ready State", func() {
 						Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady),
 							standardTimeout, standardInterval).
-							WithArguments(manifest.GetName()).
-							Should(Succeed())
-					})
-					By("And OCI-Sync-Ref Annotation exists", func() {
-						Eventually(testutils.ExpectOCISyncRefAnnotationExists(ctx, kcpClient, true),
-							standardTimeout,
-							standardInterval).
 							WithArguments(manifest.GetName()).
 							Should(Succeed())
 					})

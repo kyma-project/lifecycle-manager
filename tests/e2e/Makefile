@@ -150,3 +150,6 @@ misconfigured-kyma-secret:
 
 rbac-privileges:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "RBAC Privileges"
+
+ocm-compatible-module-template:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "OCM Format Module Template"

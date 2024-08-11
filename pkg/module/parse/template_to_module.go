@@ -218,7 +218,7 @@ func insertLayerIntoManifest(
 	manifest *v1beta2.Manifest, layer img.Layer, clnt client.Client,
 ) error {
 	switch layer.LayerName {
-	case img.DefaultCRLayer:
+	case v1beta2.DefaultCRLayer:
 		if manifest.Spec.Resource == nil {
 			defaultCR, err := getDefaultCRFromOCILayer(layer, clnt)
 			if err != nil {
@@ -226,15 +226,15 @@ func insertLayerIntoManifest(
 			}
 			manifest.Spec.Resource = defaultCR
 		}
-	case img.CRDsLayer:
+	case v1beta2.CRDsLayer:
 		fallthrough
-	case img.ConfigLayer:
+	case v1beta2.ConfigLayer:
 		imageSpec, err := getImageSpecFromLayer(layer)
 		if err != nil {
 			return fmt.Errorf("error while parsing config layer: %w", err)
 		}
 		manifest.Spec.Config = imageSpec
-	case img.RawManifestLayer:
+	case v1beta2.RawManifestLayer:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
@@ -273,7 +273,7 @@ func getDefaultCRFromOCILayer(layer img.Layer, clnt client.Client) (*unstructure
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keychain: %w", err)
 	}
-	manifest, err := extractor.FetchLayerToFile(ctx, *imageSpec, keyChain, string(img.DefaultCRLayer))
+	manifest, err := extractor.FetchLayerToFile(ctx, *imageSpec, keyChain, string(v1beta2.DefaultCRLayer))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get default CR: %w", err)
 	}

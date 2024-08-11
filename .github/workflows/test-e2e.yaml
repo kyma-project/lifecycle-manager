@@ -48,6 +48,7 @@ jobs:
           - mandatory-module-metrics
           - misconfigured-kyma-secret
           - rbac-privileges
+          - ocm-compatible-module-template
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

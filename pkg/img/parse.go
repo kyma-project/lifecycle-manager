@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/open-component-model/ocm/pkg/mime"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
@@ -100,7 +101,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 
 		layers = append(
 			layers, Layer{
-				LayerName:           LayerName(resource.Name),
+				LayerName:           v1beta2.LayerName(resource.Name),
 				LayerRepresentation: layerRepresentation,
 			},
 		)
@@ -117,9 +118,9 @@ func getOCIRef(
 	layerRef := OCI{}
 
 	switch accessSpec.MediaType {
-	case string(v1beta2.MediaTypeDir):
+	case mime.MIME_TAR:
 		layerRef.Type = string(v1beta2.OciDirType)
-	case string(v1beta2.MediaTypeFile):
+	case mime.MIME_OCTET:
 		fallthrough
 	default:
 		layerRef.Type = string(v1beta2.OciRefType)
