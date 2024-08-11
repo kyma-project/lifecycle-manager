@@ -17,6 +17,7 @@ Read more about the custom resource definitions (CRDs) in the respective documen
 * [Kyma CR](kyma-cr.md)
 * [Manifest CR](manifest-cr.md)
 * [ModuleTemplate CR](moduleTemplate-cr.md)
+* [Watcher CR](watcher-cr.md)
 
 ## Synchronization of Module Catalog with Remote Clusters
 
