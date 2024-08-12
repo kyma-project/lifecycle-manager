@@ -24,8 +24,8 @@ import (
 
 var (
 	ErrImageLayerPull       = errors.New("failed to pull layer")
-	ErrInvalidImageSpecType = errors.New(fmt.Sprintf("invalid image spec type provided,"+
-		" only '%s' '%s' are allowed", v1beta2.OciRefType, v1beta2.OciDirType))
+	ErrInvalidImageSpecType = fmt.Errorf("invalid image spec type provided,"+
+		" only '%s' '%s' are allowed", v1beta2.OciRefType, v1beta2.OciDirType)
 	ErrTaintedArchive          = errors.New("content filepath tainted")
 	ErrInvalidArchiveStructure = errors.New("tar archive has invalid structure, expected a single file")
 )
@@ -54,7 +54,7 @@ func (p PathExtractor) FetchLayerToFile(ctx context.Context,
 		if err != nil {
 			return "", err
 		}
-		extractedFile, err := p.untarLayer(tarFile)
+		extractedFile, err := p.ExtractLayer(tarFile)
 		if err != nil {
 			return "", err
 		}
@@ -123,7 +123,7 @@ func (p PathExtractor) getPathForFetchedLayer(ctx context.Context,
 	return manifestPath, nil
 }
 
-func (p PathExtractor) untarLayer(tarPath string) (string, error) {
+func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	fileMutex, err := p.fileMutexCache.GetLocker(tarPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to load locker from cache: %w", err)
@@ -210,7 +210,7 @@ func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 	return filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
 }
 
-// sanitizeArchivePath ensures the path is within the intended directory to prevent path traversal attacks (gosec:G305)
+// sanitizeArchivePath ensures the path is within the intended directory to prevent path traversal attacks (gosec:G305).
 func sanitizeArchivePath(dir, path string) (string, error) {
 	joinedPath := filepath.Join(dir, path)
 	if strings.HasPrefix(joinedPath, filepath.Clean(dir)) {

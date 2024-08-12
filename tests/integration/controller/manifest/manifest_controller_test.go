@@ -1,10 +1,11 @@
 package manifest_test
 
 import (
-	"github.com/open-component-model/ocm/pkg/mime"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/open-component-model/ocm/pkg/mime"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"

@@ -1,19 +1,23 @@
-package manifest
+package manifest_test
 
 import (
 	"archive/tar"
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 )
 
 func TestPathExtractor_untarLayer(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "untar-test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
 	var buf bytes.Buffer
@@ -22,23 +26,23 @@ func TestPathExtractor_untarLayer(t *testing.T) {
 	content := []byte("file-content")
 	header := &tar.Header{
 		Name: "raw-manifest.yaml",
-		Mode: 0600,
+		Mode: 0o600,
 		Size: int64(len(content)),
 	}
 
 	err = tarWriter.WriteHeader(header)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = tarWriter.Write(content)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tarWriter.Close()
 
 	tarFilePath := filepath.Join(tempDir, "test.tar")
-	err = os.WriteFile(tarFilePath, buf.Bytes(), 0600)
-	assert.NoError(t, err)
+	err = os.WriteFile(tarFilePath, buf.Bytes(), 0o600)
+	require.NoError(t, err)
 
-	extractor := NewPathExtractor(nil)
+	extractor := manifest.NewPathExtractor(nil)
 
 	var wg sync.WaitGroup
 	numGoroutines := 5
@@ -50,7 +54,7 @@ func TestPathExtractor_untarLayer(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			result, err := extractor.untarLayer(tarFilePath)
+			result, err := extractor.ExtractLayer(tarFilePath)
 			if err != nil {
 				resultErr = err
 			}
@@ -65,16 +69,18 @@ func TestPathExtractor_untarLayer(t *testing.T) {
 	}
 	wg.Wait()
 
-	assert.NoError(t, resultErr)
+	require.NoError(t, resultErr)
 	assert.NotEmpty(t, results)
 	assert.NotEmpty(t, modTimes)
 
+	info, err := os.Stat(results[0])
+	require.NoError(t, resultErr)
 	for i := 1; i < numGoroutines; i++ {
-		assert.Equal(t, results[0], results[i])
-		assert.Equal(t, modTimes[0], modTimes[i])
+		assert.Equal(t, info.Name(), results[i])
+		assert.Equal(t, info.ModTime(), modTimes[i])
 	}
 
 	fileContent, err := os.ReadFile(results[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, content, fileContent)
 }
