@@ -18,7 +18,7 @@ func NewReconciler(mgr manager.Manager,
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	extractor := manifest.NewPathExtractor(nil)
+	extractor := manifest.NewPathExtractor()
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,

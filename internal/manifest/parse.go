@@ -34,11 +34,8 @@ type PathExtractor struct {
 	fileMutexCache *filemutex.MutexCache
 }
 
-func NewPathExtractor(cache *filemutex.MutexCache) *PathExtractor {
-	if cache == nil {
-		return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
-	}
-	return &PathExtractor{fileMutexCache: cache}
+func NewPathExtractor() *PathExtractor {
+	return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
 }
 
 func (p PathExtractor) FetchLayerToFile(ctx context.Context,
@@ -140,49 +137,41 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	tarReader := tar.NewReader(tarFile)
 
 	extractedFilePath := ""
-	for {
-		header, err := tarReader.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return "", fmt.Errorf("failed to read tar: %w", err)
-		}
 
-		switch header.Typeflag {
-		case tar.TypeDir:
-			return "", ErrInvalidArchiveStructure
-		case tar.TypeReg:
-			if strings.HasPrefix(header.Name, "._") {
-				continue
-			}
-
-			extractedFilePath, err = sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
-			if err != nil {
-				return "", fmt.Errorf("failed to sanitize archive path: %w", err)
-			}
-
-			if _, err := os.Stat(extractedFilePath); err == nil {
-				return extractedFilePath, nil
-			}
-
-			outFile, err := os.Create(extractedFilePath)
-			if err != nil {
-				return "", fmt.Errorf("failed to create extracted file: %w", err)
-			}
-
-			var maxBytes int64 = 1024 * 1024
-			if _, err := io.CopyN(outFile, tarReader, maxBytes); err != nil && !errors.Is(err, io.EOF) {
-				outFile.Close()
-				return "", fmt.Errorf("failed to extract from tar: %w", err)
-			}
-			outFile.Close()
-		}
-
-		return extractedFilePath, nil
+	header, err := tarReader.Next()
+	if errors.Is(err, io.EOF) {
+		return "", ErrInvalidArchiveStructure
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to read tar: %w", err)
 	}
 
-	return "", ErrInvalidArchiveStructure
+	switch header.Typeflag {
+	case tar.TypeDir:
+		return "", ErrInvalidArchiveStructure
+	case tar.TypeReg:
+		extractedFilePath, err = sanitizeArchivePath(filepath.Dir(tarPath), header.Name)
+		if err != nil {
+			return "", fmt.Errorf("failed to sanitize archive path: %w", err)
+		}
+
+		if _, err := os.Stat(extractedFilePath); err == nil {
+			return extractedFilePath, nil
+		}
+
+		outFile, err := os.Create(extractedFilePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to create extracted file: %w", err)
+		}
+		defer outFile.Close()
+
+		if _, err := io.Copy(outFile, tarReader); err != nil { //nolint:gosec // the content is from managed resources,
+			// we can control the size, so it's safe from decompression bomb.
+			return "", fmt.Errorf("failed to extract from tar: %w", err)
+		}
+	}
+
+	return extractedFilePath, nil
 }
 
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {

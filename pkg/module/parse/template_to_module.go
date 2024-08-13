@@ -267,7 +267,7 @@ func getDefaultCRFromOCILayer(layer img.Layer, clnt client.Client) (*unstructure
 	if err != nil {
 		return nil, err
 	}
-	extractor := manifest.NewPathExtractor(nil)
+	extractor := manifest.NewPathExtractor()
 	ctx := context.TODO()
 	keyChain, err := manifest.LookupKeyChain(ctx, *imageSpec, clnt)
 	if err != nil {

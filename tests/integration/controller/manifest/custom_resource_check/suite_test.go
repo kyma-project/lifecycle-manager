@@ -135,7 +135,7 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
-	extractor := manifest.NewPathExtractor(nil)
+	extractor := manifest.NewPathExtractor()
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,

@@ -15,11 +15,61 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 )
 
-func TestPathExtractor_untarLayer(t *testing.T) {
+func TestPathExtractor_ExtractLayer(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "untar-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func(path string) {
+		err := os.RemoveAll(path)
+		require.NoError(t, err)
+	}(tempDir)
+	content, tarFilePath := generateDummyTarFile(t, tempDir)
+	pathExtractor := manifest.NewPathExtractor()
+	numGoroutines := 5
+	resultCh := make(chan string, numGoroutines)
+	modTimeCh := make(chan time.Time, numGoroutines)
+	errCh := make(chan error)
+	var waitGroup sync.WaitGroup
+	for range numGoroutines {
+		waitGroup.Add(1)
+		go extractLayer(&waitGroup, pathExtractor, tarFilePath, errCh, resultCh, modTimeCh)
+	}
+	go func() {
+		waitGroup.Wait()
+		close(resultCh)
+		close(modTimeCh)
+		close(errCh)
+	}()
+	results := make([]string, 0)
+	modTimes := make([]time.Time, 0)
 
+	for err := range errCh {
+		require.NoError(t, err)
+	}
+	for result := range resultCh {
+		results = append(results, result)
+	}
+	for modTime := range modTimeCh {
+		modTimes = append(modTimes, modTime)
+	}
+
+	assert.Len(t, results, numGoroutines)
+	assert.Len(t, modTimes, numGoroutines)
+
+	extractedPath := results[0]
+	info, err := os.Stat(extractedPath)
+	require.NoError(t, err)
+	for i := range numGoroutines {
+		assert.Equal(t, extractedPath, results[i])
+		assert.Equal(t, info.ModTime(), modTimes[i])
+	}
+
+	fileContent, err := os.ReadFile(extractedPath)
+	require.NoError(t, err)
+	assert.Equal(t, content, fileContent)
+}
+
+func generateDummyTarFile(t *testing.T, tempDir string) ([]byte, string) {
+	t.Helper()
 	var buf bytes.Buffer
 	tarWriter := tar.NewWriter(&buf)
 
@@ -30,57 +80,36 @@ func TestPathExtractor_untarLayer(t *testing.T) {
 		Size: int64(len(content)),
 	}
 
-	err = tarWriter.WriteHeader(header)
+	err := tarWriter.WriteHeader(header)
 	require.NoError(t, err)
 
 	_, err = tarWriter.Write(content)
 	require.NoError(t, err)
 
-	tarWriter.Close()
-
+	err = tarWriter.Close()
+	require.NoError(t, err)
 	tarFilePath := filepath.Join(tempDir, "test.tar")
 	err = os.WriteFile(tarFilePath, buf.Bytes(), 0o600)
 	require.NoError(t, err)
+	return content, tarFilePath
+}
 
-	extractor := manifest.NewPathExtractor(nil)
-
-	var wg sync.WaitGroup
-	numGoroutines := 5
-	results := make([]string, numGoroutines)
-	modTimes := make([]time.Time, numGoroutines)
-	var resultErr error
-
-	for i := 0; i < numGoroutines; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			result, err := extractor.ExtractLayer(tarFilePath)
-			if err != nil {
-				resultErr = err
-			}
-			results[i] = result
-
-			info, err := os.Stat(result)
-			if err != nil {
-				resultErr = err
-			}
-			modTimes[i] = info.ModTime()
-		}(i)
-	}
-	wg.Wait()
-
-	require.NoError(t, resultErr)
-	assert.NotEmpty(t, results)
-	assert.NotEmpty(t, modTimes)
-
-	info, err := os.Stat(results[0])
-	require.NoError(t, resultErr)
-	for i := 1; i < numGoroutines; i++ {
-		assert.Equal(t, info.Name(), results[i])
-		assert.Equal(t, info.ModTime(), modTimes[i])
+func extractLayer(wg *sync.WaitGroup, extractor *manifest.PathExtractor, tarFilePath string, errCh chan error,
+	resultCh chan string, modTimeCh chan time.Time,
+) {
+	defer wg.Done()
+	result, err := extractor.ExtractLayer(tarFilePath)
+	if err != nil {
+		errCh <- err
+		return
 	}
 
-	fileContent, err := os.ReadFile(results[0])
-	require.NoError(t, err)
-	assert.Equal(t, content, fileContent)
+	info, err := os.Stat(result)
+	if err != nil {
+		errCh <- err
+		return
+	}
+
+	resultCh <- result
+	modTimeCh <- info.ModTime()
 }
