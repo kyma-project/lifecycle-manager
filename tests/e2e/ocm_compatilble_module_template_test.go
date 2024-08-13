@@ -33,7 +33,7 @@ var _ = Describe("OCM Format Module Template", Ordered, func() {
 			By("And Module Operator Deployment exists")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				WithArguments(runtimeClient, ModuleResourceName, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
