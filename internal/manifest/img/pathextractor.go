@@ -38,16 +38,13 @@ func NewPathExtractor() *PathExtractor {
 	return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
 }
 
-func (p PathExtractor) FetchLayerToFile(ctx context.Context,
-	imageSpec v1beta2.ImageSpec,
-	keyChain authn.Keychain,
-	layerName string,
-) (string, error) {
+func (p PathExtractor) FetchLayerToFile(ctx context.Context, imageSpec v1beta2.ImageSpec,
+	keyChain authn.Keychain) (string, error) {
 	switch imageSpec.Type {
 	case v1beta2.OciRefType:
-		return p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".yaml")
+		return p.GetPathForFetchedLayer(ctx, imageSpec, keyChain, string(v1beta2.RawManifestLayer)+".yaml")
 	case v1beta2.OciDirType:
-		tarFile, err := p.getPathForFetchedLayer(ctx, imageSpec, keyChain, layerName+".tar")
+		tarFile, err := p.GetPathForFetchedLayer(ctx, imageSpec, keyChain, string(v1beta2.RawManifestLayer)+".tar")
 		if err != nil {
 			return "", err
 		}
@@ -61,7 +58,7 @@ func (p PathExtractor) FetchLayerToFile(ctx context.Context,
 	}
 }
 
-func (p PathExtractor) getPathForFetchedLayer(ctx context.Context,
+func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
 	filename string,

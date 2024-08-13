@@ -3,12 +3,15 @@ package img_test
 import (
 	"archive/tar"
 	"bytes"
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -60,6 +63,52 @@ func TestPathExtractor_ExtractLayer(t *testing.T) {
 	fileContent, err := os.ReadFile(extractedPath)
 	require.NoError(t, err)
 	assert.Equal(t, content, fileContent)
+}
+
+func TestPathExtractor_FetchLayerToFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		fileName string
+		want     img.Layer
+	}{
+		{
+			"should fetch raw-manifest layer with oci-dir type",
+			"template-operator.yaml",
+			img.Layer{
+				LayerName: "raw-manifest",
+				LayerRepresentation: &img.OCI{
+					Repo: "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator/component-descriptors",
+					Name: "kyma-project.io/module/template-operator",
+					Ref:  "sha256:d2cc278224a71384b04963a83e784da311a268a2b3fa8732bc31e70ca0c5bc52",
+					Type: "oci-dir",
+				},
+			},
+		},
+		{
+			"should fetch raw-manifest layer with oci-ref type",
+			"raw-manifest.yaml",
+			img.Layer{
+				LayerName: "raw-manifest",
+				LayerRepresentation: &img.OCI{
+					Repo: "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator/component-descriptors",
+					Name: "kyma-project.io/module/template-operator",
+					Ref:  "sha256:1ea2baf45791beafabfee533031b715af8f7a4ffdfbbf30d318f52f7652c36ca",
+					Type: "oci-ref",
+				},
+			},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			p := img.NewPathExtractor()
+			imageSpec, err := testCase.want.ConvertToImageSpec()
+			require.NoError(t, err)
+			extractedFilePath, err := p.FetchLayerToFile(context.TODO(), *imageSpec, authn.DefaultKeychain)
+			require.NoError(t, err)
+			assert.Contains(t, extractedFilePath,
+				fmt.Sprintf("%s/%s", imageSpec.Ref, testCase.fileName))
+		})
+	}
 }
 
 func generateDummyTarFile(t *testing.T) ([]byte, string) {
