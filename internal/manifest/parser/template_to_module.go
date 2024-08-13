@@ -1,29 +1,23 @@
-package parse
+package parser
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-	"github.com/kyma-project/lifecycle-manager/pkg/img"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
-
-var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
 type Parser struct {
 	client.Client
@@ -177,7 +171,7 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(manifest, layers, p.Client); err != nil {
+	if err := translateLayersAndMergeIntoManifest(manifest, layers); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
@@ -203,33 +197,20 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 	return nil
 }
 
-func translateLayersAndMergeIntoManifest(
-	manifest *v1beta2.Manifest, layers img.Layers, clnt client.Client,
-) error {
+func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(manifest, layer, clnt); err != nil {
+		if err := insertLayerIntoManifest(manifest, layer); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
 	return nil
 }
 
-func insertLayerIntoManifest(
-	manifest *v1beta2.Manifest, layer img.Layer, clnt client.Client,
-) error {
+func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer) error {
 	switch layer.LayerName {
 	case v1beta2.DefaultCRLayer:
-		if manifest.Spec.Resource == nil {
-			defaultCR, err := getDefaultCRFromOCILayer(layer, clnt)
-			if err != nil {
-				return fmt.Errorf("error while parsing default CR layer: %w", err)
-			}
-			manifest.Spec.Resource = defaultCR
-		}
-	case v1beta2.CRDsLayer:
-		fallthrough
 	case v1beta2.ConfigLayer:
-		imageSpec, err := getImageSpecFromLayer(layer)
+		imageSpec, err := layer.ConvertToImageSpec()
 		if err != nil {
 			return fmt.Errorf("error while parsing config layer: %w", err)
 		}
@@ -246,54 +227,4 @@ func insertLayerIntoManifest(
 	}
 
 	return nil
-}
-
-func getImageSpecFromLayer(layer img.Layer) (*v1beta2.ImageSpec, error) {
-	ociImage, ok := layer.LayerRepresentation.(*img.OCI)
-	if !ok {
-		return nil, fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
-	}
-	return &v1beta2.ImageSpec{
-		Repo:               ociImage.Repo,
-		Name:               ociImage.Name,
-		Ref:                ociImage.Ref,
-		Type:               v1beta2.RefTypeMetadata(ociImage.Type),
-		CredSecretSelector: ociImage.CredSecretSelector,
-	}, nil
-}
-
-func getDefaultCRFromOCILayer(layer img.Layer, clnt client.Client) (*unstructured.Unstructured, error) {
-	imageSpec, err := getImageSpecFromLayer(layer)
-	if err != nil {
-		return nil, err
-	}
-	extractor := manifest.NewPathExtractor()
-	ctx := context.TODO()
-	keyChain, err := manifest.LookupKeyChain(ctx, *imageSpec, clnt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get keychain: %w", err)
-	}
-	manifest, err := extractor.FetchLayerToFile(ctx, *imageSpec, keyChain, string(v1beta2.DefaultCRLayer))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get default CR: %w", err)
-	}
-	defaultCR, err := readYamlToUnstructured(manifest)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert to unstructured: %w", err)
-	}
-	return defaultCR, nil
-}
-
-func readYamlToUnstructured(filePath string) (*unstructured.Unstructured, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
-	}
-
-	var content map[string]interface{}
-	if err := yaml.Unmarshal(data, &content); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal yaml: %w", err)
-	}
-
-	return &unstructured.Unstructured{Object: content}, nil
 }

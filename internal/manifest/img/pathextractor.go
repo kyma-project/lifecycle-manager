@@ -1,4 +1,4 @@
-package manifest
+package img
 
 import (
 	"archive/tar"

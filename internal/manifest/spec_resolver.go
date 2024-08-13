@@ -5,22 +5,21 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/v1/google"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/auth"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 )
 
 type SpecResolver struct {
 	kcpClient             client.Client
-	manifestPathExtractor *PathExtractor
+	manifestPathExtractor *img.PathExtractor
 }
 
-func NewSpecResolver(kcpClient client.Client, extractor *PathExtractor) *SpecResolver {
+func NewSpecResolver(kcpClient client.Client, extractor *img.PathExtractor) *SpecResolver {
 	return &SpecResolver{
 		kcpClient:             kcpClient,
 		manifestPathExtractor: extractor,
@@ -40,7 +39,7 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 			client.ObjectKeyFromObject(manifest), errRenderModeInvalid)
 	}
 
-	keyChain, err := LookupKeyChain(ctx, imageSpec, s.kcpClient)
+	keyChain, err := auth.LookupKeyChain(ctx, imageSpec, s.kcpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
@@ -56,18 +55,4 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 		Path:         rawManifestPath,
 		OCIRef:       imageSpec.Ref,
 	}, nil
-}
-
-func LookupKeyChain(ctx context.Context, imageSpec v1beta2.ImageSpec,
-	targetClient client.Client,
-) (authn.Keychain, error) {
-	var keyChain authn.Keychain
-	var err error
-	if imageSpec.CredSecretSelector == nil {
-		keyChain = authn.DefaultKeychain
-	} else if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, targetClient); err != nil {
-		return nil, err
-	}
-
-	return authn.NewMultiKeychain(google.Keychain, keyChain), nil
 }

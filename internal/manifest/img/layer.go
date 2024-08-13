@@ -2,12 +2,15 @@ package img
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
+
+var ErrLayerParsing = errors.New("layer could not be parsed")
 
 type LayerRepresentation interface {
 	ToInstallRaw() ([]byte, error)
@@ -42,3 +45,17 @@ type (
 )
 
 type Layers []Layer
+
+func (l Layer) ConvertToImageSpec() (*v1beta2.ImageSpec, error) {
+	ociImage, ok := l.LayerRepresentation.(*OCI)
+	if !ok {
+		return nil, fmt.Errorf("%w: not an OCIImage", ErrLayerParsing)
+	}
+	return &v1beta2.ImageSpec{
+		Repo:               ociImage.Repo,
+		Name:               ociImage.Name,
+		Ref:                ociImage.Ref,
+		Type:               v1beta2.RefTypeMetadata(ociImage.Type),
+		CredSecretSelector: ociImage.CredSecretSelector,
+	}, nil
+}

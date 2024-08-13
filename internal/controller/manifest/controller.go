@@ -5,6 +5,7 @@ import (
 
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
@@ -18,7 +19,7 @@ func NewReconciler(mgr manager.Manager,
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	extractor := manifest.NewPathExtractor()
+	extractor := img.NewPathExtractor()
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,

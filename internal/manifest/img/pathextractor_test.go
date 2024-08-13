@@ -1,4 +1,4 @@
-package manifest_test
+package img_test
 
 import (
 	"archive/tar"
@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 )
 
 func TestPathExtractor_ExtractLayer(t *testing.T) {
 	content, tarFilePath := generateDummyTarFile(t)
-	pathExtractor := manifest.NewPathExtractor()
+	pathExtractor := img.NewPathExtractor()
 	numGoroutines := 5
 	resultCh := make(chan string, numGoroutines)
 	modTimeCh := make(chan time.Time, numGoroutines)
@@ -88,7 +88,7 @@ func generateDummyTarFile(t *testing.T) ([]byte, string) {
 	return content, tarFilePath
 }
 
-func extractLayer(wg *sync.WaitGroup, extractor *manifest.PathExtractor, tarFilePath string, errCh chan error,
+func extractLayer(wg *sync.WaitGroup, extractor *img.PathExtractor, tarFilePath string, errCh chan error,
 	resultCh chan string, modTimeCh chan time.Time,
 ) {
 	defer wg.Done()

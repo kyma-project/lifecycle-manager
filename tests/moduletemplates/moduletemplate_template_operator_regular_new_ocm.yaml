@@ -11,6 +11,13 @@ metadata:
 spec:
   channel: regular
   mandatory: false
+  data:
+    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: Sample
+    metadata:
+      name: sample-yaml
+    spec:
+      resourceFilePath: "./module-data/yaml"
   descriptor:
     component:
       componentReferences: []
