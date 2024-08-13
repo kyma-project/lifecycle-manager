@@ -39,7 +39,8 @@ func NewPathExtractor() *PathExtractor {
 }
 
 func (p PathExtractor) FetchLayerToFile(ctx context.Context, imageSpec v1beta2.ImageSpec,
-	keyChain authn.Keychain) (string, error) {
+	keyChain authn.Keychain,
+) (string, error) {
 	switch imageSpec.Type {
 	case v1beta2.OciRefType:
 		return p.GetPathForFetchedLayer(ctx, imageSpec, keyChain, string(v1beta2.RawManifestLayer)+".yaml")
