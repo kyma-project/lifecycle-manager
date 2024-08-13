@@ -44,7 +44,6 @@ func parseDescriptor(ctx *runtime.UnstructuredTypedObject, descriptor *compdesc.
 	if err != nil {
 		return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 	}
-
 	typedRepo, ok := repo.(*genericocireg.RepositorySpec)
 	if !ok {
 		return nil, common.ErrTypeAssert
@@ -142,11 +141,20 @@ func getOCIRef(
 		); found {
 			repoSubpath = string(ext)
 		}
-		baseURL := repo.UniformRepositorySpec().String()
+
+		baseURL := repo.Name()
+		if repo.SubPath != "" {
+			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
+		}
+
 		layerRef.Repo = fmt.Sprintf("%s/%s", baseURL, repoSubpath)
 		layerRef.Name = descriptor.GetName()
 	case genericocireg.OCIRegistryDigestMapping:
-		layerRef.Repo = repo.Name() + "/"
+		baseURL := repo.Name()
+		if repo.SubPath != "" {
+			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
+		}
+		layerRef.Repo = baseURL + "/"
 		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
 		return nil, fmt.Errorf(
