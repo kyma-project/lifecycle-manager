@@ -16,13 +16,7 @@ import (
 )
 
 func TestPathExtractor_ExtractLayer(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "untar-test")
-	require.NoError(t, err)
-	defer func(path string) {
-		err := os.RemoveAll(path)
-		require.NoError(t, err)
-	}(tempDir)
-	content, tarFilePath := generateDummyTarFile(t, tempDir)
+	content, tarFilePath := generateDummyTarFile(t)
 	pathExtractor := manifest.NewPathExtractor()
 	numGoroutines := 5
 	resultCh := make(chan string, numGoroutines)
@@ -68,7 +62,7 @@ func TestPathExtractor_ExtractLayer(t *testing.T) {
 	assert.Equal(t, content, fileContent)
 }
 
-func generateDummyTarFile(t *testing.T, tempDir string) ([]byte, string) {
+func generateDummyTarFile(t *testing.T) ([]byte, string) {
 	t.Helper()
 	var buf bytes.Buffer
 	tarWriter := tar.NewWriter(&buf)
@@ -88,7 +82,7 @@ func generateDummyTarFile(t *testing.T, tempDir string) ([]byte, string) {
 
 	err = tarWriter.Close()
 	require.NoError(t, err)
-	tarFilePath := filepath.Join(tempDir, "test.tar")
+	tarFilePath := filepath.Join(os.TempDir(), "test.tar")
 	err = os.WriteFile(tarFilePath, buf.Bytes(), 0o600)
 	require.NoError(t, err)
 	return content, tarFilePath
