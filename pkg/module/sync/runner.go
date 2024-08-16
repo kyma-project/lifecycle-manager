@@ -116,7 +116,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 
 	moduleStatus := kyma.GetModuleStatusMap()[module.ModuleName]
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
+	if err := r.patchOrUpdateManifest(ctx, kyma.Labels[shared.ManagedBy], module,
 		manifestObj, moduleStatus); err != nil {
 		return err
 	}
@@ -124,8 +124,11 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	return nil
 }
 
-func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
-	manifestObj *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
+func (r *Runner) patchOrUpdateManifest(ctx context.Context,
+	owner string,
+	module *common.Module,
+	manifestObj *v1beta2.Manifest,
+	kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
 	objKey := client.ObjectKeyFromObject(manifestObj)
 	manifestInCluster := &v1beta2.Manifest{}
@@ -145,7 +148,7 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module 
 		return r.patchManifest(ctx, owner, manifestObj)
 	}
 	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
-	if err := r.updateAvailableManifestSpec(ctx, manifestObj); err != nil && !util.IsNotFound(err) {
+	if err := r.updateManifestForDisabledModule(ctx, manifestObj); err != nil && !util.IsNotFound(err) {
 		return err
 	}
 	return nil
@@ -162,7 +165,7 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 	return nil
 }
 
-func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v1beta2.Manifest) error {
+func (r *Runner) updateManifestForDisabledModule(ctx context.Context, manifestObj *v1beta2.Manifest) error {
 	manifestInCluster := &v1beta2.Manifest{}
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: manifestObj.GetNamespace(),
