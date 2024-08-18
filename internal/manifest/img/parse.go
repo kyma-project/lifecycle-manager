@@ -116,13 +116,9 @@ func getOCIRef(
 	labels ocmmetav1.Labels,
 ) (*OCI, error) {
 	layerRef := OCI{}
-
-	switch accessSpec.MediaType {
-	case mime.MIME_TAR:
+	if accessSpec.MediaType == mime.MIME_TAR {
 		layerRef.Type = string(v1beta2.OciDirType)
-	case mime.MIME_OCTET:
-		fallthrough
-	default:
+	} else {
 		layerRef.Type = string(v1beta2.OciRefType)
 	}
 

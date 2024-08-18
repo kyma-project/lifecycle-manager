@@ -19,12 +19,9 @@ import (
 func setupTestEnvironment(ociTempDir, installName, mediaType string) {
 	It("setup OCI", func() {
 		var err error
-		switch mediaType {
-		case mime.MIME_TAR:
+		if mediaType == mime.MIME_TAR {
 			err = testutils.PushToRemoteOCIRegistry(server, manifestTarPath, installName)
-		case mime.MIME_OCTET:
-			fallthrough
-		default:
+		} else {
 			err = testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
 		}
 		Expect(err).NotTo(HaveOccurred())

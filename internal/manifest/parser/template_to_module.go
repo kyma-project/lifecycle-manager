@@ -209,6 +209,7 @@ func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.
 func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer) error {
 	switch layer.LayerName {
 	case v1beta2.DefaultCRLayer:
+		// default CR layer is not relevant for the manifest
 	case v1beta2.ConfigLayer:
 		imageSpec, err := layer.ConvertToImageSpec()
 		if err != nil {
