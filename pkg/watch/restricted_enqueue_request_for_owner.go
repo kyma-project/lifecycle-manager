@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -56,7 +57,7 @@ type RestrictedEnqueueRequestForOwner struct {
 func (e *RestrictedEnqueueRequestForOwner) Create(
 	_ context.Context,
 	evt event.CreateEvent,
-	q workqueue.RateLimitingInterface,
+	q workqueue.TypedRateLimitingInterface[ctrl.Request],
 ) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
@@ -69,7 +70,7 @@ func (e *RestrictedEnqueueRequestForOwner) Create(
 func (e *RestrictedEnqueueRequestForOwner) Update(
 	_ context.Context,
 	evt event.UpdateEvent,
-	q workqueue.RateLimitingInterface,
+	q workqueue.TypedRateLimitingInterface[ctrl.Request],
 ) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(evt.ObjectOld, evt.ObjectNew, reqs)
@@ -82,7 +83,7 @@ func (e *RestrictedEnqueueRequestForOwner) Update(
 func (e *RestrictedEnqueueRequestForOwner) Delete(
 	_ context.Context,
 	evt event.DeleteEvent,
-	q workqueue.RateLimitingInterface,
+	q workqueue.TypedRateLimitingInterface[ctrl.Request],
 ) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
@@ -95,7 +96,7 @@ func (e *RestrictedEnqueueRequestForOwner) Delete(
 func (e *RestrictedEnqueueRequestForOwner) Generic(
 	_ context.Context,
 	evt event.GenericEvent,
-	q workqueue.RateLimitingInterface,
+	q workqueue.TypedRateLimitingInterface[ctrl.Request],
 ) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
