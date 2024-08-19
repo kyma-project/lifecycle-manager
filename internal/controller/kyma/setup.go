@@ -79,7 +79,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 
 func (r *Reconciler) skrEventHandler() *handler.Funcs {
 	return &handler.Funcs{
-		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.TypedRateLimitingInterface[ctrl.Request]) {
 			logger := ctrl.Log.WithName("listener")
 			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
 			if !conversionOk {
