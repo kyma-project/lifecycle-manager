@@ -46,7 +46,7 @@ spec:
             - name: oci-registry-cred
               value:
                 operator.kyma-project.io/oci-registry-cred: operator-regcred
-          name: template-operator
+          name: raw-manifest
           relation: local
           type: helm-chart
           version: v1.6.0
