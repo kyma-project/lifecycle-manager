@@ -9,14 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 const (
@@ -190,7 +189,7 @@ func configureModuleInKyma(
 func TestNeedToUpdate(t *testing.T) {
 	type args struct {
 		manifestInCluster  *v1beta2.Manifest
-		manifestObj        *v1beta2.Manifest
+		newManifest        *v1beta2.Manifest
 		moduleStatus       *v1beta2.ModuleStatus
 		templateGeneration int64
 	}
@@ -209,13 +208,10 @@ func TestNeedToUpdate(t *testing.T) {
 		{
 			"When new module version available, expect need to update",
 			args{
-				&v1beta2.Manifest{},
-				&v1beta2.Manifest{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{shared.ChannelLabel: "regular"},
-					},
-					Spec: v1beta2.ManifestSpec{Version: "0.2"},
-				},
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					v1beta2.DefaultChannel).Build(),
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.2").WithChannel(
+					v1beta2.DefaultChannel).Build(),
 				&v1beta2.ModuleStatus{
 					Version: "0.1",
 					Channel: "regular",
@@ -230,15 +226,25 @@ func TestNeedToUpdate(t *testing.T) {
 			true,
 		},
 		{
+			"When new module version available and module is mandatory module, expect need to update",
+			args{
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					v1beta2.DefaultChannel).IsMandatoryModule().Build(),
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.2").WithChannel(
+					v1beta2.DefaultChannel).IsMandatoryModule().Build(),
+				nil,
+				trackedModuleTemplateGeneration,
+			},
+			true,
+		},
+		{
 			"When channel switch, expect need to update",
 			args{
-				&v1beta2.Manifest{},
-				&v1beta2.Manifest{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{shared.ChannelLabel: "fast"},
-					},
-					Spec: v1beta2.ManifestSpec{Version: "0.1"},
-				}, &v1beta2.ModuleStatus{
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					v1beta2.DefaultChannel).Build(),
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					"fast").Build(),
+				&v1beta2.ModuleStatus{
 					Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: trackedModuleTemplateGeneration,
@@ -250,39 +256,12 @@ func TestNeedToUpdate(t *testing.T) {
 			true,
 		},
 		{
-			"When cluster Manifest in divergent state, expect need to update",
-			args{
-				&v1beta2.Manifest{
-					Status: shared.Status{
-						State: "Warning",
-					},
-				},
-				&v1beta2.Manifest{},
-				&v1beta2.ModuleStatus{
-					State: "Ready", Template: &v1beta2.TrackingObject{
-						PartialMeta: v1beta2.PartialMeta{
-							Generation: trackedModuleTemplateGeneration,
-						},
-					},
-				}, trackedModuleTemplateGeneration,
-			},
-			true,
-		},
-		{
 			"When no update required, expect no update",
 			args{
-				&v1beta2.Manifest{
-					Status: shared.Status{
-						State: "Ready",
-					},
-					Spec: v1beta2.ManifestSpec{Version: "0.1"},
-				},
-				&v1beta2.Manifest{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{shared.ChannelLabel: "regular"},
-					},
-					Spec: v1beta2.ManifestSpec{Version: "0.1"},
-				},
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					v1beta2.DefaultChannel).Build(),
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					v1beta2.DefaultChannel).Build(),
 				&v1beta2.ModuleStatus{
 					State: "Ready", Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
@@ -296,18 +275,10 @@ func TestNeedToUpdate(t *testing.T) {
 		{
 			"When moduleTemplate Generation updated, expect update",
 			args{
-				&v1beta2.Manifest{
-					Status: shared.Status{
-						State: "Ready",
-					},
-					Spec: v1beta2.ManifestSpec{Version: "0.1"},
-				},
-				&v1beta2.Manifest{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Labels: map[string]string{shared.ChannelLabel: "regular"},
-					},
-					Spec: v1beta2.ManifestSpec{Version: "0.1"},
-				},
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					v1beta2.DefaultChannel).Build(),
+				builder.NewManifestBuilder().WithName("test").WithVersion("0.1").WithChannel(
+					v1beta2.DefaultChannel).Build(),
 				&v1beta2.ModuleStatus{
 					State: "Ready", Version: "0.1", Channel: "regular", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
@@ -321,9 +292,9 @@ func TestNeedToUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.manifestObj,
+			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.newManifest,
 				tt.args.moduleStatus, tt.args.templateGeneration), "needToUpdate(%v, %v, %v)",
-				tt.args.manifestInCluster, tt.args.manifestObj,
+				tt.args.manifestInCluster, tt.args.newManifest,
 				tt.args.moduleStatus)
 		})
 	}

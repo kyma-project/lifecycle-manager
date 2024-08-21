@@ -110,46 +110,53 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	if err != nil {
 		return fmt.Errorf("failed to convert object to version: %w", err)
 	}
-	manifestObj, ok := obj.(*v1beta2.Manifest)
+	newManifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return commonerrs.ErrTypeAssert
 	}
 
 	moduleStatus := kyma.GetModuleStatusMap()[module.ModuleName]
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
-		manifestObj, moduleStatus); err != nil {
+	manifestInCluster, err := r.getManifest(ctx, newManifest)
+	if err != nil {
 		return err
 	}
-	module.Manifest = manifestObj
+	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
+		manifestInCluster, newManifest, moduleStatus); err != nil {
+		return err
+	}
+	// Collect module status in cluster for downstream usage.
+	newManifest.Status = manifestInCluster.Status
+	module.Manifest = newManifest
 	return nil
 }
 
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
-	newManifest *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
+	manifestInCluster, newManifest *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
-	manifestInCluster := &v1beta2.Manifest{}
-	if err := r.Get(ctx, client.ObjectKey{
-		Namespace: newManifest.GetNamespace(),
-		Name:      newManifest.GetName(),
-	}, manifestInCluster); err != nil {
-		if !util.IsNotFound(err) {
-			return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
-		}
-	}
-
 	if !NeedToUpdate(manifestInCluster, newManifest, kymaModuleStatus, module.Template.GetGeneration()) {
-		// Collect module status in cluster for downstream usage.
-		newManifest.Status = manifestInCluster.Status
 		return nil
 	}
 	if module.Enabled {
 		return r.patchManifest(ctx, owner, newManifest)
 	}
 	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
-	if err := r.updateAvailableManifestSpec(ctx, newManifest); err != nil && !util.IsNotFound(err) {
+	if err := r.updateAvailableManifestSpec(ctx, manifestInCluster, newManifest); err != nil && !util.IsNotFound(err) {
 		return err
 	}
 	return nil
+}
+
+func (r *Runner) getManifest(ctx context.Context, newManifest *v1beta2.Manifest) (*v1beta2.Manifest, error) {
+	manifestInCluster := &v1beta2.Manifest{}
+	if err := r.Get(ctx, client.ObjectKey{
+		Namespace: newManifest.GetNamespace(),
+		Name:      newManifest.GetName(),
+	}, manifestInCluster); err != nil {
+		if !util.IsNotFound(err) {
+			return nil, fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
+		}
+	}
+	return manifestInCluster, nil
 }
 
 func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v1beta2.Manifest) error {
@@ -163,17 +170,12 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 	return nil
 }
 
-func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v1beta2.Manifest) error {
-	manifestInCluster := &v1beta2.Manifest{}
-	if err := r.Get(ctx, client.ObjectKey{
-		Namespace: manifestObj.GetNamespace(),
-		Name:      manifestObj.GetName(),
-	}, manifestInCluster); err != nil {
-		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
-	}
-	manifestInCluster.Spec = manifestObj.Spec
+func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
+	manifestInCluster, newManifest *v1beta2.Manifest,
+) error {
+	manifestInCluster.Spec = newManifest.Spec
 	if err := r.Update(ctx, manifestInCluster); err != nil {
-		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
 	}
 	return nil
 }
@@ -186,9 +188,10 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 	}
 	diffInSpec := newManifest.Spec.Version != manifestInCluster.Spec.Version ||
 		!newManifest.IsSameChannel(manifestInCluster)
-	if manifestInCluster.IsMandatoryModule() {
+	if manifestInCluster.IsMandatoryModule() || moduleInStatus == nil {
 		return diffInSpec
 	}
+
 	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != moduleTemplateGeneration
 	return diffInTemplate || diffInSpec
 }
