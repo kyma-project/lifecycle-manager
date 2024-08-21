@@ -42,4 +42,4 @@ Suppose a Kyma CR has been marked for deletion for longer than the grace period 
 
 ## Watcher Controller
 
-[Watcher controller](../../internal/controller/watcher/controller.go) deals with the update of VirtualService rules derived from the [Watcher CR](../../api/v1beta2/watcher_types.go). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime, a small component initialized to propagate changes from the runtime (remote) clusters back to react to changes that can affect the Manifest CR integrity.
+[Watcher controller](../../internal/controller/watcher/controller.go) deals with the changes of VirtualService rules derived from the [Watcher CR](../../api/v1beta2/watcher_types.go). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime. Simply put, it is a small component initialized to propagate changes from the runtime (remote) clusters back to the Kyma Control Plane (KCP), for it to react to the changes accordingly, ensuring the integrity of the affected Manifest CRs.
