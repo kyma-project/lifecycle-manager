@@ -116,7 +116,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 
 	moduleStatus := kyma.GetModuleStatusMap()[module.ModuleName]
-	manifestInCluster, err := r.getManifest(ctx, newManifest)
+	manifestInCluster, err := r.getManifest(ctx, newManifest.GetName(), newManifest.GetNamespace())
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,9 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 		return err
 	}
 	// Collect module status in cluster for downstream usage.
-	newManifest.Status = manifestInCluster.Status
+	if manifestInCluster != nil {
+		newManifest.Status = manifestInCluster.Status
+	}
 	module.Manifest = newManifest
 	return nil
 }
@@ -146,26 +148,30 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module 
 	return nil
 }
 
-func (r *Runner) getManifest(ctx context.Context, newManifest *v1beta2.Manifest) (*v1beta2.Manifest, error) {
+func (r *Runner) getManifest(ctx context.Context, name, namespace string) (*v1beta2.Manifest, error) {
 	manifestInCluster := &v1beta2.Manifest{}
-	if err := r.Get(ctx, client.ObjectKey{
-		Namespace: newManifest.GetNamespace(),
-		Name:      newManifest.GetName(),
-	}, manifestInCluster); err != nil {
-		if !util.IsNotFound(err) {
-			return nil, fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
+	err := r.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}, manifestInCluster)
+	if err != nil {
+		if util.IsNotFound(err) {
+			return nil, nil
 		}
+		return nil, fmt.Errorf("error get manifest %s/%s: %w", namespace, name,
+			err)
 	}
+
 	return manifestInCluster, nil
 }
 
-func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v1beta2.Manifest) error {
-	if err := r.Patch(ctx, manifestObj,
+func (r *Runner) patchManifest(ctx context.Context, owner string, newManifest *v1beta2.Manifest) error {
+	if err := r.Patch(ctx, newManifest,
 		client.Apply,
 		client.FieldOwner(owner),
 		client.ForceOwnership,
 	); err != nil {
-		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
+		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
 	}
 	return nil
 }
@@ -173,6 +179,9 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, manifestObj *v
 func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 	manifestInCluster, newManifest *v1beta2.Manifest,
 ) error {
+	if manifestInCluster == nil {
+		return nil
+	}
 	manifestInCluster.Spec = newManifest.Spec
 	if err := r.Update(ctx, manifestInCluster); err != nil {
 		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
