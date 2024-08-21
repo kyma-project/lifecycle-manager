@@ -156,7 +156,7 @@ func (r *Runner) getManifest(ctx context.Context, name, namespace string) (*v1be
 	}, manifestInCluster)
 	if err != nil {
 		if util.IsNotFound(err) {
-			return nil, nil
+			return nil, nil //nolint:nilnil //use nil to indicate an empty Manifest
 		}
 		return nil, fmt.Errorf("error get manifest %s/%s: %w", namespace, name,
 			err)
