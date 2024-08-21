@@ -5,22 +5,21 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/v1/google"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/auth"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 )
 
 type SpecResolver struct {
 	kcpClient             client.Client
-	manifestPathExtractor *PathExtractor
+	manifestPathExtractor *img.PathExtractor
 }
 
-func NewSpecResolver(kcpClient client.Client, extractor *PathExtractor) *SpecResolver {
+func NewSpecResolver(kcpClient client.Client, extractor *img.PathExtractor) *SpecResolver {
 	return &SpecResolver{
 		kcpClient:             kcpClient,
 		manifestPathExtractor: extractor,
@@ -35,17 +34,17 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	if imageSpec.Type != v1beta2.OciRefType {
+	if imageSpec.Type != v1beta2.OciRefType && imageSpec.Type != v1beta2.OciDirType {
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
 			client.ObjectKeyFromObject(manifest), errRenderModeInvalid)
 	}
 
-	keyChain, err := s.lookupKeyChain(ctx, imageSpec)
+	keyChain, err := auth.LookupKeyChain(ctx, imageSpec, s.kcpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
 
-	rawManifestPath, err := s.manifestPathExtractor.GetPathFromRawManifest(ctx, imageSpec, keyChain)
+	rawManifestPath, err := s.manifestPathExtractor.FetchLayerToFile(ctx, imageSpec, keyChain)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
 	}
@@ -55,16 +54,4 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 		Path:         rawManifestPath,
 		OCIRef:       imageSpec.Ref,
 	}, nil
-}
-
-func (s *SpecResolver) lookupKeyChain(ctx context.Context, imageSpec v1beta2.ImageSpec) (authn.Keychain, error) {
-	var keyChain authn.Keychain
-	var err error
-	if imageSpec.CredSecretSelector == nil {
-		keyChain = authn.DefaultKeychain
-	} else if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, s.kcpClient); err != nil {
-		return nil, err
-	}
-
-	return authn.NewMultiKeychain(google.Keychain, keyChain), nil
 }
