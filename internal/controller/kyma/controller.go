@@ -134,16 +134,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
-	err := r.ValidateKymaSpec(kyma)
-	if err != nil {
-		// if the spec is invalid, we should not continue with processing, but make the user aware of the issue
-		if sErr := r.updateStatusWithError(ctx, kyma, err); sErr != nil {
-			r.Metrics.RecordRequeueReason(metrics.ProcessingKymaState, queue.UnexpectedRequeue)
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status: %w", sErr))
-		}
-		return ctrl.Result{}, nil
-	}
-
 	return r.reconcile(ctx, kyma)
 }
 
@@ -185,9 +175,24 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 	}
 
 	if r.SyncKymaEnabled(kyma) {
-		operation := r.replaceKymaFromRemote(ctx, kyma)
-		if operation.wantsToFinishReconciliation() {
-			return operation.CtrlResultValue(), operation.ErrorValue()
+		updateRequired, err := r.SyncRemoteCrds.Execute(ctx, kyma)
+		if err != nil {
+			r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
+		}
+		if updateRequired {
+			if err := r.Update(ctx, kyma); err != nil {
+				r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.UnexpectedRequeue)
+				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
+			}
+			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
+			return ctrl.Result{Requeue: true}, nil
+		}
+		// update the control-plane kyma with the changes to the spec of the remote Kyma
+		if err = r.replaceSpecFromRemote(ctx, kyma); err != nil {
+			r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, queue.UnexpectedRequeue)
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
+				" with remote kyma spec: %w", err))
 		}
 	}
 
@@ -205,42 +210,6 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 	}
 
 	return res, err
-}
-
-func (r *Reconciler) replaceKymaFromRemote(ctx context.Context, kyma *v1beta2.Kyma) ReconciliationLoopResult {
-	updateRequired, err := r.SyncRemoteCrds.Execute(ctx, kyma)
-	if err != nil {
-		r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
-		return newReconcileResult(r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err)))
-	}
-	if updateRequired {
-		if err := r.Update(ctx, kyma); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.UnexpectedRequeue)
-			return newReconcileResult(r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err)))
-		}
-		r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
-		return newReconcileResult(ctrl.Result{Requeue: true}, nil)
-	}
-	// update the control-plane kyma with the changes to the spec of the remote Kyma
-	if err = r.replaceSpecFromRemote(ctx, kyma); err != nil {
-		if errors.Is(err, ErrInvalidKymaSpec) {
-			// if the spec is invalid, we should not continue with processing, but make the user aware of the issue
-			if sErr := r.updateStatusWithError(ctx, kyma, err); sErr != nil {
-				r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, queue.UnexpectedRequeue)
-				return newReconcileResult(r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", sErr)))
-			}
-			if sErr := r.syncStatusToRemote(ctx, kyma); sErr != nil {
-				r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, queue.UnexpectedRequeue)
-				return newReconcileResult(r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", sErr)))
-			}
-			return newReconcileResult(ctrl.Result{}, nil)
-		}
-		r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, queue.UnexpectedRequeue)
-		return newReconcileResult(r.requeueWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
-			" with remote kyma spec: %w", err)))
-	}
-
-	return ReconciliationLoopResult{}
 }
 
 func (r *Reconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -298,8 +267,8 @@ func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Ky
 	return nil
 }
 
-// ValidateKymaSpec validates the Kyma spec.
-func (r *Reconciler) ValidateKymaSpec(kyma *v1beta2.Kyma) error {
+// ValidateDefaultChannel validates the Kyma spec.
+func (r *Reconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
 	if shared.NoneChannel.Equals(kyma.Spec.Channel) {
 		return fmt.Errorf("%w: value \"none\" is not allowed in spec.channel", ErrInvalidKymaSpec)
 	}
@@ -317,11 +286,12 @@ func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma
 		return err
 	}
 
-	if err := r.ValidateKymaSpec(remoteKyma); err != nil {
+	remote.ReplaceSpec(controlPlaneKyma, remoteKyma)
+
+	if err := r.ValidateDefaultChannel(controlPlaneKyma); err != nil {
 		return err
 	}
 
-	remote.ReplaceSpec(controlPlaneKyma, remoteKyma)
 	return nil
 }
 
@@ -630,31 +600,4 @@ func (r *Reconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 
 func (r *Reconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
-}
-
-// ReconciliationLoopResult is a struct that allows helper functions used in reconciliation process to indicate that the main reconciliation loop should be finished now using certain values.
-type ReconciliationLoopResult struct {
-	hasResult       bool // requires because sometimes we just want to return empty ctrl.Result and nil error from the reconciliation loop so these values alone cannot be used to determine if the reconciliation loop should be finished
-	ctrlResultValue ctrl.Result
-	errorValue      error
-}
-
-func newReconcileResult(ctrlResult ctrl.Result, err error) ReconciliationLoopResult {
-	return ReconciliationLoopResult{
-		hasResult:       true,
-		ctrlResultValue: ctrlResult,
-		errorValue:      err,
-	}
-}
-
-func (r ReconciliationLoopResult) wantsToFinishReconciliation() bool {
-	return r.hasResult
-}
-
-func (r ReconciliationLoopResult) CtrlResultValue() ctrl.Result {
-	return r.ctrlResultValue
-}
-
-func (r ReconciliationLoopResult) ErrorValue() error {
-	return r.errorValue
 }

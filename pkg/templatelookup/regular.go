@@ -22,8 +22,6 @@ var (
 	ErrTemplateMarkedAsMandatory = errors.New("template marked as mandatory")
 	ErrTemplateNotAllowed        = errors.New("module template not allowed")
 	ErrTemplateUpdateNotAllowed  = errors.New("module template update not allowed")
-	ErrModuleInSpecNotValid      = errors.New("module configuration in spec is not valid")
-	ErrModuleInStatusNotValid    = errors.New("module data in status is not valid")
 )
 
 type ModuleTemplateInfo struct {
@@ -48,17 +46,14 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
 
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
-	for _, module := range kyma.GetAvailableModules() {
+	for _, module := range GetAvailableModules(kyma) {
 		_, found := templates[module.Name]
 		if found {
 			continue
 		}
-		if !module.IsValid() {
-			if module.Enabled {
-				templates[module.Name] = &ModuleTemplateInfo{Err: fmt.Errorf("%w: %s", ErrModuleInSpecNotValid, module.ValidationError)}
-			} else {
-				templates[module.Name] = &ModuleTemplateInfo{Err: fmt.Errorf("%w: %s", ErrModuleInStatusNotValid, module.ValidationError)}
-			}
+		moduleValidationError := module.IsValid()
+		if moduleValidationError != nil {
+			templates[module.Name] = &ModuleTemplateInfo{Err: module.ValidationError}
 			continue
 		}
 

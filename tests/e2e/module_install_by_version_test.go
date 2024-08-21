@@ -45,6 +45,11 @@ var _ = Describe("Module Install By Version", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
+			By("And Module is in \"Ready\" State")
+			Eventually(CheckModuleState).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), templateOperatorModule.Name, shared.StateReady).
+				Should(Succeed())
 		})
 	})
 })

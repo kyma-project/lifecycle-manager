@@ -21,6 +21,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
+const (
+	version1 = "1.0.1"
+	version2 = "2.2.0"
+	version3 = "3.0.3"
+
+	versionUpgradeErr = "as a higher version (" + version3 + ") of the module was previously installed"
+)
+
 type FakeModuleTemplateReader struct {
 	templateList v1beta2.ModuleTemplateList
 }
@@ -107,7 +115,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 					{Name: "Module1", Channel: "regular", Version: "v1.0"},
 				},
 			},
-			wantErr: templatelookup.ErrModuleInSpecNotValid,
+			wantErr: templatelookup.ErrInvalidModuleInSpec,
 		},
 		{
 			name: "When Template not exists in Status, Then result contains error",
@@ -121,7 +129,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 					},
 				},
 			},
-			wantErr: templatelookup.ErrModuleInStatusNotValid,
+			wantErr: templatelookup.ErrInvalidModuleInStatus,
 		},
 	}
 
@@ -159,14 +167,14 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    testModule.Name,
 					Channel: v1beta2.DefaultChannel,
-					Version: "1.0.0",
+					Version: version1,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel, "1.1.0"),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel, version2),
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
@@ -180,14 +188,14 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    testModule.Name,
 					Channel: v1beta2.DefaultChannel,
-					Version: "1.1.0",
+					Version: version2,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel, "1.0.0"),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel, version1),
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
@@ -214,15 +222,23 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 }
 
 func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *testing.T) {
-	moduleToInstall := moduleToInstallByVersion("module1", "1.1.0")
+	moduleToInstall := moduleToInstallByVersion("module1", version2)
+
+	availableModuleTemplates := (&ModuleTemplateListBuilder{}).
+		Add(moduleToInstall.Name, "regular", version1).
+		Add(moduleToInstall.Name, "fast", version2).
+		Add(moduleToInstall.Name, "experimental", version3).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version1).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
+		Build()
 
 	tests := []struct {
-		name                     string
-		kyma                     *v1beta2.Kyma
-		availableModuleTemplates v1beta2.ModuleTemplateList
-		wantVersion              string
-		wantChannel              string
-		wantErrContains          string
+		name            string
+		kyma            *v1beta2.Kyma
+		wantVersion     string
+		wantChannel     string
+		wantErrContains string
 	}{
 		{
 			name: "When upgrade version, then result contains no error",
@@ -231,21 +247,15 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
 					Channel: string(shared.NoneChannel),
-					Version: "1.0.0",
+					Version: version1,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "regular", "1.0.0").
-				Add(moduleToInstall.Name, "fast", "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.0.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Build(),
 			wantChannel: string(shared.NoneChannel),
-			wantVersion: "1.1.0",
+			wantVersion: version2,
 		},
 		{
 			name: "When downgrade version, then result contains error",
@@ -254,26 +264,20 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
 					Channel: string(shared.NoneChannel),
-					Version: "2.1.0",
+					Version: version3,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "regular", "1.1.0").
-				Add(moduleToInstall.Name, "fast", "2.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "2.1.0").
-				Build(),
-			wantErrContains: "as a higher version (2.1.0) of the module was previously installed",
+			wantErrContains: versionUpgradeErr,
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplates),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
@@ -291,15 +295,22 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 }
 
 func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *testing.T) {
-	moduleToInstall := moduleToInstallByVersion("module1", "1.1.0")
+	moduleToInstall := moduleToInstallByVersion("module1", version2)
+	availableModuleTemplates := (&ModuleTemplateListBuilder{}).
+		Add(moduleToInstall.Name, "regular", version1).
+		Add(moduleToInstall.Name, "fast", version2).
+		Add(moduleToInstall.Name, "experimental", version3).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version1).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
+		Build()
 
 	tests := []struct {
-		name                     string
-		kyma                     *v1beta2.Kyma
-		availableModuleTemplates v1beta2.ModuleTemplateList
-		wantVersion              string
-		wantChannel              string
-		wantErrContains          string
+		name            string
+		kyma            *v1beta2.Kyma
+		wantVersion     string
+		wantChannel     string
+		wantErrContains string
 	}{
 		{
 			name: "When staying with the same version, then result contains no error",
@@ -307,22 +318,16 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 				WithEnabledModule(moduleToInstall).
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
-					Channel: "regular",
-					Version: "1.1.0",
+					Channel: "fast",
+					Version: version2,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "regular", "1.1.0").
-				Add(moduleToInstall.Name, "fast", "2.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "2.1.0").
-				Build(),
 			wantChannel: string(shared.NoneChannel),
-			wantVersion: "1.1.0",
+			wantVersion: version2,
 		},
 		{
 			name: "When upgrade version, then result contains no error",
@@ -331,21 +336,15 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
 					Channel: "regular",
-					Version: "1.0.0",
+					Version: version1,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "regular", "1.0.0").
-				Add(moduleToInstall.Name, "fast", "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.0.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Build(),
 			wantChannel: string(shared.NoneChannel),
-			wantVersion: "1.1.0",
+			wantVersion: version2,
 		},
 		{
 			name: "When downgrade version, then result contains error",
@@ -353,27 +352,21 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 				WithEnabledModule(moduleToInstall).
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
-					Channel: "fast",
-					Version: "2.1.0",
+					Channel: "experimental",
+					Version: version3,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "regular", "1.1.0").
-				Add(moduleToInstall.Name, "fast", "2.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "2.1.0").
-				Build(),
-			wantErrContains: "as a higher version (2.1.0) of the module was previously installed",
+			wantErrContains: versionUpgradeErr,
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplates),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
@@ -392,14 +385,21 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 
 func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *testing.T) {
 	moduleToInstall := testutils.NewTestModule("module1", "new_channel")
+	availableModuleTemplates := (&ModuleTemplateListBuilder{}).
+		Add(moduleToInstall.Name, "regular", version1).
+		Add(moduleToInstall.Name, "new_channel", version2).
+		Add(moduleToInstall.Name, "fast", version3).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version1).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
+		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
+		Build()
 
 	tests := []struct {
-		name                     string
-		kyma                     *v1beta2.Kyma
-		availableModuleTemplates v1beta2.ModuleTemplateList
-		wantVersion              string
-		wantChannel              string
-		wantErrContains          string
+		name            string
+		kyma            *v1beta2.Kyma
+		wantVersion     string
+		wantChannel     string
+		wantErrContains string
 	}{
 		{
 			name: "When staying with the same version, then result contains no error",
@@ -408,21 +408,15 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
 					Channel: string(shared.NoneChannel),
-					Version: "1.1.0",
+					Version: version2,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "regular", "1.1.0").
-				Add(moduleToInstall.Name, "new_channel", "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "2.1.0").
-				Build(),
 			wantChannel: "new_channel",
-			wantVersion: "1.1.0",
+			wantVersion: version2,
 		},
 		{
 			name: "When upgrade version, then result contains no error",
@@ -431,21 +425,15 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
 					Channel: string(shared.NoneChannel),
-					Version: "1.0.0",
+					Version: version1,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "regular", "1.0.0").
-				Add(moduleToInstall.Name, "new_channel", "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.0.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Build(),
 			wantChannel: "new_channel",
-			wantVersion: "1.1.0",
+			wantVersion: version2,
 		},
 		{
 			name: "When downgrade version, then result contains error",
@@ -454,26 +442,20 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    moduleToInstall.Name,
 					Channel: string(shared.NoneChannel),
-					Version: "2.1.0",
+					Version: version3,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
 							Generation: 1,
 						},
 					},
 				}).Build(),
-			availableModuleTemplates: (&ModuleTemplateListBuilder{}).
-				Add(moduleToInstall.Name, "new_channel", "1.1.0").
-				Add(moduleToInstall.Name, "fast", "2.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "1.1.0").
-				Add(moduleToInstall.Name, string(shared.NoneChannel), "2.1.0").
-				Build(),
-			wantErrContains: "as a higher version (2.1.0) of the module was previously installed",
+			wantErrContains: versionUpgradeErr,
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplates),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
@@ -532,7 +514,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
-			for _, module := range testCase.kyma.GetAvailableModules() {
+			for _, module := range templatelookup.GetAvailableModules(testCase.kyma) {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 					WithModuleName(module.Name).
 					WithLabelModuleName(module.Name).
@@ -667,7 +649,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
-			for _, module := range testCase.kyma.GetAvailableModules() {
+			for _, module := range templatelookup.GetAvailableModules(testCase.kyma) {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 					WithModuleName(module.Name).
 					WithLabelModuleName(module.Name).
