@@ -359,7 +359,7 @@ func (kyma *Kyma) DetermineState() shared.State {
 func (kyma *Kyma) AllModulesReady() bool {
 	for i := range kyma.Status.Modules {
 		moduleStatus := &kyma.Status.Modules[i]
-		if moduleStatus.State != shared.StateReady {
+		if moduleStatus.State != shared.StateReady && moduleStatus.State != shared.StateUnmanaged {
 			return false
 		}
 	}

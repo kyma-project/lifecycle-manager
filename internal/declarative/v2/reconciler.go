@@ -145,10 +145,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		debugLog.Info("is unmanaged")
 		if manifest.HasDeletionTimestamp() {
 			debugLog.Info("has deletion timestamp: removing finalizers")
-			partialMeta := r.partialObjectMetadata(manifest)
-			partialMeta.SetFinalizers([]string{})
-			// TODO add specific metric?
-			return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
+			manifest.SetFinalizers([]string{})
+			return r.updateManifest(ctx, manifest, metrics.ManifestUnmanagedUpdate)
 		} else {
 			debugLog.Info("has no deletion timestamp: deleting manifest")
 			return r.deleteManifest(ctx, manifest)

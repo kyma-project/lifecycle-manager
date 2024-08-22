@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,6 +105,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	module *common.Module,
 ) error {
 	logf.FromContext(ctx, "DEBUG", "KYMA").Info("update manifest")
+	logf.FromContext(ctx, "DEBUG", "KYMA").Info("module IsUnmanaged", module.IsUnmanaged)
 	if err := r.setupModule(module, kyma); err != nil {
 		return err
 	}
@@ -141,7 +143,11 @@ func (r *Runner) patchOrUpdateManifest(ctx context.Context,
 		manifestInCluster = nil
 	}
 
-	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus, module.Template.GetGeneration()) {
+	//if manifestInCluster != nil && module.IsUnmanaged && manifestInCluster.IsUnmanaged() {
+	//	r.deleteManifest(ctx, )
+	//}
+
+	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus, module) {
 		// Point to the current state from the cluster for the outside sync of the manifest
 		*manifestObj = *manifestInCluster
 		return nil
@@ -183,17 +189,18 @@ func (r *Runner) updateManifestForDisabledModule(ctx context.Context, manifestOb
 }
 
 func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus,
-	moduleTemplateGeneration int64,
+	module *common.Module,
 ) bool {
 	if manifestInCluster == nil || moduleStatus == nil { // moduleStatus is nil in case of mandatory module
 		return true
 	}
-	if moduleStatus.Template != nil && moduleStatus.Template.GetGeneration() != moduleTemplateGeneration {
+	if moduleStatus.Template != nil && moduleStatus.Template.GetGeneration() != module.Template.GetGeneration() {
 		return true
 	}
 	return manifestObj.Spec.Version != moduleStatus.Version ||
 		manifestObj.Labels[shared.ChannelLabel] != moduleStatus.Channel ||
-		moduleStatus.State != manifestInCluster.Status.State
+		moduleStatus.State != manifestInCluster.Status.State ||
+		module.IsUnmanaged != manifestInCluster.IsUnmanaged()
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
@@ -222,6 +229,12 @@ func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modul
 	metrics ModuleMetrics,
 ) {
 	updateModuleStatusFromExistingModules(modules, kyma)
+	debugLog := logf.FromContext(ctx).V(internal.DebugLogLevel).WithValues("DEBUG", "MODULES")
+	debugLog.Info("SyncModulesStatus")
+	for _, moduleStatus := range kyma.Status.Modules {
+		debugLog.Info("ModuleStatus", "Name", moduleStatus.Name, "State", moduleStatus.State)
+	}
+
 	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, metrics)
 }
 
@@ -289,12 +302,13 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		}
 	}
 
-	return v1beta2.ModuleStatus{
+	moduleStatus := v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
 		State:   manifestObject.Status.State,
 		Channel: module.Template.Spec.Channel,
 		Version: manifestObject.Spec.Version,
+		// TODO remove manifest in case of unmanaged module
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
 				Name:       manifestObject.GetName(),
@@ -303,6 +317,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			},
 			TypeMeta: apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
+		// TODO remove template in case of unmanaged module
 		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
 				Name:       module.Template.GetName(),
@@ -311,8 +326,15 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			},
 			TypeMeta: apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
+		// TODO remove resource in case of unmanaged module
 		Resource: moduleResource,
 	}
+
+	if module.IsUnmanaged {
+		moduleStatus.State = shared.StateUnmanaged
+	}
+
+	return moduleStatus
 }
 
 func stateFromManifest(obj client.Object) shared.State {
@@ -331,9 +353,9 @@ func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma,
 	metrics ModuleMetrics,
 ) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
-	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
-	for idx := range moduleStatus {
-		moduleStatus := moduleStatus[idx]
+	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
+	for idx := range moduleStatusesToBeDeletedFromKymaStatus {
+		moduleStatus := moduleStatusesToBeDeletedFromKymaStatus[idx]
 		if moduleStatus.Manifest == nil {
 			if metrics != nil {
 				metrics.RemoveModuleStateMetrics(kyma.Name, moduleStatus.Name)
