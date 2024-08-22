@@ -124,12 +124,18 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 		manifestInCluster, newManifest, moduleStatus); err != nil {
 		return err
 	}
-	// Collect module status in cluster for downstream usage.
-	if manifestInCluster != nil {
-		newManifest.Status = manifestInCluster.Status
-	}
 	module.Manifest = newManifest
+	module.Manifest.Status = getManifestStatus(newManifest, manifestInCluster)
 	return nil
+}
+
+func getManifestStatus(manifest, manifestInCluster *v1beta2.Manifest) shared.Status {
+	// In case manifest in cluster exists, collect status from it.
+	if manifestInCluster != nil {
+		return manifestInCluster.Status
+	}
+	// status could also come from manifest after patch.
+	return manifest.Status
 }
 
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
