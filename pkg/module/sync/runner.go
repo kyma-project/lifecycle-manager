@@ -103,9 +103,11 @@ func (r *Runner) getModule(ctx context.Context, module client.Object) error {
 func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	module *common.Module,
 ) error {
+	logf.FromContext(ctx, "DEBUG", "KYMA").Info("update manifest")
 	if err := r.setupModule(module, kyma); err != nil {
 		return err
 	}
+	logf.FromContext(ctx, "DEBUG", "KYMA").Info("setup module done")
 	obj, err := r.converter.ConvertToVersion(module.Manifest, r.versioner)
 	if err != nil {
 		return fmt.Errorf("failed to convert object to version: %w", err)
@@ -204,12 +206,6 @@ func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) erro
 
 func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 	module.ApplyDefaultMetaToManifest(kyma)
-
-	if module.IsUnmanaged {
-		if !controllerutil.AddFinalizer(module.Manifest, shared.UnmanagedFinalizer) {
-			return fmt.Errorf("error adding unmanaged finalizer to manifest %s", module.GetName())
-		}
-	}
 
 	refs := module.GetOwnerReferences()
 	if len(refs) == 0 {

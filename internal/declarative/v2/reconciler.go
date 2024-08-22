@@ -106,6 +106,9 @@ func newResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	debugLog := logf.FromContext(ctx).V(internal.DebugLogLevel).WithValues("DEBUG", "MANIFEST")
+	debugLog.Info("reconciliation started")
+
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
 
@@ -127,28 +130,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.initialize(manifest); err != nil {
+		debugLog.Info("initialize and finishReconcile")
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
 
-	if manifest.GetLabels() != nil && manifest.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
+	if manifest.IsMandatoryModule() {
 		state := manifest.GetStatus().State
 		kymaName := manifest.GetLabels()[shared.KymaName]
 		moduleName := manifest.GetLabels()[shared.ModuleName]
 		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
 	}
 
-	if controllerutil.ContainsFinalizer(manifest, shared.UnmanagedFinalizer) {
-		return r.deleteManifest(ctx, manifest)
-	}
-
-	if manifest.HasDeletionTimestamp() && controllerutil.ContainsFinalizer(manifest, shared.UnmanagedFinalizer) {
-		partialMeta := r.partialObjectMetadata(manifest)
-		partialMeta.SetFinalizers([]string{})
-		// TODO add specific metric?
-		return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
+	if manifest.IsUnmanaged() {
+		debugLog.Info("is unmanaged")
+		if manifest.HasDeletionTimestamp() {
+			debugLog.Info("has deletion timestamp: removing finalizers")
+			partialMeta := r.partialObjectMetadata(manifest)
+			partialMeta.SetFinalizers([]string{})
+			// TODO add specific metric?
+			return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
+		} else {
+			debugLog.Info("has no deletion timestamp: deleting manifest")
+			return r.deleteManifest(ctx, manifest)
+		}
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
+		debugLog.Info("has no deletion timestamp: ensuring finalizers has been set")
 		partialMeta := r.partialObjectMetadata(manifest)
 		if controllerutil.AddFinalizer(partialMeta, defaultFinalizer) {
 			return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)

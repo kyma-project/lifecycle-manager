@@ -5,5 +5,4 @@ const (
 	PurgeFinalizer           = OperatorGroup + Separator + "purge-finalizer"
 	WatcherFinalizer         = OperatorGroup + Separator + "watcher"
 	MandatoryModuleFinalizer = OperatorGroup + Separator + "mandatory-module"
-	UnmanagedFinalizer       = OperatorGroup + Separator + "unmanaged"
 )

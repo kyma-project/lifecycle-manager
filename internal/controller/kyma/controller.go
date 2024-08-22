@@ -277,6 +277,9 @@ func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma
 		return err
 	}
 	remote.ReplaceModules(controlPlaneKyma, remoteKyma)
+
+	logf.FromContext(ctx, "DEBUG", "KYMA").Info("controlPlaneKyma replaced from remote")
+	logf.FromContext(ctx, "DEBUG", "KYMA").Info("spec modules length: ", "intVal", len(controlPlaneKyma.Spec.Modules))
 	return nil
 }
 

@@ -57,7 +57,9 @@ func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
 		anns = make(map[string]string)
 	}
 	anns[shared.FQDN] = m.FQDN
-	// anns[shared.Unmanaged] = strconv.FormatBool(m.IsUnmanaged)
+	if m.IsUnmanaged {
+		anns[shared.UnmanagedAnnotation] = shared.EnableLabelValue
+	}
 	m.SetAnnotations(anns)
 }
 

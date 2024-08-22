@@ -124,6 +124,34 @@ func (manifest *Manifest) SetStatus(status shared.Status) {
 	manifest.Status = status
 }
 
+func (manifest *Manifest) IsUnmanaged() bool {
+	return manifest.GetAnnotations() != nil && manifest.GetAnnotations()[shared.UnmanagedAnnotation] != ""
+}
+
+//func (manifest *Manifest) SetUnmanaged() {
+//	if manifest.GetAnnotations() == nil {
+//		manifest.SetAnnotations(map[string]string{})
+//	}
+//
+//	manifest.GetAnnotations()[shared.UnmanagedAnnotation] = shared.EnableLabelValue
+//
+//	return
+//}
+//
+//func (manifest *Manifest) SetManaged() {
+//	annotations := manifest.GetAnnotations()
+//	if annotations == nil {
+//		return
+//	}
+//	delete(annotations, shared.UnmanagedAnnotation)
+//	manifest.SetAnnotations(annotations)
+//	return
+//}
+
+func (manifest *Manifest) IsMandatoryModule() bool {
+	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.IsMandatoryModule] == shared.EnableLabelValue
+}
+
 // +kubebuilder:object:root=true
 
 // ManifestList contains a list of Manifest.
