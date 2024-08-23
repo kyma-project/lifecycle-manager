@@ -25,6 +25,7 @@ spec:
       operator.kyma-project.io/managed-by: "lifecycle-manager"
   privateKey:
     algorithm: RSA
+    size: 4096
   issuerRef:
     name: klm-watcher-selfsigned
     kind: ClusterIssuer
