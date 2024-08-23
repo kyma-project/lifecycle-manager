@@ -153,6 +153,7 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	ref apimetav1.OwnerReference,
 	refGV schema.GroupVersion,
 ) {
+	e.Log.Info("start RestrictedEnqueueRequestForOwner")
 	// Compare the OwnerReference Group and Kind against the OwnerType Group and Kind specified by the user.
 	// If the two match, create a Request for the objected referred to by
 	// the OwnerReference.  Use the Name from the OwnerReference and the Namespace from the
@@ -162,9 +163,11 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	}
 
 	// Match found - add a Request for the object referred to in the OwnerReference
-	request := reconcile.Request{NamespacedName: types.NamespacedName{
-		Name: ref.Name,
-	}}
+	request := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name: ref.Name,
+		},
+	}
 
 	// if owner is not namespaced then we should set the namespace to the empty
 	mapping, err := e.mapper.RESTMapping(e.groupKind, refGV.Version)
@@ -182,16 +185,17 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 		oldState, okOld, _ := unstructured.NestedString(componentOld, "status", "state")
 		newState, okNew, _ := unstructured.NestedString(componentNew, "status", "state")
 
-		if err != nil || !okNew || !okOld {
+		if !okNew || !okOld {
 			e.Log.Error(err, "error getting owner")
 		}
 
 		if oldState != newState {
+			e.Log.Info("RestrictedEnqueueRequestForOwner enqueue request due to state change", "request", request)
 			result[request] = ref
 		}
 		return
 	}
-
+	e.Log.Info("RestrictedEnqueueRequestForOwner enqueue request", "request", request)
 	result[request] = ref
 }
 
