@@ -24,6 +24,7 @@ spec:
     labels:
       operator.kyma-project.io/managed-by: "lifecycle-manager"
   privateKey:
+    rotationPolicy: Always
     algorithm: RSA
     size: 4096
   issuerRef:
