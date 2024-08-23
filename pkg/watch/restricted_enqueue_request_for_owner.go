@@ -159,7 +159,8 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	// the OwnerReference.  Use the Name from the OwnerReference and the Namespace from the
 	// object in the event.
 	if ref.Kind != e.groupKind.Kind || refGV.Group != e.groupKind.Group {
-		e.Log.Info("RestrictedEnqueueRequestForOwner", "groupKind", e.groupKind, "ref.Kind", ref.Kind, "refGV.Group",
+		e.Log.Info("RestrictedEnqueueRequestForOwner", "groupKind.Kind", e.groupKind.Kind, "groupKind.Group",
+			e.groupKind.Group, "ref.Kind", ref.Kind, "refGV.Group",
 			refGV.Group)
 		return
 	}
