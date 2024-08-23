@@ -159,6 +159,8 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	// the OwnerReference.  Use the Name from the OwnerReference and the Namespace from the
 	// object in the event.
 	if ref.Kind != e.groupKind.Kind || refGV.Group != e.groupKind.Group {
+		e.Log.Info("RestrictedEnqueueRequestForOwner", "groupKind", e.groupKind, "ref.Kind", ref.Kind, "refGV.Group",
+			refGV.Group)
 		return
 	}
 
@@ -172,7 +174,7 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	// if owner is not namespaced then we should set the namespace to the empty
 	mapping, err := e.mapper.RESTMapping(e.groupKind, refGV.Version)
 	if err != nil {
-		e.Log.Error(err, "Could not retrieve rest mapping", "kind", e.groupKind)
+		e.Log.Error(err, "RestrictedEnqueueRequestForOwner Could not retrieve rest mapping", "kind", e.groupKind)
 		return
 	}
 	if mapping.Scope.Name() != meta.RESTScopeNameRoot {
