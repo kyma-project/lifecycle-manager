@@ -334,6 +334,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		AdditionalDNSNames:  strings.Split(flagVar.AdditionalDNSNames, ","),
 		Duration:            flagVar.SelfSignedCertDuration,
 		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
+		KeySize:             flagVar.SelfSignedCertKeySize,
 	}
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,
