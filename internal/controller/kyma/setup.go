@@ -57,12 +57,10 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
 
-	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{},
-		predicate.ResourceVersionChangedPredicate{})
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
-		WithEventFilter(predicates).
+		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
 		Watches(&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
