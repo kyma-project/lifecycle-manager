@@ -150,6 +150,7 @@ func (p *Parser) newManifestFromTemplate(
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	manifest.Spec.Remote = p.inKCPMode
+	manifest.Spec.Channel = module.Channel
 
 	switch module.CustomResourcePolicy {
 	case v1beta2.CustomResourcePolicyIgnore:
