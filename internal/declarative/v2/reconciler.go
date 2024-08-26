@@ -142,15 +142,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.IsUnmanaged() {
-		debugLog.Info("is unmanaged")
-		if manifest.HasDeletionTimestamp() {
-			debugLog.Info("has deletion timestamp: removing finalizers")
-			manifest.SetFinalizers([]string{})
-			return r.updateManifest(ctx, manifest, metrics.ManifestUnmanagedUpdate)
-		} else {
-			debugLog.Info("has no deletion timestamp: deleting manifest")
-			return r.deleteManifest(ctx, manifest)
-		}
+		manifest.SetFinalizers([]string{})
+		return r.updateManifest(ctx, manifest, metrics.ManifestUnmanagedUpdate)
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
@@ -709,14 +702,14 @@ func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manif
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *Reconciler) deleteManifest(ctx context.Context, manifest *v1beta2.Manifest) (ctrl.Result, error) {
-	if err := r.Delete(ctx, manifest); err != nil {
-		return ctrl.Result{Requeue: true}, fmt.Errorf("failed to delete manifest when unmanaging: %w", err)
-	}
-
-	// TODO event, metrics, etc.
-	return ctrl.Result{}, nil
-}
+//func (r *Reconciler) deleteManifest(ctx context.Context, manifest *v1beta2.Manifest) (ctrl.Result, error) {
+//	if err := r.Delete(ctx, manifest); err != nil {
+//		return ctrl.Result{Requeue: true}, fmt.Errorf("failed to delete manifest when unmanaging: %w", err)
+//	}
+//
+//	// TODO event, metrics, etc.
+//	return ctrl.Result{}, nil
+//}
 
 func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name string) {
 	duration := time.Since(startTime)

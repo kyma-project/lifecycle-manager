@@ -143,13 +143,13 @@ func (r *Runner) patchOrUpdateManifest(ctx context.Context,
 		manifestInCluster = nil
 	}
 
-	//if manifestInCluster != nil && module.IsUnmanaged && manifestInCluster.IsUnmanaged() {
-	//	r.deleteManifest(ctx, )
-	//}
+	if manifestInCluster != nil && module.IsUnmanaged && manifestInCluster.IsUnmanaged() {
+		return r.deleteManifest(ctx, module)
+	}
 
 	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus, module) {
 		// Point to the current state from the cluster for the outside sync of the manifest
-		*manifestObj = *manifestInCluster
+		manifestObj = manifestInCluster
 		return nil
 	}
 	if module.Enabled {
@@ -191,6 +191,9 @@ func (r *Runner) updateManifestForDisabledModule(ctx context.Context, manifestOb
 func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus *v1beta2.ModuleStatus,
 	module *common.Module,
 ) bool {
+	if manifestInCluster == nil && module.IsUnmanaged {
+		return false
+	}
 	if manifestInCluster == nil || moduleStatus == nil { // moduleStatus is nil in case of mandatory module
 		return true
 	}
