@@ -194,6 +194,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: (24 * time.Hour).String(),
 		},
 		{
+			constName:     "DefaultSelfSignedCertKeySize",
+			constValue:    strconv.Itoa(int(DefaultSelfSignedCertKeySize)),
+			expectedValue: "4096",
+		},
+		{
 			constName:     "DefaultMetricsAddress",
 			constValue:    DefaultMetricsAddress,
 			expectedValue: ":8080",

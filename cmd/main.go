@@ -265,9 +265,9 @@ func enableWebhooks(mgr manager.Manager, setupLog logr.Logger) {
 
 func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	return ctrlruntime.Options{
-		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(flagVar.FailureBaseDelay, flagVar.FailureMaxDelay),
-			&workqueue.BucketRateLimiter{
+		RateLimiter: workqueue.NewTypedMaxOfRateLimiter(
+			workqueue.NewTypedItemExponentialFailureRateLimiter[ctrl.Request](flagVar.FailureBaseDelay, flagVar.FailureMaxDelay),
+			&workqueue.TypedBucketRateLimiter[ctrl.Request]{
 				Limiter: rate.NewLimiter(rate.Limit(flagVar.RateLimiterFrequency), flagVar.RateLimiterBurst),
 			},
 		),
@@ -334,6 +334,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		AdditionalDNSNames:  strings.Split(flagVar.AdditionalDNSNames, ","),
 		Duration:            flagVar.SelfSignedCertDuration,
 		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
+		KeySize:             flagVar.SelfSignedCertKeySize,
 	}
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,

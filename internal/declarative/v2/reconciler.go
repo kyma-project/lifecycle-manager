@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -130,7 +129,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
 
-	if manifest.GetLabels() != nil && manifest.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
+	if manifest.IsMandatoryModule() {
 		state := manifest.GetStatus().State
 		kymaName := manifest.GetLabels()[shared.KymaName]
 		moduleName := manifest.GetLabels()[shared.ModuleName]
@@ -702,7 +701,7 @@ func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name stri
 }
 
 func (r *Reconciler) cleanUpMandatoryModuleMetrics(manifest *v1beta2.Manifest) {
-	if manifest.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true) {
+	if manifest.IsMandatoryModule() {
 		kymaName := manifest.GetLabels()[shared.KymaName]
 		moduleName := manifest.GetLabels()[shared.ModuleName]
 		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)

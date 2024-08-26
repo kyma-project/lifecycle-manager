@@ -324,11 +324,11 @@ func expectEveryManifestToHaveChannel(kymaName, kymaNamespace, channel string) e
 		return err
 	}
 	for _, module := range kyma.Spec.Modules {
-		component, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
+		manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		if err != nil {
 			return err
 		}
-		manifestChannel, found := component.Labels[shared.ChannelLabel]
+		manifestChannel, found := manifest.GetChannel()
 		if found {
 			if manifestChannel != channel {
 				return fmt.Errorf(
@@ -351,11 +351,11 @@ func expectModuleManifestToHaveChannel(kymaName, kymaNamespace, moduleName, chan
 		return err
 	}
 
-	component, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), moduleName)
+	manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), moduleName)
 	if err != nil {
 		return err
 	}
-	manifestChannel, found := component.Labels[shared.ChannelLabel]
+	manifestChannel, found := manifest.GetChannel()
 	if found {
 		if manifestChannel != channel {
 			return fmt.Errorf(

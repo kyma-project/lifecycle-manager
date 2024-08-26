@@ -48,6 +48,7 @@ const (
 	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
+	DefaultSelfSignedCertKeySize                                        = 4096
 	DefaultRemoteSyncNamespace                                          = "kyma-system"
 	DefaultMetricsAddress                                               = ":8080"
 	DefaultProbeAddress                                                 = ":8081"
@@ -65,9 +66,10 @@ const (
 )
 
 var (
-	errMissingWatcherImageTag      = errors.New("runtime watcher image tag is not provided")
-	errWatcherDirNotExist          = errors.New("failed to locate watcher resource manifest folder")
-	errLeaderElectionTimeoutConfig = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
+	errMissingWatcherImageTag         = errors.New("runtime watcher image tag is not provided")
+	errWatcherDirNotExist             = errors.New("failed to locate watcher resource manifest folder")
+	errLeaderElectionTimeoutConfig    = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
+	errInvalidSelfSignedCertKeyLenght = errors.New("invalid self-signed-cert-key-size: must be 4096")
 )
 
 //nolint:funlen // defines all program flags
@@ -211,6 +213,8 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBuffer, "self-signed-cert-renew-buffer",
 		DefaultSelfSignedCertificateRenewBuffer,
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
+	flag.IntVar(&flagVar.SelfSignedCertKeySize, "self-signed-cert-key-size", DefaultSelfSignedCertKeySize,
+		"The key size for the self-signed certificate")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", DefaultDropStoredVersion,
 		"The API version to be dropped from the storage versions")
@@ -288,6 +292,7 @@ type FlagVar struct {
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
+	SelfSignedCertKeySize                  int
 	DropStoredVersion                      string
 	DropCrdStoredVersionMap                string
 	UseWatcherDevRegistry                  bool
@@ -314,6 +319,14 @@ func (f FlagVar) Validate() error {
 
 	if f.LeaderElectionRenewDeadline >= f.LeaderElectionLeaseDuration {
 		return fmt.Errorf("%w (%.1f[s])", errLeaderElectionTimeoutConfig, f.LeaderElectionLeaseDuration.Seconds())
+	}
+
+	if !map[int]bool{
+		2048: false, // 2048 is a valid value for cert-manager, but explicitly prohibited as not compliant to security requirements
+		4096: true,
+		8192: false, // see https://github.com/kyma-project/lifecycle-manager/issues/1793
+	}[f.SelfSignedCertKeySize] {
+		return errInvalidSelfSignedCertKeyLenght
 	}
 
 	return nil

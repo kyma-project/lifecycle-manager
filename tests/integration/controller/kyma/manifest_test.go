@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
@@ -95,7 +94,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 
 		By("Update Module Template spec")
 		var moduleTemplateFromFile v1beta2.ModuleTemplate
-		builder.ReadComponentDescriptorFromFile("operator_v1beta2_moduletemplate_kcp-module_updated.yaml", &moduleTemplateFromFile)
+		builder.ReadComponentDescriptorFromFile("operator_v1beta2_moduletemplate_kcp-module_updated.yaml",
+			&moduleTemplateFromFile)
 
 		moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
 		err := kcpClient.Get(ctx, client.ObjectKey{
@@ -335,7 +335,8 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 	moduleReferencedWithLabel := NewTestModuleWithFixName("random-module", v1beta2.DefaultChannel)
 	moduleReferencedWithNamespacedName := NewTestModuleWithFixName(
 		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
-	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module", v1beta2.DefaultChannel)
+	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module",
+		v1beta2.DefaultChannel)
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -459,12 +460,10 @@ func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 		return fmt.Errorf("Unexpected Repository Type: %T", typedRepo)
 	}
 
-	ociRepoSpec, typeOk := concreteRepo.RepositorySpec.(*ocireg.RepositorySpec)
-	if !typeOk {
-		return fmt.Errorf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec)
+	repositoryBaseURL := concreteRepo.Name()
+	if concreteRepo.SubPath != "" {
+		repositoryBaseURL = concreteRepo.Name() + "/" + concreteRepo.SubPath
 	}
-
-	repositoryBaseURL := ociRepoSpec.BaseURL
 	expectedSourceRepo := repositoryBaseURL + "/" + componentmapping.ComponentDescriptorNamespace
 
 	if actualSourceRepo != expectedSourceRepo {
