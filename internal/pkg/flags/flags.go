@@ -19,6 +19,9 @@ const (
 	DefaultManifestRequeueErrInterval                                   = 2 * time.Second
 	DefaultManifestRequeueWarningInterval                               = 30 * time.Second
 	DefaultManifestRequeueBusyInterval                                  = 5 * time.Second
+	DefaultManifestRequeueJitterProbability                             = 0.02
+	DefaultManifestRequeueJitterPercentage                              = 0.02
+	DefaultManifestRequeueJitterDisableAfter                            = 24 * time.Hour
 	DefaultMandatoryModuleRequeueSuccessInterval                        = 30 * time.Second
 	DefaultMandatoryModuleDeletionRequeueSuccessInterval                = 30 * time.Second
 	DefaultWatcherRequeueSuccessInterval                                = 30 * time.Second
@@ -131,6 +134,16 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.ManifestRequeueBusyInterval, "manifest-requeue-busy-interval",
 		DefaultManifestRequeueBusyInterval,
 		"determines the duration a Manifest in Processing state is enqueued for reconciliation.")
+	flag.Float64Var(&flagVar.ManifestRequeueJitterProbability, "manifest-requeue-jitter-probability",
+		DefaultManifestRequeueJitterProbability,
+		"determines the probability that jitter is applied to the requeue interval.")
+	flag.Float64Var(&flagVar.ManifestRequeueJitterPercentage, "manifest-requeue-jitter-percentage",
+		DefaultManifestRequeueJitterPercentage,
+		"determines the percentage range for the requeue jitter applied to the requeue interval. "+
+			"E.g., 0.1 means +/- 10% of the interval.")
+	flag.DurationVar(&flagVar.ManifestRequeueJitterDisableAfter, "manifest-requeue-jitter-disable-after-seconds",
+		DefaultManifestRequeueJitterDisableAfter,
+		"determines the duration in seconds after which requeue jitter is disabled.")
 	flag.DurationVar(&flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
 		"mandatory-module-deletion-requeue-success-interval",
 		DefaultMandatoryModuleDeletionRequeueSuccessInterval,
@@ -283,6 +296,9 @@ type FlagVar struct {
 	WatcherResourceLimitsCPU               string
 	WatcherResourcesPath                   string
 	MetricsCleanupIntervalInMinutes        int
+	ManifestRequeueJitterProbability       float64
+	ManifestRequeueJitterPercentage        float64
+	ManifestRequeueJitterDisableAfter      time.Duration
 }
 
 func (f FlagVar) Validate() error {
