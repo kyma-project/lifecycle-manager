@@ -406,7 +406,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			Warning: flagVar.ManifestRequeueWarningInterval,
 			Jitter: &queue.RequeueJitter{
 				Enabled:           false,
-				StartedAt:         time.Time{},
+				StartedAt:         time.Now(),
 				DisableAfter:      flagVar.ManifestRequeueJitterDisableAfter,
 				JitterProbability: flagVar.ManifestRequeueJitterProbability,
 				JitterPercentage:  flagVar.ManifestRequeueJitterPercentage,
