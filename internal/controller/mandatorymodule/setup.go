@@ -23,7 +23,7 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 		For(&v1beta2.Kyma{}).
 		Named(installationControllerName).
 		WithOptions(opts).
-		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
 		Watches(
 			&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewMandatoryTemplateChangeHandler(r).Watch()),
@@ -40,7 +40,7 @@ func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime
 		For(&v1beta2.ModuleTemplate{}).
 		Named(deletionControllerName).
 		WithOptions(opts).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module deletion controller: %w", err)
 	}

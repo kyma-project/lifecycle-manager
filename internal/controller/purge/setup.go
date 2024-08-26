@@ -17,7 +17,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
-		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for purge controller: %w", err)
 	}
