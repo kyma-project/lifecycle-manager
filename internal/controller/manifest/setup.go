@@ -63,7 +63,8 @@ func SetupWithManager(mgr manager.Manager,
 
 	addSkrEventToQueueFunc := &handler.Funcs{
 		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
-			queue workqueue.TypedRateLimitingInterface[ctrl.Request]) {
+			queue workqueue.TypedRateLimitingInterface[ctrl.Request],
+		) {
 			ctrl.Log.WithName("listener").Info(
 				fmt.Sprintf(
 					"event coming from SKR, adding %s to queue",
