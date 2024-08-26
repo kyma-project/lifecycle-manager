@@ -56,8 +56,9 @@ func (j *RequeueJitter) Apply(interval time.Duration) time.Duration {
 		return interval
 	}
 
+	//nolint:gosec
 	if rand.Float64() < j.JitterProbability {
-		jitter := rand.Float64()*(2*j.JitterPercentage) - j.JitterPercentage
+		jitter := rand.Float64()*(2*j.JitterPercentage) - j.JitterPercentage //nolint:gosec
 		return time.Duration(float64(interval) * (1 + jitter))
 	}
 
