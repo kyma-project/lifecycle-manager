@@ -19,10 +19,6 @@ type AvailableModule struct {
 	ValidationError error
 }
 
-func (a AvailableModule) IsValid() error {
-	return a.ValidationError
-}
-
 func (a AvailableModule) IsInstalledByVersion() bool {
 	return a.configuredWithVersionInSpec() || a.installedwithVersionInStatus()
 }

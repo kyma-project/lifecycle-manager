@@ -51,8 +51,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		if found {
 			continue
 		}
-		moduleValidationError := module.IsValid()
-		if moduleValidationError != nil {
+		if module.ValidationError != nil {
 			templates[module.Name] = &ModuleTemplateInfo{Err: module.ValidationError}
 			continue
 		}
