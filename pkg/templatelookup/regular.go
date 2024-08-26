@@ -317,7 +317,7 @@ func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
 		return template.Spec.ModuleName == name
 	}
 
-	// Drop the legacyCondition once the label 'shared.ModuleName' is removed
+	// Drop the legacyCondition once the label 'shared.ModuleName' is removed: https://github.com/kyma-project/lifecycle-manager/issues/1796
 	if template.Labels == nil {
 		return false
 	}
