@@ -56,9 +56,10 @@ func (j *RequeueJitter) Apply(interval time.Duration) time.Duration {
 		return interval
 	}
 
-	//nolint:gosec
+	//nolint:gosec // No simple way to generate a float in crypto/rand lib and this is not a security-sensitive context
 	if rand.Float64() < j.JitterProbability {
-		jitter := rand.Float64()*(2*j.JitterPercentage) - j.JitterPercentage //nolint:gosec
+		//nolint:gosec,gomnd // gosec: Same as above and gomnd: 2 is part of the formula
+		jitter := rand.Float64()*(2*j.JitterPercentage) - j.JitterPercentage
 		return time.Duration(float64(interval) * (1 + jitter))
 	}
 
