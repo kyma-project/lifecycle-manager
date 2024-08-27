@@ -240,7 +240,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 }
 
 func (m *SKRWebhookManifestManager) getBaseClientObjects() []client.Object {
-	if m.baseResources == nil || len(m.baseResources) == 0 {
+	if len(m.baseResources) == 0 {
 		return nil
 	}
 	baseClientObjects := make([]client.Object, 0)

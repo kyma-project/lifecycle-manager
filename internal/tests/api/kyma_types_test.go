@@ -50,7 +50,6 @@ func TestKyma_DetermineState(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			kyma := testutils.NewTestKyma("test-kyma")

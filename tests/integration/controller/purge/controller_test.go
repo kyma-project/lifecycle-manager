@@ -32,7 +32,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
-				for i := 0; i < 2; i++ {
+				for range 2 {
 					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break
@@ -95,7 +95,7 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
-				for i := 0; i < 2; i++ {
+				for range 2 {
 					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break
@@ -154,8 +154,7 @@ var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
-				// 5 Retries
-				for i := 0; i < 5; i++ {
+				for range 5 {
 					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break

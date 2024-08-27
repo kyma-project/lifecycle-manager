@@ -42,7 +42,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 
 	var err error
 	item := c.Cache.Get(key)
-	resources := internal.ManifestResources{}
+	var resources internal.ManifestResources
 	if item != nil {
 		resources = item.Value()
 	} else {

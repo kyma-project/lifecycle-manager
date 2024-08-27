@@ -249,18 +249,18 @@ func createScheme(t *testing.T) *machineryruntime.Scheme {
 }
 
 func createGateways() *istioclientapiv1beta1.GatewayList {
-	gateways := []*istioclientapiv1beta1.Gateway{}
-	for gatewayIndex := 0; gatewayIndex < 3; gatewayIndex++ {
+	gateways := make([]*istioclientapiv1beta1.Gateway, 0, 3)
+	for gatewayIndex := range 3 {
 		gateway := &istioclientapiv1beta1.Gateway{}
 		gateway.SetName(fmt.Sprintf("gateway-name-%v", gatewayIndex))
 		gateway.SetNamespace(random.Name())
 
-		servers := []*istioapiv1beta1.Server{}
-		for serverIndex := 0; serverIndex < 3; serverIndex++ {
+		var servers []*istioapiv1beta1.Server
+		for serverIndex := range 3 {
 			server := istioapiv1beta1.Server{}
 
-			hosts := []string{}
-			for hostIndex := 0; hostIndex < 3; hostIndex++ {
+			var hosts []string
+			for hostIndex := range 3 {
 				hosts = append(hosts, fmt.Sprintf("%v-%v-%v.localhost", gatewayIndex, serverIndex, hostIndex))
 			}
 			server.Hosts = hosts

@@ -55,7 +55,6 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			kcpKyma := createKyma(testCase.kcpKyma.channel, testCase.kcpKyma.modules)
