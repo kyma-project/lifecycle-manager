@@ -520,20 +520,3 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 		return nil
 	}
 }
-
-func expectKymaStatusHasError(kymaName, kymaNamespace, errMsg string) error {
-	kyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
-	if err != nil {
-		return err
-	}
-
-	if kyma.Status.State != shared.StateError {
-		return fmt.Errorf("Kyma status mismatch: expected %s, got %s", shared.StateError, kyma.Status.State)
-	}
-
-	if kyma.Status.LastOperation.Operation != errMsg {
-		return fmt.Errorf("operation mismatch: expected %s, got %s", errMsg, kyma.Status.LastOperation.Operation)
-	}
-	// operation: 'invalid kyma spec: channel: value "none" is not allowed in spec.channel'
-	return nil
-}
