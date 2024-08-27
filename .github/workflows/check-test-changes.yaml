@@ -17,16 +17,13 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const github = require('@actions/github');
-            const context = github.context;
-
-            const { data: pullRequest } = await github.pulls.get({
+            const { data: pullRequest } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             });
 
-            const { data: files } = await github.pulls.listFiles({
+            const { data: files } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
@@ -38,7 +35,7 @@ jobs:
 
       - name: Check for test changes
         run: |
-          if [ "${{ steps.changed-files.outputs.testFiles }}" == "[]" ]; then
+          if [ "${{ steps.changed-files.outputs.testFiles }}" == "" ]; then
             echo "No test files have been added or modified in this PR."
             exit 1
           else
