@@ -4,12 +4,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsEmptyKymaLabel(t *testing.T) {
@@ -19,7 +18,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsEmptyKyma
 	module.ApplyDefaultMetaToManifest(kyma)
 
 	resultLabels := module.GetLabels()
-	assert.Equal(t, resultLabels["operator.kyma-project.io/kyma-name"], "")
+	assert.Equal(t, "", resultLabels["operator.kyma-project.io/kyma-name"])
 }
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsKymaLabelSet(t *testing.T) {
@@ -30,7 +29,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsKymaLabel
 	module.ApplyDefaultMetaToManifest(kyma)
 
 	resultLabels := module.GetLabels()
-	assert.Equal(t, resultLabels["operator.kyma-project.io/kyma-name"], "some-kyma-name")
+	assert.Equal(t, "some-kyma-name", resultLabels["operator.kyma-project.io/kyma-name"])
 }
 
 func createModule() *common.Module {

@@ -145,8 +145,10 @@ func (r *Runner) patchOrUpdateManifest(ctx context.Context,
 	}
 
 	if !NeedToUpdate(manifestInCluster, manifestObj, kymaModuleStatus, module) {
-		// Point to the current state from the cluster for the outside sync of the manifest
-		manifestObj = manifestInCluster
+		if manifestInCluster != nil {
+			// Point to the current state from the cluster for the outside sync of the manifest
+			*manifestObj = *manifestInCluster
+		}
 		return nil
 	}
 	if module.Enabled {
@@ -308,7 +310,6 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		State:   manifestObject.Status.State,
 		Channel: module.Template.Spec.Channel,
 		Version: manifestObject.Spec.Version,
-		// TODO remove manifest in case of unmanaged module
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
 				Name:       manifestObject.GetName(),
@@ -317,7 +318,6 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			},
 			TypeMeta: apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
-		// TODO remove template in case of unmanaged module
 		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
 				Name:       module.Template.GetName(),
@@ -326,12 +326,14 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			},
 			TypeMeta: apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
-		// TODO remove resource in case of unmanaged module
 		Resource: moduleResource,
 	}
 
 	if module.IsUnmanaged {
 		moduleStatus.State = shared.StateUnmanaged
+		moduleStatus.Manifest = nil
+		moduleStatus.Template = nil
+		moduleStatus.Resource = nil
 	}
 
 	return moduleStatus
