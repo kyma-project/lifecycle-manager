@@ -24,7 +24,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	var caCertificate *certmanagerv1.Certificate
 	caCertName := "klm-watcher-serving"
 
-	Context("Given KCP Cluster and rotated CA certificate", func() {
+	Context("Given KCP Cluster and rotated CA certificate updated", func() {
 		kcpSecretName := types.NamespacedName{
 			Name:      kyma.Name + "-webhook-tls",
 			Namespace: "istio-system",
