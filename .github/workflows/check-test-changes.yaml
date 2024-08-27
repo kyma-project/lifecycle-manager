@@ -28,9 +28,7 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             });
-            console.log("files", files)
             const testFiles = files.filter(file => file.filename.includes('_test.go'));
-            console.log("testFiles", testFiles)
             core.setOutput('testFiles', testFiles.map(file => file.filename).join(','));
 
       - name: Check for test changes
