@@ -2,11 +2,12 @@ package sync_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -207,30 +208,36 @@ func TestNeedToUpdate(t *testing.T) {
 	}{
 		{
 			"When manifest in cluster is nil, expect need to update",
-			args{nil,
+			args{
+				nil,
 				&v1beta2.Manifest{},
 				&v1beta2.ModuleStatus{},
-				&common.Module{}},
+				&common.Module{},
+			},
 			true,
 		},
 		{
 			"When manifest in cluster is nil and module is unmanaged, expect no update",
-			args{nil,
+			args{
+				nil,
 				&v1beta2.Manifest{},
 				&v1beta2.ModuleStatus{},
 				&common.Module{
 					IsUnmanaged: true,
-				}},
+				},
+			},
 			false,
 		},
 		{
 			"When module status is nil, expect need to update",
-			args{&v1beta2.Manifest{},
+			args{
+				&v1beta2.Manifest{},
 				&v1beta2.Manifest{},
 				nil,
 				&common.Module{
 					IsUnmanaged: true,
-				}},
+				},
+			},
 			true,
 		},
 		{
