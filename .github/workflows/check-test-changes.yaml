@@ -31,7 +31,7 @@ jobs:
             console.log("files", files)
             const testFiles = files.filter(file => file.filename.includes('_test.go'));
             console.log("testFiles", testFiles)
-            return { testFiles: testFiles.map(file => file.filename) };
+            core.setOutput('testFiles', testFiles.map(file => file.filename).join(','));
 
       - name: Check for test changes
         run: |
