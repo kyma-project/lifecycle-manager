@@ -702,15 +702,6 @@ func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manif
 	return ctrl.Result{Requeue: true}, nil
 }
 
-//func (r *Reconciler) deleteManifest(ctx context.Context, manifest *v1beta2.Manifest) (ctrl.Result, error) {
-//	if err := r.Delete(ctx, manifest); err != nil {
-//		return ctrl.Result{Requeue: true}, fmt.Errorf("failed to delete manifest when unmanaging: %w", err)
-//	}
-//
-//	// TODO event, metrics, etc.
-//	return ctrl.Result{}, nil
-//}
-
 func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name string) {
 	duration := time.Since(startTime)
 	if duration >= 1*time.Minute {

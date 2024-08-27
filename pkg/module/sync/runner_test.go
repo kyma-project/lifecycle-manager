@@ -2,6 +2,8 @@ package sync_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"sort"
 	"strings"
 	"testing"
@@ -191,10 +193,10 @@ func configureModuleInKyma(
 
 func TestNeedToUpdate(t *testing.T) {
 	type args struct {
-		manifestInCluster  *v1beta2.Manifest
-		manifestObj        *v1beta2.Manifest
-		moduleStatus       *v1beta2.ModuleStatus
-		templateGeneration int64
+		manifestInCluster *v1beta2.Manifest
+		manifestObj       *v1beta2.Manifest
+		moduleStatus      *v1beta2.ModuleStatus
+		module            *common.Module
 	}
 	const trackedModuleTemplateGeneration = 1
 	const updatedModuleTemplateGeneration = 2
@@ -205,7 +207,30 @@ func TestNeedToUpdate(t *testing.T) {
 	}{
 		{
 			"When manifest in cluster is nil, expect need to update",
-			args{nil, &v1beta2.Manifest{}, &v1beta2.ModuleStatus{}, trackedModuleTemplateGeneration},
+			args{nil,
+				&v1beta2.Manifest{},
+				&v1beta2.ModuleStatus{},
+				&common.Module{}},
+			true,
+		},
+		{
+			"When manifest in cluster is nil and module is unmanaged, expect no update",
+			args{nil,
+				&v1beta2.Manifest{},
+				&v1beta2.ModuleStatus{},
+				&common.Module{
+					IsUnmanaged: true,
+				}},
+			false,
+		},
+		{
+			"When module status is nil, expect need to update",
+			args{&v1beta2.Manifest{},
+				&v1beta2.Manifest{},
+				nil,
+				&common.Module{
+					IsUnmanaged: true,
+				}},
 			true,
 		},
 		{
@@ -227,7 +252,15 @@ func TestNeedToUpdate(t *testing.T) {
 						},
 					},
 				},
-				trackedModuleTemplateGeneration,
+				&common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: trackedModuleTemplateGeneration,
+							},
+						},
+					},
+				},
 			},
 			true,
 		},
@@ -247,7 +280,15 @@ func TestNeedToUpdate(t *testing.T) {
 						},
 					},
 				},
-				trackedModuleTemplateGeneration,
+				&common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: trackedModuleTemplateGeneration,
+							},
+						},
+					},
+				},
 			},
 			true,
 		},
@@ -266,7 +307,43 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, trackedModuleTemplateGeneration,
+				}, &common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: trackedModuleTemplateGeneration,
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+		{
+			"When cluster Manifest and module managed state differ, expect need to update",
+			args{
+				&v1beta2.Manifest{
+					Status: shared.Status{
+						State: "Ready",
+					},
+				},
+				&v1beta2.Manifest{},
+				&v1beta2.ModuleStatus{
+					State: "Ready", Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				}, &common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: trackedModuleTemplateGeneration,
+							},
+						},
+					},
+					IsUnmanaged: true,
+				},
 			},
 			true,
 		},
@@ -291,7 +368,16 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, trackedModuleTemplateGeneration,
+				}, &common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: trackedModuleTemplateGeneration,
+							},
+						},
+					},
+					IsUnmanaged: false,
+				},
 			},
 			false,
 		},
@@ -316,7 +402,17 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, updatedModuleTemplateGeneration,
+				},
+				&common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: updatedModuleTemplateGeneration,
+							},
+						},
+					},
+					IsUnmanaged: false,
+				},
 			},
 			true,
 		},
@@ -324,7 +420,7 @@ func TestNeedToUpdate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.manifestObj,
-				tt.args.moduleStatus, tt.args.templateGeneration), "needToUpdate(%v, %v, %v)",
+				tt.args.moduleStatus, tt.args.module), "needToUpdate(%v, %v, %v)",
 				tt.args.manifestInCluster, tt.args.manifestObj,
 				tt.args.moduleStatus)
 		})

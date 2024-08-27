@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -104,12 +104,9 @@ func (r *Runner) getModule(ctx context.Context, module client.Object) error {
 func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	module *common.Module,
 ) error {
-	logf.FromContext(ctx, "DEBUG", "KYMA").Info("update manifest")
-	logf.FromContext(ctx, "DEBUG", "KYMA").Info("module IsUnmanaged", module.IsUnmanaged)
 	if err := r.setupModule(module, kyma); err != nil {
 		return err
 	}
-	logf.FromContext(ctx, "DEBUG", "KYMA").Info("setup module done")
 	obj, err := r.converter.ConvertToVersion(module.Manifest, r.versioner)
 	if err != nil {
 		return fmt.Errorf("failed to convert object to version: %w", err)
