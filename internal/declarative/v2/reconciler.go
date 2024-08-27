@@ -106,9 +106,6 @@ func newResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	debugLog := logf.FromContext(ctx).V(internal.DebugLogLevel).WithValues("DEBUG", "MANIFEST")
-	debugLog.Info("reconciliation started")
-
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
 
@@ -130,7 +127,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.initialize(manifest); err != nil {
-		debugLog.Info("initialize and finishReconcile")
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
 
@@ -147,7 +143,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
-		debugLog.Info("has no deletion timestamp: ensuring finalizers has been set")
 		partialMeta := r.partialObjectMetadata(manifest)
 		if controllerutil.AddFinalizer(partialMeta, defaultFinalizer) {
 			return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
