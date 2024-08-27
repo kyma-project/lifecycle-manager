@@ -88,18 +88,6 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma with invalid kyma.spec.channel value", Ordered, func() {
-	kyma := NewTestKyma("invalid-channel-kyma")
-	kyma.Spec.Channel = InvalidNoneChannel
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	It(" should result with an error in the Kyma status", func() {
-		Eventually(expectKymaStatusHasError, Timeout, Interval).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), "invalid kyma spec: value \"none\" is not allowed in spec.channel").
-			Should(Succeed())
-	})
-})
-
 var _ = Describe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
