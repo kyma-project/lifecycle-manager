@@ -58,24 +58,6 @@ func Test_getPodsState(t *testing.T) {
 		want    shared.State
 	}{
 		{
-			name: "Test Ready State",
-			podList: &apicorev1.PodList{
-				Items: []apicorev1.Pod{
-					{
-						Status: apicorev1.PodStatus{
-							ContainerStatuses: []apicorev1.ContainerStatus{
-								{
-									Ready:   true,
-									Started: ptr.To(true),
-								},
-							},
-						},
-					},
-				},
-			},
-			want: shared.StateReady,
-		},
-		{
 			name: "Test Processing State",
 			podList: &apicorev1.PodList{
 				Items: []apicorev1.Pod{
@@ -83,8 +65,9 @@ func Test_getPodsState(t *testing.T) {
 						Status: apicorev1.PodStatus{
 							ContainerStatuses: []apicorev1.ContainerStatus{
 								{
-									Ready:   false,
-									Started: ptr.To(true),
+									State: apicorev1.ContainerState{
+										Waiting: &apicorev1.ContainerStateWaiting{},
+									},
 								},
 							},
 						},
@@ -101,8 +84,11 @@ func Test_getPodsState(t *testing.T) {
 						Status: apicorev1.PodStatus{
 							ContainerStatuses: []apicorev1.ContainerStatus{
 								{
-									Ready:   false,
-									Started: ptr.To(false),
+									State: apicorev1.ContainerState{
+										Terminated: &apicorev1.ContainerStateTerminated{
+											ExitCode: 1,
+										},
+									},
 								},
 							},
 						},
@@ -112,18 +98,29 @@ func Test_getPodsState(t *testing.T) {
 			want: shared.StateError,
 		},
 		{
-			name: "Test Empty State",
+			name: "Test Ready State",
 			podList: &apicorev1.PodList{
 				Items: []apicorev1.Pod{
 					{
-						Status: apicorev1.PodStatus{},
+						Status: apicorev1.PodStatus{
+							ContainerStatuses: []apicorev1.ContainerStatus{
+								{
+									Ready: true,
+									State: apicorev1.ContainerState{
+										Terminated: &apicorev1.ContainerStateTerminated{
+											ExitCode: 0,
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
-			want: shared.StateError,
+			want: shared.StateReady,
 		},
 		{
-			name: "Test Empty Started Condition",
+			name: "Test Processing State with Ready set to false",
 			podList: &apicorev1.PodList{
 				Items: []apicorev1.Pod{
 					{
@@ -137,7 +134,24 @@ func Test_getPodsState(t *testing.T) {
 					},
 				},
 			},
-			want: shared.StateError,
+			want: shared.StateProcessing,
+		},
+		{
+			name: "Test Ready State with Ready set to true",
+			podList: &apicorev1.PodList{
+				Items: []apicorev1.Pod{
+					{
+						Status: apicorev1.PodStatus{
+							ContainerStatuses: []apicorev1.ContainerStatus{
+								{
+									Ready: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: shared.StateReady,
 		},
 	}
 	for _, tt := range tests {

@@ -35,8 +35,6 @@ func getStatefulSetState(ctx context.Context, clt declarativev2.Client,
 		return shared.StateReady
 	}
 
-	// Since statefulset is not ready, check if pods are ready or in error state
-	// Get all Pods associated with the StatefulSet
 	podList, err := getPodsForStatefulSet(ctx, clt, statefulSet)
 	if err != nil {
 		return shared.StateError
@@ -75,19 +73,19 @@ func getPodsList(ctx context.Context, clt declarativev2.Client, namespace string
 
 func GetPodsState(podList *apicorev1.PodList) shared.State {
 	for _, pod := range podList.Items {
-		for _, condition := range pod.Status.ContainerStatuses {
-			if condition.Started == nil {
+		for _, status := range pod.Status.ContainerStatuses {
+			if status.State.Waiting != nil {
+				return shared.StateProcessing
+			}
+
+			if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
 				return shared.StateError
 			}
-			switch {
-			case *condition.Started && condition.Ready:
-				return shared.StateReady
-			case *condition.Started && !condition.Ready:
+
+			if !status.Ready {
 				return shared.StateProcessing
-			default:
-				return shared.StateError
 			}
 		}
 	}
-	return shared.StateError
+	return shared.StateReady
 }
