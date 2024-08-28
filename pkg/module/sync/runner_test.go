@@ -72,6 +72,12 @@ func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			moduleStillExistsInClusterMock,
 			false,
 		},
+		{
+			"When status.modules asdf module in spec.module, expect RemoveModuleStateMetrics not called",
+			ModuleShouldKeep,
+			moduleStillExistsInClusterMock,
+			true,
+		},
 	}
 
 	for _, testCase := range tests {
