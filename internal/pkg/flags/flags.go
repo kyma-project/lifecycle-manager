@@ -19,8 +19,8 @@ const (
 	DefaultManifestRequeueErrInterval                                   = 2 * time.Second
 	DefaultManifestRequeueWarningInterval                               = 30 * time.Second
 	DefaultManifestRequeueBusyInterval                                  = 5 * time.Second
-	DefaultManifestRequeueJitterProbability                             = 0.02
-	DefaultManifestRequeueJitterPercentage                              = 0.02
+	DefaultManifestRequeueJitterProbability                             = 0.10
+	DefaultManifestRequeueJitterPercentage                              = 0.10
 	DefaultManifestRequeueJitterDisableAfter                            = 24 * time.Hour
 	DefaultMandatoryModuleRequeueSuccessInterval                        = 30 * time.Second
 	DefaultMandatoryModuleDeletionRequeueSuccessInterval                = 30 * time.Second
