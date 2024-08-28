@@ -76,7 +76,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 		It("When Kyma Module is set to managed again", func() {
 			Eventually(SetModuleManaged).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 		})
 
