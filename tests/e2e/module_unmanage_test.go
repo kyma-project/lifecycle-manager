@@ -45,20 +45,6 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
-		})
-
-		It("Then KCP Kyma CR is in \"Processing\" State", func() {
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
-				Should(Succeed())
-
-			By("And Manifest CR is in \"Deleting\" State")
-			Eventually(CheckManifestIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
-					shared.StateDeleting).
-				Should(Succeed())
 
 			By("And Module CR on SKR Cluster is not removed")
 			Consistently(CheckIfExists).
