@@ -47,7 +47,7 @@ func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates temp
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	for _, module := range templatelookup.GetAvailableModules(kyma) {
+	for _, module := range templatelookup.FindAvailableModules(kyma) {
 		template, found := templates[module.Name]
 		if found {
 			modules = p.appendModuleWithInformation(module, kyma, template, modules)

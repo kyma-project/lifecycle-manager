@@ -33,7 +33,8 @@ func (a AvailableModule) installedwithVersionInStatus() bool {
 	return !a.Enabled && shared.NoneChannel.Equals(a.Channel) && a.Version != ""
 }
 
-func GetAvailableModules(kyma *v1beta2.Kyma) []AvailableModule {
+// FindAvailableModules returns a list of AvailableModule objects based on the Kyma CR Spec and Status.
+func FindAvailableModules(kyma *v1beta2.Kyma) []AvailableModule {
 	moduleMap := make(map[string]bool)
 	modules := make([]AvailableModule, 0)
 	for _, module := range kyma.Spec.Modules {

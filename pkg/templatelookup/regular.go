@@ -46,7 +46,7 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
 
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
-	for _, module := range GetAvailableModules(kyma) {
+	for _, module := range FindAvailableModules(kyma) {
 		_, found := templates[module.Name]
 		if found {
 			continue

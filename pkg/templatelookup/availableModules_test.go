@@ -77,7 +77,7 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 				Spec: testcase.KymaSpec,
 			}
 
-			got := templatelookup.GetAvailableModules(kyma)
+			got := templatelookup.FindAvailableModules(kyma)
 			if len(got) != len(testcase.want) {
 				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
 			}
@@ -140,7 +140,7 @@ func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
 				Status: testcase.KymaStatus,
 			}
 
-			got := templatelookup.GetAvailableModules(kyma)
+			got := templatelookup.FindAvailableModules(kyma)
 			if len(got) != len(testcase.want) {
 				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
 			}
@@ -187,7 +187,7 @@ func Test_GetAvailableModules_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 				Spec:   testcase.KymaSpec,
 				Status: testcase.KymaStatus,
 			}
-			got := templatelookup.GetAvailableModules(kyma)
+			got := templatelookup.FindAvailableModules(kyma)
 			if len(got) != len(testcase.want) {
 				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
 			}
