@@ -32,6 +32,14 @@ runs:
       run: |
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+    - name: Create Template Operator Module for installation by version
+      working-directory: lifecycle-manager
+      if: ${{ matrix.e2e-test == 'module-install-by-version' }}
+      shell: bash
+      run: |
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_direct_version.yaml
     - name: Create Template Operator Module as Mandatory Module
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'mandatory-module' ||

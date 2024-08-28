@@ -385,54 +385,6 @@ func (kyma *Kyma) IsBeta() bool {
 	return found && strings.ToLower(beta) == shared.EnableLabelValue
 }
 
-type AvailableModule struct {
-	Module
-	Enabled bool
-	Valid   bool
-}
-
-func (kyma *Kyma) GetAvailableModules() []AvailableModule {
-	moduleMap := make(map[string]bool)
-	modules := make([]AvailableModule, 0)
-	for _, module := range kyma.Spec.Modules {
-		moduleMap[module.Name] = true
-		if strings.ToLower(module.Channel) == string(shared.NoneChannel) {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false})
-			continue
-		}
-		if module.Version != "" && module.Channel != "" {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false})
-			continue
-		}
-		modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: true})
-	}
-
-	for _, moduleInStatus := range kyma.Status.Modules {
-		_, exist := moduleMap[moduleInStatus.Name]
-		if exist {
-			continue
-		}
-
-		modules = append(modules, AvailableModule{
-			Module: Module{
-				Name:    moduleInStatus.Name,
-				Channel: moduleInStatus.Channel,
-				Version: moduleInStatus.Version,
-			},
-			Enabled: false,
-			Valid:   determineModuleValidity(moduleInStatus),
-		})
-	}
-	return modules
-}
-
-func determineModuleValidity(moduleStatus ModuleStatus) bool {
-	if moduleStatus.Template == nil {
-		return false
-	}
-	return true
-}
-
 func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
 		return false
