@@ -2,22 +2,14 @@ linters:
   enable-all: true
   disable:
     - contextcheck # too many false positives
-    - deadcode # deprecated (since v1.49.0) and replaced by 'unused'
     - depguard # checks if package imports are whitelisted
-    - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
     - exhaustruct # too subjective and harms code readability
-    - golint # deprecated (since v1.41.0) and replaced by 'revive'
-    - ifshort # deprecated (since v1.48.0)
-    - interfacer # deprecated (since v1.38.0)
+    - exportloopref # deprecated (since v1.60.2), replaced by copyloopvar
+    - gomnd # deprecated (since v1.58.0), renamed to mnd
     - lll
-    - maligned # deprecated (since v1.38.0)
     - nlreturn # too strict and mostly code is not more readable
-    - nosnakecase  # deprecated (since v1.48.1) and replaced by 'revive'
-    - scopelint # deprecated (since v1.39.0) and replaced by 'exportloopref'
-    - structcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - sqlclosecheck # not needed for this project
     - paralleltest # should be enabled consciously for long running tests
-    - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - wsl # too strict and mostly code is not more readable
 linters-settings:
   gomoddirectives:
@@ -172,18 +164,20 @@ linters-settings:
     exclude:
       - gdfs
 issues:
+  exclude-files:
+    - zz_generated.deepcopy.go
   exclude-rules:
     - path: "_test\\.go"
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration tests
-        - goerr113 # Dynamic error creation in unit and integration tests is sufficient
+        - err113 # Dynamic error creation in unit and integration tests is ok
         - gochecknoglobals # Does not apply to unit and integration tests
         - funlen # Table driven unit and integration tests exceed function length by design
         - maintidx # Table driven unit and integration tests exceed maintainability index by design
     - path: "pkg/testutils/"
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils
-        - goerr113 # Dynamic error creation in unit and integration test utils is sufficient
+        - err113 # Dynamic error creation in unit and integration test utils is ok
     - path: tests/e2e/
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - path: tests/integration/watcher/certificate_suite_test.go
@@ -207,5 +201,3 @@ output:
   sort-results: true
 run:
   timeout: 15m
-  skip-files:
-    - zz_generated.deepcopy.go

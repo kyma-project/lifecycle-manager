@@ -98,13 +98,12 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 	channelLength := len(diffsToDelete)
 	results := make(chan error, channelLength)
 	for _, diff := range diffsToDelete {
-		diff := diff
 		go func() {
 			results <- c.patchDiff(ctx, diff, syncContext, true)
 		}()
 	}
 	var errs []error
-	for i := 0; i < channelLength; i++ {
+	for range channelLength {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
 		}
@@ -127,14 +126,13 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
-		kcpIndex := kcpIndex
 		go func() {
 			c.prepareForSSA(&kcpModules[kcpIndex])
 			results <- c.patchDiff(ctx, &kcpModules[kcpIndex], syncContext, false)
 		}()
 	}
 	var errs []error
-	for i := 0; i < channelLength; i++ {
+	for range channelLength {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
 		}

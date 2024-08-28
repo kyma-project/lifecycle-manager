@@ -59,7 +59,6 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 	}
 
 	for i := range testCases {
-		i := i
 		t.Run(testCases[i].name, func(t *testing.T) {
 			got := cache.GenerateDescriptorKey(testCases[i].template)
 			assert.Equalf(t, testCases[i].want, got,

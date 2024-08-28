@@ -65,7 +65,6 @@ func GetManifest(ctx context.Context,
 
 	var manifestKey *v1beta2.TrackingObject
 	for _, module := range kyma.Status.Modules {
-		module := module
 		if module.Name == moduleName {
 			manifestKey = module.Manifest
 		}
@@ -259,7 +258,6 @@ func SetSkipLabelToMandatoryManifests(ctx context.Context, clnt client.Client, i
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
 	for _, manifest := range manifestList.Items {
-		manifest := manifest
 		manifest.Labels[shared.SkipReconcileLabel] = strconv.FormatBool(ifSkip)
 		err := clnt.Update(ctx, &manifest)
 		if err != nil {

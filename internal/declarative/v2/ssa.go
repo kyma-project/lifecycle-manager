@@ -49,13 +49,11 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	// The Runtime Complexity of this Branch is N as only ServerSideApplier Patch is required
 	results := make(chan error, len(resources))
 	for i := range resources {
-		i := i
 		go c.serverSideApply(ctx, resources[i], results)
 	}
 
 	var errs []error
-
-	for i := 0; i < len(resources); i++ {
+	for range len(resources) {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
 		}
@@ -83,7 +81,7 @@ func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
 	}
 
 	unauthorizedFound := 0
-	for i := 0; i < len(errs); i++ {
+	for i := range len(errs) {
 		if errors.Is(errs[i], ErrClientUnauthorized) {
 			unauthorizedFound++
 		}
