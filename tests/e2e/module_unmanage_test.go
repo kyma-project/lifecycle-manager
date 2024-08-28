@@ -51,7 +51,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
 					templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind), skrClient).
-				Should(Equal(ErrDeletionTimestampFound))
+				Should(Succeed())
 
 			By("And Module Operator Deployment is not removed on SKR cluster")
 			Consistently(CheckIfExists).
