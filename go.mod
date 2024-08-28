@@ -5,7 +5,7 @@ go 1.22.6
 replace github.com/kyma-project/lifecycle-manager/api => ./api
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/cert-manager/cert-manager v1.15.3
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
