@@ -344,6 +344,7 @@ func stateFromManifest(obj client.Object) shared.State {
 func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, moduleFunc GetModuleFunc,
 	metrics ModuleMetrics,
 ) {
+	logf.FromContext(ctx).Info("test")
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
