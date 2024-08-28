@@ -125,6 +125,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, v1beta2.Module{
 					Name:    "template-operator",
 					Channel: "regular",
+					Managed: true,
 				}).
 				Should(Succeed())
 		})

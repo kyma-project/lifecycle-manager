@@ -174,7 +174,8 @@ func configureModuleInKyma(
 ) {
 	for _, moduleName := range modulesInKymaSpec {
 		module := v1beta2.Module{
-			Name: moduleName,
+			Name:    moduleName,
+			Managed: true,
 		}
 		kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	}
