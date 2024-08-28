@@ -49,6 +49,10 @@ func NewTestModuleWithChannelVersion(name, channel, version string) v1beta2.Modu
 	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel, version)
 }
 
+func NewTemplateOperatorWithVersion(version string) v1beta2.Module {
+	return NewTestModuleWithFixName("template-operator", "", version)
+}
+
 func NewTemplateOperator(channel string) v1beta2.Module {
 	return NewTestModuleWithFixName("template-operator", channel, "")
 }

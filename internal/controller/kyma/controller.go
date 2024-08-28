@@ -48,7 +48,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-var ErrManifestsStillExist = errors.New("manifests still exist")
+var (
+	ErrManifestsStillExist = errors.New("manifests still exist")
+	ErrInvalidKymaSpec     = errors.New("invalid kyma spec")
+)
 
 const (
 	metricsError      event.Reason = "MetricsError"
@@ -266,6 +269,14 @@ func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Ky
 	return nil
 }
 
+// ValidateDefaultChannel validates the Kyma spec.
+func (r *Reconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
+	if shared.NoneChannel.Equals(kyma.Spec.Channel) {
+		return fmt.Errorf("%w: value \"none\" is not allowed in spec.channel", ErrInvalidKymaSpec)
+	}
+	return nil
+}
+
 // replaceSpecFromRemote replaces the spec from control-lane Kyma with the remote Kyma spec as single source of truth.
 func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
@@ -276,7 +287,12 @@ func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma
 		}
 		return err
 	}
-	remote.ReplaceModules(controlPlaneKyma, remoteKyma)
+
+	remote.ReplaceSpec(controlPlaneKyma, remoteKyma)
+
+	if err := r.ValidateDefaultChannel(controlPlaneKyma); err != nil {
+		return err
+	}
 
 	return nil
 }

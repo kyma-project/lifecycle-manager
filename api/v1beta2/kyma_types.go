@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -389,55 +387,6 @@ func (kyma *Kyma) IsInternal() bool {
 func (kyma *Kyma) IsBeta() bool {
 	beta, found := kyma.Labels[shared.BetaLabel]
 	return found && shared.IsEnabled(beta)
-}
-
-type AvailableModule struct {
-	Module
-	Enabled   bool
-	Unmanaged bool
-	Valid     bool
-}
-
-func (kyma *Kyma) GetAvailableModules() []AvailableModule {
-	moduleMap := make(map[string]bool)
-	modules := make([]AvailableModule, 0)
-	for _, module := range kyma.Spec.Modules {
-		moduleMap[module.Name] = true
-		if strings.ToLower(module.Channel) == string(shared.NoneChannel) {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false, Unmanaged: !module.Managed})
-			continue
-		}
-		if module.Version != "" && module.Channel != "" {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: false, Unmanaged: !module.Managed})
-			continue
-		}
-		modules = append(modules, AvailableModule{Module: module, Enabled: true, Valid: true, Unmanaged: !module.Managed})
-	}
-
-	for _, moduleInStatus := range kyma.Status.Modules {
-		_, exist := moduleMap[moduleInStatus.Name]
-		if exist {
-			continue
-		}
-
-		modules = append(modules, AvailableModule{
-			Module: Module{
-				Name:    moduleInStatus.Name,
-				Channel: moduleInStatus.Channel,
-				Version: moduleInStatus.Version,
-			},
-			Enabled: false,
-			Valid:   determineModuleValidity(moduleInStatus),
-		})
-	}
-	return modules
-}
-
-func determineModuleValidity(moduleStatus ModuleStatus) bool {
-	if moduleStatus.Template == nil {
-		return false
-	}
-	return true
 }
 
 func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
