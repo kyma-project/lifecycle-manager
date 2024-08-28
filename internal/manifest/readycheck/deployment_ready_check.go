@@ -1,4 +1,4 @@
-package manifest
+package readycheck
 
 import (
 	apiappsv1 "k8s.io/api/apps/v1"
@@ -30,10 +30,10 @@ func (c *DeploymentReadyCheck) Run(
 }
 
 func GetDeploymentState(deploy *apiappsv1.Deployment) shared.State {
-	progressingContition := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentProgressing)
+	progressingCondition := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentProgressing)
 	availableCondition := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentAvailable)
 
-	return determineDeploymentState(progressingContition, availableCondition)
+	return determineDeploymentState(progressingCondition, availableCondition)
 }
 
 func determineDeploymentState(progressingCondition, availableCondition *apiappsv1.DeploymentCondition) shared.State {

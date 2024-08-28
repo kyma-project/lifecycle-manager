@@ -1,4 +1,4 @@
-package manifest_test
+package readycheck_test
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/readycheck"
 )
 
 func Test_GetDeploymentState(t *testing.T) {
@@ -29,7 +29,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.NewRSAvailableReason,
+							Reason: readycheck.NewRSAvailableReason,
 						},
 					},
 				},
@@ -48,7 +48,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.NewReplicaSetReason,
+							Reason: readycheck.NewReplicaSetReason,
 						},
 					},
 				},
@@ -67,7 +67,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.FoundNewRSReason,
+							Reason: readycheck.FoundNewRSReason,
 						},
 					},
 				},
@@ -86,7 +86,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.ReplicaSetUpdatedReason,
+							Reason: readycheck.ReplicaSetUpdatedReason,
 						},
 					},
 				},
@@ -105,7 +105,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.ReplicaSetUpdatedReason,
+							Reason: readycheck.ReplicaSetUpdatedReason,
 						},
 					},
 				},
@@ -124,7 +124,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.NewReplicaSetReason,
+							Reason: readycheck.NewReplicaSetReason,
 						},
 					},
 				},
@@ -143,7 +143,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.FoundNewRSReason,
+							Reason: readycheck.FoundNewRSReason,
 						},
 					},
 				},
@@ -162,7 +162,7 @@ func Test_GetDeploymentState(t *testing.T) {
 						{
 							Type:   apiappsv1.DeploymentProgressing,
 							Status: apicorev1.ConditionTrue,
-							Reason: manifest.NewRSAvailableReason,
+							Reason: readycheck.NewRSAvailableReason,
 						},
 					},
 				},
@@ -249,7 +249,7 @@ func Test_GetDeploymentState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, manifest.GetDeploymentState(tt.deploy))
+			require.Equal(t, tt.expected, readycheck.GetDeploymentState(tt.deploy))
 		})
 	}
 }

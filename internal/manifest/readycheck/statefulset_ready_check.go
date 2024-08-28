@@ -1,4 +1,4 @@
-package manifest
+package readycheck
 
 import (
 	"context"
@@ -74,6 +74,10 @@ func getPodsList(ctx context.Context, clt declarativev2.Client, namespace string
 func GetPodsState(podList *apicorev1.PodList) shared.State {
 	for _, pod := range podList.Items {
 		for _, status := range pod.Status.ContainerStatuses {
+			if status.Started == nil {
+				return shared.StateError
+			}
+
 			if status.State.Waiting != nil {
 				return shared.StateProcessing
 			}
