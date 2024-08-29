@@ -12,7 +12,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
+var _ = FDescribe("Unmanaging Kyma Module", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -46,7 +46,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
 
-			By("And Module CR on SKR Cluster is not removed")
+			By("Then Module CR on SKR Cluster is not removed")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
@@ -78,16 +78,84 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
+			By("Then Manifest is re-created", func() {
+				Eventually(CheckManifestIsInState).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient, shared.StateReady).
+					Should(Succeed())
+				Eventually(ManifestNoDeletionTimeStampSet).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient).
+					Should(Succeed())
+			})
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
 		})
 
-		It("Then Manifest is re-created", func() {
-			Eventually(CheckManifestIsInState).
+		It("When Kyma Module is unmanaged again", func() {
+			Eventually(SetModuleUnmanaged).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient, shared.StateReady).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
 				Should(Succeed())
-			Eventually(ManifestNoDeletionTimeStampSet).
+
+			By("Then Manifest CR is removed")
+			Eventually(NoManifestExist).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient).
+				WithArguments(kcpClient).
+				Should(Succeed())
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("When Module is disabled", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				Should(Succeed())
+
+			By("Then Module CR on SKR Cluster is not removed")
+			Consistently(CheckIfExists).
+				WithContext(ctx).
+				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
+					templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind), skrClient).
+				Should(Succeed())
+
+			By("And Module Operator Deployment is not removed on SKR cluster")
+			Consistently(CheckIfExists).
+				WithContext(ctx).
+				WithArguments(ModuleResourceName, TestModuleResourceNamespace,
+					"apps", "v1", "Deployment", skrClient).
+				Should(Succeed())
+		})
+
+		It("When Module is enabled again", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
+				Should(Succeed())
+
+			By("Then Manifest is re-created", func() {
+				Eventually(CheckManifestIsInState).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient, shared.StateReady).
+					Should(Succeed())
+				Eventually(ManifestNoDeletionTimeStampSet).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient).
+					Should(Succeed())
+			})
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
