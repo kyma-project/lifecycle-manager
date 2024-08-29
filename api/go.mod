@@ -3,7 +3,7 @@ module github.com/kyma-project/lifecycle-manager/api
 go 1.22.6
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/open-component-model/ocm v0.13.0
 	k8s.io/apimachinery v0.31.0
 	sigs.k8s.io/controller-runtime v0.19.0
