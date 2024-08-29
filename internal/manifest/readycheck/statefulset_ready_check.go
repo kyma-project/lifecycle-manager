@@ -73,23 +73,19 @@ func getPodsList(ctx context.Context, clt declarativev2.Client, namespace string
 
 func GetPodsState(podList *apicorev1.PodList) shared.State {
 	for _, pod := range podList.Items {
-		for _, status := range pod.Status.ContainerStatuses {
-			if status.Started == nil {
+		for _, condition := range pod.Status.ContainerStatuses {
+			if condition.Started == nil {
 				return shared.StateError
 			}
-
-			if status.State.Waiting != nil {
+			switch {
+			case *condition.Started && condition.Ready:
+				return shared.StateReady
+			case *condition.Started && !condition.Ready:
 				return shared.StateProcessing
-			}
-
-			if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
+			default:
 				return shared.StateError
-			}
-
-			if !status.Ready {
-				return shared.StateProcessing
 			}
 		}
 	}
-	return shared.StateReady
+	return shared.StateError
 }

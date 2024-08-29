@@ -156,7 +156,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
-	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {
+	if len(deployment.Spec.Template.Labels) == 0 {
 		return nil, errPodTemplateMustContainAtLeastOne
 	}
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
@@ -167,7 +167,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
 	serverContainer.Image = cfg.skrWatcherImage
 
-	for i := 0; i < len(serverContainer.Env); i++ {
+	for i := range len(serverContainer.Env) {
 		if serverContainer.Env[i].Name == kcpAddressEnvName {
 			serverContainer.Env[i].Value = cfg.kcpAddress
 		}
