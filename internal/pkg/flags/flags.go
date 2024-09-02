@@ -277,7 +277,6 @@ type FlagVar struct {
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
 	SelfSignedCertKeySize                  int
-	DropStoredVersion                      string
 	DropCrdStoredVersionMap                string
 	UseWatcherDevRegistry                  bool
 	WatcherImageTag                        string
