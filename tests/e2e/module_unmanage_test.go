@@ -41,9 +41,15 @@ var _ = FDescribe("Unmanaging Kyma Module", Ordered, func() {
 		})
 
 		It("When Kyma Module is unmanaged", func() {
-			Eventually(SetModuleUnmanaged).
+			Eventually(SetModuleManaged).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name, false).
+				Should(Succeed())
+
+			By("And Manifest CR is removed")
+			Eventually(NoManifestExist).
+				WithContext(ctx).
+				WithArguments(kcpClient).
 				Should(Succeed())
 
 			By("Then Module CR on SKR Cluster is not removed")
@@ -60,12 +66,6 @@ var _ = FDescribe("Unmanaging Kyma Module", Ordered, func() {
 					"apps", "v1", "Deployment", skrClient).
 				Should(Succeed())
 
-			By("And Manifest CR is removed")
-			Eventually(NoManifestExist).
-				WithContext(ctx).
-				WithArguments(kcpClient).
-				Should(Succeed())
-
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
@@ -76,7 +76,7 @@ var _ = FDescribe("Unmanaging Kyma Module", Ordered, func() {
 		It("When Kyma Module is set to managed again", func() {
 			Eventually(SetModuleManaged).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name, true).
 				Should(Succeed())
 			By("Then Manifest is re-created", func() {
 				Eventually(CheckManifestIsInState).
@@ -96,9 +96,9 @@ var _ = FDescribe("Unmanaging Kyma Module", Ordered, func() {
 		})
 
 		It("When Kyma Module is unmanaged again", func() {
-			Eventually(SetModuleUnmanaged).
+			Eventually(SetModuleManaged).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name, false).
 				Should(Succeed())
 
 			By("Then Manifest CR is removed")
