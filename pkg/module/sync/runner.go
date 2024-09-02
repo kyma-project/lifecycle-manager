@@ -196,13 +196,16 @@ func NeedToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest, moduleStatus
 	if manifestInCluster == nil || moduleStatus == nil { // moduleStatus is nil in case of mandatory module
 		return true
 	}
+	if module.IsUnmanaged && manifestInCluster.IsUnmanaged() {
+		return false
+	}
 	if moduleStatus.Template != nil && moduleStatus.Template.GetGeneration() != module.Template.GetGeneration() {
 		return true
 	}
+
 	return manifestObj.Spec.Version != moduleStatus.Version ||
 		manifestObj.Labels[shared.ChannelLabel] != moduleStatus.Channel ||
-		moduleStatus.State != manifestInCluster.Status.State ||
-		module.IsUnmanaged != manifestInCluster.IsUnmanaged()
+		moduleStatus.State != manifestInCluster.Status.State
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
