@@ -1,6 +1,7 @@
-package queue
+package queue_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"testing"
 	"time"
 )
@@ -62,20 +63,20 @@ func TestRequeueJitter_Apply(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			jitter := &RequeueJitter{
-				jitterProbability: tt.jitterProbability,
-				jitterPercentage:  tt.jitterPercentage,
-				randFunc: func() float64 {
-					return tt.randValue
+	for _, testcase := range tests {
+		t.Run(testcase.name, func(t *testing.T) {
+			jitter := &queue.RequeueJitter{
+				JitterProbability: testcase.jitterProbability,
+				JitterPercentage:  testcase.jitterPercentage,
+				RandFunc: func() float64 {
+					return testcase.randValue
 				},
 			}
 
-			result := jitter.Apply(tt.interval)
+			result := jitter.Apply(testcase.interval)
 
-			if result < tt.expectedMin || result > tt.expectedMax {
-				t.Errorf("Apply() returned %v, expected between %v and %v", result, tt.expectedMin, tt.expectedMax)
+			if result < testcase.expectedMin || result > testcase.expectedMax {
+				t.Errorf("Apply() returned %v, expected between %v and %v", result, testcase.expectedMin, testcase.expectedMax)
 			}
 		})
 	}
