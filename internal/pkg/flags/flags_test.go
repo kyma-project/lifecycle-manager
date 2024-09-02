@@ -239,11 +239,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "200Mi",
 		},
 		{
-			constName:     "DefaultDropStoredVersion",
-			constValue:    DefaultDropStoredVersion,
-			expectedValue: "v1alpha1",
-		},
-		{
 			constName:     "DefaultDropCrdStoredVersionMap",
 			constValue:    DefaultDropCrdStoredVersionMap,
 			expectedValue: "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1",
