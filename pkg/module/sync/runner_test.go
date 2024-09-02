@@ -327,9 +327,12 @@ func TestNeedToUpdate(t *testing.T) {
 			true,
 		},
 		{
-			"When cluster Manifest and module managed state differ, expect need to update",
+			"When cluster Manifest and module both unmanaged, expect no update",
 			args{
 				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Annotations: map[string]string{shared.UnmanagedAnnotation: "true"},
+					},
 					Status: shared.Status{
 						State: "Ready",
 					},
@@ -352,7 +355,7 @@ func TestNeedToUpdate(t *testing.T) {
 					IsUnmanaged: true,
 				},
 			},
-			true,
+			false,
 		},
 		{
 			"When no update required, expect no update",
