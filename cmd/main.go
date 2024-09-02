@@ -404,13 +404,8 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			Busy:    flagVar.ManifestRequeueBusyInterval,
 			Error:   flagVar.ManifestRequeueErrInterval,
 			Warning: flagVar.ManifestRequeueWarningInterval,
-			Jitter: &queue.RequeueJitter{
-				Enabled:           true,
-				StartedAt:         time.Now(),
-				DisableAfter:      flagVar.ManifestRequeueJitterDisableAfter,
-				JitterProbability: flagVar.ManifestRequeueJitterProbability,
-				JitterPercentage:  flagVar.ManifestRequeueJitterPercentage,
-			},
+			Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
+				flagVar.ManifestRequeueJitterPercentage),
 		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,

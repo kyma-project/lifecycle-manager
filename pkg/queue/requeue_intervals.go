@@ -39,27 +39,24 @@ func DetermineRequeueInterval(state shared.State, intervals RequeueIntervals) ti
 }
 
 type RequeueJitter struct {
-	Enabled           bool
-	StartedAt         time.Time
-	DisableAfter      time.Duration
-	JitterProbability float64
-	JitterPercentage  float64
+	jitterProbability float64
+	jitterPercentage  float64
+	randFunc          func() float64
+}
+
+func NewRequeueJitter(jitterProbability, jitterPercentage float64) *RequeueJitter {
+	return &RequeueJitter{
+		jitterProbability: jitterProbability,
+		jitterPercentage:  jitterPercentage,
+		randFunc:          rand.Float64,
+	}
 }
 
 func (j *RequeueJitter) Apply(interval time.Duration) time.Duration {
-	if !j.Enabled {
-		return interval
-	}
-
-	if time.Since(j.StartedAt) > j.DisableAfter {
-		j.Enabled = false
-		return interval
-	}
-
 	//nolint:gosec // No simple way to generate a float in crypto/rand lib and this is not a security-sensitive context
-	if rand.Float64() < j.JitterProbability {
+	if j.randFunc() <= j.jitterProbability {
 		//nolint:gosec,gomnd // gosec: Same as above and gomnd: 2 is part of the formula
-		jitter := rand.Float64()*(2*j.JitterPercentage) - j.JitterPercentage
+		jitter := j.randFunc()*(2*j.jitterPercentage) - j.jitterPercentage
 		return time.Duration(float64(interval) * (1 + jitter))
 	}
 
