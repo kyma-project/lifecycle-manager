@@ -55,7 +55,6 @@ const (
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
-	DefaultDropStoredVersion                                            = "v1alpha1"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
 	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
@@ -203,8 +202,6 @@ func DefineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.SelfSignedCertKeySize, "self-signed-cert-key-size", DefaultSelfSignedCertKeySize,
 		"The key size for the self-signed certificate")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
-	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", DefaultDropStoredVersion,
-		"The API version to be dropped from the storage versions")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"Specify the API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
@@ -280,7 +277,6 @@ type FlagVar struct {
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
 	SelfSignedCertKeySize                  int
-	DropStoredVersion                      string
 	DropCrdStoredVersionMap                string
 	UseWatcherDevRegistry                  bool
 	WatcherImageTag                        string
