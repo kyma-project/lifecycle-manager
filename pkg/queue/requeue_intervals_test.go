@@ -1,9 +1,10 @@
 package queue_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
 func TestRequeueJitter_Apply(t *testing.T) {
