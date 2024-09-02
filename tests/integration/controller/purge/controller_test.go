@@ -27,12 +27,13 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 	It("The purge logic should start after the timeout", func() {
 		var issuer1 *unstructured.Unstructured
 		var issuer2 *unstructured.Unstructured
+		const retries = 2
 
 		By("Create the Kyma object", func() {
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
-				for i := 0; i < 2; i++ {
+				for range retries {
 					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break
@@ -95,7 +96,7 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
-				for i := 0; i < 2; i++ {
+				for range 2 {
 					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break
@@ -143,6 +144,7 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 
 var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 	kyma := NewTestKyma("skip-crds-kyma")
+	const retries = 5
 
 	It("Should skip the CRDs passed into the Purge Reconciler", func() {
 		var issuer1 *unstructured.Unstructured
@@ -154,8 +156,7 @@ var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
-				// 5 Retries
-				for i := 0; i < 5; i++ {
+				for range retries {
 					err = kcpClient.Update(ctx, kyma)
 					if err == nil {
 						break

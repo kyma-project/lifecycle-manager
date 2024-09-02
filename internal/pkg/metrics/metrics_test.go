@@ -61,7 +61,6 @@ func Test_ConstantMetricNames(t *testing.T) {
 		},
 	}
 	for _, testcase := range tests {
-		testcase := testcase
 		testName := fmt.Sprintf("const %s has correct value", testcase.constName)
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()

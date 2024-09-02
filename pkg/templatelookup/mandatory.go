@@ -20,7 +20,6 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 
 	mandatoryModules := make(map[string]*ModuleTemplateInfo)
 	for _, moduleTemplate := range moduleTemplateList.Items {
-		moduleTemplate := moduleTemplate
 		if moduleTemplate.Spec.Mandatory && moduleTemplate.DeletionTimestamp.IsZero() {
 			mandatoryModules[moduleTemplate.Name] = &ModuleTemplateInfo{
 				ModuleTemplate: &moduleTemplate,

@@ -100,7 +100,7 @@ func main() {
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
-	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
+	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout))) //nolint:gosec // loglevel should always be between -128 to 127
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
