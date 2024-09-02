@@ -54,8 +54,7 @@ func NewRequeueJitter(jitterProbability, jitterPercentage float64) *RequeueJitte
 
 func (j *RequeueJitter) Apply(interval time.Duration) time.Duration {
 	if j.RandFunc() <= j.JitterProbability {
-		//nolint:gomnd // 2 is part of the formula
-		jitter := j.RandFunc()*(2*j.JitterPercentage) - j.JitterPercentage
+		jitter := j.RandFunc()*(2*j.JitterPercentage) - j.JitterPercentage //nolint:gomnd // 2 is part of the formula
 		return time.Duration(float64(interval) * (1 + jitter))
 	}
 
