@@ -1,4 +1,4 @@
-package readycheck
+package statecheck
 
 import (
 	"context"
@@ -13,14 +13,17 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-// NewStatefulSetReadyCheck creates a readiness check that verifies if a StatefulSet is ready.
-func NewStatefulSetReadyCheck() *StatefulSetReadyCheck {
-	return &StatefulSetReadyCheck{}
+func NewStatefulSetStateCheck() *StatefulSetStateCheck {
+	return &StatefulSetStateCheck{}
 }
 
-type StatefulSetReadyCheck struct{}
+type StatefulSetStateChecker interface {
+	GetState(ctx context.Context, clnt declarativev2.Client, statefulSet *apiappsv1.StatefulSet) (shared.State, error)
+}
 
-func (c *StatefulSetReadyCheck) Run(ctx context.Context,
+type StatefulSetStateCheck struct{}
+
+func (*StatefulSetStateCheck) GetState(ctx context.Context,
 	clnt declarativev2.Client,
 	statefulSet *apiappsv1.StatefulSet,
 ) (shared.State, error) {

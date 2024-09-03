@@ -147,7 +147,7 @@ var _ = BeforeSuite(func() {
 			},
 		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithCustomReadyCheck(declarativev2.NewExistsReadyCheck()))
+		declarativev2.WithCustomReadyCheck(declarativev2.NewExistsStateCheck()))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

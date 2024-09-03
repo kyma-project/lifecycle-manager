@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/readycheck"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
@@ -200,7 +200,7 @@ func setDeploymentStatus(ctx context.Context, clnt client.Client, name string,
 			apiappsv1.DeploymentCondition{
 				Type:   apiappsv1.DeploymentProgressing,
 				Status: apicorev1.ConditionTrue,
-				Reason: readycheck.NewRSAvailableReason,
+				Reason: statecheck.NewReplicaSetAvailableReason,
 			})
 		err = clnt.Status().Update(ctx, deploy)
 		if err != nil {

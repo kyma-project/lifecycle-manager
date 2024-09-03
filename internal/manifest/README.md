@@ -8,4 +8,4 @@ It contains various aspects to:
 2. Look up the correct Client for Single or Dual Cluster Mode based on the [SKR Client Lookup](skr_client_lookup.go) and a [ClusterClient](client.go) to read Secret Data as if they were a kubeconfig
 3. Look up the correct Keychain to access image layers contained in private registries through a [Keychain](../../pkg/ocmextensions/cred.go)
 4. Interact with Default Data supplied to the Manifest CR for initializing a module with [Pre/Post-Hooks](custom_resource.go)
-5. Check for Module Readiness not only by looking at the resources supplied in the chart, but also to introspect the already mentioned CustomResource using a [custom ReadyCheck](readycheck/ready_check.go)
+5. Check for Module Readiness based on the applied resources, see [custom StateCheck](statecheck/state_check.go)

@@ -360,12 +360,12 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v
 		}
 	}
 
-	deploymentState, err := r.checkResourceState(ctx, clnt, target)
+	managerState, err := r.checkManagerState(ctx, clnt, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
-	return r.setManifestState(manifest, deploymentState)
+	return r.setManifestState(manifest, managerState)
 }
 
 func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
@@ -389,12 +389,12 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 	return false
 }
 
-func (r *Reconciler) checkResourceState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
+func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
 	error,
 ) {
-	resourceReadyCheck := r.CustomReadyCheck
+	managerReadyCheck := r.CustomReadyCheck
 
-	resourceState, err := resourceReadyCheck.Run(ctx, clnt, target)
+	resourceState, err := managerReadyCheck.GetState(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}

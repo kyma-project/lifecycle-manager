@@ -1,4 +1,4 @@
-package readycheck
+package statecheck
 
 import (
 	apiappsv1 "k8s.io/api/apps/v1"
@@ -9,27 +9,30 @@ import (
 )
 
 const (
-	NewRSAvailableReason    = "NewReplicaSetAvailable"
-	FoundNewRSReason        = "FoundNewReplicaSet"
-	NewReplicaSetReason     = "NewReplicaSetCreated"
-	ReplicaSetUpdatedReason = "ReplicaSetUpdated"
+	NewReplicaSetAvailableReason = "NewReplicaSetAvailable"
+	FoundNewReplicaSetReason     = "FoundNewReplicaSet"
+	NewReplicaSetCreatedReason   = "NewReplicaSetCreated"
+	ReplicaSetUpdatedReason      = "ReplicaSetUpdated"
 )
 
-// NewDeploymentReadyCheck creates a readiness check that verifies if a Deployment is ready.
-func NewDeploymentReadyCheck() *DeploymentReadyCheck {
-	return &DeploymentReadyCheck{}
+type DeploymentStateChecker interface {
+	GetState(deploy *apiappsv1.Deployment) (shared.State, error)
 }
 
-type DeploymentReadyCheck struct{}
+func NewDeploymentStateCheck() *DeploymentStateCheck {
+	return &DeploymentStateCheck{}
+}
 
-func (c *DeploymentReadyCheck) Run(
+type DeploymentStateCheck struct{}
+
+func (*DeploymentStateCheck) GetState(
 	deploy *apiappsv1.Deployment,
 ) (shared.State, error) {
-	deploymentState := GetDeploymentState(deploy)
+	deploymentState := getDeploymentState(deploy)
 	return deploymentState, nil
 }
 
-func GetDeploymentState(deploy *apiappsv1.Deployment) shared.State {
+func getDeploymentState(deploy *apiappsv1.Deployment) shared.State {
 	progressingCondition := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentProgressing)
 	availableCondition := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentAvailable)
 
@@ -42,14 +45,14 @@ func determineDeploymentState(progressingCondition, availableCondition *apiappsv
 	if isProgressing {
 		if isAvailable {
 			switch progressingCondition.Reason {
-			case NewRSAvailableReason:
+			case NewReplicaSetAvailableReason:
 				return shared.StateReady
-			case FoundNewRSReason, NewReplicaSetReason, ReplicaSetUpdatedReason:
+			case FoundNewReplicaSetReason, NewReplicaSetCreatedReason, ReplicaSetUpdatedReason:
 				return shared.StateProcessing
 			}
 		} else {
 			switch progressingCondition.Reason {
-			case NewRSAvailableReason, FoundNewRSReason, NewReplicaSetReason, ReplicaSetUpdatedReason:
+			case NewReplicaSetAvailableReason, FoundNewReplicaSetReason, NewReplicaSetCreatedReason, ReplicaSetUpdatedReason:
 				return shared.StateProcessing
 			}
 		}

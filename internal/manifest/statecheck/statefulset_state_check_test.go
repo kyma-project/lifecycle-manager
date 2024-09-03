@@ -1,4 +1,4 @@
-package readycheck_test
+package statecheck_test
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/readycheck"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 )
 
 func Test_IsStatefulSetReady(t *testing.T) {
@@ -46,7 +46,7 @@ func Test_IsStatefulSetReady(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, readycheck.IsStatefulSetReady(tt.statefulSet))
+			require.Equal(t, tt.expected, statecheck.IsStatefulSetReady(tt.statefulSet))
 		})
 	}
 }
@@ -142,7 +142,7 @@ func Test_GetPodsState(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, readycheck.GetPodsState(tt.podList))
+			require.Equal(t, tt.want, statecheck.GetPodsState(tt.podList))
 		})
 	}
 }

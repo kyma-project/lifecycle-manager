@@ -41,7 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/readycheck"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -151,7 +151,7 @@ var _ = BeforeSuite(func() {
 			},
 		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithCustomReadyCheck(readycheck.NewResourceReadyCheck()))
+		declarativev2.WithCustomReadyCheck(statecheck.NewManagerStateCheck()))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

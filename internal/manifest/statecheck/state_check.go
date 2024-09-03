@@ -1,4 +1,4 @@
-package readycheck
+package statecheck
 
 import (
 	"context"
@@ -10,60 +10,64 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-func NewResourceReadyCheck() *ResourceReadyCheck {
-	return &ResourceReadyCheck{}
+type ManagerStateCheck struct {
+	statefulSetChecker     StatefulSetStateChecker
+	deploymentStateChecker DeploymentStateChecker
 }
 
-type ResourceReadyCheck struct{}
-
-type ResourceKind string
+type ManagerKind string
 
 const (
-	DeploymentKind  ResourceKind = "Deployment"
-	StatefulSetKind ResourceKind = "StatefulSet"
+	DeploymentKind  ManagerKind = "Deployment"
+	StatefulSetKind ManagerKind = "StatefulSet"
 )
 
-type Resource struct {
-	Kind ResourceKind
+type Manager struct {
+	Kind ManagerKind
 	*apiappsv1.Deployment
 	*apiappsv1.StatefulSet
 }
 
-func (c *ResourceReadyCheck) Run(ctx context.Context,
+func NewManagerStateCheck() *ManagerStateCheck {
+	return &ManagerStateCheck{
+		statefulSetChecker:     NewStatefulSetStateCheck(),
+		deploymentStateChecker: NewDeploymentStateCheck(),
+	}
+}
+
+func (m *ManagerStateCheck) GetState(ctx context.Context,
 	clnt declarativev2.Client,
 	resources []*resource.Info,
 ) (shared.State, error) {
-	res := findResource(clnt, resources)
-	if res == nil {
+	mgr := findManager(clnt, resources)
+	if mgr == nil {
 		return shared.StateReady, nil
 	}
 
-	switch res.Kind {
+	switch mgr.Kind {
 	case StatefulSetKind:
-		statefulSetReadyCheck := NewStatefulSetReadyCheck()
-		return statefulSetReadyCheck.Run(ctx, clnt, res.StatefulSet)
+		return m.statefulSetChecker.GetState(ctx, clnt, mgr.StatefulSet)
 	case DeploymentKind:
-		deploymentReadyCheck := NewDeploymentReadyCheck()
-		return deploymentReadyCheck.Run(res.Deployment)
+		return m.deploymentStateChecker.GetState(mgr.Deployment)
 	}
 
 	return shared.StateReady, nil
 }
 
-func findResource(clt declarativev2.Client, resources []*resource.Info) *Resource {
+func findManager(clt declarativev2.Client, resources []*resource.Info) *Manager {
 	deploy := &apiappsv1.Deployment{}
 	statefulSet := &apiappsv1.StatefulSet{}
 
 	for _, res := range resources {
 		if err := clt.Scheme().Convert(res.Object, deploy, nil); err == nil {
-			return &Resource{
+			return &Manager{
 				Kind:       DeploymentKind,
 				Deployment: deploy,
 			}
 		}
 
 		if err := clt.Scheme().Convert(res.Object, statefulSet, nil); err == nil {
-			return &Resource{
+			return &Manager{
 				Kind:        StatefulSetKind,
 				StatefulSet: statefulSet,
 			}

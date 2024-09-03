@@ -42,7 +42,7 @@ type Options struct {
 	ClientCacheKeyFn
 	ManifestParser
 	ManifestCache
-	CustomReadyCheck ReadyCheck
+	CustomReadyCheck StateCheck
 
 	PostRenderTransforms []ObjectTransform
 
@@ -171,11 +171,11 @@ func (o WithManifestParserOption) Apply(options *Options) {
 }
 
 type WithCustomReadyCheckOption struct {
-	ReadyCheck
+	StateCheck
 }
 
-func WithCustomReadyCheck(check ReadyCheck) WithCustomReadyCheckOption {
-	return WithCustomReadyCheckOption{ReadyCheck: check}
+func WithCustomReadyCheck(check StateCheck) WithCustomReadyCheckOption {
+	return WithCustomReadyCheckOption{StateCheck: check}
 }
 
 func (o WithCustomReadyCheckOption) Apply(options *Options) {
