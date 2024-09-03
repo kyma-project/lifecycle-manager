@@ -21,26 +21,26 @@ var _ = Describe("Purge Controller", Ordered, func() {
 		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
 		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 		})
 
 		It("When finalizer is added to Module CR", func() {
-			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
+			Expect(AddFinalizerToModuleCR(ctx, skrClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
 
 			By("And KCP Kyma CR has deletion timestamp set")
-			Expect(DeleteKyma(ctx, controlPlaneClient, kyma, apimetav1.DeletePropagationBackground)).
+			Expect(DeleteKyma(ctx, kcpClient, kyma, apimetav1.DeletePropagationBackground)).
 				Should(Succeed())
 
-			Expect(KymaHasDeletionTimestamp(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
+			Expect(KymaHasDeletionTimestamp(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())).
 				Should(BeTrue())
 		})
 
@@ -48,21 +48,21 @@ var _ = Describe("Purge Controller", Ordered, func() {
 			time.Sleep(5 * time.Second)
 			Eventually(FinalizerIsRemoved).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR, moduleCRFinalizer).
+				WithArguments(skrClient, moduleCR, moduleCRFinalizer).
 				Should(Succeed())
 
 			By("And Module CR, KCP Kyma CR and SKR Kyma CR are deleted")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Equal(ErrNotFound))
 			Eventually(KymaDeleted).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
 			Eventually(KymaDeleted).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, RemoteNamespace, runtimeClient).
+				WithArguments(defaultRemoteKymaName, RemoteNamespace, skrClient).
 				Should(Succeed())
 		})
 	})

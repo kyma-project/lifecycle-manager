@@ -45,6 +45,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	case shared.StateDeleting:
 	case shared.StateError:
 	case shared.StateProcessing:
+	case shared.StateUnmanaged:
 	default:
 	}
 

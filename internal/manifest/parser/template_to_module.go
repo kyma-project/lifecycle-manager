@@ -84,9 +84,10 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 ) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
 		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
+			ModuleName:  module.Name,
+			Template:    template,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -94,9 +95,10 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 	if err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
+			ModuleName:  module.Name,
+			Template:    template,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -108,9 +110,10 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 		template.ModuleTemplate); err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
+			ModuleName:  module.Name,
+			Template:    template,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -119,11 +122,12 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 	// to have correct owner references, the manifest must always have the same namespace as kyma
 	manifest.SetNamespace(kyma.GetNamespace())
 	modules = append(modules, &common.Module{
-		ModuleName: module.Name,
-		FQDN:       fqdn,
-		Template:   template,
-		Manifest:   manifest,
-		Enabled:    module.Enabled,
+		ModuleName:  module.Name,
+		FQDN:        fqdn,
+		Template:    template,
+		Manifest:    manifest,
+		Enabled:     module.Enabled,
+		IsUnmanaged: module.Unmanaged,
 	})
 	return modules
 }

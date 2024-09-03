@@ -124,6 +124,14 @@ func (manifest *Manifest) SetStatus(status shared.Status) {
 	manifest.Status = status
 }
 
+func (manifest *Manifest) IsUnmanaged() bool {
+	return manifest.GetAnnotations() != nil && manifest.GetAnnotations()[shared.UnmanagedAnnotation] != ""
+}
+
+func (manifest *Manifest) IsMandatoryModule() bool {
+	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.IsMandatoryModule] == shared.EnableLabelValue
+}
+
 // +kubebuilder:object:root=true
 
 // ManifestList contains a list of Manifest.
@@ -140,4 +148,8 @@ func init() {
 
 func (manifest *Manifest) SkipReconciliation() bool {
 	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true)
+}
+
+func (manifest *Manifest) HasDeletionTimestamp() bool {
+	return !manifest.GetDeletionTimestamp().IsZero()
 }

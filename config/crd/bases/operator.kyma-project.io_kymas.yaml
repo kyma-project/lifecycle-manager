@@ -375,6 +375,7 @@ spec:
                       - Error
                       - ""
                       - Warning
+                      - Unmanaged
                       type: string
                     template:
                       description: |-
@@ -449,6 +450,7 @@ spec:
                 - Error
                 - ""
                 - Warning
+                - Unmanaged
                 type: string
             type: object
         type: object
@@ -785,6 +787,7 @@ spec:
                       - Error
                       - ""
                       - Warning
+                      - Unmanaged
                       type: string
                     template:
                       description: |-
@@ -859,6 +862,7 @@ spec:
                 - Error
                 - ""
                 - Warning
+                - Unmanaged
                 type: string
             type: object
         type: object

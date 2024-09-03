@@ -247,6 +247,7 @@ spec:
                 - Error
                 - ""
                 - Warning
+                - Unmanaged
                 type: string
             required:
             - state
@@ -486,6 +487,7 @@ spec:
                 - Error
                 - ""
                 - Warning
+                - Unmanaged
                 type: string
             required:
             - state
