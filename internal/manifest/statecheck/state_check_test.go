@@ -2,8 +2,8 @@ package statecheck_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,7 +11,9 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 )
 
 func TestManagerStateCheck_GetState(t *testing.T) {
@@ -51,10 +53,7 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 
 			statefulsetChecker := &StatefulSetStateCheckerStub{}
 			deploymentChecker := &DeploymentStateCheckerStub{}
-			m := &statecheck.ManagerStateCheck{
-				StatefulSetChecker:     statefulsetChecker,
-				DeploymentStateChecker: deploymentChecker,
-			}
+			m := statecheck.NewManagerStateCheck(statefulsetChecker, deploymentChecker)
 			got, err := m.GetState(context.Background(), clnt, testCase.resources)
 			require.NoError(t, err)
 			if testCase.isDeployment {
@@ -85,7 +84,8 @@ type StatefulSetStateCheckerStub struct {
 }
 
 func (s *StatefulSetStateCheckerStub) GetState(_ context.Context, _ client.Client,
-	_ *apiappsv1.StatefulSet) (shared.State, error) {
+	_ *apiappsv1.StatefulSet,
+) (shared.State, error) {
 	s.called = true
 	return shared.StateReady, nil
 }

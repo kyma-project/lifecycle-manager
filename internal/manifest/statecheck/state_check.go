@@ -5,14 +5,14 @@ import (
 
 	apiappsv1 "k8s.io/api/apps/v1"
 	"k8s.io/cli-runtime/pkg/resource"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ManagerStateCheck struct {
-	StatefulSetChecker     StatefulSetStateChecker
-	DeploymentStateChecker DeploymentStateChecker
+	statefulSetChecker     StatefulSetStateChecker
+	deploymentStateChecker DeploymentStateChecker
 }
 
 type DeploymentStateChecker interface {
@@ -31,16 +31,17 @@ const (
 )
 
 type Manager struct {
-	Kind ManagerKind
-	*apiappsv1.Deployment
-	*apiappsv1.StatefulSet
+	kind        ManagerKind
+	deployment  *apiappsv1.Deployment
+	statefulSet *apiappsv1.StatefulSet
 }
 
 func NewManagerStateCheck(statefulSetChecker StatefulSetStateChecker,
-	deploymentChecker DeploymentStateChecker) *ManagerStateCheck {
+	deploymentChecker DeploymentStateChecker,
+) *ManagerStateCheck {
 	return &ManagerStateCheck{
-		StatefulSetChecker:     statefulSetChecker,
-		DeploymentStateChecker: deploymentChecker,
+		statefulSetChecker:     statefulSetChecker,
+		deploymentStateChecker: deploymentChecker,
 	}
 }
 
@@ -53,11 +54,11 @@ func (m *ManagerStateCheck) GetState(ctx context.Context,
 		return shared.StateReady, nil
 	}
 
-	switch mgr.Kind {
+	switch mgr.kind {
 	case StatefulSetKind:
-		return m.StatefulSetChecker.GetState(ctx, clnt, mgr.StatefulSet)
+		return m.statefulSetChecker.GetState(ctx, clnt, mgr.statefulSet)
 	case DeploymentKind:
-		return m.DeploymentStateChecker.GetState(mgr.Deployment)
+		return m.deploymentStateChecker.GetState(mgr.deployment)
 	}
 
 	return shared.StateReady, nil
@@ -70,15 +71,15 @@ func findManager(clt client.Client, resources []*resource.Info) *Manager {
 	for _, res := range resources {
 		if err := clt.Scheme().Convert(res.Object, deploy, nil); err == nil {
 			return &Manager{
-				Kind:       DeploymentKind,
-				Deployment: deploy,
+				kind:       DeploymentKind,
+				deployment: deploy,
 			}
 		}
 
 		if err := clt.Scheme().Convert(res.Object, statefulSet, nil); err == nil {
 			return &Manager{
-				Kind:        StatefulSetKind,
-				StatefulSet: statefulSet,
+				kind:        StatefulSetKind,
+				statefulSet: statefulSet,
 			}
 		}
 	}
