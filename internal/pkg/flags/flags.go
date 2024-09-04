@@ -322,10 +322,10 @@ func (f FlagVar) Validate() error {
 		return errInvalidSelfSignedCertKeyLength
 	}
 
-	if f.ManifestRequeueJitterProbability <= 0 || f.ManifestRequeueJitterProbability >= 0.05 {
+	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 0.05 {
 		return errInvalidManifestRequeueJitterPercentage
 	}
-	if f.ManifestRequeueJitterProbability <= 0 || f.ManifestRequeueJitterProbability >= 1 {
+	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 1 {
 		return errInvalidManifestRequeueJitterProbability
 	}
 
