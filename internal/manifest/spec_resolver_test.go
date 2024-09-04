@@ -1,4 +1,4 @@
-package manifest
+package manifest_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 )
 
 const (
@@ -50,20 +51,20 @@ func Test_GetSpec(t *testing.T) {
 		mockKeyChainLookup := &mockKeyChainLookup{}
 		mockPathExtractor := &mockPathExtractor{}
 
-		specResolver := NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
 
 		// when
 		ctx := context.TODO()
-		manifest := v1beta2.Manifest{}
-		err := yaml.Unmarshal([]byte(testManifest), &manifest)
-		require.Nil(t, err)
+		mft := v1beta2.Manifest{}
+		err := yaml.Unmarshal([]byte(testManifest), &mft)
+		require.NoError(t, err)
 
-		actual, err := specResolver.GetSpec(ctx, &manifest)
-		require.Nil(t, err)
+		actual, err := specResolver.GetSpec(ctx, &mft)
+		require.NoError(t, err)
 
 		// then
 		expected := &declarativev2.Spec{
-			ManifestName: manifest.Spec.Install.Name,
+			ManifestName: mft.Spec.Install.Name,
 			Path:         testPath(),
 			OCIRef:       "sha256:c49b23729d7f12e25a44bbc9c0fb226f998cb443802af4793b4faea79a9bac40",
 		}
@@ -75,18 +76,18 @@ func Test_GetSpec(t *testing.T) {
 		// given
 		mockKeyChainLookup := &mockKeyChainLookup{}
 		mockPathExtractor := &mockPathExtractor{}
-		specResolver := NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
 
 		invalidManifest := strings.ReplaceAll(testManifest, "type: oci-ref", "type: invalid-ref")
 
 		// when
 		ctx := context.TODO()
-		manifest := v1beta2.Manifest{}
-		err := yaml.Unmarshal([]byte(invalidManifest), &manifest)
-		require.Nil(t, err)
+		mft := v1beta2.Manifest{}
+		err := yaml.Unmarshal([]byte(invalidManifest), &mft)
+		require.NoError(t, err)
 
-		_, err = specResolver.GetSpec(ctx, &manifest)
-		require.ErrorIs(t, err, errRenderModeInvalid)
+		_, err = specResolver.GetSpec(ctx, &mft)
+		require.ErrorIs(t, err, manifest.ErrRenderModeInvalid)
 		require.ErrorContains(t, err, "could not determine render mode for")
 	})
 
@@ -94,15 +95,15 @@ func Test_GetSpec(t *testing.T) {
 		// given
 		mockKeyChainLookup := &mockKeyChainLookup{mockError: errors.New("unexpected")}
 		mockPathExtractor := &mockPathExtractor{}
-		specResolver := NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
 
 		// when
 		ctx := context.TODO()
-		manifest := v1beta2.Manifest{}
-		err := yaml.Unmarshal([]byte(testManifest), &manifest)
-		require.Nil(t, err)
+		mft := v1beta2.Manifest{}
+		err := yaml.Unmarshal([]byte(testManifest), &mft)
+		require.NoError(t, err)
 
-		_, err = specResolver.GetSpec(ctx, &manifest)
+		_, err = specResolver.GetSpec(ctx, &mft)
 		require.ErrorContains(t, err, "failed to fetch keyChain: unexpected")
 	})
 
@@ -110,15 +111,15 @@ func Test_GetSpec(t *testing.T) {
 		// given
 		mockKeyChainLookup := &mockKeyChainLookup{}
 		mockPathExtractor := &mockPathExtractor{mockError: errors.New("unexpected")}
-		specResolver := NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
 
 		// when
 		ctx := context.TODO()
-		manifest := v1beta2.Manifest{}
-		err := yaml.Unmarshal([]byte(testManifest), &manifest)
-		require.Nil(t, err)
+		mft := v1beta2.Manifest{}
+		err := yaml.Unmarshal([]byte(testManifest), &mft)
+		require.NoError(t, err)
 
-		_, err = specResolver.GetSpec(ctx, &manifest)
+		_, err = specResolver.GetSpec(ctx, &mft)
 		require.ErrorContains(t, err, "failed to extract raw manifest from layer digest: unexpected")
 	})
 }

@@ -33,7 +33,7 @@ func NewSpecResolver(kcLookup KeyChainLookup, extractor PathExtractor) *SpecReso
 	}
 }
 
-var errRenderModeInvalid = errors.New("render mode is invalid")
+var ErrRenderModeInvalid = errors.New("render mode is invalid")
 
 func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*declarativev2.Spec, error) {
 	var imageSpec v1beta2.ImageSpec
@@ -43,7 +43,7 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 
 	if imageSpec.Type != v1beta2.OciRefType {
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
-			client.ObjectKeyFromObject(manifest), errRenderModeInvalid)
+			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
 	keyChain, err := s.keyChainLookup.Get(ctx, imageSpec)
