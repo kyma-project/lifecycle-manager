@@ -11,8 +11,8 @@ import (
 )
 
 type ManagerStateCheck struct {
-	statefulSetChecker     StatefulSetStateChecker
-	deploymentStateChecker DeploymentStateChecker
+	StatefulSetChecker     StatefulSetStateChecker
+	DeploymentStateChecker DeploymentStateChecker
 }
 
 type DeploymentStateChecker interface {
@@ -39,8 +39,8 @@ type Manager struct {
 func NewManagerStateCheck(statefulSetChecker StatefulSetStateChecker,
 	deploymentChecker DeploymentStateChecker) *ManagerStateCheck {
 	return &ManagerStateCheck{
-		statefulSetChecker:     statefulSetChecker,
-		deploymentStateChecker: deploymentChecker,
+		StatefulSetChecker:     statefulSetChecker,
+		DeploymentStateChecker: deploymentChecker,
 	}
 }
 
@@ -55,9 +55,9 @@ func (m *ManagerStateCheck) GetState(ctx context.Context,
 
 	switch mgr.Kind {
 	case StatefulSetKind:
-		return m.statefulSetChecker.GetState(ctx, clnt, mgr.StatefulSet)
+		return m.StatefulSetChecker.GetState(ctx, clnt, mgr.StatefulSet)
 	case DeploymentKind:
-		return m.deploymentStateChecker.GetState(mgr.Deployment)
+		return m.DeploymentStateChecker.GetState(mgr.Deployment)
 	}
 
 	return shared.StateReady, nil
