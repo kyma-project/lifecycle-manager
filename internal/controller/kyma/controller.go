@@ -47,10 +47,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-var (
-	ErrManifestsStillExist = errors.New("manifests still exist")
-	ErrInvalidKymaState    = errors.New("invalid kyma state")
-)
+var ErrManifestsStillExist = errors.New("manifests still exist")
 
 const (
 	moduleReconciliationError event.Reason = "ModuleReconciliationError"
@@ -297,7 +294,7 @@ func (r *Reconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (
 	case shared.StateReady, shared.StateWarning:
 		return r.handleProcessingState(ctx, kyma)
 	case shared.StateUnmanaged:
-		return ctrl.Result{}, ErrInvalidKymaState
+		return ctrl.Result{}, nil // no requeue of invalid state
 	}
 
 	return ctrl.Result{Requeue: false}, nil
