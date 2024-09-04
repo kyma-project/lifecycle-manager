@@ -17,33 +17,23 @@ func NewStatefulSetStateCheck() *StatefulSetStateCheck {
 	return &StatefulSetStateCheck{}
 }
 
-type StatefulSetStateChecker interface {
-	GetState(ctx context.Context, clnt declarativev2.Client, statefulSet *apiappsv1.StatefulSet) (shared.State, error)
-}
-
 type StatefulSetStateCheck struct{}
 
 func (*StatefulSetStateCheck) GetState(ctx context.Context,
 	clnt declarativev2.Client,
 	statefulSet *apiappsv1.StatefulSet,
 ) (shared.State, error) {
-	statefulSetState := getStatefulSetState(ctx, clnt, statefulSet)
-	return statefulSetState, nil
-}
-
-func getStatefulSetState(ctx context.Context, clt declarativev2.Client,
-	statefulSet *apiappsv1.StatefulSet,
-) shared.State {
 	if IsStatefulSetReady(statefulSet) {
-		return shared.StateReady
+		return shared.StateReady, nil
 	}
 
-	podList, err := getPodsForStatefulSet(ctx, clt, statefulSet)
+	podList, err := getPodsForStatefulSet(ctx, clnt, statefulSet)
 	if err != nil {
-		return shared.StateError
+		return shared.StateError, err
 	}
 
-	return GetPodsState(podList)
+	statefulSetState := GetPodsState(podList)
+	return statefulSetState, nil
 }
 
 func IsStatefulSetReady(statefulSet *apiappsv1.StatefulSet) bool {

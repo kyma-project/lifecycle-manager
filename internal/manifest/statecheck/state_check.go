@@ -15,6 +15,14 @@ type ManagerStateCheck struct {
 	deploymentStateChecker DeploymentStateChecker
 }
 
+type DeploymentStateChecker interface {
+	GetState(deploy *apiappsv1.Deployment) (shared.State, error)
+}
+
+type StatefulSetStateChecker interface {
+	GetState(ctx context.Context, clnt declarativev2.Client, statefulSet *apiappsv1.StatefulSet) (shared.State, error)
+}
+
 type ManagerKind string
 
 const (

@@ -15,10 +15,6 @@ const (
 	ReplicaSetUpdatedReason      = "ReplicaSetUpdated"
 )
 
-type DeploymentStateChecker interface {
-	GetState(deploy *apiappsv1.Deployment) (shared.State, error)
-}
-
 func NewDeploymentStateCheck() *DeploymentStateCheck {
 	return &DeploymentStateCheck{}
 }
@@ -28,15 +24,11 @@ type DeploymentStateCheck struct{}
 func (*DeploymentStateCheck) GetState(
 	deploy *apiappsv1.Deployment,
 ) (shared.State, error) {
-	deploymentState := getDeploymentState(deploy)
-	return deploymentState, nil
-}
-
-func getDeploymentState(deploy *apiappsv1.Deployment) shared.State {
 	progressingCondition := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentProgressing)
 	availableCondition := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentAvailable)
 
-	return determineDeploymentState(progressingCondition, availableCondition)
+	deploymentState := determineDeploymentState(progressingCondition, availableCondition)
+	return deploymentState, nil
 }
 
 func determineDeploymentState(progressingCondition, availableCondition *apiappsv1.DeploymentCondition) shared.State {

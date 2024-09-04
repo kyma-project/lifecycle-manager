@@ -28,7 +28,7 @@ func NewReconciler(mgr manager.Manager,
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
 		manifest.NewSpecResolver(kcp.Client, extractor),
-		declarativev2.WithCustomReadyCheck(statecheck.NewManagerStateCheck()),
+		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck()),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
 		declarativev2.WithPostRun{manifest.PostRunCreateCR},

@@ -392,18 +392,18 @@ func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
 	error,
 ) {
-	managerReadyCheck := r.CustomReadyCheck
+	managerReadyCheck := r.CustomStateCheck
 
-	resourceState, err := managerReadyCheck.GetState(ctx, clnt, target)
+	managerState, err := managerReadyCheck.GetState(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}
 
-	if resourceState == shared.StateProcessing {
+	if managerState == shared.StateProcessing {
 		return shared.StateProcessing, nil
 	}
 
-	return resourceState, nil
+	return managerState, nil
 }
 
 func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, state shared.State) error {
