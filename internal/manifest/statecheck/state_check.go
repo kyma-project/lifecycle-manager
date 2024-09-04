@@ -7,7 +7,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ManagerStateCheck struct {
@@ -20,7 +20,7 @@ type DeploymentStateChecker interface {
 }
 
 type StatefulSetStateChecker interface {
-	GetState(ctx context.Context, clnt declarativev2.Client, statefulSet *apiappsv1.StatefulSet) (shared.State, error)
+	GetState(ctx context.Context, clnt client.Client, statefulSet *apiappsv1.StatefulSet) (shared.State, error)
 }
 
 type ManagerKind string
@@ -36,15 +36,16 @@ type Manager struct {
 	*apiappsv1.StatefulSet
 }
 
-func NewManagerStateCheck() *ManagerStateCheck {
+func NewManagerStateCheck(statefulSetChecker StatefulSetStateChecker,
+	deploymentChecker DeploymentStateChecker) *ManagerStateCheck {
 	return &ManagerStateCheck{
-		statefulSetChecker:     NewStatefulSetStateCheck(),
-		deploymentStateChecker: NewDeploymentStateCheck(),
+		statefulSetChecker:     statefulSetChecker,
+		deploymentStateChecker: deploymentChecker,
 	}
 }
 
 func (m *ManagerStateCheck) GetState(ctx context.Context,
-	clnt declarativev2.Client,
+	clnt client.Client,
 	resources []*resource.Info,
 ) (shared.State, error) {
 	mgr := findManager(clnt, resources)
@@ -62,7 +63,7 @@ func (m *ManagerStateCheck) GetState(ctx context.Context,
 	return shared.StateReady, nil
 }
 
-func findManager(clt declarativev2.Client, resources []*resource.Info) *Manager {
+func findManager(clt client.Client, resources []*resource.Info) *Manager {
 	deploy := &apiappsv1.Deployment{}
 	statefulSet := &apiappsv1.StatefulSet{}
 

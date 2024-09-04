@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 func NewStatefulSetStateCheck() *StatefulSetStateCheck {
@@ -20,7 +19,7 @@ func NewStatefulSetStateCheck() *StatefulSetStateCheck {
 type StatefulSetStateCheck struct{}
 
 func (*StatefulSetStateCheck) GetState(ctx context.Context,
-	clnt declarativev2.Client,
+	clnt client.Client,
 	statefulSet *apiappsv1.StatefulSet,
 ) (shared.State, error) {
 	if IsStatefulSetReady(statefulSet) {
@@ -43,13 +42,13 @@ func IsStatefulSetReady(statefulSet *apiappsv1.StatefulSet) bool {
 	return false
 }
 
-func getPodsForStatefulSet(ctx context.Context, clt declarativev2.Client,
+func getPodsForStatefulSet(ctx context.Context, clt client.Client,
 	statefulSet *apiappsv1.StatefulSet,
 ) (*apicorev1.PodList, error) {
 	return getPodsList(ctx, clt, statefulSet.Namespace, statefulSet.Spec.Selector.MatchLabels)
 }
 
-func getPodsList(ctx context.Context, clt declarativev2.Client, namespace string,
+func getPodsList(ctx context.Context, clt client.Client, namespace string,
 	matchLabels map[string]string) (*apicorev1.PodList,
 	error,
 ) {

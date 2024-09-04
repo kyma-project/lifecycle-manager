@@ -19,6 +19,8 @@ const (
 	DefaultManifestRequeueErrInterval                                   = 2 * time.Second
 	DefaultManifestRequeueWarningInterval                               = 30 * time.Second
 	DefaultManifestRequeueBusyInterval                                  = 5 * time.Second
+	DefaultManifestRequeueJitterProbability                             = 0.02
+	DefaultManifestRequeueJitterPercentage                              = 0.02
 	DefaultMandatoryModuleRequeueSuccessInterval                        = 30 * time.Second
 	DefaultMandatoryModuleDeletionRequeueSuccessInterval                = 30 * time.Second
 	DefaultWatcherRequeueSuccessInterval                                = 30 * time.Second
@@ -62,10 +64,12 @@ const (
 )
 
 var (
-	errMissingWatcherImageTag         = errors.New("runtime watcher image tag is not provided")
-	errWatcherDirNotExist             = errors.New("failed to locate watcher resource manifest folder")
-	errLeaderElectionTimeoutConfig    = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
-	errInvalidSelfSignedCertKeyLenght = errors.New("invalid self-signed-cert-key-size: must be 4096")
+	errMissingWatcherImageTag                  = errors.New("runtime watcher image tag is not provided")
+	errWatcherDirNotExist                      = errors.New("failed to locate watcher resource manifest folder")
+	errLeaderElectionTimeoutConfig             = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
+	errInvalidSelfSignedCertKeyLength          = errors.New("invalid self-signed-cert-key-size: must be 4096")
+	errInvalidManifestRequeueJitterPercentage  = errors.New("invalid manifest requeue jitter percentage: must be between 0 and 0.05")
+	errInvalidManifestRequeueJitterProbability = errors.New("invalid manifest requeue jitter probability: must be between 0 and 1")
 )
 
 //nolint:funlen // defines all program flags
@@ -132,6 +136,13 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.ManifestRequeueBusyInterval, "manifest-requeue-busy-interval",
 		DefaultManifestRequeueBusyInterval,
 		"determines the duration a Manifest in Processing state is enqueued for reconciliation.")
+	flag.Float64Var(&flagVar.ManifestRequeueJitterProbability, "manifest-requeue-jitter-probability",
+		DefaultManifestRequeueJitterProbability,
+		"determines the probability that jitter is applied to the requeue interval.")
+	flag.Float64Var(&flagVar.ManifestRequeueJitterPercentage, "manifest-requeue-jitter-percentage",
+		DefaultManifestRequeueJitterPercentage,
+		"determines the percentage range for the requeue jitter applied to the requeue interval. "+
+			"E.g., 0.1 means +/- 10% of the interval.")
 	flag.DurationVar(&flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
 		"mandatory-module-deletion-requeue-success-interval",
 		DefaultMandatoryModuleDeletionRequeueSuccessInterval,
@@ -284,6 +295,8 @@ type FlagVar struct {
 	WatcherResourceLimitsCPU               string
 	WatcherResourcesPath                   string
 	MetricsCleanupIntervalInMinutes        int
+	ManifestRequeueJitterProbability       float64
+	ManifestRequeueJitterPercentage        float64
 }
 
 func (f FlagVar) Validate() error {
@@ -306,7 +319,14 @@ func (f FlagVar) Validate() error {
 		4096: true,
 		8192: false, // see https://github.com/kyma-project/lifecycle-manager/issues/1793
 	}[f.SelfSignedCertKeySize] {
-		return errInvalidSelfSignedCertKeyLenght
+		return errInvalidSelfSignedCertKeyLength
+	}
+
+	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 0.05 {
+		return errInvalidManifestRequeueJitterPercentage
+	}
+	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 1 {
+		return errInvalidManifestRequeueJitterProbability
 	}
 
 	return nil

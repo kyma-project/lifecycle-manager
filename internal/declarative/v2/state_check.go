@@ -14,7 +14,7 @@ import (
 var ErrNotValidClientObject = errors.New("object in resource info is not a valid client object")
 
 type StateCheck interface {
-	GetState(ctx context.Context, clnt Client, resources []*resource.Info) (shared.State, error)
+	GetState(ctx context.Context, clnt client.Client, resources []*resource.Info) (shared.State, error)
 }
 
 func NewExistsStateCheck() *ExistsStateCheck {
@@ -25,7 +25,7 @@ type ExistsStateCheck struct{}
 
 func (c *ExistsStateCheck) GetState(
 	ctx context.Context,
-	clnt Client,
+	clnt client.Client,
 	resources []*resource.Info,
 ) (shared.State, error) {
 	for i := range resources {

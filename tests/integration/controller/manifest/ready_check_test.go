@@ -76,7 +76,9 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(resources).ToNot(BeEmpty())
 
 		By("Executing the CR readiness check")
-		customStateCheck := statecheck.NewManagerStateCheck()
+		statefulChecker := statecheck.NewStatefulSetStateCheck()
+		deploymentChecker := statecheck.NewDeploymentStateCheck()
+		customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
 		state, err := customStateCheck.GetState(ctx, testClient, resources)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(state).To(Equal(shared.StateReady))
