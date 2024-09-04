@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -11,23 +12,54 @@ type RequeueIntervals struct {
 	Busy    time.Duration
 	Warning time.Duration
 	Error   time.Duration
+	Jitter  *RequeueJitter
 }
 
 func DetermineRequeueInterval(state shared.State, intervals RequeueIntervals) time.Duration {
+	var interval time.Duration
 	switch state {
 	case shared.StateError:
-		return intervals.Error
+		interval = intervals.Error
 	case shared.StateDeleting:
-		return intervals.Busy
+		interval = intervals.Busy
 	case shared.StateProcessing:
-		return intervals.Busy
+		interval = intervals.Busy
 	case shared.StateWarning:
-		return intervals.Warning
+		interval = intervals.Warning
 	case shared.StateReady:
-		return intervals.Success
+		interval = intervals.Success
 	default:
-		return intervals.Success
+		interval = intervals.Success
 	}
+
+	if intervals.Jitter != nil {
+		return intervals.Jitter.Apply(interval)
+	}
+	return interval
+}
+
+type RequeueJitter struct {
+	JitterProbability float64
+	JitterPercentage  float64
+	RandFunc          func() float64
+}
+
+func NewRequeueJitter(jitterProbability, jitterPercentage float64) *RequeueJitter {
+	return &RequeueJitter{
+		JitterProbability: jitterProbability,
+		JitterPercentage:  jitterPercentage,
+		RandFunc:          rand.Float64,
+	}
+}
+
+func (j *RequeueJitter) Apply(interval time.Duration) time.Duration {
+	if j.RandFunc() <= j.JitterProbability {
+		//nolint:mnd // 2 is part of the formula
+		jitter := j.RandFunc()*(2*j.JitterPercentage) - j.JitterPercentage
+		return time.Duration(float64(interval) * (1 + jitter))
+	}
+
+	return interval
 }
 
 type RequeueType string
