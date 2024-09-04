@@ -124,7 +124,7 @@ func (r *Reconciler) stateHandling(ctx context.Context, watcher *v1beta2.Watcher
 	case shared.StateReady, shared.StateWarning:
 		return r.handleProcessingState(ctx, watcher)
 	case shared.StateUnmanaged:
-		return ctrl.Result{}, errInvalidWatcherState
+		return ctrl.Result{}, nil // no requeue of invalid state
 	}
 
 	return ctrl.Result{Requeue: false}, nil
