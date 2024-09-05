@@ -5,7 +5,7 @@ packages:
   internal/event: 100
   internal/manifest/statecheck: 66
   internal/manifest/filemutex: 100
-  internal/manifest: 12
+  internal/manifest: 7
   internal/istio: 63
   internal/pkg/resources: 91
   internal/remote: 6
