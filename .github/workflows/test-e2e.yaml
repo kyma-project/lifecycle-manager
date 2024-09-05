@@ -1,29 +1,20 @@
 name: TestSuite E2E
 
 on:
-  pull_request:
-    branches:
-      - main
-      - feat/**
   workflow_dispatch:
     inputs:
       k8s_version:
         description: With Kubernetes version
         required: false
-
+  workflow_run:
+    workflows: [ "Build Image" ]
+    types:
+      - completed
+    branches-ignore:
+      - main
 jobs:
-  wait-for-image-build:
-    name: Wait for image build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/wait-for-image-build
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
   e2e-integration:
     name: E2E
-    needs: wait-for-image-build
     strategy:
       matrix:
         e2e-test:
