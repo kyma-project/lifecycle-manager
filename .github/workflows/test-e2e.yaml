@@ -25,6 +25,7 @@ jobs:
     name: E2E
     needs: wait-for-image-build
     strategy:
+      fail-fast: false
       matrix:
         e2e-test:
           - watcher-enqueue
