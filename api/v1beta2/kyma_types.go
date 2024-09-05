@@ -71,7 +71,6 @@ type Module struct {
 
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
-	// The Version and Channel are mutually exclusive options.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
@@ -81,8 +80,7 @@ type Module struct {
 	// ModuleTemplate based on this specific version.
 	// The Version and Channel are mutually exclusive options.
 	// The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-	// +kubebuilder:validation:Pattern:=`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
-	Version string `json:"version,omitempty"`
+	Version string `json:"-"`
 
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
