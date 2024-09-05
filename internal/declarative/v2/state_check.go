@@ -13,19 +13,19 @@ import (
 
 var ErrNotValidClientObject = errors.New("object in resource info is not a valid client object")
 
-type ReadyCheck interface {
-	Run(ctx context.Context, clnt Client, resources []*resource.Info) (shared.State, error)
+type StateCheck interface {
+	GetState(ctx context.Context, clnt client.Client, resources []*resource.Info) (shared.State, error)
 }
 
-func NewExistsReadyCheck() *ExistsReadyCheck {
-	return &ExistsReadyCheck{}
+func NewExistsStateCheck() *ExistsStateCheck {
+	return &ExistsStateCheck{}
 }
 
-type ExistsReadyCheck struct{}
+type ExistsStateCheck struct{}
 
-func (c *ExistsReadyCheck) Run(
+func (c *ExistsStateCheck) GetState(
 	ctx context.Context,
-	clnt Client,
+	clnt client.Client,
 	resources []*resource.Info,
 ) (shared.State, error) {
 	for i := range resources {

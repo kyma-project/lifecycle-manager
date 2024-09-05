@@ -41,6 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -136,6 +137,8 @@ var _ = BeforeSuite(func() {
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
 	extractor := manifest.NewPathExtractor(nil)
+	statefulChecker := statecheck.NewStatefulSetStateCheck()
+	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
@@ -150,7 +153,7 @@ var _ = BeforeSuite(func() {
 			},
 		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithCustomReadyCheck(manifest.NewResourceReadyCheck()))
+		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
