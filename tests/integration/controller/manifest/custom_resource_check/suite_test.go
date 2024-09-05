@@ -136,7 +136,8 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
-	extractor := manifest.NewPathExtractor(nil)
+	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
+	extractor := manifest.NewRawManifestDownloader(nil)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
@@ -146,7 +147,7 @@ var _ = BeforeSuite(func() {
 		Warning: 1 * time.Second,
 	},
 		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifest.NewSpecResolver(kcp.Client, extractor),
+		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
