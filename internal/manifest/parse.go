@@ -22,18 +22,20 @@ import (
 
 var ErrImageLayerPull = errors.New("failed to pull layer")
 
-type PathExtractor struct {
+// RawManifestDownloader is responsible for downloading raw manifests contents from a container registry.
+// Downloaded manifests are stored as files in the local filesystem for caching purposes.
+type RawManifestDownloader struct {
 	fileMutexCache *filemutex.MutexCache
 }
 
-func NewPathExtractor(cache *filemutex.MutexCache) *PathExtractor {
+func NewRawManifestDownloader(cache *filemutex.MutexCache) *RawManifestDownloader {
 	if cache == nil {
-		return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
+		return &RawManifestDownloader{fileMutexCache: filemutex.NewMutexCache(nil)}
 	}
-	return &PathExtractor{fileMutexCache: cache}
+	return &RawManifestDownloader{fileMutexCache: cache}
 }
 
-func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
+func (p RawManifestDownloader) GetPathFromRawManifest(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
 ) (string, error) {
@@ -49,11 +51,11 @@ func (p PathExtractor) GetPathFromRawManifest(ctx context.Context,
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
-	dir, err := os.Open(manifestPath)
+	cachedFile, err := os.Open(manifestPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("opening dir for installs caused an error %s: %w", imageRef, err)
 	}
-	if dir != nil {
+	if cachedFile != nil {
 		return manifestPath, nil
 	}
 

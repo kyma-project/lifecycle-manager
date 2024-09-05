@@ -23,13 +23,14 @@ func NewReconciler(mgr manager.Manager,
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	extractor := manifest.NewPathExtractor(nil)
+	extractor := manifest.NewRawManifestDownloader(nil)
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
+	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-		manifest.NewSpecResolver(kcp.Client, extractor),
+		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
