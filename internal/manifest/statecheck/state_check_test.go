@@ -18,9 +18,11 @@ import (
 
 func TestManagerStateCheck_GetState(t *testing.T) {
 	tests := []struct {
-		name         string
-		resources    []*resource.Info
-		isDeployment bool
+		name          string
+		resources     []*resource.Info
+		isDeployment  bool
+		isStateFulSet bool
+		expectedError error
 	}{
 		{
 			name: "Test Deployment State Checker",
@@ -31,7 +33,9 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 					},
 				},
 			},
-			isDeployment: true,
+			isDeployment:  true,
+			isStateFulSet: false,
+			expectedError: nil,
 		},
 		{
 			name: "Test StatefulSet State Checker",
@@ -42,7 +46,16 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 					},
 				},
 			},
-			isDeployment: false,
+			isDeployment:  false,
+			isStateFulSet: true,
+			expectedError: nil,
+		},
+		{
+			name:          "Test no manager found",
+			resources:     []*resource.Info{},
+			isDeployment:  false,
+			isStateFulSet: false,
+			expectedError: statecheck.ErrNoManagerProvided,
 		},
 	}
 	for _, testCase := range tests {
@@ -55,12 +68,20 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 			deploymentChecker := &DeploymentStateCheckerStub{}
 			m := statecheck.NewManagerStateCheck(statefulsetChecker, deploymentChecker)
 			got, err := m.GetState(context.Background(), clnt, testCase.resources)
-			require.NoError(t, err)
+
+			if testCase.expectedError == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, testCase.expectedError, err)
+			}
+
 			if testCase.isDeployment {
 				require.True(t, deploymentChecker.called)
 				require.False(t, statefulsetChecker.called)
 				require.Equal(t, shared.StateProcessing, got)
-			} else {
+			}
+
+			if testCase.isStateFulSet {
 				require.True(t, statefulsetChecker.called)
 				require.False(t, deploymentChecker.called)
 				require.Equal(t, shared.StateReady, got)
