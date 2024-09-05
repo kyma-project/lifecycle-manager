@@ -13,4 +13,3 @@ if ! [[ $CURRENT_RELEASE_TAG =~ $semver_pattern ]]; then
     echo "Given tag \"$CURRENT_RELEASE_TAG\" does not match the expected semantic version pattern: \"$semver_pattern\"."
     exit 1
 fi
-

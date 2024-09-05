@@ -1,0 +1,46 @@
+name: Build Lifecycle Manager
+
+on:
+  push:
+    branches:
+      - main  # This will get tagged with `latest` and `v{{DATE}}-{{COMMIT_HASH_SHORT}}`
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Additional tag for built images'
+        required: false
+        type: string
+        default: ""
+  pull_request_target:
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
+
+permissions:
+  id-token: write # This is required for requesting the JWT token
+  contents: read # This is required for actions/checkout
+
+jobs:
+  compute-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get_tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get the latest tag
+        id: get_tag
+        run: |
+          if [[ "${{ inputs.tag }}" != "" ]]; then
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+      - name: Echo the tag
+        run: echo ${{ steps.get_tag.outputs.tag }}
+  build-image:
+    needs: compute-tag
+    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
+    with:
+      name: lifecycle-manager
+      dockerfile: Dockerfile
+      context: .
+      tags: ${{ needs.compute-tag.outputs.tag }}
