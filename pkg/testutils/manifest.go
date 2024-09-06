@@ -27,6 +27,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -45,16 +46,9 @@ var (
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
-	return &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", prefix, random.Name()),
-			Namespace: apimetav1.NamespaceDefault,
-			Labels: map[string]string{
-				shared.KymaName: string(uuid.NewUUID()),
-			},
-			Annotations: map[string]string{},
-		},
-	}
+	return builder.NewManifestBuilder().WithName(fmt.Sprintf("%s-%s", prefix,
+		random.Name())).WithNamespace(apimetav1.NamespaceDefault).WithLabel(shared.KymaName,
+		string(uuid.NewUUID())).Build()
 }
 
 // GetManifest should be only used when manifest still been tracked in kyma.status.
@@ -71,7 +65,6 @@ func GetManifest(ctx context.Context,
 
 	var manifestKey *v1beta2.TrackingObject
 	for _, module := range kyma.Status.Modules {
-		module := module
 		if module.Name == moduleName {
 			manifestKey = module.Manifest
 		}
@@ -265,7 +258,6 @@ func SetSkipLabelToMandatoryManifests(ctx context.Context, clnt client.Client, i
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
 	for _, manifest := range manifestList.Items {
-		manifest := manifest
 		manifest.Labels[shared.SkipReconcileLabel] = strconv.FormatBool(ifSkip)
 		err := clnt.Update(ctx, &manifest)
 		if err != nil {

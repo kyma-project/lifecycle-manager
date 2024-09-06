@@ -136,6 +136,13 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
+	extractor := manifest.NewRawManifestDownloader(nil)
+	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
+	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
+		Success: 1 * time.Second,
+		Busy:    1 * time.Second,
+		Error:   1 * time.Second,
+		Warning: 1 * time.Second,
 	extractor := img.NewPathExtractor()
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
@@ -144,14 +151,14 @@ var _ = BeforeSuite(func() {
 		Warning: 1 * time.Second,
 	},
 		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifest.NewSpecResolver(kcp.Client, extractor),
+		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
 		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithCustomReadyCheck(declarativev2.NewExistsReadyCheck()))
+		declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

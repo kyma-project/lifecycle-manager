@@ -5,28 +5,35 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/auth"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 )
 
-type SpecResolver struct {
-	kcpClient             client.Client
-	manifestPathExtractor *img.PathExtractor
+type KeyChainLookup interface {
+	Get(ctx context.Context, imageSpec v1beta2.ImageSpec) (authn.Keychain, error)
 }
 
-func NewSpecResolver(kcpClient client.Client, extractor *img.PathExtractor) *SpecResolver {
+type PathExtractor interface {
+	GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec, keyChain authn.Keychain) (string, error)
+}
+
+type SpecResolver struct {
+	keyChainLookup        KeyChainLookup
+	manifestPathExtractor PathExtractor
+}
+
+func NewSpecResolver(kcLookup KeyChainLookup, extractor PathExtractor) *SpecResolver {
 	return &SpecResolver{
-		kcpClient:             kcpClient,
+		keyChainLookup:        kcLookup,
 		manifestPathExtractor: extractor,
 	}
 }
 
-var errRenderModeInvalid = errors.New("render mode is invalid")
+var ErrRenderModeInvalid = errors.New("render mode is invalid")
 
 func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*declarativev2.Spec, error) {
 	var imageSpec v1beta2.ImageSpec
@@ -34,17 +41,17 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	if imageSpec.Type != v1beta2.OciRefType && imageSpec.Type != v1beta2.OciDirType {
+	if imageSpec.Type != v1beta2.OciRefType {
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
-			client.ObjectKeyFromObject(manifest), errRenderModeInvalid)
+			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
-	keyChain, err := auth.LookupKeyChain(ctx, imageSpec, s.kcpClient)
+	keyChain, err := s.keyChainLookup.Get(ctx, imageSpec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
 
-	rawManifestPath, err := s.manifestPathExtractor.FetchLayerToFile(ctx, imageSpec, keyChain)
+	rawManifestPath, err := s.manifestPathExtractor.GetPathFromRawManifest(ctx, imageSpec, keyChain)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
 	}

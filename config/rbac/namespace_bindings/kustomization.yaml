@@ -11,10 +11,8 @@ resources:
   # runtime. Be sure to update RoleBinding and ClusterRoleBinding
   # subjects if changing service account names.
   - role_binding.yaml
-  - metrics_role_binding.yaml
   # Comment the following to disable manifest integration
-  - manifest_role_binding.yaml
-  - istio_namespace_role.yaml
-  - remote_namespace_role.yaml
-  - istio_namespace_role_binding.yaml
-  - remote_namespace_role_binding.yaml
+  - watcher_certmanager_role.yaml
+  - skr_role.yaml
+  - watcher_certmanager_role_binding.yaml
+  - skr_role_binding.yaml

@@ -1,12 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: metrics-rolebinding
+  name: controller-manager-skr
   namespace: kyma-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: metrics-reader
+  kind: Role
+  name: controller-manager-skr
 subjects:
   - kind: ServiceAccount
     name: controller-manager

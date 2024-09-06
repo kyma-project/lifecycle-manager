@@ -20,7 +20,6 @@ func NewHTTPRoute(watcher *v1beta2.Watcher) (*istioapiv1beta1.HTTPRoute, error) 
 			{
 				Uri: &istioapiv1beta1.StringMatch{
 					MatchType: &istioapiv1beta1.StringMatch_Prefix{
-						//nolint:nosnakecase // external type
 						Prefix: fmt.Sprintf(prefixFormat, contractVersion, watcher.GetModuleName()),
 					},
 				},
@@ -31,13 +30,18 @@ func NewHTTPRoute(watcher *v1beta2.Watcher) (*istioapiv1beta1.HTTPRoute, error) 
 				Destination: &istioapiv1beta1.Destination{
 					Host: destinationHost(watcher.Spec.ServiceInfo.Name, watcher.Spec.ServiceInfo.Namespace),
 					Port: &istioapiv1beta1.PortSelector{
-						Number: uint32(watcher.Spec.ServiceInfo.Port),
+						Number: uint32(watcher.Spec.ServiceInfo.Port), //nolint: gosec // see validation of port range below
 					},
 				},
 			},
 		},
 	}, nil
 }
+
+const (
+	minPort = 1
+	maxPort = 65535
+)
 
 func validateArgumentsForNewHTTPRoute(watcher *v1beta2.Watcher) error {
 	if watcher == nil {
@@ -64,9 +68,12 @@ func validateArgumentsForNewHTTPRoute(watcher *v1beta2.Watcher) error {
 		return fmt.Errorf("watcher.Spec.ServiceInfo.Namespace must not be empty: %w", ErrInvalidArgument)
 	}
 
-	// 0 is the zero value of int64 and further a reserved port => consider it invalid
 	if watcher.Spec.ServiceInfo.Port == 0 {
-		return fmt.Errorf("watcher.Spec.ServiceInfo.Port must not be 0: %w", ErrInvalidArgument)
+		return fmt.Errorf("watcher.Spec.ServiceInfo.Port must not be 0 as it is reserved: %w", ErrInvalidArgument)
+	}
+
+	if watcher.Spec.ServiceInfo.Port < minPort || watcher.Spec.ServiceInfo.Port > maxPort {
+		return fmt.Errorf("watcher.Spec.ServiceInfo.Port must be between %d and %d: %w", minPort, maxPort, ErrInvalidArgument)
 	}
 
 	return nil

@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	watcherCrName = "klm-kyma-watcher"
+	watcherCrName = "klm-watcher"
 )
 
 var errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")

@@ -102,7 +102,6 @@ jobs:
           
           kubectl create namespace kyma-system
           kubectl create namespace kcp-system
-          kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-47.0.0/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
       - name: Deploy lifecycle manager with Kyma CLI
         run: kyma --ci alpha deploy -k config/${{ matrix.target }}
       - name: Deploy template operator module template and add module
@@ -128,7 +127,7 @@ jobs:
             name: kyma-cli-provisioned-wildcard
           subjects:
             - kind: ServiceAccount
-              name: lifecycle-manager-controller-manager
+              name: klm-controller-manager
               namespace: kcp-system
           EOF
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml

@@ -41,6 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -136,6 +137,11 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
+	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
+	extractor := manifest.NewRawManifestDownloader(nil)
+	statefulChecker := statecheck.NewStatefulSetStateCheck()
+	deploymentChecker := statecheck.NewDeploymentStateCheck()
+	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 	extractor := img.NewPathExtractor()
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
@@ -144,14 +150,14 @@ var _ = BeforeSuite(func() {
 		Warning: 1 * time.Second,
 	},
 		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifest.NewSpecResolver(kcp.Client, extractor),
+		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
 		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
 		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarativev2.WithCustomReadyCheck(manifest.NewResourceReadyCheck()))
+		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

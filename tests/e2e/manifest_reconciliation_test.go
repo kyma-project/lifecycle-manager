@@ -29,7 +29,8 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			By("Then the Module Operator is deployed on the SKR cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleResourceName,
+					TestModuleResourceNamespace).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State")
 			Eventually(CheckSampleCRIsInState).

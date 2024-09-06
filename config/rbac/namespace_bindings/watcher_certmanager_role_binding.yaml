@@ -1,11 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
-  name: manager-rolebinding-manifest
+  name: controller-manager-watcher-certmanager
+  namespace: istio-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: manager-role-manifest
+  kind: Role
+  name: controller-manager-watcher-certmanager
 subjects:
   - kind: ServiceAccount
     name: controller-manager

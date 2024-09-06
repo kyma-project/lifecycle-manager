@@ -12,5 +12,3 @@ resources:
   # subjects if changing service account names.
   - clusterrole_binding.yaml
   - metrics_clusterrole_binding.yaml
-  # Comment the following to disable manifest integration
-  - manifest_clusterrole_binding.yaml

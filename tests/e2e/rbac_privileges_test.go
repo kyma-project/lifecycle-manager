@@ -28,14 +28,14 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"update"},
 				},
 			}
-			Expect(GetClusterRoleBindingPolicyRules(ctx, kcpClient, "klm-manager-role-crd",
+			Expect(GetClusterRoleBindingPolicyRules(ctx, kcpClient, "klm-controller-manager-crds",
 				klmClusterRoleBindings)).To(Equal(crdRoleRules))
 
 			By("And KLM Service Account has the correct RoleBindings in kcp-system namespace")
 			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(3))
+			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(2))
 
 			leaderElectionRoleRules := []apirbacv1.PolicyRule{
 				{
@@ -54,7 +54,8 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"create", "patch"},
 				},
 			}
-			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-leader-election-role", "kcp-system",
+			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager-leader-election",
+				"kcp-system",
 				kcpSystemKlmRoleBindings)).To(Equal(leaderElectionRoleRules))
 
 			klmManagerRoleRules := []apirbacv1.PolicyRule{
@@ -125,6 +126,21 @@ var _ = Describe("RBAC Privileges", func() {
 				},
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"manifests"},
+					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"manifests/finalizers"},
+					Verbs:     []string{"update"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"manifests/status"},
+					Verbs:     []string{"get", "patch", "update"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"moduletemplates"},
 					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
 				},
@@ -149,28 +165,8 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"get", "patch", "update"},
 				},
 			}
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, kcpClient, "klm-manager-role",
+			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, kcpClient, "klm-controller-manager",
 				kcpSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
-
-			manifestRoleRules := []apirbacv1.PolicyRule{
-				{
-					APIGroups: []string{"operator.kyma-project.io"},
-					Resources: []string{"manifests"},
-					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
-				},
-				{
-					APIGroups: []string{"operator.kyma-project.io"},
-					Resources: []string{"manifests/finalizers"},
-					Verbs:     []string{"update"},
-				},
-				{
-					APIGroups: []string{"operator.kyma-project.io"},
-					Resources: []string{"manifests/status"},
-					Verbs:     []string{"get", "patch", "update"},
-				},
-			}
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, kcpClient, "klm-manager-role-manifest",
-				kcpSystemKlmRoleBindings)).To(Equal(manifestRoleRules))
 
 			By("And KLM Service Account has the correct RoleBindings in istio-system namespace")
 			istioNamespaceRoleRules := []apirbacv1.PolicyRule{
@@ -195,7 +191,7 @@ var _ = Describe("RBAC Privileges", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(istioSystemKlmRoleBindings.Items).To(HaveLen(1))
 
-			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-manager-role-istio-namespace",
+			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager-watcher-certmanager",
 				"istio-system",
 				istioSystemKlmRoleBindings)).To(Equal(istioNamespaceRoleRules))
 
@@ -225,20 +221,11 @@ var _ = Describe("RBAC Privileges", func() {
 			kymaSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kyma-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kymaSystemKlmRoleBindings.Items).To(HaveLen(2))
+			Expect(kymaSystemKlmRoleBindings.Items).To(HaveLen(1))
 
 			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient,
-				"klm-manager-role-remote-namespace", "kyma-system",
+				"klm-controller-manager-skr", "kyma-system",
 				kymaSystemKlmRoleBindings)).To(Equal(remoteNamespaceRoleRules))
-
-			metricsReaderRoleRules := []apirbacv1.PolicyRule{
-				{
-					NonResourceURLs: []string{"/metrics"},
-					Verbs:           []string{"get"},
-				},
-			}
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, kcpClient, "klm-metrics-reader",
-				kymaSystemKlmRoleBindings)).To(Equal(metricsReaderRoleRules))
 		})
 	})
 })

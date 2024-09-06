@@ -100,7 +100,7 @@ func main() {
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
-	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout)))
+	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout))) //nolint:gosec // loglevel should always be between -128 to 127
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -265,9 +265,9 @@ func enableWebhooks(mgr manager.Manager, setupLog logr.Logger) {
 
 func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	return ctrlruntime.Options{
-		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(flagVar.FailureBaseDelay, flagVar.FailureMaxDelay),
-			&workqueue.BucketRateLimiter{
+		RateLimiter: workqueue.NewTypedMaxOfRateLimiter(
+			workqueue.NewTypedItemExponentialFailureRateLimiter[ctrl.Request](flagVar.FailureBaseDelay, flagVar.FailureMaxDelay),
+			&workqueue.TypedBucketRateLimiter[ctrl.Request]{
 				Limiter: rate.NewLimiter(rate.Limit(flagVar.RateLimiterFrequency), flagVar.RateLimiterBurst),
 			},
 		),
@@ -334,6 +334,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		AdditionalDNSNames:  strings.Split(flagVar.AdditionalDNSNames, ","),
 		Duration:            flagVar.SelfSignedCertDuration,
 		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
+		KeySize:             flagVar.SelfSignedCertKeySize,
 	}
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,
@@ -403,6 +404,8 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			Busy:    flagVar.ManifestRequeueBusyInterval,
 			Error:   flagVar.ManifestRequeueErrInterval,
 			Warning: flagVar.ManifestRequeueWarningInterval,
+			Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
+				flagVar.ManifestRequeueJitterPercentage),
 		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,

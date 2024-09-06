@@ -144,10 +144,19 @@ func getOCIRef(
 			repoSubpath = fmt.Sprintf("%s/%s", repo.SubPath, DefaultRepoSubdirectory)
 		}
 
-		layerRef.Repo = fmt.Sprintf("%s/%s", repo.Name(), repoSubpath)
+		baseURL := repo.Name()
+		if repo.SubPath != "" {
+			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
+		}
+
+		layerRef.Repo = fmt.Sprintf("%s/%s", baseURL, repoSubpath)
 		layerRef.Name = descriptor.GetName()
 	case genericocireg.OCIRegistryDigestMapping:
-		layerRef.Repo = repo.Name() + "/"
+		baseURL := repo.Name()
+		if repo.SubPath != "" {
+			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
+		}
+		layerRef.Repo = baseURL + "/"
 		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
 		return nil, fmt.Errorf(

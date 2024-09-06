@@ -16,7 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
@@ -76,8 +76,10 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(resources).ToNot(BeEmpty())
 
 		By("Executing the CR readiness check")
-		customReadyCheck := manifest.NewResourceReadyCheck()
-		state, err := customReadyCheck.Run(ctx, testClient, resources)
+		statefulChecker := statecheck.NewStatefulSetStateCheck()
+		deploymentChecker := statecheck.NewDeploymentStateCheck()
+		customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
+		state, err := customStateCheck.GetState(ctx, testClient, resources)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(state).To(Equal(shared.StateReady))
 
@@ -117,6 +119,11 @@ func verifyDeploymentInstallation(ctx context.Context, clnt client.Client, deplo
 		apiappsv1.DeploymentCondition{
 			Type:   apiappsv1.DeploymentAvailable,
 			Status: apicorev1.ConditionTrue,
+		},
+		apiappsv1.DeploymentCondition{
+			Type:   apiappsv1.DeploymentProgressing,
+			Status: apicorev1.ConditionTrue,
+			Reason: statecheck.NewReplicaSetAvailableReason,
 		})
 	err = clnt.Status().Update(ctx, deploy)
 	if err != nil {

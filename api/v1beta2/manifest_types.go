@@ -150,6 +150,30 @@ func (manifest *Manifest) SkipReconciliation() bool {
 	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true)
 }
 
+func (manifest *Manifest) IsMandatoryModule() bool {
+	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true)
+}
+
+func (manifest *Manifest) GetChannel() (string, bool) {
+	channel, found := manifest.Labels[shared.ChannelLabel]
+	if !found {
+		return "", false
+	}
+	return channel, true
+}
+
+func (manifest *Manifest) IsSameChannel(otherManifest *Manifest) bool {
+	channel, found := manifest.GetChannel()
+	if !found {
+		return false
+	}
+	otherChannel, found := otherManifest.GetChannel()
+	if !found {
+		return false
+	}
+	return channel == otherChannel
+}
+
 func (manifest *Manifest) HasDeletionTimestamp() bool {
 	return !manifest.GetDeletionTimestamp().IsZero()
 }

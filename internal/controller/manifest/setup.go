@@ -11,11 +11,13 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -60,7 +62,9 @@ func SetupWithManager(mgr manager.Manager,
 	}
 
 	addSkrEventToQueueFunc := &handler.Funcs{
-		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
+			queue workqueue.TypedRateLimitingInterface[ctrl.Request],
+		) {
 			ctrl.Log.WithName("listener").Info(
 				fmt.Sprintf(
 					"event coming from SKR, adding %s to queue",
@@ -75,7 +79,9 @@ func SetupWithManager(mgr manager.Manager,
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Named(controllerName).
-		Watches(&apicorev1.Secret{}, handler.Funcs{}).
+		Watches(&apicorev1.Secret{}, handler.Funcs{},
+			builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{},
+				predicate.LabelChangedPredicate{}))).
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
 		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics)); err != nil {

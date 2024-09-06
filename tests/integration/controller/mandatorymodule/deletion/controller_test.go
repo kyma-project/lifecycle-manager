@@ -133,7 +133,6 @@ func deleteMandatoryModuleTemplates(ctx context.Context, clnt client.Client) err
 	}
 
 	for _, template := range templates.Items {
-		template := template
 		if template.Spec.Mandatory {
 			if err := clnt.Delete(ctx, &template); err != nil {
 				return fmt.Errorf("failed to delete ModuleTemplate: %w", err)

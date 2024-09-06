@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.22.5-alpine AS builder
+FROM golang:1.22.6-alpine as builder
 
 WORKDIR /lifecycle-manager
 # Copy the Go Modules manifests

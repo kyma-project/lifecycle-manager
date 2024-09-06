@@ -19,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 const (
@@ -78,7 +79,6 @@ func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			kyma := testutils.NewTestKyma("test-kyma")
@@ -151,7 +151,6 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			kyma := testutils.NewTestKyma("test-kyma")
