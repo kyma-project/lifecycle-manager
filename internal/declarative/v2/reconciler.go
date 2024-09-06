@@ -138,7 +138,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if manifest.IsUnmanaged() {
 		manifest.SetFinalizers([]string{})
-		return r.updateManifest(ctx, manifest, metrics.ManifestUnmanagedUpdate)
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
+		}
+		if err := r.Delete(ctx, manifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+		}
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {

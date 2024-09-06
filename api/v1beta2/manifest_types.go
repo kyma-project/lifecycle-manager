@@ -167,7 +167,3 @@ func (manifest *Manifest) IsSameChannel(otherManifest *Manifest) bool {
 	}
 	return channel == otherChannel
 }
-
-func (manifest *Manifest) HasDeletionTimestamp() bool {
-	return !manifest.GetDeletionTimestamp().IsZero()
-}

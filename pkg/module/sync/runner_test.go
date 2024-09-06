@@ -356,6 +356,37 @@ func TestNeedToUpdate(t *testing.T) {
 			false,
 		},
 		{
+			"When cluster Manifest is unmanaged and module is managed, expect no update",
+			args{
+				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Annotations: map[string]string{shared.UnmanagedAnnotation: "true"},
+					},
+					Status: shared.Status{
+						State: "Ready",
+					},
+				},
+				&v1beta2.Manifest{},
+				&v1beta2.ModuleStatus{
+					State: "Ready", Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				}, &common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: trackedModuleTemplateGeneration,
+							},
+						},
+					},
+					IsUnmanaged: false,
+				},
+			},
+			false,
+		},
+		{
 			"When cluster Manifest is managed and module is unmanaged, expect update",
 			args{
 				&v1beta2.Manifest{

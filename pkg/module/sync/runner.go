@@ -120,9 +120,6 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	if err != nil {
 		return err
 	}
-	if manifestInCluster != nil && module.IsUnmanaged && manifestInCluster.IsUnmanaged() {
-		return r.deleteManifest(ctx, module)
-	}
 
 	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
 		manifestInCluster, newManifest, moduleStatus); err != nil {
@@ -206,7 +203,7 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 		return !(module.IsUnmanaged)
 	}
 
-	if module.IsUnmanaged && manifestInCluster.IsUnmanaged() {
+	if manifestInCluster.IsUnmanaged() {
 		return false
 	}
 
