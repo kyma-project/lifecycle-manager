@@ -123,7 +123,7 @@ func (manifest *Manifest) SetStatus(status shared.Status) {
 }
 
 func (manifest *Manifest) IsUnmanaged() bool {
-	return manifest.GetAnnotations() != nil && manifest.GetAnnotations()[shared.UnmanagedAnnotation] != ""
+	return manifest.GetAnnotations() != nil && manifest.GetAnnotations()[shared.UnmanagedAnnotation] == shared.EnableLabelValue
 }
 
 func (manifest *Manifest) IsMandatoryModule() bool {

@@ -193,7 +193,7 @@ func configureModuleInKyma(
 func TestNeedToUpdate(t *testing.T) {
 	type args struct {
 		manifestInCluster *v1beta2.Manifest
-		manifestObj       *v1beta2.Manifest
+		newManifest       *v1beta2.Manifest
 		moduleStatus      *v1beta2.ModuleStatus
 		module            *common.Module
 	}
@@ -356,6 +356,37 @@ func TestNeedToUpdate(t *testing.T) {
 			false,
 		},
 		{
+			"When cluster Manifest is managed and module is unmanaged, expect update",
+			args{
+				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Annotations: map[string]string{shared.UnmanagedAnnotation: "false"},
+					},
+					Status: shared.Status{
+						State: "Ready",
+					},
+				},
+				&v1beta2.Manifest{},
+				&v1beta2.ModuleStatus{
+					State: "Ready", Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: trackedModuleTemplateGeneration,
+						},
+					},
+				}, &common.Module{
+					Template: &templatelookup.ModuleTemplateInfo{
+						ModuleTemplate: &v1beta2.ModuleTemplate{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Generation: trackedModuleTemplateGeneration,
+							},
+						},
+					},
+					IsUnmanaged: true,
+				},
+			},
+			true,
+		},
+		{
 			"When no update required, expect no update",
 			args{
 				&v1beta2.Manifest{
@@ -430,9 +461,9 @@ func TestNeedToUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.manifestObj,
+			assert.Equalf(t, tt.want, sync.NeedToUpdate(tt.args.manifestInCluster, tt.args.newManifest,
 				tt.args.moduleStatus, tt.args.module), "needToUpdate(%v, %v, %v)",
-				tt.args.manifestInCluster, tt.args.manifestObj,
+				tt.args.manifestInCluster, tt.args.newManifest,
 				tt.args.moduleStatus)
 		})
 	}
