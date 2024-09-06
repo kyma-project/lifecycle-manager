@@ -137,7 +137,8 @@ type mockPathExtractor struct {
 }
 
 func (m *mockPathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec,
-	keyChain authn.Keychain) (string, error) {
+	keyChain authn.Keychain,
+) (string, error) {
 	if m.mockError != nil {
 		return "", m.mockError
 	}
