@@ -137,7 +137,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.IsUnmanaged() {
-		manifest.SetFinalizers([]string{})
 		if !manifest.GetDeletionTimestamp().IsZero() {
 			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
 		}
@@ -235,7 +234,11 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
 	r.cleanUpMandatoryModuleMetrics(manifest)
-	if removeFinalizers(manifest, r.finalizerToRemove(originalErr, manifest)) {
+	finalizersToRemove := []string{defaultFinalizer}
+	if errors.Is(originalErr, ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
+		finalizersToRemove = manifest.GetFinalizers()
+	}
+	if removeFinalizers(manifest, finalizersToRemove) {
 		return r.updateManifest(ctx, manifest, requeueReason)
 	}
 	if manifest.GetStatus().State != shared.StateWarning {
@@ -243,14 +246,6 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", manifest.GetFinalizers())))
 	}
 	return r.finishReconcile(ctx, manifest, requeueReason, manifestStatus, originalErr)
-}
-
-func (r *Reconciler) finalizerToRemove(originalErr error, manifest *v1beta2.Manifest) []string {
-	finalizersToRemove := []string{defaultFinalizer}
-	if errors.Is(originalErr, ErrAccessSecretNotFound) {
-		finalizersToRemove = manifest.GetFinalizers()
-	}
-	return finalizersToRemove
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
