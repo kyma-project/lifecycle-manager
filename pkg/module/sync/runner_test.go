@@ -359,10 +359,13 @@ func TestNeedToUpdate(t *testing.T) {
 			"When no update required, expect no update",
 			args{
 				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{shared.ChannelLabel: "regular"},
+					},
+					Spec: v1beta2.ManifestSpec{Version: "0.1"},
 					Status: shared.Status{
 						State: "Ready",
 					},
-					Spec: v1beta2.ManifestSpec{Version: "0.1"},
 				},
 				&v1beta2.Manifest{
 					ObjectMeta: apimetav1.ObjectMeta{
