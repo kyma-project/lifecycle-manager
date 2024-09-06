@@ -27,7 +27,9 @@ func DetermineRequeueInterval(state shared.State, intervals RequeueIntervals) ti
 	case shared.StateWarning:
 		interval = intervals.Warning
 	case shared.StateReady:
-		interval = intervals.Success
+		fallthrough
+	case shared.StateUnmanaged:
+		fallthrough
 	default:
 		interval = intervals.Success
 	}
@@ -54,8 +56,7 @@ func NewRequeueJitter(jitterProbability, jitterPercentage float64) *RequeueJitte
 
 func (j *RequeueJitter) Apply(interval time.Duration) time.Duration {
 	if j.RandFunc() <= j.JitterProbability {
-		//nolint:mnd // 2 is part of the formula
-		jitter := j.RandFunc()*(2*j.JitterPercentage) - j.JitterPercentage
+		jitter := j.RandFunc()*(2*j.JitterPercentage) - j.JitterPercentage //nolint:mnd // 2 is part of the formula
 		return time.Duration(float64(interval) * (1 + jitter))
 	}
 

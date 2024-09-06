@@ -41,7 +41,7 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	if imageSpec.Type != v1beta2.OciRefType {
+	if imageSpec.Type != v1beta2.OciRefType && imageSpec.Type != v1beta2.OciDirType {
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
