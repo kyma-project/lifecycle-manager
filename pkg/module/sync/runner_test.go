@@ -391,13 +391,17 @@ func TestNeedToUpdate(t *testing.T) {
 			args{
 				&v1beta2.Manifest{
 					ObjectMeta: apimetav1.ObjectMeta{
-						Annotations: map[string]string{shared.UnmanagedAnnotation: "false"},
+						Labels: map[string]string{shared.ChannelLabel: "fast"},
 					},
 					Status: shared.Status{
 						State: "Ready",
 					},
 				},
-				&v1beta2.Manifest{},
+				&v1beta2.Manifest{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Labels: map[string]string{shared.ChannelLabel: "fast"},
+					},
+				},
 				&v1beta2.ModuleStatus{
 					State: "Ready", Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{

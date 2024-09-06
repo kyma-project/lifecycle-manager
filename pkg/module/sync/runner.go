@@ -207,6 +207,10 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 		return false
 	}
 
+	if module.IsUnmanaged {
+		return true
+	}
+
 	diffInSpec := newManifest.Spec.Version != manifestInCluster.Spec.Version ||
 		!newManifest.IsSameChannel(manifestInCluster)
 	if manifestInCluster.IsMandatoryModule() || moduleInStatus == nil {
