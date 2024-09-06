@@ -360,6 +360,10 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v
 		}
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return r.setManifestState(manifest, shared.StateDeleting)
+	}
+
 	managerState, err := r.checkManagerState(ctx, clnt, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
@@ -393,14 +397,9 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 	error,
 ) {
 	managerReadyCheck := r.CustomStateCheck
-
 	managerState, err := managerReadyCheck.GetState(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
-	}
-
-	if managerState == shared.StateProcessing {
-		return shared.StateProcessing, nil
 	}
 
 	return managerState, nil
