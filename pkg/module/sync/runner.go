@@ -16,7 +16,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -146,7 +145,7 @@ func getManifestStatus(manifest, manifestInCluster *v1beta2.Manifest) shared.Sta
 func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
 	manifestInCluster, newManifest *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
-	if !NeedToUpdate(manifestInCluster, newManifest, kymaModuleStatus, module.Template.GetGeneration()) {
+	if !NeedToUpdate(manifestInCluster, newManifest, kymaModuleStatus, module) {
 		return nil
 	}
 	if module.Enabled {
@@ -201,7 +200,7 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 }
 
 func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStatus *v1beta2.ModuleStatus,
-	moduleTemplateGeneration int64,
+	module *common.Module,
 ) bool {
 	if manifestInCluster == nil {
 		return true
@@ -217,7 +216,7 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 		return diffInSpec
 	}
 
-	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != moduleTemplateGeneration
+	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != module.Template.GetGeneration()
 	return diffInTemplate || diffInSpec
 }
 

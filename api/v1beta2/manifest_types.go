@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"strconv"
-
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -147,11 +145,7 @@ func init() {
 }
 
 func (manifest *Manifest) SkipReconciliation() bool {
-	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true)
-}
-
-func (manifest *Manifest) IsMandatoryModule() bool {
-	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.IsMandatoryModule] == strconv.FormatBool(true)
+	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == shared.EnableLabelValue
 }
 
 func (manifest *Manifest) GetChannel() (string, bool) {

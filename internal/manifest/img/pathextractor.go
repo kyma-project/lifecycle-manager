@@ -38,7 +38,7 @@ func NewPathExtractor() *PathExtractor {
 	return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
 }
 
-func (p PathExtractor) FetchLayerToFile(ctx context.Context, imageSpec v1beta2.ImageSpec,
+func (p PathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
 ) (string, error) {
 	switch imageSpec.Type {

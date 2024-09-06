@@ -136,13 +136,7 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
-	extractor := manifest.NewRawManifestDownloader(nil)
 	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
-	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
-		Success: 1 * time.Second,
-		Busy:    1 * time.Second,
-		Error:   1 * time.Second,
-		Warning: 1 * time.Second,
 	extractor := img.NewPathExtractor()
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,

@@ -140,10 +140,6 @@ func getOCIRef(
 	switch repo.ComponentNameMapping {
 	case genericocireg.OCIRegistryURLPathMapping:
 		repoSubpath := DefaultRepoSubdirectory
-		if repo.SubPath != "" {
-			repoSubpath = fmt.Sprintf("%s/%s", repo.SubPath, DefaultRepoSubdirectory)
-		}
-
 		baseURL := repo.Name()
 		if repo.SubPath != "" {
 			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
