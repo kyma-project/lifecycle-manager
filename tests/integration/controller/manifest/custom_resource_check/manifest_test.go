@@ -43,7 +43,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		By("Install test Manifest CR")
 		testManifest := testutils.NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
-		validImageSpec, err := testutils.CreateOCIImageSpec(installName, server.Listener.Addr().String(),
+		validImageSpec, err := testutils.CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath,
 			false)
 		Expect(err).NotTo(HaveOccurred())

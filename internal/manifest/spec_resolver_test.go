@@ -136,7 +136,9 @@ type mockPathExtractor struct {
 	mockError error
 }
 
-func (m *mockPathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec, keyChain authn.Keychain) (string, error) {
+func (m *mockPathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec,
+	keyChain authn.Keychain,
+) (string, error) {
 	if m.mockError != nil {
 		return "", m.mockError
 	}
@@ -144,5 +146,5 @@ func (m *mockPathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpe
 }
 
 func testPath() string {
-	return path.Join(mockLocalFileCachePath, v1beta2.RawManifestLayerName+".yaml")
+	return path.Join(mockLocalFileCachePath, string(v1beta2.RawManifestLayer+".yaml"))
 }

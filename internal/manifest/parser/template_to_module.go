@@ -1,4 +1,4 @@
-package parse
+package parser
 
 import (
 	"context"
@@ -13,13 +13,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/pkg/img"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
-
-var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
 type Parser struct {
 	client.Client
@@ -86,9 +84,10 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 ) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
 		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
+			ModuleName:  module.Name,
+			Template:    template,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -96,9 +95,10 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 	if err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
+			ModuleName:  module.Name,
+			Template:    template,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -110,9 +110,10 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 		template.ModuleTemplate); err != nil {
 		template.Err = err
 		modules = append(modules, &common.Module{
-			ModuleName: module.Name,
-			Template:   template,
-			Enabled:    module.Enabled,
+			ModuleName:  module.Name,
+			Template:    template,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -121,11 +122,12 @@ func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kym
 	// to have correct owner references, the manifest must always have the same namespace as kyma
 	manifest.SetNamespace(kyma.GetNamespace())
 	modules = append(modules, &common.Module{
-		ModuleName: module.Name,
-		FQDN:       fqdn,
-		Template:   template,
-		Manifest:   manifest,
-		Enabled:    module.Enabled,
+		ModuleName:  module.Name,
+		FQDN:        fqdn,
+		Template:    template,
+		Manifest:    manifest,
+		Enabled:     module.Enabled,
+		IsUnmanaged: module.Unmanaged,
 	})
 	return modules
 }
@@ -199,9 +201,7 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 	return nil
 }
 
-func translateLayersAndMergeIntoManifest(
-	manifest *v1beta2.Manifest, layers img.Layers,
-) error {
+func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers) error {
 	for _, layer := range layers {
 		if err := insertLayerIntoManifest(manifest, layer); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
@@ -210,25 +210,17 @@ func translateLayersAndMergeIntoManifest(
 	return nil
 }
 
-func insertLayerIntoManifest(
-	manifest *v1beta2.Manifest, layer img.Layer,
-) error {
+func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer) error {
 	switch layer.LayerName {
-	case img.CRDsLayer:
-		fallthrough
-	case img.ConfigLayer:
-		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
-		if !ok {
-			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
+	case v1beta2.DefaultCRLayer:
+		// default CR layer is not relevant for the manifest
+	case v1beta2.ConfigLayer:
+		imageSpec, err := layer.ConvertToImageSpec()
+		if err != nil {
+			return fmt.Errorf("error while parsing config layer: %w", err)
 		}
-		manifest.Spec.Config = &v1beta2.ImageSpec{
-			Repo:               ociImage.Repo,
-			Name:               ociImage.Name,
-			Ref:                ociImage.Ref,
-			Type:               v1beta2.OciRefType,
-			CredSecretSelector: ociImage.CredSecretSelector,
-		}
-	default:
+		manifest.Spec.Config = imageSpec
+	case v1beta2.RawManifestLayer:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)

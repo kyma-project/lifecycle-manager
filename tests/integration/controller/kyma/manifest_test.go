@@ -368,7 +368,7 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 
 func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	for _, r := range reslist {
-		if r.Name == v1beta2.RawManifestLayerName {
+		if r.Name == string(v1beta2.RawManifestLayer) {
 			return &r
 		}
 	}
@@ -567,7 +567,7 @@ func updateComponentResources(descriptor *v1beta2.Descriptor) {
 		res := &resources[i]
 		res.Version = updatedModuleTemplateVersion
 
-		if res.Name == v1beta2.RawManifestLayerName {
+		if res.Name == string(v1beta2.RawManifestLayer) {
 			object, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
 			Expect(ok).To(BeTrue())
 			object.Object["digest"] = updatedModuleTemplateRawManifestLayerDigest
@@ -615,7 +615,7 @@ func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate
 			return fmt.Errorf("Invalid resource version: %s, expected: %s", res.Version, expectedVersion)
 		}
 
-		if res.Name == v1beta2.RawManifestLayerName {
+		if res.Name == string(v1beta2.RawManifestLayer) {
 			object, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
 			Expect(ok).To(BeTrue())
 			if object.Object["digest"] != updatedModuleTemplateRawManifestLayerDigest {

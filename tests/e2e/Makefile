@@ -127,6 +127,9 @@ skip-manifest-reconciliation:
 upgrade-under-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
 
+unmanage-module:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Unmanaging Kyma Module"
+
 purge-controller:
 	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
 
@@ -150,3 +153,6 @@ misconfigured-kyma-secret:
 
 rbac-privileges:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "RBAC Privileges"
+
+ocm-compatible-module-template:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "OCM Format Module Template"

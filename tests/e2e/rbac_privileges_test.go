@@ -12,7 +12,7 @@ import (
 var _ = Describe("RBAC Privileges", func() {
 	Context("Given KCP Cluster with KLM Service Account", func() {
 		It("Then KLM Service Account has the correct ClusterRoleBindings", func() {
-			klmClusterRoleBindings, err := ListKlmClusterRoleBindings(controlPlaneClient, ctx, "klm-controller-manager")
+			klmClusterRoleBindings, err := ListKlmClusterRoleBindings(kcpClient, ctx, "klm-controller-manager")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(klmClusterRoleBindings.Items).To(HaveLen(1))
 
@@ -28,11 +28,11 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"update"},
 				},
 			}
-			Expect(GetClusterRoleBindingPolicyRules(ctx, controlPlaneClient, "klm-controller-manager-crds",
+			Expect(GetClusterRoleBindingPolicyRules(ctx, kcpClient, "klm-controller-manager-crds",
 				klmClusterRoleBindings)).To(Equal(crdRoleRules))
 
 			By("And KLM Service Account has the correct RoleBindings in kcp-system namespace")
-			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
+			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(2))
@@ -54,7 +54,7 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"create", "patch"},
 				},
 			}
-			Expect(GetRoleBindingRolePolicyRules(ctx, controlPlaneClient, "klm-controller-manager-leader-election",
+			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager-leader-election",
 				"kcp-system",
 				kcpSystemKlmRoleBindings)).To(Equal(leaderElectionRoleRules))
 
@@ -165,7 +165,7 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"get", "patch", "update"},
 				},
 			}
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, controlPlaneClient, "klm-controller-manager",
+			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, kcpClient, "klm-controller-manager",
 				kcpSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
 
 			By("And KLM Service Account has the correct RoleBindings in istio-system namespace")
@@ -186,12 +186,12 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"list", "watch"},
 				},
 			}
-			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
+			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"istio-system")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(istioSystemKlmRoleBindings.Items).To(HaveLen(1))
 
-			Expect(GetRoleBindingRolePolicyRules(ctx, controlPlaneClient, "klm-controller-manager-watcher-certmanager",
+			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager-watcher-certmanager",
 				"istio-system",
 				istioSystemKlmRoleBindings)).To(Equal(istioNamespaceRoleRules))
 
@@ -218,12 +218,12 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"list", "watch", "delete"},
 				},
 			}
-			kymaSystemKlmRoleBindings, err := ListKlmRoleBindings(controlPlaneClient, ctx, "klm-controller-manager",
+			kymaSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kyma-system")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(kymaSystemKlmRoleBindings.Items).To(HaveLen(1))
 
-			Expect(GetRoleBindingRolePolicyRules(ctx, controlPlaneClient,
+			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient,
 				"klm-controller-manager-skr", "kyma-system",
 				kymaSystemKlmRoleBindings)).To(Equal(remoteNamespaceRoleRules))
 		})

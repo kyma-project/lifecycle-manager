@@ -42,6 +42,7 @@ jobs:
           - purge-metrics
           - module-upgrade-channel-switch
           - module-upgrade-new-version
+          - unmanage-module
           - skip-manifest-reconciliation
           - ca-certificate-rotation
           - self-signed-certificate-rotation
@@ -49,6 +50,7 @@ jobs:
           - mandatory-module-metrics
           - misconfigured-kyma-secret
           - rbac-privileges
+          - ocm-compatible-module-template
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
