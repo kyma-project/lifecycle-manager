@@ -6,12 +6,7 @@ on:
       k8s_version:
         description: With Kubernetes version
         required: false
-  workflow_run:
-    workflows: [ "Build Image" ]
-    types:
-      - completed
-    branches-ignore:
-      - main
+
 jobs:
   build-image:
     name: Build Image
