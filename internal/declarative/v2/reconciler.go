@@ -69,6 +69,8 @@ type Reconciler struct {
 	specResolver           SpecResolver
 }
 
+const waitingForResourcesMsg = "waiting for resources to become ready"
+
 type ConditionType string
 
 const (
@@ -366,6 +368,10 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v
 		}
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return r.setManifestState(manifest, shared.StateDeleting)
+	}
+
 	managerState, err := r.checkManagerState(ctx, clnt, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
@@ -399,39 +405,28 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 	error,
 ) {
 	managerReadyCheck := r.CustomStateCheck
-
 	managerState, err := managerReadyCheck.GetState(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}
 
-	if managerState == shared.StateProcessing {
-		return shared.StateProcessing, nil
-	}
-
 	return managerState, nil
 }
 
-func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, state shared.State) error {
+func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, newState shared.State) error {
 	status := manifest.GetStatus()
 
-	if state == shared.StateProcessing {
-		waitingMsg := "waiting for resources to become ready"
-		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingMsg))
+	if newState == shared.StateProcessing {
+		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingForResourcesMsg))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		state = shared.StateDeleting
-	}
-
 	installationCondition := newInstallationCondition(manifest)
-	if !meta.IsStatusConditionTrue(status.Conditions,
-		installationCondition.Type) || status.State != state {
+	if newState != status.State || !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) {
 		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		manifest.SetStatus(status.WithState(state).
-			WithOperation(installationCondition.Message))
+
+		manifest.SetStatus(status.WithState(newState).WithOperation(installationCondition.Message))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
