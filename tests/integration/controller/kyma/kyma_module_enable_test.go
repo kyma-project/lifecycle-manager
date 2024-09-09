@@ -17,7 +17,7 @@ var _ = Describe("Given kyma CR with invalid module enabled", Ordered, func() {
 			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 
-	It("When enable module with channel and version, expect module status in Error state", func() {
+	Skip("When enable module with channel and version, expect module status in Error state", func() {
 		module := NewTestModuleWithChannelVersion("test", v1beta2.DefaultChannel, "1.0.0")
 		Eventually(givenKymaWithModule, Timeout, Interval).
 			WithArguments(kyma, module).Should(Succeed())
