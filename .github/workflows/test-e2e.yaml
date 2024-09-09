@@ -13,8 +13,12 @@ on:
     branches-ignore:
       - main
 jobs:
+  build-image:
+    name: Build Image
+    uses: ./.github/workflows/build-image.yml
   e2e-integration:
     name: E2E
+    needs: build-image
     strategy:
       matrix:
         e2e-test:
