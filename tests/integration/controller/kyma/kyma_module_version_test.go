@@ -10,9 +10,9 @@ import (
 )
 
 var _ = Describe("Given invalid module version which is rejected by CRD validation rules", func() {
-	Skip("Version attribute is disabled on the CRD level")
 	DescribeTable(
 		"Test enable module", func(givenCondition func() error) {
+			Skip("Version attribute is disabled for now on the CRD level")
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
 		},
 
