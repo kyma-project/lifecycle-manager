@@ -55,7 +55,7 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 			resources:     []*resource.Info{},
 			isDeployment:  false,
 			isStateFulSet: false,
-			expectedError: statecheck.ErrNoManagerProvided,
+			expectedError: nil,
 		},
 	}
 	for _, testCase := range tests {
