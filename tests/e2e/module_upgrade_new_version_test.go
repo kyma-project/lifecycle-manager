@@ -22,32 +22,32 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, module).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
 		})
 
 		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 
 			By("And Module Operator Deployment exists")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
 		It("When Module Template Version is Upgraded", func() {
 			Expect(ApplyYAML(ctx,
-				controlPlaneClient,
+				kcpClient,
 				newTemplateFilePath)).
 				Should(Succeed())
 		})
@@ -55,42 +55,42 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 
 			By("And new Module Operator Deployment exists")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And old Module Operator Deployment does not exist")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 
 			By("And Kyma Module Version in Kyma Status is updated")
-			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(ctx, controlPlaneClient, module,
+			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(ctx, kcpClient, module,
 				kyma.Spec.Channel)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(ModuleVersionInKymaStatusIsCorrect).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
 					newModuleTemplateVersion).
 				Should(Succeed())
 
 			By("And Manifest Version is updated")
 			Eventually(ManifestVersionIsCorrect).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
 					newModuleTemplateVersion).
 				Should(Succeed())
 		})

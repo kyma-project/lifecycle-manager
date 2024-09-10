@@ -41,6 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -64,6 +65,7 @@ var (
 	server           *httptest.Server
 	serverAddress    string
 	manifestFilePath string
+	manifestTarPath  string
 )
 
 const (
@@ -82,6 +84,8 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 	manifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
 		"rendered.yaml")
+	manifestTarPath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
+		"rendered.tar")
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 	// create registry and server
@@ -132,7 +136,8 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 
 	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
-	extractor := manifest.NewPathExtractor(nil)
+	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
+	extractor := img.NewPathExtractor()
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
@@ -140,7 +145,7 @@ var _ = BeforeSuite(func() {
 		Warning: 1 * time.Second,
 	},
 		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifest.NewSpecResolver(kcp.Client, extractor),
+		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil

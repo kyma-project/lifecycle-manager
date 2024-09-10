@@ -11,4 +11,5 @@ const (
 	IsClusterScopedAnnotation  = OperatorGroup + Separator + "is-cluster-scoped"
 	CustomStateCheckAnnotation = OperatorGroup + Separator + "custom-state-check"
 	ModuleVersionAnnotation    = OperatorGroup + Separator + "module-version"
+	UnmanagedAnnotation        = OperatorGroup + Separator + "is-unmanaged"
 )
