@@ -80,7 +80,9 @@ type Module struct {
 	// ModuleTemplate based on this specific version.
 	// The Version and Channel are mutually exclusive options.
 	// The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-	Version string `json:"-"`
+        // json:"-" to disable installation of specific versions until decided to roll this out
+        // see https://github.com/kyma-project/lifecycle-manager/issues/1847
+        Version string `json:"-"`
 
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
