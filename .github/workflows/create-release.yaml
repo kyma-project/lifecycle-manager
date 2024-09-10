@@ -40,7 +40,7 @@ jobs:
       - name: Create changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./.github/scripts/release/create_changelog.sh ${{ github.event.inputs.name }} ${{ github.event.inputs.since }}
+        run: ./.github/scripts/release/create_changelog.sh ${{ github.event.inputs.name }} ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ github.event.inputs.since }}
       - name: Draft release
         id: draft-release
         env:
