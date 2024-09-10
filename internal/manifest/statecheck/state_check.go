@@ -60,7 +60,7 @@ func (m *ManagerStateCheck) GetState(ctx context.Context,
 ) (shared.State, error) {
 	mgr := findManager(clnt, resources)
 	if mgr == nil {
-		return shared.StateError, ErrNoManagerProvided
+		return shared.StateReady, nil
 	}
 
 	switch mgr.kind {
@@ -71,7 +71,7 @@ func (m *ManagerStateCheck) GetState(ctx context.Context,
 	}
 
 	// fall through that should not be reached
-	return shared.StateError, ErrNoStateDetermined
+	return shared.StateReady, nil
 }
 
 func findManager(clt client.Client, resources []*resource.Info) *Manager {
