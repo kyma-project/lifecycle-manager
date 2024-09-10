@@ -22,6 +22,7 @@ var _ = Describe("Module Install By Version", Ordered, func() {
 
 	Context("Given SKR Cluster", func() {
 		It("When Template-Operator Module is enabled on SKR Kyma CR in a specific version", func() {
+			Skip("Version attribute is disabled for now on the CRD level")
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, templateOperatorModule).
@@ -29,6 +30,7 @@ var _ = Describe("Module Install By Version", Ordered, func() {
 		})
 
 		It("Then Module CR exists", func() {
+			Skip("Version attribute is disabled for now on the CRD level")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
