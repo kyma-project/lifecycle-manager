@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -82,6 +80,11 @@ type Module struct {
 
 	// +kubebuilder:default:=CreateAndDelete
 	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
+	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
+	// for the lifecycle of the module.
+	// +kubebuilder:default:=true
+	Managed bool `json:"managed"`
 }
 
 // CustomResourcePolicy determines how a ModuleTemplate should be parsed. When CustomResourcePolicy is set to
@@ -356,7 +359,7 @@ func (kyma *Kyma) DetermineState() shared.State {
 func (kyma *Kyma) AllModulesReady() bool {
 	for i := range kyma.Status.Modules {
 		moduleStatus := &kyma.Status.Modules[i]
-		if moduleStatus.State != shared.StateReady {
+		if moduleStatus.State != shared.StateReady && moduleStatus.State != shared.StateUnmanaged {
 			return false
 		}
 	}
@@ -365,29 +368,31 @@ func (kyma *Kyma) AllModulesReady() bool {
 
 func (kyma *Kyma) HasSyncLabelEnabled() bool {
 	if sync, found := kyma.Labels[shared.SyncLabel]; found {
-		return strings.ToLower(sync) == shared.EnableLabelValue
+		return shared.IsEnabled(sync)
 	}
+
 	return true // missing label defaults to enabled sync
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
 	skip, found := kyma.Labels[shared.SkipReconcileLabel]
-	return found && strings.ToLower(skip) == shared.EnableLabelValue
+	return found && shared.IsEnabled(skip)
 }
 
 func (kyma *Kyma) IsInternal() bool {
 	internal, found := kyma.Labels[shared.InternalLabel]
-	return found && strings.ToLower(internal) == shared.EnableLabelValue
+	return found && shared.IsEnabled(internal)
 }
 
 func (kyma *Kyma) IsBeta() bool {
 	beta, found := kyma.Labels[shared.BetaLabel]
-	return found && strings.ToLower(beta) == shared.EnableLabelValue
+	return found && shared.IsEnabled(beta)
 }
 
 type AvailableModule struct {
 	Module
-	Enabled bool
+	Enabled   bool
+	Unmanaged bool
 }
 
 func (kyma *Kyma) GetAvailableModules() []AvailableModule {
@@ -395,7 +400,7 @@ func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 	modules := make([]AvailableModule, 0)
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
-		modules = append(modules, AvailableModule{Module: module, Enabled: true})
+		modules = append(modules, AvailableModule{Module: module, Enabled: true, Unmanaged: !module.Managed})
 	}
 
 	for _, module := range kyma.Status.Modules {

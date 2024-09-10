@@ -2,6 +2,7 @@ package statecheck
 
 import (
 	"context"
+	"errors"
 
 	apiappsv1 "k8s.io/api/apps/v1"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -30,6 +31,11 @@ const (
 	StatefulSetKind ManagerKind = "StatefulSet"
 )
 
+var (
+	ErrNoManagerProvided = errors.New("failed to find manager in provided resources")
+	ErrNoStateDetermined = errors.New("failed to determine state for manager")
+)
+
 type Manager struct {
 	kind        ManagerKind
 	deployment  *apiappsv1.Deployment
@@ -45,13 +51,16 @@ func NewManagerStateCheck(statefulSetChecker StatefulSetStateChecker,
 	}
 }
 
+// Determines the state based on the manager. The manager may either be a Deployment or a StatefulSet and
+// must be included in the provided resources.
+// Will be refactored with https://github.com/kyma-project/lifecycle-manager/issues/1831
 func (m *ManagerStateCheck) GetState(ctx context.Context,
 	clnt client.Client,
 	resources []*resource.Info,
 ) (shared.State, error) {
 	mgr := findManager(clnt, resources)
 	if mgr == nil {
-		return shared.StateReady, nil
+		return shared.StateError, ErrNoManagerProvided
 	}
 
 	switch mgr.kind {
@@ -61,7 +70,8 @@ func (m *ManagerStateCheck) GetState(ctx context.Context,
 		return m.deploymentStateChecker.GetState(mgr.deployment)
 	}
 
-	return shared.StateReady, nil
+	// fall through that should not be reached
+	return shared.StateError, ErrNoStateDetermined
 }
 
 func findManager(clt client.Client, resources []*resource.Info) *Manager {

@@ -173,6 +173,26 @@ func DisableModule(ctx context.Context, clnt client.Client,
 	return nil
 }
 
+func SetModuleManaged(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName string, managed bool,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules[i].Managed = managed
+			break
+		}
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma failed: %w", err)
+	}
+	return nil
+}
+
 func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
 }

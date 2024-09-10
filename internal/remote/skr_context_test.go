@@ -80,6 +80,7 @@ func createKyma(channel string, modules []string) *v1beta2.Kyma {
 			kcpKyma.Spec.Modules, v1beta2.Module{
 				Name:    module,
 				Channel: v1beta2.DefaultChannel,
+				Managed: true,
 			})
 	}
 	return kcpKyma
