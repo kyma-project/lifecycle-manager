@@ -69,6 +69,8 @@ type Reconciler struct {
 	specResolver           SpecResolver
 }
 
+const waitingForResourcesMsg = "waiting for resources to become ready"
+
 type ConditionType string
 
 const (
@@ -136,6 +138,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
 	}
 
+	if manifest.IsUnmanaged() {
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
+		}
+		if err := r.Delete(ctx, manifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+		}
+		return ctrl.Result{RequeueAfter: r.Success}, nil
+	}
+
 	if manifest.GetDeletionTimestamp().IsZero() {
 		partialMeta := r.partialObjectMetadata(manifest)
 		if controllerutil.AddFinalizer(partialMeta, defaultFinalizer) {
@@ -154,7 +166,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if notContainsSyncedOCIRefAnnotation(manifest) {
 		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
-		return r.updateObject(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
+		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
@@ -209,7 +221,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(manifest, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
-		return r.updateObject(ctx, manifest, metrics.ManifestUpdateSyncedOCIRef)
+		return r.updateManifest(ctx, manifest, metrics.ManifestUpdateSyncedOCIRef)
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
@@ -224,22 +236,18 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
 	r.cleanUpMandatoryModuleMetrics(manifest)
-	if removeFinalizers(manifest, r.finalizerToRemove(originalErr, manifest)) {
-		return r.updateObject(ctx, manifest, requeueReason)
+	finalizersToRemove := []string{defaultFinalizer}
+	if errors.Is(originalErr, ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
+		finalizersToRemove = manifest.GetFinalizers()
+	}
+	if removeFinalizers(manifest, finalizersToRemove) {
+		return r.updateManifest(ctx, manifest, requeueReason)
 	}
 	if manifest.GetStatus().State != shared.StateWarning {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
 			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", manifest.GetFinalizers())))
 	}
 	return r.finishReconcile(ctx, manifest, requeueReason, manifestStatus, originalErr)
-}
-
-func (r *Reconciler) finalizerToRemove(originalErr error, manifest *v1beta2.Manifest) []string {
-	finalizersToRemove := []string{defaultFinalizer}
-	if errors.Is(originalErr, ErrAccessSecretNotFound) {
-		finalizersToRemove = manifest.GetFinalizers()
-	}
-	return finalizersToRemove
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
@@ -360,6 +368,10 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v
 		}
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return r.setManifestState(manifest, shared.StateDeleting)
+	}
+
 	managerState, err := r.checkManagerState(ctx, clnt, target)
 	if err != nil {
 		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
@@ -393,39 +405,28 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 	error,
 ) {
 	managerReadyCheck := r.CustomStateCheck
-
 	managerState, err := managerReadyCheck.GetState(ctx, clnt, target)
 	if err != nil {
 		return shared.StateError, err
 	}
 
-	if managerState == shared.StateProcessing {
-		return shared.StateProcessing, nil
-	}
-
 	return managerState, nil
 }
 
-func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, state shared.State) error {
+func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, newState shared.State) error {
 	status := manifest.GetStatus()
 
-	if state == shared.StateProcessing {
-		waitingMsg := "waiting for resources to become ready"
-		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingMsg))
+	if newState == shared.StateProcessing {
+		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingForResourcesMsg))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		state = shared.StateDeleting
-	}
-
 	installationCondition := newInstallationCondition(manifest)
-	if !meta.IsStatusConditionTrue(status.Conditions,
-		installationCondition.Type) || status.State != state {
+	if newState != status.State || !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) {
 		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		manifest.SetStatus(status.WithState(state).
-			WithOperation(installationCondition.Message))
+
+		manifest.SetStatus(status.WithState(newState).WithOperation(installationCondition.Message))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
@@ -680,12 +681,12 @@ func resetNonPatchableField(obj client.Object) {
 	obj.SetResourceVersion("")
 }
 
-func (r *Reconciler) updateObject(ctx context.Context, obj client.Object,
+func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	if err := r.Update(ctx, obj); err != nil {
-		r.Event(obj, "Warning", "UpdateObject", err.Error())
+	if err := r.Update(ctx, manifest); err != nil {
+		r.Event(manifest, "Warning", "UpdateObject", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to update object: %w", err)
 	}
 	return ctrl.Result{Requeue: true}, nil
