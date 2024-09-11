@@ -61,6 +61,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
+		WithEventFilter(predicates)
 		Watches(&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
 			builder.WithPredicates(predicates)).
