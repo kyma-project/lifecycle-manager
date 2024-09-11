@@ -6,15 +6,9 @@ on:
       - main
       - feat/**
 jobs:
-  wait-for-image-build:
-    name: Wait for image build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/wait-for-image-build
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          statusName: pull-lifecycle-mgr-build
+  build-image:
+    name: Build Image
+    uses: ./.github/workflows/build-image.yml
 
   kustomize:
     strategy:
@@ -44,7 +38,7 @@ jobs:
       matrix:
         cli-stability: ["unstable"]
         target: ["default", "control-plane"]
-    needs: [kustomize,wait-for-image-build]
+    needs: [ kustomize,build-image ]
     name: "kyma (${{ matrix.cli-stability }}) alpha deploy -k config/${{ matrix.target }}"
     runs-on: ubuntu-latest
     env:
