@@ -24,7 +24,6 @@ func (m *MutexCache) GetLocker(key string) (sync.Locker, error) {
 	if !ok {
 		val, _ = m.cache.LoadOrStore(key, &sync.Mutex{})
 	}
-
 	mutex, ok := val.(*sync.Mutex)
 	if !ok {
 		return nil, ErrMutexConversion
