@@ -54,6 +54,7 @@ URI=http://testclient.lyft.com;DNS=lyft.com;DNS=www.lyft.com`
 			require.Equal(t, test.expectedResult, actualResult)
 			actualKeys := len(strings.Split(test.xfccHeader, ";"))
 			require.Equal(t, test.expectedKeys, actualKeys)
+			// TODO remove
 		})
 	}
 }

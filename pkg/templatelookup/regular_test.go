@@ -36,6 +36,7 @@ func (f *FakeModuleTemplateReader) List(_ context.Context, list client.ObjectLis
 		return errors.New("list is not of type *v1beta2.ModuleTemplateList")
 	}
 	castedList.Items = append(castedList.Items, f.templateList.Items...)
+	// TODO remove
 	return nil
 }
 
