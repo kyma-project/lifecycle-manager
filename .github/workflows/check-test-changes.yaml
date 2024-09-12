@@ -45,4 +45,4 @@ jobs:
             echo "${{ steps.changed-files.outputs.testFiles }}" | tr ',' '\n'
           fi
           echo "Number of test files changed:"
-          echo "${{ steps.changed-files.outputs.testFiles }}" | tr ',' '\n' | wc -l
+          echo "${{ steps.changed-files.outputs.testFiles }}" | tr ',' '\n' | grep -v '^$' | wc -l
