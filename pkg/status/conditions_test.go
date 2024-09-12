@@ -106,7 +106,6 @@ func onlyRequiredKymaConditionsPresent(kyma *v1beta2.Kyma, requiredConditions []
 				exists = true
 				break
 			}
-			// TODO remove
 		}
 		if !exists {
 			return false
