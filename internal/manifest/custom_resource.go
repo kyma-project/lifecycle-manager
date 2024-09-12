@@ -29,7 +29,7 @@ func PostRunCreateCR(
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
-	// TODO remove
+
 	resource := manifest.Spec.Resource.DeepCopy()
 	err := skr.Create(ctx, resource, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer))
 	if err != nil && !apierrors.IsAlreadyExists(err) {
