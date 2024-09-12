@@ -37,10 +37,10 @@ jobs:
 
       - name: Check for test changes
         run: |
-          echo "Number of test files changed:"
-          echo "${{ steps.changed-files.outputs.testFiles }}" | tr ',' '\n' | grep -v '^$' | wc -l
           echo "Number of go files changed:"
           echo "${{ steps.changed-files.outputs.goFiles }}" | tr ',' '\n' | grep -v '^$' | wc -l
+          echo "Number of test files changed:"
+          echo "${{ steps.changed-files.outputs.testFiles }}" | tr ',' '\n' | grep -v '^$' | wc -l
           if [ "${{ steps.changed-files.outputs.goFiles }}" != "" ] && [ "${{ steps.changed-files.outputs.testFiles }}" == "" ]; then
             echo "There are changes to .go files but no changes to _test.go files."
             exit 1
