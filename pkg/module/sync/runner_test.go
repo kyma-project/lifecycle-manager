@@ -45,6 +45,7 @@ func (m *ModuleMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string
 
 func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 	t.Parallel()
+	// TODO remove
 	tests := []struct {
 		name                         string
 		ModuleInStatus               string

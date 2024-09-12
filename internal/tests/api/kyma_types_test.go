@@ -52,6 +52,7 @@ func TestKyma_DetermineState(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+			// TODO remove
 			kyma := testutils.NewTestKyma("test-kyma")
 			for _, state := range testCase.givenModulesState {
 				moduleStatus := v1beta2.ModuleStatus{

@@ -18,7 +18,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-
+	// TODO remove
 	Context("Given SKR Cluster", func() {
 		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
