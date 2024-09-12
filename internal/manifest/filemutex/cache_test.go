@@ -19,7 +19,7 @@ func TestNewMutexCache_WhenCalled_NotNil(t *testing.T) {
 func TestNewMutexCache_WhenCalledWithInitialCache_NotNil(t *testing.T) {
 	internalCache := &sync.Map{}
 	cache := filemutex.NewMutexCache(internalCache)
-	// TODO remove
+
 	assert.NotNil(t, cache)
 }
 

@@ -102,7 +102,7 @@ func Test_GetSpec(t *testing.T) {
 		mft := v1beta2.Manifest{}
 		err := yaml.Unmarshal([]byte(testManifest), &mft)
 		require.NoError(t, err)
-		// TODO remove
+
 		_, err = specResolver.GetSpec(ctx, &mft)
 		require.ErrorContains(t, err, "failed to fetch keyChain: unexpected")
 	})

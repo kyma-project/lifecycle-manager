@@ -16,7 +16,7 @@ var _ = Describe("Purge Controller", Ordered, func() {
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
-	// TODO remove
+
 	Context("Given SKR Cluster", func() {
 		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
