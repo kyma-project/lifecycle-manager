@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
+// test
 const (
 	InvalidModulePrefix = "invalid_"
 	ModuleShouldKeep    = "ModuleShouldKeep"

@@ -183,6 +183,7 @@ func (r *Runner) patchManifest(ctx context.Context, owner string, newManifest *v
 	return nil
 }
 
+// test
 func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 	manifestInCluster, newManifest *v1beta2.Manifest,
 ) error {

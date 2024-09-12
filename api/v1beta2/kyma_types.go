@@ -47,7 +47,7 @@ type KymaSpec struct {
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
-
+	// test
 	// Modules specifies the list of modules to be installed
 	// +listType=map
 	// +listMapKey=name

@@ -17,6 +17,7 @@ type testObj struct{ *unstructured.Unstructured }
 func (t testObj) GetStatus() shared.Status { panic("status not supported in test object") }
 func (t testObj) SetStatus(shared.Status)  { panic("status not supported in test object") }
 
+// teset
 func Test_defaultTransforms(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
