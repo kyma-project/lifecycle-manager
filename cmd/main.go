@@ -355,6 +355,8 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		resolvedKcpAddr)
 }
 
+// test change
+
 const (
 	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr"
 	watcherRegDev  = "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher"
