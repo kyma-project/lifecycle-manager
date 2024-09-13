@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	. "github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 )
