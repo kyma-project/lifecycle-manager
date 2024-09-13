@@ -222,7 +222,7 @@ func DefineFlagVar() *FlagVar {
 		`Image name to be used for the SKR watcher image.`)
 	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
-	flag.StringVar(&flagVar.WatcherImageRegistry, "skr-watcher-image-registry", "europe-docker.pkg.dev/kyma-project/prod",
+	flag.StringVar(&flagVar.WatcherImageRegistry, "skr-watcher-image-registry", "",
 		`Image registry to be used for the SKR watcher image.`)
 	flag.StringVar(&flagVar.WatcherResourceLimitsMemory, "skr-webhook-memory-limits",
 		DefaultWatcherResourceLimitsMemory,
