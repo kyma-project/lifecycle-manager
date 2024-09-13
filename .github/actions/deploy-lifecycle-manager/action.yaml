@@ -18,6 +18,7 @@ runs:
         for retry in $(seq 1 $maxRetry)
         do
           if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/${{ inputs.klm_image_repo }}/lifecycle-manager:${{ inputs.klm_version_tag }}; then
+            kubectl logs deploy/klm-controller-manager -n kcp-system
             kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=90s
             echo "KLM deployed successfully"
             exit 0
