@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/build-image.yml
   e2e-integration:
     name: E2E
-    needs: build-image
+    # needs: build-image
     strategy:
       fail-fast: false
       matrix:
