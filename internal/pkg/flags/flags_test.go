@@ -231,6 +231,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "runtime-watcher",
 		},
 		{
+			constName:     "WatcherImageRegistry",
+			constValue:    DefaultWatcherImageRegistry,
+			expectedValue: "europe-docker.pkg.dev/kyma-project/prod",
+		},
+		{
 			constName:     "DefaultWatcherResourcesPath",
 			constValue:    DefaultWatcherResourcesPath,
 			expectedValue: "./skr-webhook",

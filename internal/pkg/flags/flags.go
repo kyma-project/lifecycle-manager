@@ -55,6 +55,7 @@ const (
 	DefaultManifestListenerAddress                                      = ":8083"
 	DefaultPprofAddress                                                 = ":8084"
 	DefaultWatcherImageName                                             = "runtime-watcher"
+	DefaultWatcherImageRegistry                                         = "europe-docker.pkg.dev/kyma-project/prod"
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
@@ -222,7 +223,7 @@ func DefineFlagVar() *FlagVar {
 		`Image name to be used for the SKR watcher image.`)
 	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
-	flag.StringVar(&flagVar.WatcherImageRegistry, "skr-watcher-image-registry", "",
+	flag.StringVar(&flagVar.WatcherImageRegistry, "skr-watcher-image-registry", DefaultWatcherImageRegistry,
 		`Image registry to be used for the SKR watcher image.`)
 	flag.StringVar(&flagVar.WatcherResourceLimitsMemory, "skr-webhook-memory-limits",
 		DefaultWatcherResourceLimitsMemory,

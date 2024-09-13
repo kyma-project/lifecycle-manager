@@ -6,7 +6,7 @@ on:
       k8s_version:
         description: With Kubernetes version
         required: false
-  pull_request:
+  pull_request_target:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
 jobs:
   build-image:
@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/build-image.yml
   e2e-integration:
     name: E2E
-    # needs: build-image
+    needs: build-image
     strategy:
       fail-fast: false
       matrix:
