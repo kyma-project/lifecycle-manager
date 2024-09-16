@@ -19,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 )
 
 type SKRWebhookManifestManager struct {
@@ -83,6 +84,15 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
+	}
+
+	// Ensure gateway secret exists
+	_, err = getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
+		Namespace: m.certificateConfig.IstioNamespace,
+		Name:      zerodw.GatewaySecretName,
+	})
+	if err != nil {
+		return err
 	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
@@ -212,17 +222,20 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context,
 	kymaObjKey client.ObjectKey, remoteNs string,
 ) (*unstructuredResourcesConfig, error) {
-	tlsSecret := &apicorev1.Secret{}
-	certObjKey := client.ObjectKey{
+	tlsSecret, err := getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
 		Namespace: m.certificateConfig.IstioNamespace,
 		Name:      ResolveTLSCertName(kymaObjKey.Name),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	if err := m.kcpClient.Get(ctx, certObjKey, tlsSecret); err != nil {
-		if util.IsNotFound(err) {
-			return nil, &CertificateNotReadyError{}
-		}
-		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
+	gatewaySecret, err := getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
+		Namespace: m.certificateConfig.IstioNamespace,
+		Name:      zerodw.GatewaySecretName,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &unstructuredResourcesConfig{
@@ -232,11 +245,23 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		cpuResLimit:     m.config.SkrWebhookCPULimits,
 		memResLimit:     m.config.SkrWebhookMemoryLimits,
 		skrWatcherImage: m.config.SkrWatcherImage,
-		caCert:          tlsSecret.Data[caCertKey],
-		tlsCert:         tlsSecret.Data[tlsCertKey],
-		tlsKey:          tlsSecret.Data[tlsPrivateKeyKey],
+		caCert:          gatewaySecret.Data[CaCertKey],
+		tlsCert:         tlsSecret.Data[TlsCertKey],
+		tlsKey:          tlsSecret.Data[TlsPrivateKeyKey],
 		remoteNs:        remoteNs,
 	}, nil
+}
+
+func getCertificateSecret(ctx context.Context, clnt client.Client, objKey client.ObjectKey) (*apicorev1.Secret, error) {
+	certificateSecret := &apicorev1.Secret{}
+
+	if err := clnt.Get(ctx, objKey, certificateSecret); err != nil {
+		if util.IsNotFound(err) {
+			return nil, &CertificateNotReadyError{}
+		}
+		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
+	}
+	return certificateSecret, nil
 }
 
 func (m *SKRWebhookManifestManager) getBaseClientObjects() []client.Object {
