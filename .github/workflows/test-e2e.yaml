@@ -11,6 +11,8 @@ on:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
 jobs:
   wait-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
     - name: Wait Image
       run: "./.github/scripts/release/await_image.sh ${{ github.ref_name }} ${{ env.IMAGE_REPO }}"
