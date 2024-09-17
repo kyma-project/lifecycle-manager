@@ -29,9 +29,9 @@ jobs:
         id: get_tag
         run: |
           if [[ "${{ inputs.tag }}" != "" ]]; then
-            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "TAGS=${{ inputs.tag }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "TAGS=latest" >> $GITHUB_OUTPUT
           else
             {
               echo 'tags<<TAGS'
