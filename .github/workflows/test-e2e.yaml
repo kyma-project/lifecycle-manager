@@ -1,5 +1,6 @@
 name: TestSuite E2E
-
+env:
+  IMAGE_REPO: europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager
 on:
   workflow_dispatch:
     inputs:
@@ -9,12 +10,13 @@ on:
   pull_request_target:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
 jobs:
-  build-image:
-    name: Build Image
-    uses: ./.github/workflows/build-image.yml
+  wait-image:
+    steps:
+    - name: Wait Image
+      run: "./.github/scripts/release/await_image.sh ${{ github.ref_name }} ${{ env.IMAGE_REPO }}"
   e2e-integration:
     name: E2E
-    needs: build-image
+    needs: wait-image
     strategy:
       fail-fast: false
       matrix:
