@@ -7,10 +7,8 @@ on:
       k8s_version:
         description: With Kubernetes version
         required: false
-  push:
-    branches:
-      - "main"
-      - "feat/*"
+  pull_request:
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
 jobs:
   wait-image:
     steps:
