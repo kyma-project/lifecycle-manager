@@ -23,25 +23,18 @@ jobs:
     outputs:
       tag: ${{ steps.get_tag.outputs.tag }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Get the latest tag
         id: get_tag
         run: |
           if [[ "${{ inputs.tag }}" != "" ]]; then
-            echo "TAGS=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "TAGS=latest" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> $GITHUB_OUTPUT
           else
-            {
-              echo 'tags<<TAGS'
-              echo 'PR-${{ github.event.pull_request.number }}'
-              echo '${{ github.event.pull_request.head.sha }}'
-              echo 'TAGS'
-            } >> "$GITHUB_OUTPUT"
+            echo "tag=PR-${{ github.event.pull_request.number }},${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
           fi
-      - name: Echo the tag
-        run: echo ${{ steps.get_tag.outputs.tag }}
+      - name: Display output
+        run: cat $GITHUB_OUTPUT
   build-image:
     needs: compute-tag
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
