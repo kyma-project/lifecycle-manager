@@ -63,7 +63,7 @@ func watchedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.U
 			lbls = make(map[string]string)
 		}
 		// legacy managed by value
-		lbls[shared.WatchedByLabel] = OperatorName
+		lbls[shared.WatchedByLabel] = "kyma"
 
 		annotations := resource.GetAnnotations()
 		if annotations == nil {
