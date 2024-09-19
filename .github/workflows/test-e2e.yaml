@@ -17,7 +17,7 @@ jobs:
     - name: Checkout lifecycle-manager
       uses: actions/checkout@v4
     - name: Wait Image
-      run: "./.github/scripts/release/await_image.sh ${{ github.ref_name }} ${{ env.IMAGE_REPO }}"
+      run: "./.github/scripts/release/await_image.sh ${{ github.event.pull_request.head.sha }} ${{ env.IMAGE_REPO }}"
   e2e-integration:
     name: E2E
     needs: wait-image
