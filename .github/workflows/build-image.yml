@@ -38,8 +38,6 @@ jobs:
               echo 'TAGS'
             } >> "$GITHUB_OUTPUT"
           fi
-      - name: Display output
-        run: echo ${{ steps.get_tag.outputs.tags }}
   build-image:
     needs: compute-tag
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
