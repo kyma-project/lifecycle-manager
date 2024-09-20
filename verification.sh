@@ -55,6 +55,10 @@ FILE="tests/moduletemplates/moduletemplate_template_operator_v2_direct_version.y
 #2nd round:
 FILE="api/v1beta2/kyma_types.go"
 FILE="internal/controller/kyma/controller.go"
+#TODO-ONLY_NEW!A	internal/manifest/deployment_ready_check_test.go
+#TODO-ONLY_NEW!A	internal/manifest/statefulset_ready_check.go
+#TODO-ONLY_NEW!A	internal/manifest/statefulset_ready_check_test.go
+
 git diff $COMMIT_BASE  feat/module-catalogue-improvements           $FILE > old.diff
 git diff main                                                       $FILE > new.diff
 
