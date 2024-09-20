@@ -34,12 +34,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
+	parse "github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -543,18 +541,6 @@ func (r *Reconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, err)
 	}
 	return nil
-}
-
-func (r *Reconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1beta2.Kyma) (common.Modules, error) {
-	lookup := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider)
-	templates := lookup.GetRegularTemplates(ctx, kyma)
-	for _, template := range templates {
-		if template.Err != nil {
-			r.Event.Warning(kyma, moduleReconciliationError, template.Err)
-		}
-	}
-	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
-	return parser.GenerateModulesFromTemplates(kyma, templates), nil
 }
 
 func (r *Reconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {

@@ -17,6 +17,7 @@ type AvailableModule struct {
 	v1beta2.Module
 	Enabled         bool
 	ValidationError error
+	Unmanaged       bool
 }
 
 func (a AvailableModule) IsInstalledByVersion() bool {
@@ -40,14 +41,24 @@ func FindAvailableModules(kyma *v1beta2.Kyma) []AvailableModule {
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
 		if shared.NoneChannel.Equals(module.Channel) {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, ValidationError: fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec, module.Name)})
+			modules = append(modules, AvailableModule{
+				Module:          module,
+				Enabled:         true,
+				ValidationError: fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec, module.Name),
+				Unmanaged:       !module.Managed,
+			})
 			continue
 		}
 		if module.Version != "" && module.Channel != "" {
-			modules = append(modules, AvailableModule{Module: module, Enabled: true, ValidationError: fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options", ErrInvalidModuleInSpec, module.Name)})
+			modules = append(modules, AvailableModule{
+				Module:          module,
+				Enabled:         true,
+				ValidationError: fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options", ErrInvalidModuleInSpec, module.Name),
+				Unmanaged:       !module.Managed,
+			})
 			continue
 		}
-		modules = append(modules, AvailableModule{Module: module, Enabled: true})
+		modules = append(modules, AvailableModule{Module: module, Enabled: true, Unmanaged: !module.Managed})
 	}
 
 	for _, moduleInStatus := range kyma.Status.Modules {
