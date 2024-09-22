@@ -183,7 +183,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupCertMigrationHandlers(mgr.GetClient(), setupLog, 8*time.Second)
+	setupGatewaySecretHandler(mgr.GetClient(), setupLog, 8*time.Second)
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics,
 		setupLog)
@@ -495,7 +495,7 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	}
 }
 
-func setupCertMigrationHandlers(kcpClient client.Client, log logr.Logger, gatewaySecretRefreshInterval time.Duration) {
+func setupGatewaySecretHandler(kcpClient client.Client, log logr.Logger, gatewaySecretRefreshInterval time.Duration) {
 	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, log)
 
 	//gateway secret management
