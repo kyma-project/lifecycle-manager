@@ -166,7 +166,7 @@ func readComponentDescriptorFromYaml(template string, moduleTemplate *v1beta2.Mo
 		panic("Can't capture current filename!")
 	}
 	modulePath := filepath.Join(
-		filepath.Dir(filename), "../../../config/samples/component-integration-installed", template,
+		filepath.Dir(filename), "../../../tests/moduletemplates", template,
 	)
 
 	moduleFile, err := os.ReadFile(modulePath)

@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"strconv"
-
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -26,8 +24,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
+type LayerName string
+
 const (
-	RawManifestLayerName = "raw-manifest"
+	ConfigLayer      LayerName = "config"
+	DefaultCRLayer   LayerName = "default-cr"
+	RawManifestLayer LayerName = "raw-manifest"
 )
 
 // InstallInfo defines installation information.
@@ -94,6 +96,7 @@ type RefTypeMetadata string
 
 const (
 	OciRefType RefTypeMetadata = "oci-ref"
+	OciDirType RefTypeMetadata = "oci-dir"
 )
 
 // +kubebuilder:object:root=true
@@ -119,6 +122,14 @@ func (manifest *Manifest) SetStatus(status shared.Status) {
 	manifest.Status = status
 }
 
+func (manifest *Manifest) IsUnmanaged() bool {
+	return manifest.GetAnnotations() != nil && manifest.GetAnnotations()[shared.UnmanagedAnnotation] == shared.EnableLabelValue
+}
+
+func (manifest *Manifest) IsMandatoryModule() bool {
+	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.IsMandatoryModule] == shared.EnableLabelValue
+}
+
 // +kubebuilder:object:root=true
 
 // ManifestList contains a list of Manifest.
@@ -134,5 +145,25 @@ func init() {
 }
 
 func (manifest *Manifest) SkipReconciliation() bool {
-	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == strconv.FormatBool(true)
+	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == shared.EnableLabelValue
+}
+
+func (manifest *Manifest) GetChannel() (string, bool) {
+	channel, found := manifest.Labels[shared.ChannelLabel]
+	if !found {
+		return "", false
+	}
+	return channel, true
+}
+
+func (manifest *Manifest) IsSameChannel(otherManifest *Manifest) bool {
+	channel, found := manifest.GetChannel()
+	if !found {
+		return false
+	}
+	otherChannel, found := otherManifest.GetChannel()
+	if !found {
+		return false
+	}
+	return channel == otherChannel
 }

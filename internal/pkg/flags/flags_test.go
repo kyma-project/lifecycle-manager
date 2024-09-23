@@ -194,6 +194,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: (24 * time.Hour).String(),
 		},
 		{
+			constName:     "DefaultSelfSignedCertKeySize",
+			constValue:    strconv.Itoa(int(DefaultSelfSignedCertKeySize)),
+			expectedValue: "4096",
+		},
+		{
 			constName:     "DefaultMetricsAddress",
 			constValue:    DefaultMetricsAddress,
 			expectedValue: ":8080",
@@ -234,11 +239,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "200Mi",
 		},
 		{
-			constName:     "DefaultDropStoredVersion",
-			constValue:    DefaultDropStoredVersion,
-			expectedValue: "v1alpha1",
-		},
-		{
 			constName:     "DefaultDropCrdStoredVersionMap",
 			constValue:    DefaultDropCrdStoredVersionMap,
 			expectedValue: "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1",
@@ -255,7 +255,6 @@ func Test_ConstantFlags(t *testing.T) {
 		},
 	}
 	for _, testcase := range tests {
-		testcase := testcase
 		testName := fmt.Sprintf("const %s has correct value", testcase.constName)
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()

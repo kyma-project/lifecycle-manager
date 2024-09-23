@@ -21,9 +21,6 @@ import (
 )
 
 const (
-	// private key will only be generated if one does not already exist in the target `spec.secretName`.
-	privateKeyRotationPolicy = "Never"
-
 	DomainAnnotation = shared.SKRDomainAnnotation
 
 	caCertKey        = "ca.crt"
@@ -66,6 +63,7 @@ type CertificateConfig struct {
 	Duration           time.Duration
 	RenewBefore        time.Duration
 	RenewBuffer        time.Duration
+	KeySize            int
 }
 
 type CertificateSecret struct {
@@ -206,9 +204,10 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 				certmanagerv1.UsageKeyEncipherment,
 			},
 			PrivateKey: &certmanagerv1.CertificatePrivateKey{
-				RotationPolicy: privateKeyRotationPolicy,
+				RotationPolicy: certmanagerv1.RotationPolicyAlways,
 				Encoding:       certmanagerv1.PKCS1,
 				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
+				Size:           c.config.KeySize,
 			},
 		},
 	}

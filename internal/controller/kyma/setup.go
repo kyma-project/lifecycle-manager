@@ -57,18 +57,16 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
-
-	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
-		WithEventFilter(predicates).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
 		Watches(&v1beta2.ModuleTemplate{},
-			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
-			builder.WithPredicates(predicates)).
+			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Watches(&v1beta2.Manifest{},
-			&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true}).
+			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
+				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler())).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
@@ -79,7 +77,9 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 
 func (r *Reconciler) skrEventHandler() *handler.Funcs {
 	return &handler.Funcs{
-		GenericFunc: func(ctx context.Context, evnt event.GenericEvent, queue workqueue.RateLimitingInterface) {
+		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
+			queue workqueue.TypedRateLimitingInterface[ctrl.Request],
+		) {
 			logger := ctrl.Log.WithName("listener")
 			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
 			if !conversionOk {

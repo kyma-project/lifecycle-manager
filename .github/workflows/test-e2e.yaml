@@ -1,30 +1,22 @@
 name: TestSuite E2E
 
 on:
-  pull_request:
-    branches:
-      - main
-      - feat/**
   workflow_dispatch:
     inputs:
       k8s_version:
         description: With Kubernetes version
         required: false
-
+  pull_request_target:
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
 jobs:
-  wait-for-image-build:
-    name: Wait for image build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/wait-for-image-build
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
+  build-image:
+    name: Build Image
+    uses: ./.github/workflows/build-image.yml
   e2e-integration:
     name: E2E
-    needs: wait-for-image-build
+    needs: build-image
     strategy:
+      fail-fast: false
       matrix:
         e2e-test:
           - watcher-enqueue
@@ -41,6 +33,7 @@ jobs:
           - purge-metrics
           - module-upgrade-channel-switch
           - module-upgrade-new-version
+          - unmanage-module
           - module-install-by-version
           - skip-manifest-reconciliation
           - ca-certificate-rotation
@@ -49,6 +42,7 @@ jobs:
           - mandatory-module-metrics
           - misconfigured-kyma-secret
           - rbac-privileges
+          - ocm-compatible-module-template
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

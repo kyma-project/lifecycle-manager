@@ -46,7 +46,6 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			resourcesInfo := convertToResourceInfo([]machineryruntime.Object{
 				&apicorev1.ServiceAccount{},
@@ -118,7 +117,6 @@ func Test_IsOperatorRelatedResources(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			for _, kind := range testCase.kinds {
 				if got := resources.IsOperatorRelatedResources(getKindName(kind)); got != testCase.want {
@@ -167,7 +165,6 @@ func Test_SplitResources(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			expectedOperatorRelatedResources := convertToResourceInfo(testCase.operatorRelatedResources)
 			expectedOperatorManagedResources := convertToResourceInfo(testCase.operatorManagedResources)

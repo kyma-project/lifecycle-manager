@@ -69,6 +69,7 @@ spec:
                       - Error
                       - ""
                       - Warning
+                      - Unmanaged
                       type: string
                     value:
                       description: Value is the value at the JSONPath for which the
@@ -179,6 +180,7 @@ spec:
                       - Error
                       - ""
                       - Warning
+                      - Unmanaged
                       type: string
                     value:
                       description: Value is the value at the JSONPath for which the

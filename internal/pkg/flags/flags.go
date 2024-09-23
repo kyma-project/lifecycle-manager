@@ -19,6 +19,8 @@ const (
 	DefaultManifestRequeueErrInterval                                   = 2 * time.Second
 	DefaultManifestRequeueWarningInterval                               = 30 * time.Second
 	DefaultManifestRequeueBusyInterval                                  = 5 * time.Second
+	DefaultManifestRequeueJitterProbability                             = 0.02
+	DefaultManifestRequeueJitterPercentage                              = 0.02
 	DefaultMandatoryModuleRequeueSuccessInterval                        = 30 * time.Second
 	DefaultMandatoryModuleDeletionRequeueSuccessInterval                = 30 * time.Second
 	DefaultWatcherRequeueSuccessInterval                                = 30 * time.Second
@@ -45,6 +47,7 @@ const (
 	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
+	DefaultSelfSignedCertKeySize                                        = 4096
 	DefaultRemoteSyncNamespace                                          = "kyma-system"
 	DefaultMetricsAddress                                               = ":8080"
 	DefaultProbeAddress                                                 = ":8081"
@@ -54,7 +57,6 @@ const (
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
-	DefaultDropStoredVersion                                            = "v1alpha1"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
 	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
@@ -62,9 +64,12 @@ const (
 )
 
 var (
-	errMissingWatcherImageTag      = errors.New("runtime watcher image tag is not provided")
-	errWatcherDirNotExist          = errors.New("failed to locate watcher resource manifest folder")
-	errLeaderElectionTimeoutConfig = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
+	errMissingWatcherImageTag                  = errors.New("runtime watcher image tag is not provided")
+	errWatcherDirNotExist                      = errors.New("failed to locate watcher resource manifest folder")
+	errLeaderElectionTimeoutConfig             = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
+	errInvalidSelfSignedCertKeyLength          = errors.New("invalid self-signed-cert-key-size: must be 4096")
+	errInvalidManifestRequeueJitterPercentage  = errors.New("invalid manifest requeue jitter percentage: must be between 0 and 0.05")
+	errInvalidManifestRequeueJitterProbability = errors.New("invalid manifest requeue jitter probability: must be between 0 and 1")
 )
 
 //nolint:funlen // defines all program flags
@@ -131,6 +136,13 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.ManifestRequeueBusyInterval, "manifest-requeue-busy-interval",
 		DefaultManifestRequeueBusyInterval,
 		"determines the duration a Manifest in Processing state is enqueued for reconciliation.")
+	flag.Float64Var(&flagVar.ManifestRequeueJitterProbability, "manifest-requeue-jitter-probability",
+		DefaultManifestRequeueJitterProbability,
+		"determines the probability that jitter is applied to the requeue interval.")
+	flag.Float64Var(&flagVar.ManifestRequeueJitterPercentage, "manifest-requeue-jitter-percentage",
+		DefaultManifestRequeueJitterPercentage,
+		"determines the percentage range for the requeue jitter applied to the requeue interval. "+
+			"E.g., 0.1 means +/- 10% of the interval.")
 	flag.DurationVar(&flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
 		"mandatory-module-deletion-requeue-success-interval",
 		DefaultMandatoryModuleDeletionRequeueSuccessInterval,
@@ -198,9 +210,9 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBuffer, "self-signed-cert-renew-buffer",
 		DefaultSelfSignedCertificateRenewBuffer,
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
+	flag.IntVar(&flagVar.SelfSignedCertKeySize, "self-signed-cert-key-size", DefaultSelfSignedCertKeySize,
+		"The key size for the self-signed certificate")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
-	flag.StringVar(&flagVar.DropStoredVersion, "drop-stored-version", DefaultDropStoredVersion,
-		"The API version to be dropped from the storage versions")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"Specify the API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
@@ -275,7 +287,7 @@ type FlagVar struct {
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
-	DropStoredVersion                      string
+	SelfSignedCertKeySize                  int
 	DropCrdStoredVersionMap                string
 	UseWatcherDevRegistry                  bool
 	WatcherImageTag                        string
@@ -283,6 +295,8 @@ type FlagVar struct {
 	WatcherResourceLimitsCPU               string
 	WatcherResourcesPath                   string
 	MetricsCleanupIntervalInMinutes        int
+	ManifestRequeueJitterProbability       float64
+	ManifestRequeueJitterPercentage        float64
 }
 
 func (f FlagVar) Validate() error {
@@ -298,6 +312,21 @@ func (f FlagVar) Validate() error {
 
 	if f.LeaderElectionRenewDeadline >= f.LeaderElectionLeaseDuration {
 		return fmt.Errorf("%w (%.1f[s])", errLeaderElectionTimeoutConfig, f.LeaderElectionLeaseDuration.Seconds())
+	}
+
+	if !map[int]bool{
+		2048: false, // 2048 is a valid value for cert-manager, but explicitly prohibited as not compliant to security requirements
+		4096: true,
+		8192: false, // see https://github.com/kyma-project/lifecycle-manager/issues/1793
+	}[f.SelfSignedCertKeySize] {
+		return errInvalidSelfSignedCertKeyLength
+	}
+
+	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 0.05 {
+		return errInvalidManifestRequeueJitterPercentage
+	}
+	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 1 {
+		return errInvalidManifestRequeueJitterProbability
 	}
 
 	return nil

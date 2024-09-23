@@ -254,6 +254,7 @@ spec:
                 - Error
                 - ""
                 - Warning
+                - Unmanaged
                 type: string
               synced:
                 description: |-
@@ -524,6 +525,7 @@ spec:
                 - Error
                 - ""
                 - Warning
+                - Unmanaged
                 type: string
               synced:
                 description: |-

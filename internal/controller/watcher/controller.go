@@ -122,6 +122,8 @@ func (r *Reconciler) stateHandling(ctx context.Context, watcher *v1beta2.Watcher
 		return r.handleProcessingState(ctx, watcher)
 	case shared.StateReady, shared.StateWarning:
 		return r.handleProcessingState(ctx, watcher)
+	case shared.StateUnmanaged:
+		return ctrl.Result{}, nil // no requeue of invalid state
 	}
 
 	return ctrl.Result{Requeue: false}, nil
@@ -129,7 +131,7 @@ func (r *Reconciler) stateHandling(ctx context.Context, watcher *v1beta2.Watcher
 
 func (r *Reconciler) handleDeletingState(ctx context.Context, watcher *v1beta2.Watcher) (ctrl.Result, error) {
 	err := r.IstioClient.DeleteVirtualService(ctx, watcher.GetName(), watcher.GetNamespace())
-	if err != nil {
+	if err != nil && !util.IsNotFound(err) {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
 		return r.updateWatcherState(ctx, watcher, shared.StateError, vsConfigDelErr)
 	}
@@ -174,7 +176,9 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, watcherCR *v1bet
 	return r.updateWatcherState(ctx, watcherCR, shared.StateReady, nil)
 }
 
-func (r *Reconciler) updateWatcherState(ctx context.Context, watcher *v1beta2.Watcher, state shared.State, err error) (ctrl.Result, error) {
+func (r *Reconciler) updateWatcherState(ctx context.Context, watcher *v1beta2.Watcher, state shared.State,
+	err error,
+) (ctrl.Result, error) {
 	watcher.Status.State = state
 	if state == shared.StateReady {
 		watcher.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)

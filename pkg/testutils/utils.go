@@ -61,6 +61,7 @@ func NewTestModuleWithFixName(name, channel, version string) v1beta2.Module {
 	return v1beta2.Module{
 		Name:    name,
 		Channel: channel,
+		Managed: true,
 		Version: version,
 	}
 }

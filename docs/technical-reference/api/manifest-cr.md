@@ -17,7 +17,7 @@ The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and
 
 ### **.spec.remote**
 
-This parameter determines whether or not the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR.
+This parameter determines whether the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR.
 
 Thus a Manifest CR like
 
@@ -37,7 +37,11 @@ looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and 
 
 ### **.spec.config**
 
-The config reference uses an image layer reference that contains configuration data that can be used to further influence any potential rendering process while the resources are processed by the [declarative library](../../../internal/declarative/README.md#resource-rendering). It is resolved through a translation of the ModuleTemplate CR to the Manifest CR during the [resolution of the modules](../../../pkg/module/parse/template_to_module.go) in the Kyma CR control loop.
+The config reference uses an image layer reference that contains configuration data that can be used to further
+influence any potential rendering process while the resources are processed by
+the [declarative library](../../../internal/declarative/README.md#resource-rendering). It is resolved through a
+translation of the ModuleTemplate CR to the Manifest CR during
+the [resolution of the modules](../../../internal/manifest/parser/template_to_module.go) in the Kyma CR control loop.
 
 There can be at most one config layer, and it is referenced by the **name** `config` with **type** `yaml` as `localOciBlob` or `OCIBlob`:
 

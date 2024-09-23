@@ -215,7 +215,7 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 		It("should result Kyma in Warning state", func() {
 			By(testCase.enableStatement, func() {
 				kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
-					Name: testCase.moduleName,
+					Name: testCase.moduleName, Managed: true,
 				})
 				Eventually(kcpClient.Update, Timeout, Interval).
 					WithContext(ctx).WithArguments(kyma).Should(Succeed())

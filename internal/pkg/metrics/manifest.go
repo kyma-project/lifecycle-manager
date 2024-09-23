@@ -31,6 +31,7 @@ const (
 	ManifestSyncResources                ManifestRequeueReason = "manifest_sync_resources"
 	ManifestUnauthorized                 ManifestRequeueReason = "manifest_unauthorized"
 	ManifestReconcileFinished            ManifestRequeueReason = "manifest_reconcile_finished"
+	ManifestUnmanagedUpdate              ManifestRequeueReason = "manifest_unmanaged_update"
 )
 
 type ManifestMetrics struct {

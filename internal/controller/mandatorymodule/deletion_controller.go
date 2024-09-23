@@ -128,7 +128,6 @@ func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 
 func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for _, manifest := range manifests {
-		manifest := manifest
 		if err := r.Delete(ctx, &manifest); err != nil {
 			return fmt.Errorf("not able to delete manifest %s/%s: %w", manifest.Namespace, manifest.Name, err)
 		}

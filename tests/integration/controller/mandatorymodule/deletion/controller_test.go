@@ -102,7 +102,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 		installName := filepath.Join("main-dir", "installs")
 		mandatoryManifest.Annotations = map[string]string{shared.FQDN: "kyma-project.io/template-operator"}
-		validImageSpec, err := CreateOCIImageSpec(installName, server.Listener.Addr().String(), manifestFilePath,
+		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(), manifestFilePath,
 			false)
 		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
@@ -133,7 +133,6 @@ func deleteMandatoryModuleTemplates(ctx context.Context, clnt client.Client) err
 	}
 
 	for _, template := range templates.Items {
-		template := template
 		if template.Spec.Mandatory {
 			if err := clnt.Delete(ctx, &template); err != nil {
 				return fmt.Errorf("failed to delete ModuleTemplate: %w", err)
