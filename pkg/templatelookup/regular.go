@@ -257,7 +257,6 @@ func (t *TemplateLookup) getTemplateByChannel(ctx context.Context, name, desired
 
 	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
-		template := template
 		if TemplateNameMatch(&template, name) && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue

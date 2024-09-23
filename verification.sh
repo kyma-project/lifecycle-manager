@@ -14,18 +14,12 @@ FILE="config/crd/bases/operator.kyma-project.io_moduletemplates.yaml"
 FILE="internal/controller/kyma/controller.go"
 FILE="internal/descriptor/cache/key.go"
 FILE="internal/descriptor/provider/provider_test.go"
-#TODO-ONLY_NEW!A	internal/manifest/deployment_ready_check.go
-#TODO-ONLY_NEW!A	internal/manifest/deployment_ready_check_test.go
-#TODO-ONLY_NEW!A	internal/manifest/statefulset_ready_check.go
-#TODO-ONLY_NEW!A	internal/manifest/statefulset_ready_check_test.go
 FILE="internal/pkg/metrics/kyma.go"
 FILE="internal/remote/skr_context.go"
 FILE="internal/remote/skr_context_test.go"
-#TODO-ONLY_OLD!M	pkg/module/parse/template_to_module.go
-#BOTH_DELETED!FILE="pkg/module/sync/errors.go"
 FILE="pkg/templatelookup/availableModules.go"
 FILE="pkg/templatelookup/availableModules_test.go"
-#TODO!FILE="pkg/templatelookup/regular.go"
+FILE="pkg/templatelookup/regular.go"
 FILE="pkg/templatelookup/regular_test.go"
 FILE="pkg/testutils/builder/moduletemplate.go"
 FILE="pkg/testutils/moduletemplate.go"
@@ -55,13 +49,17 @@ FILE="tests/moduletemplates/moduletemplate_template_operator_v2_direct_version.y
 #2nd round:
 FILE="api/v1beta2/kyma_types.go"
 FILE="internal/controller/kyma/controller.go"
+#FILE="pkg/module/parse/template_to_module.go"
+FILE="pkg/templatelookup/regular.go"
+FILE="tests/integration/controller/kyma/manifest_test.go"
+FILE="unit-test-coverage.yaml"
 
 git diff $COMMIT_BASE  feat/module-catalogue-improvements           $FILE > old.diff
 git diff main                                                       $FILE > new.diff
 
 #NOTES
 # internal/remote/skr_context_test.go: in commit 98811dee24447a000f82a0e1ed401db62e004b8d the "testCase" variable is modified -> possible bug
-#
+# check: "pkg/module/parse/template_to_module.go" for changes.
 #
 #
 #
