@@ -1,10 +1,11 @@
 package e2e_test
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -34,21 +35,30 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			Namespace: RemoteNamespace,
 		}
 		It("Then KCP TLS Certificate is removed", func() {
-			timeNow := &apimetav1.Time{Time: time.Now()}
-			expectedLogMessage := "CA Certificate was rotated, removing certificate"
-			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
-			Eventually(CheckKLMLogs, 4*time.Minute).
-				WithContext(ctx).
-				WithArguments(expectedLogMessage, kcpRESTConfig, skrRESTConfig,
-					kcpClient, skrClient, timeNow).
-				Should(Succeed())
-
-			By("And new TLS Certificate is created")
 			var err error
 			namespacedCertName := types.NamespacedName{
 				Name:      caCertName,
 				Namespace: "istio-system",
 			}
+			caCertificate, err = GetCACertificate(ctx, namespacedCertName, kcpClient)
+			Expect(err).NotTo(HaveOccurred())
+
+			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
+			Eventually(func(ctx context.Context, oldValue time.Time) error {
+				cert, err := GetCACertificate(ctx, namespacedCertName, kcpClient)
+				if err != nil {
+					return err
+				}
+				if cert.Status.NotAfter.Time == oldValue {
+					return errors.New("certificate not rotated")
+				}
+				return nil
+			}, 4*time.Minute).
+				WithContext(ctx).
+				WithArguments(caCertificate.Status.NotAfter.Time).
+				Should(Succeed())
+
+			By("And new TLS Certificate is created")
 			caCertificate, err = GetCACertificate(ctx, namespacedCertName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(CertificateSecretIsCreatedAfter).
