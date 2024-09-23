@@ -3,8 +3,10 @@ package zerodw
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
@@ -15,6 +17,7 @@ import (
 const (
 	GatewaySecretName = "gateway-secret"
 	kcpRootSecretName = "klm-watcher"
+	kcpCACertName     = "klm-watcher-serving"
 	istioNamespace    = flags.DefaultIstioNamespace
 )
 
@@ -64,10 +67,17 @@ func (gsh *GatewaySecretHandler) handleNonExisting(rootSecret *apicorev1.Secret)
 func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gwSecret *apicorev1.Secret) error {
 	doUpdate := true
 
+	caCert := certmanagerv1.Certificate{}
+	if err := gsh.kcpClient.Get(context.TODO(),
+		client.ObjectKey{Namespace: istioNamespace, Name: kcpCACertName},
+		&caCert); err != nil {
+		return fmt.Errorf("failed to get CA certificate %w", err)
+	}
+
 	gwSecretlastModifiedAtValue, ok := gwSecret.Annotations[LastModifiedAtAnnotation]
 	if ok {
 		gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretlastModifiedAtValue)
-		if err == nil && gwSecretLastModifiedAt.Before(rootSecret.CreationTimestamp.Time) {
+		if err == nil && caCert.Status.NotBefore.Time.Before(gwSecretLastModifiedAt) {
 			doUpdate = false
 		}
 	}
