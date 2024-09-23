@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -14,8 +15,9 @@ import (
 )
 
 var (
-	errOldCreationTime = errors.New("certificate has an old creation timestamp")
-	errNotSyncedSecret = errors.New("secret is not synced to skr cluster")
+	errOldCreationTime     = errors.New("certificate has an old creation timestamp")
+	errNotSyncedSecret     = errors.New("secret is not synced to skr cluster")
+	errTlsSecretNotRotated = errors.New("tls secret did not rotated")
 )
 
 func CertificateSecretExists(ctx context.Context, secretName types.NamespacedName, k8sClient client.Client) error {
@@ -40,6 +42,17 @@ func CertificateSecretIsCreatedAfter(ctx context.Context,
 		return errOldCreationTime
 	}
 
+	return nil
+}
+func TlsSecretRotated(ctx context.Context, oldValue time.Time,
+	namespacedSecretName types.NamespacedName, kcpClient client.Client) error {
+	secret, err := GetTlsSecret(ctx, namespacedSecretName, kcpClient)
+	if err != nil {
+		return fmt.Errorf("failed to fetch tls secret: %w", err)
+	}
+	if secret.CreationTimestamp.Time == oldValue {
+		return errTlsSecretNotRotated
+	}
 	return nil
 }
 
@@ -103,4 +116,14 @@ func GetCACertificate(ctx context.Context, namespacedCertName types.NamespacedNa
 	}
 
 	return caCert, nil
+}
+
+func GetTlsSecret(ctx context.Context, namespacedSecretName types.NamespacedName, k8sClient client.Client,
+) (*apicorev1.Secret, error) {
+	tlsSecret := &apicorev1.Secret{}
+	if err := k8sClient.Get(ctx, namespacedSecretName, tlsSecret); err != nil {
+		return nil, fmt.Errorf("failed to get secret %w", err)
+	}
+
+	return tlsSecret, nil
 }
