@@ -100,7 +100,8 @@ func main() {
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
-	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout))) //nolint:gosec // loglevel should always be between -128 to 127
+	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
+		zapcore.Lock(os.Stdout)))
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -266,7 +267,8 @@ func enableWebhooks(mgr manager.Manager, setupLog logr.Logger) {
 func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	return ctrlruntime.Options{
 		RateLimiter: workqueue.NewTypedMaxOfRateLimiter(
-			workqueue.NewTypedItemExponentialFailureRateLimiter[ctrl.Request](flagVar.FailureBaseDelay, flagVar.FailureMaxDelay),
+			workqueue.NewTypedItemExponentialFailureRateLimiter[ctrl.Request](flagVar.FailureBaseDelay,
+				flagVar.FailureMaxDelay),
 			&workqueue.TypedBucketRateLimiter[ctrl.Request]{
 				Limiter: rate.NewLimiter(rate.Limit(flagVar.RateLimiterFrequency), flagVar.RateLimiterBurst),
 			},
@@ -356,7 +358,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 }
 
 const (
-	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr"
+	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher"
 	watcherRegDev  = "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher"
 )
 
