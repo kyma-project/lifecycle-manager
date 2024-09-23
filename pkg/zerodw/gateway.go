@@ -65,32 +65,27 @@ func (gsh *GatewaySecretHandler) handleNonExisting(rootSecret *apicorev1.Secret)
 }
 
 func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gwSecret *apicorev1.Secret) error {
-	doUpdate := true
-
 	caCert := certmanagerv1.Certificate{}
 	if err := gsh.kcpClient.Get(context.TODO(),
 		client.ObjectKey{Namespace: istioNamespace, Name: kcpCACertName},
 		&caCert); err != nil {
-		return fmt.Errorf("failed to get CA certificate %w", err)
+		return fmt.Errorf("failed to get CA certificate: %w", err)
 	}
 
-	gwSecretlastModifiedAtValue, ok := gwSecret.Annotations[LastModifiedAtAnnotation]
-	if ok {
-		gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretlastModifiedAtValue)
-		if err == nil && !caCert.Status.NotBefore.Time.Before(gwSecretLastModifiedAt) {
-			doUpdate = false
+	if gwSecretLastModifiedAtValue, ok := gwSecret.Annotations[LastModifiedAtAnnotation]; ok {
+		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+			if gwSecretLastModifiedAt.After(caCert.Status.NotBefore.Time) {
+				return nil
+			}
 		}
 	}
 
-	// update gateway secret if creation time of kcp secret is newer than the gateway Secret
-	if doUpdate {
-		gwSecret.Data["tls.crt"] = rootSecret.Data["tls.crt"]
-		gwSecret.Data["tls.key"] = rootSecret.Data["tls.key"]
-		gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
-		err := gsh.update(context.TODO(), gwSecret)
-		if err == nil {
-			gsh.log.Info("updated the gateway secret", "reason", "CA-Bundle is more recent than the gateway secret")
-		}
+	gwSecret.Data["tls.crt"] = rootSecret.Data["tls.crt"]
+	gwSecret.Data["tls.key"] = rootSecret.Data["tls.key"]
+	gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
+	err := gsh.update(context.TODO(), gwSecret)
+	if err == nil {
+		gsh.log.Info("updated the gateway secret", "reason", "CA-Bundle is more recent than the gateway secret")
 	}
 
 	return nil
