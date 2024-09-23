@@ -77,7 +77,7 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 	gwSecretlastModifiedAtValue, ok := gwSecret.Annotations[LastModifiedAtAnnotation]
 	if ok {
 		gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretlastModifiedAtValue)
-		if err == nil && caCert.Status.NotBefore.Time.Before(gwSecretLastModifiedAt) {
+		if err == nil && !caCert.Status.NotBefore.Time.Before(gwSecretLastModifiedAt) {
 			doUpdate = false
 		}
 	}
