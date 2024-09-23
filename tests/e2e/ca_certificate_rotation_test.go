@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	"context"
-	"errors"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -36,29 +34,24 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 		}
 		It("Then KCP TLS Certificate is removed", func() {
 			var err error
+			namespacedSecretName := types.NamespacedName{
+				Name:      watcher.ResolveTLSCertName(kyma.Name),
+				Namespace: "istio-system",
+			}
+			tlsSecret, err := GetTlsSecret(ctx, namespacedSecretName, kcpClient)
+			Expect(err).NotTo(HaveOccurred())
+
+			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
+			Eventually(TlsSecretRotated, 4*time.Minute).
+				WithContext(ctx).
+				WithArguments(tlsSecret.CreationTimestamp.Time, namespacedSecretName, kcpClient).
+				Should(Succeed())
+
+			By("And new TLS Certificate is created")
 			namespacedCertName := types.NamespacedName{
 				Name:      caCertName,
 				Namespace: "istio-system",
 			}
-			caCertificate, err = GetCACertificate(ctx, namespacedCertName, kcpClient)
-			Expect(err).NotTo(HaveOccurred())
-
-			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
-			Eventually(func(ctx context.Context, oldValue time.Time) error {
-				cert, err := GetCACertificate(ctx, namespacedCertName, kcpClient)
-				if err != nil {
-					return err
-				}
-				if cert.Status.NotAfter.Time == oldValue {
-					return errors.New("certificate not rotated")
-				}
-				return nil
-			}, 4*time.Minute).
-				WithContext(ctx).
-				WithArguments(caCertificate.Status.NotAfter.Time).
-				Should(Succeed())
-
-			By("And new TLS Certificate is created")
 			caCertificate, err = GetCACertificate(ctx, namespacedCertName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(CertificateSecretIsCreatedAfter).
