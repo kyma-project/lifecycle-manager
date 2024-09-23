@@ -25,7 +25,7 @@ var _ = Describe("Module Install By Version", Ordered, func() {
 			Skip("Version attribute is disabled for now on the CRD level")
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, RemoteNamespace, templateOperatorModule).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, templateOperatorModule).
 				Should(Succeed())
 		})
 
@@ -33,24 +33,24 @@ var _ = Describe("Module Install By Version", Ordered, func() {
 			Skip("Version attribute is disabled for now on the CRD level")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR).
+				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 
 			By("And Module Operator Deployment exists")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(runtimeClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 			By("And Module is in \"Ready\" State")
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), templateOperatorModule.Name, shared.StateReady).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), templateOperatorModule.Name, shared.StateReady).
 				Should(Succeed())
 		})
 	})

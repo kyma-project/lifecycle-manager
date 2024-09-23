@@ -291,7 +291,6 @@ func (t *TemplateLookup) getTemplateByVersion(ctx context.Context, name, version
 
 	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
-		template := template
 		if TemplateNameMatch(&template, name) && shared.NoneChannel.Equals(template.Spec.Channel) && template.Spec.Version == version {
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
