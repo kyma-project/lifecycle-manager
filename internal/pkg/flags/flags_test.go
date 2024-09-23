@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	. "github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -224,6 +226,16 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: ":8084",
 		},
 		{
+			constName:     "WatcherImageName",
+			constValue:    DefaultWatcherImageName,
+			expectedValue: "runtime-watcher",
+		},
+		{
+			constName:     "WatcherImageRegistry",
+			constValue:    DefaultWatcherImageRegistry,
+			expectedValue: "europe-docker.pkg.dev/kyma-project/prod",
+		},
+		{
 			constName:     "DefaultWatcherResourcesPath",
 			constValue:    DefaultWatcherResourcesPath,
 			expectedValue: "./skr-webhook",
@@ -264,4 +276,197 @@ func Test_ConstantFlags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Flags_Validate(t *testing.T) {
+	tests := []struct {
+		name  string
+		flags FlagVar
+		err   error
+	}{
+		{
+			name:  "WatcherImageTag is required",
+			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherImageTag("").build(),
+			err:   ErrMissingWatcherImageTag,
+		},
+		{
+			name:  "WatcherImageTag is NOT required",
+			flags: newFlagVarBuilder().withWatcherImageTag("").build(),
+			err:   nil,
+		},
+		{
+			name:  "WatcherImageRegistry is required",
+			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherImageRegistry("").build(),
+			err:   ErrMissingWatcherImageRegistry,
+		},
+		{
+			name:  "WatcherImageRegistry is NOT required",
+			flags: newFlagVarBuilder().withWatcherImageRegistry("").build(),
+			err:   nil,
+		},
+		{
+			name:  "WatcherResourcesPath is required",
+			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherResourcesPath("").build(),
+			err:   ErrWatcherDirNotExist,
+		},
+		{
+			name:  "WatcherResourcesPath is NOT required",
+			flags: newFlagVarBuilder().withWatcherResourcesPath("").build(),
+			err:   nil,
+		},
+		{
+			name:  "LeaderElectionRenewDeadline > LeaderElectionLeaseDuration",
+			flags: newFlagVarBuilder().withLeaderElectionRenewDeadline(2).withLeaderElectionLeaseDuration(1).build(),
+			err:   ErrLeaderElectionTimeoutConfig,
+		},
+		{
+			name:  "LeaderElectionRenewDeadline = LeaderElectionLeaseDuration",
+			flags: newFlagVarBuilder().withLeaderElectionRenewDeadline(1).withLeaderElectionLeaseDuration(1).build(),
+			err:   ErrLeaderElectionTimeoutConfig,
+		},
+		{
+			name:  "LeaderElectionRenewDeadline < LeaderElectionLeaseDuration",
+			flags: newFlagVarBuilder().withLeaderElectionRenewDeadline(1).withLeaderElectionLeaseDuration(2).build(),
+			err:   nil,
+		},
+		{
+			name:  "SelfSignedCertKeySize 2048",
+			flags: newFlagVarBuilder().withSelfSignedCertKeySize(2048).build(),
+			err:   ErrInvalidSelfSignedCertKeyLength,
+		},
+		{
+			name:  "SelfSignedCertKeySize 8192",
+			flags: newFlagVarBuilder().withSelfSignedCertKeySize(8192).build(),
+			err:   ErrInvalidSelfSignedCertKeyLength,
+		},
+		{
+			name:  "SelfSignedCertKeySize 4711",
+			flags: newFlagVarBuilder().withSelfSignedCertKeySize(4711).build(),
+			err:   ErrInvalidSelfSignedCertKeyLength,
+		},
+		{
+			name:  "SelfSignedCertKeySize 4096",
+			flags: newFlagVarBuilder().withSelfSignedCertKeySize(4096).build(),
+			err:   nil,
+		},
+		{
+			name:  "ManifestRequeueJitterProbability < 0",
+			flags: newFlagVarBuilder().withManifestRequeueJitterProbability(-1).build(),
+			err:   ErrInvalidManifestRequeueJitterPercentage,
+		},
+		{
+			name:  "ManifestRequeueJitterProbability > 0.05",
+			flags: newFlagVarBuilder().withManifestRequeueJitterProbability(0.1).build(),
+			err:   ErrInvalidManifestRequeueJitterPercentage,
+		},
+		{
+			name:  "ManifestRequeueJitterProbability 0.01",
+			flags: newFlagVarBuilder().withManifestRequeueJitterProbability(0.01).build(),
+			err:   nil,
+		},
+		{
+			name:  "ManifestRequeueJitterPercentage < 0",
+			flags: newFlagVarBuilder().withManifestRequeueJitterPercentage(-1).build(),
+			err:   ErrInvalidManifestRequeueJitterProbability,
+		},
+		{
+			name:  "ManifestRequeueJitterPercentage > 0.05",
+			flags: newFlagVarBuilder().withManifestRequeueJitterPercentage(2).build(),
+			err:   ErrInvalidManifestRequeueJitterProbability,
+		},
+		{
+			name:  "ManifestRequeueJitterPercentage 0.1",
+			flags: newFlagVarBuilder().withManifestRequeueJitterPercentage(0.1).build(),
+			err:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.flags.Validate()
+			if tt.err != nil {
+				require.ErrorIs(t, err, tt.err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// test builder
+
+type flagVarBuilder struct {
+	flags FlagVar
+}
+
+func newFlagVarBuilder() *flagVarBuilder {
+	builder := &flagVarBuilder{
+		flags: FlagVar{},
+	}
+
+	return builder.
+		withEnabledKcpWatcher(false).
+		withWatcherImageTag("v1.0.0").
+		withWatcherImageName("runtime-watcher").
+		withWatcherImageRegistry("foo.bar").
+		withWatcherResourcesPath("./skr-webhook").
+		withLeaderElectionRenewDeadline(120 * time.Second).
+		withLeaderElectionLeaseDuration(180 * time.Second).
+		withSelfSignedCertKeySize(4096).
+		withManifestRequeueJitterProbability(0.01).
+		withManifestRequeueJitterPercentage(0.1)
+}
+
+func (b *flagVarBuilder) build() FlagVar {
+	return b.flags
+}
+
+func (b *flagVarBuilder) withEnabledKcpWatcher(enabled bool) *flagVarBuilder {
+	b.flags.EnableKcpWatcher = enabled
+	return b
+}
+
+func (b *flagVarBuilder) withWatcherImageTag(tag string) *flagVarBuilder {
+	b.flags.WatcherImageTag = tag
+	return b
+}
+
+func (b *flagVarBuilder) withWatcherImageName(name string) *flagVarBuilder {
+	b.flags.WatcherImageName = name
+	return b
+}
+
+func (b *flagVarBuilder) withWatcherImageRegistry(registry string) *flagVarBuilder {
+	b.flags.WatcherImageRegistry = registry
+	return b
+}
+
+func (b *flagVarBuilder) withWatcherResourcesPath(path string) *flagVarBuilder {
+	b.flags.WatcherResourcesPath = path
+	return b
+}
+
+func (b *flagVarBuilder) withLeaderElectionRenewDeadline(duration time.Duration) *flagVarBuilder {
+	b.flags.LeaderElectionRenewDeadline = duration
+	return b
+}
+
+func (b *flagVarBuilder) withLeaderElectionLeaseDuration(duration time.Duration) *flagVarBuilder {
+	b.flags.LeaderElectionLeaseDuration = duration
+	return b
+}
+
+func (b *flagVarBuilder) withSelfSignedCertKeySize(size int) *flagVarBuilder {
+	b.flags.SelfSignedCertKeySize = size
+	return b
+}
+
+func (b *flagVarBuilder) withManifestRequeueJitterProbability(probability float64) *flagVarBuilder {
+	b.flags.ManifestRequeueJitterProbability = probability
+	return b
+}
+
+func (b *flagVarBuilder) withManifestRequeueJitterPercentage(percentage float64) *flagVarBuilder {
+	b.flags.ManifestRequeueJitterPercentage = percentage
+	return b
 }
