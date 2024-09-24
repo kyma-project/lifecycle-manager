@@ -6,8 +6,8 @@ packages:
   internal/manifest/statecheck: 66
   internal/manifest/filemutex: 100
   internal/manifest: 7
-  internal/istio: 63.5
-  internal/pkg/resources: 91.8
+  internal/istio: 63.3
+  internal/pkg/resources: 91.7
   internal/remote: 6.6
   pkg/templatelookup: 72
 
