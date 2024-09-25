@@ -751,7 +751,6 @@ func TestTemplateNameMatch(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if got := templatelookup.TemplateNameMatch(&tt.template, targetName); got != tt.want {
 				assert.Equal(t, tt.want, got)
