@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -24,9 +25,9 @@ import (
 const (
 	DomainAnnotation = shared.SKRDomainAnnotation
 
-	CaCertKey        = "ca.crt"
-	TlsCertKey       = "tls.crt"
-	TlsPrivateKeyKey = "tls.key"
+	CACertKey     = "ca.crt"
+	TLSCertKey    = "tls.crt"
+	TLSPrivateKey = "tls.key"
 )
 
 var (
@@ -160,9 +161,9 @@ func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret,
 			err)
 	}
 	certSecret := CertificateSecret{
-		CACrt:           string(secret.Data[CaCertKey]),
-		TLSCrt:          string(secret.Data[TlsCertKey]),
-		TLSKey:          string(secret.Data[TlsPrivateKeyKey]),
+		CACrt:           string(secret.Data[CACertKey]),
+		TLSCrt:          string(secret.Data[TLSCertKey]),
+		TLSKey:          string(secret.Data[TLSPrivateKey]),
 		ResourceVersion: secret.GetResourceVersion(),
 	}
 	return &certSecret, nil

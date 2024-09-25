@@ -2,6 +2,7 @@ package zerodw
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -23,9 +24,8 @@ func (sm *secretManager) findSecret(ctx context.Context, objKey client.ObjectKey
 	secret := &apicorev1.Secret{}
 
 	err := sm.kcpClient.Get(ctx, objKey, secret)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get secret %s: %w", objKey.Name, err)
 	}
 
 	return secret, nil
@@ -41,12 +41,18 @@ func isNotFound(err error) bool {
 
 func (sm *secretManager) create(ctx context.Context, secret *apicorev1.Secret) error {
 	sm.updateLastModifiedAt(secret)
-	return sm.kcpClient.Create(ctx, secret)
+	if err := sm.kcpClient.Create(ctx, secret); err != nil {
+		return fmt.Errorf("failed to create secret %s: %w", secret.Name, err)
+	}
+	return nil
 }
 
 func (sm *secretManager) update(ctx context.Context, secret *apicorev1.Secret) error {
 	sm.updateLastModifiedAt(secret)
-	return sm.kcpClient.Update(ctx, secret)
+	if err := sm.kcpClient.Update(ctx, secret); err != nil {
+		return fmt.Errorf("failed to update secret %s: %w", secret.Name, err)
+	}
+	return nil
 }
 
 func (sm *secretManager) updateLastModifiedAt(secret *apicorev1.Secret) {

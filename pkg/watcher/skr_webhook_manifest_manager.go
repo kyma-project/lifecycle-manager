@@ -245,9 +245,9 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		cpuResLimit:     m.config.SkrWebhookCPULimits,
 		memResLimit:     m.config.SkrWebhookMemoryLimits,
 		skrWatcherImage: m.config.SkrWatcherImage,
-		caCert:          gatewaySecret.Data[CaCertKey],
-		tlsCert:         tlsSecret.Data[TlsCertKey],
-		tlsKey:          tlsSecret.Data[TlsPrivateKeyKey],
+		caCert:          gatewaySecret.Data[CACertKey],
+		tlsCert:         tlsSecret.Data[TLSCertKey],
+		tlsKey:          tlsSecret.Data[TLSPrivateKey],
 		remoteNs:        remoteNs,
 	}, nil
 }

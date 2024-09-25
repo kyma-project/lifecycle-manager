@@ -21,11 +21,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
@@ -183,7 +181,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	setupGatewaySecretHandler(mgr.GetClient(), setupLog, 8*time.Second)
+	zerodw.SetupGatewaySecretHandler(mgr.GetClient(), setupLog, flags.DefaultIstioGatewaySecretRefreshInterval)
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics,
 		setupLog)
@@ -493,37 +491,4 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
-}
-
-func setupGatewaySecretHandler(kcpClient client.Client, log logr.Logger, gatewaySecretRefreshInterval time.Duration) {
-	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, log)
-
-	//gateway secret management
-	go func() {
-		for {
-			//sleep for gatewaySecretRefreshInterval with some jitter
-			time.Sleep(with10PercentJitter(gatewaySecretRefreshInterval))
-
-			if err := gatewaySecretHandler.ManageGatewaySecret(); err != nil {
-				log.Error(err, "failed to manage gateway secret")
-				continue
-			}
-			log.Info("gateway secret managed successfully")
-		}
-	}()
-}
-
-// with10PercentJitter returns a duration with 10% withJitter
-func with10PercentJitter(d time.Duration) time.Duration {
-	return withJitter(d, 0.1)
-}
-
-// withJitter returns a duration with jitter. For jitter = 0.1, the returned duration will be between 90% and 110% of the input duration
-func withJitter(d time.Duration, jitter float64) time.Duration {
-	return time.Duration(float64(d) * (1 + jitter*randomSymmetricInterval()))
-}
-
-// randomSymmetricInterval is a function that returns a random float64 between -1 and 1
-func randomSymmetricInterval() float64 {
-	return rand.Float64()*2 - 1
 }

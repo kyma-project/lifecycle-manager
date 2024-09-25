@@ -62,9 +62,9 @@ func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.Objec
 		},
 		Immutable: nil,
 		Data: map[string][]byte{
-			CaCertKey:        cfg.caCert,
-			TlsCertKey:       cfg.tlsCert,
-			TlsPrivateKeyKey: cfg.tlsKey,
+			CACertKey:     cfg.caCert,
+			TLSCertKey:    cfg.tlsCert,
+			TLSPrivateKey: cfg.tlsKey,
 		},
 		Type: apicorev1.SecretTypeOpaque,
 	}

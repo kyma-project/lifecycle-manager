@@ -3,8 +3,10 @@ package zerodw
 import (
 	"context"
 	"fmt"
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"math/rand"
 	"time"
+
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 
@@ -43,19 +45,16 @@ func (gsh *GatewaySecretHandler) ManageGatewaySecret() error {
 	gwSecret, err := gsh.findGatewaySecret()
 
 	if isNotFound(err) {
-		// gateway secret does not exist
 		return gsh.handleNonExisting(rootSecret)
 	}
 	if err != nil {
 		return err
 	}
 
-	// gateway secret exists
 	return gsh.handleExisting(rootSecret, gwSecret)
 }
 
 func (gsh *GatewaySecretHandler) handleNonExisting(rootSecret *apicorev1.Secret) error {
-	// create gateway secret
 	gwSecret := gsh.newGatewaySecret(rootSecret)
 	err := gsh.create(context.TODO(), gwSecret)
 	if err == nil {
@@ -85,7 +84,7 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 	gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
 	err := gsh.update(context.TODO(), gwSecret)
 	if err == nil {
-		gsh.log.Info("updated the gateway secret", "reason", "CA-Bundle is more recent than the gateway secret")
+		gsh.log.Info("updated the gateway secret", "reason", "root ca is more recent than the gateway secret")
 	}
 
 	return nil
@@ -122,4 +121,36 @@ func (gsh *GatewaySecretHandler) newGatewaySecret(rootSecret *apicorev1.Secret) 
 		},
 	}
 	return gwSecret
+}
+
+func SetupGatewaySecretHandler(kcpClient client.Client, log logr.Logger, gatewaySecretRefreshInterval time.Duration) {
+	gatewaySecretHandler := NewGatewaySecretHandler(kcpClient, log)
+
+	go func() {
+		for {
+			time.Sleep(with10PercentJitter(gatewaySecretRefreshInterval))
+
+			if err := gatewaySecretHandler.ManageGatewaySecret(); err != nil {
+				log.Error(err, "failed to manage gateway secret")
+				continue
+			}
+			log.Info("gateway secret managed successfully")
+		}
+	}()
+}
+
+// with10PercentJitter returns a duration with 10% withJitter.
+func with10PercentJitter(d time.Duration) time.Duration {
+	factor := 0.1
+	return withJitter(d, factor)
+}
+
+// withJitter returns a duration with jitter. For jitter = 0.1, the returned duration will be between 90% and 110% of the input duration.
+func withJitter(d time.Duration, jitter float64) time.Duration {
+	return time.Duration(float64(d) * (1 + jitter*randomSymmetricInterval()))
+}
+
+// randomSymmetricInterval is a function that returns a random float64 between -1 and 1.
+func randomSymmetricInterval() float64 {
+	return rand.Float64()*2 - 1 //nolint:gosec // This is not used for security purposes
 }

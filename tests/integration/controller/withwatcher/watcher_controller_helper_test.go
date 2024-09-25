@@ -140,7 +140,7 @@ func createCaCertificate() *certmanagerv1.Certificate {
 			DNSNames:   []string{"listener.kyma.cloud.sap"},
 			IsCA:       true,
 			CommonName: "klm-watcher-selfsigned-ca",
-			SecretName: "klm-watcher-root-secret",
+			SecretName: "klm-watcher",
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: map[string]string{
 					shared.ManagedBy: shared.OperatorName,
