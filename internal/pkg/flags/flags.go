@@ -156,7 +156,7 @@ func DefineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", DefaultClientBurst, "kubernetes client Burst")
 	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", true,
+	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
@@ -189,7 +189,7 @@ func DefineFlagVar() *FlagVar {
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
-	flag.BoolVar(&flagVar.InKCPMode, "in-kcp-mode", true,
+	flag.BoolVar(&flagVar.InKCPMode, "in-kcp-mode", false,
 		"Indicates lifecycle manager is deployed in control-plane mode (multiple clusters mode)")
 	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enabling purge finalizer")
@@ -217,7 +217,7 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"Specify the API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
-	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "1.1.1",
+	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
 	flag.BoolVar(&flagVar.UseWatcherDevRegistry, "watcher-dev-registry", false,
 		`Enable to use the dev registry for fetching the watcher image.`)
