@@ -37,7 +37,8 @@ type Catalog interface {
 	Delete(ctx context.Context) error
 }
 
-func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider, remoteSyncNamespace string) *RemoteCatalog {
+func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
+	remoteSyncNamespace string) *RemoteCatalog {
 	force := true
 	return NewRemoteCatalog(kcpClient, skrContextFactory,
 		Settings{
@@ -212,6 +213,12 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
+	labels := moduleTemplate.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels[shared.ManagedBy] = shared.KymaLabelValue
+	moduleTemplate.SetLabels(labels)
 
 	if c.settings.Namespace != "" {
 		moduleTemplate.SetNamespace(c.settings.Namespace)
@@ -250,7 +257,9 @@ func (c *RemoteCatalog) Delete(
 func (c *RemoteCatalog) createModuleTemplateCRDInRuntime(ctx context.Context, kyma types.NamespacedName) error {
 	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
 	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
-	objKey := client.ObjectKey{Name: fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group)}
+	objKey := client.ObjectKey{
+		Name: fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group),
+	}
 	err := c.kcpClient.Get(ctx, objKey, kcpCrd)
 	if err != nil {
 		return fmt.Errorf("failed to get ModuleTemplate CRD from KCP: %w", err)
