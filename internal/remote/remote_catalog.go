@@ -38,7 +38,8 @@ type Catalog interface {
 }
 
 func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
-	remoteSyncNamespace string) *RemoteCatalog {
+	remoteSyncNamespace string,
+) *RemoteCatalog {
 	force := true
 	return NewRemoteCatalog(kcpClient, skrContextFactory,
 		Settings{

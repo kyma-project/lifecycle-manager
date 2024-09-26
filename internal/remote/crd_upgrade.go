@@ -25,7 +25,8 @@ type SyncCrdsUseCase struct {
 }
 
 func NewSyncCrdsUseCase(kcpClient client.Client, skrContextFactory SkrContextProvider,
-	cache *crd.Cache) SyncCrdsUseCase {
+	cache *crd.Cache,
+) SyncCrdsUseCase {
 	if cache == nil {
 		return SyncCrdsUseCase{
 			kcpClient:         kcpClient,
@@ -164,7 +165,8 @@ func (s *SyncCrdsUseCase) fetchCrdsAndUpdateKymaAnnotations(ctx context.Context,
 }
 
 func (s *SyncCrdsUseCase) fetchCrds(ctx context.Context, skrClient Client,
-	plural string) (*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error) {
+	plural string,
+) (*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error) {
 	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
 	kcpCrd, ok := s.crdCache.Get(kcpCrdName)
 	if !ok {
