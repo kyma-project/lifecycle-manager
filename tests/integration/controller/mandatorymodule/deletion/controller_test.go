@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// TEST
 var ErrNoMandatoryManifest = errors.New("manifest for mandatory Module not found")
 
 const (
