@@ -88,7 +88,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
-		kyma.Labels[shared.ManagedBy] = shared.OperatorName
+		kyma.Labels[shared.ManagedBy] = shared.KymaLabelValue
 		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())

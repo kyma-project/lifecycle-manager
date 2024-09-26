@@ -64,7 +64,7 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 			Namespace: namespace,
 			Labels: k8slabels.Set{
 				shared.PurposeLabel: shared.CertManager,
-				shared.ManagedBy:    shared.OperatorName,
+				shared.ManagedBy:    shared.KymaLabelValue,
 			},
 		},
 		Spec: certmanagerv1.IssuerSpec{

@@ -435,7 +435,7 @@ func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	}
 
 	if _, ok := kyma.ObjectMeta.Labels[shared.ManagedBy]; !ok {
-		kyma.ObjectMeta.Labels[shared.ManagedBy] = shared.OperatorName
+		kyma.ObjectMeta.Labels[shared.ManagedBy] = shared.KymaLabelValue
 		updateRequired = true
 	}
 	return updateRequired
