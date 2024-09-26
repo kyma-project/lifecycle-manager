@@ -210,6 +210,7 @@ func (s *SkrContext) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *
 	}
 
 	remoteKyma.Labels[shared.WatchedByLabel] = shared.WatchedByLabelValue
+	remoteKyma.Labels[shared.ManagedBy] = shared.KymaLabelValue
 
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)

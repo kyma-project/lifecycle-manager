@@ -44,8 +44,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"empty ManagedByDeclarativeV2",
-			declarativev2.ManagedByDeclarativeV2,
+			"empty WatchedByManagedByOwnedBy",
+			declarativev2.WatchedByManagedByOwnedBy,
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -87,8 +87,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"simple ManagedByDeclarativeV2",
-			declarativev2.ManagedByDeclarativeV2,
+			"simple WatchedByManagedByOwnedBy",
+			declarativev2.WatchedByManagedByOwnedBy,
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -97,9 +97,14 @@ func Test_defaultTransforms(t *testing.T) {
 				unstruct := unstructs[0]
 				assert.NotEmpty(testingT, unstruct)
 				assert.NotNil(testingT, unstruct.GetLabels())
+				assert.NotNil(testingT, unstruct.GetAnnotations())
 				assert.Contains(testingT, unstruct.GetLabels(), shared.ManagedBy)
+				assert.Contains(testingT, unstruct.GetLabels(), shared.WatchedByLabel)
+				assert.Contains(testingT, unstruct.GetAnnotations(), shared.OwnedByAnnotation)
 				assert.Equal(testingT, shared.KymaLabelValue,
 					unstruct.GetLabels()[shared.ManagedBy])
+				assert.Equal(testingT, shared.WatchedByLabelValue,
+					unstruct.GetLabels()[shared.WatchedByLabel])
 				return true
 			},
 		},

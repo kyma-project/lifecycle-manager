@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	OperatorName              = "module-manager"
 	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
 	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
@@ -42,26 +41,14 @@ func KymaComponentTransform(_ context.Context, obj Object, resources []*unstruct
 	return nil
 }
 
-func ManagedByDeclarativeV2(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
-	for _, resource := range resources {
-		lbls := resource.GetLabels()
-		if lbls == nil {
-			lbls = make(map[string]string)
-		}
-		// legacy managed by value
-		lbls[shared.ManagedBy] = shared.KymaLabelValue
-		resource.SetLabels(lbls)
-	}
-	return nil
-}
-
-func watchedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func WatchedByManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
 		lbls := resource.GetLabels()
 		if lbls == nil {
 			lbls = make(map[string]string)
 		}
 		lbls[shared.WatchedByLabel] = shared.WatchedByLabelValue
+		lbls[shared.ManagedBy] = shared.KymaLabelValue
 
 		annotations := resource.GetAnnotations()
 		if annotations == nil {
@@ -69,6 +56,7 @@ func watchedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.U
 		}
 		annotations[shared.OwnedByAnnotation] = fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName())
 		resource.SetLabels(lbls)
+		resource.SetAnnotations(annotations)
 	}
 	return nil
 }

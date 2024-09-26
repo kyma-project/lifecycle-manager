@@ -59,6 +59,9 @@ func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.Objec
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      secretObjKey.Name,
 			Namespace: secretObjKey.Namespace,
+			Labels: map[string]string{
+				shared.ManagedBy: shared.KymaLabelValue,
+			},
 		},
 		Immutable: nil,
 		Data: map[string][]byte{
@@ -128,6 +131,9 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      webhookObjKey.Name,
 			Namespace: webhookObjKey.Namespace,
+			Labels: map[string]string{
+				shared.ManagedBy: shared.KymaLabelValue,
+			},
 		},
 		Webhooks: webhooks,
 	}
@@ -186,6 +192,13 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 		apicorev1.ResourceMemory: memResQty,
 	}
 	deployment.Spec.Template.Spec.Containers[0] = serverContainer
+
+	labels := deployment.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	labels[shared.ManagedBy] = shared.KymaLabelValue
+	deployment.SetLabels(labels)
 
 	return deployment, nil
 }

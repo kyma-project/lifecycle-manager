@@ -21,8 +21,7 @@ const (
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
 		WithPostRenderTransform(
-			ManagedByDeclarativeV2,
-			watchedByOwnedBy,
+			WatchedByManagedByOwnedBy,
 			KymaComponentTransform,
 			DisclaimerTransform,
 		),
