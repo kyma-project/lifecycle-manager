@@ -17,12 +17,13 @@
     {
       "label": "Deploy KLM from sources",
       "type": "shell",
-      "command": "make docker-build IMG=${LOCAL_IMG}; make docker-push IMG=${LOCAL_IMG}; make local-deploy-with-watcher IMG=${CLUSTER_IMG}",
+      "command": "TAG=\"$(date +%Y%m%d%H%M%S)\" && make docker-build IMG=${LOCAL_IMG}:${TAG}; make docker-push IMG=${LOCAL_IMG}:${TAG}; make local-deploy-with-watcher IMG=${CLUSTER_IMG}:${TAG}",
       "options": {
         "env": {
-          "LOCAL_IMG": "localhost:5111/lifecycle-manager:dev",
-          "CLUSTER_IMG": "k3d-myregistry.localhost:5000/lifecycle-manager:dev",
+          "LOCAL_IMG": "localhost:5111/lifecycle-manager",
+          "CLUSTER_IMG": "k3d-myregistry.localhost:5000/lifecycle-manager",
           "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+
         }
       }
     },
