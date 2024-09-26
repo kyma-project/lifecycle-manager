@@ -21,7 +21,8 @@
       "options": {
         "env": {
           "LOCAL_IMG": "localhost:5111/lifecycle-manager:dev",
-          "CLUSTER_IMG": "k3d-myregistry.localhost:5000/lifecycle-manager:dev"
+          "CLUSTER_IMG": "k3d-myregistry.localhost:5000/lifecycle-manager:dev",
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
         }
       }
     },
@@ -33,7 +34,8 @@
       "options": {
         "env": {
           "IMG_REGISTRY_HOST": "europe-docker.pkg.dev/kyma-project",
-          "IMG_NAME": "lifecycle-manager"
+          "IMG_NAME": "lifecycle-manager",
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
         }
       }
     },
