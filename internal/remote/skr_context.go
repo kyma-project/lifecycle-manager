@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+// TEST
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
 const (
