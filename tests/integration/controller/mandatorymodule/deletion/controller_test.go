@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// TEST
 var ErrNoMandatoryManifest = errors.New("manifest for mandatory Module not found")
 
 const (
@@ -93,7 +92,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
-		kyma.Labels[shared.ManagedBy] = shared.KymaLabelValue
+		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())

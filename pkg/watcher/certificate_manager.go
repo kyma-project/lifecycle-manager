@@ -86,7 +86,7 @@ func NewCertificateManager(kcpClient client.Client, kymaName string,
 		caCertCache:     caCertCache,
 		labelSet: k8slabels.Set{
 			shared.PurposeLabel: shared.CertManager,
-			shared.ManagedBy:    shared.KymaLabelValue,
+			shared.ManagedBy:    shared.OperatorName,
 		},
 	}
 }

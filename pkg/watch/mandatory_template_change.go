@@ -46,7 +46,7 @@ func (h *MandatoryTemplateChangeHandler) Watch() handler.MapFunc {
 func getKymaList(ctx context.Context, clnt client.Reader) (*v1beta2.KymaList, error) {
 	kymas := &v1beta2.KymaList{}
 	listOptions := &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.ManagedBy: shared.KymaLabelValue}),
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.ManagedBy: shared.OperatorName}),
 	}
 	err := clnt.List(ctx, kymas, listOptions)
 	if err != nil {

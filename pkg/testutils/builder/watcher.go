@@ -17,16 +17,13 @@ func NewWatcherBuilder() *WatcherBuilder {
 	builder := &WatcherBuilder{
 		watcher: &v1beta2.Watcher{},
 	}
-	builder.watcher.SetLabels(
-		map[string]string{
-			shared.ManagedBy: shared.KymaLabelValue,
-		})
 
 	namespace := random.Name()
 
 	return builder.
 		WithName(random.Name()).
 		WithNamespace(namespace).
+		WithManager(random.Name()).
 		WithServiceInfoName(random.Name()).
 		WithServiceInfoNamespace(namespace).
 		WithServiceInfoPort(random.Port()).
@@ -46,6 +43,13 @@ func (builder *WatcherBuilder) WithName(name string) *WatcherBuilder {
 
 func (builder *WatcherBuilder) WithNamespace(namespace string) *WatcherBuilder {
 	builder.watcher.SetNamespace(namespace)
+	return builder
+}
+
+func (builder *WatcherBuilder) WithManager(manager string) *WatcherBuilder {
+	builder.watcher.Labels = map[string]string{
+		shared.ManagedBy: manager,
+	}
 	return builder
 }
 
