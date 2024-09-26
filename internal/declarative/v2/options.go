@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
@@ -28,6 +29,9 @@ func DefaultOptions() *Options {
 		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
+		WithCustomResourceLabels{
+			shared.ManagedBy: shared.KymaLabelValue,
+		},
 	)
 }
 
