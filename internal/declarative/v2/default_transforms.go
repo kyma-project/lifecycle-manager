@@ -11,7 +11,6 @@ import (
 
 const (
 	OperatorName              = "module-manager"
-	ManagedByLabelValue       = "declarative-v2"
 	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
 	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
@@ -50,7 +49,7 @@ func ManagedByDeclarativeV2(_ context.Context, _ Object, resources []*unstructur
 			lbls = make(map[string]string)
 		}
 		// legacy managed by value
-		lbls[shared.ManagedBy] = ManagedByLabelValue
+		lbls[shared.ManagedBy] = shared.KymaLabelValue
 		resource.SetLabels(lbls)
 	}
 	return nil

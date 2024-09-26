@@ -98,7 +98,7 @@ func Test_defaultTransforms(t *testing.T) {
 				assert.NotEmpty(testingT, unstruct)
 				assert.NotNil(testingT, unstruct.GetLabels())
 				assert.Contains(testingT, unstruct.GetLabels(), shared.ManagedBy)
-				assert.Equal(testingT, declarativev2.ManagedByLabelValue,
+				assert.Equal(testingT, shared.KymaLabelValue,
 					unstruct.GetLabels()[shared.ManagedBy])
 				return true
 			},

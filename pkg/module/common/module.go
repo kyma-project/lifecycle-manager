@@ -46,7 +46,7 @@ func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
 	}
 	lbls[shared.ModuleName] = m.ModuleName
 	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
-	lbls[shared.ManagedBy] = shared.OperatorName
+	lbls[shared.ManagedBy] = shared.KymaLabelValue
 	if m.Template.Spec.Mandatory {
 		lbls[shared.IsMandatoryModule] = shared.EnableLabelValue
 	}

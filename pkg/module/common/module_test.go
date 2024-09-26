@@ -72,7 +72,7 @@ func TestApplyDefaultMetaToManifest_WhenCalled_SetsManagedByLabel(t *testing.T) 
 	module.ApplyDefaultMetaToManifest(kyma)
 
 	resultLabels := module.GetLabels()
-	assert.Equal(t, "lifecycle-manager", resultLabels["operator.kyma-project.io/managed-by"])
+	assert.Equal(t, "kyma", resultLabels["operator.kyma-project.io/managed-by"])
 }
 
 func TestApplyDefaultMetaToManifest_WhenCalled_SetsFQDNAnnotation(t *testing.T) {

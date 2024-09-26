@@ -143,7 +143,7 @@ func createCaCertificate() *certmanagerv1.Certificate {
 			SecretName: "klm-watcher-root-secret",
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: map[string]string{
-					shared.ManagedBy: shared.OperatorName,
+					shared.ManagedBy: shared.KymaLabelValue,
 				},
 			},
 			PrivateKey: &certmanagerv1.CertificatePrivateKey{
@@ -167,7 +167,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			Name:      managerInstanceName,
 			Namespace: kcpSystemNs,
 			Labels: map[string]string{
-				shared.ManagedBy: managerInstanceName,
+				shared.ManagedBy: shared.KymaLabelValue,
 			},
 		},
 		Spec: v1beta2.WatcherSpec{
@@ -198,7 +198,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
-				shared.ManagedBy: shared.OperatorName,
+				shared.ManagedBy: shared.KymaLabelValue,
 			},
 		},
 		Data: map[string][]byte{
