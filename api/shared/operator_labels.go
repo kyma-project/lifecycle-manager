@@ -24,7 +24,8 @@ const (
 	OperatorName         = "lifecycle-manager"
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
-	WatchedByLabel = OperatorGroup + Separator + "watched-by"
+	WatchedByLabel      = OperatorGroup + Separator + "watched-by"
+	WatchedByLabelValue = "kyma"
 	// PurposeLabel defines the purpose of the resource, i.e. Secrets which will be used to certificate management.
 	PurposeLabel = OperatorGroup + Separator + "purpose"
 	CertManager  = "klm-watcher-cert-manager"

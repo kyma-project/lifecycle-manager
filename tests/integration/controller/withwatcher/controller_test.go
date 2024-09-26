@@ -207,7 +207,7 @@ func verifyWebhookConfig(
 				Name:      watcherName,
 			})
 	}
-	expectedModuleName, exists := watcherCR.Labels[shared.KymaLabelValue]
+	expectedModuleName, exists := watcherCR.Labels[shared.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}
