@@ -92,7 +92,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
-		kyma.Labels[shared.ManagedBy] = shared.OperatorName
+		kyma.Labels[shared.ManagedBy] = shared.KymaLabelValue
 		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
@@ -102,7 +102,8 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 		installName := filepath.Join("main-dir", "installs")
 		mandatoryManifest.Annotations = map[string]string{shared.FQDN: "kyma-project.io/template-operator"}
-		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(), manifestFilePath,
+		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
+			manifestFilePath,
 			false)
 		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)

@@ -76,7 +76,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: shared.DefaultRemoteNamespace,
 			Labels: map[string]string{
-				shared.ManagedBy:           shared.OperatorName,
+				shared.ManagedBy:           shared.KymaLabelValue,
 				shared.IstioInjectionLabel: shared.EnabledValue,
 				shared.WardenLabel:         shared.EnabledValue,
 			},

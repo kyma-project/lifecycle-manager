@@ -8,7 +8,8 @@ const (
 	ControllerName = OperatorGroup + Separator + "controller-name"
 	ChannelLabel   = OperatorGroup + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
-	ManagedBy = OperatorGroup + Separator + "managed-by"
+	ManagedBy      = OperatorGroup + Separator + "managed-by"
+	KymaLabelValue = "kyma"
 
 	IstioInjectionLabel = "istio-injection"
 	WardenLabel         = "namespaces.warden.kyma-project.io/validate"
