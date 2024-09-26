@@ -95,7 +95,7 @@ func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma,
 	if err != nil {
 		return err
 	}
-	if remoteKyma.Labels[shared.WatchedByLabel] != shared.OperatorName {
+	if remoteKyma.Labels[shared.WatchedByLabel] != shared.WatchedByLabelValue {
 		return ErrWatcherLabelMissing
 	}
 	if remoteKyma.Annotations[shared.OwnedByAnnotation] != fmt.Sprintf(shared.OwnedByFormat,
