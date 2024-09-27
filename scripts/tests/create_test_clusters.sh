@@ -4,7 +4,7 @@
 cd "$(dirname "$0")"
 
 # create SKR cluster
-if k3d cluster list | grep -q "skr"; then
+if k3d cluster list | grep -q "^skr\s"; then
   echo "Reusing existing SKR cluster..."
   else
   k3d cluster create skr \
@@ -17,7 +17,7 @@ if k3d cluster list | grep -q "skr"; then
 fi
 
 # create KCP cluster
-if k3d cluster list | grep -q "kcp"; then
+if k3d cluster list | grep -q "^kcp\s"; then
   echo "Reusing existing KCP cluster..."
   else
   k3d cluster create kcp \
