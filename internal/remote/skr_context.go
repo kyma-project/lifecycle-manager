@@ -180,8 +180,8 @@ func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, remoteKyma *v
 	return nil
 }
 
-// ReplaceModules replaces modules specification from control plane Kyma with Remote Kyma specifications.
-func ReplaceModules(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
+// ReplaceSpec replaces 'spec' attributes in control plane Kyma with values from Remote Kyma.
+func ReplaceSpec(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
 	controlPlaneKyma.Spec.Modules = []v1beta2.Module{}
 	controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, remoteKyma.Spec.Modules...)
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
