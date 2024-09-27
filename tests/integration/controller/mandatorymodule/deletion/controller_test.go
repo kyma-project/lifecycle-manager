@@ -80,7 +80,7 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	template := builder.NewModuleTemplateBuilder().
 		WithName("mandatory-module").
-		WithModuleName("mandatory-module").
+		WithLabelModuleName("mandatory-module").
 		WithChannel(mandatoryChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()

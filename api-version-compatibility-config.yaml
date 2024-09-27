@@ -21,4 +21,6 @@ operator.kyma-project.io_moduletemplates.yaml:
       - .spec.properties.target
       - .spec.required[]|select(.=="target")
     v1beta2:
+      - .spec.properties.version
+      - .spec.properties.moduleName
       - .spec.properties.customStateCheck.description

@@ -45,7 +45,7 @@ func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates temp
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	for _, module := range kyma.GetAvailableModules() {
+	for _, module := range templatelookup.FindAvailableModules(kyma) {
 		template := templates[module.Name]
 		modules = p.appendModuleWithInformation(module, kyma, template, modules)
 	}
@@ -67,7 +67,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			moduleName = template.Name
 		}
 
-		modules = p.appendModuleWithInformation(v1beta2.AvailableModule{
+		modules = p.appendModuleWithInformation(templatelookup.AvailableModule{
 			Module: v1beta2.Module{
 				Name:                 moduleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
@@ -79,7 +79,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	return modules
 }
 
-func (p *Parser) appendModuleWithInformation(module v1beta2.AvailableModule, kyma *v1beta2.Kyma,
+func (p *Parser) appendModuleWithInformation(module templatelookup.AvailableModule, kyma *v1beta2.Kyma,
 	template *templatelookup.ModuleTemplateInfo, modules common.Modules,
 ) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {

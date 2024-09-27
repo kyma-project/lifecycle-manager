@@ -22,6 +22,7 @@ import (
 const (
 	FastChannel             = "fast"
 	ValidChannel            = "valid"
+	InvalidNoneChannel      = string(shared.NoneChannel)
 	InValidChannel          = "Invalid01"                                       // lower case characters from a to z
 	InValidMinLengthChannel = "ch"                                              // minlength = 3
 	InValidMaxLengthChannel = "averylongchannelwhichlargerthanallowedmaxlength" // maxlength = 32
@@ -77,7 +78,7 @@ var _ = Describe("module channel different from the global channel", func() {
 	})
 })
 
-var _ = Describe("Given invalid channel", func() {
+var _ = Describe("Given invalid channel which is rejected by CRD validation rules", func() {
 	DescribeTable(
 		"Test kyma CR, module template creation", func(givenCondition func() error) {
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
@@ -280,7 +281,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 		for _, module := range kyma.Spec.Modules {
 			template := builder.NewModuleTemplateBuilder().
 				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
-				WithModuleName(module.Name).
+				WithLabelModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
@@ -291,7 +292,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 		for _, module := range kyma.Spec.Modules {
 			template := builder.NewModuleTemplateBuilder().
 				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
-				WithModuleName(module.Name).
+				WithLabelModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
@@ -385,7 +386,7 @@ func whenUpdatingEveryModuleChannel(kymaName, kymaNamespace, channel string) fun
 func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
 		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(module.Name).
+			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 

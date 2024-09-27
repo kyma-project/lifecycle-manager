@@ -38,7 +38,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -47,14 +46,16 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-var ErrManifestsStillExist = errors.New("manifests still exist")
+var (
+	ErrManifestsStillExist = errors.New("manifests still exist")
+	ErrInvalidKymaSpec     = errors.New("invalid kyma spec")
+)
 
 const (
-	moduleReconciliationError event.Reason = "ModuleReconciliationError"
-	metricsError              event.Reason = "MetricsError"
-	updateSpecError           event.Reason = "UpdateSpecError"
-	updateStatusError         event.Reason = "UpdateStatusError"
-	patchStatusError          event.Reason = "PatchStatus"
+	metricsError      event.Reason = "MetricsError"
+	updateSpecError   event.Reason = "UpdateSpecError"
+	updateStatusError event.Reason = "UpdateStatusError"
+	patchStatusError  event.Reason = "PatchStatus"
 )
 
 type Reconciler struct {
@@ -266,6 +267,14 @@ func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Ky
 	return nil
 }
 
+// ValidateDefaultChannel validates the Kyma spec.
+func (r *Reconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
+	if shared.NoneChannel.Equals(kyma.Spec.Channel) {
+		return fmt.Errorf("%w: value \"none\" is not allowed in spec.channel", ErrInvalidKymaSpec)
+	}
+	return nil
+}
+
 // replaceSpecFromRemote replaces the spec from control-lane Kyma with the remote Kyma spec as single source of truth.
 func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
@@ -276,7 +285,12 @@ func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma
 		}
 		return err
 	}
-	remote.ReplaceModules(controlPlaneKyma, remoteKyma)
+
+	remote.ReplaceSpec(controlPlaneKyma, remoteKyma)
+
+	if err := r.ValidateDefaultChannel(controlPlaneKyma); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -475,17 +489,14 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 }
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
-	modules, err := r.GenerateModulesFromTemplate(ctx, kyma)
-	if err != nil {
-		return fmt.Errorf("error while fetching modules during processing: %w", err)
-	}
+	templates := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider).GetRegularTemplates(ctx, kyma)
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
+	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)
-
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
-
 	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
@@ -530,18 +541,6 @@ func (r *Reconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, err)
 	}
 	return nil
-}
-
-func (r *Reconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1beta2.Kyma) (common.Modules, error) {
-	lookup := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider)
-	templates := lookup.GetRegularTemplates(ctx, kyma)
-	for _, template := range templates {
-		if template.Err != nil {
-			r.Event.Warning(kyma, moduleReconciliationError, template.Err)
-		}
-	}
-	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
-	return parser.GenerateModulesFromTemplates(kyma, templates), nil
 }
 
 func (r *Reconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {
