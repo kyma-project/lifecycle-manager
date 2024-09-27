@@ -61,7 +61,7 @@
     {
       "label": "Deploy kyma",
       "type": "shell",
-      "command": "${cwd}/scripts/tests/deploy_kyma.sh",
+      "command": "export SKR_HOST=${input:skrHost} && ${cwd}/scripts/tests/deploy_kyma.sh",
       "options": {
         "env": {
           "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
@@ -89,6 +89,16 @@
         "env": {
           "KCP_KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
           "SKR_KUBECONFIG": "${env:HOME}/.k3d/skr-local.yaml"
+        }
+      }
+    },
+    {
+      "label": "Install CRDs",
+      "type": "shell",
+      "command": "make install",
+      "options": {
+        "env": {
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
         }
       }
     }
@@ -155,6 +165,17 @@
       "id": "klmImageTag",
       "type": "promptString",
       "description": "Tag of the KLM image, e.g. 'latest'",
-    }
+    },
+    {
+      "id": "skrHost",
+      "type": "pickString",
+      "description": "Host of the SKR",
+      "options": [
+        // use host.k3d.internal when deploying KLM into the cluster
+        "host.k3d.internal",
+        // use localhost when running KLM locally on the machine
+        "localhost"
+      ]
+    },
   ]
 }
