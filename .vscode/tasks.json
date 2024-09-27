@@ -9,9 +9,17 @@
       "command": "k3d cluster rm kcp skr",
     },
     {
-      "label": "Create Test Clusters",
+      "label": "Ensure Test Clusters",
       "type": "shell",
       "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+    },
+    {
+      "label": "Create New Test Clusters",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+      "dependsOn": [
+        "Delete Test Clusters"
+      ]
     },
     // re-run if encountering error that the watcher CRD is missing
     {
