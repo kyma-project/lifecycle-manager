@@ -74,6 +74,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		Expect(kcpClient.Delete(ctx, issuer)).To(Succeed())
 		By("Deleting CA Certificate")
 		Expect(kcpClient.Delete(ctx, caCert)).To(Succeed())
+		By("Deleting CA Secret")
+		Expect(kcpClient.Delete(ctx, caSecret)).To(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -136,8 +138,9 @@ func createCaCertificate() *certmanagerv1.Certificate {
 			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      "klm-watcher-serving",
-			Namespace: istioSystemNs,
+			Name:            "klm-watcher-serving",
+			Namespace:       istioSystemNs,
+			ResourceVersion: "",
 		},
 		Status: certmanagerv1.CertificateStatus{
 			NotBefore: &apimetav1.Time{Time: time.Now()},
@@ -175,6 +178,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			Labels: map[string]string{
 				shared.ManagedBy: managerInstanceName,
 			},
+			ResourceVersion: "",
 		},
 		Spec: v1beta2.WatcherSpec{
 			ServiceInfo: v1beta2.Service{
