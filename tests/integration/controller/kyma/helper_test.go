@@ -63,7 +63,7 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
 			WithName(createModuleTemplateName(module)).
-			WithModuleName(module.Name).
+			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(DeleteCR, Timeout, Interval).
@@ -76,11 +76,11 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
 			WithName(createModuleTemplateName(module)).
-			WithModuleName(module.Name).
+			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
-		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-			WithArguments(template).
+		Eventually(CreateCR, Timeout, Interval).WithContext(ctx).
+			WithArguments(kcpClient, template).
 			Should(Succeed())
 	}
 }
@@ -106,7 +106,7 @@ func createModuleTemplateName(module v1beta2.Module) string {
 func newMandatoryModuleTemplate() *v1beta2.ModuleTemplate {
 	return builder.NewModuleTemplateBuilder().
 		WithName("mandatory-template").
-		WithModuleName("mandatory-template-operator").
+		WithLabelModuleName("mandatory-template-operator").
 		WithChannel(mandatoryChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()

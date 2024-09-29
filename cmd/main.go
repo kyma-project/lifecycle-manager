@@ -324,7 +324,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 	caCertificateCache := watcher.NewCACertificateCache(flagVar.CaCertCacheTTL)
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
-		SkrWatcherImage:        getWatcherImg(flagVar),
+		SkrWatcherImage:        flagVar.GetWatcherImage(),
 		SkrWebhookCPULimits:    flagVar.WatcherResourceLimitsCPU,
 		SkrWebhookMemoryLimits: flagVar.WatcherResourceLimitsMemory,
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
@@ -355,18 +355,6 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		config,
 		certConfig,
 		resolvedKcpAddr)
-}
-
-const (
-	watcherRegProd = "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr"
-	watcherRegDev  = "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher"
-)
-
-func getWatcherImg(flagVar *flags.FlagVar) string {
-	if flagVar.UseWatcherDevRegistry {
-		return fmt.Sprintf("%s:%s", watcherRegDev, flagVar.WatcherImageTag)
-	}
-	return fmt.Sprintf("%s:%s", watcherRegProd, flagVar.WatcherImageTag)
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
