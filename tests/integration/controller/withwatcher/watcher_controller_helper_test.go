@@ -140,7 +140,7 @@ func createCaCertificate() *certmanagerv1.Certificate {
 			Namespace: istioSystemNs,
 		},
 		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{time.Now()},
+			NotBefore: &apimetav1.Time{Time: time.Now()},
 		},
 		Spec: certmanagerv1.CertificateSpec{
 			DNSNames:   []string{"listener.kyma.cloud.sap"},
