@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	istioapiv1beta1 "istio.io/api/networking/v1beta1"
@@ -137,6 +138,9 @@ func createCaCertificate() *certmanagerv1.Certificate {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "klm-watcher-serving",
 			Namespace: istioSystemNs,
+		},
+		Status: certmanagerv1.CertificateStatus{
+			NotBefore: &apimetav1.Time{time.Now()},
 		},
 		Spec: certmanagerv1.CertificateSpec{
 			DNSNames:   []string{"listener.kyma.cloud.sap"},
