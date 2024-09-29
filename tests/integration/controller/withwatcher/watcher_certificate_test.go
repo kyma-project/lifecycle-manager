@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -93,13 +95,44 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		Expect(kcpClient.Update(ctx, tlsSecret)).To(Succeed())
 
 		By("updates the TLS secret on SKR")
-		Eventually(matchTLSSecretPrivateKey, Timeout, Interval).
+		Eventually(matchSecretPrivateKey, Timeout, Interval).
 			WithArguments(skrClient, skrTLSSecretObjKey, []byte(newKey)).
 			Should(Succeed())
 	})
 
 	AfterAll(func() {
 		Expect(kcpClient.Delete(ctx, kyma)).To(Succeed())
+	})
+})
+
+var _ = Describe("Istio Gateway Certificate Secret Management", Ordered, func() {
+	caCertificate := createCaCertificate()
+	caSecret := createCASecret()
+	BeforeAll(func() {
+		By("Creating CA Certificate")
+		Expect(kcpClient.Create(ctx, caCertificate)).To(Succeed())
+		By("Creating CA Secret")
+		Expect(kcpClient.Create(ctx, caSecret)).To(Succeed())
+	})
+	AfterAll(func() {
+		By("Deleting CA Certificate")
+		Expect(kcpClient.Delete(ctx, caCertificate)).To(Succeed())
+		By("Deleting CA Secret")
+		Expect(kcpClient.Delete(ctx, caSecret)).To(Succeed())
+	})
+
+	It("istio gateway secret exists", func() {
+		Eventually(secretExists, Timeout, Interval).
+			WithArguments(kcpClient, client.ObjectKey{Name: "gateway-secret", Namespace: istioSystemNs}).
+			Should(Succeed())
+	})
+
+	It("istio gateway secret updates when KCP secret rotated", func() {
+		Expect(updateCAPrivateKey(kcpClient, "new-private-key")).To(Succeed())
+		Eventually(matchSecretPrivateKey, Timeout, Interval).
+			WithArguments(kcpClient, client.ObjectKey{Name: "gateway-secret", Namespace: istioSystemNs},
+				[]byte("new-private-key")).
+			Should(Succeed())
 	})
 })
 
@@ -133,7 +166,19 @@ func secretExists(clnt client.Client, secretObjKey client.ObjectKey) error {
 	return nil
 }
 
-func matchTLSSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey, privateKey []byte) error {
+func updateCAPrivateKey(clnt client.Client, newPrivateKeyValue string) error {
+	caCert, err := getSecret(clnt, types.NamespacedName{Name: "klm-watcher", Namespace: istioSystemNs})
+	if err != nil {
+		return fmt.Errorf("error getting CA secret: %w", err)
+	}
+	caCert.Data[apicorev1.TLSPrivateKeyKey] = []byte(newPrivateKeyValue)
+	if err := clnt.Update(ctx, caCert); err != nil {
+		return fmt.Errorf("error updating CA secret: %w", err)
+	}
+	return nil
+}
+
+func matchSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey, privateKey []byte) error {
 	secretCR, err := getSecret(clnt, secretObjKey)
 	if err != nil {
 		return err

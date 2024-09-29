@@ -55,7 +55,7 @@ func (gsh *GatewaySecretHandler) ManageGatewaySecret() error {
 
 func (gsh *GatewaySecretHandler) handleNonExisting(rootSecret *apicorev1.Secret) error {
 	gwSecret := gsh.newGatewaySecret(rootSecret)
-	err := gsh.create(context.TODO(), gwSecret)
+	err := gsh.create(context.Background(), gwSecret)
 	if err == nil {
 		gsh.log.Info("created the gateway secret", "reason", "gateway secret does not exist")
 	}
@@ -64,7 +64,7 @@ func (gsh *GatewaySecretHandler) handleNonExisting(rootSecret *apicorev1.Secret)
 
 func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gwSecret *apicorev1.Secret) error {
 	caCert := certmanagerv1.Certificate{}
-	if err := gsh.kcpClient.Get(context.TODO(),
+	if err := gsh.kcpClient.Get(context.Background(),
 		client.ObjectKey{Namespace: istioNamespace, Name: kcpCACertName},
 		&caCert); err != nil {
 		return fmt.Errorf("failed to get CA certificate: %w", err)
@@ -72,7 +72,7 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 
 	if gwSecretLastModifiedAtValue, ok := gwSecret.Annotations[LastModifiedAtAnnotation]; ok {
 		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
-			if gwSecretLastModifiedAt.After(caCert.Status.NotBefore.Time) {
+			if caCert.Status.NotBefore != nil && gwSecretLastModifiedAt.After(caCert.Status.NotBefore.Time) {
 				return nil
 			}
 		}
@@ -81,7 +81,7 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 	gwSecret.Data["tls.crt"] = rootSecret.Data["tls.crt"]
 	gwSecret.Data["tls.key"] = rootSecret.Data["tls.key"]
 	gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
-	err := gsh.update(context.TODO(), gwSecret)
+	err := gsh.update(context.Background(), gwSecret)
 	if err == nil {
 		gsh.log.Info("updated the gateway secret", "reason", "root ca is more recent than the gateway secret")
 	}
@@ -90,14 +90,14 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 }
 
 func (gsh *GatewaySecretHandler) findGatewaySecret() (*apicorev1.Secret, error) {
-	return gsh.findSecret(context.TODO(), client.ObjectKey{
+	return gsh.findSecret(context.Background(), client.ObjectKey{
 		Name:      GatewaySecretName,
 		Namespace: istioNamespace,
 	})
 }
 
 func (gsh *GatewaySecretHandler) findKcpRootSecret() (*apicorev1.Secret, error) {
-	return gsh.findSecret(context.TODO(), client.ObjectKey{
+	return gsh.findSecret(context.Background(), client.ObjectKey{
 		Name:      kcpRootSecretName,
 		Namespace: istioNamespace,
 	})
