@@ -202,6 +202,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 			Labels: map[string]string{
 				shared.ManagedBy: shared.OperatorName,
 			},
+			ResourceVersion: "",
 		},
 		Data: map[string][]byte{
 			"ca.crt":  []byte("jelly"),
@@ -220,6 +221,7 @@ func createCASecret() *apicorev1.Secret {
 			Labels: map[string]string{
 				shared.ManagedBy: shared.OperatorName,
 			},
+			ResourceVersion: "",
 		},
 		Data: map[string][]byte{
 			"ca.crt":  []byte("jelly"),
