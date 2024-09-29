@@ -31,8 +31,8 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	tlsSecret := createTLSSecret(kymaObjKey)
 	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: flags.DefaultRemoteSyncNamespace}
 	caCertificate := createCaCertificate()
-
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
+	caSecret := createCASecret()
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate, caSecret)
 	var skrClient client.Client
 	var err error
 	BeforeAll(func() {

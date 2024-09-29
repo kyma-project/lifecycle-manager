@@ -44,7 +44,7 @@ var (
 )
 
 func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
-	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer, caCert *certmanagerv1.Certificate,
+	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer, caCert *certmanagerv1.Certificate, caSecret *apicorev1.Secret,
 ) {
 	BeforeAll(func() {
 		By("Creating watcher CR")
@@ -57,6 +57,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		Expect(kcpClient.Create(ctx, issuer)).To(Succeed())
 		By("Creating CA Certificate")
 		Expect(kcpClient.Create(ctx, caCert)).To(Succeed())
+		By("Creating CA Secret")
+		Expect(kcpClient.Create(ctx, caSecret)).To(Succeed())
 	})
 
 	AfterAll(func() {
@@ -196,6 +198,24 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
+			Namespace: istioSystemNs,
+			Labels: map[string]string{
+				shared.ManagedBy: shared.OperatorName,
+			},
+		},
+		Data: map[string][]byte{
+			"ca.crt":  []byte("jelly"),
+			"tls.crt": []byte("jellyfish"),
+			"tls.key": []byte("jellyfishes"),
+		},
+		Type: apicorev1.SecretTypeOpaque,
+	}
+}
+
+func createCASecret() *apicorev1.Secret {
+	return &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      "klm-watcher",
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
 				shared.ManagedBy: shared.OperatorName,
