@@ -126,6 +126,30 @@ type ModuleTemplateSpec struct {
 
 	// CustomStateCheck is deprecated.
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
+
+	// Info is the information about the module.
+	// +optional
+	Info ModuleInfo `json:"info,omitempty"`
+}
+
+type ModuleInfo struct {
+	// Repository is the link to the repository of the module.
+	Repository string `json:"repository"`
+
+	// Documentation is the link to the documentation of the module.
+	Documentation string `json:"documentation"`
+
+	// Icons is a list of icons associated with the module.
+	// +optional
+	Icons []ModuleIcon `json:"icons"`
+}
+
+type ModuleIcon struct {
+	// Name is the name of the icon.
+	Name string `json:"name"`
+
+	// Link is the link to the icon.
+	Link string `json:"link"`
 }
 
 type CustomStateCheck struct {
