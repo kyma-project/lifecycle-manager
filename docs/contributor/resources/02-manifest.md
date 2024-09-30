@@ -1,6 +1,14 @@
-# Manifest Custom Resource
+# Manifest
 
-The [Manifest custom resource (CR)](../../../api/v1beta2/manifest_types.go) is our internal representation of what results from the resolution of a ModuleTemplate CR in the context of a single cluster represented by a Kyma CR. Thus, a lot of configuration elements are similar or entirely equivalent to the data layer found in a ModuleTemplate CR.
+The `manifests.operator.kyma-project.io` Custom Resource Definition (CRD) is a comprehensive specification that defines the structure and format used to configure the Manifest resource.
+
+The Manifest custom resource (CR) represent resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module added to a particular cluster.
+
+To get the latest CRD in the YAML format, run the following command:
+
+```bash
+kubectl get crd manifests.operator.kyma-project.io -o yaml
+```
 
 ## Patching
 
@@ -10,7 +18,7 @@ The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and
 2. The Manifest CR channel differs from the Kyma CR's module status channel.
 3. The Manifest CR state differs from the Kyma CR's module status state.
 
->[!NOTE] 
+>[!NOTE]
 >The module status is not present in the Kyma CR for mandatory modules, hence their Manifest CR is updated using SSA in every reconcile loop.
 
 ## Configuration
@@ -102,12 +110,12 @@ The resource is the default data that should be initialized for the module and i
 
 ### **.status**
 
-The Manifest CR status is set based on the following logic, managed by the manifest reconciler: 
+The Manifest CR status is set based on the following logic, managed by the manifest reconciler:
 
-- If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the status of the Manifest CR is set to `Ready`.
-- While the manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
-- If the Deployment cannot start (for example, due to an `ImagePullBackOff` error) or if the application of the manifest fails, the status of the Manifest CR is set to `Error`.
-- If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleting`.
+* If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the status of the Manifest CR is set to `Ready`.
+* While the manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
+* If the Deployment cannot start (for example, due to an `ImagePullBackOff` error) or if the application of the manifest fails, the status of the Manifest CR is set to `Error`.
+* If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleting`.
 
 This status provides a reliable way to track the state of the Manifest CR and the associated module. It offers insights into the deployment process and any potential issues while being decoupled from the module's business logic.
 

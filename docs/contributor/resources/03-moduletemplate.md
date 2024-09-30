@@ -1,6 +1,14 @@
-# ModuleTemplate Custom Resource
+# ModuleTemplate
 
-The core of our modular discovery is the [ModuleTemplate custom resource (CR)](../../../api/v1beta2/moduletemplate_types.go). It is used to initialize and resolve modules.
+The `moduletemplates.operator.kyma-project.io` Custom Resource Definition (CRD) is a comprehensive specification that defines the structure and format used to configure the ModuleTemplate resource.
+
+The Manifest CR contains modules' metadata with links to their images and manifests. ModuleTemplate CR represents a module in a particular version. Based on this resource Lifecycle Manager enables or disables modules in a cluster. It contains the list of added modules and their state.
+
+To get the latest CRD in the YAML format, run the following command:
+
+```bash
+kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
+```
 
 ## Configuration
 
