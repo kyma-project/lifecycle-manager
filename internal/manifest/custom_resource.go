@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -31,6 +32,13 @@ func PostRunCreateCR(
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
+	labels := resource.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels[shared.ManagedBy] = shared.ManagedByLabelValue
+	resource.SetLabels(labels)
+
 	err := skr.Create(ctx, resource, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer))
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create resource: %w", err)
@@ -41,9 +49,11 @@ func PostRunCreateCR(
 	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	oMeta.SetNamespace(obj.GetNamespace())
 	oMeta.SetFinalizers(obj.GetFinalizers())
+
 	if added := controllerutil.AddFinalizer(oMeta, declarativev2.CustomResourceManagerFinalizer); added {
 		if err := kcp.Patch(
-			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer),
+			ctx, oMeta, client.Apply, client.ForceOwnership,
+			client.FieldOwner(declarativev2.CustomResourceManagerFinalizer),
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
