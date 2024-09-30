@@ -76,7 +76,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: shared.DefaultRemoteNamespace,
 			Labels: map[string]string{
-				shared.ManagedBy:           shared.KymaLabelValue,
+				shared.ManagedBy:           shared.ManagedByLabelValue,
 				shared.IstioInjectionLabel: shared.EnabledValue,
 				shared.WardenLabel:         shared.EnabledValue,
 			},
@@ -210,7 +210,7 @@ func (s *SkrContext) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *
 	}
 
 	remoteKyma.Labels[shared.WatchedByLabel] = shared.WatchedByLabelValue
-	remoteKyma.Labels[shared.ManagedBy] = shared.KymaLabelValue
+	remoteKyma.Labels[shared.ManagedBy] = shared.ManagedByLabelValue
 
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)

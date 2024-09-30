@@ -218,7 +218,7 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate) {
 	if labels == nil {
 		labels = map[string]string{}
 	}
-	labels[shared.ManagedBy] = shared.KymaLabelValue
+	labels[shared.ManagedBy] = shared.ManagedByLabelValue
 	moduleTemplate.SetLabels(labels)
 
 	if c.settings.Namespace != "" {

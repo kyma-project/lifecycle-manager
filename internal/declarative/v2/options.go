@@ -31,7 +31,7 @@ func DefaultOptions() *Options {
 		WithManifestCache(os.TempDir()),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
 		WithCustomResourceLabels{
-			shared.ManagedBy: shared.KymaLabelValue,
+			shared.ManagedBy: shared.ManagedByLabelValue,
 		},
 	)
 }

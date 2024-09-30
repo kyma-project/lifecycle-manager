@@ -8,8 +8,9 @@ const (
 	ControllerName = OperatorGroup + Separator + "controller-name"
 	ChannelLabel   = OperatorGroup + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
-	ManagedBy      = OperatorGroup + Separator + "managed-by"
-	KymaLabelValue = "kyma"
+	ManagedBy           = OperatorGroup + Separator + "managed-by"
+	ManagedByLabelValue = kymaValue
+	kymaValue           = "kyma"
 
 	IstioInjectionLabel = "istio-injection"
 	WardenLabel         = "namespaces.warden.kyma-project.io/validate"
@@ -25,7 +26,7 @@ const (
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
 	WatchedByLabel      = OperatorGroup + Separator + "watched-by"
-	WatchedByLabelValue = "kyma"
+	WatchedByLabelValue = kymaValue
 	// PurposeLabel defines the purpose of the resource, i.e. Secrets which will be used to certificate management.
 	PurposeLabel = OperatorGroup + Separator + "purpose"
 	CertManager  = "klm-watcher-cert-manager"

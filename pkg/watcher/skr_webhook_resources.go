@@ -60,7 +60,7 @@ func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.Objec
 			Name:      secretObjKey.Name,
 			Namespace: secretObjKey.Namespace,
 			Labels: map[string]string{
-				shared.ManagedBy: shared.KymaLabelValue,
+				shared.ManagedBy: shared.ManagedByLabelValue,
 			},
 		},
 		Immutable: nil,
@@ -132,7 +132,7 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 			Name:      webhookObjKey.Name,
 			Namespace: webhookObjKey.Namespace,
 			Labels: map[string]string{
-				shared.ManagedBy: shared.KymaLabelValue,
+				shared.ManagedBy: shared.ManagedByLabelValue,
 			},
 		},
 		Webhooks: webhooks,
@@ -197,7 +197,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	if labels == nil {
 		labels = make(map[string]string)
 	}
-	labels[shared.ManagedBy] = shared.KymaLabelValue
+	labels[shared.ManagedBy] = shared.ManagedByLabelValue
 	deployment.SetLabels(labels)
 
 	return deployment, nil

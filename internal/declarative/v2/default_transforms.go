@@ -48,7 +48,7 @@ func WatchedByManagedByOwnedBy(_ context.Context, obj Object, resources []*unstr
 			lbls = make(map[string]string)
 		}
 		lbls[shared.WatchedByLabel] = shared.WatchedByLabelValue
-		lbls[shared.ManagedBy] = shared.KymaLabelValue
+		lbls[shared.ManagedBy] = shared.ManagedByLabelValue
 
 		annotations := resource.GetAnnotations()
 		if annotations == nil {

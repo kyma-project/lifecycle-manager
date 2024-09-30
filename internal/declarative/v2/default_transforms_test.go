@@ -101,7 +101,7 @@ func Test_defaultTransforms(t *testing.T) {
 				assert.Contains(testingT, unstruct.GetLabels(), shared.ManagedBy)
 				assert.Contains(testingT, unstruct.GetLabels(), shared.WatchedByLabel)
 				assert.Contains(testingT, unstruct.GetAnnotations(), shared.OwnedByAnnotation)
-				assert.Equal(testingT, shared.KymaLabelValue,
+				assert.Equal(testingT, shared.ManagedByLabelValue,
 					unstruct.GetLabels()[shared.ManagedBy])
 				assert.Equal(testingT, shared.WatchedByLabelValue,
 					unstruct.GetLabels()[shared.WatchedByLabel])

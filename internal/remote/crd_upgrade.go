@@ -77,7 +77,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	if labels == nil {
 		labels = map[string]string{}
 	}
-	labels[shared.ManagedBy] = shared.KymaLabelValue
+	labels[shared.ManagedBy] = shared.ManagedByLabelValue
 	crdToApply.SetLabels(labels)
 
 	err := clnt.Patch(ctx, crdToApply,
