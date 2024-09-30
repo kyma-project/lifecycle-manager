@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -200,6 +201,12 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 	resources := make([]client.Object, 0)
 	for _, baseRes := range m.baseResources {
 		resource := baseRes.DeepCopy()
+		labels := resource.GetLabels()
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[shared.ManagedBy] = shared.ManagedByLabelValue
+		resource.SetLabels(labels)
 		configuredResource, err := configureUnstructuredObject(cfg, resource)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure %s resource: %w", resource.GetKind(), err)
