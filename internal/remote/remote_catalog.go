@@ -13,6 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -214,12 +215,9 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
-	labels := moduleTemplate.GetLabels()
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	labels[shared.ManagedBy] = shared.ManagedByLabelValue
-	moduleTemplate.SetLabels(labels)
+	moduleTemplate.SetLabels(collections.MergeMaps(moduleTemplate.GetLabels(), map[string]string{
+		shared.ManagedBy: shared.ManagedByLabelValue,
+	}))
 
 	if c.settings.Namespace != "" {
 		moduleTemplate.SetNamespace(c.settings.Namespace)

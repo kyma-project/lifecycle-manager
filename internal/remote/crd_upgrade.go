@@ -16,6 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 )
 
 type SyncCrdsUseCase struct {
@@ -73,12 +74,10 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	crdToApply.Spec = crd.Spec
 	crdToApply.Spec.Conversion.Strategy = apiextensionsv1.NoneConverter
 	crdToApply.Spec.Conversion.Webhook = nil
-	labels := crdToApply.GetLabels()
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	labels[shared.ManagedBy] = shared.ManagedByLabelValue
-	crdToApply.SetLabels(labels)
+
+	crdToApply.SetLabels(collections.MergeMaps(crdToApply.GetLabels(), map[string]string{
+		shared.ManagedBy: shared.ManagedByLabelValue,
+	}))
 
 	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,

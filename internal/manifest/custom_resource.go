@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -32,12 +33,9 @@ func PostRunCreateCR(
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	labels := resource.GetLabels()
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	labels[shared.ManagedBy] = shared.ManagedByLabelValue
-	resource.SetLabels(labels)
+	resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+		shared.ManagedBy: shared.ManagedByLabelValue,
+	}))
 
 	err := skr.Create(ctx, resource, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer))
 	if err != nil && !apierrors.IsAlreadyExists(err) {

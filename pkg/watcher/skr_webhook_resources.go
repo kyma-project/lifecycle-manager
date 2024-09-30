@@ -19,6 +19,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -193,12 +194,9 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	}
 	deployment.Spec.Template.Spec.Containers[0] = serverContainer
 
-	labels := deployment.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
-	}
-	labels[shared.ManagedBy] = shared.ManagedByLabelValue
-	deployment.SetLabels(labels)
+	deployment.SetLabels(collections.MergeMaps(deployment.GetLabels(), map[string]string{
+		shared.ManagedBy: shared.ManagedByLabelValue,
+	}))
 
 	return deployment, nil
 }
