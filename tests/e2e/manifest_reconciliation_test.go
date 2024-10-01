@@ -37,6 +37,12 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
+			By("And the SKR Module Default CR has the Managed-by Label")
+			Eventually(CheckSampleCRHasExpectedLabel).
+				WithContext(ctx).
+				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.ManagedBy,
+					shared.ManagedByLabelValue).
+				Should(Succeed())
 			By("And the KCP Kyma CR is in a \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).

@@ -237,7 +237,6 @@ func (m *ModuleTemplate) GetVersion() (*semver.Version, error) {
 		}
 	} else {
 		versionValue = m.Spec.Version
-
 	}
 
 	version, err := semver.NewVersion(versionValue)

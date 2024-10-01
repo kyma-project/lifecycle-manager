@@ -1,22 +1,11 @@
-# Lifecycle Manager API
+# Lifecycle Manager Resources
 
-## Overview
+The API of Lifecycle Manager is based on Kubernetes Custom Resource Definitions (CRDs), which extend the Kubernetes API with custom additions. The CRDs allow Lifecycle Manager to manage clusters and modules. To inspect the specification of the Lifecycle Manager resources, see:
 
-The Lifecycle Manager API types consist of three major custom resources (CRs). Each CR deals with a specific aspect of reconciling modules into their corresponding states.
-
-1. [Kyma CR](/api/v1beta2/kyma_types.go) that introduces a single entry point CustomResourceDefinition to control a cluster and it's desired state.
-2. [Manifest CR](/api/v1beta2/manifest_types.go) that introduces a single entry point CustomResourceDefinition to control a module and it's desired state.
-3. [ModuleTemplate CR](/api/v1beta2/moduletemplate_types.go) that contains all reference data for the modules to be installed correctly. It is a standardized desired state for a module available in a given release channel.
-
-Additionally, we maintain the [Watcher CR](/api/v1beta2/watcher_types.go) to define the callback functionality for synchronized remote clusters that allows lower latencies before the Control Plane detects any changes.
-
-## Custom Resource Definitions
-
-Read more about the custom resource definitions (CRDs) in the respective documents:
-
-* [Kyma CR](kyma-cr.md)
-* [Manifest CR](manifest-cr.md)
-* [ModuleTemplate CR](moduleTemplate-cr.md)
+* [Kyma CRD](01-kyma.md)
+* [Manifest CRD](02-manifest.md)
+* [ModuleTemplateCRD](03-moduletemplate.md)
+* [Watcher CRD](04-watcher.md)
 
 ## Synchronization of Module Catalog with Remote Clusters
 
@@ -36,7 +25,7 @@ By default, without any labels configured on Kyma and ModuleTemplate CRs, a Modu
 
 **NOTE:** Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from remote clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Control Plane are not synchronized.
 
-For details, read about [the Kyma CR synchronization labels](kyma-cr.md#operatorkyma-projectio-labels) and [the ModuleTemplate CR synchronization labels](moduleTemplate-cr.md#operatorkyma-projectio-labels).
+For more information, see [the Kyma CR synchronization labels](kyma-cr.md#operatorkyma-projectio-labels) and [the ModuleTemplate CR synchronization labels](moduleTemplate-cr.md#operatorkyma-projectio-labels).
 
 ## Stability
 
@@ -48,3 +37,5 @@ See the list of CRs involved in Lifecycle Manager's workflow and their stability
 | v1beta2 | [ModuleTemplate](/api/v1beta2/moduletemplate_types.go)     | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
 | v1beta2 | [Manifest](/api/v1beta2/manifest_types.go)                 | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
 | v1beta2 | [Watcher](/api/v1beta2/watcher_types.go)                   | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+
+For more information on changes introduced by an API version, see [API Changelog](../api-changelog.md).

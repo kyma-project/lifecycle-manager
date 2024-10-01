@@ -7,11 +7,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 )
 
 const (
-	OperatorName              = "module-manager"
-	ManagedByLabelValue       = "declarative-v2"
 	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
 	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
@@ -32,44 +31,24 @@ func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.
 
 func KymaComponentTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
-		lbls := resource.GetLabels()
-		if lbls == nil {
-			lbls = make(map[string]string)
-		}
-		lbls["app.kubernetes.io/component"] = obj.GetName()
-		lbls["app.kubernetes.io/part-of"] = "Kyma"
-		resource.SetLabels(lbls)
+		resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+			"app.kubernetes.io/component": obj.GetName(),
+			"app.kubernetes.io/part-of":   "Kyma",
+		}))
 	}
 	return nil
 }
 
-func ManagedByDeclarativeV2(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
+func WatchedByManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
-		lbls := resource.GetLabels()
-		if lbls == nil {
-			lbls = make(map[string]string)
-		}
-		// legacy managed by value
-		lbls[shared.ManagedBy] = ManagedByLabelValue
-		resource.SetLabels(lbls)
-	}
-	return nil
-}
+		resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+			shared.WatchedByLabel: shared.WatchedByLabelValue,
+			shared.ManagedBy:      shared.ManagedByLabelValue,
+		}))
 
-func watchedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
-	for _, resource := range resources {
-		lbls := resource.GetLabels()
-		if lbls == nil {
-			lbls = make(map[string]string)
-		}
-		lbls[shared.WatchedByLabel] = shared.WatchedByLabelValue
-
-		annotations := resource.GetAnnotations()
-		if annotations == nil {
-			annotations = make(map[string]string)
-		}
-		annotations[shared.OwnedByAnnotation] = fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName())
-		resource.SetLabels(lbls)
+		resource.SetAnnotations(collections.MergeMaps(resource.GetAnnotations(), map[string]string{
+			shared.OwnedByAnnotation: fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName()),
+		}))
 	}
 	return nil
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -59,6 +60,9 @@ func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.Objec
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      secretObjKey.Name,
 			Namespace: secretObjKey.Namespace,
+			Labels: map[string]string{
+				shared.ManagedBy: shared.ManagedByLabelValue,
+			},
 		},
 		Immutable: nil,
 		Data: map[string][]byte{
@@ -128,6 +132,9 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      webhookObjKey.Name,
 			Namespace: webhookObjKey.Namespace,
+			Labels: map[string]string{
+				shared.ManagedBy: shared.ManagedByLabelValue,
+			},
 		},
 		Webhooks: webhooks,
 	}
@@ -186,6 +193,10 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 		apicorev1.ResourceMemory: memResQty,
 	}
 	deployment.Spec.Template.Spec.Containers[0] = serverContainer
+
+	deployment.SetLabels(collections.MergeMaps(deployment.GetLabels(), map[string]string{
+		shared.ManagedBy: shared.ManagedByLabelValue,
+	}))
 
 	return deployment, nil
 }
