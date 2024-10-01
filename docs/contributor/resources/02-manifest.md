@@ -1,6 +1,6 @@
 # Manifest
 
-The `manifests.operator.kyma-project.io` Custom Resource Definition (CRD) is a comprehensive specification that defines the structure and format used to configure the Manifest resource.
+The `manifests.operator.kyma-project.io` Custom Resource Definition (CRD) defines the structure and format used to configure the Manifest resource.
 
 The Manifest custom resource (CR) represent resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module added to a particular cluster.
 

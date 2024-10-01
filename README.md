@@ -11,10 +11,6 @@ Lifecycle Manager manages the lifecycle of [Kyma Modules](https://help.sap.com/d
 
 For more information on the Lifecycle Manager's workflow, see the [Architecture](docs/contributor/01-architecture.md) document.
 
-## Installation
-
-<!-- Local Test Setup??-->
-
 ## Usage
 
 If you are a Kyma end user, see the [user documentation](./docs/user/README.md).

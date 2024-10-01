@@ -1,8 +1,8 @@
 # ModuleTemplate
 
-The `moduletemplates.operator.kyma-project.io` Custom Resource Definition (CRD) is a comprehensive specification that defines the structure and format used to configure the ModuleTemplate resource.
+The `moduletemplates.operator.kyma-project.io` Custom Resource Definition (CRD) defines the structure and format used to configure the ModuleTemplate resource.
 
-The Manifest CR contains modules' metadata with links to their images and manifests. ModuleTemplate CR represents a module in a particular version. Based on this resource Lifecycle Manager enables or disables modules in a cluster. It contains the list of added modules and their state.
+The ModuleTemplate custom resource (CR) defines a module, in a particular version, that can be added to or deleted from the module list in the Kyma CR. Each ModuleTemplate CR represents one module.
 
 To get the latest CRD in the YAML format, run the following command:
 
