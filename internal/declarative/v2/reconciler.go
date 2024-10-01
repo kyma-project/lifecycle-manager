@@ -42,6 +42,7 @@ const (
 	CustomResourceManagerFinalizer                   = "resource.kyma-project.io/finalizer"
 	SyncedOCIRefAnnotation                           = "sync-oci-ref"
 	defaultFinalizer                                 = "declarative.kyma-project.io/finalizer"
+	labelRemovalFinalizer                            = "label-removal-finalizer"
 	defaultFieldOwner              client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
@@ -150,7 +151,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if manifest.GetDeletionTimestamp().IsZero() {
 		partialMeta := r.partialObjectMetadata(manifest)
-		if controllerutil.AddFinalizer(partialMeta, defaultFinalizer) {
+		defaultFinalizerAdded := controllerutil.AddFinalizer(partialMeta, defaultFinalizer)
+		labelRemovalFinalizerAdded := controllerutil.AddFinalizer(partialMeta, labelRemovalFinalizer)
+		if defaultFinalizerAdded || labelRemovalFinalizerAdded {
 			return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
 		}
 	}
@@ -236,7 +239,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
 	r.cleanUpMandatoryModuleMetrics(manifest)
-	finalizersToRemove := []string{defaultFinalizer}
+	finalizersToRemove := []string{defaultFinalizer, labelRemovalFinalizer}
 	if errors.Is(originalErr, ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
 		finalizersToRemove = manifest.GetFinalizers()
 	}
