@@ -139,10 +139,32 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
 	}
 
+	skrClient, err := r.getTargetClient(ctx, manifest)
+	if err != nil {
+		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
+			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit,
+				err)
+		}
+
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		return r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err)
+	}
+
 	if manifest.IsUnmanaged() {
 		if !manifest.GetDeletionTimestamp().IsZero() {
 			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
 		}
+
+		if controllerutil.ContainsFinalizer(manifest, labelRemovalFinalizer) {
+			if err := r.handleLabelsRemovalFromResources(ctx, manifest, skrClient); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			if controllerutil.RemoveFinalizer(manifest, labelRemovalFinalizer) {
+				return r.updateManifest(ctx, manifest, metrics.ManifestResourcesLabelRemoval)
+			}
+		}
+
 		if err := r.Delete(ctx, manifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
@@ -170,17 +192,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if notContainsSyncedOCIRefAnnotation(manifest) {
 		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
 		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
-	}
-
-	skrClient, err := r.getTargetClient(ctx, manifest)
-	if err != nil {
-		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit,
-				err)
-		}
-
-		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-		return r.finishReconcile(ctx, manifest, metrics.ManifestClientInit, manifestStatus, err)
 	}
 
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
@@ -453,11 +464,11 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	converter ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		deleted, err := checkCRDeletion(ctx, skrClient, manifest)
+		defaultCR, err := fetchCR(ctx, skrClient, manifest)
 		if err != nil {
 			return nil, err
 		}
-		if deleted {
+		if defaultCR == nil {
 			return ResourceList{}, nil
 		}
 	}
@@ -486,9 +497,10 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	return target, nil
 }
 
-func checkCRDeletion(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (bool, error) {
+func fetchCR(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
+	error) {
 	if manifest.Spec.Resource == nil {
-		return true, nil
+		return nil, nil
 	}
 
 	name := manifest.Spec.Resource.GetName()
@@ -505,11 +517,11 @@ func checkCRDeletion(ctx context.Context, skrClient client.Client, manifest *v1b
 	if err := skrClient.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
 		if util.IsNotFound(err) {
-			return true, nil
+			return nil, nil
 		}
-		return false, fmt.Errorf("%w: failed to fetch default resource CR", err)
+		return nil, fmt.Errorf("%w: failed to fetch default resource CR", err)
 	}
-	return false, nil
+	return resourceCR, nil
 }
 
 func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
@@ -710,4 +722,65 @@ func (r *Reconciler) cleanUpMandatoryModuleMetrics(manifest *v1beta2.Manifest) {
 		moduleName := manifest.GetLabels()[shared.ModuleName]
 		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
 	}
+}
+
+func (r *Reconciler) handleLabelsRemovalFromResources(ctx context.Context, manifest *v1beta2.Manifest,
+	skrClient Client) error {
+	for _, res := range manifest.Status.Synced {
+		objectKey := client.ObjectKey{
+			Name:      res.Name,
+			Namespace: res.Namespace,
+		}
+		gvk := schema.GroupVersionKind{
+			Group:   res.Group,
+			Version: res.Version,
+			Kind:    res.Kind,
+		}
+
+		obj := &unstructured.Unstructured{}
+		obj.SetGroupVersionKind(gvk)
+		if err := skrClient.Get(ctx, objectKey, obj); err != nil {
+			return fmt.Errorf("failed to get resource")
+		}
+
+		if err := removeManagedByAndWatchedByLabels(ctx, obj, skrClient); err != nil {
+			return err
+		}
+	}
+
+	defaultCR, err := fetchCR(ctx, skrClient, manifest)
+	if err != nil {
+		return fmt.Errorf("failed to fetch CR: %w", err)
+	}
+
+	if defaultCR != nil {
+		if err := removeManagedByAndWatchedByLabels(ctx, defaultCR, skrClient); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func removeManagedByAndWatchedByLabels(ctx context.Context, resource *unstructured.Unstructured,
+	skrClient Client) error {
+	labels := resource.GetLabels()
+	_, managedByLabelExists := labels[shared.ManagedBy]
+	if managedByLabelExists {
+		delete(labels, shared.ManagedBy)
+	}
+	_, watchedByLabelExists := labels[shared.WatchedByLabel]
+	if watchedByLabelExists {
+		delete(labels, shared.WatchedByLabel)
+	}
+
+	if managedByLabelExists || watchedByLabelExists {
+		resource.SetLabels(labels)
+
+		if err := skrClient.Update(ctx, resource); err != nil {
+			return fmt.Errorf("failed to update object: %w", err)
+		}
+	}
+
+	return nil
 }
