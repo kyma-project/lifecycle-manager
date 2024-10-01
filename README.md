@@ -1,6 +1,6 @@
 # Lifecycle Manager
 
-<!-- markdown-link-check-disable-next-line -->
+<!-- markdown-link-check-disable-next-line  -->
 [![REUSE status](https://api.reuse.software/badge/github.com/kyma-project/lifecycle-manager)](https://api.reuse.software/info/github.com/kyma-project/lifecycle-manager)
 
 ## Overview
