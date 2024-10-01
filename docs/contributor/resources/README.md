@@ -1,6 +1,6 @@
 # Lifecycle Manager Resources
 
-The API of Lifecycle Manager is based on Kubernetes Custom Resource Definitions (CRDs), which  extend the Kubernetes API with custom additions. The CRDs allow Lifecycle Manager to manage clusters and modules. To inspect the specification of the Lifecycle Manager resources, see:
+The API of Lifecycle Manager is based on Kubernetes Custom Resource Definitions (CRDs), which extend the Kubernetes API with custom additions. The CRDs allow Lifecycle Manager to manage clusters and modules. To inspect the specification of the Lifecycle Manager resources, see:
 
 * [Kyma CRD](01-kyma.md)
 * [Manifest CRD](02-manifest.md)
