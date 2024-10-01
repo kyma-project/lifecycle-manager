@@ -4,13 +4,15 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: modulereleasemeta.operator.kyma-project.io
+  name: modulereleasemetas.operator.kyma-project.io
 spec:
   group: operator.kyma-project.io
   names:
     kind: ModuleReleaseMeta
     listKind: ModuleReleaseMetaList
-    plural: modulereleasemeta
+    plural: modulereleasemetas
+    shortNames:
+    - mrm
     singular: modulereleasemeta
   scope: Namespaced
   versions:
@@ -67,7 +69,7 @@ spec:
                   type: object
                 type: array
                 x-kubernetes-list-map-keys:
-                - name
+                - channel
                 x-kubernetes-list-type: map
               moduleName:
                 description: ModuleName is the name of the Module.

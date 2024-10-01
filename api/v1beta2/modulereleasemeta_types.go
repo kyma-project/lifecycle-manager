@@ -9,6 +9,7 @@ import (
 //
 // +genclient
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:singular=modulereleasemeta,path=modulereleasemetas,shortName=mrm
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:storageversion
 
@@ -28,7 +29,7 @@ type ModuleReleaseMetaSpec struct {
 
 	// Channels is the list of module channels with their corresponding versions
 	// +listType=map
-	// +listMapKey=name
+	// +listMapKey=channel
 	Channels []ChannelVersionAssignment `json:"channels"`
 }
 
