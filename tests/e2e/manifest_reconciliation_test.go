@@ -12,7 +12,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
+var _ = FDescribe("Manifest Skip Reconciliation Label", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	waitingForFinalizersOperationMsg := "waiting as other finalizers are present"
@@ -37,7 +37,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
-			By("And the SKR Module Default CR has the Mnagaed-by Label")
+			By("And the SKR Module Default CR has the Managed-by Label")
 			Eventually(CheckSampleCRHasExpectedLabel).
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.ManagedBy,

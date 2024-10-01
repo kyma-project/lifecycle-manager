@@ -225,17 +225,16 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 func CheckSampleCRHasExpectedLabel(ctx context.Context, name, namespace string, clnt client.Client,
 	labelKey, labelValue string,
 ) error {
-	cr, err := GetCR(ctx, clnt, client.ObjectKey{Name: name, Namespace: namespace}, schema.GroupVersionKind{
+	customResource, err := GetCR(ctx, clnt, client.ObjectKey{Name: name, Namespace: namespace}, schema.GroupVersionKind{
 		Group:   "operator.kyma-project.io",
 		Version: "v1alpha1",
 		Kind:    string(templatev1alpha1.SampleKind),
 	})
-
 	if err != nil {
 		return err
 	}
 
-	labels := cr.GetLabels()
+	labels := customResource.GetLabels()
 	if labels == nil || labels[labelKey] != labelValue {
 		return errLabelNotExistOnSampleCR
 	}

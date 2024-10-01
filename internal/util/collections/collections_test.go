@@ -1,9 +1,11 @@
 package collections_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 )
 
 func TestMergeMaps_WhenMapIsEmpty(t *testing.T) {
