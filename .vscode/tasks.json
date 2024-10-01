@@ -1,0 +1,181 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Delete Test Clusters",
+      "type": "shell",
+      "command": "k3d cluster rm kcp skr",
+    },
+    {
+      "label": "Ensure Test Clusters",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+    },
+    {
+      "label": "Create New Test Clusters",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+      "dependsOn": [
+        "Delete Test Clusters"
+      ]
+    },
+    // re-run if encountering error that the watcher CRD is missing
+    {
+      "label": "Deploy KLM from sources",
+      "type": "shell",
+      "command": "TAG=\"$(date +%Y%m%d%H%M%S)\" && make docker-build IMG=${LOCAL_IMG}:${TAG}; make docker-push IMG=${LOCAL_IMG}:${TAG}; make local-deploy-with-watcher IMG=${CLUSTER_IMG}:${TAG}",
+      "options": {
+        "env": {
+          "LOCAL_IMG": "localhost:5111/lifecycle-manager",
+          "CLUSTER_IMG": "k3d-myregistry.localhost:5000/lifecycle-manager",
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+
+        }
+      }
+    },
+    // re-run if encountering error that the watcher CRD is missing
+    {
+      "label": "Deploy KLM from registry",
+      "type": "shell",
+      "command": "make local-deploy-with-watcher IMG=${IMG_REGISTRY_HOST}/${input:klmImageRegistry}/${IMG_NAME}:${input:klmImageTag}",
+      "options": {
+        "env": {
+          "IMG_REGISTRY_HOST": "europe-docker.pkg.dev/kyma-project",
+          "IMG_NAME": "lifecycle-manager",
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+        }
+      }
+    },
+    {
+      "label": "Deploy template-operator",
+      "type": "shell",
+      "command": "kubectl apply -f ${cwd}/tests/moduletemplates/${input:templateOperatorVersion}",
+      "options": {
+        "env": {
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+        }
+      }
+    },
+    {
+      "label": "Deploy kyma",
+      "type": "shell",
+      "command": "export SKR_HOST=${input:skrHost} && ${cwd}/scripts/tests/deploy_kyma.sh",
+      "options": {
+        "env": {
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+        }
+      }
+    },
+    {
+      "label": "Un-Deploy kyma",
+      "type": "shell",
+      "command": "kubectl -n kcp-system delete kyma kyma-sample; kubectl -n kcp-system delete secret kyma-sample",
+      "options": {
+        "env": {
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+        }
+      }
+    },
+    {
+      "label": "E2E Tests",
+      "type": "shell",
+      "command": "make -C ${cwd}/tests/e2e ${input:e2eTestTarget}",
+      "group": {
+        "kind": "test"
+      },
+      "options": {
+        "env": {
+          "KCP_KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+          "SKR_KUBECONFIG": "${env:HOME}/.k3d/skr-local.yaml"
+        }
+      }
+    },
+    {
+      "label": "Install CRDs",
+      "type": "shell",
+      "command": "make install",
+      "options": {
+        "env": {
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+        }
+      }
+    }
+  ],
+  "inputs": [
+    {
+      // not all of the options work OOTB, see deploy-lifecycle-manager-e2e action.yaml for specific patches
+      "id": "e2eTestTarget",
+      "type": "pickString",
+      "description": "E2E test target",
+      "options": [
+        "watcher-enqueue",
+        "rbac-privileges",
+        "kyma-deprovision-with-foreground-propagation",
+        "kyma-deprovision-with-background-propagation",
+        "module-status-decoupling-with-statefulset",
+        "module-status-decoupling-with-deployment",
+        "kyma-metrics",
+        "module-without-default-cr",
+        "module-consistency",
+        "non-blocking-deletion",
+        "upgrade-under-deletion",
+        "purge-controller",
+        "purge-metrics",
+        "module-upgrade-channel-switch",
+        "module-upgrade-new-version",
+        "unmanage-module",
+        "skip-manifest-reconciliation",
+        "ca-certificate-rotation",
+        "self-signed-certificate-rotation",
+        "mandatory-module",
+        "mandatory-module-metrics",
+        "misconfigured-kyma-secret",
+        "ocm-compatible-module-template",
+      ]
+    },
+    {
+      "id": "templateOperatorVersion",
+      "type": "pickString",
+      "description": "Template-operator manifest",
+      "options": [
+        "mandatory_moduletemplate_template_operator_v1.yaml",
+        "mandatory_moduletemplate_template_operator_v2.yaml",
+        "moduletemplate_template_operator_regular_new_ocm.yaml",
+        "moduletemplate_template_operator_v1_regular.yaml",
+        "moduletemplate_template_operator_v2_fast.yaml",
+        "moduletemplate_template_operator_v2_regular_new_version.yaml",
+        "operator_v1beta2_moduletemplate_kcp-module_updated.yaml",
+        "operator_v1beta2_moduletemplate_kcp-module-cred-label.yaml",
+        "operator_v1beta2_moduletemplate_kcp-module.yaml",
+        "operator_v1beta2_moduletemplate_ocm.software.v3alpha1.yaml"
+      ]
+    },
+    {
+      "id": "klmImageRegistry",
+      "type": "pickString",
+      "description": "Registry of KLM image",
+      "options": [
+        "dev",
+        "prod"
+      ]
+    },
+    {
+      "id": "klmImageTag",
+      "type": "promptString",
+      "description": "Tag of the KLM image, e.g. 'latest'",
+    },
+    {
+      "id": "skrHost",
+      "type": "pickString",
+      "description": "Host of the SKR",
+      "options": [
+        // use host.k3d.internal when deploying KLM into the cluster
+        "host.k3d.internal",
+        // use localhost when running KLM locally on the machine
+        "localhost"
+      ]
+    },
+  ]
+}

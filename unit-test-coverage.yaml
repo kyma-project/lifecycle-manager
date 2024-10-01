@@ -3,11 +3,11 @@ packages:
   internal/descriptor/cache: 92.3
   internal/descriptor/provider: 66.7
   internal/event: 100
-  internal/manifest/statecheck: 66
+  internal/manifest/statecheck: 71
   internal/manifest/filemutex: 100
-  internal/manifest: 7
+  internal/manifest: 10
   internal/istio: 63.3
   internal/pkg/resources: 91.7
-  internal/remote: 6.6
-  pkg/templatelookup: 72
+  internal/remote: 6.4
+  pkg/templatelookup: 76
 

@@ -11,6 +11,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 const (
@@ -21,14 +23,16 @@ const (
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
 		WithPostRenderTransform(
-			ManagedByDeclarativeV2,
-			watchedByOwnedBy,
+			WatchedByManagedByOwnedBy,
 			KymaComponentTransform,
 			DisclaimerTransform,
 		),
 		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
+		WithCustomResourceLabels{
+			shared.ManagedBy: shared.ManagedByLabelValue,
+		},
 	)
 }
 

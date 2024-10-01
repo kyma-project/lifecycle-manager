@@ -20,8 +20,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -52,7 +52,7 @@ func SetupWithManager(mgr manager.Manager,
 	}
 
 	runnableListener := watcherevent.NewSKREventListener(
-		settings.ListenerAddr, strings.ToLower(declarativev2.OperatorName),
+		settings.ListenerAddr, strings.ToLower(shared.OperatorName),
 		verifyFunc,
 	)
 
