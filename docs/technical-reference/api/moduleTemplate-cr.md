@@ -47,6 +47,25 @@ spec:
 
 If not specified, the **namespace** of the resource mentioned in **.spec.data** will be controlled by the `sync-namespace` flag; otherwise, it will be respected. All other attributes (including **.metadata.name**, **apiVersion**, and **kind**) are taken over as stated. Note that since it behaves similarly to a `template`, any subresources, such as **status**, are ignored, even if specified in the field.
 
+### **.spec.info**
+
+The `info` field contains metadata about the module template, including repository, documentation, and icons. For
+example:
+
+```
+spec:
+  info:
+    repository: https://github.com/example/repo
+    documentation: https://docs.example.com
+    icons:
+    - name: example-icon
+      link: https://example.com/icon.png
+```
+
+- repository: The link to the repository of the module.
+- documentation: The link to the documentation of the module.
+- icons: A list of icons associated with the module, each with a name and link.
+
 ### **.spec.customStateCheck**
 
 > **CAUTION:** This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
