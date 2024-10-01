@@ -1,4 +1,4 @@
-# Local test Setup in the control-plane Mode Using k3d
+# Local Test Setup in the Control Plane Mode Using k3d
 
 > ### Supported Versions
 > * Golang: `v1.22.5`
