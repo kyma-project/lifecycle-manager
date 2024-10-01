@@ -28,7 +28,7 @@ import (
 
 const (
 	defaultBufferSize      = 2048
-	Timeout                = time.Second * 40
+	Timeout                = time.Second * 10
 	ConsistentCheckTimeout = time.Second * 10
 	Interval               = time.Millisecond * 250
 )
@@ -42,18 +42,27 @@ var (
 )
 
 func NewTestModule(name, channel string) v1beta2.Module {
-	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel)
+	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel, "")
+}
+
+func NewTestModuleWithChannelVersion(name, channel, version string) v1beta2.Module {
+	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, random.Name()), channel, version)
+}
+
+func NewTemplateOperatorWithVersion(version string) v1beta2.Module {
+	return NewTestModuleWithFixName("template-operator", "", version)
 }
 
 func NewTemplateOperator(channel string) v1beta2.Module {
-	return NewTestModuleWithFixName("template-operator", channel)
+	return NewTestModuleWithFixName("template-operator", channel, "")
 }
 
-func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
+func NewTestModuleWithFixName(name, channel, version string) v1beta2.Module {
 	return v1beta2.Module{
 		Name:    name,
 		Channel: channel,
 		Managed: true,
+		Version: version,
 	}
 }
 
