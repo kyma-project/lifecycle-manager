@@ -12,6 +12,8 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
+// test
+
 var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
