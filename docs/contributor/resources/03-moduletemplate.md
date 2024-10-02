@@ -57,7 +57,7 @@ If not specified, the **namespace** of the resource mentioned in **.spec.data** 
 
 ### **.spec.info**
 
-The `info` field contains metadata about the module, including repository, documentation, and icons. For example:
+The **info** field contains module metadata, including the repository URL, documentation link, and icons. For example:
 
 ```
 spec:
