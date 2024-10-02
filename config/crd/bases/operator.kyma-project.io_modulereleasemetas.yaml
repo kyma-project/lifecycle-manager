@@ -42,8 +42,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: ModuleReleaseMetaSpec defines the version-channel assignments
-              for a module
+            description: ModuleReleaseMetaSpec defines the channel-version assignments
+              for a module.
             properties:
               channels:
                 description: Channels is the list of module channels with their corresponding
@@ -51,8 +51,7 @@ spec:
                 items:
                   properties:
                     channel:
-                      description: Channel is the module channel of the corresponding
-                        module version.
+                      description: Channel is the module channel.
                       maxLength: 32
                       minLength: 3
                       pattern: ^[a-z]+$

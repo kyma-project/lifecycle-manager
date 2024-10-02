@@ -20,7 +20,7 @@ type ModuleReleaseMeta struct {
 	Spec ModuleReleaseMetaSpec `json:"spec,omitempty"`
 }
 
-// ModuleReleaseMetaSpec defines the version-channel assignments for a module
+// ModuleReleaseMetaSpec defines the channel-version assignments for a module.
 type ModuleReleaseMetaSpec struct {
 	// ModuleName is the name of the Module.
 	// +kubebuilder:validation:Pattern:=`^([a-z]{3,}(-[a-z]{3,})*)?$`
@@ -43,7 +43,7 @@ type ModuleReleaseMetaList struct {
 }
 
 type ChannelVersionAssignment struct {
-	// Channel is the module channel of the corresponding module version.
+	// Channel is the module channel.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
