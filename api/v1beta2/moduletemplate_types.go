@@ -143,7 +143,7 @@ type ModuleInfo struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=name
-	Icons []ModuleIcon `json:"icons"`
+	Icons []ModuleIcon `json:"icons,omitempty"`
 }
 
 type ModuleIcon struct {
