@@ -71,7 +71,7 @@ spec:
 
 - repository: The link to the repository of the module.
 - documentation: The link to the documentation of the module.
-- icons: A list of icons associated with the module, each with a name and link.
+- icons: A list of icons of the module, each with a name and link.
 
 ### **.spec.customStateCheck**
 
