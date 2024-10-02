@@ -220,6 +220,38 @@ spec:
                   charts and kustomize renderers are deprecated and ignored.
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              info:
+                description: Info contains metadata about the module.
+                properties:
+                  documentation:
+                    description: Documentation is the link to the documentation of
+                      the module.
+                    type: string
+                  icons:
+                    description: Icons is a list of icons of the module.
+                    items:
+                      properties:
+                        link:
+                          description: Link is the link to the icon.
+                          type: string
+                        name:
+                          description: Name is the name of the icon.
+                          type: string
+                      required:
+                        - link
+                        - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                      - name
+                    x-kubernetes-list-type: map
+                  repository:
+                    description: Repository is the link to the repository of the module.
+                    type: string
+                required:
+                  - documentation
+                  - repository
+                type: object
               mandatory:
                 description: |-
                   Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
