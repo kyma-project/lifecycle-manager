@@ -230,7 +230,6 @@ func CheckSampleCRHasExpectedLabel(ctx context.Context, name, namespace string, 
 		Version: templatev1alpha1.GroupVersion.Version,
 		Kind:    string(templatev1alpha1.SampleKind),
 	})
-
 	if err != nil {
 		return err
 	}
