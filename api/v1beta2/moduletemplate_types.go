@@ -141,6 +141,8 @@ type ModuleInfo struct {
 
 	// Icons is a list of icons associated with the module.
 	// +optional
+	// +listType=map
+	// +listMapKey=name
 	Icons []ModuleIcon `json:"icons"`
 }
 
