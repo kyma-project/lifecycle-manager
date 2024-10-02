@@ -9,6 +9,7 @@ resources:
 - bases/operator.kyma-project.io_manifests.yaml
 - bases/operator.kyma-project.io_moduletemplates.yaml
 - bases/operator.kyma-project.io_watchers.yaml
+- bases/operator.kyma-project.io_modulereleasemetas.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
