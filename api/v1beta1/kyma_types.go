@@ -25,6 +25,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories={kyma-modules}
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Kyma is deprecated. Use v1beta2 instead."

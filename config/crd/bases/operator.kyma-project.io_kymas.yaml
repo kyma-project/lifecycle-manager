@@ -8,6 +8,8 @@ metadata:
 spec:
   group: operator.kyma-project.io
   names:
+    categories:
+    - kyma-modules
     kind: Kyma
     listKind: KymaList
     plural: kymas
