@@ -14,6 +14,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestPruneResource(t *testing.T) {
@@ -229,4 +230,43 @@ func Test_hasStatusDiff(t *testing.T) {
 				tt.args.first, tt.args.second)
 		})
 	}
+}
+
+func Test_needsUpdateAfterLabelRemoval_WhenLabelsAreEmpty(t *testing.T) {
+	emptyLabels := map[string]string{}
+	res := &unstructured.Unstructured{}
+	res.SetLabels(emptyLabels)
+	actual := needsUpdateAfterLabelRemoval(res)
+
+	require.Equal(t, false, actual)
+	require.Equal(t, emptyLabels, res.GetLabels())
+}
+
+func Test_needsUpdateAfterLabelRemoval_WhenWatchedByLabel(t *testing.T) {
+	labels := map[string]string{
+		shared.WatchedByLabel: shared.WatchedByLabelValue,
+		"test":                "value",
+	}
+	expectedLabels := map[string]string{
+		"test": "value",
+	}
+	res := &unstructured.Unstructured{}
+	res.SetLabels(labels)
+	actual := needsUpdateAfterLabelRemoval(res)
+
+	require.Equal(t, true, actual)
+	require.Equal(t, expectedLabels, res.GetLabels())
+}
+
+func Test_needsUpdateAfterLabelRemoval_WhenManagedByLabel(t *testing.T) {
+	labels := map[string]string{
+		shared.ManagedBy: shared.ManagedByLabelValue,
+	}
+	expectedLabels := map[string]string{}
+	res := &unstructured.Unstructured{}
+	res.SetLabels(labels)
+	actual := needsUpdateAfterLabelRemoval(res)
+
+	require.Equal(t, true, actual)
+	require.Equal(t, expectedLabels, res.GetLabels())
 }

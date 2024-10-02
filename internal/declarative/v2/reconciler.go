@@ -743,8 +743,10 @@ func (r *Reconciler) handleLabelsRemovalFromResources(ctx context.Context, manif
 			return fmt.Errorf("failed to get resource")
 		}
 
-		if err := removeManagedByAndWatchedByLabels(ctx, obj, skrClient); err != nil {
-			return err
+		if needsUpdateAfterLabelRemoval(obj) {
+			if err := skrClient.Update(ctx, obj); err != nil {
+				return fmt.Errorf("failed to update object: %w", err)
+			}
 		}
 	}
 
@@ -754,16 +756,17 @@ func (r *Reconciler) handleLabelsRemovalFromResources(ctx context.Context, manif
 	}
 
 	if defaultCR != nil {
-		if err := removeManagedByAndWatchedByLabels(ctx, defaultCR, skrClient); err != nil {
-			return err
+		if needsUpdateAfterLabelRemoval(defaultCR) {
+			if err := skrClient.Update(ctx, defaultCR); err != nil {
+				return fmt.Errorf("failed to update object: %w", err)
+			}
 		}
 	}
 
 	return nil
 }
 
-func removeManagedByAndWatchedByLabels(ctx context.Context, resource *unstructured.Unstructured,
-	skrClient Client) error {
+func needsUpdateAfterLabelRemoval(resource *unstructured.Unstructured) bool {
 	labels := resource.GetLabels()
 	_, managedByLabelExists := labels[shared.ManagedBy]
 	if managedByLabelExists {
@@ -774,13 +777,7 @@ func removeManagedByAndWatchedByLabels(ctx context.Context, resource *unstructur
 		delete(labels, shared.WatchedByLabel)
 	}
 
-	if managedByLabelExists || watchedByLabelExists {
-		resource.SetLabels(labels)
+	resource.SetLabels(labels)
 
-		if err := skrClient.Update(ctx, resource); err != nil {
-			return fmt.Errorf("failed to update object: %w", err)
-		}
-	}
-
-	return nil
+	return watchedByLabelExists || managedByLabelExists
 }
