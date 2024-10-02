@@ -139,7 +139,7 @@ type ModuleInfo struct {
 	// Documentation is the link to the documentation of the module.
 	Documentation string `json:"documentation"`
 
-	// Icons is a list of icons associated with the module.
+	// Icons is a list of icons of the module.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
