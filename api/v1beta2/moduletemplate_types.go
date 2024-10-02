@@ -127,7 +127,7 @@ type ModuleTemplateSpec struct {
 	// CustomStateCheck is deprecated.
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 
-	// Info is the information about the module.
+	// Info contains metadata about the module.
 	// +optional
 	Info ModuleInfo `json:"info,omitempty"`
 }
