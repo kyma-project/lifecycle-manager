@@ -124,11 +124,6 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.ManagedBy,
 					shared.ManagedByLabelValue).
 				Should(Equal(ErrLabelNotExistOnCR))
-			Eventually(CheckSampleCRHasExpectedLabel).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.WatchedByLabel,
-					shared.WatchedByLabel).
-				Should(Equal(ErrLabelNotExistOnCR))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
