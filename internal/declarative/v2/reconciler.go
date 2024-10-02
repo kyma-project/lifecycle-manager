@@ -156,13 +156,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 
 		if controllerutil.ContainsFinalizer(manifest, labelRemovalFinalizer) {
-			if err := r.handleLabelsRemovalFromResources(ctx, manifest, skrClient); err != nil {
-				return ctrl.Result{}, err
-			}
-
-			if controllerutil.RemoveFinalizer(manifest, labelRemovalFinalizer) {
-				return r.updateManifest(ctx, manifest, metrics.ManifestResourcesLabelRemoval)
-			}
+			return r.handleLabelsRemovalFinalizerForUnmanagedModule(ctx, manifest, skrClient)
 		}
 
 		if err := r.Delete(ctx, manifest); err != nil {
@@ -243,6 +237,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
+}
+
+func (r *Reconciler) handleLabelsRemovalFinalizerForUnmanagedModule(ctx context.Context,
+	manifest *v1beta2.Manifest, skrClient Client) (ctrl.Result,
+	error,
+) {
+	if err := r.handleLabelsRemovalFromResources(ctx, manifest, skrClient); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	controllerutil.RemoveFinalizer(manifest, labelRemovalFinalizer)
+	return r.updateManifest(ctx, manifest, metrics.ManifestResourcesLabelRemoval)
 }
 
 func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, manifest *v1beta2.Manifest,
@@ -464,11 +470,11 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	converter ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		defaultCR, err := fetchCR(ctx, skrClient, manifest)
+		deleted, err := checkCRDeletion(ctx, skrClient, manifest)
 		if err != nil {
 			return nil, err
 		}
-		if defaultCR == nil {
+		if deleted {
 			return ResourceList{}, nil
 		}
 	}
@@ -497,17 +503,32 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	return target, nil
 }
 
-func fetchCR(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
-	error) {
+func checkCRDeletion(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (bool,
+	error,
+) {
 	if manifest.Spec.Resource == nil {
-		return nil, nil
+		return true, nil
 	}
 
+	resourceCR, err := getCR(ctx, skrClient, manifest)
+	if err != nil {
+		if util.IsNotFound(err) {
+			return true, nil
+		}
+		return false, fmt.Errorf("%w: failed to fetch default resource CR", err)
+	}
+
+	return resourceCR == nil, nil
+}
+
+func getCR(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
+	error,
+) {
+	resourceCR := &unstructured.Unstructured{}
 	name := manifest.Spec.Resource.GetName()
 	namespace := manifest.Spec.Resource.GetNamespace()
 	gvk := manifest.Spec.Resource.GroupVersionKind()
 
-	resourceCR := &unstructured.Unstructured{}
 	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   gvk.Group,
 		Version: gvk.Version,
@@ -516,11 +537,9 @@ func fetchCR(ctx context.Context, skrClient client.Client, manifest *v1beta2.Man
 
 	if err := skrClient.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
-		if util.IsNotFound(err) {
-			return nil, nil
-		}
 		return nil, fmt.Errorf("%w: failed to fetch default resource CR", err)
 	}
+
 	return resourceCR, nil
 }
 
@@ -725,7 +744,8 @@ func (r *Reconciler) cleanUpMandatoryModuleMetrics(manifest *v1beta2.Manifest) {
 }
 
 func (r *Reconciler) handleLabelsRemovalFromResources(ctx context.Context, manifest *v1beta2.Manifest,
-	skrClient Client) error {
+	skrClient Client,
+) error {
 	for _, res := range manifest.Status.Synced {
 		objectKey := client.ObjectKey{
 			Name:      res.Name,
@@ -740,7 +760,7 @@ func (r *Reconciler) handleLabelsRemovalFromResources(ctx context.Context, manif
 		obj := &unstructured.Unstructured{}
 		obj.SetGroupVersionKind(gvk)
 		if err := skrClient.Get(ctx, objectKey, obj); err != nil {
-			return fmt.Errorf("failed to get resource")
+			return fmt.Errorf("failed to get resource, %w", err)
 		}
 
 		if needsUpdateAfterLabelRemoval(obj) {
@@ -750,16 +770,18 @@ func (r *Reconciler) handleLabelsRemovalFromResources(ctx context.Context, manif
 		}
 	}
 
-	defaultCR, err := fetchCR(ctx, skrClient, manifest)
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+
+	defaultCR, err := getCR(ctx, skrClient, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to fetch CR: %w", err)
 	}
 
-	if defaultCR != nil {
-		if needsUpdateAfterLabelRemoval(defaultCR) {
-			if err := skrClient.Update(ctx, defaultCR); err != nil {
-				return fmt.Errorf("failed to update object: %w", err)
-			}
+	if needsUpdateAfterLabelRemoval(defaultCR) {
+		if err := skrClient.Update(ctx, defaultCR); err != nil {
+			return fmt.Errorf("failed to update object: %w", err)
 		}
 	}
 

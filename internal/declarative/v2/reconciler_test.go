@@ -11,10 +11,10 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestPruneResource(t *testing.T) {
@@ -238,7 +238,7 @@ func Test_needsUpdateAfterLabelRemoval_WhenLabelsAreEmpty(t *testing.T) {
 	res.SetLabels(emptyLabels)
 	actual := needsUpdateAfterLabelRemoval(res)
 
-	require.Equal(t, false, actual)
+	require.False(t, actual)
 	require.Equal(t, emptyLabels, res.GetLabels())
 }
 
@@ -254,7 +254,7 @@ func Test_needsUpdateAfterLabelRemoval_WhenWatchedByLabel(t *testing.T) {
 	res.SetLabels(labels)
 	actual := needsUpdateAfterLabelRemoval(res)
 
-	require.Equal(t, true, actual)
+	require.True(t, actual)
 	require.Equal(t, expectedLabels, res.GetLabels())
 }
 
@@ -267,6 +267,6 @@ func Test_needsUpdateAfterLabelRemoval_WhenManagedByLabel(t *testing.T) {
 	res.SetLabels(labels)
 	actual := needsUpdateAfterLabelRemoval(res)
 
-	require.Equal(t, true, actual)
+	require.True(t, actual)
 	require.Equal(t, expectedLabels, res.GetLabels())
 }
