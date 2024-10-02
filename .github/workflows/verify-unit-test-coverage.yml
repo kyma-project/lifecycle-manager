@@ -29,7 +29,7 @@ jobs:
         with:
           path: codebase
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: ${{ github.workspace }}/codebase/go.mod
       - name: Run the quality gate verification
