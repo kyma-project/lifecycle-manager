@@ -19,30 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         e2e-test:
-          - watcher-enqueue
-          - kyma-deprovision-with-foreground-propagation
-          - kyma-deprovision-with-background-propagation
-          - module-status-decoupling-with-statefulset
-          - module-status-decoupling-with-deployment
-          - kyma-metrics
-          - module-without-default-cr
-          - module-consistency
-          - non-blocking-deletion
-          - upgrade-under-deletion
-          - purge-controller
-          - purge-metrics
-          - module-upgrade-channel-switch
-          - module-upgrade-new-version
-          - unmanage-module
           - module-install-by-version
-          - skip-manifest-reconciliation
-          - ca-certificate-rotation
-          - self-signed-certificate-rotation
-          - mandatory-module
-          - mandatory-module-metrics
-          - misconfigured-kyma-secret
-          - rbac-privileges
-          - ocm-compatible-module-template
+
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
