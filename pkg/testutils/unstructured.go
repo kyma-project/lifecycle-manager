@@ -10,8 +10,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"errors"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+)
+
+var (
+	ErrLabelNotFound        = errors.New("label is not found")
+	ErrLabelValueNotCorrect = errors.New("label value is not as expected")
 )
 
 func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
@@ -67,6 +73,28 @@ func IsResourceVersionSame(ctx context.Context, clnt client.Client,
 		return true, nil
 	}
 	return false, nil
+}
+
+func HasExpectedLabel(ctx context.Context, clnt client.Client,
+	objectKey client.ObjectKey,
+	gvk schema.GroupVersionKind, expectedLabelKey string, expectedLabelValue string,
+) error {
+	obj, err := GetCR(ctx, clnt, objectKey, gvk)
+	if err != nil {
+		return err
+	}
+
+	labels := obj.GetLabels()
+	value, exists := labels[expectedLabelKey]
+	if !exists {
+		return ErrLabelNotFound
+	}
+
+	if value != expectedLabelValue {
+		return ErrLabelValueNotCorrect
+	}
+
+	return nil
 }
 
 func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {

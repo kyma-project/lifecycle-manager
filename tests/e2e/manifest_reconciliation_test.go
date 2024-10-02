@@ -1,10 +1,9 @@
 package e2e_test
 
 import (
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -43,6 +42,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.ManagedBy,
 					shared.ManagedByLabelValue).
 				Should(Succeed())
+
 			By("And the KCP Kyma CR is in a \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).

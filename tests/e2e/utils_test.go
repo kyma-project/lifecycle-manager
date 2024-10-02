@@ -28,7 +28,7 @@ var (
 	errKymaNotInExpectedState   = errors.New("kyma CR not in expected state")
 	errModuleNotExisting        = errors.New("module does not exists in KymaCR")
 	errLabelNotExistOnNamespace = errors.New("label does not exist on namespace")
-	errLabelNotExistOnSampleCR  = errors.New("label does not exist on CustomResource")
+	ErrLabelNotExistOnCR        = errors.New("label does not exist on CustomResource")
 )
 
 const (
@@ -226,17 +226,18 @@ func CheckSampleCRHasExpectedLabel(ctx context.Context, name, namespace string, 
 	labelKey, labelValue string,
 ) error {
 	customResource, err := GetCR(ctx, clnt, client.ObjectKey{Name: name, Namespace: namespace}, schema.GroupVersionKind{
-		Group:   "operator.kyma-project.io",
-		Version: "v1alpha1",
+		Group:   templatev1alpha1.GroupVersion.Group,
+		Version: templatev1alpha1.GroupVersion.Version,
 		Kind:    string(templatev1alpha1.SampleKind),
 	})
+
 	if err != nil {
 		return err
 	}
 
 	labels := customResource.GetLabels()
 	if labels == nil || labels[labelKey] != labelValue {
-		return errLabelNotExistOnSampleCR
+		return ErrLabelNotExistOnCR
 	}
 
 	return nil
