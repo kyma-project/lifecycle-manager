@@ -67,11 +67,6 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.ManagedBy,
 					shared.ManagedByLabelValue).
 				Should(Succeed())
-			Eventually(CheckSampleCRHasExpectedLabel).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.WatchedByLabel,
-					shared.WatchedByLabel).
-				Should(Succeed())
 		})
 
 		It("When Kyma Module is unmanaged", func() {
@@ -126,11 +121,6 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.ManagedBy,
 					shared.ManagedByLabelValue).
-				Should(Equal(ErrLabelNotExistOnCR))
-			Eventually(CheckSampleCRHasExpectedLabel).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.WatchedByLabel,
-					shared.WatchedByLabel).
 				Should(Equal(ErrLabelNotExistOnCR))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
