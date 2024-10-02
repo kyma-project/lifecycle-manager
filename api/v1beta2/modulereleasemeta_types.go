@@ -4,7 +4,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ModuleReleaseMeta is the representation of the version-channel pairs for modules. Each item represents
+// ModuleReleaseMeta is the representation of the channel-version pairs for modules. Each item represents
 // a module version along with its assigned channel.
 //
 // +genclient
@@ -27,7 +27,7 @@ type ModuleReleaseMetaSpec struct {
 	// +kubebuilder:validation:MaxLength:=64
 	ModuleName string `json:"moduleName"`
 
-	// Channels is the list of module channels with their corresponding versions
+	// Channels is the list of module channels with their corresponding versions.
 	// +listType=map
 	// +listMapKey=channel
 	Channels []ChannelVersionAssignment `json:"channels"`

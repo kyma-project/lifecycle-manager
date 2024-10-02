@@ -47,7 +47,7 @@ spec:
             properties:
               channels:
                 description: Channels is the list of module channels with their corresponding
-                  versions
+                  versions.
                 items:
                   properties:
                     channel:

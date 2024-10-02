@@ -2,7 +2,7 @@
 
 The `modulereleasemetas.operator.kyma-project.io` Custom Resource Definition (CRD) defines the structure and format used to configure the ModuleReleaseMeta resource.
 
-The ModuleReleaseMeta custom resource (CR) describes the channel-version pairs for modules. Each entry represents a module channel along with its assigned version. Each module requires a separate dedicated ModuleReleaseMeta CR.
+The ModuleReleaseMeta custom resource (CR) describes the channel-version pairs for modules. Each ModuleReleaseMeta represents one module and defines the available channels for this module along with the version that is currently assigned to the channel.
 
 To get the latest CRD in the YAML format, run the following command:
 
@@ -14,11 +14,11 @@ kubectl get crd modulereleasemetas.operator.kyma-project.io -o yaml
 
 ### **.spec.moduleName**
 
-This parameter defines the name of the module for which the channel assignments are listed.
+The **moduleName** defines the name of the module for which the channel assignments are listed.
 
 ### **.spec.channels**
 
-This parameter defines each channel with its corresponding module version. Each channel can only have one version assigned.
+The **channels** define each module channel with its corresponding version. Each channel can only have one version assigned.
 See the following example:
 
 ```yaml
