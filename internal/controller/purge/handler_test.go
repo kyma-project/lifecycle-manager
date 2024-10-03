@@ -1,3 +1,4 @@
+//nolint:testpackage // This handler doesn't have exported methods, so I want to test the unexported ones
 package purge
 
 import (
@@ -6,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -24,7 +26,7 @@ func Test_reconcileHandler_getKyma_unknownError(t *testing.T) {
 	_, err := r.reconcile(context.Background(), ctrl.Request{})
 
 	// then
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, mockErr))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, mockErr)
 	assert.Contains(t, err.Error(), "failed getting Kyma")
 }
