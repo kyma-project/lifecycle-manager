@@ -10,9 +10,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestReconcileHandler_kyma_not_found(t *testing.T) {
+func Test_reconcileHandler_getKyma_unknownError(t *testing.T) {
 	// given
-	mockErr := errors.New("mocked-not-found")
+	mockErr := errors.New("unknown-error")
 	getFn := func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 		return mockErr
 	}
@@ -26,4 +26,5 @@ func TestReconcileHandler_kyma_not_found(t *testing.T) {
 	// then
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, mockErr))
+	assert.Contains(t, err.Error(), "failed getting Kyma")
 }

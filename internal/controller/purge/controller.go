@@ -59,6 +59,21 @@ type Reconciler struct {
 
 // TODO: Refactor into a separate component
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	rh := reconcileHandler{
+		handleKymaNotFoundError:        handleKymaNotFoundError,
+		handlePurgeNotDue:              handlePurgeNotDue,
+		Get:                            r.Get,
+		handleKymaNotMarkedForDeletion: r.handleKymaNotMarkedForDeletion,
+		handleSkrNotFoundError:         r.handleSkrNotFoundError,
+		handlePurge:                    r.handlePurge,
+		calculateRequeueAfterTime:      r.calculateRequeueAfterTime,
+		SkrContextFactory:              r.SkrContextFactory,
+	}
+
+	return rh.reconcile(ctx, req)
+}
+
+func (r *reconcileHandler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Purge reconciliation started")
 
