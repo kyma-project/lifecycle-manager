@@ -27,6 +27,6 @@ func Test_reconcileHandler_getKyma_unknownError(t *testing.T) {
 
 	// then
 	require.Error(t, err)
-	assert.ErrorIs(t, err, mockErr)
+	require.ErrorIs(t, err, mockErr)
 	assert.Contains(t, err.Error(), "failed getting Kyma")
 }

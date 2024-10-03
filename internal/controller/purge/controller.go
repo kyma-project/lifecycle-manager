@@ -57,8 +57,9 @@ type Reconciler struct {
 	Metrics               *metrics.PurgeMetrics
 }
 
-// TODO: Refactor into a separate component.
+//nolint:godox // For demo purposes.
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// TODO: Refactor into a separate component.
 	handler := reconcileHandler{
 		handleKymaNotFoundError:        handleKymaNotFoundError,
 		handlePurgeNotDue:              handlePurgeNotDue,
