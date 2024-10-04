@@ -126,6 +126,12 @@ type ModuleTemplateSpec struct {
 
 	// CustomStateCheck is deprecated.
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
+
+	// Resources is a list of additional resources of the module that can be fetched, e.g., the raw manifest.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	Resources []Resource `json:"resources,omitempty"`
 }
 
 type CustomStateCheck struct {
@@ -146,6 +152,14 @@ type ModuleTemplateList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []ModuleTemplate `json:"items"`
+}
+
+type Resource struct {
+	// Name is the name of the resource.
+	Name string `json:"name"`
+	// Link is the URL to the resource.
+	// +kubebuilder:validation:Format=uri
+	Link string `json:"link"`
 }
 
 //nolint:gochecknoinits // registers ModuleTemplate CRD on startup
