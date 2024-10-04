@@ -155,6 +155,27 @@ spec:
           spec:
             description: ModuleTemplateSpec defines the desired state of ModuleTemplate.
             properties:
+              associatedResources:
+                description: AssociatedResources is a list of module related resources
+                  that usually must be cleaned when uninstalling a module. Informational
+                  purpose only.
+                items:
+                  description: |-
+                    GroupVersionKind unambiguously identifies a kind.  It doesn't anonymously include GroupVersion
+                    to avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling
+                  properties:
+                    group:
+                      type: string
+                    kind:
+                      type: string
+                    version:
+                      type: string
+                  required:
+                  - group
+                  - kind
+                  - version
+                  type: object
+                type: array
               channel:
                 description: |-
                   Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
