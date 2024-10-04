@@ -262,6 +262,26 @@ spec:
                 maxLength: 64
                 pattern: ^([a-z]{3,}(-[a-z]{3,})*)?$
                 type: string
+              resources:
+                description: Resources is a list of additional resources of the module
+                  that can be fetched, e.g., the raw manifest.
+                items:
+                  properties:
+                    link:
+                      description: Link is the URL to the resource.
+                      format: uri
+                      type: string
+                    name:
+                      description: Name is the name of the resource.
+                      type: string
+                  required:
+                  - link
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               version:
                 description: Version identifies the version of the Module. Can be
                   empty, or a semantic version.
