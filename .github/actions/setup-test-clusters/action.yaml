@@ -16,7 +16,7 @@ runs:
     - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
       with:
         cluster_name: skr
-        k8s_version: ${{ inputs.k8s_version }}
+        k8s_version: '1.29.8'
         args: "-p 10080:80@loadbalancer;-p 10443:443@loadbalancer;--k3s-arg --tls-san=skr.cluster.local@server:*;${{ inputs.additional_skr_args }}"
     - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
       with:
