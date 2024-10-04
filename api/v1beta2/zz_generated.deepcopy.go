@@ -540,9 +540,7 @@ func (in *ModuleTemplateSpec) DeepCopyInto(out *ModuleTemplateSpec) {
 		*out = make([]Resource, len(*in))
 		copy(*out, *in)
 	}
-
 	in.Info.DeepCopyInto(&out.Info)
-
 	if in.AssociatedResources != nil {
 		in, out := &in.AssociatedResources, &out.AssociatedResources
 		*out = make([]v1.GroupVersionKind, len(*in))
