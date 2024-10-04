@@ -110,6 +110,11 @@ Mandatory modules do not appear in the Kyma CR `.status` and `.spec.modules`, fu
 
 The `resources` field is a list of additional resources of the module that can be fetched. As of now, the primary expected use case is for module teams to add a link to the raw manifest of the module.
 
+### **.spec.associatedResources**
+
+The `associatedResources` field is a list of module-related custom resource definitions (CRDs) that should be cleaned up during module deletion.
+The list is purely informational and does not introduce functional changes to the module.
+
 ## `operator.kyma-project.io` Labels
 
 These are the synchronization labels available on the ModuleTemplate CR:

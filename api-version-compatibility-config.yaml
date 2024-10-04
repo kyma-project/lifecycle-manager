@@ -25,3 +25,4 @@ operator.kyma-project.io_moduletemplates.yaml:
       - .spec.properties.moduleName
       - .spec.properties.customStateCheck.description
       - .spec.properties.resources
+      - .spec.properties.associatedResources

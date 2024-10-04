@@ -132,6 +132,10 @@ type ModuleTemplateSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	Resources []Resource `json:"resources,omitempty"`
+
+	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
+	// +optional
+	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
 }
 
 type CustomStateCheck struct {
