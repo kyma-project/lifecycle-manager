@@ -237,9 +237,6 @@ spec:
                         name:
                           description: Name is the name of the icon.
                           type: string
-                      required:
-                        - link
-                        - name
                       type: object
                     type: array
                     x-kubernetes-list-map-keys:
@@ -248,9 +245,6 @@ spec:
                   repository:
                     description: Repository is the link to the repository of the module.
                     type: string
-                required:
-                  - documentation
-                  - repository
                 type: object
               mandatory:
                 description: |-

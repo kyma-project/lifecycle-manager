@@ -134,10 +134,12 @@ type ModuleTemplateSpec struct {
 
 type ModuleInfo struct {
 	// Repository is the link to the repository of the module.
-	Repository string `json:"repository"`
+	// +optional
+	Repository string `json:"repository,omitempty"`
 
 	// Documentation is the link to the documentation of the module.
-	Documentation string `json:"documentation"`
+	// +optional
+	Documentation string `json:"documentation,omitempty"`
 
 	// Icons is a list of icons of the module.
 	// +optional
@@ -148,10 +150,12 @@ type ModuleInfo struct {
 
 type ModuleIcon struct {
 	// Name is the name of the icon.
-	Name string `json:"name"`
+	// +optional
+	Name string `json:"name,omitempty"`
 
 	// Link is the link to the icon.
-	Link string `json:"link"`
+	// +optional
+	Link string `json:"link,omitempty"`
 }
 
 type CustomStateCheck struct {
