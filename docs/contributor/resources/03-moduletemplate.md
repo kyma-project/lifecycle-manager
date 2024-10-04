@@ -106,6 +106,12 @@ By default, it will most likely be easiest to use [Kyma CLI](https://github.com/
 The `mandatory` field indicates whether the module is installed in all runtime clusters without any interaction from the user.
 Mandatory modules do not appear in the Kyma CR `.status` and `.spec.modules`, furthermore they have the same configuration across all runtime clusters.
 
+
+### **.spec.associatedResources**
+
+The `associatedResources` field is a list of module related resource definitions that usually should be cleaned up when uninstalling a module. 
+The purpose of listing GVKs here is purely informational and does not introduce functional changes to the module.
+
 ## `operator.kyma-project.io` Labels
 
 These are the synchronization labels available on the ModuleTemplate CR:

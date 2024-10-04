@@ -126,6 +126,10 @@ type ModuleTemplateSpec struct {
 
 	// CustomStateCheck is deprecated.
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
+
+	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
+	// +optional
+	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
 }
 
 type CustomStateCheck struct {
