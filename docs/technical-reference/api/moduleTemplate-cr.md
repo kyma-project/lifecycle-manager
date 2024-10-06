@@ -4,9 +4,11 @@ The core of our modular discovery is the [ModuleTemplate custom resource (CR)](.
 
 ## Configuration
 
-### **.spec.channel**
+### **.spec.channel** (Deprecated)
 
-The channel that a ModuleTemplate CR is registered in. It is used alongside the channel attributes of the Kyma CR to match up a module and a channel.
+The `channel` field previously indicated the channel in which a ModuleTemplate CR was registered. It was used alongside the channel attributes of the Kyma CR to match a module with a specific channel.
+
+**Note:** This field is now deprecated and will be removed in a future release. It has been decided that ModuleTemplates are now tied directly to versions, rather than being associated with channels.
 
 For the following ModuleTemplate CR:
 
@@ -19,7 +21,7 @@ spec:
   channel: regular
 ```
 
-the module will be referenced by any Kyma CR asking for it in the `regular` channel.
+the module was referenced by any Kyma CR asking for it in the `regular` channel.
 
 ### **.spec.data**
 
