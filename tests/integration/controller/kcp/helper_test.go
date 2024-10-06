@@ -56,7 +56,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(module.Name).
+			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(DeleteCR, Timeout, Interval).
@@ -68,7 +68,7 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
-			WithModuleName(module.Name).
+			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
@@ -95,7 +95,7 @@ func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma,
 	if err != nil {
 		return err
 	}
-	if remoteKyma.Labels[shared.WatchedByLabel] != shared.OperatorName {
+	if remoteKyma.Labels[shared.WatchedByLabel] != shared.WatchedByLabelValue {
 		return ErrWatcherLabelMissing
 	}
 	if remoteKyma.Annotations[shared.OwnedByAnnotation] != fmt.Sprintf(shared.OwnedByFormat,

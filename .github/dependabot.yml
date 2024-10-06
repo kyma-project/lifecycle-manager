@@ -2,6 +2,14 @@
 
 version: 2
 updates:
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+      - "/.github/actions"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(dependabot)"
   - package-ecosystem: "gomod"
     directory: "/"
     labels:

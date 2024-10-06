@@ -74,6 +74,14 @@ type Module struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel,omitempty"`
 
+	// Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
+	// ModuleTemplate based on this specific version.
+	// The Version and Channel are mutually exclusive options.
+	// The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	// json:"-" to disable installation of specific versions until decided to roll this out
+	// see https://github.com/kyma-project/lifecycle-manager/issues/1847
+	Version string `json:"-"`
+
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
 	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef,omitempty"`
@@ -210,14 +218,6 @@ type PartialMeta struct {
 }
 
 const DefaultChannel = "regular"
-
-func PartialMetaFromObject(object apimetav1.Object) PartialMeta {
-	return PartialMeta{
-		Name:       object.GetName(),
-		Namespace:  object.GetNamespace(),
-		Generation: object.GetGeneration(),
-	}
-}
 
 func (m PartialMeta) GetName() string {
 	return m.Name
@@ -387,36 +387,6 @@ func (kyma *Kyma) IsInternal() bool {
 func (kyma *Kyma) IsBeta() bool {
 	beta, found := kyma.Labels[shared.BetaLabel]
 	return found && shared.IsEnabled(beta)
-}
-
-type AvailableModule struct {
-	Module
-	Enabled   bool
-	Unmanaged bool
-}
-
-func (kyma *Kyma) GetAvailableModules() []AvailableModule {
-	moduleMap := make(map[string]bool)
-	modules := make([]AvailableModule, 0)
-	for _, module := range kyma.Spec.Modules {
-		moduleMap[module.Name] = true
-		modules = append(modules, AvailableModule{Module: module, Enabled: true, Unmanaged: !module.Managed})
-	}
-
-	for _, module := range kyma.Status.Modules {
-		_, exist := moduleMap[module.Name]
-		if exist {
-			continue
-		}
-		modules = append(modules, AvailableModule{
-			Module: Module{
-				Name:    module.Name,
-				Channel: module.Channel,
-			},
-			Enabled: false,
-		})
-	}
-	return modules
 }
 
 func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {

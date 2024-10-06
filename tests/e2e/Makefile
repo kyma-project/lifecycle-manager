@@ -84,6 +84,7 @@ test: kyma-deprovision-with-foreground-propagation \
 	   purge-metrics \
 	   module-upgrade-channel-switch \
 	   module-upgrade-new-version \
+	   module-install-by-version \
 	   ca-certificate-rotation \
 	   self-signed-certificate-rotation \
 	   misconfigured-kyma-secret
@@ -141,6 +142,9 @@ module-upgrade-channel-switch:
 
 module-upgrade-new-version:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By New Version"
+
+module-install-by-version:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Install By Version"
 
 ca-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"

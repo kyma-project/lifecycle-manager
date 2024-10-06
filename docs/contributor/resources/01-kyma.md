@@ -1,4 +1,12 @@
-# Kyma Custom Resource
+# Kyma
+
+The `kymas.operator.kyma-project.io` Custom Resource Definition (CRD) defines the structure and format used to manage a cluster and its desired state. It contains the list of added modules and their state.
+
+To get the latest CRD in the YAML format, run the following command:
+
+```bash
+kubectl get crd kymas.operator.kyma-project.io -o yaml
+```
 
 The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to declare the desired state of a cluster. **.spec.channel**, **.spec.modules[].channel**, and **.spec.modules** are the basic fields that are used together to define the cluster state.
 

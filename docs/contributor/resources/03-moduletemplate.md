@@ -1,6 +1,14 @@
-# ModuleTemplate Custom Resource
+# ModuleTemplate
 
-The core of our modular discovery is the [ModuleTemplate custom resource (CR)](../../../api/v1beta2/moduletemplate_types.go). It is used to initialize and resolve modules.
+The `moduletemplates.operator.kyma-project.io` Custom Resource Definition (CRD) defines the structure and format used to configure the ModuleTemplate resource.
+
+The ModuleTemplate custom resource (CR) defines a module, in a particular version, that can be added to or deleted from the module list in the Kyma CR. Each ModuleTemplate CR represents one module.
+
+To get the latest CRD in the YAML format, run the following command:
+
+```bash
+kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
+```
 
 ## Configuration
 
@@ -48,6 +56,24 @@ spec:
 ```
 
 If not specified, the **namespace** of the resource mentioned in **.spec.data** will be controlled by the `sync-namespace` flag; otherwise, it will be respected. All other attributes (including **.metadata.name**, **apiVersion**, and **kind**) are taken over as stated. Note that since it behaves similarly to a `template`, any subresources, such as **status**, are ignored, even if specified in the field.
+
+### **.spec.info**
+
+The **info** field contains module metadata, including the repository URL, documentation link, and icons. For example:
+
+```
+spec:
+  info:
+    repository: https://github.com/example/repo
+    documentation: https://docs.example.com
+    icons:
+    - name: example-icon
+      link: https://example.com/icon.png
+```
+
+- repository: The link to the repository of the module.
+- documentation: The link to the documentation of the module.
+- icons: A list of icons of the module, each with a name and link.
 
 ### **.spec.customStateCheck**
 
@@ -99,6 +125,15 @@ By default, it will most likely be easiest to use [Kyma CLI](https://github.com/
 
 The `mandatory` field indicates whether the module is installed in all runtime clusters without any interaction from the user.
 Mandatory modules do not appear in the Kyma CR `.status` and `.spec.modules`, furthermore they have the same configuration across all runtime clusters.
+
+### **.spec.resources**
+
+The `resources` field is a list of additional resources of the module that can be fetched. As of now, the primary expected use case is for module teams to add a link to the raw manifest of the module.
+
+### **.spec.associatedResources**
+
+The `associatedResources` field is a list of module-related custom resource definitions (CRDs) that should be cleaned up during module deletion.
+The list is purely informational and does not introduce functional changes to the module.
 
 ## `operator.kyma-project.io` Labels
 

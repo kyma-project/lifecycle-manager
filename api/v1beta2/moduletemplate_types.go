@@ -17,8 +17,11 @@ limitations under the License.
 package v1beta2
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -81,6 +84,18 @@ type ModuleTemplateSpec struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
+	// Version identifies the version of the Module. Can be empty, or a semantic version.
+	// +optional
+	// +kubebuilder:validation:Pattern:=`^((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[a-zA-Z-][0-9a-zA-Z-]*)?)?$`
+	// +kubebuilder:validation:MaxLength:=32
+	Version string `json:"version"`
+
+	// ModuleName is the name of the Module. Can be empty.
+	// +optional
+	// +kubebuilder:validation:Pattern:=`^([a-z]{3,}(-[a-z]{3,})*)?$`
+	// +kubebuilder:validation:MaxLength:=64
+	ModuleName string `json:"moduleName"`
+
 	// Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
 	// its configuration in all runtime clusters.
 	// +optional
@@ -114,6 +129,42 @@ type ModuleTemplateSpec struct {
 
 	// CustomStateCheck is deprecated.
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
+
+	// Resources is a list of additional resources of the module that can be fetched, e.g., the raw manifest.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	Resources []Resource `json:"resources,omitempty"`
+
+	// Info contains metadata about the module.
+	// +optional
+	Info ModuleInfo `json:"info,omitempty"`
+  
+	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
+	// +optional
+	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
+}
+
+type ModuleInfo struct {
+	// Repository is the link to the repository of the module.
+	Repository string `json:"repository"`
+
+	// Documentation is the link to the documentation of the module.
+	Documentation string `json:"documentation"`
+
+	// Icons is a list of icons of the module.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	Icons []ModuleIcon `json:"icons,omitempty"`
+}
+
+type ModuleIcon struct {
+	// Name is the name of the icon.
+	Name string `json:"name"`
+
+	// Link is the link to the icon.
+	Link string `json:"link"`
 }
 
 type CustomStateCheck struct {
@@ -134,6 +185,14 @@ type ModuleTemplateList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []ModuleTemplate `json:"items"`
+}
+
+type Resource struct {
+	// Name is the name of the resource.
+	Name string `json:"name"`
+	// Link is the URL to the resource.
+	// +kubebuilder:validation:Format=uri
+	Link string `json:"link"`
 }
 
 //nolint:gochecknoinits // registers ModuleTemplate CRD on startup
@@ -173,6 +232,41 @@ func (m *ModuleTemplate) IsInternal() bool {
 		return strings.ToLower(isInternal) == shared.EnableLabelValue
 	}
 	return false
+}
+
+var ErrInvalidVersion = errors.New("can't find valid semantic version")
+
+// getVersionLegacy() returns the version of the ModuleTemplate from the annotation on the object.
+// Remove once shared.ModuleVersionAnnotation is removed
+func (m *ModuleTemplate) getVersionLegacy() (string, error) {
+	if m.Annotations != nil {
+		moduleVersion, found := m.Annotations[shared.ModuleVersionAnnotation]
+		if found {
+			return moduleVersion, nil
+		}
+	}
+	return "", ErrInvalidVersion
+}
+
+// GetVersion returns the declared version of the ModuleTemplate from it's Spec.
+func (m *ModuleTemplate) GetVersion() (*semver.Version, error) {
+	var versionValue string
+	var err error
+
+	if m.Spec.Version == "" {
+		versionValue, err = m.getVersionLegacy()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		versionValue = m.Spec.Version
+	}
+
+	version, err := semver.NewVersion(versionValue)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrInvalidVersion, err.Error())
+	}
+	return version, nil
 }
 
 func (m *ModuleTemplate) IsBeta() bool {

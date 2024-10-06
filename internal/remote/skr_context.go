@@ -76,7 +76,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: shared.DefaultRemoteNamespace,
 			Labels: map[string]string{
-				shared.ManagedBy:           shared.OperatorName,
+				shared.ManagedBy:           shared.ManagedByLabelValue,
 				shared.IstioInjectionLabel: shared.EnabledValue,
 				shared.WardenLabel:         shared.EnabledValue,
 			},
@@ -180,8 +180,8 @@ func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, remoteKyma *v
 	return nil
 }
 
-// ReplaceModules replaces modules specification from control plane Kyma with Remote Kyma specifications.
-func ReplaceModules(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
+// ReplaceSpec replaces 'spec' attributes in control plane Kyma with values from Remote Kyma.
+func ReplaceSpec(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
 	controlPlaneKyma.Spec.Modules = []v1beta2.Module{}
 	controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, remoteKyma.Spec.Modules...)
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
@@ -209,7 +209,8 @@ func (s *SkrContext) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels[shared.WatchedByLabel] = shared.OperatorName
+	remoteKyma.Labels[shared.WatchedByLabel] = shared.WatchedByLabelValue
+	remoteKyma.Labels[shared.ManagedBy] = shared.ManagedByLabelValue
 
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)

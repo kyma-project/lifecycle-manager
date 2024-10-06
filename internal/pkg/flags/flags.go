@@ -54,6 +54,9 @@ const (
 	DefaultKymaListenerAddress                                          = ":8082"
 	DefaultManifestListenerAddress                                      = ":8083"
 	DefaultPprofAddress                                                 = ":8084"
+	DefaultWatcherImageTag                                              = "1.1.4"
+	DefaultWatcherImageName                                             = "runtime-watcher"
+	DefaultWatcherImageRegistry                                         = "europe-docker.pkg.dev/kyma-project/prod"
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
@@ -64,12 +67,13 @@ const (
 )
 
 var (
-	errMissingWatcherImageTag                  = errors.New("runtime watcher image tag is not provided")
-	errWatcherDirNotExist                      = errors.New("failed to locate watcher resource manifest folder")
-	errLeaderElectionTimeoutConfig             = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
-	errInvalidSelfSignedCertKeyLength          = errors.New("invalid self-signed-cert-key-size: must be 4096")
-	errInvalidManifestRequeueJitterPercentage  = errors.New("invalid manifest requeue jitter percentage: must be between 0 and 0.05")
-	errInvalidManifestRequeueJitterProbability = errors.New("invalid manifest requeue jitter probability: must be between 0 and 1")
+	ErrMissingWatcherImageTag                  = errors.New("runtime watcher image tag is not provided")
+	ErrMissingWatcherImageRegistry             = errors.New("runtime watcher image registry is not provided")
+	ErrWatcherDirNotExist                      = errors.New("failed to locate watcher resource manifest folder")
+	ErrLeaderElectionTimeoutConfig             = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
+	ErrInvalidSelfSignedCertKeyLength          = errors.New("invalid self-signed-cert-key-size: must be 4096")
+	ErrInvalidManifestRequeueJitterPercentage  = errors.New("invalid manifest requeue jitter percentage: must be between 0 and 0.05")
+	ErrInvalidManifestRequeueJitterProbability = errors.New("invalid manifest requeue jitter probability: must be between 0 and 1")
 )
 
 //nolint:funlen // defines all program flags
@@ -216,10 +220,12 @@ func DefineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"Specify the API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
-	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
+	flag.StringVar(&flagVar.WatcherImageName, "skr-watcher-image-name", DefaultWatcherImageName,
+		`Image name to be used for the SKR watcher image.`)
+	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", DefaultWatcherImageTag,
 		`Image tag to be used for the SKR watcher image.`)
-	flag.BoolVar(&flagVar.UseWatcherDevRegistry, "watcher-dev-registry", false,
-		`Enable to use the dev registry for fetching the watcher image.`)
+	flag.StringVar(&flagVar.WatcherImageRegistry, "skr-watcher-image-registry", DefaultWatcherImageRegistry,
+		`Image registry to be used for the SKR watcher image.`)
 	flag.StringVar(&flagVar.WatcherResourceLimitsMemory, "skr-webhook-memory-limits",
 		DefaultWatcherResourceLimitsMemory,
 		"The resources.limits.memory for skr webhook.")
@@ -289,8 +295,9 @@ type FlagVar struct {
 	SelfSignedCertRenewBuffer              time.Duration
 	SelfSignedCertKeySize                  int
 	DropCrdStoredVersionMap                string
-	UseWatcherDevRegistry                  bool
 	WatcherImageTag                        string
+	WatcherImageName                       string
+	WatcherImageRegistry                   string
 	WatcherResourceLimitsMemory            string
 	WatcherResourceLimitsCPU               string
 	WatcherResourcesPath                   string
@@ -302,16 +309,19 @@ type FlagVar struct {
 func (f FlagVar) Validate() error {
 	if f.EnableKcpWatcher {
 		if f.WatcherImageTag == "" {
-			return errMissingWatcherImageTag
+			return ErrMissingWatcherImageTag
+		}
+		if f.WatcherImageRegistry == "" {
+			return ErrMissingWatcherImageRegistry
 		}
 		dirInfo, err := os.Stat(f.WatcherResourcesPath)
 		if err != nil || !dirInfo.IsDir() {
-			return errWatcherDirNotExist
+			return ErrWatcherDirNotExist
 		}
 	}
 
 	if f.LeaderElectionRenewDeadline >= f.LeaderElectionLeaseDuration {
-		return fmt.Errorf("%w (%.1f[s])", errLeaderElectionTimeoutConfig, f.LeaderElectionLeaseDuration.Seconds())
+		return fmt.Errorf("%w (%.1f[s])", ErrLeaderElectionTimeoutConfig, f.LeaderElectionLeaseDuration.Seconds())
 	}
 
 	if !map[int]bool{
@@ -319,15 +329,19 @@ func (f FlagVar) Validate() error {
 		4096: true,
 		8192: false, // see https://github.com/kyma-project/lifecycle-manager/issues/1793
 	}[f.SelfSignedCertKeySize] {
-		return errInvalidSelfSignedCertKeyLength
+		return ErrInvalidSelfSignedCertKeyLength
 	}
 
 	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 0.05 {
-		return errInvalidManifestRequeueJitterPercentage
+		return ErrInvalidManifestRequeueJitterPercentage
 	}
-	if f.ManifestRequeueJitterProbability < 0 || f.ManifestRequeueJitterProbability > 1 {
-		return errInvalidManifestRequeueJitterProbability
+	if f.ManifestRequeueJitterPercentage < 0 || f.ManifestRequeueJitterPercentage > 1 {
+		return ErrInvalidManifestRequeueJitterProbability
 	}
 
 	return nil
+}
+
+func (f FlagVar) GetWatcherImage() string {
+	return fmt.Sprintf("%s/%s:%s", f.WatcherImageRegistry, f.WatcherImageName, f.WatcherImageTag)
 }
