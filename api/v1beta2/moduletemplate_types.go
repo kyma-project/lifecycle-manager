@@ -133,9 +133,35 @@ type ModuleTemplateSpec struct {
 	// +listMapKey=name
 	Resources []Resource `json:"resources,omitempty"`
 
+	// Info contains metadata about the module.
+	// +optional
+	Info ModuleInfo `json:"info,omitempty"`
+  
 	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
 	// +optional
 	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
+}
+
+type ModuleInfo struct {
+	// Repository is the link to the repository of the module.
+	Repository string `json:"repository"`
+
+	// Documentation is the link to the documentation of the module.
+	Documentation string `json:"documentation"`
+
+	// Icons is a list of icons of the module.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	Icons []ModuleIcon `json:"icons,omitempty"`
+}
+
+type ModuleIcon struct {
+	// Name is the name of the icon.
+	Name string `json:"name"`
+
+	// Link is the link to the icon.
+	Link string `json:"link"`
 }
 
 type CustomStateCheck struct {
