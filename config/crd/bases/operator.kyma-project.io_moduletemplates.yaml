@@ -49,6 +49,7 @@ spec:
                 description: |-
                   Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
                   to a target channel. It has to be provided at any given time.
+                  Deprecated: This field is deprecated and will be removed in a future release.
                 maxLength: 32
                 minLength: 3
                 pattern: ^[a-z]+$
@@ -119,7 +120,6 @@ spec:
                 - remote
                 type: string
             required:
-            - channel
             - descriptor
             - target
             type: object
@@ -260,19 +260,19 @@ spec:
                           description: Name is the name of the icon.
                           type: string
                       required:
-                        - link
-                        - name
+                      - link
+                      - name
                       type: object
                     type: array
                     x-kubernetes-list-map-keys:
-                      - name
+                    - name
                     x-kubernetes-list-type: map
                   repository:
                     description: Repository is the link to the repository of the module.
                     type: string
                 required:
-                  - documentation
-                  - repository
+                - documentation
+                - repository
                 type: object
               mandatory:
                 description: |-
