@@ -159,6 +159,7 @@ spec:
                 description: |-
                   Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
                   to a target channel. It has to be provided at any given time.
+                  Deprecated: This field is deprecated and will be removed in a future release.
                 maxLength: 32
                 minLength: 3
                 pattern: ^[a-z]+$
@@ -226,7 +227,6 @@ spec:
                   its configuration in all runtime clusters.
                 type: boolean
             required:
-            - channel
             - descriptor
             type: object
         type: object
