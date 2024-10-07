@@ -76,7 +76,7 @@ spec:
 
 ### **.spec.install**
 
-The installation layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../../../internal/declarative/README.md#resource-rendering).
+The installation layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../../../internal/declarative/).
 
 It is mapped from an access type layer in the descriptor:
 
