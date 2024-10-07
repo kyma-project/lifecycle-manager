@@ -1,6 +1,6 @@
 # Internal Manifest Library
 
-This package contains internal reference coding that is used for translating and implementing the Manifest Reconciler parts that are not generically solved by the [declarative library](../declarative/README.md).
+This package contains internal reference coding that is used for translating and implementing the Manifest Reconciler parts that are not generically solved by the [declarative library](../declarative/).
 
 It contains various aspects to:
 
