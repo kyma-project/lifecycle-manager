@@ -85,7 +85,7 @@ spec:
 
 The **managed** field determines whether or not the Lifecycle Manager manages the module. By default, it is set to `true`. By setting it to `false`, the module is opted out of management by Lifecycle Manager. This means that the module and all its related resources remain in the remote cluster in the same state they were in when the module became unmanaged. From this time on, Lifecycle Manager does NOT reconcile the module and its resources.
 
-Once a module was successfully unmanaged, the module's status in **.status.modules[].state** shows `Unmanaged`. Once the `Unmanaged` state shows, the module's entry can also be deleted entirely from **.spec.modules[]**.
+Once a module was successfully unmanaged, the module's status in **.status.modules[].state** shows `Unmanaged`. Once the `Unmanaged` state shows, the module's entry can also be deleted entirely from **.spec.modules[]**. As the module is already unmanaged, this still leaves the module and its related resources in the remote cluster.
 
 If the **.spec.modules[].managed** field is set back to `true`, Lifecycle Manager starts the module management again. The existing module resources in the remote cluster are left intact but may be overwritten if the desired state has changed in the meantime, for example, if the module's version within the used channel was updated.
 
