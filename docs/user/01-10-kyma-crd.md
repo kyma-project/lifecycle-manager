@@ -10,4 +10,4 @@ To get the latest CRD in the YAML format, run the following command:
 kubectl get crd kymas.operator.kyma-project.io -o yaml
 ```
 
-For detailed explanations on the fields and how to use them, refer to [Kyma](../contributor/resources/01-kyma.md).
+For more information on the fields and how to use them, see [Kyma](../contributor/resources/01-kyma.md).
