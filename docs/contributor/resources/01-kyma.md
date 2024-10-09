@@ -83,15 +83,18 @@ spec:
 
 ### **.spec.modules[].managed**
 
-The **managed** field determines whether or not the Lifecycle Manager manages the module. By default, it is set to `true`. By setting it to `false`, the module is opted out of management by Lifecycle Manager. This means that the module and all its related resources remain in the remote cluster in the same state they were in when the module became unmanaged. From this time on, Lifecycle Manager does NOT reconcile the module and its resources. In addition, the labels `operator.kyma-project.io/managed-by=kyma` and `operator.kyma-project.io/watched-by=kyma` are removed from the module's resources. This may be relevant if you for instance use those labels as exclusion filters for a custom monitoring, for example using the Kyma Telemetry module.
+The **managed** field determines whether or not the Lifecycle Manager manages the module. By default, it is set to `true`. If you set it to `false`, you exclude a module from management by Lifecycle Manager and trigger the following changes:
+* The module and all its related resources remain in the remote cluster in the same state they were in when the module became unmanaged. 
+* Lifecycle Manager stops reconciling the module and its resources. 
+* The `operator.kyma-project.io/managed-by=kyma` and `operator.kyma-project.io/watched-by=kyma` labels are removed from the module's resources. For example, this may be relevant if you use those labels as exclusion filters for custom monitoring using the Kyma Telemetry module.
 
 Once a module was successfully unmanaged, the module's status in **.status.modules[].state** shows `Unmanaged`. Once the `Unmanaged` state shows, the module's entry can also be deleted entirely from **.spec.modules[]**. As the module is already unmanaged, this still leaves the module and its related resources in the remote cluster.
 
-If the **.spec.modules[].managed** field is set back to `true`, Lifecycle Manager starts the module management again. The existing module resources in the remote cluster are left intact but may be overwritten if the desired state has changed in the meantime, for example, if the module's version within the used channel was updated.
+When the **.spec.modules[].managed** field is set back to `true`, Lifecycle Manager starts the module management again. The existing module resources in the remote cluster may be overwritten if the desired state has changed in the meantime, for example, if the module's version within the used channel was updated.
 
 
 > **CAUTION:**
-> When you switch values of **.spec.modules[].managed**, you MUST wait for the new state to be reflected in **.status.modules[].state** before you remove the module's entry from **.status.modules[]**. If the entry is removed before the current state is reflected properly in **.status.modules[].state**, it may lead to unpredictable behavior that is hard to recover from.
+> When you switch values of **.spec.modules[].managed**, you MUST wait for the new state to be reflected in **.status.modules[].state** before you remove the module's entry from **.spec.modules[]**. If the entry is removed before the current state is reflected properly in **.status.modules[].state**, it may lead to unpredictable behavior that is hard to recover from.
 
 ### **.spec.modules[].customResourcePolicy**
 
