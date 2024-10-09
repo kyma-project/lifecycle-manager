@@ -88,7 +88,7 @@ The **managed** field determines whether or not the Lifecycle Manager manages th
 * Lifecycle Manager stops reconciling the module and its resources. 
 * The `operator.kyma-project.io/managed-by=kyma` and `operator.kyma-project.io/watched-by=kyma` labels are removed from the module's resources. For example, this may be relevant if you use those labels as exclusion filters for custom monitoring using the Kyma Telemetry module.
 
-Once a module was successfully unmanaged, the module's status in **.status.modules[].state** shows `Unmanaged`. Once the `Unmanaged` state shows, the module's entry can also be deleted entirely from **.spec.modules[]**. As the module is already unmanaged, this still leaves the module and its related resources in the remote cluster.
+To verify that a module was successfully unmanaged, check that the field **.status.modules[].state** has the status `Unmanaged`. Once the state is `Unmanaged`, you can delete the module's entry from **.spec.modules[]** in the Kyma CR.  Nevertheless, the module and its related resources remain in the remote cluster.
 
 > **CAUTION:**
 > When you switch values of **.spec.modules[].managed**, you MUST wait for the new state to be reflected in **.status.modules[].state** before you remove the module's entry from **.spec.modules[]**. If the entry is removed before the current state is reflected properly in **.status.modules[].state**, it may lead to unpredictable behavior that is hard to recover from.
