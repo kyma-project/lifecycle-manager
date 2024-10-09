@@ -21,11 +21,11 @@ The v1beta2 API introduces three groups of modules:
 
 By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with remote clusters.
 
-**NOTE:** The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the [control-plane mode](../running-modes.md). Lifecycle Manager running in the single-cluster mode, doesn't require any CR synchronization.
+**NOTE:** The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the control-plane mode. Lifecycle Manager running in the single-cluster mode, doesn't require any CR synchronization.
 
 **NOTE:** Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from remote clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Control Plane are not synchronized.
 
-For more information, see [the Kyma CR synchronization labels](kyma-cr.md#operatorkyma-projectio-labels) and [the ModuleTemplate CR synchronization labels](moduleTemplate-cr.md#operatorkyma-projectio-labels).
+For more information, see [the Kyma CR synchronization labels](./01-kyma.md#operatorkyma-projectio-labels) and [the ModuleTemplate CR synchronization labels](./03-moduletemplate.md#operatorkyma-projectio-labels).
 
 ## Stability
 
@@ -38,4 +38,4 @@ See the list of CRs involved in Lifecycle Manager's workflow and their stability
 | v1beta2 | [Manifest](/api/v1beta2/manifest_types.go)                 | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
 | v1beta2 | [Watcher](/api/v1beta2/watcher_types.go)                   | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
 
-For more information on changes introduced by an API version, see [API Changelog](../api-changelog.md).
+For more information on changes introduced by an API version, see [API Changelog](../05-api-changelog.md).
