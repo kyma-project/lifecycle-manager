@@ -29,10 +29,10 @@ jobs:
         id: get_tag
         run: |
           if [[ "${{ inputs.tag }}" != "" ]]; then
-            echo "tags=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
           else
             {
-              echo 'tags<<TAGS'
+              echo 'tag<<TAGS'
               echo 'PR-${{ github.event.pull_request.number }}'
               echo '${{ github.event.pull_request.head.sha }}'
               echo 'TAGS'
