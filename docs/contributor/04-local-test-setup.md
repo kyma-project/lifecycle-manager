@@ -25,11 +25,6 @@ This setup is deployed with the following security features enabled:
 * Strict mTLS connection between Kyma Control Plane (KCP) and SKR clusters
 * SAN Pinning (SAN of client TLS certificate needs to match the DNS annotation of a corresponding Kyma CR)
 
-> **NOTE:** If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
->
-> * [Provision cluster and OCI registry](provision-cluster-and-registry.md)
-> * [Create a test environment on Google Container Registry (GCR)](prepare-gcr-registry.md)
-
 ## Procedure
 
 ### KCP Cluster Setup
