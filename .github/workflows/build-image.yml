@@ -11,7 +11,8 @@ on:
         required: false
         type: string
         default: ""
-
+  pull_request_target:
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
 permissions:
   id-token: write # This is required for requesting the JWT token
   contents: read # This is required for actions/checkout
@@ -28,9 +29,14 @@ jobs:
         id: get_tag
         run: |
           if [[ "${{ inputs.tag }}" != "" ]]; then
-            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "tags=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            {
+              echo 'tags<<TAGS'
+              echo 'PR-${{ github.event.pull_request.number }}'
+              echo '${{ github.event.pull_request.head.sha }}'
+              echo 'TAGS'
+            } >> "$GITHUB_OUTPUT"
           fi
       - name: Echo the tag
         run: echo ${{ steps.get_tag.outputs.tag }}
