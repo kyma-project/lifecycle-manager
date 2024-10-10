@@ -64,6 +64,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -180,6 +181,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
+	zerodw.SetupGatewaySecretHandler(mgr.GetClient(), setupLog, flags.DefaultIstioGatewaySecretRefreshInterval)
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics,
 		setupLog)
