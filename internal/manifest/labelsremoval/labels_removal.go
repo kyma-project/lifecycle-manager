@@ -74,12 +74,8 @@ func NeedsUpdateAfterLabelRemoval(resource *unstructured.Unstructured) bool {
 	if managedByLabelExists {
 		delete(labels, shared.ManagedBy)
 	}
-	_, watchedByLabelExists := labels[shared.WatchedByLabel]
-	if watchedByLabelExists {
-		delete(labels, shared.WatchedByLabel)
-	}
 
 	resource.SetLabels(labels)
 
-	return watchedByLabelExists || managedByLabelExists
+	return managedByLabelExists
 }

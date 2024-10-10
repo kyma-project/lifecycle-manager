@@ -56,10 +56,6 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 					WithContext(ctx).
 					WithArguments(skrClient, objectKey, gvk,
 						shared.ManagedBy, shared.ManagedByLabelValue).Should(Succeed())
-				Eventually(HasExpectedLabel).
-					WithContext(ctx).
-					WithArguments(skrClient, objectKey, gvk,
-						shared.WatchedByLabel, shared.WatchedByLabelValue).Should(Succeed())
 
 			}
 			Eventually(CheckSampleCRHasExpectedLabel).
@@ -107,10 +103,6 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 					WithContext(ctx).
 					WithArguments(skrClient, objectKey, gvk,
 						shared.ManagedBy, shared.ManagedByLabelValue).Should(Equal(ErrLabelNotFound))
-				Eventually(HasExpectedLabel).
-					WithContext(ctx).
-					WithArguments(skrClient, objectKey, gvk,
-						shared.WatchedByLabel, shared.WatchedByLabelValue).Should(Equal(ErrLabelNotFound))
 			}
 
 			Eventually(CheckSampleCRHasExpectedLabel).
