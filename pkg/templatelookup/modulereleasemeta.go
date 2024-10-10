@@ -31,7 +31,7 @@ func GetModuleReleaseMeta(ctx context.Context, clnt client.Reader, moduleName st
 
 func GetChannelVersionForModule(moduleReleaseMeta *v1beta2.ModuleReleaseMeta, desiredChannel string) (string, error) {
 	channelAssignments := moduleReleaseMeta.Spec.Channels
-	if channelAssignments == nil || len(channelAssignments) == 0 {
+	if len(channelAssignments) == 0 {
 		return "", fmt.Errorf("%w: %s", errNoChannelsFound, moduleReleaseMeta.Name)
 	}
 
