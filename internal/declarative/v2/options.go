@@ -23,7 +23,7 @@ const (
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
 		WithPostRenderTransform(
-			WatchedByManagedByOwnedBy,
+			ManagedByOwnedBy,
 			KymaComponentTransform,
 			DisclaimerTransform,
 		),
