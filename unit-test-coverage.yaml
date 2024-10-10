@@ -6,6 +6,7 @@ packages:
   internal/manifest/statecheck: 71
   internal/manifest/filemutex: 100
   internal/manifest: 10
+  internal/manifest/labelsremoval: 93
   internal/istio: 63.3
   internal/pkg/resources: 91.7
   internal/remote: 6.4
