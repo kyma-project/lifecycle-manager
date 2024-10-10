@@ -20,6 +20,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
@@ -42,7 +44,6 @@ const (
 	CustomResourceManagerFinalizer                   = "resource.kyma-project.io/finalizer"
 	SyncedOCIRefAnnotation                           = "sync-oci-ref"
 	defaultFinalizer                                 = "declarative.kyma-project.io/finalizer"
-	labelRemovalFinalizer                            = "label-removal-finalizer"
 	defaultFieldOwner              client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
@@ -50,6 +51,7 @@ func NewFromManager(mgr manager.Manager,
 	requeueIntervals queue.RequeueIntervals,
 	metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	manifestClient manifestclient.ManifestClient,
 	specResolver SpecResolver,
 	options ...Option,
 ) *Reconciler {
@@ -58,6 +60,7 @@ func NewFromManager(mgr manager.Manager,
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
+	reconciler.manifestClient = manifestClient
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -68,6 +71,7 @@ type Reconciler struct {
 	ManifestMetrics        *metrics.ManifestMetrics
 	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
 	specResolver           SpecResolver
+	manifestClient         manifestclient.ManifestClient
 }
 
 const waitingForResourcesMsg = "waiting for resources to become ready"
@@ -155,8 +159,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
 		}
 
-		if controllerutil.ContainsFinalizer(manifest, labelRemovalFinalizer) {
-			return r.handleLabelsRemovalFinalizerForUnmanagedModule(ctx, manifest, skrClient)
+		if controllerutil.ContainsFinalizer(manifest, labelsremoval.LabelRemovalFinalizer) {
+			return r.handleLabelsRemovalFinalizer(ctx, skrClient, manifest)
 		}
 
 		if err := r.Delete(ctx, manifest); err != nil {
@@ -168,7 +172,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if manifest.GetDeletionTimestamp().IsZero() {
 		partialMeta := r.partialObjectMetadata(manifest)
 		defaultFinalizerAdded := controllerutil.AddFinalizer(partialMeta, defaultFinalizer)
-		labelRemovalFinalizerAdded := controllerutil.AddFinalizer(partialMeta, labelRemovalFinalizer)
+		labelRemovalFinalizerAdded := controllerutil.AddFinalizer(partialMeta, labelsremoval.LabelRemovalFinalizer)
 		if defaultFinalizerAdded || labelRemovalFinalizerAdded {
 			return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
 		}
@@ -239,16 +243,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
 }
 
-func (r *Reconciler) handleLabelsRemovalFinalizerForUnmanagedModule(ctx context.Context,
-	manifest *v1beta2.Manifest, skrClient Client) (ctrl.Result,
-	error,
-) {
-	if err := r.handleLabelsRemovalFromResources(ctx, manifest, skrClient); err != nil {
+func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient client.Client,
+	manifest *v1beta2.Manifest,
+) (ctrl.Result, error) {
+	defaultCR, err := getCR(ctx, skrClient, manifest)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := labelsremoval.HandleLabelsRemovalFinalizerForUnmanagedModule(ctx, manifest, skrClient,
+		r.manifestClient, defaultCR); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	controllerutil.RemoveFinalizer(manifest, labelRemovalFinalizer)
-	return r.updateManifest(ctx, manifest, metrics.ManifestResourcesLabelRemoval)
+	r.ManifestMetrics.RecordRequeueReason(metrics.ManifestResourcesLabelRemoval, queue.IntendedRequeue)
+	return ctrl.Result{Requeue: true}, nil
 }
 
 func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, manifest *v1beta2.Manifest,
@@ -256,7 +264,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
 	r.cleanUpMandatoryModuleMetrics(manifest)
-	finalizersToRemove := []string{defaultFinalizer, labelRemovalFinalizer}
+	finalizersToRemove := []string{defaultFinalizer, labelsremoval.LabelRemovalFinalizer}
 	if errors.Is(originalErr, ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
 		finalizersToRemove = manifest.GetFinalizers()
 	}
@@ -503,14 +511,14 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	return target, nil
 }
 
-func checkCRDeletion(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (bool,
+func checkCRDeletion(ctx context.Context, skrClient client.Client, manifestCR *v1beta2.Manifest) (bool,
 	error,
 ) {
-	if manifest.Spec.Resource == nil {
+	if manifestCR.Spec.Resource == nil {
 		return true, nil
 	}
 
-	resourceCR, err := getCR(ctx, skrClient, manifest)
+	resourceCR, err := getCR(ctx, skrClient, manifestCR)
 	if err != nil {
 		if util.IsNotFound(err) {
 			return true, nil
@@ -519,28 +527,6 @@ func checkCRDeletion(ctx context.Context, skrClient client.Client, manifest *v1b
 	}
 
 	return resourceCR == nil, nil
-}
-
-func getCR(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
-	error,
-) {
-	resourceCR := &unstructured.Unstructured{}
-	name := manifest.Spec.Resource.GetName()
-	namespace := manifest.Spec.Resource.GetNamespace()
-	gvk := manifest.Spec.Resource.GroupVersionKind()
-
-	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   gvk.Group,
-		Version: gvk.Version,
-		Kind:    gvk.Kind,
-	})
-
-	if err := skrClient.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
-		return nil, fmt.Errorf("%w: failed to fetch default resource CR", err)
-	}
-
-	return resourceCR, nil
 }
 
 func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
@@ -667,9 +653,8 @@ func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifes
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
-	if err := r.patchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
-		r.Event(manifest, "Warning", "PatchStatus", err.Error())
-		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
+	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
+		return ctrl.Result{}, err
 	}
 	if originalErr != nil {
 		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
@@ -680,49 +665,25 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
-func (r *Reconciler) patchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest,
-	previousStatus shared.Status,
-) error {
-	if hasStatusDiff(manifest.GetStatus(), previousStatus) {
-		resetNonPatchableField(manifest)
-		if err := r.Status().Patch(ctx, manifest, client.Apply, client.ForceOwnership, defaultFieldOwner); err != nil {
-			return fmt.Errorf("failed to patch status: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func hasStatusDiff(first, second shared.Status) bool {
-	return first.State != second.State || first.LastOperation.Operation != second.LastOperation.Operation
-}
-
 func (r *Reconciler) ssaSpec(ctx context.Context, obj client.Object,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
-	resetNonPatchableField(obj)
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	if err := r.Patch(ctx, obj, client.Apply, client.ForceOwnership, defaultFieldOwner); err != nil {
-		r.Event(obj, "Warning", "PatchObject", err.Error())
-		return ctrl.Result{}, fmt.Errorf("failed to patch object: %w", err)
+	if err := r.manifestClient.SsaSpec(ctx, obj); err != nil {
+		return ctrl.Result{}, err
 	}
 	return ctrl.Result{Requeue: true}, nil
-}
-
-func resetNonPatchableField(obj client.Object) {
-	obj.SetUID("")
-	obj.SetManagedFields(nil)
-	obj.SetResourceVersion("")
 }
 
 func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	if err := r.Update(ctx, manifest); err != nil {
-		r.Event(manifest, "Warning", "UpdateObject", err.Error())
-		return ctrl.Result{}, fmt.Errorf("failed to update object: %w", err)
+
+	if err := r.manifestClient.UpdateManifest(ctx, manifest); err != nil {
+		return ctrl.Result{}, err
 	}
+
 	return ctrl.Result{Requeue: true}, nil
 }
 
@@ -743,63 +704,24 @@ func (r *Reconciler) cleanUpMandatoryModuleMetrics(manifest *v1beta2.Manifest) {
 	}
 }
 
-func (r *Reconciler) handleLabelsRemovalFromResources(ctx context.Context, manifest *v1beta2.Manifest,
-	skrClient Client,
-) error {
-	for _, res := range manifest.Status.Synced {
-		objectKey := client.ObjectKey{
-			Name:      res.Name,
-			Namespace: res.Namespace,
-		}
-		gvk := schema.GroupVersionKind{
-			Group:   res.Group,
-			Version: res.Version,
-			Kind:    res.Kind,
-		}
+func getCR(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
+	error,
+) {
+	resourceCR := &unstructured.Unstructured{}
+	name := manifest.Spec.Resource.GetName()
+	namespace := manifest.Spec.Resource.GetNamespace()
+	gvk := manifest.Spec.Resource.GroupVersionKind()
 
-		obj := &unstructured.Unstructured{}
-		obj.SetGroupVersionKind(gvk)
-		if err := skrClient.Get(ctx, objectKey, obj); err != nil {
-			return fmt.Errorf("failed to get resource, %w", err)
-		}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
+	})
 
-		if needsUpdateAfterLabelRemoval(obj) {
-			if err := skrClient.Update(ctx, obj); err != nil {
-				return fmt.Errorf("failed to update object: %w", err)
-			}
-		}
+	if err := skrClient.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
+		return nil, fmt.Errorf("%w: failed to fetch default resource CR", err)
 	}
 
-	if manifest.Spec.Resource == nil {
-		return nil
-	}
-
-	defaultCR, err := getCR(ctx, skrClient, manifest)
-	if err != nil {
-		return fmt.Errorf("failed to fetch CR: %w", err)
-	}
-
-	if needsUpdateAfterLabelRemoval(defaultCR) {
-		if err := skrClient.Update(ctx, defaultCR); err != nil {
-			return fmt.Errorf("failed to update object: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func needsUpdateAfterLabelRemoval(resource *unstructured.Unstructured) bool {
-	labels := resource.GetLabels()
-	_, managedByLabelExists := labels[shared.ManagedBy]
-	if managedByLabelExists {
-		delete(labels, shared.ManagedBy)
-	}
-	_, watchedByLabelExists := labels[shared.WatchedByLabel]
-	if watchedByLabelExists {
-		delete(labels, shared.WatchedByLabel)
-	}
-
-	resource.SetLabels(labels)
-
-	return watchedByLabelExists || managedByLabelExists
+	return resourceCR, nil
 }
