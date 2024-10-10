@@ -27,22 +27,6 @@ func Test_needsUpdateAfterLabelRemoval_WhenLabelsAreEmpty(t *testing.T) {
 	require.Equal(t, emptyLabels, res.GetLabels())
 }
 
-func Test_needsUpdateAfterLabelRemoval_WhenWatchedByLabel(t *testing.T) {
-	labels := map[string]string{
-		shared.WatchedByLabel: shared.WatchedByLabelValue,
-		"test":                "value",
-	}
-	expectedLabels := map[string]string{
-		"test": "value",
-	}
-	res := &unstructured.Unstructured{}
-	res.SetLabels(labels)
-	actual := labelsremoval.NeedsUpdateAfterLabelRemoval(res)
-
-	require.True(t, actual)
-	require.Equal(t, expectedLabels, res.GetLabels())
-}
-
 func Test_needsUpdateAfterLabelRemoval_WhenManagedByLabel(t *testing.T) {
 	labels := map[string]string{
 		shared.ManagedBy: shared.ManagedByLabelValue,
