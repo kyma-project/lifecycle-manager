@@ -39,11 +39,10 @@ func KymaComponentTransform(_ context.Context, obj Object, resources []*unstruct
 	return nil
 }
 
-func WatchedByManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func ManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
 		resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
-			shared.WatchedByLabel: shared.WatchedByLabelValue,
-			shared.ManagedBy:      shared.ManagedByLabelValue,
+			shared.ManagedBy: shared.ManagedByLabelValue,
 		}))
 
 		resource.SetAnnotations(collections.MergeMaps(resource.GetAnnotations(), map[string]string{
