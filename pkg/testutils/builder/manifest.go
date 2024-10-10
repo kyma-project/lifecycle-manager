@@ -85,6 +85,12 @@ func (mb ManifestBuilder) WithStatus(status shared.Status) ManifestBuilder {
 	return mb
 }
 
+// WithFinalizers sets v1beta2.Manifest.Finalizers.
+func (mb ManifestBuilder) WithFinalizers(finalizers []string) ManifestBuilder {
+	mb.manifest.Finalizers = finalizers
+	return mb
+}
+
 // Build returns the built v1beta2.Manifest.
 func (mb ManifestBuilder) Build() *v1beta2.Manifest {
 	return mb.manifest

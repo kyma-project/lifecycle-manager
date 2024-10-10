@@ -40,7 +40,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
-			By("And all manifest resources and default CR have managed-by and watched-by labels")
+			By("And all manifest resources and default CR have managed-by label")
 			manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
 				module.Name)
 			Expect(err).Should(Succeed())
@@ -91,7 +91,7 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 					"apps", "v1", "Deployment", skrClient).
 				Should(Succeed())
 
-			By("And all manifest resources and default CR no longer have managed-by or watched-by labels")
+			By("And all manifest resources and default CR no longer have managed-by labels")
 			for _, resource := range manifestResources {
 				objectKey := client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}
 				gvk := schema.GroupVersionKind{

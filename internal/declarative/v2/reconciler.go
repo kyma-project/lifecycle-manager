@@ -61,6 +61,7 @@ func NewFromManager(mgr manager.Manager,
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
 	reconciler.manifestClient = manifestClient
+	reconciler.managedLabelRemovalService = labelsremoval.NewManagedLabelRemovalService(manifestClient)
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -68,10 +69,11 @@ func NewFromManager(mgr manager.Manager,
 type Reconciler struct {
 	queue.RequeueIntervals
 	*Options
-	ManifestMetrics        *metrics.ManifestMetrics
-	MandatoryModuleMetrics *metrics.MandatoryModulesMetrics
-	specResolver           SpecResolver
-	manifestClient         manifestclient.ManifestClient
+	ManifestMetrics            *metrics.ManifestMetrics
+	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
+	specResolver               SpecResolver
+	manifestClient             manifestclient.ManifestClient
+	managedLabelRemovalService *labelsremoval.ManagedLabelRemovalService
 }
 
 const waitingForResourcesMsg = "waiting for resources to become ready"
@@ -250,8 +252,9 @@ func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	if err := labelsremoval.HandleLabelsRemovalFinalizerForUnmanagedModule(ctx, manifest, skrClient,
-		r.manifestClient, defaultCR); err != nil {
+
+	if err := r.managedLabelRemovalService.HandleLabelsRemovalFinalizerForUnmanagedModule(ctx, manifest, skrClient,
+		defaultCR); err != nil {
 		return ctrl.Result{}, err
 	}
 

@@ -15,13 +15,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 func Test_needsUpdateAfterLabelRemoval_WhenLabelsAreEmpty(t *testing.T) {
 	emptyLabels := map[string]string{}
 	res := &unstructured.Unstructured{}
 	res.SetLabels(emptyLabels)
-	actual := labelsremoval.NeedsUpdateAfterLabelRemoval(res)
+	actual := labelsremoval.IsManagedLabelRemoved(res)
 
 	require.False(t, actual)
 	require.Equal(t, emptyLabels, res.GetLabels())
@@ -34,7 +36,7 @@ func Test_needsUpdateAfterLabelRemoval_WhenManagedByLabel(t *testing.T) {
 	expectedLabels := map[string]string{}
 	res := &unstructured.Unstructured{}
 	res.SetLabels(labels)
-	actual := labelsremoval.NeedsUpdateAfterLabelRemoval(res)
+	actual := labelsremoval.IsManagedLabelRemoved(res)
 
 	require.True(t, actual)
 	require.Equal(t, expectedLabels, res.GetLabels())
@@ -47,30 +49,29 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesHaveLabels(t *te
 		Kind:    "TestKind",
 	}
 
-	manifest := &v1beta2.Manifest{
-		Status: shared.Status{
-			Synced: []shared.Resource{
-				{
-					Name:      "test-resource-1",
-					Namespace: "test-1",
-					GroupVersionKind: apimetav1.GroupVersionKind{
-						Group:   gvk.Group,
-						Version: gvk.Version,
-						Kind:    gvk.Kind,
-					},
+	status := shared.Status{
+		Synced: []shared.Resource{
+			{
+				Name:      "test-resource-1",
+				Namespace: "test-1",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
 				},
-				{
-					Name:      "test-resource-2",
-					Namespace: "test-2",
-					GroupVersionKind: apimetav1.GroupVersionKind{
-						Group:   gvk.Group,
-						Version: gvk.Version,
-						Kind:    gvk.Kind,
-					},
+			},
+			{
+				Name:      "test-resource-2",
+				Namespace: "test-2",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
 				},
 			},
 		},
 	}
+	manifest := builder.NewManifestBuilder().WithStatus(status).Build()
 
 	objs := []client.Object{
 		&unstructured.Unstructured{
@@ -123,11 +124,7 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesHaveLabels(t *te
 }
 
 func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAreNilAndNoDefaultCR(t *testing.T) {
-	manifest := &v1beta2.Manifest{
-		Status: shared.Status{
-			Synced: []shared.Resource{},
-		},
-	}
+	manifest := builder.NewManifestBuilder().Build()
 
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
@@ -147,21 +144,20 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAndDefaultCRHave
 		Kind:    "TestKind",
 	}
 
-	manifest := &v1beta2.Manifest{
-		Status: shared.Status{
-			Synced: []shared.Resource{
-				{
-					Name:      "test-resource-1",
-					Namespace: "test-1",
-					GroupVersionKind: apimetav1.GroupVersionKind{
-						Group:   gvk.Group,
-						Version: gvk.Version,
-						Kind:    gvk.Kind,
-					},
+	status := shared.Status{
+		Synced: []shared.Resource{
+			{
+				Name:      "test-resource-1",
+				Namespace: "test-1",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
 				},
 			},
 		},
 	}
+	manifest := builder.NewManifestBuilder().WithStatus(status).Build()
 
 	objs := []client.Object{
 		&unstructured.Unstructured{
@@ -206,8 +202,95 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAndDefaultCRHave
 	require.NoError(t, err)
 	require.Empty(t, firstObj.GetLabels())
 
-	err = fakeClient.Get(context.TODO(), client.ObjectKey{Name: "default-cr", Namespace: "default-ns"},
-		defaultCR)
 	require.NoError(t, err)
 	require.Empty(t, defaultCR.GetLabels())
+}
+
+func Test_HandleLabelsRemovalFinalizerForUnmanagedModule_WhenErrorIsReturned(t *testing.T) {
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	gvk := schema.GroupVersionKind{
+		Group:   "test-group",
+		Version: "v1",
+		Kind:    "TestKind",
+	}
+	status := shared.Status{
+		Synced: []shared.Resource{
+			{
+				Name:      "test-resource-1",
+				Namespace: "test-1",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+				},
+			},
+		},
+	}
+	manifest := builder.NewManifestBuilder().WithStatus(status).Build()
+
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+
+	manifestClnt := manifestclient.NewManifestClient(nil, fakeClient)
+	svc := labelsremoval.NewManagedLabelRemovalService(manifestClnt)
+
+	err = svc.HandleLabelsRemovalFinalizerForUnmanagedModule(context.TODO(), manifest, fakeClient, nil)
+	require.ErrorContains(t, err, "failed to get resource")
+}
+
+func Test_HandleLabelsRemovalFinalizerForUnmanagedModule_WhenFinalizerIsRemoved(t *testing.T) {
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	gvk := schema.GroupVersionKind{
+		Group:   "test-group",
+		Version: "v1",
+		Kind:    "TestKind",
+	}
+	status := shared.Status{
+		Synced: []shared.Resource{
+			{
+				Name:      "test-resource-1",
+				Namespace: "test-1",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+				},
+			},
+		},
+	}
+	finalizers := []string{"label-removal-finalizer"}
+	manifest := builder.NewManifestBuilder().WithFinalizers(finalizers).WithStatus(status).Build()
+
+	objs := []client.Object{
+		&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": gvk.GroupVersion().String(),
+				"kind":       gvk.Kind,
+				"version":    gvk.Version,
+			},
+		},
+	}
+	objs[0].SetName("test-resource-1")
+	objs[0].SetNamespace("test-1")
+	objs[0].SetLabels(map[string]string{
+		"operator.kyma-project.io/managed-by": "kyma",
+	})
+
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(manifest).WithObjects(objs...).Build()
+
+	manifestClnt := manifestclient.NewManifestClient(nil, fakeClient)
+	svc := labelsremoval.NewManagedLabelRemovalService(manifestClnt)
+
+	err = svc.HandleLabelsRemovalFinalizerForUnmanagedModule(context.TODO(), manifest, fakeClient, nil)
+	require.NoError(t, err)
+
+	err = fakeClient.Get(context.TODO(), client.ObjectKey{Name: manifest.GetName(), Namespace: manifest.GetNamespace()},
+		manifest)
+	require.NoError(t, err)
+	require.Empty(t, manifest.GetFinalizers())
 }

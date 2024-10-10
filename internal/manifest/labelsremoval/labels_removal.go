@@ -16,16 +16,25 @@ import (
 
 const LabelRemovalFinalizer = "label-removal-finalizer"
 
-func HandleLabelsRemovalFinalizerForUnmanagedModule(ctx context.Context,
-	manifest *v1beta2.Manifest, skrClient client.Client, manifestClnt manifestclient.ManifestClient,
-	defaultCR *unstructured.Unstructured,
+type ManagedLabelRemovalService struct {
+	manifestClient manifestclient.ManifestClient
+}
+
+func NewManagedLabelRemovalService(manifestClient manifestclient.ManifestClient) *ManagedLabelRemovalService {
+	return &ManagedLabelRemovalService{
+		manifestClient: manifestClient,
+	}
+}
+
+func (l *ManagedLabelRemovalService) HandleLabelsRemovalFinalizerForUnmanagedModule(ctx context.Context,
+	manifest *v1beta2.Manifest, skrClient client.Client, defaultCR *unstructured.Unstructured,
 ) error {
 	if err := HandleLabelsRemovalFromResources(ctx, manifest, skrClient, defaultCR); err != nil {
 		return err
 	}
 
 	controllerutil.RemoveFinalizer(manifest, LabelRemovalFinalizer)
-	return manifestClnt.UpdateManifest(ctx, manifest)
+	return l.manifestClient.UpdateManifest(ctx, manifest)
 }
 
 func HandleLabelsRemovalFromResources(ctx context.Context, manifestCR *v1beta2.Manifest,
@@ -36,19 +45,13 @@ func HandleLabelsRemovalFromResources(ctx context.Context, manifestCR *v1beta2.M
 			Name:      res.Name,
 			Namespace: res.Namespace,
 		}
-		gvk := schema.GroupVersionKind{
-			Group:   res.Group,
-			Version: res.Version,
-			Kind:    res.Kind,
-		}
 
-		obj := &unstructured.Unstructured{}
-		obj.SetGroupVersionKind(gvk)
+		obj := constructResource(res)
 		if err := skrClient.Get(ctx, objectKey, obj); err != nil {
 			return fmt.Errorf("failed to get resource, %w", err)
 		}
 
-		if NeedsUpdateAfterLabelRemoval(obj) {
+		if IsManagedLabelRemoved(obj) {
 			if err := skrClient.Update(ctx, obj); err != nil {
 				return fmt.Errorf("failed to update object: %w", err)
 			}
@@ -59,7 +62,7 @@ func HandleLabelsRemovalFromResources(ctx context.Context, manifestCR *v1beta2.M
 		return nil
 	}
 
-	if NeedsUpdateAfterLabelRemoval(defaultCR) {
+	if IsManagedLabelRemoved(defaultCR) {
 		if err := skrClient.Update(ctx, defaultCR); err != nil {
 			return fmt.Errorf("failed to update object: %w", err)
 		}
@@ -68,7 +71,20 @@ func HandleLabelsRemovalFromResources(ctx context.Context, manifestCR *v1beta2.M
 	return nil
 }
 
-func NeedsUpdateAfterLabelRemoval(resource *unstructured.Unstructured) bool {
+func constructResource(resource shared.Resource) *unstructured.Unstructured {
+	gvk := schema.GroupVersionKind{
+		Group:   resource.Group,
+		Version: resource.Version,
+		Kind:    resource.Kind,
+	}
+
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(gvk)
+
+	return obj
+}
+
+func IsManagedLabelRemoved(resource *unstructured.Unstructured) bool {
 	labels := resource.GetLabels()
 	_, managedByLabelExists := labels[shared.ManagedBy]
 	if managedByLabelExists {
