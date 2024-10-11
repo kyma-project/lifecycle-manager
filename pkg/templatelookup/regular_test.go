@@ -59,26 +59,18 @@ func (f *FakeModuleTemplateReader) Get(_ context.Context, objKey client.ObjectKe
 	_ ...client.GetOption,
 ) error {
 	notFoundErr := apierrors.NewNotFound(schema.GroupResource{}, objKey.Name)
-	if _, ok := obj.(*v1beta2.ModuleReleaseMeta); ok {
+	if castedObj, ok := obj.(*v1beta2.ModuleReleaseMeta); ok {
 		for _, mrm := range f.moduleReleaseMetaList.Items {
 			if mrm.Name == objKey.Name {
-				castedObj, ok := obj.(*v1beta2.ModuleReleaseMeta)
-				if !ok {
-					return errors.New("object is not of type *v1beta2.ModuleReleaseMeta")
-				}
 				*castedObj = mrm
 				return nil
 			}
 		}
 
 		return notFoundErr
-	} else if _, ok := obj.(*v1beta2.ModuleTemplate); ok {
+	} else if castedObj, ok := obj.(*v1beta2.ModuleTemplate); ok {
 		for _, template := range f.templateList.Items {
 			if template.Name == objKey.Name {
-				castedObj, ok := obj.(*v1beta2.ModuleTemplate)
-				if !ok {
-					return errors.New("object is not of type *v1beta2.ModuleTemplate")
-				}
 				*castedObj = template
 				return nil
 			}
@@ -272,7 +264,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 					Err:            nil,
 				},
 			},
-		}, {
+		},
+		{
 			name: "When downgrade version during channel switch, Then result contains error, with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).
@@ -657,6 +650,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
 					WithModuleName(module.Name).
 					WithLabelModuleName(module.Name).
 					WithChannel(module.Channel).
@@ -848,6 +842,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
 					WithModuleName(module.Name).
 					WithLabelModuleName(module.Name).
 					WithChannel(module.Channel).
