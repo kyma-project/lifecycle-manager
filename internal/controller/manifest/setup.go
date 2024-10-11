@@ -22,6 +22,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -40,6 +41,7 @@ func SetupWithManager(mgr manager.Manager,
 	settings SetupOptions,
 	manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	manifestClient declarativev2.ManifestAPIClient,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -84,7 +86,8 @@ func SetupWithManager(mgr manager.Manager,
 				predicate.LabelChangedPredicate{}))).
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
-		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics)); err != nil {
+		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
+			manifestClient)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

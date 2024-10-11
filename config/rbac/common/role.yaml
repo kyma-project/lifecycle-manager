@@ -152,6 +152,12 @@ rules:
 - apiGroups:
   - operator.kyma-project.io
   resources:
+  - modulereleasemetas
+  verbs:
+  - get
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
   - moduletemplates
   verbs:
   - create

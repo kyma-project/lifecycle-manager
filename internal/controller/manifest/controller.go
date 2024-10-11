@@ -19,6 +19,7 @@ func NewReconciler(mgr manager.Manager,
 	requeueIntervals queue.RequeueIntervals,
 	manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	manifestClient declarativev2.ManifestAPIClient,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
@@ -30,7 +31,7 @@ func NewReconciler(mgr manager.Manager,
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
-		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
+		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
 		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
