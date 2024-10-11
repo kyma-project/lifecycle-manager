@@ -57,7 +57,7 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 					c.kcpNamespace:    {},
 				},
 			},
-			&v1beta2.ModuleTemplate{}: {
+			&v1beta2.ModuleReleaseMeta{}: {
 				Namespaces: map[string]cache.Config{
 					c.kcpNamespace: {},
 				},
