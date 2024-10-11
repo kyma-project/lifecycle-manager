@@ -13,12 +13,15 @@ import (
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"fmt"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -30,12 +33,15 @@ const (
 )
 
 type FakeModuleTemplateReader struct {
-	templateList v1beta2.ModuleTemplateList
+	templateList          v1beta2.ModuleTemplateList
+	moduleReleaseMetaList v1beta2.ModuleReleaseMetaList
 }
 
-func NewFakeModuleTemplateReader(templateList v1beta2.ModuleTemplateList) *FakeModuleTemplateReader {
+func NewFakeModuleTemplateReader(templateList v1beta2.ModuleTemplateList,
+	moduleReleaseMetaList v1beta2.ModuleReleaseMetaList) *FakeModuleTemplateReader {
 	return &FakeModuleTemplateReader{
-		templateList: templateList,
+		templateList:          templateList,
+		moduleReleaseMetaList: moduleReleaseMetaList,
 	}
 }
 
@@ -48,9 +54,37 @@ func (f *FakeModuleTemplateReader) List(_ context.Context, list client.ObjectLis
 	return nil
 }
 
-func (f *FakeModuleTemplateReader) Get(_ context.Context, _ client.ObjectKey, _ client.Object,
+func (f *FakeModuleTemplateReader) Get(_ context.Context, objKey client.ObjectKey, obj client.Object,
 	_ ...client.GetOption,
 ) error {
+	notFoundErr := apierrors.NewNotFound(schema.GroupResource{}, objKey.Name)
+	if _, ok := obj.(*v1beta2.ModuleReleaseMeta); ok {
+		for _, mrm := range f.moduleReleaseMetaList.Items {
+			if mrm.Name == objKey.Name {
+				castedObj, ok := obj.(*v1beta2.ModuleReleaseMeta)
+				if !ok {
+					return errors.New("object is not of type *v1beta2.ModuleReleaseMeta")
+				}
+				*castedObj = mrm
+				return nil
+			}
+		}
+
+		return notFoundErr
+	} else if _, ok := obj.(*v1beta2.ModuleTemplate); ok {
+		for _, template := range f.templateList.Items {
+			if template.Name == objKey.Name {
+				castedObj, ok := obj.(*v1beta2.ModuleTemplate)
+				if !ok {
+					return errors.New("object is not of type *v1beta2.ModuleTemplate")
+				}
+				*castedObj = template
+				return nil
+			}
+		}
+		return notFoundErr
+	}
+
 	return nil
 }
 
@@ -151,14 +185,15 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 	}
 }
 
-func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T) {
+func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel_WithModuleReleaseMeta(t *testing.T) {
 	testModule := testutils.NewTestModule("module1", "new_channel")
 
 	tests := []struct {
-		name                    string
-		kyma                    *v1beta2.Kyma
-		availableModuleTemplate v1beta2.ModuleTemplateList
-		want                    templatelookup.ModuleTemplatesByModuleName
+		name                       string
+		kyma                       *v1beta2.Kyma
+		availableModuleTemplate    v1beta2.ModuleTemplateList
+		availableModuleReleaseMeta v1beta2.ModuleReleaseMetaList
+		want                       templatelookup.ModuleTemplatesByModuleName
 	}{
 		{
 			name: "When upgrade version during channel switch, Then result contains no error",
@@ -176,6 +211,11 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 				}).Build(),
 			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
 				version2),
+			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
+				[]v1beta2.ChannelVersionAssignment{
+					{Channel: testModule.Channel, Version: version2},
+					{Channel: v1beta2.DefaultChannel, Version: version1},
+				}),
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
@@ -198,6 +238,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 				}).Build(),
 			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
 				version1),
+			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
+				[]v1beta2.ChannelVersionAssignment{
+					{Channel: testModule.Channel, Version: version1},
+				}),
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
@@ -209,7 +253,86 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplate),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplate,
+				testCase.availableModuleReleaseMeta),
+				provider.NewCachedDescriptorProvider())
+			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			assert.Equal(t, len(got), len(testCase.want))
+			for key, module := range got {
+				wantModule, ok := testCase.want[key]
+				assert.True(t, ok)
+				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
+				require.ErrorIs(t, module.Err, wantModule.Err)
+			}
+		})
+	}
+}
+
+func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel_NoModuleReleaseMeta(t *testing.T) {
+	testModule := testutils.NewTestModule("module1", "new_channel")
+
+	tests := []struct {
+		name                       string
+		kyma                       *v1beta2.Kyma
+		availableModuleTemplate    v1beta2.ModuleTemplateList
+		availableModuleReleaseMeta v1beta2.ModuleReleaseMetaList
+		want                       templatelookup.ModuleTemplatesByModuleName
+	}{
+		{
+			name: "When upgrade version during channel switch, Then result contains no error",
+			kyma: builder.NewKymaBuilder().
+				WithEnabledModule(testModule).
+				WithModuleStatus(v1beta2.ModuleStatus{
+					Name:    testModule.Name,
+					Channel: v1beta2.DefaultChannel,
+					Version: version1,
+					Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: 1,
+						},
+					},
+				}).Build(),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+				version2),
+			availableModuleReleaseMeta: v1beta2.ModuleReleaseMetaList{},
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: testModule.Channel,
+					Err:            nil,
+				},
+			},
+		},
+		{
+			name: "When downgrade version during channel switch, Then result contains error",
+			kyma: builder.NewKymaBuilder().
+				WithEnabledModule(testModule).
+				WithModuleStatus(v1beta2.ModuleStatus{
+					Name:    testModule.Name,
+					Channel: v1beta2.DefaultChannel,
+					Version: version2,
+					Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: 1,
+						},
+					},
+				}).Build(),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+				version1),
+			availableModuleReleaseMeta: v1beta2.ModuleReleaseMetaList{},
+
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: testModule.Channel,
+					Err:            templatelookup.ErrTemplateUpdateNotAllowed,
+				},
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplate,
+				testCase.availableModuleReleaseMeta),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
@@ -234,6 +357,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
 		Build()
+
+	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 
 	tests := []struct {
 		name            string
@@ -279,7 +404,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates,
+				availableModuleReleaseMetas),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
@@ -306,6 +432,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
 		Build()
+
+	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 
 	tests := []struct {
 		name            string
@@ -368,7 +496,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates,
+				availableModuleReleaseMetas),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
@@ -395,6 +524,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version2).
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
 		Build()
+
+	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 
 	tests := []struct {
 		name            string
@@ -457,7 +588,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates,
+				availableModuleReleaseMetas),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
@@ -476,7 +608,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 
 func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalidDescriptor(t *testing.T) {
 	testModule := testutils.NewTestModule("module1", v1beta2.DefaultChannel)
-
 	tests := []struct {
 		name string
 		kyma *v1beta2.Kyma
@@ -524,7 +655,84 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 					WithDescriptor(nil).
 					WithRawDescriptor([]byte("{invalid_json}")).Build())
 			}
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
+				v1beta2.ModuleReleaseMetaList{}),
+				provider.NewCachedDescriptorProvider())
+			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			assert.Equal(t, len(got), len(testCase.want))
+			for key, module := range got {
+				wantModule, ok := testCase.want[key]
+				assert.True(t, ok)
+				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
+				require.ErrorIs(t, module.Err, wantModule.Err)
+			}
+		})
+	}
+}
+
+func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalidDescriptorWithModuleReleaseMeta(t *testing.T) {
+	testModule := testutils.NewTestModule("module1", v1beta2.DefaultChannel)
+
+	tests := []struct {
+		name string
+		kyma *v1beta2.Kyma
+		want templatelookup.ModuleTemplatesByModuleName
+	}{
+		{
+			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error",
+			kyma: builder.NewKymaBuilder().
+				WithEnabledModule(testModule).Build(),
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: testModule.Channel,
+					Err:            provider.ErrDecode,
+				},
+			},
+		},
+		{
+			name: "When module exits in ModuleStatus only, then return ModuleTemplatesByModuleName with error",
+			kyma: builder.NewKymaBuilder().
+				WithModuleStatus(v1beta2.ModuleStatus{
+					Name:    testModule.Name,
+					Channel: testModule.Channel,
+					Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: 1,
+						},
+					},
+				}).Build(),
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: testModule.Channel,
+					Err:            provider.ErrDecode,
+				},
+			},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			givenTemplateList := &v1beta2.ModuleTemplateList{}
+			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
+
+			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
+				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
+					WithModuleName(module.Name).
+					WithLabelModuleName(module.Name).
+					WithChannel(module.Channel).
+					WithDescriptor(nil).
+					WithRawDescriptor([]byte("{invalid_json}")).Build())
+
+				moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
+					*builder.NewModuleReleaseMetaBuilder().
+						WithModuleName(module.Name).
+						WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
+							{Channel: module.Channel, Version: testModule.Version},
+						}).Build())
+			}
+
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
+				moduleReleaseMetas),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
@@ -585,7 +793,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
+				v1beta2.ModuleReleaseMetaList{}),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
@@ -600,7 +809,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 	}
 }
 
-func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.T) {
+func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists_NoModuleReleaseMeta(t *testing.T) {
 	testModule := testutils.NewTestModule("module1", v1beta2.DefaultChannel)
 
 	tests := []struct {
@@ -658,7 +867,91 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					WithChannel(module.Channel).
 					WithOCM(compdescv2.SchemaVersion).Build())
 			}
-			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList),
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
+				v1beta2.ModuleReleaseMetaList{}),
+				provider.NewCachedDescriptorProvider())
+			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			assert.Equal(t, len(got), len(testCase.want))
+			for key, module := range got {
+				wantModule, ok := testCase.want[key]
+				assert.True(t, ok)
+				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
+				require.ErrorIs(t, module.Err, wantModule.Err)
+				assert.Equal(t, wantModule.ModuleTemplate.Spec.Channel, module.ModuleTemplate.Spec.Channel)
+			}
+		})
+	}
+}
+
+func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists_WithModuleReleaseMeta(t *testing.T) {
+	testModule := testutils.NewTestModule("module1", v1beta2.DefaultChannel)
+
+	tests := []struct {
+		name string
+		kyma *v1beta2.Kyma
+		want templatelookup.ModuleTemplatesByModuleName
+	}{
+		{
+			name: "When module enabled in Spec, then return expected moduleTemplateInfo",
+			kyma: builder.NewKymaBuilder().
+				WithEnabledModule(testModule).Build(),
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: testModule.Channel,
+					Err:            nil,
+					ModuleTemplate: builder.NewModuleTemplateBuilder().
+						WithModuleName(testModule.Name).
+						WithChannel(testModule.Channel).
+						Build(),
+				},
+			},
+		},
+		{
+			name: "When module exits in ModuleStatus only, then return expected moduleTemplateInfo",
+			kyma: builder.NewKymaBuilder().
+				WithEnabledModule(testModule).
+				WithModuleStatus(v1beta2.ModuleStatus{
+					Name:    testModule.Name,
+					Channel: testModule.Channel,
+					Template: &v1beta2.TrackingObject{
+						PartialMeta: v1beta2.PartialMeta{
+							Generation: 1,
+						},
+					},
+				}).Build(),
+			want: templatelookup.ModuleTemplatesByModuleName{
+				testModule.Name: &templatelookup.ModuleTemplateInfo{
+					DesiredChannel: testModule.Channel,
+					Err:            nil,
+					ModuleTemplate: builder.NewModuleTemplateBuilder().
+						WithModuleName(testModule.Name).
+						WithChannel(testModule.Channel).
+						Build(),
+				},
+			},
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			givenTemplateList := &v1beta2.ModuleTemplateList{}
+			availabeModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
+			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
+				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
+					WithModuleName(module.Name).
+					WithLabelModuleName(module.Name).
+					WithChannel(module.Channel).
+					WithOCM(compdescv2.SchemaVersion).Build())
+
+				availabeModuleReleaseMetas.Items = append(availabeModuleReleaseMetas.Items,
+					*builder.NewModuleReleaseMetaBuilder().
+						WithModuleName(module.Name).
+						WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
+							{Channel: module.Channel, Version: testModule.Version},
+						}).Build())
+			}
+			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
+				availabeModuleReleaseMetas),
 				provider.NewCachedDescriptorProvider())
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
@@ -764,6 +1057,7 @@ func TestTemplateNameMatch(t *testing.T) {
 func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersion string) v1beta2.ModuleTemplateList {
 	templateList := v1beta2.ModuleTemplateList{}
 	templateList.Items = append(templateList.Items, *builder.NewModuleTemplateBuilder().
+		WithName(fmt.Sprintf("%s-%s", moduleName, moduleVersion)).
 		WithModuleName(moduleName).
 		WithLabelModuleName(moduleName).
 		WithChannel(moduleChannel).
@@ -781,6 +1075,16 @@ func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersi
 			},
 		}).Build())
 	return templateList
+}
+
+func generateModuleReleaseMetaList(moduleName string,
+	channelVersions []v1beta2.ChannelVersionAssignment) v1beta2.ModuleReleaseMetaList {
+	mrmList := v1beta2.ModuleReleaseMetaList{}
+	mrmList.Items = append(mrmList.Items, *builder.NewModuleReleaseMetaBuilder().
+		WithModuleName(moduleName).
+		WithModuleChannelAndVersions(channelVersions).
+		Build())
+	return mrmList
 }
 
 type ModuleTemplateListBuilder struct {
