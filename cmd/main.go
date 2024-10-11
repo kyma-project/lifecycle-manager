@@ -65,8 +65,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "ocm.software/ocm/api/ocm"
 	//nolint:gci // kubebuilder's scaffold imports must be appended here.
 	// +kubebuilder:scaffold:imports
 )
@@ -100,7 +100,8 @@ func main() {
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
-	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), zapcore.Lock(os.Stdout))) //nolint:gosec // loglevel should always be between -128 to 127
+	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
+		zapcore.Lock(os.Stdout)))
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -266,7 +267,8 @@ func enableWebhooks(mgr manager.Manager, setupLog logr.Logger) {
 func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	return ctrlruntime.Options{
 		RateLimiter: workqueue.NewTypedMaxOfRateLimiter(
-			workqueue.NewTypedItemExponentialFailureRateLimiter[ctrl.Request](flagVar.FailureBaseDelay, flagVar.FailureMaxDelay),
+			workqueue.NewTypedItemExponentialFailureRateLimiter[ctrl.Request](flagVar.FailureBaseDelay,
+				flagVar.FailureMaxDelay),
 			&workqueue.TypedBucketRateLimiter[ctrl.Request]{
 				Limiter: rate.NewLimiter(rate.Limit(flagVar.RateLimiterFrequency), flagVar.RateLimiterBurst),
 			},

@@ -73,9 +73,9 @@ linters-settings:
         alias: watcherevent
       - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/metrics
         alias: watchermetrics
-      - pkg: github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1
+      - pkg: ocm.software/ocm/api/ocm/compdesc/meta/v1
         alias: ocmmetav1
-      - pkg: github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2
+      - pkg: ocm.software/ocm/api/ocm/compdesc/versions/v2
         alias: compdescv2
       - pkg: istio.io/api/networking/v1beta1
         alias: istioapiv1beta1
@@ -184,7 +184,7 @@ issues:
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - path: tests/integration/declarative/declarative_test.go
       linters: [ gci ] # Disable gci due to the test utilities dot import.
-    - path: tests/integration/controller/(eventfilters|kyma|withwatcher|purge|mandatorymodule|kcp)/(.*)_test.go
+    - path: tests/integration/controller/(.*)/(.*)_test.go
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - linters:
       - importas

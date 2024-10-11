@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	ocmmetav1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
-	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"ocm.software/ocm/api/ocm/compdesc"
+	ocmmetav1 "ocm.software/ocm/api/ocm/compdesc/meta/v1"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -174,7 +174,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel, version2),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+				version2),
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
@@ -195,7 +196,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel, version1),
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+				version1),
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
