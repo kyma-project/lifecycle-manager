@@ -66,8 +66,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "ocm.software/ocm/api/ocm"
 	//nolint:gci // kubebuilder's scaffold imports must be appended here.
 )
 
