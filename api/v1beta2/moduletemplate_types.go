@@ -22,11 +22,11 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"ocm.software/ocm/api/ocm/compdesc"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
