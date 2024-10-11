@@ -89,12 +89,12 @@ func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
 	module AvailableModule, namespace, kymaChannel string,
 ) ModuleTemplateInfo {
 	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, t, module.Name, namespace)
-	if err != nil && !util.IsNotFound(err) {
-		return ModuleTemplateInfo{Err: err}
+	if util.IsNotFound(err) {
+		return t.populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx, module, kymaChannel)
 	}
 
-	if util.IsNotFound(err) || moduleReleaseMeta.Name == "" {
-		return t.populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx, module, kymaChannel)
+	if err != nil {
+		return ModuleTemplateInfo{Err: err}
 	}
 
 	return t.populateModuleTemplateInfoUsingModuleReleaseMeta(ctx, module, moduleReleaseMeta, kymaChannel, namespace)
