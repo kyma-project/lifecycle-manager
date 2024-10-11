@@ -76,6 +76,9 @@ func (d *Descriptor) DeepCopyObject() machineryruntime.Object {
 type ModuleTemplateSpec struct {
 	// Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
 	// to a target channel. It has to be provided at any given time.
+	// Deprecated: This field is deprecated and will be removed in a future release.
+	// +optional
+	// +kubebuilder:deprecatedversion
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
