@@ -155,6 +155,7 @@ rules:
   - modulereleasemetas
   verbs:
   - get
+  - list
 - apiGroups:
   - operator.kyma-project.io
   resources:
