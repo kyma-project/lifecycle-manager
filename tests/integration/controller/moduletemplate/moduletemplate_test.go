@@ -3,14 +3,15 @@ package moduletemplate_test
 import (
 	"fmt"
 
-	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -40,7 +41,8 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 			} else {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("spec.version: Invalid value: \"%s\"", givenVersion)))
+				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("spec.version: Invalid value: \"%s\"",
+					givenVersion)))
 			}
 		},
 		Entry("when version is empty,"+
@@ -133,7 +135,8 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 			} else {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("spec.moduleName: Invalid value: \"%s\"", givenModuleName)))
+				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("spec.moduleName: Invalid value: \"%s\"",
+					givenModuleName)))
 			}
 		},
 		Entry("when moduleName is empty,"+
