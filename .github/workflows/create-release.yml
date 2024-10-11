@@ -73,7 +73,7 @@ jobs:
         env:
           ITERATIONS: 40
           SLEEP_SECONDS: 30
-        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} $ITERATIONS $SLEEP_SECONDS
+        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS }}
       - name: Publish release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
