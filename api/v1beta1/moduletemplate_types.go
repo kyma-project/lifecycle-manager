@@ -71,7 +71,7 @@ type ModuleTemplateSpec struct {
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Charts, Manifests, References to Binaries and/or configuration)
 	// Name more information on Component Descriptors, see
-	// https://ocm.software/ocm
+	// https://github.com/open-component-model/ocm
 	//
 	// It is translated inside the Lifecycle of the Cluster and will be used by downstream controllers
 	// to bootstrap and manage the module. This part is also propagated for every change of the template.
