@@ -21,7 +21,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
@@ -51,7 +50,7 @@ func NewFromManager(mgr manager.Manager,
 	requeueIntervals queue.RequeueIntervals,
 	metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestClient manifestclient.ManifestClient,
+	manifestAPIClient ManifestAPIClient,
 	specResolver SpecResolver,
 	options ...Option,
 ) *Reconciler {
@@ -60,10 +59,23 @@ func NewFromManager(mgr manager.Manager,
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
-	reconciler.manifestClient = manifestClient
-	reconciler.managedLabelRemovalService = labelsremoval.NewManagedLabelRemovalService(manifestClient)
+	reconciler.manifestClient = manifestAPIClient
+	reconciler.managedLabelRemovalService = labelsremoval.NewManagedLabelRemovalService(manifestAPIClient)
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
+}
+
+type ManagedLabelRemoval interface {
+	RemoveManagedLabel(ctx context.Context,
+		manifest *v1beta2.Manifest, skrClient client.Client, defaultCR *unstructured.Unstructured,
+	) error
+}
+
+type ManifestAPIClient interface {
+	UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error
+	PatchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest,
+		previousStatus shared.Status) error
+	SsaSpec(ctx context.Context, obj client.Object) error
 }
 
 type Reconciler struct {
@@ -72,8 +84,8 @@ type Reconciler struct {
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
 	specResolver               SpecResolver
-	manifestClient             manifestclient.ManifestClient
-	managedLabelRemovalService *labelsremoval.ManagedLabelRemovalService
+	manifestClient             ManifestAPIClient
+	managedLabelRemovalService ManagedLabelRemoval
 }
 
 const waitingForResourcesMsg = "waiting for resources to become ready"
@@ -253,7 +265,7 @@ func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient
 		return ctrl.Result{}, err
 	}
 
-	if err := r.managedLabelRemovalService.HandleLabelsRemovalFinalizerForUnmanagedModule(ctx, manifest, skrClient,
+	if err := r.managedLabelRemovalService.RemoveManagedLabel(ctx, manifest, skrClient,
 		defaultCR); err != nil {
 		return ctrl.Result{}, err
 	}

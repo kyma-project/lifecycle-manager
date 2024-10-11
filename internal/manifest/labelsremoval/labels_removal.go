@@ -11,22 +11,25 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 )
 
 const LabelRemovalFinalizer = "label-removal-finalizer"
 
-type ManagedLabelRemovalService struct {
-	manifestClient manifestclient.ManifestClient
+type ManifestAPIClient interface {
+	UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error
 }
 
-func NewManagedLabelRemovalService(manifestClient manifestclient.ManifestClient) *ManagedLabelRemovalService {
+type ManagedLabelRemovalService struct {
+	manifestClient ManifestAPIClient
+}
+
+func NewManagedLabelRemovalService(manifestClient ManifestAPIClient) *ManagedLabelRemovalService {
 	return &ManagedLabelRemovalService{
 		manifestClient: manifestClient,
 	}
 }
 
-func (l *ManagedLabelRemovalService) HandleLabelsRemovalFinalizerForUnmanagedModule(ctx context.Context,
+func (l *ManagedLabelRemovalService) RemoveManagedLabel(ctx context.Context,
 	manifest *v1beta2.Manifest, skrClient client.Client, defaultCR *unstructured.Unstructured,
 ) error {
 	if err := HandleLabelsRemovalFromResources(ctx, manifest, skrClient, defaultCR); err != nil {

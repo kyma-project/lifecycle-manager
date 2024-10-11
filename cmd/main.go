@@ -69,7 +69,6 @@ import (
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	//nolint:gci // kubebuilder's scaffold imports must be appended here.
-	// +kubebuilder:scaffold:imports
 )
 
 const (
@@ -391,6 +390,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
+
 	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
 			Success: flagVar.ManifestRequeueSuccessInterval,

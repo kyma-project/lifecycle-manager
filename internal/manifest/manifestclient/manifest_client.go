@@ -13,20 +13,13 @@ import (
 
 const defaultFieldOwner client.FieldOwner = "declarative.kyma-project.io/applier"
 
-type ManifestAPIClient interface {
-	UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error
-	PatchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest,
-		previousStatus shared.Status) error
-	SsaSpec(ctx context.Context, obj client.Object) error
-}
-
 type ManifestClient struct {
 	client.Client
 	event.Event
 }
 
-func NewManifestClient(event event.Event, kcpClient client.Client) ManifestClient {
-	return ManifestClient{
+func NewManifestClient(event event.Event, kcpClient client.Client) *ManifestClient {
+	return &ManifestClient{
 		Event:  event,
 		Client: kcpClient,
 	}

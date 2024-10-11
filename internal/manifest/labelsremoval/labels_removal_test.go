@@ -206,7 +206,7 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAndDefaultCRHave
 	require.Empty(t, defaultCR.GetLabels())
 }
 
-func Test_HandleLabelsRemovalFinalizerForUnmanagedModule_WhenErrorIsReturned(t *testing.T) {
+func Test_RemoveManagedLabel_WhenErrorIsReturned(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
@@ -236,11 +236,11 @@ func Test_HandleLabelsRemovalFinalizerForUnmanagedModule_WhenErrorIsReturned(t *
 	manifestClnt := manifestclient.NewManifestClient(nil, fakeClient)
 	svc := labelsremoval.NewManagedLabelRemovalService(manifestClnt)
 
-	err = svc.HandleLabelsRemovalFinalizerForUnmanagedModule(context.TODO(), manifest, fakeClient, nil)
+	err = svc.RemoveManagedLabel(context.TODO(), manifest, fakeClient, nil)
 	require.ErrorContains(t, err, "failed to get resource")
 }
 
-func Test_HandleLabelsRemovalFinalizerForUnmanagedModule_WhenFinalizerIsRemoved(t *testing.T) {
+func Test_RemoveManagedLabel_WhenFinalizerIsRemoved(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
@@ -286,7 +286,7 @@ func Test_HandleLabelsRemovalFinalizerForUnmanagedModule_WhenFinalizerIsRemoved(
 	manifestClnt := manifestclient.NewManifestClient(nil, fakeClient)
 	svc := labelsremoval.NewManagedLabelRemovalService(manifestClnt)
 
-	err = svc.HandleLabelsRemovalFinalizerForUnmanagedModule(context.TODO(), manifest, fakeClient, nil)
+	err = svc.RemoveManagedLabel(context.TODO(), manifest, fakeClient, nil)
 	require.NoError(t, err)
 
 	err = fakeClient.Get(context.TODO(), client.ObjectKey{Name: manifest.GetName(), Namespace: manifest.GetNamespace()},
