@@ -2,11 +2,11 @@ package templatelookup
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"errors"
-	"fmt"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -17,7 +17,8 @@ var (
 
 func GetModuleReleaseMeta(ctx context.Context, clnt client.Reader, moduleName string,
 	namespace string) (*v1beta2.ModuleReleaseMeta,
-	error) {
+	error,
+) {
 	mrm := &v1beta2.ModuleReleaseMeta{}
 	if err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,

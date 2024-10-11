@@ -1,10 +1,11 @@
 package templatelookup_test
 
 import (
+	"testing"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func Test_GetChannelVersionForModule_WhenEmptyChannels(t *testing.T) {

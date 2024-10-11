@@ -86,7 +86,8 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 }
 
 func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
-	module AvailableModule, namespace, kymaChannel string) ModuleTemplateInfo {
+	module AvailableModule, namespace, kymaChannel string,
+) ModuleTemplateInfo {
 	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, t, module.Name, namespace)
 	if err != nil && !util.IsNotFound(err) {
 		return ModuleTemplateInfo{Err: err}
@@ -100,7 +101,8 @@ func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
 }
 
 func (t *TemplateLookup) populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx context.Context,
-	module AvailableModule, kymaChannel string) ModuleTemplateInfo {
+	module AvailableModule, kymaChannel string,
+) ModuleTemplateInfo {
 	var templateInfo ModuleTemplateInfo
 	if module.IsInstalledByVersion() {
 		templateInfo = t.GetAndValidateByVersion(ctx, module.Name, module.Version)
@@ -112,7 +114,8 @@ func (t *TemplateLookup) populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx 
 
 func (t *TemplateLookup) populateModuleTemplateInfoUsingModuleReleaseMeta(ctx context.Context,
 	module AvailableModule,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta, kymaChannel, namespace string) ModuleTemplateInfo {
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta, kymaChannel, namespace string,
+) ModuleTemplateInfo {
 	var templateInfo ModuleTemplateInfo
 	templateInfo.DesiredChannel = getDesiredChannel(module.Channel, kymaChannel)
 	desiredModuleVersion, err := GetChannelVersionForModule(moduleReleaseMeta, templateInfo.DesiredChannel)
@@ -148,7 +151,8 @@ func ValidateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 }
 
 func (t *TemplateLookup) getTemplateByVersion(ctx context.Context,
-	moduleName, moduleVersion, namespace string) (*v1beta2.ModuleTemplate, error) {
+	moduleName, moduleVersion, namespace string,
+) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplate := &v1beta2.ModuleTemplate{}
 
 	moduleTemplateName := fmt.Sprintf("%s-%s", moduleName, moduleVersion)
@@ -163,7 +167,8 @@ func (t *TemplateLookup) getTemplateByVersion(ctx context.Context,
 }
 
 func (t *TemplateLookup) GetAndValidateByChannel(ctx context.Context,
-	name, channel, defaultChannel string) ModuleTemplateInfo {
+	name, channel, defaultChannel string,
+) ModuleTemplateInfo {
 	desiredChannel := getDesiredChannel(channel, defaultChannel)
 	info := ModuleTemplateInfo{
 		DesiredChannel: desiredChannel,
