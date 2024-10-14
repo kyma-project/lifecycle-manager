@@ -1,0 +1,272 @@
+name: Deploy template-operator With ModuleReleaseMeta
+description: Deploys a test-specific template-operator and corresponding ModuleReleaseMeta.
+inputs:
+  deploy_modulereleasemeta:
+    description: A flag to indicate with to apply the ModuleReleaseMeta CR for Template Operator module.
+runs:
+  using: composite
+  steps:
+    - name: Create Template Operator Module and apply ModuleTemplate and ModuleReleaseMeta
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'kyma-metrics' ||
+        matrix.e2e-test == 'non-blocking-deletion' ||
+        matrix.e2e-test == 'purge-controller' ||
+        matrix.e2e-test == 'purge-metrics' ||
+        matrix.e2e-test == 'kyma-deprovision-with-foreground-propagation' ||
+        matrix.e2e-test == 'kyma-deprovision-with-background-propagation' ||
+        matrix.e2e-test == 'module-consistency' ||
+        matrix.e2e-test == 'skip-manifest-reconciliation' ||
+        matrix.e2e-test == 'misconfigured-kyma-secret' ||
+        matrix.e2e-test == 'unmanage-module'
+        }}
+      shell: bash
+      run: |
+        make build-manifests
+        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+        kubectl apply -f module-release-meta.yaml
+    - name: Apply Template Operator Module and ModuleReleaseMeta for regular and fast channels
+      working-directory: lifecycle-manager
+      if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
+        matrix.e2e-test == 'module-upgrade-new-version' ||
+        matrix.e2e-test == 'upgrade-under-deletion'
+        }}
+      shell: bash
+      run: |
+        sed -i 's/template-operator-fast/template-operator-1.1.1-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        sed -i 's/template-operator-regular/template-operator-2.4.2-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+
+        cat <<EOF > mrm.yaml
+        apiVersion: operator.kyma-project.io/v1beta2
+        kind: ModuleReleaseMeta
+        metadata:
+          name: template-operator
+          namespace: kcp-system
+        spec:
+          channels:
+            - channel: fast
+              version: 2.4.2-e2e-test
+            - channel: regular
+              version: 1.1.1-e2e-test
+          moduleName: template-operator
+        EOF
+        
+        kubectl apply -f mrm.yaml
+    - name: Create Template Operator Module for installation by version
+      working-directory: lifecycle-manager
+      if: ${{ matrix.e2e-test == 'module-install-by-version' }}
+      shell: bash
+      run: |
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_direct_version.yaml
+    - name: Create Template Operator Module as Mandatory Module
+      working-directory: lifecycle-manager
+      if: ${{ matrix.e2e-test == 'mandatory-module' ||
+        matrix.e2e-test == 'mandatory-module-metrics'
+        }}
+      shell: bash
+      run: |
+        kubectl apply -f tests/moduletemplates/mandatory_moduletemplate_template_operator_v1.yaml
+    - name: Apply Template Operator Module V2 and ModuleReleaseMeta, fast channel
+      working-directory: ./lifecycle-manager
+      if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+      shell: bash
+      run: |
+        sed -i 's/template-operator-fast/template-operator-1.1.1-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        cat <<EOF > mrm.yaml
+        apiVersion: operator.kyma-project.io/v1beta2
+        kind: ModuleReleaseMeta
+        metadata:
+          name: template-operator
+          namespace: kcp-system
+        spec:
+          channels:
+            - channel: fast
+              version: 2.4.2-e2e-test
+          moduleName: template-operator
+        EOF
+        kubectl apply -f mrm.yaml
+    - name: Create Template Operator Module with Deployment, with final state and final deletion state as `Warning` and apply
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
+      shell: bash
+      run: |
+        pushd config/overlays/deployment
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/args/1
+          value: --final-state=Warning
+        - op: replace
+          path: /spec/template/spec/containers/0/args/2
+          value: --final-deletion-state=Warning" >> warning_patch.yaml
+        cat warning_patch.yaml
+        kustomize edit add patch --path warning_patch.yaml --kind Deployment
+        popd
+        make build-manifests
+        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+        kubectl apply -f module-release-meta.yaml
+    - name: Create Template Operator Module with StatefulSet, with final state and final deletion state as `Warning` and apply
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
+      shell: bash
+      run: |
+        pushd config/overlays/statefulset
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/args/1
+          value: --final-state=Warning
+        - op: replace
+          path: /spec/template/spec/containers/0/args/2
+          value: --final-deletion-state=Warning" >> warning_patch.yaml
+        cat warning_patch.yaml
+        kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
+        popd
+        make build-statefulset-manifests
+        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+        kubectl apply -f module-release-meta.yaml
+    - name: Create non-working image patch for Template Operator Module and create associated module config file and applying ModuleReleaseMeta
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'||
+        matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
+      shell: bash
+      run: |
+        echo "name: kyma-project.io/module/template-operator-misconfigured
+        channel: regular
+        version: v1.1.1
+        manifest: template-operator.yaml
+        security: sec-scanners-config.yaml
+        defaultCR: ./config/samples/default-sample-cr.yaml
+        annotations:
+          operator.kyma-project.io/doc-url: https://kyma-project.io" >> misconfigured-module-config.yaml
+        
+        cat <<EOF > mrm.yaml
+        apiVersion: operator.kyma-project.io/v1beta2
+        kind: ModuleReleaseMeta
+        metadata:
+          name: template-operator-misconfigured
+          namespace: kcp-system
+        spec:
+          channels:
+            - channel: regular
+              version: 1.1.1
+          moduleName: template-operator-misconfigured
+        EOF
+
+        kubectl apply -f mrm.yaml
+    - name: Create Template Operator Module with Deployment, with non-working image and apply
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
+      shell: bash
+      run: |
+        pushd config/overlays/deployment
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/image
+          value: non-working-path" >> image_patch.yaml
+        cat image_patch.yaml
+        kustomize edit add patch --path image_patch.yaml --kind Deployment
+        popd
+        make build-manifests
+        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+    - name: Create Template Operator Module with StatefulSet, with non-working image and apply
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
+      shell: bash
+      run: |
+        pushd config/overlays/statefulset
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/image
+          value: non-working-path" >> image_patch.yaml
+        cat image_patch.yaml
+        kustomize edit add patch --path image_patch.yaml --kind StatefulSet
+        popd
+        make build-statefulset-manifests
+        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+
+    - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
+      shell: bash
+      run: |
+        make build-manifests
+        echo "name: kyma-project.io/module/template-operator
+        channel: regular
+        version: v1.0.0
+        manifest: template-operator.yaml
+        security: sec-scanners-config.yaml
+        annotations:
+          operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
+        kyma alpha create module \
+        --module-config-file ./module-config-no-cr.yaml \
+        --path . \
+        --registry localhost:5111 \
+        --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-regular/template-operator-1.0.0/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+        cat <<EOF > mrm.yaml
+        apiVersion: operator.kyma-project.io/v1beta2
+        kind: ModuleReleaseMeta
+        metadata:
+          name: template-operator
+          namespace: kcp-system
+        spec:
+          channels:
+            - channel: regular
+              version: 1.0.0
+          moduleName: template-operator
+        EOF
+
+        kubectl apply -f mrm.yaml
+
+    - name: Apply ModuleReleaseMeta and Template Operator Module in OCM format
+      working-directory: ./lifecycle-manager
+      if: ${{ matrix.e2e-test == 'ocm-compatible-module-template' }}
+      shell: bash
+      run: |
+        sed -i 's/template-operator-regular/template-operator-1.0.0-new-ocm-format/g' tests/moduletemplates/moduletemplate_template_operator_regular_new_ocm.yaml
+        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular_new_ocm.yaml
+        cat <<EOF > mrm.yaml
+        apiVersion: operator.kyma-project.io/v1beta2
+        kind: ModuleReleaseMeta
+        metadata:
+          name: template-operator
+          namespace: kcp-system
+        spec:
+          channels:
+            - channel: regular
+              version: 1.0.0-new-ocm-format
+          moduleName: template-operator
+        EOF
+
+        kubectl apply -f mrm.yaml
+
+        
+    
+

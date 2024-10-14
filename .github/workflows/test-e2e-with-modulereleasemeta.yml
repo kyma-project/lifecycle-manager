@@ -1,0 +1,103 @@
+name: TestSuite E2E
+
+env:
+  IMAGE_REPO: europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager
+on:
+  workflow_dispatch:
+    inputs:
+      k8s_version:
+        description: With Kubernetes version
+        required: false
+  pull_request:
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
+jobs:
+  wait-for-image-build:
+    name: Wait for image build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for the Docker image
+        timeout-minutes: 20
+        env:
+          ITERATIONS: 40
+          SLEEP_SECONDS: 30
+        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.pull_request.head.sha }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
+  e2e-integration:
+    name: E2E
+    needs: wait-for-image-build
+    strategy:
+      fail-fast: false
+      matrix:
+        e2e-test:
+          - watcher-enqueue
+          - kyma-deprovision-with-foreground-propagation
+          - kyma-deprovision-with-background-propagation
+          - module-status-decoupling-with-statefulset
+          - module-status-decoupling-with-deployment
+          - kyma-metrics
+          - module-without-default-cr
+          - module-consistency
+          - non-blocking-deletion
+          - upgrade-under-deletion
+          - purge-controller
+          - purge-metrics
+          - module-upgrade-channel-switch
+          - module-upgrade-new-version
+          - unmanage-module
+          - skip-manifest-reconciliation
+          - ca-certificate-rotation
+          - self-signed-certificate-rotation
+          - mandatory-module
+          - mandatory-module-metrics
+          - misconfigured-kyma-secret
+          - rbac-privileges
+          - ocm-compatible-module-template
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          path: lifecycle-manager
+
+      - name: Checkout template-operator
+        uses: actions/checkout@v4
+        with:
+          repository: kyma-project/template-operator
+          path: template-operator
+
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
+        id: configuration
+
+      - name: Setup tools
+        uses: ./lifecycle-manager/.github/actions/setup-tools
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          istio_version: ${{ steps.configuration.outputs.istio_version }}
+          k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          go-version-file: lifecycle-manager/go.mod
+          cache-dependency-path: lifecycle-manager/go.sum
+
+      - name: Setup test clusters
+        uses: ./lifecycle-manager/.github/actions/setup-test-clusters
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
+
+      - name: Deploy lifecycle-manager
+        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
+        with:
+          klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
+          klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
+
+      - name: Deploy template-operator
+        uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
+
+      - name: Run '${{ matrix.e2e-test }}' test
+        working-directory: lifecycle-manager
+        run: |
+          make -C tests/e2e ${{ matrix.e2e-test }}
