@@ -1,8 +1,5 @@
 name: Deploy template-operator With ModuleReleaseMeta
 description: Deploys a test-specific template-operator and corresponding ModuleReleaseMeta.
-inputs:
-  deploy_modulereleasemeta:
-    description: A flag to indicate with to apply the ModuleReleaseMeta CR for Template Operator module.
 runs:
   using: composite
   steps:
@@ -92,6 +89,8 @@ runs:
           channels:
             - channel: fast
               version: 2.4.2-e2e-test
+            - channel: regular
+              version: 1.0.1
           moduleName: template-operator
         EOF
         kubectl apply -f mrm.yaml
