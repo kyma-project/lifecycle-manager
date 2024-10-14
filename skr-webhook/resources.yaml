@@ -52,7 +52,7 @@ spec:
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
-  name: skr-webhook-high-priority
+  name: skr-webhook-priority
 value: 1000000000
 globalDefault: false
 description: "This priority class is used for skr-webhook to ensure reconciliation, even with high workload."
@@ -128,4 +128,4 @@ spec:
                 path: tls.crt
               - key: ca.crt
                 path: ca.crt
-      priorityClassName: skr-webhook-high-priority
+      priorityClassName: skr-webhook-priority
