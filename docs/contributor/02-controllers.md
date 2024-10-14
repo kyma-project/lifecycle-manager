@@ -16,6 +16,13 @@ Its main responsibilities are:
 To determine the cluster to sync to, fields in **.spec.remote** are evaluated.
 This allows the use of ModuleTemplate CRs in a cluster managed by Lifecycle Manager while Kyma Control Plane is in a different cluster.
 
+### Fetching the ModuleTemplate
+
+The Kyma Controller uses the ModuleReleaseMeta CR to fetch the correct ModuleTemplate CR for a module. The ModuleReleaseMeta should have the name of the module. The Kyma Controller uses the channel defined in the Kyma.Spec to fetch the corresponding module version from the ModuleReleaseMeta channel-version pairs. If there is no entry with the channel defined in Kyma.Spec, an error will be thrown. The Kyma Controller then fetches the ModuleTemplate which has the name of modulename-version from the ModuleTemplate CRs available in the Kyma Control Plane.
+
+If there is no ModuleReleaseMeta CR present for the module, the Kyma Controller lists all the ModuleTemplates in the Control Plane and then filters them according to the Kyma.spec.channel
+
+
 ### Remote Synchronization
 
 The Kyma CR in Kyma Control Plane shows the initial specification and the current status. To install a module, Lifecycle Manager uses the specification from the remote cluster Kyma CR.
