@@ -23,8 +23,8 @@ func GetModuleTemplate(ctx context.Context,
 	availableModule := templatelookup.AvailableModule{
 		Module: module,
 	}
-	templateInfo := templateLookup.PopulateModuleTemplateInfo(ctx, availableModule, defaultChannel,
-		ControlPlaneNamespace)
+	templateInfo := templateLookup.PopulateModuleTemplateInfo(ctx, availableModule, ControlPlaneNamespace,
+		defaultChannel)
 
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)

@@ -91,7 +91,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 			GinkgoWriter.Printf(string(out))
 
 			By("And ModuleReleaseMeta is updated if it exists")
-			Eventually(UpdateChannelVersionIfMRMExists).
+			Eventually(UpdateChannelVersionIfModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, "2.4.2-e2e-test").
 				Should(Succeed())

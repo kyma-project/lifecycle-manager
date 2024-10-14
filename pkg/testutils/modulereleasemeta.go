@@ -8,14 +8,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/onsi/ginkgo/v2"
 )
 
-func UpdateChannelVersionIfMRMExists(ctx context.Context, clnt client.Client,
+func UpdateChannelVersionIfModuleReleaseMetaExists(ctx context.Context, clnt client.Client,
 	moduleName, namespace, channel, version string,
 ) error {
 	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
-	ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("MODULERELEASEMETA: %v\n", mrm)))
 	if err != nil {
 		if util.IsNotFound(err) {
 			return nil
