@@ -138,11 +138,34 @@ type ModuleTemplateSpec struct {
 
 	// Info contains metadata about the module.
 	// +optional
-	Info ModuleInfo `json:"info,omitempty"`
+	Info *ModuleInfo `json:"info,omitempty"`
 
 	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
 	// +optional
 	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
+
+	// Manager contains information identifying a module's resource that indicates the readiness of the module. Typically, this should be the manager Deployment of the module.
+	// +optional
+	Manager *Manager `json:"manager,omitempty"`
+}
+
+// Manager defines the structure for the manager field in ModuleTemplateSpec.
+type Manager struct {
+	// Group is the API group of the manager.
+	Group string `json:"group"`
+
+	// Version is the API version of the manager.
+	Version string `json:"version"`
+
+	// Kind is the kind of the manager.
+	Kind string `json:"kind"`
+
+	// Namespace is the namespace of the manager. It is optional.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// Name is the name of the manager.
+	Name string `json:"name"`
 }
 
 type ModuleInfo struct {

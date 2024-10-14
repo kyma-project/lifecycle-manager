@@ -75,6 +75,38 @@ spec:
 - documentation: The link to the documentation of the module.
 - icons: A list of icons of the module, each with a name and link.
 
+### **.spec.manager**
+
+The `manager` field provides details about a module's resource that indicates its readiness. Typically, this is the
+`Deployment` managing the module. If the resource is not namespaced, such as the module CR's `CRD`, the namespace can be
+optional.
+
+For example, if the module has a manager `Deployment` in the `kyma-system` namespace:
+
+```yaml
+spec:
+  manager:
+    group: apps
+    version: v1
+    kind: Deployment
+    namespace: kyma-system
+    name: [module manager]
+```
+
+For a module without a manager, such as [cloud manager](https://github.com/kyma-project/cloud-manager):
+
+```yaml
+spec:
+  manager:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: [module CRD]
+```
+
+This field helps identify the module's manager, which is useful for determining whether a module is successfully
+installed, especially in manual installation scenarios.
+
 ### **.spec.customStateCheck**
 
 > **CAUTION:** This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
