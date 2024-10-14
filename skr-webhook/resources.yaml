@@ -49,6 +49,14 @@ spec:
       targetPort: metrics-port
       name: http-metrics
 ---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: skr-webhook-priority
+value: 1000000000
+globalDefault: false
+description: "This priority class is used for skr-webhook to ensure reconciliation, even with high workload."
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -120,3 +128,4 @@ spec:
                 path: tls.crt
               - key: ca.crt
                 path: ca.crt
+      priorityClassName: skr-webhook-priority

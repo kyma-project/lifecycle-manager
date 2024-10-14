@@ -1,4 +1,4 @@
-name: TestSuite E2E
+name: TestSuite E2E with ModuleReleaseMeta
 
 env:
   IMAGE_REPO: europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager
@@ -26,7 +26,7 @@ jobs:
           SLEEP_SECONDS: 30
         run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.pull_request.head.sha }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
-    name: E2E
+    name: E2E With ModuleReleaseMeta
     needs: wait-for-image-build
     strategy:
       fail-fast: false
