@@ -144,7 +144,7 @@ type ModuleTemplateSpec struct {
 	// +optional
 	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
 
-	// Manager contains information identifying a module's resource that indicates the readiness of the module. Typically, this should be the manager Deployment of the module.
+	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource. 
 	// +optional
 	Manager *Manager `json:"manager,omitempty"`
 }
