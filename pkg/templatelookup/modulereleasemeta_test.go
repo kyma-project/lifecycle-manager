@@ -17,7 +17,7 @@ func Test_GetChannelVersionForModule_WhenEmptyChannels(t *testing.T) {
 	}
 	_, err := templatelookup.GetChannelVersionForModule(moduleReleaseMeta, "test")
 
-	require.ErrorContains(t, err, "no channels found for module")
+	require.ErrorIs(t, err, templatelookup.ErrNoChannelsFound)
 }
 
 func Test_GetChannelVersionForModule_WhenChannelFound(t *testing.T) {
@@ -50,5 +50,5 @@ func Test_GetChannelVersionForModule_WhenChannelNotFound(t *testing.T) {
 	}
 	_, err := templatelookup.GetChannelVersionForModule(moduleReleaseMeta, "fast")
 
-	require.ErrorContains(t, err, "no versions found for channel")
+	require.ErrorIs(t, err, templatelookup.ErrChannelNotFound)
 }
