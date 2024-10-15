@@ -77,9 +77,7 @@ spec:
 
 ### **.spec.manager**
 
-The `manager` field provides details about a module's resource that indicates its readiness. Typically, this is the
-`Deployment` managing the module. If the resource is not namespaced, such as the module CR's `CRD`, the namespace can be
-optional.
+The `manager` field provides information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource. If the resource is not namespaced, such as the module CR's `CRD`, the namespace can be optional.
 
 For example, if the module has a manager `Deployment` in the `kyma-system` namespace:
 
