@@ -99,7 +99,7 @@ spec:
     group: apiextensions.k8s.io
     version: v1
     kind: CustomResourceDefinition
-    name: [module CRD]
+    name: [module CRD name]
 ```
 
 This field helps identify the module's manager, which is useful for determining whether a module is successfully
