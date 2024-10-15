@@ -144,21 +144,14 @@ type ModuleTemplateSpec struct {
 	// +optional
 	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
 
-	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource. 
+	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource.
 	// +optional
 	Manager *Manager `json:"manager,omitempty"`
 }
 
 // Manager defines the structure for the manager field in ModuleTemplateSpec.
 type Manager struct {
-	// Group is the API group of the manager.
-	Group string `json:"group"`
-
-	// Version is the API version of the manager.
-	Version string `json:"version"`
-
-	// Kind is the kind of the manager.
-	Kind string `json:"kind"`
+	apimetav1.GroupVersionKind `json:",inline"`
 
 	// Namespace is the namespace of the manager. It is optional.
 	// +optional

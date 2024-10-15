@@ -101,10 +101,6 @@ spec:
     kind: CustomResourceDefinition
     name: [module CRD name]
 ```
-
-This field helps identify the module's manager, which is useful for determining whether a module is successfully
-installed, especially in manual installation scenarios.
-
 ### **.spec.customStateCheck**
 
 > **CAUTION:** This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
