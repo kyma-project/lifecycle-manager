@@ -88,7 +88,7 @@ spec:
     version: v1
     kind: Deployment
     namespace: kyma-system
-    name: [module manager]
+    name: [module manager name]
 ```
 
 For a module without a manager, such as [cloud manager](https://github.com/kyma-project/cloud-manager):
