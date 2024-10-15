@@ -267,7 +267,7 @@ runs:
 
         kubectl apply -f mrm.yaml
 
-    - name: Apply ModuleReleaseMeta with old ModuleTemplate name
+    - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'modulereleasemeta-with-old-moduletemplate-name' }}
       shell: bash

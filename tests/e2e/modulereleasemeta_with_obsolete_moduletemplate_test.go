@@ -12,7 +12,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("ModuleReleaseMeta With Old ModuleTemplate Name", Ordered, func() {
+var _ = Describe("ModuleReleaseMeta With Obsolete ModuleTemplate", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 

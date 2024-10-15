@@ -161,5 +161,5 @@ rbac-privileges:
 ocm-compatible-module-template:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "OCM Format Module Template"
 
-modulereleasemeta-with-old-moduletemplate-name:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta With Old ModuleTemplate Name"
+modulereleasemeta-with-obsolete-moduletemplate:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta With Obsolete ModuleTemplate"

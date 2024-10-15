@@ -55,7 +55,7 @@ jobs:
           - misconfigured-kyma-secret
           - rbac-privileges
           - ocm-compatible-module-template
-          - modulereleasemeta-with-old-moduletemplate-name
+          - modulereleasemeta-with-obsolete-moduletemplate
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
