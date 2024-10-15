@@ -20,7 +20,7 @@ This allows the use of ModuleTemplate CRs in a cluster managed by Lifecycle Mana
 
 The Kyma Controller uses the ModuleReleaseMeta CR to fetch the correct ModuleTemplate CR for a module. The ModuleReleaseMeta should have the name of the module. The Kyma Controller uses the channel defined in the Kyma.Spec to fetch the corresponding module version from the ModuleReleaseMeta channel-version pairs. If there is no entry with the channel defined in Kyma.Spec, an error will be thrown. The Kyma Controller then fetches the ModuleTemplate which has the name of modulename-version from the ModuleTemplate CRs available in the Kyma Control Plane.
 
-If there is no ModuleReleaseMeta CR present for the module, the Kyma Controller lists all the ModuleTemplates in the Control Plane and then filters them according to the Kyma.spec.channel
+If a ModuleReleaseMeta CR for a particular module doesn't exist, Kyma Controller lists all the ModuleTemplates in the Control Plane and then filters them using the **.spec.channel** parameter in the Kyma CR.
 
 
 ### Remote Synchronization
