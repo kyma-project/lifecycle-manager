@@ -269,7 +269,7 @@ runs:
 
     - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
       working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'modulereleasemeta-with-old-moduletemplate-name' }}
+      if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
       shell: bash
       run: |
         make build-manifests
