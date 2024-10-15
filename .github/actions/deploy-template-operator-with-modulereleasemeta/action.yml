@@ -267,6 +267,18 @@ runs:
 
         kubectl apply -f mrm.yaml
 
+    - name: Apply ModuleReleaseMeta with old ModuleTemplate name
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'modulereleasemeta-with-old-moduletemplate-name' }}
+      shell: bash
+      run: |
+        make build-manifests
+        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        kubectl apply -f template.yaml
+        kubectl apply -f module-release-meta.yaml
+      
+
         
     
 

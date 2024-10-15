@@ -24,6 +24,7 @@ var (
 	ErrContainsUnexpectedModules        = errors.New("kyma CR contains unexpected modules")
 	ErrNotContainsExpectedModules       = errors.New("kyma CR not contains expected modules")
 	ErrModuleVersionInStatusIsIncorrect = errors.New("status.modules.version is incorrect")
+	ErrModuleMessageInStatusIsIncorrect = errors.New("status.modules.message is incorrect")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -355,6 +356,23 @@ func ContainsModuleInSpec(ctx context.Context,
 	}
 
 	return ErrNotContainsExpectedModules
+}
+
+func ModuleMessageInKymaStatusIsCorrect(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName, message string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+
+	for _, module := range kyma.Status.Modules {
+		if module.Name == moduleName && module.Message == message {
+			return nil
+		}
+	}
+
+	return ErrModuleMessageInStatusIsIncorrect
 }
 
 func ModuleVersionInKymaStatusIsCorrect(ctx context.Context,
