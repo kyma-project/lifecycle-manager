@@ -19,7 +19,7 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./module-config.yaml --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -72,7 +72,7 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind Deployment
         popd
         make build-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./module-config.yaml --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -93,7 +93,7 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./module-config.yaml --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -125,7 +125,7 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
         make build-manifests
-        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./misconfigured-module-config.yaml --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -143,7 +143,7 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./misconfigured-module-config.yaml --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -160,11 +160,7 @@ runs:
         security: sec-scanners-config.yaml
         annotations:
           operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
-        kyma alpha create module \
-        --module-config-file ./module-config-no-cr.yaml \
-        --path . \
-        --registry localhost:5111 \
-        --insecure
+        module create --module-config-file ./module-config-no-cr.yaml --registry localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
