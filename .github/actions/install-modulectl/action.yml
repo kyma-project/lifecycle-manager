@@ -7,7 +7,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install kyma-cli
+    - name: Install modulectl
       shell: bash
       run: |
         wget https://github.com/kyma-project/modulectl/releases/download/${{ inputs.modulectl_version }}/modulectl-linux -O modulectl-linux
