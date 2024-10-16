@@ -63,6 +63,13 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
 		Watches(&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
+		Watches(&v1beta2.ModuleReleaseMeta{},
+			handler.Funcs{
+				UpdateFunc: func(ctx context.Context, e event.UpdateEvent,
+					rli workqueue.TypedRateLimitingInterface[ctrl.Request]) {
+					watch.NewModuleReleaseMetaEventHandler(r).Update(ctx, e, rli)
+				},
+			}).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
