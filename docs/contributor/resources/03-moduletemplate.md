@@ -91,7 +91,7 @@ spec:
     name: [module manager name]
 ```
 
-For a module without a manager, such as [cloud manager](https://github.com/kyma-project/cloud-manager):
+In this example, the module doesn't have a manager and in the **manager** field you specifie the module's `CustomResourceDefinition`. For example, of the [Cloud Manager](https://github.com/kyma-project/cloud-manager) module:
 
 ```yaml
 spec:
