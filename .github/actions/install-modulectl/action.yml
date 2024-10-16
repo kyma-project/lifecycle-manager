@@ -1,0 +1,17 @@
+name: Install modulectl
+description: Downloads modulectl and installs it locally.
+inputs:
+  modulectl_version:
+    description: The version of modulectl to install. For example, 1.0.0.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install modulectl
+      shell: bash
+      run: |
+        wget https://github.com/kyma-project/modulectl/releases/download/${{ inputs.modulectl_version }}/modulectl-linux -O modulectl-linux
+        chmod +x modulectl-linux
+        mv modulectl-linux /usr/local/bin/modulectl
+        echo "PATH=/usr/local/bin/modulectl" >> $GITHUB_OUTPUT
+        ln -s /usr/local/bin/modulectl /usr/local/bin/module
