@@ -105,7 +105,7 @@ runs:
       run: |
         echo "name: kyma-project.io/module/template-operator-misconfigured
         channel: regular
-        version: v1.1.1
+        version: 1.1.1
         manifest: template-operator.yaml
         security: sec-scanners-config.yaml
         defaultCR: ./config/samples/default-sample-cr.yaml
@@ -155,7 +155,7 @@ runs:
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
         channel: regular
-        version: v1.0.0
+        version: 1.0.0
         manifest: template-operator.yaml
         security: sec-scanners-config.yaml
         annotations:

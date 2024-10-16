@@ -91,7 +91,7 @@ This setup is deployed with the following security features enabled:
 
    </details>
 
-5. Create a ModuleTemplate CR using [Kyma CLI](https://github.com/kyma-project/cli).
+5. Create a ModuleTemplate CR using [modulectl](https://github.com/kyma-project/modulectl).
    The ModuleTemplate CR includes component descriptors for module installations.
 
    In this tutorial, we will create a ModuleTemplate CR from the [`template-operator`](https://github.com/kyma-project/template-operator) repository.
@@ -104,8 +104,7 @@ This setup is deployed with the following security features enabled:
    make build-manifests
    
    # create the a ModuleTemplate CR and save it to the template.yaml file
-   kyma alpha create module -p ./ --version 1.2.3 \
-   --registry k3d-registry.localhost:5111 --insecure --module-config-file ./module-config.yaml
+ modulectl create --module-config-file ./module-config.yaml --registry http://k3d-registry.localhost:5111 --insecure 
    ```
 
 6. Verify images pushed to the local registry:
