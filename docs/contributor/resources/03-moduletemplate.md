@@ -79,7 +79,7 @@ spec:
 
 The `manager` field provides information for identifying a module's resource that can indicate the module's installation readiness. Typically, the manager is the module's `Deployment` resource. In exceptional cases, it may also be another resource. The **namespace** parameter is optional if the resource is not namespaced. For example,  if the resource is the module CR's `CustomResourceDefinition`.
 
-For example, if the module has a manager `Deployment` in the `kyma-system` namespace:
+In this example, the module's manager is the `Deployment` resource in the `kyma-system` namespace.
 
 ```yaml
 spec:
