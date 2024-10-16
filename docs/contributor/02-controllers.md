@@ -16,6 +16,13 @@ Its main responsibilities are:
 To determine the cluster to sync to, fields in **.spec.remote** are evaluated.
 This allows the use of ModuleTemplate CRs in a cluster managed by Lifecycle Manager while Kyma Control Plane is in a different cluster.
 
+### Fetching the ModuleTemplate
+
+Kyma Controller uses the ModuleReleaseMeta CR to fetch the correct ModuleTemplate CR for a module. The name of ModuleReleaseMeta CR should be the same as the module name. Kyma Controller uses the channel defined in the Kyma CR spec to fetch the corresponding module version from the ModuleReleaseMeta channel-version pairs. Kyma Controller then fetches the ModuleTemplate CR with the module name-version from the ModuleTemplate CRs available in the Kyma Control Plane. If there is no entry in the ModuleReleaseMeta CR for the channel defined in the Kyma CR spec, the Kyma CR will be in the `Error` state indicating that no versions were found for the channel.
+
+If a ModuleReleaseMeta CR for a particular module doesn't exist, Kyma Controller lists all the ModuleTemplates in the Control Plane and then filters them using the **.spec.channel** parameter in the Kyma CR.
+
+
 ### Remote Synchronization
 
 The Kyma CR in Kyma Control Plane shows the initial specification and the current status. To install a module, Lifecycle Manager uses the specification from the remote cluster Kyma CR.
@@ -39,7 +46,7 @@ it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandato
 ## Manifest Controller
 
 [Manifest controller](../../internal/controller/manifest/controller.go) deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
-Since it mainly is a delegation to the [declarative reconciliation library](../../internal/declarative/README.md) with certain [internal implementation additions](../../internal/manifest/README.md), please look at the respective documentation for these parts to understand them more.
+Since it mainly is a delegation to the [declarative reconciliation library](../../internal/declarative/) with certain [internal implementation additions](../../internal/manifest/README.md), please look at the respective documentation for these parts to understand them more.
 
 ## Purge Controller
 

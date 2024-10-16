@@ -41,7 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+	_ "ocm.software/ocm/api/ocm"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

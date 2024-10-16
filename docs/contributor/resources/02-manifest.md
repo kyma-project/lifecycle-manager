@@ -47,7 +47,7 @@ looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and 
 
 The config reference uses an image layer reference that contains configuration data that can be used to further
 influence any potential rendering process while the resources are processed by
-the [declarative library](../../../internal/declarative/README.md#resource-rendering). It is resolved through a
+the [declarative library](../../../internal/declarative/). It is resolved through a
 translation of the ModuleTemplate CR to the Manifest CR during
 the [resolution of the modules](../../../internal/manifest/parser/template_to_module.go) in the Kyma CR control loop.
 
@@ -76,7 +76,7 @@ spec:
 
 ### **.spec.install**
 
-The installation layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../../../internal/declarative/README.md#resource-rendering).
+The installation layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../../../internal/declarative/).
 
 It is mapped from an access type layer in the descriptor:
 

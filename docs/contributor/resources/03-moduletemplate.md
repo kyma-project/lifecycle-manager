@@ -12,9 +12,11 @@ kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
 
 ## Configuration
 
-### **.spec.channel**
+### **.spec.channel** (Deprecated)
 
-The channel that a ModuleTemplate CR is registered in. It is used alongside the channel attributes of the Kyma CR to match up a module and a channel.
+The `channel` field previously indicated the channel in which a ModuleTemplate CR was registered. It was used alongside the channel attributes of the Kyma CR to match a module with a specific channel.
+
+**Note:** This field is now deprecated and will be removed in a future release. It has been decided that ModuleTemplates are now tied directly to versions, rather than being associated with channels.
 
 For the following ModuleTemplate CR:
 
@@ -27,7 +29,7 @@ spec:
   channel: regular
 ```
 
-the module will be referenced by any Kyma CR asking for it in the `regular` channel.
+the module was referenced by any Kyma CR asking for it in the `regular` channel.
 
 ### **.spec.data**
 
@@ -73,6 +75,32 @@ spec:
 - documentation: The link to the documentation of the module.
 - icons: A list of icons of the module, each with a name and link.
 
+### **.spec.manager**
+
+The `manager` field provides information for identifying a module's resource that can indicate the module's installation readiness. Typically, the manager is the module's `Deployment` resource. In exceptional cases, it may also be another resource. The **namespace** parameter is optional if the resource is not namespaced. For example,  if the resource is the module CR's `CustomResourceDefinition`.
+
+In this example, the module's manager is the `Deployment` resource in the `kyma-system` namespace.
+
+```yaml
+spec:
+  manager:
+    group: apps
+    version: v1
+    kind: Deployment
+    namespace: kyma-system
+    name: [module manager name]
+```
+
+In this example, the module's manager is the module's `CustomResourceDefinition` that does not require the **namespace** parameter.
+
+```yaml
+spec:
+  manager:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: [module CRD name]
+```
 ### **.spec.customStateCheck**
 
 > **CAUTION:** This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.

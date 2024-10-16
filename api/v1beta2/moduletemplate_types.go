@@ -22,11 +22,11 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"ocm.software/ocm/api/ocm/compdesc"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -76,6 +76,9 @@ func (d *Descriptor) DeepCopyObject() machineryruntime.Object {
 type ModuleTemplateSpec struct {
 	// Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
 	// to a target channel. It has to be provided at any given time.
+	// Deprecated: This field is deprecated and will be removed in a future release.
+	// +optional
+	// +kubebuilder:deprecatedversion
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
@@ -135,11 +138,27 @@ type ModuleTemplateSpec struct {
 
 	// Info contains metadata about the module.
 	// +optional
-	Info ModuleInfo `json:"info,omitempty"`
-  
+	Info *ModuleInfo `json:"info,omitempty"`
+
 	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
 	// +optional
 	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
+
+	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource.
+	// +optional
+	Manager *Manager `json:"manager,omitempty"`
+}
+
+// Manager defines the structure for the manager field in ModuleTemplateSpec.
+type Manager struct {
+	apimetav1.GroupVersionKind `json:",inline"`
+
+	// Namespace is the namespace of the manager. It is optional.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// Name is the name of the manager.
+	Name string `json:"name"`
 }
 
 type ModuleInfo struct {

@@ -50,6 +50,12 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 				kcpClient,
 				newTemplateFilePath)).
 				Should(Succeed())
+
+			By("And ModuleReleaseMeta is updated if it exists")
+			Eventually(UpdateChannelVersionIfModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, "2.4.2-e2e-test").
+				Should(Succeed())
 		})
 
 		It("Then Module CR exists", func() {

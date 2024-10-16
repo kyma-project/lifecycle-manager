@@ -141,6 +141,11 @@ var _ = Describe("RBAC Privileges", func() {
 				},
 				{
 					APIGroups: []string{"operator.kyma-project.io"},
+					Resources: []string{"modulereleasemetas"},
+					Verbs:     []string{"get", "list"},
+				},
+				{
+					APIGroups: []string{"operator.kyma-project.io"},
 					Resources: []string{"moduletemplates"},
 					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
 				},
