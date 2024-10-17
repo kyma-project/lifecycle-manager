@@ -42,6 +42,7 @@ const (
 	DefaultIstioGatewayName                                             = "klm-watcher"
 	DefaultIstioGatewayNamespace                                        = "kcp-system"
 	DefaultIstioNamespace                                               = "istio-system"
+	DefaultIstioGatewaySecretRefreshInterval                            = 8 * time.Second
 	DefaultCaCertName                                                   = "klm-watcher-serving"
 	DefaultCaCertCacheTTL                                 time.Duration = 1 * time.Hour
 	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour

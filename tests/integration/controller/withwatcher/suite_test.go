@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -234,6 +236,8 @@ var _ = BeforeSuite(func() {
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
+
+	zerodw.SetupGatewaySecretHandler(mgr.GetClient(), logf.FromContext(ctx), 8*time.Second)
 
 	go func() {
 		defer GinkgoRecover()
