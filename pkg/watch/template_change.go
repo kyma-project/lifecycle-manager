@@ -47,7 +47,8 @@ func filterKymasWithTemplate(kymas *v1beta2.KymaList, template *v1beta2.ModuleTe
 				continue
 			}
 			if moduleStatus.Template.GetName() == template.GetName() &&
-				moduleStatus.Template.GetNamespace() == template.GetNamespace() {
+				moduleStatus.Template.GetNamespace() == template.GetNamespace() &&
+				moduleStatus.Channel != "" {
 				templateUsed = true
 				break
 			}
