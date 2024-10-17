@@ -38,9 +38,7 @@ func NewKymaSkrContextProvider(kcpClient Client, clientCache *ClientCache, event
 
 const kubeConfigKey = "config"
 
-var (
-	ErrSkrClientContextNotFound = errors.New("skr client context not found")
-)
+var ErrSkrClientContextNotFound = errors.New("skr client context not found")
 
 func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.NamespacedName) error {
 	if k.clientCache.Contains(kyma) {
