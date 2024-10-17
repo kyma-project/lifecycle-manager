@@ -74,7 +74,7 @@ func (c *Client) CheckCRDeletion(ctx context.Context, manifestCR *v1beta2.Manife
 
 func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := c.preDeleteDeleteCR(ctx, kcp, manifest); err != nil {
+		if err := c.DeleteCR(ctx, kcp, manifest); err != nil {
 			// we do not set a status here since it will be deleting if timestamp is set.
 			manifest.SetStatus(manifest.GetStatus().WithErr(err))
 			return err
@@ -84,11 +84,11 @@ func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest
 	return nil
 }
 
-// preDeleteDeleteCR is a hook for deleting the module CR if available in the cluster.
+// DeleteCR deletes the module CR if available in the cluster.
 // It uses DeletePropagationBackground to delete module CR.
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
 // and we consider the CR removal successful.
-func (c *Client) preDeleteDeleteCR(
+func (c *Client) DeleteCR(
 	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
 ) error {
 	if manifest.Spec.Resource == nil {
@@ -106,7 +106,7 @@ func (c *Client) preDeleteDeleteCR(
 	onCluster := manifest.DeepCopy()
 	err = kcp.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster)
 	if util.IsNotFound(err) {
-		return fmt.Errorf("preDeleteDeleteCR: %w", err)
+		return fmt.Errorf("DeleteCR: %w", err)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to fetch resource: %w", err)
@@ -122,9 +122,9 @@ func (c *Client) preDeleteDeleteCR(
 	return nil
 }
 
-// PostRunCreateCR is a hook for creating the manifest default custom resource if not available in the cluster
+// CreateCR creates the manifest default custom resource if not available in the cluster
 // It is used to provide the controller with default data in the Runtime.
-func (c *Client) PostRunCreateCR(
+func (c *Client) CreateCR(
 	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
 ) error {
 	if manifest.Spec.Resource == nil {

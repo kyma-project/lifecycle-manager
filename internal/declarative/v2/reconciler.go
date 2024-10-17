@@ -331,7 +331,7 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 		return ErrWarningResourceSyncStateDiff
 	}
 
-	if err := modulecr.NewClient(skrClient).PostRunCreateCR(ctx, r.Client, manifest); err != nil {
+	if err := modulecr.NewClient(skrClient).CreateCR(ctx, r.Client, manifest); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}

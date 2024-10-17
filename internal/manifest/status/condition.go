@@ -52,5 +52,4 @@ func UpdateResourcesCondition(manifest *v1beta2.Manifest) {
 		meta.SetStatusCondition(&status.Conditions, resourceCondition)
 		manifest.SetStatus(status.WithOperation(resourceCondition.Message))
 	}
-
 }
