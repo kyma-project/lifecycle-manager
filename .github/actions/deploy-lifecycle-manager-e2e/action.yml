@@ -10,82 +10,89 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Patch purge finalizer flags
-      if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd config/watcher_local_test
-        echo \
-        "- op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --enable-purge-finalizer=true
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
-        cat purge_finalizer.yaml
-        kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
-        popd
-    - name: Patch metrics cleanup interval
-      if : ${{ matrix.e2e-test == 'kyma-metrics' }}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd config/watcher_local_test
-        echo \
-        "- op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --metrics-cleanup-interval=1" >> metrics_cleanup.yaml
-        cat metrics_cleanup.yaml
-        kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment
-        popd
-    - name: Patch self signed certificate lifetime
-      if: ${{matrix.e2e-test == 'self-signed-certificate-rotation'}}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd config/watcher_local_test
-        echo \
-        "- op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-duration=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-before=59m
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
-        cat self-signed-cert.yaml
-        kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
-        popd
-    - name: Patch CA certificate renewBefore
-      if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd config/watcher_local_test
-        echo \
-        "- op: replace
-          path: /spec/renewBefore
-          value: 59m 
-        - op: replace
-          path: /spec/duration
-          value: 1h">> certificate_renewal.yaml
-        cat certificate_renewal.yaml
-        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
-        popd
-    - name: Deploy LM local testing kustomize
-      uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
-      with:
-        klm_version_tag: ${{ inputs.klm_version_tag }}
-        klm_image_repo: ${{ inputs.klm_image_repo }}
-    - name: Expose Metrics Endpoint
-      working-directory: lifecycle-manager
-      if: ${{ matrix.e2e-test == 'kyma-metrics' ||
-        matrix.e2e-test == 'purge-metrics' ||
-        matrix.e2e-test == 'self-signed-certificate-rotation' ||
-        matrix.e2e-test == 'mandatory-module-metrics'
-        }}
-      shell: bash
-      run: |
-        kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
+  - name: Patch purge finalizer flags
+    if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
+    working-directory: lifecycle-manager
+    shell: bash
+    run: |
+      pushd config/watcher_local_test
+      echo \
+      "- op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-purge-finalizer=true
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+      cat purge_finalizer.yaml
+      kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+      popd
+  - name: Patch metrics cleanup interval
+    if: ${{ matrix.e2e-test == 'kyma-metrics' }}
+    working-directory: lifecycle-manager
+    shell: bash
+    run: |
+      pushd config/watcher_local_test
+      echo \
+      "- op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --metrics-cleanup-interval=1" >> metrics_cleanup.yaml
+      cat metrics_cleanup.yaml
+      kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment
+      popd
+  - name: Patch self signed certificate lifetime
+    if: ${{matrix.e2e-test == 'self-signed-certificate-rotation'}}
+    working-directory: lifecycle-manager
+    shell: bash
+    run: |
+      pushd config/watcher_local_test
+      echo \
+      "- op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-duration=1h
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-renew-before=59m
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+      cat self-signed-cert.yaml
+      kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
+      popd
+  - name: Patch requeue intervals
+    if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger'}}
+    working-directory: lifecycle-manager
+    shell: bash
+    run: |
+      pushd config/watcher_local_test
+      echo \
+      "- op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-error-interval=1h
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-warning-interval=1h
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-success-interval=1h
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-busy-interval=1h" >> requeue-interval-patch.yaml
+      cat requeue-interval-patch.yaml
+      kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
+      popd
+  - name: Patch CA certificate renewBefore
+    if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
+    working-directory: lifecycle-manager
+    shell: bash
+    run: "pushd config/watcher_local_test\necho \\\n\"- op: replace\n  path: /spec/renewBefore\n  value: 59m \n- op: replace\n  path: /spec/duration\n  value: 1h\">> certificate_renewal.yaml\ncat certificate_renewal.yaml\nkustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving\npopd\n"
+  - name: Deploy LM local testing kustomize
+    uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
+    with:
+      klm_version_tag: ${{ inputs.klm_version_tag }}
+      klm_image_repo: ${{ inputs.klm_image_repo }}
+  - name: Expose Metrics Endpoint
+    working-directory: lifecycle-manager
+    if: ${{ matrix.e2e-test == 'kyma-metrics' || matrix.e2e-test == 'purge-metrics' || matrix.e2e-test == 'self-signed-certificate-rotation' || matrix.e2e-test == 'mandatory-module-metrics' }}
+    shell: bash
+    run: |
+      kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
