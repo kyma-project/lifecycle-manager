@@ -2,6 +2,7 @@ package modulecr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -13,10 +14,13 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
+
+const CustomResourceManagerFinalizer = "resource.kyma-project.io/finalizer"
+
+var ErrRequeueRequired = errors.New("requeue required")
 
 type Client struct {
 	client.Client
@@ -85,12 +89,8 @@ func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
 // and we consider the CR removal successful.
 func (c *Client) preDeleteDeleteCR(
-	ctx context.Context, kcp client.Client, obj declarativev2.Object,
+	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
 ) error {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return nil
-	}
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
@@ -104,20 +104,20 @@ func (c *Client) preDeleteDeleteCR(
 	}
 
 	onCluster := manifest.DeepCopy()
-	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
+	err = kcp.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster)
 	if util.IsNotFound(err) {
 		return fmt.Errorf("preDeleteDeleteCR: %w", err)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to fetch resource: %w", err)
 	}
-	if removed := controllerutil.RemoveFinalizer(onCluster, declarativev2.CustomResourceManagerFinalizer); removed {
+	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
 		if err := kcp.Update(
-			ctx, onCluster, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer),
+			ctx, onCluster, client.FieldOwner(CustomResourceManagerFinalizer),
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}
-		return declarativev2.ErrRequeueRequired
+		return ErrRequeueRequired
 	}
 	return nil
 }
@@ -125,12 +125,8 @@ func (c *Client) preDeleteDeleteCR(
 // PostRunCreateCR is a hook for creating the manifest default custom resource if not available in the cluster
 // It is used to provide the controller with default data in the Runtime.
 func (c *Client) PostRunCreateCR(
-	ctx context.Context, kcp client.Client, obj declarativev2.Object,
+	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
 ) error {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return nil
-	}
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
@@ -143,25 +139,25 @@ func (c *Client) PostRunCreateCR(
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 
-	err := c.Create(ctx, resource, client.FieldOwner(declarativev2.CustomResourceManagerFinalizer))
+	err := c.Create(ctx, resource, client.FieldOwner(CustomResourceManagerFinalizer))
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
 	oMeta := &apimetav1.PartialObjectMetadata{}
-	oMeta.SetName(obj.GetName())
-	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
-	oMeta.SetNamespace(obj.GetNamespace())
-	oMeta.SetFinalizers(obj.GetFinalizers())
+	oMeta.SetName(manifest.GetName())
+	oMeta.SetGroupVersionKind(manifest.GetObjectKind().GroupVersionKind())
+	oMeta.SetNamespace(manifest.GetNamespace())
+	oMeta.SetFinalizers(manifest.GetFinalizers())
 
-	if added := controllerutil.AddFinalizer(oMeta, declarativev2.CustomResourceManagerFinalizer); added {
+	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
 		if err := kcp.Patch(
 			ctx, oMeta, client.Apply, client.ForceOwnership,
-			client.FieldOwner(declarativev2.CustomResourceManagerFinalizer),
+			client.FieldOwner(CustomResourceManagerFinalizer),
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
-		return declarativev2.ErrRequeueRequired
+		return ErrRequeueRequired
 	}
 	return nil
 }

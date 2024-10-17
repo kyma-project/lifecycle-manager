@@ -32,16 +32,14 @@ var (
 	ErrWarningResourceSyncStateDiff   = errors.New("resource syncTarget state diff detected")
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
-	ErrRequeueRequired      = errors.New("requeue required")
 	ErrAccessSecretNotFound = errors.New("access secret not found")
 )
 
 const (
-	namespaceNotBeRemoved                            = "kyma-system"
-	CustomResourceManagerFinalizer                   = "resource.kyma-project.io/finalizer"
-	SyncedOCIRefAnnotation                           = "sync-oci-ref"
-	defaultFinalizer                                 = "declarative.kyma-project.io/finalizer"
-	defaultFieldOwner              client.FieldOwner = "declarative.kyma-project.io/applier"
+	namespaceNotBeRemoved                    = "kyma-system"
+	SyncedOCIRefAnnotation                   = "sync-oci-ref"
+	defaultFinalizer                         = "declarative.kyma-project.io/finalizer"
+	defaultFieldOwner      client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
 func NewFromManager(mgr manager.Manager,
@@ -187,7 +185,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
-		if errors.Is(err, ErrRequeueRequired) {
+		if errors.Is(err, modulecr.ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -195,7 +193,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err = r.syncResources(ctx, skrClient, manifest, target); err != nil {
-		if errors.Is(err, ErrRequeueRequired) {
+		if errors.Is(err, modulecr.ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
