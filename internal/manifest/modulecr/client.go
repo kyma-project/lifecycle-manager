@@ -74,7 +74,7 @@ func (c *Client) CheckCRDeletion(ctx context.Context, manifestCR *v1beta2.Manife
 
 func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := c.DeleteCR(ctx, kcp, manifest); err != nil {
+		if err := c.deleteCR(ctx, kcp, manifest); err != nil {
 			// we do not set a status here since it will be deleting if timestamp is set.
 			manifest.SetStatus(manifest.GetStatus().WithErr(err))
 			return err
@@ -84,11 +84,11 @@ func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest
 	return nil
 }
 
-// DeleteCR deletes the module CR if available in the cluster.
+// deleteCR deletes the module CR if available in the cluster.
 // It uses DeletePropagationBackground to delete module CR.
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
 // and we consider the CR removal successful.
-func (c *Client) DeleteCR(
+func (c *Client) deleteCR(
 	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
 ) error {
 	if manifest.Spec.Resource == nil {
@@ -106,7 +106,7 @@ func (c *Client) DeleteCR(
 	onCluster := manifest.DeepCopy()
 	err = kcp.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster)
 	if util.IsNotFound(err) {
-		return fmt.Errorf("DeleteCR: %w", err)
+		return fmt.Errorf("deleteCR: %w", err)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to fetch resource: %w", err)

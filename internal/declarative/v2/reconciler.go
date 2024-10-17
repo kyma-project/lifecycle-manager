@@ -18,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
@@ -32,13 +33,11 @@ var (
 	ErrWarningResourceSyncStateDiff   = errors.New("resource syncTarget state diff detected")
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
-	ErrAccessSecretNotFound = errors.New("access secret not found")
 )
 
 const (
 	namespaceNotBeRemoved                    = "kyma-system"
 	SyncedOCIRefAnnotation                   = "sync-oci-ref"
-	defaultFinalizer                         = "declarative.kyma-project.io/finalizer"
 	defaultFieldOwner      client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
@@ -119,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
-		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrAccessSecretNotFound) {
+		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, common.ErrAccessSecretNotFound) {
 			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit,
 				err)
 		}
@@ -144,11 +143,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
-		partialMeta := r.partialObjectMetadata(manifest)
-		defaultFinalizerAdded := controllerutil.AddFinalizer(partialMeta, defaultFinalizer)
-		labelRemovalFinalizerAdded := controllerutil.AddFinalizer(partialMeta, labelsremoval.LabelRemovalFinalizer)
-		if defaultFinalizerAdded || labelRemovalFinalizerAdded {
-			return r.ssaSpec(ctx, partialMeta, metrics.ManifestAddFinalizer)
+		if finalizer.AddFinalizers(manifest) {
+			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
 		}
 	}
 
@@ -239,11 +235,8 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RemoveManifestDuration(req.Name)
 	r.cleanUpMandatoryModuleMetrics(manifest)
-	finalizersToRemove := []string{defaultFinalizer, labelsremoval.LabelRemovalFinalizer}
-	if errors.Is(originalErr, ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
-		finalizersToRemove = manifest.GetFinalizers()
-	}
-	if removeFinalizers(manifest, finalizersToRemove) {
+
+	if finalizer.RemoveFinalizers(manifest, originalErr) {
 		return r.updateManifest(ctx, manifest, requeueReason)
 	}
 	if manifest.GetStatus().State != shared.StateWarning {
@@ -262,26 +255,6 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta
 			r.ClientCache.DeleteClient(clientsCacheKey)
 		}
 	}
-}
-
-func removeFinalizers(manifest *v1beta2.Manifest, finalizersToRemove []string) bool {
-	finalizerRemoved := false
-	for _, f := range finalizersToRemove {
-		if controllerutil.RemoveFinalizer(manifest, f) {
-			finalizerRemoved = true
-		}
-	}
-
-	return finalizerRemoved
-}
-
-func (r *Reconciler) partialObjectMetadata(manifest *v1beta2.Manifest) *apimetav1.PartialObjectMetadata {
-	objMeta := &apimetav1.PartialObjectMetadata{}
-	objMeta.SetName(manifest.GetName())
-	objMeta.SetNamespace(manifest.GetNamespace())
-	objMeta.SetGroupVersionKind(manifest.GetObjectKind().GroupVersionKind())
-	objMeta.SetFinalizers(manifest.GetFinalizers())
-	return objMeta
 }
 
 func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
@@ -554,11 +527,11 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
-func (r *Reconciler) ssaSpec(ctx context.Context, obj client.Object,
+func (r *Reconciler) ssaSpec(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	if err := r.manifestClient.SsaSpec(ctx, obj); err != nil {
+	if err := r.manifestClient.SsaSpec(ctx, manifest); err != nil {
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{Requeue: true}, nil
