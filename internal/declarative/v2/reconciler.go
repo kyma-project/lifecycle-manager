@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,6 +19,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
@@ -32,10 +32,8 @@ var (
 	ErrWarningResourceSyncStateDiff   = errors.New("resource syncTarget state diff detected")
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
-	ErrInstallationConditionRequiresUpdate = errors.New("installation condition needs an update")
-	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
-	ErrRequeueRequired                     = errors.New("requeue required")
-	ErrAccessSecretNotFound                = errors.New("access secret not found")
+	ErrRequeueRequired      = errors.New("requeue required")
+	ErrAccessSecretNotFound = errors.New("access secret not found")
 )
 
 const (
@@ -88,42 +86,6 @@ type Reconciler struct {
 	managedLabelRemovalService ManagedLabelRemoval
 }
 
-const waitingForResourcesMsg = "waiting for resources to become ready"
-
-type ConditionType string
-
-const (
-	ConditionTypeResources    ConditionType = "Resources"
-	ConditionTypeInstallation ConditionType = "Installation"
-)
-
-type ConditionReason string
-
-const (
-	ConditionReasonResourcesAreAvailable ConditionReason = "ResourcesAvailable"
-	ConditionReasonReady                 ConditionReason = "Ready"
-)
-
-func newInstallationCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
-	return apimetav1.Condition{
-		Type:               string(ConditionTypeInstallation),
-		Reason:             string(ConditionReasonReady),
-		Status:             apimetav1.ConditionFalse,
-		Message:            "installation is ready and resources can be used",
-		ObservedGeneration: manifest.GetGeneration(),
-	}
-}
-
-func newResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
-	return apimetav1.Condition{
-		Type:               string(ConditionTypeResources),
-		Reason:             string(ConditionReasonResourcesAreAvailable),
-		Status:             apimetav1.ConditionFalse,
-		Message:            "resources are parsed and ready for use",
-		ObservedGeneration: manifest.GetGeneration(),
-	}
-}
-
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
@@ -146,7 +108,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	if err := r.initialize(manifest); err != nil {
+	if err := status.Initialize(manifest); err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
 
@@ -224,7 +186,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
 
-	if err := r.removeModuleCR(ctx, skrClient, manifest); err != nil {
+	if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
@@ -260,7 +222,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient client.Client,
 	manifest *v1beta2.Manifest,
 ) (ctrl.Result, error) {
-	defaultCR, err := getCR(ctx, skrClient, manifest)
+	defaultCR, err := modulecr.NewClient(skrClient).GetCR(ctx, manifest)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -324,37 +286,10 @@ func (r *Reconciler) partialObjectMetadata(manifest *v1beta2.Manifest) *apimetav
 	return objMeta
 }
 
-func (r *Reconciler) initialize(manifest *v1beta2.Manifest) error {
-	status := manifest.GetStatus()
-
-	for _, condition := range []apimetav1.Condition{
-		newResourcesCondition(manifest),
-		newInstallationCondition(manifest),
-	} {
-		if meta.FindStatusCondition(status.Conditions, condition.Type) == nil {
-			meta.SetStatusCondition(&status.Conditions, condition)
-		}
-	}
-
-	if status.Synced == nil {
-		status.Synced = []shared.Resource{}
-	}
-
-	if status.State == "" {
-		manifest.SetStatus(status.WithState(shared.StateProcessing).WithErr(ErrObjectHasEmptyState))
-		return ErrObjectHasEmptyState
-	}
-
-	manifest.SetStatus(status)
-
-	return nil
-}
-
 func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
 	spec *Spec,
 ) ([]*resource.Info, []*resource.Info, error) {
-	resourceCondition := newResourcesCondition(manifest)
-	status := manifest.GetStatus()
+	manifestStatus := manifest.GetStatus()
 
 	var err error
 	var target, current ResourceList
@@ -362,65 +297,57 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 	converter := NewResourceToInfoConverter(ResourceInfoConverter(skrClient), apimetav1.NamespaceDefault)
 
 	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
 
-	current, err = converter.ResourcesToInfos(status.Synced)
+	current, err = converter.ResourcesToInfos(manifestStatus.Synced)
 	if err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
-
-	if !meta.IsStatusConditionTrue(status.Conditions, resourceCondition.Type) {
-		resourceCondition.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&status.Conditions, resourceCondition)
-		manifest.SetStatus(status.WithOperation(resourceCondition.Message))
-	}
-
+	status.UpdateResourcesCondition(manifest)
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
+func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
 	target []*resource.Info,
 ) error {
-	status := manifest.GetStatus()
+	manifestStatus := manifest.GetStatus()
 
-	if err := ConcurrentSSA(clnt, defaultFieldOwner).Run(ctx, target); err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+	if err := ConcurrentSSA(skrClient, defaultFieldOwner).Run(ctx, target); err != nil {
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
-	oldSynced := status.Synced
+	oldSynced := manifestStatus.Synced
 	newSynced := NewInfoToResourceConverter().InfosToResources(target)
-	status.Synced = newSynced
+	manifestStatus.Synced = newSynced
 
 	if hasDiff(oldSynced, newSynced) {
 		if manifest.GetDeletionTimestamp().IsZero() {
-			manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		} else if status.State != shared.StateWarning {
-			manifest.SetStatus(status.WithState(shared.StateDeleting).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+			manifest.SetStatus(manifestStatus.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		} else if manifestStatus.State != shared.StateWarning {
+			manifest.SetStatus(manifestStatus.WithState(shared.StateDeleting).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		}
 		return ErrWarningResourceSyncStateDiff
 	}
 
-	for i := range r.PostRuns {
-		if err := r.PostRuns[i](ctx, clnt, r.Client, manifest); err != nil {
-			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
-			return err
-		}
+	if err := modulecr.NewClient(skrClient).PostRunCreateCR(ctx, r.Client, manifest); err != nil {
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		return err
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		return r.setManifestState(manifest, shared.StateDeleting)
+		return status.SetManifestState(manifest, shared.StateDeleting)
 	}
 
-	managerState, err := r.checkManagerState(ctx, clnt, target)
+	managerState, err := r.checkManagerState(ctx, skrClient, target)
 	if err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
-	return r.setManifestState(manifest, managerState)
+	return status.SetManifestState(manifest, managerState)
 }
 
 func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
@@ -456,44 +383,11 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 	return managerState, nil
 }
 
-func (r *Reconciler) setManifestState(manifest *v1beta2.Manifest, newState shared.State) error {
-	status := manifest.GetStatus()
-
-	if newState == shared.StateProcessing {
-		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingForResourcesMsg))
-		return ErrInstallationConditionRequiresUpdate
-	}
-
-	installationCondition := newInstallationCondition(manifest)
-	if newState != status.State || !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) {
-		installationCondition.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&status.Conditions, installationCondition)
-
-		manifest.SetStatus(status.WithState(newState).WithOperation(installationCondition.Message))
-		return ErrInstallationConditionRequiresUpdate
-	}
-
-	return nil
-}
-
-func (r *Reconciler) removeModuleCR(ctx context.Context, clnt Client, manifest *v1beta2.Manifest) error {
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		for _, preDelete := range r.PreDeletes {
-			if err := preDelete(ctx, clnt, r.Client, manifest); err != nil {
-				// we do not set a status here since it will be deleting if timestamp is set.
-				manifest.SetStatus(manifest.GetStatus().WithErr(err))
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client.Client,
 	converter ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		deleted, err := checkCRDeletion(ctx, skrClient, manifest)
+		deleted, err := modulecr.NewClient(skrClient).CheckCRDeletion(ctx, manifest)
 		if err != nil {
 			return nil, err
 		}
@@ -524,24 +418,6 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	}
 
 	return target, nil
-}
-
-func checkCRDeletion(ctx context.Context, skrClient client.Client, manifestCR *v1beta2.Manifest) (bool,
-	error,
-) {
-	if manifestCR.Spec.Resource == nil {
-		return true, nil
-	}
-
-	resourceCR, err := getCR(ctx, skrClient, manifestCR)
-	if err != nil {
-		if util.IsNotFound(err) {
-			return true, nil
-		}
-		return false, fmt.Errorf("%w: failed to fetch default resource CR", err)
-	}
-
-	return resourceCR == nil, nil
 }
 
 func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
@@ -717,26 +593,4 @@ func (r *Reconciler) cleanUpMandatoryModuleMetrics(manifest *v1beta2.Manifest) {
 		moduleName := manifest.GetLabels()[shared.ModuleName]
 		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
 	}
-}
-
-func getCR(ctx context.Context, skrClient client.Client, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
-	error,
-) {
-	resourceCR := &unstructured.Unstructured{}
-	name := manifest.Spec.Resource.GetName()
-	namespace := manifest.Spec.Resource.GetNamespace()
-	gvk := manifest.Spec.Resource.GroupVersionKind()
-
-	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   gvk.Group,
-		Version: gvk.Version,
-		Kind:    gvk.Kind,
-	})
-
-	if err := skrClient.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
-		return nil, fmt.Errorf("%w: failed to fetch default resource CR", err)
-	}
-
-	return resourceCR, nil
 }
