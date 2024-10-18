@@ -1,15 +1,16 @@
-package watch
+package watch_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Test_diffModuleReleaseMetaChannels(t *testing.T) {
+func Test_DiffModuleReleaseMetaChannels(t *testing.T) {
 	type args struct {
 		oldModuleReleaseMeta *v1beta2.ModuleReleaseMeta
 		newModuleReleaseMeta *v1beta2.ModuleReleaseMeta
@@ -206,7 +207,7 @@ func Test_diffModuleReleaseMetaChannels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := diffModuleReleaseMetaChannels(tt.args.oldModuleReleaseMeta,
+			if got := watch.DiffModuleReleaseMetaChannels(tt.args.oldModuleReleaseMeta,
 				tt.args.newModuleReleaseMeta); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("diffModuleReleaseMetaChannels() = %v, want %v", got, tt.want)
 			}
@@ -214,7 +215,7 @@ func Test_diffModuleReleaseMetaChannels(t *testing.T) {
 	}
 }
 
-func Test_getAffectedKymas(t *testing.T) {
+func Test_GetAffectedKymas(t *testing.T) {
 	type args struct {
 		kymas                 *v1beta2.KymaList
 		moduleName            string
@@ -385,7 +386,7 @@ func Test_getAffectedKymas(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getAffectedKymas(tt.args.kymas, tt.args.moduleName,
+			if got := watch.GetAffectedKymas(tt.args.kymas, tt.args.moduleName,
 				tt.args.newChannelAssignments); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getAffectedKymas() = %v, want %v", got, tt.want)
 			}
