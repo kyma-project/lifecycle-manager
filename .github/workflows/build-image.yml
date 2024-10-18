@@ -34,7 +34,7 @@ jobs:
           elif [[ "${{ github.event_name }}" == "workflow_call" ]]; then
             tags="${{ inputs.tag }}"
           elif [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
-            tags="P${{ github.event.pull_request.head.sha }}"
+            tags="${{ github.event.pull_request.head.sha }}"
           fi
           echo "Using custom tags: '$tags'"
           echo "tags=$tags" >> $GITHUB_OUTPUT
