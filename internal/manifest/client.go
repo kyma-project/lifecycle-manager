@@ -19,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
@@ -47,7 +48,7 @@ func (cc *ClusterClient) GetRESTConfig(
 		key := client.ObjectKey{Name: kymaOwner, Namespace: namespace}
 		if err := cc.DefaultClient.Get(ctx, key, kubeConfigSecret); err != nil {
 			return nil, fmt.Errorf("could not get by key (%s) or selector (%s): %w",
-				key, labelSelector.String(), declarativev2.ErrAccessSecretNotFound)
+				key, labelSelector.String(), common.ErrAccessSecretNotFound)
 		}
 	} else {
 		kubeConfigSecret = &kubeConfigSecretList.Items[0]
