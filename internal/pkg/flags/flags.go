@@ -54,7 +54,7 @@ const (
 	DefaultKymaListenerAddress                                          = ":8082"
 	DefaultManifestListenerAddress                                      = ":8083"
 	DefaultPprofAddress                                                 = ":8084"
-	DefaultWatcherImageTag                                              = "1.1.4"
+	DefaultWatcherImageTag                                              = "latest"
 	DefaultWatcherImageName                                             = "runtime-watcher"
 	DefaultWatcherImageRegistry                                         = "europe-docker.pkg.dev/kyma-project/prod"
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
