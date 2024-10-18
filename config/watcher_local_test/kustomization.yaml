@@ -75,9 +75,6 @@ patches:
     version: v1
     kind: Certificate
     name: watcher-serving
-- path: requeue-interval-patch.yaml
-  target:
-    kind: Deployment
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
