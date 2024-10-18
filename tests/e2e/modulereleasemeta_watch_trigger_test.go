@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
@@ -15,9 +13,6 @@ import (
 var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-
-	expectedErrorMessage := fmt.Sprintf("failed to get module template: ModuleTemplate.operator.kyma-project.io \"%s-%s\" not found",
-		module.Name, "1.0.1")
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
