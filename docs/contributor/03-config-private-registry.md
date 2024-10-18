@@ -43,7 +43,7 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
 
 The `oci-registry-cred` label in a ModuleTemplate CR allows Lifecycle Manager to parse the Secret label selector and propagate it to the Manifest CR so that Lifecycle Manager knows which credentials Secret to look up.
 
-To support the ModuleTemplate CR with the `oci-registry-cred` label, use Kyma CLI with the `registry-cred-selector` flag for creating a module command.
+To support the ModuleTemplate CR with the `oci-registry-cred` label, use modulectl with the `registry-cred-selector` flag for creating a module command.
 
 For example, you can run the following command to push your module image and generate a ModuleTemplate CR with the `oci-registry-cred` label:
 
