@@ -30,20 +30,14 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma CR is in \"Error\" State", func() {
+		It("Then KCP Kyma CR is in \"Ready\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 			Consistently(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
-				Should(Succeed())
-
-			By("And Module Message in Kyma Status is as expected")
-			Eventually(ModuleMessageInKymaStatusIsCorrect).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, expectedErrorMessage).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
