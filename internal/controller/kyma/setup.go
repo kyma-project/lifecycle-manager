@@ -65,9 +65,17 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
 		Watches(&v1beta2.ModuleReleaseMeta{},
 			handler.Funcs{
+				CreateFunc: func(ctx context.Context, e event.CreateEvent,
+					rli workqueue.TypedRateLimitingInterface[ctrl.Request]) {
+					watch.NewModuleReleaseMetaEventHandler(r).Create(ctx, e, rli)
+				},
 				UpdateFunc: func(ctx context.Context, e event.UpdateEvent,
 					rli workqueue.TypedRateLimitingInterface[ctrl.Request]) {
 					watch.NewModuleReleaseMetaEventHandler(r).Update(ctx, e, rli)
+				},
+				DeleteFunc: func(ctx context.Context, e event.TypedDeleteEvent[client.Object],
+					rli workqueue.TypedRateLimitingInterface[ctrl.Request]) {
+					watch.NewModuleReleaseMetaEventHandler(r).Delete(ctx, e, rli)
 				},
 			}).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).

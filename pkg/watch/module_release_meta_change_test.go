@@ -235,7 +235,7 @@ func Test_GetAffectedKymas(t *testing.T) {
 			want: []*types.NamespacedName{},
 		},
 		{
-			name: "One Kyma with global channel affected",
+			name: "Single update affects one Kyma",
 			args: args{
 				kymas: &v1beta2.KymaList{
 					Items: []v1beta2.Kyma{
@@ -244,60 +244,8 @@ func Test_GetAffectedKymas(t *testing.T) {
 								Name:      "test-kyma-1",
 								Namespace: "kcp-system",
 							},
-							Spec: v1beta2.KymaSpec{
-								Channel: "regular",
-								Modules: []v1beta2.Module{
-									{
-										Name: "module",
-									},
-								},
-							},
-						},
-						{
-							ObjectMeta: apimetav1.ObjectMeta{
-								Name:      "test-kyma-2",
-								Namespace: "kcp-system",
-							},
-							Spec: v1beta2.KymaSpec{
-								Channel: "regular",
-								Modules: []v1beta2.Module{
-									{
-										Name:    "module",
-										Channel: "fast",
-									},
-								},
-							},
-						},
-					},
-				},
-				moduleName: "module",
-				newChannelAssignments: map[string]v1beta2.ChannelVersionAssignment{
-					"regular": {
-						Channel: "regular",
-						Version: "1.0.0",
-					},
-				},
-			},
-			want: []*types.NamespacedName{
-				{
-					Name:      "test-kyma-1",
-					Namespace: "kcp-system",
-				},
-			},
-		},
-		{
-			name: "One Kyma with module specific channel affected",
-			args: args{
-				kymas: &v1beta2.KymaList{
-					Items: []v1beta2.Kyma{
-						{
-							ObjectMeta: apimetav1.ObjectMeta{
-								Name:      "test-kyma-1",
-								Namespace: "kcp-system",
-							},
-							Spec: v1beta2.KymaSpec{
-								Channel: "fast",
-								Modules: []v1beta2.Module{
+							Status: v1beta2.KymaStatus{
+								Modules: []v1beta2.ModuleStatus{
 									{
 										Name:    "module",
 										Channel: "regular",
@@ -310,9 +258,8 @@ func Test_GetAffectedKymas(t *testing.T) {
 								Name:      "test-kyma-2",
 								Namespace: "kcp-system",
 							},
-							Spec: v1beta2.KymaSpec{
-								Channel: "regular",
-								Modules: []v1beta2.Module{
+							Status: v1beta2.KymaStatus{
+								Modules: []v1beta2.ModuleStatus{
 									{
 										Name:    "module",
 										Channel: "fast",
@@ -338,7 +285,7 @@ func Test_GetAffectedKymas(t *testing.T) {
 			},
 		},
 		{
-			name: "No Kyma affected",
+			name: "Multiple updates affects multiple Kyma",
 			args: args{
 				kymas: &v1beta2.KymaList{
 					Items: []v1beta2.Kyma{
@@ -347,11 +294,11 @@ func Test_GetAffectedKymas(t *testing.T) {
 								Name:      "test-kyma-1",
 								Namespace: "kcp-system",
 							},
-							Spec: v1beta2.KymaSpec{
-								Channel: "regular",
-								Modules: []v1beta2.Module{
+							Status: v1beta2.KymaStatus{
+								Modules: []v1beta2.ModuleStatus{
 									{
-										Name: "module",
+										Name:    "module",
+										Channel: "regular",
 									},
 								},
 							},
@@ -361,12 +308,86 @@ func Test_GetAffectedKymas(t *testing.T) {
 								Name:      "test-kyma-2",
 								Namespace: "kcp-system",
 							},
-							Spec: v1beta2.KymaSpec{
-								Channel: "regular",
-								Modules: []v1beta2.Module{
+							Status: v1beta2.KymaStatus{
+								Modules: []v1beta2.ModuleStatus{
 									{
 										Name:    "module",
 										Channel: "fast",
+									},
+								},
+							},
+						},
+					},
+				},
+				moduleName: "module",
+				newChannelAssignments: map[string]v1beta2.ChannelVersionAssignment{
+					"regular": {
+						Channel: "regular",
+						Version: "1.0.0",
+					},
+					"fast": {
+						Channel: "fast",
+						Version: "1.0.0",
+					},
+				},
+			},
+			want: []*types.NamespacedName{
+				{
+					Name:      "test-kyma-1",
+					Namespace: "kcp-system",
+				},
+				{
+					Name:      "test-kyma-2",
+					Namespace: "kcp-system",
+				},
+			},
+		},
+		{
+			name: "Module name does not match - No Kyma affected",
+			args: args{
+				kymas: &v1beta2.KymaList{
+					Items: []v1beta2.Kyma{
+						{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Name:      "test-kyma-1",
+								Namespace: "kcp-system",
+							},
+							Status: v1beta2.KymaStatus{
+								Modules: []v1beta2.ModuleStatus{
+									{
+										Name:    "non-existent-module",
+										Channel: "regular",
+									},
+								},
+							},
+						},
+					},
+				},
+				moduleName: "module",
+				newChannelAssignments: map[string]v1beta2.ChannelVersionAssignment{
+					"regular": {
+						Channel: "regular",
+						Version: "1.0.0",
+					},
+				},
+			},
+			want: []*types.NamespacedName{},
+		},
+		{
+			name: "Module channel does not match - No Kyma affected",
+			args: args{
+				kymas: &v1beta2.KymaList{
+					Items: []v1beta2.Kyma{
+						{
+							ObjectMeta: apimetav1.ObjectMeta{
+								Name:      "test-kyma-1",
+								Namespace: "kcp-system",
+							},
+							Status: v1beta2.KymaStatus{
+								Modules: []v1beta2.ModuleStatus{
+									{
+										Name:    "module",
+										Channel: "regular",
 									},
 								},
 							},

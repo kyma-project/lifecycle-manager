@@ -72,9 +72,12 @@ patches:
       value: "skr.cluster.local"
   target:
     group: cert-manager.io
-    version: v1
     kind: Certificate
     name: watcher-serving
+    version: v1
+- path: requeue-interval-patch.yaml
+  target:
+    kind: Deployment
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

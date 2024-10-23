@@ -3,7 +3,6 @@ package watch
 import (
 	"context"
 
-	"github.com/cloudflare/cfssl/log"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -76,8 +75,6 @@ func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.
 // Update handles Update events and gets old and new state.
 func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.UpdateEvent,
 	q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
-	log.Info("Resource updated", "Old Object", event.ObjectOld, "New Object", event.ObjectNew)
-
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -91,7 +88,6 @@ func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.
 	if !ok {
 		return
 	}
-
 	diff := DiffModuleReleaseMetaChannels(oldModuleReleaseMeta, newModuleReleaseMeta)
 
 	affectedKymas := GetAffectedKymas(kymaList, newModuleReleaseMeta.Spec.ModuleName, diff)
@@ -132,15 +128,19 @@ func GetAffectedKymas(kymas *v1beta2.KymaList, moduleName string,
 	newChannelAssignments map[string]v1beta2.ChannelVersionAssignment) []*types.NamespacedName {
 	affectedKymas := make([]*types.NamespacedName, 0)
 	for _, kyma := range kymas.Items {
-		for _, module := range kyma.Spec.Modules {
+		for _, module := range kyma.Status.Modules {
+
 			if module.Name != moduleName {
 				continue
 			}
 			moduleChannel := module.Channel
+
 			if moduleChannel == "" {
 				moduleChannel = kyma.Spec.Channel
 			}
+
 			newAssignment, ok := newChannelAssignments[moduleChannel]
+
 			if ok && (moduleChannel == newAssignment.Channel) {
 				affectedKymas = append(affectedKymas,
 					&types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()})
