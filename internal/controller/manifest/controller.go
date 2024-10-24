@@ -36,7 +36,5 @@ func NewReconciler(mgr manager.Manager,
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
-		declarativev2.WithPostRun{manifest.PostRunCreateCR},
-		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
 	)
 }
