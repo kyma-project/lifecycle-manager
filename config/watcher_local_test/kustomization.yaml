@@ -10,7 +10,7 @@ resources:
 # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
 components:
-  - ../istio
+- ../istio
 
 
 generatorOptions:
@@ -72,9 +72,9 @@ patches:
       value: "skr.cluster.local"
   target:
     group: cert-manager.io
-    version: v1
     kind: Certificate
     name: watcher-serving
+    version: v1
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
