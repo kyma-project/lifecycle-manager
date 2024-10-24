@@ -90,3 +90,16 @@ func ModuleReleaseMetaContainsCorrectChannelVersion(ctx context.Context,
 
 	return ErrNotExpectedChannelVersion
 }
+
+func DeleteModuleReleaseMeta(ctx context.Context, moduleName, namespace string, clnt client.Client) error {
+	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
+	if util.IsNotFound(err) {
+		return nil
+	}
+
+	err = client.IgnoreNotFound(clnt.Delete(ctx, mrm))
+	if err != nil {
+		return fmt.Errorf("modulereleasemeta not deleted: %w", err)
+	}
+	return nil
+}
