@@ -19,7 +19,7 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
@@ -111,7 +111,7 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind Deployment
         popd
         make build-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
@@ -134,7 +134,7 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
@@ -148,7 +148,7 @@ runs:
       run: |
         echo "name: kyma-project.io/module/template-operator-misconfigured
         channel: regular
-        version: v1.1.1
+        version: 1.1.1
         manifest: template-operator.yaml
         security: sec-scanners-config.yaml
         defaultCR: ./config/samples/default-sample-cr.yaml
@@ -183,7 +183,7 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
         make build-manifests
-        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
         kubectl get crds
@@ -202,7 +202,7 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        kyma alpha create module --module-config-file ./misconfigured-module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
         kubectl get crds
@@ -216,16 +216,12 @@ runs:
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
         channel: regular
-        version: v1.0.0
+        version: 1.0.0
         manifest: template-operator.yaml
         security: sec-scanners-config.yaml
         annotations:
           operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
-        kyma alpha create module \
-        --module-config-file ./module-config-no-cr.yaml \
-        --path . \
-        --registry localhost:5111 \
-        --insecure
+        module create --module-config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-regular/template-operator-1.0.0/g' ./template.yaml
         kubectl get crds
@@ -273,7 +269,7 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        kyma alpha create module --module-config-file ./module-config.yaml --path . --registry localhost:5111 --insecure
+        module create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
