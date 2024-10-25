@@ -54,7 +54,6 @@ const (
 	DefaultKymaListenerAddress                                          = ":8082"
 	DefaultManifestListenerAddress                                      = ":8083"
 	DefaultPprofAddress                                                 = ":8084"
-	DefaultWatcherImageTag                                              = "1.1.4"
 	DefaultWatcherImageName                                             = "runtime-watcher"
 	DefaultWatcherImageRegistry                                         = "europe-docker.pkg.dev/kyma-project/prod"
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
@@ -222,7 +221,7 @@ func DefineFlagVar() *FlagVar {
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
 	flag.StringVar(&flagVar.WatcherImageName, "skr-watcher-image-name", DefaultWatcherImageName,
 		`Image name to be used for the SKR watcher image.`)
-	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", DefaultWatcherImageTag,
+	flag.StringVar(&flagVar.WatcherImageTag, "skr-watcher-image-tag", "",
 		`Image tag to be used for the SKR watcher image.`)
 	flag.StringVar(&flagVar.WatcherImageRegistry, "skr-watcher-image-registry", DefaultWatcherImageRegistry,
 		`Image registry to be used for the SKR watcher image.`)

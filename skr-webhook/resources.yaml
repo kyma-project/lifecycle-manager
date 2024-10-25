@@ -100,7 +100,7 @@ spec:
               value: "v1"
             - name: KCP_ADDR
               value: "kcp-base-url-invalid"
-          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher:1.1.5"
+          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher:latest" # this image will be dynamically replaced by flags
           imagePullPolicy: Always
           volumeMounts:
             - name: ssl

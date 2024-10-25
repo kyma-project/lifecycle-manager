@@ -156,8 +156,7 @@ var _ = BeforeSuite(func() {
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
-		), manifest.WithClientCacheKey(), declarativev2.WithPostRun{manifest.PostRunCreateCR},
-		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
+		), manifest.WithClientCacheKey(),
 		declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
 
 	err = ctrl.NewControllerManagedBy(mgr).

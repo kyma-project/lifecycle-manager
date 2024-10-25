@@ -13,6 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
 )
 
 type SkrContextProvider interface {
@@ -37,10 +38,7 @@ func NewKymaSkrContextProvider(kcpClient Client, clientCache *ClientCache, event
 
 const kubeConfigKey = "config"
 
-var (
-	ErrAccessSecretNotFound     = errors.New("access secret not found")
-	ErrSkrClientContextNotFound = errors.New("skr client context not found")
-)
+var ErrSkrClientContextNotFound = errors.New("skr client context not found")
 
 func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.NamespacedName) error {
 	if k.clientCache.Contains(kyma) {
@@ -53,7 +51,7 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 	}); err != nil {
 		return fmt.Errorf("failed to list kubeconfig secrets: %w", err)
 	} else if len(kubeConfigSecretList.Items) < 1 {
-		return fmt.Errorf("secret with label %s=%s %w", shared.KymaName, kyma.Name, ErrAccessSecretNotFound)
+		return fmt.Errorf("secret with label %s=%s %w", shared.KymaName, kyma.Name, common.ErrAccessSecretNotFound)
 	}
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
