@@ -53,7 +53,18 @@ func initModuleCRCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 	}
 }
 
-func UpdateResourcesCondition(manifest *v1beta2.Manifest) {
+func ConfirmModuleCRCondition(manifest *v1beta2.Manifest) {
+	status := manifest.GetStatus()
+	moduleCRCondition := initModuleCRCondition(manifest)
+
+	if !meta.IsStatusConditionTrue(status.Conditions, moduleCRCondition.Type) {
+		moduleCRCondition.Status = apimetav1.ConditionTrue
+		meta.SetStatusCondition(&status.Conditions, moduleCRCondition)
+		manifest.SetStatus(status.WithOperation(moduleCRCondition.Message))
+	}
+}
+
+func ConfirmResourcesCondition(manifest *v1beta2.Manifest) {
 	status := manifest.GetStatus()
 	resourceCondition := initResourcesCondition(manifest)
 

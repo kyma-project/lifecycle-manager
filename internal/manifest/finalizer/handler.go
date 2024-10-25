@@ -1,29 +1,34 @@
 package finalizer
 
 import (
-	"errors"
-
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
-	"github.com/kyma-project/lifecycle-manager/pkg/common"
 )
 
 const DefaultFinalizer = "declarative.kyma-project.io/finalizer"
 
-func RemoveFinalizers(manifest *v1beta2.Manifest, originalErr error) bool {
+// RemoveRequiredFinalizers removes preconfigured finalizers, but not include modulecr.CustomResourceManagerFinalizer.
+func RemoveRequiredFinalizers(manifest *v1beta2.Manifest) bool {
 	finalizersToRemove := []string{DefaultFinalizer, labelsremoval.LabelRemovalFinalizer}
-	if errors.Is(originalErr, common.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
-		finalizersToRemove = manifest.GetFinalizers()
-	}
+
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
 		if controllerutil.RemoveFinalizer(manifest, f) {
 			finalizerRemoved = true
 		}
 	}
+	return finalizerRemoved
+}
 
+func RemoveAllFinalizers(manifest *v1beta2.Manifest) bool {
+	finalizerRemoved := false
+	for _, f := range manifest.GetFinalizers() {
+		if controllerutil.RemoveFinalizer(manifest, f) {
+			finalizerRemoved = true
+		}
+	}
 	return finalizerRemoved
 }
 

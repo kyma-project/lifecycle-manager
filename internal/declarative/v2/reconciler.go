@@ -234,7 +234,13 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	if finalizer.RemoveFinalizers(manifest, originalErr) {
+	finalizerRemoved := false
+	if errors.Is(originalErr, common.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
+		finalizerRemoved = finalizer.RemoveAllFinalizers(manifest)
+	} else {
+		finalizerRemoved = finalizer.RemoveRequiredFinalizers(manifest)
+	}
+	if finalizerRemoved {
 		return r.updateManifest(ctx, manifest, requeueReason)
 	}
 	if manifest.GetStatus().State != shared.StateWarning {
@@ -294,7 +300,7 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
-	status.UpdateResourcesCondition(manifest)
+	status.ConfirmResourcesCondition(manifest)
 	return target, current, nil
 }
 
@@ -320,7 +326,7 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 		}
 		return ErrWarningResourceSyncStateDiff
 	}
-	moduleCRState, err := modulecr.NewClient(skrClient).SyncCR(ctx, r.Client, manifest)
+	moduleCRState, err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, r.Client, manifest)
 	if err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
@@ -329,6 +335,11 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		if moduleCRState == shared.StateWarning {
 			if err := r.RecordModuleCRWarningCondition(manifest); err != nil {
+				return err
+			}
+			status.ConfirmModuleCRCondition(manifest)
+		} else {
+			if err := r.RemoveModuleCRWarningCondition(manifest); err != nil {
 				return err
 			}
 		}
@@ -353,6 +364,18 @@ func (r *Reconciler) RecordModuleCRWarningCondition(manifest *v1beta2.Manifest) 
 		return fmt.Errorf("failed to get module name: %w", err)
 	}
 	r.ModuleMetrics.SetModuleCRWarningCondition(kymaName, moduleName)
+	return nil
+}
+func (r *Reconciler) RemoveModuleCRWarningCondition(manifest *v1beta2.Manifest) error {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return fmt.Errorf("failed to get kyma name: %w", err)
+	}
+	moduleName, err := manifest.GetModuleName()
+	if err != nil {
+		return fmt.Errorf("failed to get module name: %w", err)
+	}
+	r.ModuleMetrics.RemoveModuleCRWarningCondition(kymaName, moduleName)
 	return nil
 }
 

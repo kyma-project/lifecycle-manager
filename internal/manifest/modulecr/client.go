@@ -122,9 +122,9 @@ func (c *Client) deleteCR(
 	return nil
 }
 
-// SyncCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
+// SyncModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
-func (c *Client) SyncCR(
+func (c *Client) SyncModuleCR(
 	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
 ) (shared.State, error) {
 	if manifest.Spec.Resource == nil {
