@@ -13,13 +13,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
 	ControlPlaneNamespace = "kcp-system"
-	watcherPodContainer   = "server"
 	KLMPodPrefix          = "klm-controller-manager"
 	KLMPodContainer       = "manager"
 	RemoteNamespace       = "kyma-system"
@@ -30,13 +27,13 @@ var (
 	ErrLogNotFound = errors.New("logMsg was not found in log")
 )
 
-func CheckKLMLogs(ctx context.Context,
-	logMsg string,
-	controlPlaneConfig, runtimeConfig *rest.Config,
-	k8sClient, runtimeClient client.Client,
+func CheckPodLogs(ctx context.Context,
+	namespace, podPrefix, container, logMsg string,
+	RESTConfig *rest.Config,
+	k8sClient client.Client,
 	logsSince *apimetav1.Time,
 ) error {
-	logs, err := getPodLogs(ctx, controlPlaneConfig, k8sClient, ControlPlaneNamespace, KLMPodPrefix, KLMPodContainer,
+	logs, err := getPodLogs(ctx, RESTConfig, k8sClient, namespace, podPrefix, container,
 		logsSince)
 	if err != nil {
 		return err
@@ -44,12 +41,6 @@ func CheckKLMLogs(ctx context.Context,
 
 	if strings.Contains(logs, logMsg) {
 		return nil
-	}
-
-	_, err = getPodLogs(ctx, runtimeConfig,
-		runtimeClient, RemoteNamespace, watcher.SkrResourceName, watcherPodContainer, logsSince)
-	if err != nil {
-		return err
 	}
 	return ErrLogNotFound
 }

@@ -1,8 +1,11 @@
 package e2e_test
 
 import (
+	"context"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -43,7 +46,7 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 		It("When ModuleReleaseMeta channels get updaed with invalid version", func() {
 			Eventually(UpdateAllModuleReleaseMetaChannelVersions).
 				WithContext(ctx).
-				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, "invalid-version").
+				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, "1.2.3").
 				Should(Succeed())
 		})
 		It("Then KCP Kyma CR should be requeued and gets into \"Error\" State", func() {
@@ -60,13 +63,17 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 	})
 })
 
-func UpdateAllModuleReleaseMetaChannelVersions(client client.Client, namespace, name, version string) error {
+func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client client.Client, namespace, name, version string) error {
+
 	meta := &v1beta2.ModuleReleaseMeta{}
 	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
 		return err
 	}
-	for _, channel := range meta.Spec.Channels {
-		channel.Version = version
+	for i := range meta.Spec.Channels {
+		meta.Spec.Channels[i].Version = version
 	}
-	return client.Update(ctx, meta)
+	if err := client.Update(ctx, meta); err != nil {
+		return err
+	}
+	return nil
 }
