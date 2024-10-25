@@ -1,6 +1,6 @@
 package e2e_test
 
-// test
+// test.
 import (
 	"time"
 
