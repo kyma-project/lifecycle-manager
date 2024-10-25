@@ -43,6 +43,16 @@ func initResourcesCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
 	}
 }
 
+func initModuleCRCondition(manifest *v1beta2.Manifest) apimetav1.Condition {
+	return apimetav1.Condition{
+		Type:               string(ConditionTypeModuleCR),
+		Reason:             string(ConditionReasonModuleCRWarning),
+		Status:             apimetav1.ConditionFalse,
+		Message:            "Module CR is in Warning state",
+		ObservedGeneration: manifest.GetGeneration(),
+	}
+}
+
 func UpdateResourcesCondition(manifest *v1beta2.Manifest) {
 	status := manifest.GetStatus()
 	resourceCondition := initResourcesCondition(manifest)

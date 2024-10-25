@@ -14,7 +14,6 @@ type ManifestRequeueReason string
 const (
 	MetricManifestDuration                                     = "reconcile_duration_seconds"
 	ManifestNameLabel                                          = "manifest_name"
-	ManifestTypeCast                     ManifestRequeueReason = "manifest_type_cast"
 	ManifestRetrieval                    ManifestRequeueReason = "manifest_retrieval"
 	ManifestInit                         ManifestRequeueReason = "manifest_initialize"
 	ManifestAddFinalizer                 ManifestRequeueReason = "manifest_add_finalizer"
@@ -62,6 +61,12 @@ func (k *ManifestMetrics) RecordManifestDuration(manifestName string, duration t
 }
 
 func (k *ManifestMetrics) RemoveManifestDuration(manifestName string) {
+	k.ManifestDurationGauge.DeletePartialMatch(prometheus.Labels{
+		ManifestNameLabel: manifestName,
+	})
+}
+
+func (k *ManifestMetrics) CleanupMetrics(manifestName string) {
 	k.ManifestDurationGauge.DeletePartialMatch(prometheus.Labels{
 		ManifestNameLabel: manifestName,
 	})

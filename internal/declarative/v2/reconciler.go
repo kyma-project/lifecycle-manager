@@ -41,17 +41,14 @@ const (
 	defaultFieldOwner      client.FieldOwner = "declarative.kyma-project.io/applier"
 )
 
-func NewFromManager(mgr manager.Manager,
-	requeueIntervals queue.RequeueIntervals,
-	metrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestAPIClient ManifestAPIClient,
-	specResolver SpecResolver,
-	options ...Option,
+func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, moduleMetrics *metrics.ModuleMetrics,
+	manifestAPIClient ManifestAPIClient, specResolver SpecResolver, options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
+	reconciler.ModuleMetrics = moduleMetrics
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
 	reconciler.manifestClient = manifestAPIClient
@@ -78,6 +75,7 @@ type Reconciler struct {
 	*Options
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
+	ModuleMetrics              *metrics.ModuleMetrics
 	specResolver               SpecResolver
 	manifestClient             ManifestAPIClient
 	managedLabelRemovalService ManagedLabelRemoval
@@ -119,8 +117,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
 		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, common.ErrAccessSecretNotFound) {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit,
-				err)
+			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestClientInit, err)
 		}
 
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -129,7 +126,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if manifest.IsUnmanaged() {
 		if !manifest.GetDeletionTimestamp().IsZero() {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
+			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
 		}
 
 		if controllerutil.ContainsFinalizer(manifest, labelsremoval.LabelRemovalFinalizer) {
@@ -143,7 +140,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
-		if finalizer.AddFinalizers(manifest) {
+		if finalizer.FinalizersUpdateRequired(manifest) {
 			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
 		}
 	}
@@ -152,7 +149,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
 		if !manifest.GetDeletionTimestamp().IsZero() {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestParseSpec, err)
+			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestParseSpec, err)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestParseSpec, manifestStatus, err)
 	}
@@ -207,7 +204,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
+		return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
 	}
 
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
@@ -230,12 +227,13 @@ func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, manifest *v1beta2.Manifest,
-	manifestStatus shared.Status, requeueReason metrics.ManifestRequeueReason, originalErr error,
+func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Manifest, manifestStatus shared.Status,
+	requeueReason metrics.ManifestRequeueReason, originalErr error,
 ) (ctrl.Result, error) {
-	r.ManifestMetrics.RemoveManifestDuration(req.Name)
-	r.cleanUpMandatoryModuleMetrics(manifest)
-
+	err := r.cleanupMetrics(manifest)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	if finalizer.RemoveFinalizers(manifest, originalErr) {
 		return r.updateManifest(ctx, manifest, requeueReason)
 	}
@@ -244,6 +242,25 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", manifest.GetFinalizers())))
 	}
 	return r.finishReconcile(ctx, manifest, requeueReason, manifestStatus, originalErr)
+}
+
+func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return fmt.Errorf("failed to get kyma name: %w", err)
+	}
+	moduleName, err := manifest.GetModuleName()
+	if err != nil {
+		return fmt.Errorf("failed to get module name: %w", err)
+	}
+	r.ManifestMetrics.CleanupMetrics(manifest.GetName())
+
+	if manifest.IsMandatoryModule() {
+		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
+	}
+
+	r.ModuleMetrics.CleanupMetrics(kymaName, moduleName)
+	return nil
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
@@ -303,13 +320,18 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 		}
 		return ErrWarningResourceSyncStateDiff
 	}
-
-	if err := modulecr.NewClient(skrClient).CreateCR(ctx, r.Client, manifest); err != nil {
+	moduleCRState, err := modulecr.NewClient(skrClient).SyncCR(ctx, r.Client, manifest)
+	if err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
+		if moduleCRState == shared.StateWarning {
+			if err := r.RecordModuleCRWarningCondition(manifest); err != nil {
+				return err
+			}
+		}
 		return status.SetManifestState(manifest, shared.StateDeleting)
 	}
 
@@ -319,6 +341,19 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 		return err
 	}
 	return status.SetManifestState(manifest, managerState)
+}
+
+func (r *Reconciler) RecordModuleCRWarningCondition(manifest *v1beta2.Manifest) error {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return fmt.Errorf("failed to get kyma name: %w", err)
+	}
+	moduleName, err := manifest.GetModuleName()
+	if err != nil {
+		return fmt.Errorf("failed to get module name: %w", err)
+	}
+	r.ModuleMetrics.SetModuleCRWarningCondition(kymaName, moduleName)
+	return nil
 }
 
 func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
@@ -555,13 +590,5 @@ func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name stri
 		r.ManifestMetrics.RecordManifestDuration(name, duration)
 	} else {
 		r.ManifestMetrics.RemoveManifestDuration(name)
-	}
-}
-
-func (r *Reconciler) cleanUpMandatoryModuleMetrics(manifest *v1beta2.Manifest) {
-	if manifest.IsMandatoryModule() {
-		kymaName := manifest.GetLabels()[shared.KymaName]
-		moduleName := manifest.GetLabels()[shared.ModuleName]
-		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
 	}
 }

@@ -27,7 +27,7 @@ func RemoveFinalizers(manifest *v1beta2.Manifest, originalErr error) bool {
 	return finalizerRemoved
 }
 
-func AddFinalizers(manifest *v1beta2.Manifest) bool {
+func FinalizersUpdateRequired(manifest *v1beta2.Manifest) bool {
 	defaultFinalizerAdded := controllerutil.AddFinalizer(manifest, DefaultFinalizer)
 	labelRemovalFinalizerAdded := controllerutil.AddFinalizer(manifest, labelsremoval.LabelRemovalFinalizer)
 	return defaultFinalizerAdded || labelRemovalFinalizerAdded

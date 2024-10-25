@@ -122,16 +122,16 @@ func (c *Client) deleteCR(
 	return nil
 }
 
-// CreateCR creates the manifest default custom resource if not available in the cluster
+// SyncCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
-func (c *Client) CreateCR(
+func (c *Client) SyncCR(
 	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
-) error {
+) (shared.State, error) {
 	if manifest.Spec.Resource == nil {
-		return nil
+		return "", nil
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		return nil
+		return "", nil
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
@@ -139,9 +139,11 @@ func (c *Client) CreateCR(
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 
-	err := c.Create(ctx, resource, client.FieldOwner(CustomResourceManagerFinalizer))
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return fmt.Errorf("failed to create resource: %w", err)
+	if err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil && util.IsNotFound(err) {
+		if err := c.Create(ctx, resource,
+			client.FieldOwner(CustomResourceManagerFinalizer)); err != nil && !apierrors.IsAlreadyExists(err) {
+			return "", fmt.Errorf("failed to create resource: %w", err)
+		}
 	}
 
 	oMeta := &apimetav1.PartialObjectMetadata{}
@@ -155,9 +157,11 @@ func (c *Client) CreateCR(
 			ctx, oMeta, client.Apply, client.ForceOwnership,
 			client.FieldOwner(CustomResourceManagerFinalizer),
 		); err != nil {
-			return fmt.Errorf("failed to patch resource: %w", err)
+			return "", fmt.Errorf("failed to patch resource: %w", err)
 		}
-		return ErrRequeueRequired
+		return "", ErrRequeueRequired
 	}
-	return nil
+
+	stateFromCR, _, err := unstructured.NestedString(resource.Object, "status", "state")
+	return shared.State(stateFromCR), err
 }

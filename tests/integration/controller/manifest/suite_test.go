@@ -148,16 +148,12 @@ var _ = BeforeSuite(func() {
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
 		Warning: 1 * time.Second,
-	},
-		metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifestClient,
-		manifest.NewSpecResolver(keyChainLookup, extractor),
-		declarativev2.WithRemoteTargetCluster(
+	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(), nil,
+		manifestClient, manifest.NewSpecResolver(keyChainLookup, extractor), declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
-		), manifest.WithClientCacheKey(),
-		declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
+		), manifest.WithClientCacheKey(), declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
