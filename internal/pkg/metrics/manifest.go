@@ -28,6 +28,7 @@ const (
 	ManifestPreDelete                    ManifestRequeueReason = "manifest_pre_delete"
 	ManifestSyncResourcesEnqueueRequired ManifestRequeueReason = "manifest_sync_resources_enqueue_required"
 	ManifestSyncResources                ManifestRequeueReason = "manifest_sync_resources"
+	ManifestSyncState                    ManifestRequeueReason = "manifest_sync_state"
 	ManifestUnauthorized                 ManifestRequeueReason = "manifest_unauthorized"
 	ManifestReconcileFinished            ManifestRequeueReason = "manifest_reconcile_finished"
 	ManifestUnmanagedUpdate              ManifestRequeueReason = "manifest_unmanaged_update"

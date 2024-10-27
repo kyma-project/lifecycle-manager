@@ -185,17 +185,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 	}
 
-	if err = r.syncResources(ctx, skrClient, manifest, target); err != nil {
-		if errors.Is(err, modulecr.ErrRequeueRequired) {
-			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
-			return ctrl.Result{Requeue: true}, nil
-		}
+	if err := r.syncResources(ctx, skrClient, manifest, target); err != nil {
 		if errors.Is(err, ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, manifest)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
 	}
 
+	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
+		if errors.Is(err, modulecr.ErrRequeueRequired) {
+			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
+			return ctrl.Result{Requeue: true}, nil
+		}
+		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
+	}
 	// This situation happens when manifest get new installation layer to update resources,
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(manifest, spec.OCIRef) {
@@ -234,7 +237,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	finalizerRemoved := false
+	var finalizerRemoved bool
 	if errors.Is(originalErr, common.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
 		finalizerRemoved = finalizer.RemoveAllFinalizers(manifest)
 	} else {
@@ -326,6 +329,14 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 		}
 		return ErrWarningResourceSyncStateDiff
 	}
+	return nil
+}
+
+func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
+	target []*resource.Info,
+) error {
+	manifestStatus := manifest.GetStatus()
+
 	moduleCRState, err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, r.Client, manifest)
 	if err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
@@ -338,10 +349,8 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 				return err
 			}
 			status.ConfirmModuleCRCondition(manifest)
-		} else {
-			if err := r.RemoveModuleCRWarningCondition(manifest); err != nil {
-				return err
-			}
+		} else if err := r.RemoveModuleCRWarningCondition(manifest); err != nil {
+			return err
 		}
 		return status.SetManifestState(manifest, shared.StateDeleting)
 	}
@@ -366,6 +375,7 @@ func (r *Reconciler) RecordModuleCRWarningCondition(manifest *v1beta2.Manifest) 
 	r.ModuleMetrics.SetModuleCRWarningCondition(kymaName, moduleName)
 	return nil
 }
+
 func (r *Reconciler) RemoveModuleCRWarningCondition(manifest *v1beta2.Manifest) error {
 	kymaName, err := manifest.GetKymaName()
 	if err != nil {
