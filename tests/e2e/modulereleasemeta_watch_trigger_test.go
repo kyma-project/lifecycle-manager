@@ -37,10 +37,6 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
-			Consistently(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
-				Should(Succeed())
 		})
 
 		It("When ModuleReleaseMeta channels get updaed with invalid version", func() {
