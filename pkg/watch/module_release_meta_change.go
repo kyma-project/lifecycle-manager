@@ -21,8 +21,8 @@ func NewModuleReleaseMetaEventHandler(handlerClient ChangeHandlerClient) *Module
 }
 
 func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, e event.CreateEvent,
-	q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
-
+	q workqueue.TypedRateLimitingInterface[reconcile.Request],
+) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -48,7 +48,8 @@ func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, e event.Crea
 
 // Delete handles Delete events.
 func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.DeleteEvent,
-	q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	q workqueue.TypedRateLimitingInterface[reconcile.Request],
+) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -74,7 +75,8 @@ func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.
 
 // Update handles Update events and gets old and new state.
 func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.UpdateEvent,
-	q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	q workqueue.TypedRateLimitingInterface[reconcile.Request],
+) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -125,7 +127,8 @@ func DiffModuleReleaseMetaChannels(oldModuleReleaseMeta, newModuleReleaseMeta *v
 // GetAffectedKymas determines which Kymas are affected by the update. It returns a list of Kymas that have modules
 // assigned to the updated channels.
 func GetAffectedKymas(kymas *v1beta2.KymaList, moduleName string,
-	newChannelAssignments map[string]v1beta2.ChannelVersionAssignment) []*types.NamespacedName {
+	newChannelAssignments map[string]v1beta2.ChannelVersionAssignment,
+) []*types.NamespacedName {
 	affectedKymas := make([]*types.NamespacedName, 0)
 	for _, kyma := range kymas.Items {
 		for _, module := range kyma.Status.Modules {

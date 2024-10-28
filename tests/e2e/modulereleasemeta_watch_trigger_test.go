@@ -26,7 +26,6 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given kyma deployed in KCP", func() {
-
 		It("When enabling Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
@@ -49,7 +48,7 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When ModuleReleaseMeta channels get updaed with invalid version", func() {
+		It("When ModuleReleaseMeta channels get updated with invalid version", func() {
 			Eventually(UpdateAllModuleReleaseMetaChannelVersions).
 				WithContext(ctx).
 				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, "1.2.3").
@@ -66,11 +65,26 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 				Should(Succeed())
 		})
 
+		It("When ModuleReleaseMeta channels get updated with invalid version", func() {
+			Eventually(UpdateAllModuleReleaseMetaChannelVersions).
+				WithContext(ctx).
+				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, "1.0.1").
+				Should(Succeed())
+		})
+		It("Then KCP Kyma CR should be requeued and gets into \"Ready\" State", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			Consistently(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
 	})
 })
 
 func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client client.Client, namespace, name, version string) error {
-
 	meta := &v1beta2.ModuleReleaseMeta{}
 	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
 		return err
