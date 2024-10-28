@@ -25,6 +25,17 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given kyma deployed in KCP", func() {
+		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			Consistently(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
+
 		It("When enabling Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
@@ -34,6 +45,10 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 
 		It("Then KCP Kyma CR is in \"Ready\" State", func() {
 			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			Consistently(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
