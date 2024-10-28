@@ -4,10 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 )
 
 func Test_DiffModuleReleaseMetaChannels(t *testing.T) {

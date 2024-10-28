@@ -3,12 +3,13 @@ package watch
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // ModuleReleaseMetaEventHandler implements handler.EventHandler.
@@ -21,8 +22,8 @@ func NewModuleReleaseMetaEventHandler(handlerClient ChangeHandlerClient) *Module
 }
 
 func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, event event.CreateEvent,
-	rli workqueue.TypedRateLimitingInterface[reconcile.Request]) {
-
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
+) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -48,7 +49,8 @@ func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, event event.
 
 // Delete handles Delete events.
 func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.DeleteEvent,
-	rli workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
+) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -74,7 +76,8 @@ func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.
 
 // Update handles Update events and gets old and new state.
 func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.UpdateEvent,
-	rli workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
+) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -125,7 +128,8 @@ func DiffModuleReleaseMetaChannels(oldModuleReleaseMeta, newModuleReleaseMeta *v
 // GetAffectedKymas determines which Kymas are affected by the update. It returns a list of Kymas that have modules
 // assigned to the updated channels.
 func GetAffectedKymas(kymas *v1beta2.KymaList, moduleName string,
-	newChannelAssignments map[string]v1beta2.ChannelVersionAssignment) []*types.NamespacedName {
+	newChannelAssignments map[string]v1beta2.ChannelVersionAssignment,
+) []*types.NamespacedName {
 	affectedKymas := make([]*types.NamespacedName, 0)
 	for _, kyma := range kymas.Items {
 		for _, module := range kyma.Status.Modules {
