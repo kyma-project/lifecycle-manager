@@ -30,7 +30,8 @@ runs:
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
         matrix.e2e-test == 'module-upgrade-new-version' ||
-        matrix.e2e-test == 'upgrade-under-deletion'
+        matrix.e2e-test == 'upgrade-under-deletion' ||
+        matrix.e2e-test == 'modulereleasemeta-sync'
         }}
       shell: bash
       run: |
