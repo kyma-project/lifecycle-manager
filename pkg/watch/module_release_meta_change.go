@@ -20,36 +20,9 @@ func NewModuleReleaseMetaEventHandler(handlerClient ChangeHandlerClient) *Module
 	return &ModuleReleaseMetaEventHandler{Reader: handlerClient}
 }
 
-func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, e event.CreateEvent,
-	q workqueue.TypedRateLimitingInterface[reconcile.Request],
-) {
-	kymaList, err := getKymaList(ctx, m.Reader)
-	if err != nil {
-		return
-	}
+func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, event event.CreateEvent,
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 
-	moduleReleaseMeta, ok := e.Object.(*v1beta2.ModuleReleaseMeta)
-	if !ok {
-		return
-	}
-
-	channelAssignment := getChannelAssignmentMapping(moduleReleaseMeta)
-	affectedKymas := GetAffectedKymas(kymaList, moduleReleaseMeta.Spec.ModuleName, channelAssignment)
-
-	for _, kyma := range affectedKymas {
-		q.Add(reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Name:      kyma.Name,
-				Namespace: kyma.Namespace,
-			},
-		})
-	}
-}
-
-// Delete handles Delete events.
-func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.DeleteEvent,
-	q workqueue.TypedRateLimitingInterface[reconcile.Request],
-) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -64,7 +37,33 @@ func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.
 	affectedKymas := GetAffectedKymas(kymaList, moduleReleaseMeta.Spec.ModuleName, channelAssignment)
 
 	for _, kyma := range affectedKymas {
-		q.Add(reconcile.Request{
+		rli.Add(reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      kyma.Name,
+				Namespace: kyma.Namespace,
+			},
+		})
+	}
+}
+
+// Delete handles Delete events.
+func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.DeleteEvent,
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	kymaList, err := getKymaList(ctx, m.Reader)
+	if err != nil {
+		return
+	}
+
+	moduleReleaseMeta, ok := event.Object.(*v1beta2.ModuleReleaseMeta)
+	if !ok {
+		return
+	}
+
+	channelAssignment := getChannelAssignmentMapping(moduleReleaseMeta)
+	affectedKymas := GetAffectedKymas(kymaList, moduleReleaseMeta.Spec.ModuleName, channelAssignment)
+
+	for _, kyma := range affectedKymas {
+		rli.Add(reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Name:      kyma.Name,
 				Namespace: kyma.Namespace,
@@ -75,8 +74,7 @@ func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.
 
 // Update handles Update events and gets old and new state.
 func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.UpdateEvent,
-	q workqueue.TypedRateLimitingInterface[reconcile.Request],
-) {
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
 		return
@@ -95,7 +93,7 @@ func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.
 	affectedKymas := GetAffectedKymas(kymaList, newModuleReleaseMeta.Spec.ModuleName, diff)
 
 	for _, kyma := range affectedKymas {
-		q.Add(reconcile.Request{
+		rli.Add(reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Name:      kyma.Name,
 				Namespace: kyma.Namespace,
@@ -127,12 +125,10 @@ func DiffModuleReleaseMetaChannels(oldModuleReleaseMeta, newModuleReleaseMeta *v
 // GetAffectedKymas determines which Kymas are affected by the update. It returns a list of Kymas that have modules
 // assigned to the updated channels.
 func GetAffectedKymas(kymas *v1beta2.KymaList, moduleName string,
-	newChannelAssignments map[string]v1beta2.ChannelVersionAssignment,
-) []*types.NamespacedName {
+	newChannelAssignments map[string]v1beta2.ChannelVersionAssignment) []*types.NamespacedName {
 	affectedKymas := make([]*types.NamespacedName, 0)
 	for _, kyma := range kymas.Items {
 		for _, module := range kyma.Status.Modules {
-
 			if module.Name != moduleName {
 				continue
 			}

@@ -29,11 +29,11 @@ var (
 
 func CheckPodLogs(ctx context.Context,
 	namespace, podPrefix, container, logMsg string,
-	RESTConfig *rest.Config,
+	restConfig *rest.Config,
 	k8sClient client.Client,
 	logsSince *apimetav1.Time,
 ) error {
-	logs, err := getPodLogs(ctx, RESTConfig, k8sClient, namespace, podPrefix, container,
+	logs, err := getPodLogs(ctx, restConfig, k8sClient, namespace, podPrefix, container,
 		logsSince)
 	if err != nil {
 		return err
