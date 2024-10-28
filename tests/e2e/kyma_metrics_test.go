@@ -37,6 +37,10 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+			Consistently(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
 
 			By("And count of Kyma State Metric in \"Ready\" State is 1")
 			Eventually(GetKymaStateMetricCount).
