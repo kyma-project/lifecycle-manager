@@ -56,6 +56,7 @@ jobs:
           - rbac-privileges
           - ocm-compatible-module-template
           - modulereleasemeta-with-obsolete-moduletemplate
+          - modulereleasemeta-sync
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -80,6 +81,7 @@ jobs:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           istio_version: ${{ steps.configuration.outputs.istio_version }}
           k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
 
