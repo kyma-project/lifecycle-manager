@@ -12,21 +12,30 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-// ModuleReleaseMetaEventHandler implements handler.EventHandler.
-type ModuleReleaseMetaEventHandler struct {
+type ModuleReleaseMetaEventHandler = TypedModuleReleaseMetaEventHandler[client.Object, reconcile.Request]
+
+// TypedModuleReleaseMetaEventHandler implements handler.EventHandler.
+type TypedModuleReleaseMetaEventHandler[object any, request comparable] struct {
 	client.Reader
+
+	CreateFunc func(context.Context, event.TypedCreateEvent[object], workqueue.TypedRateLimitingInterface[request])
+
+	UpdateFunc func(context.Context, event.TypedUpdateEvent[object], workqueue.TypedRateLimitingInterface[request])
+
+	DeleteFunc func(context.Context, event.TypedDeleteEvent[object], workqueue.TypedRateLimitingInterface[request])
+
+	GenericFunc func(context.Context, event.TypedGenericEvent[object], workqueue.TypedRateLimitingInterface[request])
 }
 
 func NewModuleReleaseMetaEventHandler(handlerClient ChangeHandlerClient) *ModuleReleaseMetaEventHandler {
 	return &ModuleReleaseMetaEventHandler{Reader: handlerClient}
 }
 
-func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, event event.CreateEvent,
+func (m TypedModuleReleaseMetaEventHandler[object, request]) Create(ctx context.Context, event event.CreateEvent,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
 ) {
 	kymaList, err := getKymaList(ctx, m.Reader)
 	if err != nil {
-		return
 	}
 
 	moduleReleaseMeta, ok := event.Object.(*v1beta2.ModuleReleaseMeta)
@@ -48,7 +57,7 @@ func (m *ModuleReleaseMetaEventHandler) Create(ctx context.Context, event event.
 }
 
 // Delete handles Delete events.
-func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.DeleteEvent,
+func (m TypedModuleReleaseMetaEventHandler[object, request]) Delete(ctx context.Context, event event.DeleteEvent,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
 ) {
 	kymaList, err := getKymaList(ctx, m.Reader)
@@ -75,7 +84,7 @@ func (m *ModuleReleaseMetaEventHandler) Delete(ctx context.Context, event event.
 }
 
 // Update handles Update events and gets old and new state.
-func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.UpdateEvent,
+func (m TypedModuleReleaseMetaEventHandler[object, request]) Update(ctx context.Context, event event.UpdateEvent,
 	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
 ) {
 	kymaList, err := getKymaList(ctx, m.Reader)
@@ -103,6 +112,12 @@ func (m *ModuleReleaseMetaEventHandler) Update(ctx context.Context, event event.
 			},
 		})
 	}
+}
+
+// Generic handles generic events; no-op.
+func (m TypedModuleReleaseMetaEventHandler[object, request]) Generic(ctx context.Context, event event.GenericEvent,
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
+) {
 }
 
 // DiffModuleReleaseMetaChannels determines the difference between the old and new ModuleReleaseMeta channels. It returns
