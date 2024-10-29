@@ -100,6 +100,7 @@ func main() {
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
+
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
 		zapcore.Lock(os.Stdout)))
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
