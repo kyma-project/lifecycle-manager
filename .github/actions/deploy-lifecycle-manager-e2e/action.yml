@@ -84,7 +84,18 @@ runs:
       if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
       working-directory: lifecycle-manager
       shell: bash
-      run: "pushd config/watcher_local_test\necho \\\n\"- op: replace\n  path: /spec/renewBefore\n  value: 59m \n- op: replace\n  path: /spec/duration\n  value: 1h\">> certificate_renewal.yaml\ncat certificate_renewal.yaml\nkustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving\npopd\n"
+      run: |
+        pushd config/watcher_local_test
+        echo \
+        "- op: replace
+          path: /spec/renewBefore
+          value: 59m 
+        - op: replace
+          path: /spec/duration
+          value: 1h">> certificate_renewal.yaml
+        cat certificate_renewal.yaml
+        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
+        popd
     - name: Deploy LM local testing kustomize
       uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
       with:
@@ -95,7 +106,7 @@ runs:
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
         matrix.e2e-test == 'purge-metrics' ||
         matrix.e2e-test == 'self-signed-certificate-rotation' ||
-        matrix.e2e-test == 'mandatory-module-metrics'}}
+        matrix.e2e-test == 'mandatory-module-metrics'}}  
       shell: bash
       run: |
         kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
