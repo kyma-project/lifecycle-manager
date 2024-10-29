@@ -133,13 +133,13 @@ func handleEvent(ctx context.Context, evt interface{}, rli workqueue.TypedRateLi
 
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta
 	var ok bool
-	switch e := evt.(type) {
+	switch eventInstance := evt.(type) {
 	case event.CreateEvent:
-		moduleReleaseMeta, ok = e.Object.(*v1beta2.ModuleReleaseMeta)
+		moduleReleaseMeta, ok = eventInstance.Object.(*v1beta2.ModuleReleaseMeta)
 	case event.DeleteEvent:
-		moduleReleaseMeta, ok = e.Object.(*v1beta2.ModuleReleaseMeta)
+		moduleReleaseMeta, ok = eventInstance.Object.(*v1beta2.ModuleReleaseMeta)
 	case event.GenericEvent:
-		moduleReleaseMeta, ok = e.Object.(*v1beta2.ModuleReleaseMeta)
+		moduleReleaseMeta, ok = eventInstance.Object.(*v1beta2.ModuleReleaseMeta)
 	default:
 		return
 	}
