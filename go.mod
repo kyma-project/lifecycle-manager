@@ -24,12 +24,12 @@ require (
 	golang.org/x/time v0.7.0
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	ocm.software/ocm v0.16.2
-	sigs.k8s.io/controller-runtime v0.19.0
+	sigs.k8s.io/controller-runtime v0.19.1
 	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
-	istio.io/api v1.23.2
+	istio.io/api v1.23.3
 	istio.io/client-go v1.23.2
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.1
 	k8s.io/api v0.31.2
-	k8s.io/apiextensions-apiserver v0.31.1
+	k8s.io/apiextensions-apiserver v0.31.2
 	k8s.io/apimachinery v0.31.2
 	k8s.io/cli-runtime v0.31.2
 	k8s.io/client-go v0.31.2
