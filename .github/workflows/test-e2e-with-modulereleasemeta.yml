@@ -15,16 +15,16 @@ jobs:
     name: Wait for image build
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Wait for the Docker image
-      timeout-minutes: 20
-      env:
-        ITERATIONS: 40
-        SLEEP_SECONDS: 30
-      run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.pull_request.head.sha }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for the Docker image
+        timeout-minutes: 20
+        env:
+          ITERATIONS: 40
+          SLEEP_SECONDS: 30
+        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.pull_request.head.sha }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
     name: E2E With ModuleReleaseMeta
     needs: wait-for-image-build
@@ -62,47 +62,47 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-    - name: Checkout lifecycle-manager
-      uses: actions/checkout@v4
-      with:
-        path: lifecycle-manager
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          path: lifecycle-manager
 
-    - name: Checkout template-operator
-      uses: actions/checkout@v4
-      with:
-        repository: kyma-project/template-operator
-        path: template-operator
+      - name: Checkout template-operator
+        uses: actions/checkout@v4
+        with:
+          repository: kyma-project/template-operator
+          path: template-operator
 
-    - name: Get configuration
-      uses: ./lifecycle-manager/.github/actions/get-configuration
-      id: configuration
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
+        id: configuration
 
-    - name: Setup tools
-      uses: ./lifecycle-manager/.github/actions/setup-tools
-      with:
-        k8s_version: ${{ steps.configuration.outputs.k8s_version }}
-        istio_version: ${{ steps.configuration.outputs.istio_version }}
-        k3d_version: ${{ steps.configuration.outputs.k3d_version }}
-        modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
-        go-version-file: lifecycle-manager/go.mod
-        cache-dependency-path: lifecycle-manager/go.sum
+      - name: Setup tools
+        uses: ./lifecycle-manager/.github/actions/setup-tools
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          istio_version: ${{ steps.configuration.outputs.istio_version }}
+          k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
+          go-version-file: lifecycle-manager/go.mod
+          cache-dependency-path: lifecycle-manager/go.sum
 
-    - name: Setup test clusters
-      uses: ./lifecycle-manager/.github/actions/setup-test-clusters
-      with:
-        k8s_version: ${{ steps.configuration.outputs.k8s_version }}
-        cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
+      - name: Setup test clusters
+        uses: ./lifecycle-manager/.github/actions/setup-test-clusters
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
 
-    - name: Deploy lifecycle-manager
-      uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
-      with:
-        klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
-        klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
+      - name: Deploy lifecycle-manager
+        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
+        with:
+          klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
+          klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
 
-    - name: Deploy template-operator
-      uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
+      - name: Deploy template-operator
+        uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
 
-    - name: Run '${{ matrix.e2e-test }}' test
-      working-directory: lifecycle-manager
-      run: |
-        make -C tests/e2e ${{ matrix.e2e-test }}
+      - name: Run '${{ matrix.e2e-test }}' test
+        working-directory: lifecycle-manager
+        run: |
+          make -C tests/e2e ${{ matrix.e2e-test }}
