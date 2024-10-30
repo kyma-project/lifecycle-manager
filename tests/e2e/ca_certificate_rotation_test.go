@@ -37,10 +37,10 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			timeNow := &apimetav1.Time{Time: time.Now()}
 			expectedLogMessage := "CA Certificate was rotated, removing certificate"
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
-			Eventually(CheckKLMLogs, 4*time.Minute).
+			Eventually(CheckPodLogs, 4*time.Minute).
 				WithContext(ctx).
-				WithArguments(expectedLogMessage, kcpRESTConfig, skrRESTConfig,
-					kcpClient, skrClient, timeNow).
+				WithArguments(ControlPlaneNamespace, KLMPodPrefix, KLMPodContainer, expectedLogMessage, kcpRESTConfig,
+					kcpClient, timeNow).
 				Should(Succeed())
 
 			By("And new TLS Certificate is created")

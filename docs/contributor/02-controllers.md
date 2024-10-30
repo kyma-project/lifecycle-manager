@@ -27,6 +27,12 @@ If a ModuleReleaseMeta CR for a particular module doesn't exist, Kyma Controller
 
 The Kyma CR in Kyma Control Plane shows the initial specification and the current status. To install a module, Lifecycle Manager uses the specification from the remote cluster Kyma CR.
 
+### Requeuing the Kyma CR
+
+The `Kyma` CR is requeued at set intervals using specific flags from Lifecycle Manager. The requeuing ensures that the Kyma CR is periodically reprocessed, allowing the controller to detect and apply any changes that may have occurred during that time. Additionally, several watch mechanisms are implemented, enabling the controller to requeue Kyma CRs when certain events occur.
+
+These watch mechanisms monitor Kyma, Secret, Manifest, and ModuleReleaseMeta CRs, ensuring that the relevant Kyma CRs are requeued whenever these CRs are created, updated, or deleted. Additionally, the watch mechanism for ModuleReleaseMeta CRs has a [dedicated implementation](../../internal/watch/modulereleasemeta_change.go), which ensures that all Kyma CRs using a module in a channel affected by the ModuleReleaseMeta CR are requeued as needed.
+
 ## Mandatory Modules Controllers
 
 Lifecycle Manager uses two Mandatory Modules Controllers:
