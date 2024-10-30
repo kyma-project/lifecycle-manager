@@ -1,9 +1,10 @@
 package e2e_test
 
 import (
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -41,7 +42,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			By("And count of Mandatory Module State Metric in \"Ready\" State is 1", func() {
 				Eventually(GetMandatoryModuleStateMetric).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), "template-operator", string(shared.StateReady)).
+					WithArguments(kyma.GetName(), TestModuleName, string(shared.StateReady)).
 					Should(Equal(1))
 			})
 
@@ -88,7 +89,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			By("And count of Mandatory Module State Metric in \"Ready\" State is 0", func() {
 				Eventually(GetMandatoryModuleStateMetric).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), "template-operator", string(shared.StateReady)).
+					WithArguments(kyma.GetName(), TestModuleName, string(shared.StateReady)).
 					Should(Equal(0))
 			})
 

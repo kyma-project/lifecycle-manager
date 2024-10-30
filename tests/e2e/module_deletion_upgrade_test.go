@@ -122,7 +122,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 			By("And Manifest CR is still in \"Deleting\" State")
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", kcpClient,
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), TestModuleName, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
 		})
