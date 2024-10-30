@@ -11,8 +11,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 type ResourceKind string
@@ -83,6 +84,15 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateDeleting).
 				Should(Succeed())
+			By("And Module CR is in \"Warning\" State")
+			Eventually(ModuleCRIsInExpectedState).
+				WithContext(ctx).
+				WithArguments(skrClient, moduleCR, shared.StateWarning).
+				Should(BeTrue())
+			Consistently(ModuleCRIsInExpectedState).
+				WithContext(ctx).
+				WithArguments(skrClient, moduleCR, shared.StateWarning).
+				Should(BeTrue())
 		})
 
 		It("When blocking finalizers from Module CR get removed", func() {
