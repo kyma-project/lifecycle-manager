@@ -10,7 +10,7 @@ resources:
 # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
 components:
-- ../istio
+  - ../istio
 
 
 generatorOptions:
