@@ -17,8 +17,6 @@ limitations under the License.
 // Package v1beta1 contains API Schema definitions for the operator v1beta1 API group
 // +kubebuilder:object:generate=true
 // +groupName=operator.kyma-project.io
-//
-//nolint:gochecknoglobals // required for utilizing the API
 package v1beta1
 
 import (
