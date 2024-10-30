@@ -210,6 +210,87 @@ func Test_DiffModuleReleaseMetaChannels(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Multiple channels added and updated",
+			args: args{
+				oldModuleReleaseMeta: &v1beta2.ModuleReleaseMeta{
+					Spec: v1beta2.ModuleReleaseMetaSpec{
+						Channels: []v1beta2.ChannelVersionAssignment{
+							{
+								Channel: "regular",
+								Version: "1.0.0",
+							},
+						},
+					},
+				},
+				newModuleReleaseMeta: &v1beta2.ModuleReleaseMeta{
+					Spec: v1beta2.ModuleReleaseMetaSpec{
+						Channels: []v1beta2.ChannelVersionAssignment{
+							{
+								Channel: "regular",
+								Version: "1.1.0",
+							},
+							{
+								Channel: "fast",
+								Version: "2.0.0",
+							},
+							{
+								Channel: "experimental",
+								Version: "3.0.0",
+							},
+						},
+					},
+				},
+			},
+			want: map[string]v1beta2.ChannelVersionAssignment{
+				"regular": {
+					Channel: "regular",
+					Version: "1.1.0",
+				},
+				"fast": {
+					Channel: "fast",
+					Version: "2.0.0",
+				},
+				"experimental": {
+					Channel: "experimental",
+					Version: "3.0.0",
+				},
+			},
+		},
+		{
+			name: "Multiple channels removed",
+			args: args{
+				oldModuleReleaseMeta: &v1beta2.ModuleReleaseMeta{
+					Spec: v1beta2.ModuleReleaseMetaSpec{
+						Channels: []v1beta2.ChannelVersionAssignment{
+							{
+								Channel: "regular",
+								Version: "1.0.0",
+							},
+							{
+								Channel: "fast",
+								Version: "2.0.0",
+							},
+						},
+					},
+				},
+				newModuleReleaseMeta: &v1beta2.ModuleReleaseMeta{
+					Spec: v1beta2.ModuleReleaseMetaSpec{
+						Channels: []v1beta2.ChannelVersionAssignment{},
+					},
+				},
+			},
+			want: map[string]v1beta2.ChannelVersionAssignment{
+				"regular": {
+					Channel: "regular",
+					Version: "1.0.0",
+				},
+				"fast": {
+					Channel: "fast",
+					Version: "2.0.0",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
