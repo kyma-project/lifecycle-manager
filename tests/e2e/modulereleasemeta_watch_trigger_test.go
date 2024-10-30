@@ -70,7 +70,6 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, "failed to get module template: ModuleTemplate.operator.kyma-project.io \"template-operator-1.2.3\" not found").
 					Should(Succeed())
 			})
-
 		})
 
 		It("When ModuleReleaseMeta channels get updated with valid version", func() {
