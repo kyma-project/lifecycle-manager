@@ -21,3 +21,9 @@ jobs:
         with:
           version: v1.60.3
           args: --verbose
+      - name: golangci-lint on api
+        uses: golangci/golangci-lint-action@v6.1.0
+        with:
+          version: v1.60.3
+          args: --verbose
+          working-directory: ./api
