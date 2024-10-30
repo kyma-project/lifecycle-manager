@@ -60,7 +60,7 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When ModuleReleaseMeta channels get updated with invalid version", func() {
+		It("When ModuleReleaseMeta channels get updated with valid version", func() {
 			Eventually(UpdateAllModuleReleaseMetaChannelVersions).
 				WithContext(ctx).
 				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, "1.0.1").
