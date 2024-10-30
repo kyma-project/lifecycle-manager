@@ -1,13 +1,8 @@
 package e2e_test
 
 import (
-	"context"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -83,17 +78,3 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 		})
 	})
 })
-
-func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client client.Client, namespace, name, version string) error {
-	meta := &v1beta2.ModuleReleaseMeta{}
-	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
-		return err
-	}
-	for i := range meta.Spec.Channels {
-		meta.Spec.Channels[i].Version = version
-	}
-	if err := client.Update(ctx, meta); err != nil {
-		return err
-	}
-	return nil
-}

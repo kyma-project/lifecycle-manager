@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/watch"
+	"github.com/kyma-project/lifecycle-manager/internal/watch"
 )
 
 func Test_DiffModuleReleaseMetaChannels(t *testing.T) {
@@ -203,7 +203,12 @@ func Test_DiffModuleReleaseMetaChannels(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]v1beta2.ChannelVersionAssignment{},
+			want: map[string]v1beta2.ChannelVersionAssignment{
+				"regular": {
+					Channel: "regular",
+					Version: "1.0.0",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

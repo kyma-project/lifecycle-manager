@@ -86,10 +86,18 @@ func DiffModuleReleaseMetaChannels(oldModuleReleaseMeta, newModuleReleaseMeta *v
 		oldChannels[channel.Channel] = channel
 	}
 
+	newChannels := make(map[string]v1beta2.ChannelVersionAssignment)
 	for _, newChannel := range newModuleReleaseMeta.Spec.Channels {
+		newChannels[newChannel.Channel] = newChannel
 		oldChannel, ok := oldChannels[newChannel.Channel]
 		if !ok || oldChannel.Version != newChannel.Version {
 			diff[newChannel.Channel] = newChannel
+		}
+	}
+
+	for oldChannelName, oldChannel := range oldChannels {
+		if _, ok := newChannels[oldChannelName]; !ok {
+			diff[oldChannelName] = oldChannel
 		}
 	}
 
