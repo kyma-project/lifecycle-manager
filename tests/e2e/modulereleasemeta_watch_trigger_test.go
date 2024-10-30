@@ -63,12 +63,12 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateError).
 					Should(Succeed())
-				By("And the Module Status has correct error message", func() {
-					Eventually(ModuleMessageInKymaStatusIsCorrect).
-						WithContext(ctx).
-						WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, "failed to get module template: ModuleTemplate.operator.kyma-project.io \"template-operator-1.2.3\" not found").
-						Should(Succeed())
-				}
+			})
+			By("And the Module Status has correct error message", func() {
+				Eventually(ModuleMessageInKymaStatusIsCorrect).
+					WithContext(ctx).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, "failed to get module template: ModuleTemplate.operator.kyma-project.io \"template-operator-1.2.3\" not found").
+					Should(Succeed())
 			})
 
 		})
