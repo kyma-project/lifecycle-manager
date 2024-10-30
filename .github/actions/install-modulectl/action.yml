@@ -14,4 +14,3 @@ runs:
         chmod +x modulectl-linux
         mv modulectl-linux /usr/local/bin/modulectl
         echo "PATH=/usr/local/bin/modulectl" >> $GITHUB_OUTPUT
-        ln -s /usr/local/bin/modulectl /usr/local/bin/module
