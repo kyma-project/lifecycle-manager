@@ -29,9 +29,9 @@ The Kyma CR in Kyma Control Plane shows the initial specification and the curren
 
 ### Requeuing the Kyma CR
 
-The `Kyma` CR is requeued at set intervals using specific flags from the Lifecycle Manager. This ensures that the Kyma CR is periodically reprocessed, allowing the controller to detect and apply any changes that may have occurred during that time. Additionally, several watch mechanisms have been implemented, enabling the controller to requeue Kyma CRs when certain events occur.
+The `Kyma` CR is requeued at set intervals using specific flags from Lifecycle Manager. The requeuing ensures that the Kyma CR is periodically reprocessed, allowing the controller to detect and apply any changes that may have occurred during that time. Additionally, several watch mechanisms are implemented, enabling the controller to requeue Kyma CRs when certain events occur.
 
-These watches monitor `Kyma`, `Secret`, `Manifest`, and `ModuleReleaseMeta` CRs, ensuring that the relevant Kyma CRs are requeued whenever these CRs are created, updated, or deleted. In particular, the watch mechanism for `ModuleReleaseMeta` CRs has a [dedicated implementation](../../internal/watch/modulereleasemeta_change.go). This ensures that any Kyma CRs using a module in a channel affected by the `ModuleReleaseMeta` CR are requeued as needed.
+These watch mechanisms monitor Kyma, Secret, Manifest, and ModuleReleaseMeta CRs, ensuring that the relevant Kyma CRs are requeued whenever these CRs are created, updated, or deleted. Additionally, the watch mechanism for ModuleReleaseMeta CRs has a [dedicated implementation](../../internal/watch/modulereleasemeta_change.go), which ensures that all Kyma CRs using a module in a channel affected by the ModuleReleaseMeta CR are requeued as needed.
 
 ## Mandatory Modules Controllers
 
