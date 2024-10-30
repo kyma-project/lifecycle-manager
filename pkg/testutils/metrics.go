@@ -159,9 +159,28 @@ func GetModuleCRWarningConditionMetric(ctx context.Context, kymaName, moduleName
 		return 0, err
 	}
 
-	re := regexp.MustCompile(fmt.Sprintf(`%s{kyma_name="%s",module_name="%s",condition="ModuleCRWarning"} (\d+)`,
-		metrics.MetricModuleCondition, kymaName, moduleName))
+	re := getModuleCRWarningConditionMetric(kymaName, moduleName)
 	return parseCount(re, bodyString)
+}
+
+func getModuleCRWarningConditionMetric(kymaName, moduleName string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf(`%s{kyma_name="%s",module_name="%s",condition="ModuleCRWarning"} (\d+)`,
+		metrics.MetricModuleCondition, kymaName, moduleName))
+}
+
+func ModuleCRWarningConditionMetricNotFound(ctx context.Context, kymaName, moduleName string) error {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return err
+	}
+
+	re := getModuleCRWarningConditionMetric(kymaName, moduleName)
+	match := re.FindStringSubmatch(bodyString)
+	if len(match) < 1 {
+		return ErrMetricNotFound
+	}
+
+	return nil
 }
 
 func getMetricsBody(ctx context.Context) (string, error) {

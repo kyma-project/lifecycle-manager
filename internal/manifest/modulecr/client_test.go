@@ -33,7 +33,7 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 	ctx := context.TODO()
 
 	manifest := testutils.NewTestManifest("test-manifest")
-	manifest.SetFinalizers([]string{modulecr.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
+	manifest.SetFinalizers([]string{finalizer.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
 	moduleCR := unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(
 		schema.GroupVersionKind{
@@ -70,5 +70,5 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 
 	err = kcpClient.Get(ctx, client.ObjectKey{Name: manifest.GetName(), Namespace: manifest.GetNamespace()}, manifest)
 	require.NoError(t, err)
-	assert.NotContains(t, manifest.GetFinalizers(), modulecr.CustomResourceManagerFinalizer)
+	assert.NotContains(t, manifest.GetFinalizers(), finalizer.CustomResourceManagerFinalizer)
 }
