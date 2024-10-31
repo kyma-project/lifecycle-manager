@@ -95,12 +95,13 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) error
 	resource := manifest.Spec.Resource.DeepCopy()
 	propagation := apimetav1.DeletePropagationBackground
 	err := c.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-
-	if err != nil && !util.IsNotFound(err) {
+	if util.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
 		return fmt.Errorf("failed to fetch resource: %w", err)
 	}
-
-	return nil
+	return finalizer.ErrRequeueRequired
 }
 
 // SyncModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
