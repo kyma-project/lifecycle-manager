@@ -30,9 +30,9 @@ func NewModuleMetrics() *ModuleMetrics {
 
 func (m *ModuleMetrics) SetModuleCRWarningCondition(kymaName, moduleName string) {
 	m.moduleCRConditionGauge.With(prometheus.Labels{
-		KymaNameLabel:  kymaName,
-		moduleName:     moduleName,
-		conditionLabel: string(moduleCrWarning),
+		KymaNameLabel:   kymaName,
+		moduleNameLabel: moduleName,
+		conditionLabel:  string(moduleCrWarning),
 	}).Set(1)
 }
 
