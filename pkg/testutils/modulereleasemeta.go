@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -100,6 +101,20 @@ func DeleteModuleReleaseMeta(ctx context.Context, moduleName, namespace string, 
 	err = client.IgnoreNotFound(clnt.Delete(ctx, mrm))
 	if err != nil {
 		return fmt.Errorf("modulereleasemeta not deleted: %w", err)
+	}
+	return nil
+}
+
+func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client client.Client, namespace, name, version string) error {
+	meta := &v1beta2.ModuleReleaseMeta{}
+	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
+		return err
+	}
+	for i := range meta.Spec.Channels {
+		meta.Spec.Channels[i].Version = version
+	}
+	if err := client.Update(ctx, meta); err != nil {
+		return err
 	}
 	return nil
 }

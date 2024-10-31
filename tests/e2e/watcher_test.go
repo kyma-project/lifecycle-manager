@@ -90,10 +90,10 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		})
 
 		It("Then new reconciliation gets triggered for KCP Kyma CR", func() {
-			Eventually(CheckKLMLogs).
+			Eventually(CheckPodLogs).
 				WithContext(ctx).
-				WithArguments(incomingRequestMsg, kcpRESTConfig, skrRESTConfig,
-					kcpClient, skrClient, timeNow).
+				WithArguments(ControlPlaneNamespace, KLMPodPrefix, KLMPodContainer, incomingRequestMsg, kcpRESTConfig,
+					kcpClient, timeNow).
 				Should(Succeed())
 		})
 
@@ -112,10 +112,10 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		})
 
 		It("Then new reconciliation gets triggered for KCP Kyma CR", func() {
-			Eventually(CheckKLMLogs).
+			Eventually(CheckPodLogs).
 				WithContext(ctx).
-				WithArguments(incomingRequestMsg, kcpRESTConfig, skrRESTConfig,
-					kcpClient, skrClient, patchingTimestamp).
+				WithArguments(ControlPlaneNamespace, KLMPodPrefix, KLMPodContainer, incomingRequestMsg, kcpRESTConfig,
+					kcpClient, patchingTimestamp).
 				Should(Succeed())
 		})
 	})
