@@ -253,7 +253,7 @@ func (m *ModuleTemplate) IsInternal() bool {
 var ErrInvalidVersion = errors.New("can't find valid semantic version")
 
 // getVersionLegacy() returns the version of the ModuleTemplate from the annotation on the object.
-// Remove once shared.ModuleVersionAnnotation is removed
+// Remove once shared.ModuleVersionAnnotation is removed.
 func (m *ModuleTemplate) getVersionLegacy() (string, error) {
 	if m.Annotations != nil {
 		moduleVersion, found := m.Annotations[shared.ModuleVersionAnnotation]

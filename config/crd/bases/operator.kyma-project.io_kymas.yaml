@@ -145,7 +145,7 @@ spec:
             - channel
             type: object
           status:
-            description: KymaStatus defines the observed state of Kyma
+            description: KymaStatus defines the observed state of Kyma.
             properties:
               activeChannel:
                 description: Active Channel
@@ -557,7 +557,7 @@ spec:
             - channel
             type: object
           status:
-            description: KymaStatus defines the observed state of Kyma
+            description: KymaStatus defines the observed state of Kyma.
             properties:
               activeChannel:
                 description: Active Channel

@@ -125,7 +125,7 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 	return moduleStatusMap
 }
 
-// KymaStatus defines the observed state of Kyma
+// KymaStatus defines the observed state of Kyma.
 type KymaStatus struct {
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
