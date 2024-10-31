@@ -61,7 +61,7 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 
 	// And in second deletion attempt, the resource should not be found
 	err = skrClient.RemoveModuleCR(ctx, kcpClient, manifest)
-	require.ErrorIs(t, err, modulecr.ErrRequeueRequired)
+	require.ErrorIs(t, err, finalizer.ErrRequeueRequired)
 
 	// Then the resource CR should be deleted and the finalizer should be removed from Manifest CR
 	err = kcpClient.Get(ctx, client.ObjectKey{Name: moduleCR.GetName(), Namespace: moduleCR.GetNamespace()},

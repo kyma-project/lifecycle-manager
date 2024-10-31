@@ -178,7 +178,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
-		if errors.Is(err, modulecr.ErrRequeueRequired) {
+		if errors.Is(err, finalizer.ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -193,7 +193,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
-		if errors.Is(err, modulecr.ErrRequeueRequired) {
+		if errors.Is(err, finalizer.ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}

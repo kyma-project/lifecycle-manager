@@ -2,6 +2,7 @@ package finalizer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,15 +11,17 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
+
+var ErrRequeueRequired = errors.New("requeue required")
 
 const (
 	DefaultFinalizer               = "declarative.kyma-project.io/finalizer"
 	CustomResourceManagerFinalizer = "resource.kyma-project.io/finalizer"
 )
 
-// RemoveRequiredFinalizers removes preconfigured finalizers, but not include modulecr.CustomResourceManagerFinalizer.
+// RemoveRequiredFinalizers removes preconfigured finalizers, but not include CustomResourceManagerFinalizer.
 func RemoveRequiredFinalizers(manifest *v1beta2.Manifest) bool {
 	finalizersToRemove := []string{DefaultFinalizer, labelsremoval.LabelRemovalFinalizer}
 
@@ -67,7 +70,32 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
-		return modulecr.ErrRequeueRequired
+		return ErrRequeueRequired
+	}
+	return nil
+}
+
+func RemoveCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
+	if manifest.Spec.Resource == nil {
+		return nil
+	}
+	onCluster := manifest.DeepCopy()
+
+	if err := kcp.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster); err != nil {
+		// If the manifest is not found, we consider the finalizer removed.
+		if util.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("deleteCR: %w", err)
+	}
+
+	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
+		if err := kcp.Update(
+			ctx, onCluster, client.FieldOwner(CustomResourceManagerFinalizer),
+		); err != nil {
+			return fmt.Errorf("failed to update resource: %w", err)
+		}
+		return ErrRequeueRequired
 	}
 	return nil
 }
