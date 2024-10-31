@@ -4,7 +4,7 @@ package collections
 // The provided identity function should return the smallest unique string representation of the object.
 // Note: For most types one can find a unique string identity, but for some types it might not be possible or practical: one example would be a built-in map[k]v type.
 //
-//	In such cases, the diffCalc type should not be used.
+//	In such cases, the DiffCalc type should not be used.
 type DiffCalc[E any] struct {
 	First    []E
 	Identity func(E) string

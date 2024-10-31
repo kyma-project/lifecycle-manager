@@ -68,8 +68,8 @@ func TestObjLists_diff_disjointLists(t *testing.T) {
 
 	// then
 	assert.Len(t, diff, 2)
-	assertExistsInDiff(t, first[0], diff)
-	assertExistsInDiff(t, first[1], diff)
+	assert.Contains(t, diff, &first[0])
+	assert.Contains(t, diff, &first[1])
 }
 
 func TestObjLists_diff_overlappingLists(t *testing.T) {
@@ -91,18 +91,8 @@ func TestObjLists_diff_overlappingLists(t *testing.T) {
 
 	// then
 	assert.Len(t, diff, 2)
-	assertExistsInDiff(t, first[0], diff)
-	assertExistsInDiff(t, first[2], diff)
-}
-
-func assertExistsInDiff(t *testing.T, obj fakeK8sObject, diff []*fakeK8sObject) {
-	t.Helper()
-	for _, d := range diff {
-		if obj.GetName() == d.GetName() && obj.GetNamespace() == d.GetNamespace() {
-			return
-		}
-	}
-	assert.Fail(t, obj.GetName()+"/"+obj.GetNamespace()+" should be in diff (but it is not)")
+	assert.Contains(t, diff, &first[0])
+	assert.Contains(t, diff, &first[2])
 }
 
 // In the production code this would be some existing K8s type, e.g. v1beta2.ModuleTemplate.
