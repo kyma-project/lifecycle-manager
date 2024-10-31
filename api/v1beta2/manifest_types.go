@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	"fmt"
+	"errors"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,7 +34,7 @@ const (
 	RawManifestLayer LayerName = "raw-manifest"
 )
 
-var ErrLabelNotFound = fmt.Errorf("label not found")
+var ErrLabelNotFound = errors.New("label is not found")
 
 // InstallInfo defines installation information.
 type InstallInfo struct {
