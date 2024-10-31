@@ -22,16 +22,16 @@ var (
 	errCatTemplatesApply   = errors.New("could not apply catalog templates")
 )
 
-// moduleTemplateSyncWorker performs synchronization using multiple goroutines.
-type moduleTemplateSyncWorker struct {
+// moduleTemplateConcurrentWorker performs synchronization using multiple goroutines.
+type moduleTemplateConcurrentWorker struct {
 	namespace  string
 	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
 	deleteDiff func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
 	createCRD  func(ctx context.Context) error
 }
 
-// newModuleTemplateSyncWorker returns a new ModuleTemplateSync instance with default dependencies.
-func newModuleTemplateSyncWorker(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateSyncWorker {
+// newModuleTemplateConcurrentWorker returns a new moduleTemplateConcurrentWorker instance with default dependencies.
+func newModuleTemplateConcurrentWorker(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
 		return patchDiff(ctx, obj, skrClient, settings.SSAPatchOptions)
 	}
@@ -44,7 +44,7 @@ func newModuleTemplateSyncWorker(kcpClient, skrClient client.Client, settings *S
 		return createModuleTemplateCRDInRuntime(ctx, kcpClient, skrClient)
 	}
 
-	return &moduleTemplateSyncWorker{
+	return &moduleTemplateConcurrentWorker{
 		namespace:  settings.Namespace,
 		patchDiff:  patchDiffFn,
 		deleteDiff: deleteDiffFn,
@@ -54,7 +54,7 @@ func newModuleTemplateSyncWorker(kcpClient, skrClient client.Client, settings *S
 
 // SyncConcurrently synchronizes ModuleTemplates from KCP to SKR.
 // kcpModules are the ModuleTemplates to be synced from the KCP cluster.
-func (c *moduleTemplateSyncWorker) SyncConcurrently(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error {
+func (c *moduleTemplateConcurrentWorker) SyncConcurrently(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error {
 	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
@@ -85,7 +85,7 @@ func (c *moduleTemplateSyncWorker) SyncConcurrently(ctx context.Context, kcpModu
 }
 
 // DeleteConcurrently deletes ModuleTemplates from SKR.
-func (c *moduleTemplateSyncWorker) DeleteConcurrently(ctx context.Context,
+func (c *moduleTemplateConcurrentWorker) DeleteConcurrently(ctx context.Context,
 	diffsToDelete []v1beta2.ModuleTemplate,
 ) error {
 	channelLength := len(diffsToDelete)

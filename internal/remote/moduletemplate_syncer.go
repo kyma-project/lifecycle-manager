@@ -31,7 +31,7 @@ type syncer struct {
 
 func newSyncer(kcpClient, skrClient client.Client, settings *Settings) *syncer {
 	var syncWokerFactoryFn syncWorkerFactory = func(kcpClient, skrClient client.Client, settings *Settings) syncWorker {
-		return newModuleTemplateSyncWorker(kcpClient, skrClient, settings)
+		return newModuleTemplateConcurrentWorker(kcpClient, skrClient, settings)
 	}
 
 	return &syncer{
