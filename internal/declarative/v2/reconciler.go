@@ -191,6 +191,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
 		}
+		logf.FromContext(ctx).Error(err, "failed to sync manifest state")
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
 	}
 	// This situation happens when manifest get new installation layer to update resources,
