@@ -9,7 +9,7 @@ on:
         description: With Kubernetes version
         required: false
   pull_request:
-    types: [ opened, edited, synchronize, reopened, ready_for_review ]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 jobs:
   wait-for-image-build:
     name: Wait for image build
@@ -57,6 +57,8 @@ jobs:
           - ocm-compatible-module-template
           - modulereleasemeta-with-obsolete-moduletemplate
           - modulereleasemeta-sync
+          - modulereleasemeta-watch-trigger
+
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

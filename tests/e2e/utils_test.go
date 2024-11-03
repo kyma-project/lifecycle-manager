@@ -17,6 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -69,6 +70,13 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 				"istio-injection": "enabled",
 				"namespaces.warden.kyma-project.io/validate": "enabled",
 			}).Should(Succeed())
+		By("And Runtime Watcher deployment is up and running in SKR", func() {
+			Eventually(CheckPodLogs).
+				WithContext(ctx).
+				WithArguments(RemoteNamespace, watcher.SkrResourceName, "server", "Starting server for validation endpoint", skrRESTConfig,
+					skrClient, &apimetav1.Time{Time: time.Now().Add(-5 * time.Minute)}).
+				Should(Succeed())
+		})
 	})
 }
 

@@ -34,7 +34,8 @@ This setup is deployed with the following security features enabled:
     ```shell
     k3d cluster create kcp-local --port 9443:443@loadbalancer \
     --registry-create k3d-registry.localhost:0.0.0.0:5111 \
-    --k3s-arg '--disable=traefik@server:0'
+    --k3s-arg '--disable=traefik@server:0' \
+    --k3s-arg --tls-san=host.k3d.internal@server:* 
     ```
 
 2. Open `/etc/hosts` file on your local system:
@@ -148,7 +149,7 @@ This setup is deployed with the following security features enabled:
 Create a local Kyma runtime (SKR) cluster:
 
 ```shell
-k3d cluster create skr-local
+k3d cluster create skr-local --k3s-arg --tls-san=host.k3d.internal@server:* 
 ```
 
 ### Create a Kyma CR and a Remote Secret
