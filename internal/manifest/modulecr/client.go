@@ -72,33 +72,35 @@ func (c *Client) CheckCRDeletion(ctx context.Context, manifestCR *v1beta2.Manife
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
 // and we consider the CR removal successful.
 func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
-	if err := c.deleteCR(ctx, manifest); err != nil {
-		// we do not set a status here since it will be deleting if timestamp is set.
+	crDeleted, err := c.deleteCR(ctx, manifest)
+	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithErr(err))
 		return err
 	}
-	if err := finalizer.RemoveCRFinalizer(ctx, kcp, manifest); err != nil {
-		manifest.SetStatus(manifest.GetStatus().WithErr(err))
-		return err
+	if crDeleted {
+		if err := finalizer.RemoveCRFinalizer(ctx, kcp, manifest); err != nil {
+			manifest.SetStatus(manifest.GetStatus().WithErr(err))
+			return err
+		}
 	}
 	return nil
 }
 
-func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) error {
+func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
 	if manifest.Spec.Resource == nil {
-		return nil
+		return false, nil
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
 	propagation := apimetav1.DeletePropagationBackground
 	err := c.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
 	if util.IsNotFound(err) {
-		return nil
+		return true, nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed to fetch resource: %w", err)
+		return false, fmt.Errorf("failed to fetch resource: %w", err)
 	}
-	return finalizer.ErrRequeueRequired
+	return false, nil
 }
 
 // SyncModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.

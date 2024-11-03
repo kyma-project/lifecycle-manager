@@ -58,7 +58,7 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 
 	// And deleting the resource CR
 	err = skrClient.RemoveModuleCR(ctx, kcpClient, manifest)
-	require.ErrorIs(t, err, finalizer.ErrRequeueRequired)
+	require.NoError(t, err)
 
 	// And in second deletion attempt, the resource should not be found and the finalizer should be removed
 	err = skrClient.RemoveModuleCR(ctx, kcpClient, manifest)
