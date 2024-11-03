@@ -32,6 +32,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+var errNotDescriptor = errors.New("provided Spec.Descriptor.Object is not a v1beta2.Descriptor")
+
 func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewWebhookManagedBy(mgr).
 		For(m).
@@ -86,7 +88,7 @@ func (m *ModuleTemplate) descriptor() (*Descriptor, error) {
 	if obj != nil {
 		desc, ok := obj.(*Descriptor)
 		if !ok {
-			return nil, errors.New("provided Spec.Descriptor.Object is not a v1beta2.Descriptor")
+			return nil, errNotDescriptor
 		}
 		return desc, nil
 	}
@@ -94,7 +96,7 @@ func (m *ModuleTemplate) descriptor() (*Descriptor, error) {
 	raw := m.Spec.Descriptor.Raw
 	desc, err := compdesc.Decode(raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode component descriptor, %w", err)
 	}
 
 	return &Descriptor{ComponentDescriptor: desc}, nil

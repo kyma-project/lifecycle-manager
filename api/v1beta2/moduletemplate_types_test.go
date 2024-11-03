@@ -1,11 +1,13 @@
-package v1beta2
+package v1beta2_test
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 func Test_GetVersion(t *testing.T) {
@@ -13,13 +15,13 @@ func Test_GetVersion(t *testing.T) {
 	const otherVersion = "0.0.1"
 	tests := []struct {
 		name            string
-		m               *ModuleTemplate
+		m               *v1beta2.ModuleTemplate
 		expectedVersion string
 		expectedErr     string
 	}{
 		{
 			name: "Test GetVersion() by annotation (legacy)",
-			m: &ModuleTemplate{
+			m: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
 						shared.ModuleVersionAnnotation: testVersion,
@@ -30,8 +32,8 @@ func Test_GetVersion(t *testing.T) {
 		},
 		{
 			name: "Test GetVersion() by explicit version in Spec",
-			m: &ModuleTemplate{
-				Spec: ModuleTemplateSpec{
+			m: &v1beta2.ModuleTemplate{
+				Spec: v1beta2.ModuleTemplateSpec{
 					Version: testVersion,
 				},
 			},
@@ -39,13 +41,13 @@ func Test_GetVersion(t *testing.T) {
 		},
 		{
 			name: "Test GetVersion() with both version in Spec and annotation",
-			m: &ModuleTemplate{
+			m: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
 						shared.ModuleVersionAnnotation: otherVersion,
 					},
 				},
-				Spec: ModuleTemplateSpec{
+				Spec: v1beta2.ModuleTemplateSpec{
 					Version: testVersion,
 				},
 			},
@@ -53,38 +55,36 @@ func Test_GetVersion(t *testing.T) {
 		},
 		{
 			name: "Test GetVersion without any version info",
-			m: &ModuleTemplate{
+			m: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{},
 				},
-				Spec: ModuleTemplateSpec{},
+				Spec: v1beta2.ModuleTemplateSpec{},
 			},
-			expectedErr: ErrInvalidVersion.Error(),
+			expectedErr: v1beta2.ErrInvalidVersion.Error(),
 		},
 		{
 			name: "Test GetVersion with invalid version",
-			m: &ModuleTemplate{
-				Spec: ModuleTemplateSpec{
+			m: &v1beta2.ModuleTemplate{
+				Spec: v1beta2.ModuleTemplateSpec{
 					Version: "invalid",
 				},
 			},
 			expectedErr: "Invalid Semantic Version",
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			actualVersion, err := tt.m.GetVersion()
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			actualVersion, err := testCase.m.GetVersion()
 			if err != nil {
 				if actualVersion != nil {
 					t.Errorf("GetVersion(): Returned version should be nil when error is not nil")
 				}
-				if tt.expectedErr == "" {
+				if testCase.expectedErr == "" {
 					t.Errorf("GetVersion(): Unexpected error: %v", err)
 				}
-				if !strings.Contains(err.Error(), tt.expectedErr) {
-					t.Errorf("GetVersion(): Actual error = %v, expected error: %v", err, tt.expectedErr)
+				if !strings.Contains(err.Error(), testCase.expectedErr) {
+					t.Errorf("GetVersion(): Actual error = %v, expected error: %v", err, testCase.expectedErr)
 				}
 				return
 			}
@@ -93,12 +93,13 @@ func Test_GetVersion(t *testing.T) {
 				t.Errorf("GetVersion(): Returned version should not be nil when error is nil")
 			}
 
-			if tt.expectedVersion == "" {
+			if testCase.expectedVersion == "" {
 				t.Errorf("GetVersion(): Expected version is empty but non-nil version is returned")
 			}
 
-			if actualVersion.String() != tt.expectedVersion {
-				t.Errorf("GetVersion(): actual version = %v, expected version: %v", actualVersion.String(), tt.expectedVersion)
+			if actualVersion != nil && actualVersion.String() != testCase.expectedVersion {
+				t.Errorf("GetVersion(): actual version = %v, expected version: %v", actualVersion.String(),
+					testCase.expectedVersion)
 			}
 		})
 	}
