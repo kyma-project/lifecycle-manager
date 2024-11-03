@@ -195,7 +195,6 @@ var _ = BeforeSuite(func() {
 		LocalGatewayPortOverwrite: "",
 	}
 
-	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
 	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
@@ -203,7 +202,6 @@ var _ = BeforeSuite(func() {
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
 		kcpClient,
 		testSkrContextFactory,
-		caCertCache,
 		skrChartCfg, certificateConfig, resolvedKcpAddr)
 	Expect(err).ToNot(HaveOccurred())
 

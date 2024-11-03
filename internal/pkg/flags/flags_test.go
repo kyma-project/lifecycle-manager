@@ -176,11 +176,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "klm-watcher-serving",
 		},
 		{
-			constName:     "DefaultCaCertCacheTTL",
-			constValue:    DefaultCaCertCacheTTL.String(),
-			expectedValue: (1 * time.Hour).String(),
-		},
-		{
 			constName:     "DefaultSelfSignedCertDuration",
 			constValue:    DefaultSelfSignedCertDuration.String(),
 			expectedValue: (90 * 24 * time.Hour).String(),

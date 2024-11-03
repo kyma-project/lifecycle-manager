@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -43,7 +44,6 @@ type SubjectAltName struct {
 
 type CertificateManager struct {
 	kcpClient       client.Client
-	caCertCache     *CACertificateCache
 	certificateName string
 	secretName      string
 	labelSet        k8slabels.Set
@@ -76,14 +76,12 @@ type CertificateSecret struct {
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kymaName string,
 	config CertificateConfig,
-	caCertCache *CACertificateCache,
 ) *CertificateManager {
 	return &CertificateManager{
 		kcpClient:       kcpClient,
 		certificateName: ResolveTLSCertName(kymaName),
 		secretName:      ResolveTLSCertName(kymaName),
 		config:          config,
-		caCertCache:     caCertCache,
 		labelSet: k8slabels.Set{
 			shared.PurposeLabel: shared.CertManager,
 			shared.ManagedBy:    shared.OperatorName,
@@ -279,35 +277,21 @@ func (e *CertificateNotReadyError) Error() string {
 	return "Certificate-Secret does not exist"
 }
 
-func (c *CertificateManager) GetCACertificateStatus(ctx context.Context) (certmanagerv1.CertificateStatus, error) {
-	cachedCertStatus := c.caCertCache.GetCACertStatusFromCache(c.config.CACertificateName)
-
-	if cachedCertStatus.RenewalTime == nil || certificateRenewalTimePassed(cachedCertStatus) {
-		caCert := certmanagerv1.Certificate{}
-		if err := c.kcpClient.Get(ctx,
-			client.ObjectKey{Namespace: c.config.IstioNamespace, Name: c.config.CACertificateName},
-			&caCert); err != nil {
-			return certmanagerv1.CertificateStatus{}, fmt.Errorf("failed to get CA certificate %w", err)
-		}
-		c.caCertCache.SetCACertToCache(caCert)
-		return caCert.Status, nil
-	}
-
-	return cachedCertStatus, nil
-}
-
 func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kymaObjKey client.ObjectKey) error {
-	caCertificateStatus, err := c.GetCACertificateStatus(ctx)
+	gatewaySecret, err := getCertificateSecret(ctx, c.kcpClient, client.ObjectKey{
+		Namespace: c.config.IstioNamespace,
+		Name:      zerodw.GatewaySecretName,
+	})
 	if err != nil {
-		return fmt.Errorf("error while fetching CA Certificate: %w", err)
+		return err
 	}
 
-	certSecret, err := c.getCertificateSecret(ctx)
+	watcherCert, err := c.getCertificateSecret(ctx)
 	if err != nil {
 		return fmt.Errorf("error while fetching certificate: %w", err)
 	}
 
-	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificateStatus.NotBefore)) {
+	if watcherCert != nil && isGatewaySecretNewerThanWatcherCert(gatewaySecret, watcherCert) {
 		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 			"kyma", kymaObjKey)
 		if err = c.removeSecret(ctx); err != nil {
@@ -318,6 +302,14 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 	return nil
 }
 
-func certificateRenewalTimePassed(certStatus certmanagerv1.CertificateStatus) bool {
-	return certStatus.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()}))
+func isGatewaySecretNewerThanWatcherCert(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
+	if gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[zerodw.LastModifiedAtAnnotation]; ok {
+		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+			if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
+				return false
+			}
+		}
+	}
+
+	return true
 }

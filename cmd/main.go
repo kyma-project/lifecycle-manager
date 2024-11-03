@@ -21,6 +21,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -36,6 +41,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgok8s "k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -196,12 +202,42 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	addHealthChecks(mgr, setupLog)
 
+	kcpClientset := clientgok8s.NewForConfigOrDie(config)
+	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, setupLog)
+	go watchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
+
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
+	}
+
+}
+
+func watchChangesOnRootCertificate(clientset *clientgok8s.Clientset, gatewaySecretHandler *zerodw.GatewaySecretHandler,
+	setupLog logr.Logger) {
+	secretWatch, err := clientset.CoreV1().Secrets("istio-system").Watch(context.Background(), v1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(v1.ObjectNameField, "klm-watcher").String(),
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start watching root certificate")
+		return
+	}
+
+	for e := range secretWatch.ResultChan() {
+		item := e.Object.(*corev1.Secret)
+
+		switch e.Type {
+		case watch.Modified:
+			fallthrough
+		case watch.Added:
+			err := gatewaySecretHandler.ManageGatewaySecret(item)
+			if err != nil {
+				setupLog.Error(err, "unable to manage istio gateway secret")
+			}
+		}
 	}
 }
 
@@ -321,7 +357,6 @@ func setupKymaReconciler(mgr ctrl.Manager,
 func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
 	flagVar *flags.FlagVar,
 ) (*watcher.SKRWebhookManifestManager, error) {
-	caCertificateCache := watcher.NewCACertificateCache(flagVar.CaCertCacheTTL)
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
 		SkrWatcherImage:        flagVar.GetWatcherImage(),
@@ -351,7 +386,6 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 	return watcher.NewSKRWebhookManifestManager(
 		mgr.GetClient(),
 		skrContextFactory,
-		caCertificateCache,
 		config,
 		certConfig,
 		resolvedKcpAddr)
