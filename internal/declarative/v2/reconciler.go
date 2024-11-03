@@ -20,6 +20,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -36,9 +37,8 @@ var (
 )
 
 const (
-	namespaceNotBeRemoved                    = "kyma-system"
-	SyncedOCIRefAnnotation                   = "sync-oci-ref"
-	defaultFieldOwner      client.FieldOwner = "declarative.kyma-project.io/applier"
+	namespaceNotBeRemoved  = "kyma-system"
+	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
@@ -85,6 +85,7 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
+	logf.FromContext(ctx).Info(req.NamespacedName.String() + " start reconciling!")
 
 	manifest := &v1beta2.Manifest{}
 	if err := r.Get(ctx, req.NamespacedName, manifest); err != nil {
@@ -103,6 +104,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
+	logf.FromContext(ctx).Info(req.NamespacedName.String() + " init!")
+
 	if err := status.Initialize(manifest); err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
@@ -113,6 +116,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		moduleName := manifest.GetLabels()[shared.ModuleName]
 		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
 	}
+
+	logf.FromContext(ctx).Info(req.NamespacedName.String() + " getTargetClient!")
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
@@ -140,11 +145,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info(req.NamespacedName.String() + " FinalizersUpdateRequired!")
 		if finalizer.FinalizersUpdateRequired(manifest) {
 			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
 		}
 	}
 
+	logf.FromContext(ctx).Info(req.NamespacedName.String() + " GetSpec!")
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -159,6 +166,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
+	logf.FromContext(ctx).Info(req.NamespacedName.String() + " renderResources!")
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
@@ -177,14 +185,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
 
-	if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
-		if errors.Is(err, finalizer.ErrRequeueRequired) {
-			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
-			return ctrl.Result{Requeue: true}, nil
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
+			if errors.Is(err, finalizer.ErrRequeueRequired) {
+				r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
+				return ctrl.Result{Requeue: true}, nil
+			}
+			return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 		}
-		return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 	}
-
+	logf.FromContext(ctx).Info(req.NamespacedName.String() + " syncResources!")
 	if err := r.syncResources(ctx, skrClient, manifest, target); err != nil {
 		if errors.Is(err, ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, manifest)
@@ -312,7 +322,7 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	if err := ConcurrentSSA(skrClient, defaultFieldOwner).Run(ctx, target); err != nil {
+	if err := ConcurrentSSA(skrClient, manifestclient.DefaultFieldOwner).Run(ctx, target); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}

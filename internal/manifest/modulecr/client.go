@@ -72,18 +72,15 @@ func (c *Client) CheckCRDeletion(ctx context.Context, manifestCR *v1beta2.Manife
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
 // and we consider the CR removal successful.
 func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := c.deleteCR(ctx, manifest); err != nil {
-			// we do not set a status here since it will be deleting if timestamp is set.
-			manifest.SetStatus(manifest.GetStatus().WithErr(err))
-			return err
-		}
-		if err := finalizer.RemoveCRFinalizer(ctx, kcp, manifest); err != nil {
-			manifest.SetStatus(manifest.GetStatus().WithErr(err))
-			return err
-		}
+	if err := c.deleteCR(ctx, manifest); err != nil {
+		// we do not set a status here since it will be deleting if timestamp is set.
+		manifest.SetStatus(manifest.GetStatus().WithErr(err))
+		return err
 	}
-
+	if err := finalizer.RemoveCRFinalizer(ctx, kcp, manifest); err != nil {
+		manifest.SetStatus(manifest.GetStatus().WithErr(err))
+		return err
+	}
 	return nil
 }
 
