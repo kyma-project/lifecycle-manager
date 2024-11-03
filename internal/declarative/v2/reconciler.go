@@ -20,8 +20,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
@@ -30,11 +30,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	ErrWarningResourceSyncStateDiff   = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
-		"same oci layer, prevent sync resource to be deleted")
-)
+var ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
+	"same oci layer, prevent sync resource to be deleted")
 
 const (
 	namespaceNotBeRemoved  = "kyma-system"
@@ -85,7 +82,6 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
-	logf.FromContext(ctx).Info(req.NamespacedName.String() + " start reconciling!")
 
 	manifest := &v1beta2.Manifest{}
 	if err := r.Get(ctx, req.NamespacedName, manifest); err != nil {
@@ -104,20 +100,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	logf.FromContext(ctx).Info(req.NamespacedName.String() + " init!")
-
 	if err := status.Initialize(manifest); err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
 
-	if manifest.IsMandatoryModule() {
-		state := manifest.GetStatus().State
-		kymaName := manifest.GetLabels()[shared.KymaName]
-		moduleName := manifest.GetLabels()[shared.ModuleName]
-		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
-	}
-
-	logf.FromContext(ctx).Info(req.NamespacedName.String() + " getTargetClient!")
+	recordMandatoryModuleState(manifest, r)
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
@@ -145,13 +132,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info(req.NamespacedName.String() + " FinalizersUpdateRequired!")
 		if finalizer.FinalizersUpdateRequired(manifest) {
 			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
 		}
 	}
 
-	logf.FromContext(ctx).Info(req.NamespacedName.String() + " GetSpec!")
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -166,7 +151,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
-	logf.FromContext(ctx).Info(req.NamespacedName.String() + " renderResources!")
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
@@ -194,9 +178,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 		}
 	}
-	logf.FromContext(ctx).Info(req.NamespacedName.String() + " syncResources!")
-	if err := r.syncResources(ctx, skrClient, manifest, target); err != nil {
-		if errors.Is(err, ErrClientUnauthorized) {
+
+	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
+		if errors.Is(err, skrresources.ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, manifest)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
@@ -221,6 +205,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
+}
+
+func recordMandatoryModuleState(manifest *v1beta2.Manifest, r *Reconciler) {
+	if manifest.IsMandatoryModule() {
+		state := manifest.GetStatus().State
+		kymaName := manifest.GetLabels()[shared.KymaName]
+		moduleName := manifest.GetLabels()[shared.ModuleName]
+		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
+	}
 }
 
 func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient client.Client,
@@ -301,7 +294,8 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 	var err error
 	var target, current ResourceList
 
-	converter := NewResourceToInfoConverter(ResourceInfoConverter(skrClient), apimetav1.NamespaceDefault)
+	converter := skrresources.NewResourceToInfoConverter(skrresources.ResourceInfoConverter(skrClient),
+		apimetav1.NamespaceDefault)
 
 	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
@@ -317,36 +311,9 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
-	target []*resource.Info,
-) error {
-	manifestStatus := manifest.GetStatus()
-
-	if err := ConcurrentSSA(skrClient, manifestclient.DefaultFieldOwner).Run(ctx, target); err != nil {
-		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
-		return err
-	}
-
-	oldSynced := manifestStatus.Synced
-	newSynced := NewInfoToResourceConverter().InfosToResources(target)
-	manifestStatus.Synced = newSynced
-
-	if hasDiff(oldSynced, newSynced) {
-		if manifest.GetDeletionTimestamp().IsZero() {
-			manifest.SetStatus(manifestStatus.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		} else if manifestStatus.State != shared.StateWarning {
-			manifest.SetStatus(manifestStatus.WithState(shared.StateDeleting).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		}
-		return ErrWarningResourceSyncStateDiff
-	}
-	return nil
-}
-
 func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
 	target []*resource.Info,
 ) error {
-	logf.FromContext(ctx).Info("start sync manifest state")
-
 	manifestStatus := manifest.GetStatus()
 
 	moduleCRState, err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest)
@@ -354,14 +321,11 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
-	logf.FromContext(ctx).Info(string("module CR state is " + moduleCRState))
 
 	if err := finalizer.EnsureCRFinalizer(ctx, r.Client, manifest); err != nil {
 		return err
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info(string("manifest in deleting, module CR state is " + moduleCRState))
-
 		if moduleCRState == shared.StateWarning {
 			if err := r.RecordModuleCRWarningCondition(manifest); err != nil {
 				return err
@@ -407,27 +371,6 @@ func (r *Reconciler) RemoveModuleCRWarningCondition(manifest *v1beta2.Manifest) 
 	return nil
 }
 
-func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
-	if len(oldResources) != len(newResources) {
-		return true
-	}
-	countMap := map[string]bool{}
-	for _, item := range oldResources {
-		countMap[item.ID()] = true
-	}
-	for _, item := range newResources {
-		if countMap[item.ID()] {
-			countMap[item.ID()] = false
-		}
-	}
-	for _, exists := range countMap {
-		if exists {
-			return true
-		}
-	}
-	return false
-}
-
 func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
 	error,
 ) {
@@ -441,7 +384,7 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 }
 
 func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client.Client,
-	converter ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
+	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		deleted, err := modulecr.NewClient(skrClient).CheckCRDeletion(ctx, manifest)
