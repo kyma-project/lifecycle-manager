@@ -29,4 +29,7 @@ runs:
         create_command+="--k3s-arg --disable=traefik@server:* "
         create_command+="--k3s-arg --tls-san=host.k3d.internal@server:* "
 
+        echo "Creating clusters using command:"
+        echo "${create_command}"
+
         eval ${create_command}
