@@ -61,7 +61,7 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) {
 		}
 	}
 
-	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) syncWorker {
+	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
 		return &fakeSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,
@@ -69,7 +69,7 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) {
 		}
 	}
 
-	subject := syncer{
+	subject := moduleTemplateSyncer{
 		skrClient:           skrClient,
 		settings:            getSettings(),
 		syncWorkerFactoryFn: syncWokerFactoryFn,
@@ -120,7 +120,7 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 		}
 	}
 
-	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) syncWorker {
+	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
 		return &fakeSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,
@@ -128,7 +128,7 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 		}
 	}
 
-	subject := syncer{
+	subject := moduleTemplateSyncer{
 		skrClient:           skrClient,
 		settings:            getSettings(),
 		syncWorkerFactoryFn: syncWokerFactoryFn,
