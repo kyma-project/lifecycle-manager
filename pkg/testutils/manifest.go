@@ -83,7 +83,8 @@ func ConditionExists(ctx context.Context,
 	moduleName,
 	expectedConditionType,
 	expectedConditionReason string,
-	expectedConditionStatus apimetav1.ConditionStatus) error {
+	expectedConditionStatus apimetav1.ConditionStatus,
+) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
 		return err
@@ -98,6 +99,7 @@ func ConditionExists(ctx context.Context,
 
 	return errManifestConditionNotExists
 }
+
 func GetManifestWithMetadata(ctx context.Context,
 	clnt client.Client, manifestNamespace, manifestName string,
 ) (*v1beta2.Manifest, error) {
@@ -439,7 +441,8 @@ func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerNam
 }
 
 func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec,
-	error) {
+	error,
+) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
@@ -461,7 +464,8 @@ func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredS
 }
 
 func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string, enableCredSecretSelector bool) (v1beta2.ImageSpec,
-	error) {
+	error,
+) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
