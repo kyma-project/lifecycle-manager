@@ -3,7 +3,6 @@ package withwatcher_test
 import (
 	"context"
 	"errors"
-	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 	"io"
 	"os"
 	"time"
@@ -21,6 +20,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
