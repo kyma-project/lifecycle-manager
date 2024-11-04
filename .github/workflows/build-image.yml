@@ -31,7 +31,7 @@ jobs:
           tags=""
           if [[ "${{ github.event_name }}" == "push" ]]; then
             tags="latest"
-          elif [[ "${{ github.event_name }}" == "workflow_call" ]]; then
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             tags="${{ inputs.tag }}"
           elif [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
             tags="${{ github.event.pull_request.head.sha }}"
