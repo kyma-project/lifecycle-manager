@@ -271,8 +271,6 @@ func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
 	if manifest.IsMandatoryModule() {
 		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
 	}
-
-	r.ModuleMetrics.CleanupMetrics(kymaName, moduleName)
 	return nil
 }
 
@@ -328,12 +326,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		if moduleCRState == shared.StateWarning {
-			if err := r.RecordModuleCRWarningCondition(manifest); err != nil {
-				return err
-			}
 			status.ConfirmModuleCRCondition(manifest)
-		} else if err := r.RemoveModuleCRWarningCondition(manifest); err != nil {
-			return err
 		}
 		return status.SetManifestState(manifest, shared.StateDeleting)
 	}
@@ -397,24 +390,19 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 		}
 	}
 
-	status := manifest.GetStatus()
-
 	targetResources, err := r.ManifestParser.Parse(spec)
 	if err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
 
 	for _, transform := range r.PostRenderTransforms {
 		if err := transform(ctx, manifest, targetResources.Items); err != nil {
-			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 			return nil, err
 		}
 	}
 
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
 
