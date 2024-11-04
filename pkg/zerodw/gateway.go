@@ -16,7 +16,7 @@ import (
 
 const (
 	GatewaySecretName = "istio-gateway-secret"
-	kcpRootSecretName = "klm-watcher"
+	KCPRootSecretName = "klm-watcher"
 	kcpCACertName     = "klm-watcher-serving"
 	istioNamespace    = flags.DefaultIstioNamespace
 )
@@ -86,13 +86,6 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 func (gsh *GatewaySecretHandler) findGatewaySecret() (*apicorev1.Secret, error) {
 	return gsh.findSecret(context.Background(), client.ObjectKey{
 		Name:      GatewaySecretName,
-		Namespace: istioNamespace,
-	})
-}
-
-func (gsh *GatewaySecretHandler) findKcpRootSecret() (*apicorev1.Secret, error) {
-	return gsh.findSecret(context.Background(), client.ObjectKey{
-		Name:      kcpRootSecretName,
 		Namespace: istioNamespace,
 	})
 }

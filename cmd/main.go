@@ -21,11 +21,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/watch"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -38,10 +33,14 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgok8s "k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -71,6 +70,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "ocm.software/ocm/api/ocm"
@@ -202,7 +202,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	addHealthChecks(mgr, setupLog)
 
-	kcpClientset := clientgok8s.NewForConfigOrDie(config)
+	kcpClientset := kubernetes.NewForConfigOrDie(config)
 	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, setupLog)
 	go watchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
 
@@ -213,13 +213,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
-
 }
 
-func watchChangesOnRootCertificate(clientset *clientgok8s.Clientset, gatewaySecretHandler *zerodw.GatewaySecretHandler,
-	setupLog logr.Logger) {
-	secretWatch, err := clientset.CoreV1().Secrets("istio-system").Watch(context.Background(), v1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(v1.ObjectNameField, "klm-watcher").String(),
+func watchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecretHandler *zerodw.GatewaySecretHandler,
+	setupLog logr.Logger,
+) {
+	secretWatch, err := clientset.CoreV1().Secrets("istio-system").Watch(context.Background(), apimetav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, zerodw.KCPRootSecretName).String(),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start watching root certificate")
@@ -227,7 +227,10 @@ func watchChangesOnRootCertificate(clientset *clientgok8s.Clientset, gatewaySecr
 	}
 
 	for e := range secretWatch.ResultChan() {
-		item := e.Object.(*corev1.Secret)
+		item, ok := e.Object.(*apicorev1.Secret)
+		if !ok {
+			setupLog.Info("unable to convert object to secret", "object", e.Object)
+		}
 
 		switch e.Type {
 		case watch.Modified:
@@ -237,6 +240,8 @@ func watchChangesOnRootCertificate(clientset *clientgok8s.Clientset, gatewaySecr
 			if err != nil {
 				setupLog.Error(err, "unable to manage istio gateway secret")
 			}
+		default:
+			setupLog.Info("unhandled event type", "event", e.Type)
 		}
 	}
 }

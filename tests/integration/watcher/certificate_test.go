@@ -84,7 +84,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				RenewBefore:         5 * time.Minute,
 			}
 			cert := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma.Name, config, watcher.NewCACertificateCache(1*time.Minute))
+				test.kyma.Name, config)
 
 			_, err := cert.CreateSelfSignedCert(ctx, test.kyma)
 			if test.wantCreateErr {
