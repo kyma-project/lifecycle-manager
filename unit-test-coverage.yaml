@@ -6,9 +6,12 @@ packages:
   internal/manifest: 15.8
   internal/manifest/statecheck: 71
   internal/manifest/filemutex: 100
-  internal/manifest/finalizer: 100
+  internal/manifest/finalizer: 17.5
   internal/manifest/skrresources: 20.2
   internal/manifest/labelsremoval: 93
+  internal/manifest/img: 100
+  internal/manifest/manifestclient: 100
+  internal/manifest/modulecr: 100
   internal/istio: 63.3
   internal/pkg/resources: 91.7
   internal/remote: 11.8
