@@ -519,8 +519,14 @@ func (r *Reconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) 
 			modulesToSync = append(modulesToSync, mt)
 		}
 	}
+
+	moduleReleaseMetaList := &v1beta2.ModuleReleaseMetaList{}
+	if err := r.List(ctx, moduleReleaseMetaList, &client.ListOptions{}); err != nil {
+		return fmt.Errorf("could not aggregate module release metas for module catalog sync: %w", err)
+	}
+
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace)
-	if err := remoteCatalog.Sync(ctx, kyma.GetNamespacedName(), modulesToSync); err != nil {
+	if err := remoteCatalog.Sync(ctx, kyma.GetNamespacedName(), modulesToSync, moduleReleaseMetaList.Items); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
