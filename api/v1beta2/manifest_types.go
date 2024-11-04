@@ -18,6 +18,7 @@ package v1beta2
 
 import (
 	"errors"
+	"fmt"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -155,7 +156,7 @@ func (manifest *Manifest) SkipReconciliation() bool {
 func (manifest *Manifest) GetKymaName() (string, error) {
 	kymaName, found := manifest.GetLabels()[shared.KymaName]
 	if !found {
-		return "", ErrLabelNotFound
+		return "", fmt.Errorf("KymaName label not found %w", ErrLabelNotFound)
 	}
 	return kymaName, nil
 }
@@ -163,7 +164,7 @@ func (manifest *Manifest) GetKymaName() (string, error) {
 func (manifest *Manifest) GetModuleName() (string, error) {
 	moduleName, found := manifest.GetLabels()[shared.ModuleName]
 	if !found {
-		return "", ErrLabelNotFound
+		return "", fmt.Errorf("ModuleName label not found %w", ErrLabelNotFound)
 	}
 	return moduleName, nil
 }
