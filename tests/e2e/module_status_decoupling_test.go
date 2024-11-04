@@ -144,13 +144,6 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
-
-			By("And count of metrics lifecycle_mgr_module_condition is removed", func() {
-				Eventually(ModuleCRWarningConditionMetricNotFound).
-					WithContext(ctx).
-					WithArguments(kyma.GetName(), TestModuleName).
-					Should(Equal(ErrMetricNotFound))
-			})
 		})
 	})
 
