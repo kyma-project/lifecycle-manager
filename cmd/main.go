@@ -226,22 +226,28 @@ func watchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecre
 		return
 	}
 
-	for e := range secretWatch.ResultChan() {
-		item, ok := e.Object.(*apicorev1.Secret)
+	for caughtEvent := range secretWatch.ResultChan() {
+		item, ok := caughtEvent.Object.(*apicorev1.Secret)
 		if !ok {
-			setupLog.Info("unable to convert object to secret", "object", e.Object)
+			setupLog.Info("unable to convert object to secret", "object", caughtEvent.Object)
 		}
 
-		switch e.Type {
-		case watch.Modified:
-			fallthrough
+		switch caughtEvent.Type {
 		case watch.Added:
+			fallthrough
+		case watch.Modified:
 			err := gatewaySecretHandler.ManageGatewaySecret(item)
 			if err != nil {
 				setupLog.Error(err, "unable to manage istio gateway secret")
 			}
+		case watch.Deleted:
+			fallthrough
+		case watch.Error:
+			fallthrough
+		case watch.Bookmark:
+			fallthrough
 		default:
-			setupLog.Info("unhandled event type", "event", e.Type)
+			setupLog.Info("ignored event type", "event", caughtEvent.Type)
 		}
 	}
 }
