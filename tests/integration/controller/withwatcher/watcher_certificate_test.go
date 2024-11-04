@@ -28,11 +28,11 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	tlsSecret := createTLSSecret(kymaObjKey)
+	tlsSecret := createWatcherSecret(kymaObjKey)
 	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: flags.DefaultRemoteSyncNamespace}
-	caCertificate := createCaCertificate()
+	gatewaySecret := createGatewaySecret()
 
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, gatewaySecret)
 	var skrClient client.Client
 	var err error
 	BeforeAll(func() {

@@ -9,6 +9,9 @@ import (
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -16,7 +19,7 @@ import (
 
 const (
 	GatewaySecretName = "istio-gateway-secret"
-	KCPRootSecretName = "klm-watcher"
+	kcpRootSecretName = "klm-watcher"
 	kcpCACertName     = "klm-watcher-serving"
 	istioNamespace    = flags.DefaultIstioNamespace
 )
@@ -107,4 +110,41 @@ func (gsh *GatewaySecretHandler) newGatewaySecret(rootSecret *apicorev1.Secret) 
 		},
 	}
 	return gwSecret
+}
+
+func WatchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecretHandler *GatewaySecretHandler,
+	setupLog logr.Logger,
+) {
+	secretWatch, err := clientset.CoreV1().Secrets("istio-system").Watch(context.Background(), apimetav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start watching root certificate")
+		return
+	}
+
+	for event := range secretWatch.ResultChan() {
+		item, ok := event.Object.(*apicorev1.Secret)
+		if !ok {
+			setupLog.Info("unable to convert object to secret", "object", event.Object)
+		}
+
+		switch event.Type {
+		case watch.Added:
+			fallthrough
+		case watch.Modified:
+			err := gatewaySecretHandler.ManageGatewaySecret(item)
+			if err != nil {
+				setupLog.Error(err, "unable to manage istio gateway secret")
+			}
+		case watch.Deleted:
+			fallthrough
+		case watch.Error:
+			fallthrough
+		case watch.Bookmark:
+			fallthrough
+		default:
+			setupLog.Info("ignored event type", "event", event.Type)
+		}
+	}
 }

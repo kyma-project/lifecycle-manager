@@ -33,13 +33,9 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
-	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/workqueue"
@@ -204,7 +200,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	kcpClientset := kubernetes.NewForConfigOrDie(config)
 	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, setupLog)
-	go watchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
+	go zerodw.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
 
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
@@ -212,43 +208,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
-	}
-}
-
-func watchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecretHandler *zerodw.GatewaySecretHandler,
-	setupLog logr.Logger,
-) {
-	secretWatch, err := clientset.CoreV1().Secrets("istio-system").Watch(context.Background(), apimetav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, zerodw.KCPRootSecretName).String(),
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start watching root certificate")
-		return
-	}
-
-	for caughtEvent := range secretWatch.ResultChan() {
-		item, ok := caughtEvent.Object.(*apicorev1.Secret)
-		if !ok {
-			setupLog.Info("unable to convert object to secret", "object", caughtEvent.Object)
-		}
-
-		switch caughtEvent.Type {
-		case watch.Added:
-			fallthrough
-		case watch.Modified:
-			err := gatewaySecretHandler.ManageGatewaySecret(item)
-			if err != nil {
-				setupLog.Error(err, "unable to manage istio gateway secret")
-			}
-		case watch.Deleted:
-			fallthrough
-		case watch.Error:
-			fallthrough
-		case watch.Bookmark:
-			fallthrough
-		default:
-			setupLog.Info("ignored event type", "event", caughtEvent.Type)
-		}
 	}
 }
 
