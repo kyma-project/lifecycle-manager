@@ -57,16 +57,20 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 }
 
 func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
-	var syncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI {
+	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI {
 		return newModuleTemplateSyncer(kcpClient, skrClient, settings)
+	}
+
+	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI {
+		return newModuleReleaseMetaSyncer(kcpClient, skrClient, settings)
 	}
 
 	res := &RemoteCatalog{
 		kcpClient:                         kcpClient,
 		skrContextFactory:                 skrContextFactory,
 		settings:                          settings,
-		moduleTemplateSyncAPIFactoryFn:    syncerAPIFactoryFn,
-		moduleReleaseMetaSyncAPIFactoryFn: nil, //TODO: Wire up
+		moduleTemplateSyncAPIFactoryFn:    moduleTemplateSyncerAPIFactoryFn,
+		moduleReleaseMetaSyncAPIFactoryFn: moduleReleaseMetaSyncerAPIFactoryFn,
 	}
 
 	return res
