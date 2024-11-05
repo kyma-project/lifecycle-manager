@@ -67,9 +67,8 @@ jobs:
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:
-          repository: nesmabadr/template-operator
+          repository: kyma-project/template-operator
           path: template-operator
-          ref: update_moduleconfig
 
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
