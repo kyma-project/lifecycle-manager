@@ -8,9 +8,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -165,7 +166,7 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 		),
 		Entry("when moduleName contains two words,"+
 			thenNoErrors,
-			"template-operator",
+			TestModuleName,
 			true,
 		),
 		Entry("when moduleName contains a number,"+

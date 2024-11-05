@@ -14,7 +14,6 @@ type ManifestRequeueReason string
 const (
 	MetricManifestDuration                                     = "reconcile_duration_seconds"
 	ManifestNameLabel                                          = "manifest_name"
-	ManifestTypeCast                     ManifestRequeueReason = "manifest_type_cast"
 	ManifestRetrieval                    ManifestRequeueReason = "manifest_retrieval"
 	ManifestInit                         ManifestRequeueReason = "manifest_initialize"
 	ManifestAddFinalizer                 ManifestRequeueReason = "manifest_add_finalizer"
@@ -29,6 +28,7 @@ const (
 	ManifestPreDelete                    ManifestRequeueReason = "manifest_pre_delete"
 	ManifestSyncResourcesEnqueueRequired ManifestRequeueReason = "manifest_sync_resources_enqueue_required"
 	ManifestSyncResources                ManifestRequeueReason = "manifest_sync_resources"
+	ManifestSyncState                    ManifestRequeueReason = "manifest_sync_state"
 	ManifestUnauthorized                 ManifestRequeueReason = "manifest_unauthorized"
 	ManifestReconcileFinished            ManifestRequeueReason = "manifest_reconcile_finished"
 	ManifestUnmanagedUpdate              ManifestRequeueReason = "manifest_unmanaged_update"
@@ -62,6 +62,12 @@ func (k *ManifestMetrics) RecordManifestDuration(manifestName string, duration t
 }
 
 func (k *ManifestMetrics) RemoveManifestDuration(manifestName string) {
+	k.ManifestDurationGauge.DeletePartialMatch(prometheus.Labels{
+		ManifestNameLabel: manifestName,
+	})
+}
+
+func (k *ManifestMetrics) CleanupMetrics(manifestName string) {
 	k.ManifestDurationGauge.DeletePartialMatch(prometheus.Labels{
 		ManifestNameLabel: manifestName,
 	})

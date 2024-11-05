@@ -3,13 +3,17 @@ packages:
   internal/descriptor/cache: 92.3
   internal/descriptor/provider: 66.7
   internal/event: 100
+  internal/manifest: 15.8
   internal/manifest/statecheck: 71
   internal/manifest/filemutex: 100
-  internal/manifest: 10
+  internal/manifest/finalizer: 17.5
+  internal/manifest/skrresources: 20.2
   internal/manifest/labelsremoval: 93
+  internal/manifest/img: 65.5
+  internal/manifest/manifestclient: 5.0
+  internal/manifest/modulecr: 51.1
   internal/istio: 63.3
   internal/pkg/resources: 91.7
   internal/remote: 11.8
   internal/util/collections: 83.3
-  pkg/templatelookup: 76
-
+  pkg/templatelookup: 77.7

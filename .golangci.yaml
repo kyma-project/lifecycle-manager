@@ -7,6 +7,7 @@ linters:
     - exportloopref # deprecated (since v1.60.2), replaced by copyloopvar
     - gomnd # deprecated (since v1.58.0), renamed to mnd
     - lll
+    - execinquery # deprecated (since v1.58.0) due to: The repository of the linter has been archived by the owner.
     - nlreturn # too strict and mostly code is not more readable
     - sqlclosecheck # not needed for this project
     - paralleltest # should be enabled consciously for long running tests

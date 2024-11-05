@@ -51,7 +51,6 @@ const (
 	KymaDeletion                             KymaRequeueReason = "kyma_deletion"
 	KymaRetrieval                            KymaRequeueReason = "kyma_retrieval"
 	KymaUnauthorized                         KymaRequeueReason = "kyma_unauthorized"
-	SpecValidation                           KymaRequeueReason = "spec_validation"
 )
 
 func NewKymaMetrics(sharedMetrics *SharedMetrics) *KymaMetrics {

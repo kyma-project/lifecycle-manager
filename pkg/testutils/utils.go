@@ -50,11 +50,11 @@ func NewTestModuleWithChannelVersion(name, channel, version string) v1beta2.Modu
 }
 
 func NewTemplateOperatorWithVersion(version string) v1beta2.Module {
-	return NewTestModuleWithFixName("template-operator", "", version)
+	return NewTestModuleWithFixName(TestModuleName, "", version)
 }
 
 func NewTemplateOperator(channel string) v1beta2.Module {
-	return NewTestModuleWithFixName("template-operator", channel, "")
+	return NewTestModuleWithFixName(TestModuleName, channel, "")
 }
 
 func NewTestModuleWithFixName(name, channel, version string) v1beta2.Module {

@@ -2,7 +2,6 @@ package modulecr
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -10,17 +9,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
-
-const CustomResourceManagerFinalizer = "resource.kyma-project.io/finalizer"
-
-var ErrRequeueRequired = errors.New("requeue required")
 
 type Client struct {
 	client.Client
@@ -72,66 +67,47 @@ func (c *Client) CheckCRDeletion(ctx context.Context, manifestCR *v1beta2.Manife
 	return resourceCR == nil, nil
 }
 
+// RemoveModuleCR deletes the module CR if available in the cluster.
+// It uses DeletePropagationBackground to delete module CR.
+// Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
+// and we consider the CR removal successful.
 func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := c.deleteCR(ctx, kcp, manifest); err != nil {
-			// we do not set a status here since it will be deleting if timestamp is set.
+	crDeleted, err := c.deleteCR(ctx, manifest)
+	if err != nil {
+		manifest.SetStatus(manifest.GetStatus().WithErr(err))
+		return err
+	}
+	if crDeleted {
+		if err := finalizer.RemoveCRFinalizer(ctx, kcp, manifest); err != nil {
 			manifest.SetStatus(manifest.GetStatus().WithErr(err))
 			return err
 		}
 	}
-
 	return nil
 }
 
-// deleteCR deletes the module CR if available in the cluster.
-// It uses DeletePropagationBackground to delete module CR.
-// Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
-// and we consider the CR removal successful.
-func (c *Client) deleteCR(
-	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
-) error {
+func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
 	if manifest.Spec.Resource == nil {
-		return nil
+		return false, nil
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
 	propagation := apimetav1.DeletePropagationBackground
 	err := c.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-
-	if !util.IsNotFound(err) {
-		return nil
-	}
-
-	onCluster := manifest.DeepCopy()
-	err = kcp.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster)
 	if util.IsNotFound(err) {
-		return fmt.Errorf("deleteCR: %w", err)
+		return true, nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed to fetch resource: %w", err)
+		return false, fmt.Errorf("failed to fetch resource: %w", err)
 	}
-	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
-		if err := kcp.Update(
-			ctx, onCluster, client.FieldOwner(CustomResourceManagerFinalizer),
-		); err != nil {
-			return fmt.Errorf("failed to update resource: %w", err)
-		}
-		return ErrRequeueRequired
-	}
-	return nil
+	return false, nil
 }
 
-// CreateCR creates the manifest default custom resource if not available in the cluster
+// SyncModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
-func (c *Client) CreateCR(
-	ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest,
-) error {
+func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) (shared.State, error) {
 	if manifest.Spec.Resource == nil {
-		return nil
-	}
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		return nil
+		return "", nil
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
@@ -139,25 +115,16 @@ func (c *Client) CreateCR(
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 
-	err := c.Create(ctx, resource, client.FieldOwner(CustomResourceManagerFinalizer))
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return fmt.Errorf("failed to create resource: %w", err)
-	}
-
-	oMeta := &apimetav1.PartialObjectMetadata{}
-	oMeta.SetName(manifest.GetName())
-	oMeta.SetGroupVersionKind(manifest.GetObjectKind().GroupVersionKind())
-	oMeta.SetNamespace(manifest.GetNamespace())
-	oMeta.SetFinalizers(manifest.GetFinalizers())
-
-	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
-		if err := kcp.Patch(
-			ctx, oMeta, client.Apply, client.ForceOwnership,
-			client.FieldOwner(CustomResourceManagerFinalizer),
-		); err != nil {
-			return fmt.Errorf("failed to patch resource: %w", err)
+	if err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil && util.IsNotFound(err) {
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			return "", nil
 		}
-		return ErrRequeueRequired
+		if err := c.Create(ctx, resource,
+			client.FieldOwner(finalizer.CustomResourceManagerFinalizer)); err != nil && !apierrors.IsAlreadyExists(err) {
+			return "", fmt.Errorf("failed to create resource: %w", err)
+		}
 	}
-	return nil
+
+	stateFromCR, _, err := unstructured.NestedString(resource.Object, "status", "state")
+	return shared.State(stateFromCR), err
 }

@@ -123,7 +123,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, v1beta2.Module{
-					Name:    "template-operator",
+					Name:    TestModuleName,
 					Channel: "regular",
 					Managed: true,
 				}).
@@ -139,7 +139,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 		It("When mandatory Module is disabled on SKR Kyma CR", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, "template-operator").
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName).
 				Should(Succeed())
 
 			By("Then Kyma is back in a \"Ready\" State", func() {

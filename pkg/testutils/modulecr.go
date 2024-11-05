@@ -17,6 +17,7 @@ import (
 
 const (
 	TestModuleCRName                   = "sample-yaml"
+	TestModuleName                     = "template-operator"
 	TestModuleResourceNamespace        = "template-operator-system"
 	ModuleResourceName                 = "template-operator-controller-manager"
 	ModuleServiceAccountName           = "template-operator-controller-manager"

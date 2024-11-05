@@ -35,12 +35,9 @@ type SetupOptions struct {
 	EnableDomainNameVerification bool
 }
 
-func SetupWithManager(mgr manager.Manager,
-	opts ctrlruntime.Options,
-	requeueIntervals queue.RequeueIntervals,
-	settings SetupOptions,
-	manifestMetrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueIntervals queue.RequeueIntervals,
+	settings SetupOptions, manifestMetrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, moduleMetrics *metrics.ModuleMetrics,
 	manifestClient declarativev2.ManifestAPIClient,
 ) error {
 	var verifyFunc watcherevent.Verify
@@ -86,7 +83,7 @@ func SetupWithManager(mgr manager.Manager,
 				predicate.LabelChangedPredicate{}))).
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
-		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
+		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, moduleMetrics,
 			manifestClient)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}

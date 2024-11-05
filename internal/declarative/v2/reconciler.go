@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
@@ -29,29 +30,22 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	ErrWarningResourceSyncStateDiff   = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
-		"same oci layer, prevent sync resource to be deleted")
-)
+var ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
+	"same oci layer, prevent sync resource to be deleted")
 
 const (
-	namespaceNotBeRemoved                    = "kyma-system"
-	SyncedOCIRefAnnotation                   = "sync-oci-ref"
-	defaultFieldOwner      client.FieldOwner = "declarative.kyma-project.io/applier"
+	namespaceNotBeRemoved  = "kyma-system"
+	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
-func NewFromManager(mgr manager.Manager,
-	requeueIntervals queue.RequeueIntervals,
-	metrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestAPIClient ManifestAPIClient,
-	specResolver SpecResolver,
-	options ...Option,
+func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, moduleMetrics *metrics.ModuleMetrics,
+	manifestAPIClient ManifestAPIClient, specResolver SpecResolver, options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
+	reconciler.ModuleMetrics = moduleMetrics
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
 	reconciler.manifestClient = manifestAPIClient
@@ -78,6 +72,7 @@ type Reconciler struct {
 	*Options
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
+	ModuleMetrics              *metrics.ModuleMetrics
 	specResolver               SpecResolver
 	manifestClient             ManifestAPIClient
 	managedLabelRemovalService ManagedLabelRemoval
@@ -109,18 +104,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
 
-	if manifest.IsMandatoryModule() {
-		state := manifest.GetStatus().State
-		kymaName := manifest.GetLabels()[shared.KymaName]
-		moduleName := manifest.GetLabels()[shared.ModuleName]
-		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
-	}
+	recordMandatoryModuleState(manifest, r)
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
 		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, common.ErrAccessSecretNotFound) {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestClientInit,
-				err)
+			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestClientInit, err)
 		}
 
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -129,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if manifest.IsUnmanaged() {
 		if !manifest.GetDeletionTimestamp().IsZero() {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
+			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
 		}
 
 		if controllerutil.ContainsFinalizer(manifest, labelsremoval.LabelRemovalFinalizer) {
@@ -143,7 +132,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
-		if finalizer.AddFinalizers(manifest) {
+		if finalizer.FinalizersUpdateRequired(manifest) {
 			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
 		}
 	}
@@ -152,7 +141,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
 		if !manifest.GetDeletionTimestamp().IsZero() {
-			return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestParseSpec, err)
+			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestParseSpec, err)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestParseSpec, manifestStatus, err)
 	}
@@ -180,25 +169,31 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
 
-	if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
-		if errors.Is(err, modulecr.ErrRequeueRequired) {
-			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
-			return ctrl.Result{Requeue: true}, nil
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
+			if errors.Is(err, finalizer.ErrRequeueRequired) {
+				r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
+				return ctrl.Result{Requeue: true}, nil
+			}
+			return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 		}
-		return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 	}
 
-	if err = r.syncResources(ctx, skrClient, manifest, target); err != nil {
-		if errors.Is(err, modulecr.ErrRequeueRequired) {
-			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
-			return ctrl.Result{Requeue: true}, nil
-		}
-		if errors.Is(err, ErrClientUnauthorized) {
+	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
+		if errors.Is(err, skrresources.ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, manifest)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
 	}
 
+	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
+		if errors.Is(err, finalizer.ErrRequeueRequired) {
+			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
+			return ctrl.Result{Requeue: true}, nil
+		}
+		logf.FromContext(ctx).Error(err, "failed to sync manifest state")
+		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncState, manifestStatus, err)
+	}
 	// This situation happens when manifest get new installation layer to update resources,
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(manifest, spec.OCIRef) {
@@ -207,10 +202,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		return r.cleanupManifest(ctx, req, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
+		return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestReconcileFinished, nil)
 	}
 
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
+}
+
+func recordMandatoryModuleState(manifest *v1beta2.Manifest, r *Reconciler) {
+	if manifest.IsMandatoryModule() {
+		state := manifest.GetStatus().State
+		kymaName := manifest.GetLabels()[shared.KymaName]
+		moduleName := manifest.GetLabels()[shared.ModuleName]
+		r.MandatoryModuleMetrics.RecordMandatoryModuleState(kymaName, moduleName, state)
+	}
 }
 
 func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient client.Client,
@@ -230,13 +234,20 @@ func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, manifest *v1beta2.Manifest,
-	manifestStatus shared.Status, requeueReason metrics.ManifestRequeueReason, originalErr error,
+func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Manifest, manifestStatus shared.Status,
+	requeueReason metrics.ManifestRequeueReason, originalErr error,
 ) (ctrl.Result, error) {
-	r.ManifestMetrics.RemoveManifestDuration(req.Name)
-	r.cleanUpMandatoryModuleMetrics(manifest)
-
-	if finalizer.RemoveFinalizers(manifest, originalErr) {
+	err := r.cleanupMetrics(manifest)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	var finalizerRemoved bool
+	if errors.Is(originalErr, common.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
+		finalizerRemoved = finalizer.RemoveAllFinalizers(manifest)
+	} else {
+		finalizerRemoved = finalizer.RemoveRequiredFinalizers(manifest)
+	}
+	if finalizerRemoved {
 		return r.updateManifest(ctx, manifest, requeueReason)
 	}
 	if manifest.GetStatus().State != shared.StateWarning {
@@ -244,6 +255,23 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, req ctrl.Request, mani
 			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", manifest.GetFinalizers())))
 	}
 	return r.finishReconcile(ctx, manifest, requeueReason, manifestStatus, originalErr)
+}
+
+func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return fmt.Errorf("failed to get kyma name: %w", err)
+	}
+	moduleName, err := manifest.GetModuleName()
+	if err != nil {
+		return fmt.Errorf("failed to get module name: %w", err)
+	}
+	r.ManifestMetrics.CleanupMetrics(manifest.GetName())
+
+	if manifest.IsMandatoryModule() {
+		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
+	}
+	return nil
 }
 
 func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
@@ -265,7 +293,8 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 	var err error
 	var target, current ResourceList
 
-	converter := NewResourceToInfoConverter(ResourceInfoConverter(skrClient), apimetav1.NamespaceDefault)
+	converter := skrresources.NewResourceToInfoConverter(skrresources.ResourceInfoConverter(skrClient),
+		apimetav1.NamespaceDefault)
 
 	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
@@ -277,39 +306,28 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
-	status.UpdateResourcesCondition(manifest)
+	status.ConfirmResourcesCondition(manifest)
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
+func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
 	target []*resource.Info,
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	if err := ConcurrentSSA(skrClient, defaultFieldOwner).Run(ctx, target); err != nil {
+	moduleCRState, err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest)
+	if err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
-	oldSynced := manifestStatus.Synced
-	newSynced := NewInfoToResourceConverter().InfosToResources(target)
-	manifestStatus.Synced = newSynced
-
-	if hasDiff(oldSynced, newSynced) {
-		if manifest.GetDeletionTimestamp().IsZero() {
-			manifest.SetStatus(manifestStatus.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		} else if manifestStatus.State != shared.StateWarning {
-			manifest.SetStatus(manifestStatus.WithState(shared.StateDeleting).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		}
-		return ErrWarningResourceSyncStateDiff
-	}
-
-	if err := modulecr.NewClient(skrClient).CreateCR(ctx, r.Client, manifest); err != nil {
-		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+	if err := finalizer.EnsureCRFinalizer(ctx, r.Client, manifest); err != nil {
 		return err
 	}
-
 	if !manifest.GetDeletionTimestamp().IsZero() {
+		if moduleCRState == shared.StateWarning {
+			status.ConfirmModuleCRCondition(manifest)
+		}
 		return status.SetManifestState(manifest, shared.StateDeleting)
 	}
 
@@ -321,25 +339,30 @@ func (r *Reconciler) syncResources(ctx context.Context, skrClient Client, manife
 	return status.SetManifestState(manifest, managerState)
 }
 
-func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
-	if len(oldResources) != len(newResources) {
-		return true
+func (r *Reconciler) RecordModuleCRWarningCondition(manifest *v1beta2.Manifest) error {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return fmt.Errorf("failed to get kyma name: %w", err)
 	}
-	countMap := map[string]bool{}
-	for _, item := range oldResources {
-		countMap[item.ID()] = true
+	moduleName, err := manifest.GetModuleName()
+	if err != nil {
+		return fmt.Errorf("failed to get module name: %w", err)
 	}
-	for _, item := range newResources {
-		if countMap[item.ID()] {
-			countMap[item.ID()] = false
-		}
+	r.ModuleMetrics.SetModuleCRWarningCondition(kymaName, moduleName)
+	return nil
+}
+
+func (r *Reconciler) RemoveModuleCRWarningCondition(manifest *v1beta2.Manifest) error {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return fmt.Errorf("failed to get kyma name: %w", err)
 	}
-	for _, exists := range countMap {
-		if exists {
-			return true
-		}
+	moduleName, err := manifest.GetModuleName()
+	if err != nil {
+		return fmt.Errorf("failed to get module name: %w", err)
 	}
-	return false
+	r.ModuleMetrics.RemoveModuleCRWarningCondition(kymaName, moduleName)
+	return nil
 }
 
 func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
@@ -355,7 +378,7 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 }
 
 func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client.Client,
-	converter ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
+	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		deleted, err := modulecr.NewClient(skrClient).CheckCRDeletion(ctx, manifest)
@@ -367,24 +390,19 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 		}
 	}
 
-	status := manifest.GetStatus()
-
 	targetResources, err := r.ManifestParser.Parse(spec)
 	if err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
 
 	for _, transform := range r.PostRenderTransforms {
 		if err := transform(ctx, manifest, targetResources.Items); err != nil {
-			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 			return nil, err
 		}
 	}
 
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
 
@@ -555,13 +573,5 @@ func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name stri
 		r.ManifestMetrics.RecordManifestDuration(name, duration)
 	} else {
 		r.ManifestMetrics.RemoveManifestDuration(name)
-	}
-}
-
-func (r *Reconciler) cleanUpMandatoryModuleMetrics(manifest *v1beta2.Manifest) {
-	if manifest.IsMandatoryModule() {
-		kymaName := manifest.GetLabels()[shared.KymaName]
-		moduleName := manifest.GetLabels()[shared.ModuleName]
-		r.MandatoryModuleMetrics.CleanupMetrics(kymaName, moduleName)
 	}
 }
