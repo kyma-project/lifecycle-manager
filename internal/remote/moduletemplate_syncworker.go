@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -17,12 +16,12 @@ import (
 )
 
 var (
-	errTemplateCRDNotReady = errors.New("module template crd for catalog sync is not ready")
-	errTemplateCleanup     = errors.New("failed to delete obsolete catalog templates")
-	errCatTemplatesApply   = errors.New("could not apply catalog templates")
+	errModuleTemplateCRDNotReady = errors.New("catalog sync: ModuleTemplate CRD is not ready")
+	errModuleTemplateCleanup     = errors.New("catalog sync: Failed to delete obsolete ModuleTemplates")
+	errCatModuleTemplatesApply   = errors.New("catalog sync: Could not apply ModuleTemplates")
 )
 
-// moduleTemplateConcurrentWorker performs synchronization using multiple goroutines.
+// moduleTemplateConcurrentWorker performs ModuleTemplate synchronization using multiple goroutines.
 type moduleTemplateConcurrentWorker struct {
 	namespace  string
 	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
@@ -33,11 +32,11 @@ type moduleTemplateConcurrentWorker struct {
 // newModuleTemplateConcurrentWorker returns a new moduleTemplateConcurrentWorker instance with default dependencies.
 func newModuleTemplateConcurrentWorker(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
-		return patchDiff(ctx, obj, skrClient, settings.SSAPatchOptions)
+		return patchDiffModuleTemplate(ctx, obj, skrClient, settings.SSAPatchOptions)
 	}
 
 	deleteDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
-		return patchDelete(ctx, obj, skrClient)
+		return deleteModuleTemplate(ctx, obj, skrClient)
 	}
 
 	createCRDFn := func(ctx context.Context) error {
@@ -59,7 +58,7 @@ func (c *moduleTemplateConcurrentWorker) SyncConcurrently(ctx context.Context, k
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
 		go func() {
-			prepareForSSA(&kcpModules[kcpIndex], c.namespace)
+			prepareModuleTemplateForSSA(&kcpModules[kcpIndex], c.namespace)
 			results <- c.patchDiff(ctx, &kcpModules[kcpIndex])
 		}()
 	}
@@ -78,7 +77,7 @@ func (c *moduleTemplateConcurrentWorker) SyncConcurrently(ctx context.Context, k
 	}
 
 	if len(errs) != 0 {
-		errs = append(errs, errCatTemplatesApply)
+		errs = append(errs, errCatModuleTemplatesApply)
 		return errors.Join(errs...)
 	}
 	return nil
@@ -103,23 +102,10 @@ func (c *moduleTemplateConcurrentWorker) DeleteConcurrently(ctx context.Context,
 	}
 
 	if len(errs) != 0 {
-		errs = append(errs, errTemplateCleanup)
+		errs = append(errs, errModuleTemplateCleanup)
 		return errors.Join(errs...)
 	}
 	return nil
-}
-
-func prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {
-	moduleTemplate.SetResourceVersion("")
-	moduleTemplate.SetUID("")
-	moduleTemplate.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
-	moduleTemplate.SetLabels(collections.MergeMaps(moduleTemplate.GetLabels(), map[string]string{
-		shared.ManagedBy: shared.ManagedByLabelValue,
-	}))
-
-	if namespace != "" {
-		moduleTemplate.SetNamespace(namespace)
-	}
 }
 
 func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Client, skrClient client.Client) error {
@@ -140,7 +126,7 @@ func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Clie
 	}
 
 	if !crdReady(skrCrd) {
-		return errTemplateCRDNotReady
+		return errModuleTemplateCRDNotReady
 	}
 
 	if err != nil {
@@ -150,22 +136,35 @@ func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Clie
 	return nil
 }
 
-func patchDiff(ctx context.Context, diff *v1beta2.ModuleTemplate, skrClient client.Client, ssaPatchOptions *client.PatchOptions) error {
+func prepareModuleTemplateForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {
+	moduleTemplate.SetResourceVersion("")
+	moduleTemplate.SetUID("")
+	moduleTemplate.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
+	moduleTemplate.SetLabels(collections.MergeMaps(moduleTemplate.GetLabels(), map[string]string{
+		shared.ManagedBy: shared.ManagedByLabelValue,
+	}))
+
+	if namespace != "" {
+		moduleTemplate.SetNamespace(namespace)
+	}
+}
+
+func patchDiffModuleTemplate(ctx context.Context, diff *v1beta2.ModuleTemplate, skrClient client.Client, ssaPatchOptions *client.PatchOptions) error {
 	err := skrClient.Patch(
 		ctx, diff, client.Apply, ssaPatchOptions,
 	)
 	if err != nil {
-		return fmt.Errorf("could not apply module template diff: %w", err)
+		return fmt.Errorf("could not apply ModuleTemplate diff: %w", err)
 	}
 	return nil
 }
 
-func patchDelete(
+func deleteModuleTemplate(
 	ctx context.Context, diff *v1beta2.ModuleTemplate, skrClient client.Client,
 ) error {
 	err := skrClient.Delete(ctx, diff)
 	if err != nil {
-		return fmt.Errorf("could not delete module template: %w", err)
+		return fmt.Errorf("could not delete ModuleTemplate: %w", err)
 	}
 	return nil
 }

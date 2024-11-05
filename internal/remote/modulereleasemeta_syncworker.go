@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	errModuleReleaseMetaCRDNotReady = errors.New("module release meta crd for catalog sync is not ready")
-	errModuleReleaseMetaCleanup     = errors.New("failed to delete obsolete ModuleReleaseMeta from catalog")
-	errCatModuleReleaseMetaApply    = errors.New("could not apply ModuleReleseMeta objects from catalog")
+	errModuleReleaseMetaCRDNotReady = errors.New("catalog sync: ModuleReleaseMeta CRD is not ready")
+	errModuleReleaseMetaCleanup     = errors.New("catalog sync: Failed to delete ModuleReleaseMeta")
+	errCatModuleReleaseMetaApply    = errors.New("catalog sync: Could not apply ModuleReleseMetas")
 )
 
-// moduleReleaseMetaConcurrentWorker performs synchronization using multiple goroutines.
+// moduleReleaseMetaConcurrentWorker performs ModuleReleaseMeta synchronization using multiple goroutines.
 type moduleReleaseMetaConcurrentWorker struct {
 	namespace  string
 	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error
@@ -29,14 +29,14 @@ type moduleReleaseMetaConcurrentWorker struct {
 	createCRD  func(ctx context.Context) error
 }
 
-// newModuleReleaseMetaConcurrentWorker returns new moduleReleaseMetaConcurrentWorker instance with default dependencies.
+// newModuleReleaseMetaConcurrentWorker returns a new moduleReleaseMetaConcurrentWorker instance with default dependencies.
 func newModuleReleaseMetaConcurrentWorker(kcpClient, skrClient client.Client, settings *Settings) *moduleReleaseMetaConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error {
 		return patchDiffModuleReleaseMeta(ctx, obj, skrClient, settings.SSAPatchOptions)
 	}
 
 	deleteDiffFn := func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error {
-		return patchDeleteModuleReleaseMeta(ctx, obj, skrClient)
+		return deleteModuleReleaseMeta(ctx, obj, skrClient)
 	}
 
 	createCRDFn := func(ctx context.Context) error {
@@ -58,7 +58,7 @@ func (c *moduleReleaseMetaConcurrentWorker) SyncConcurrently(ctx context.Context
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
 		go func() {
-			prepareForSSAModuleReleaseMeta(&kcpModules[kcpIndex], c.namespace)
+			prepareModuleReleaseMetaForSSA(&kcpModules[kcpIndex], c.namespace)
 			results <- c.patchDiff(ctx, &kcpModules[kcpIndex])
 		}()
 	}
@@ -136,7 +136,7 @@ func createModuleReleaseMetaCRDInRuntime(ctx context.Context, kcpClient client.C
 	return nil
 }
 
-func prepareForSSAModuleReleaseMeta(moduleReleaseMeta *v1beta2.ModuleReleaseMeta, namespace string) {
+func prepareModuleReleaseMetaForSSA(moduleReleaseMeta *v1beta2.ModuleReleaseMeta, namespace string) {
 	moduleReleaseMeta.SetResourceVersion("")
 	moduleReleaseMeta.SetUID("")
 	moduleReleaseMeta.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
@@ -159,8 +159,7 @@ func patchDiffModuleReleaseMeta(ctx context.Context, diff *v1beta2.ModuleRelease
 	return nil
 }
 
-// TODO: rename to deleteModuleReleaseMeta
-func patchDeleteModuleReleaseMeta(
+func deleteModuleReleaseMeta(
 	ctx context.Context, diff *v1beta2.ModuleReleaseMeta, skrClient client.Client,
 ) error {
 	err := skrClient.Delete(ctx, diff)

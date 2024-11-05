@@ -177,7 +177,7 @@ func (f *fakeSyncWorker) SyncConcurrently(ctx context.Context, kcpModules []v1be
 	// Simulate namespace switch on modules in kcpModules list that happens in moduleTemplateConcurrentWorker.SyncConcurrently
 	// This is necessary for proper diff calculation later in the process.
 	for i := range kcpModules {
-		prepareForSSA(&kcpModules[i], f.namespace)
+		prepareModuleTemplateForSSA(&kcpModules[i], f.namespace)
 	}
 
 	return nil
