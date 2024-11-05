@@ -14,6 +14,6 @@ packages:
   internal/manifest/modulecr: 51.1
   internal/istio: 63.3
   internal/pkg/resources: 91.7
-  internal/remote: 11.8
+  internal/remote: 13.2
   internal/util/collections: 83.3
   pkg/templatelookup: 77.7

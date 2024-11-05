@@ -16,8 +16,8 @@ import (
 )
 
 // TestSyncer_SyncToSKR_happypath tests the happy path of the SyncToSKR method,
-// with some modules to be installed in the SKR and some modules to be deleted from the SKR.
-func TestSyncer_SyncToSKR_happypath(t *testing.T) {
+// with some ModuleTemplates to be installed in the SKR and some modules to be deleted from the SKR.
+func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl // duplication will be removed: https://github.com/kyma-project/lifecycle-manager/issues/2015
 	// given
 	mtKCP1 := moduleTemplate("mt1", "kcp-system") // this one should be installed in the SKR, because it's not there
 	mtKCP2 := moduleTemplate("mt2", "kcp-system")
@@ -107,7 +107,7 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 	// onDeleteConcurrentlyFn "pretends" to be the moduleTemplateConcurrentWorker.DeleteConcurrently
 	onDeleteConcurrentlyFn := func(_ context.Context, runtimeModules []v1beta2.ModuleTemplate) {
 		if len(runtimeModules) != 3 {
-			t.Errorf("Expected 1 runtime module, got %d", len(runtimeModules))
+			t.Errorf("Expected 3 runtime module, got %d", len(runtimeModules))
 		}
 		if runtimeModules[0].Name != "mt2" {
 			t.Errorf("Expected module mt2, got %s", runtimeModules[0].Name)
