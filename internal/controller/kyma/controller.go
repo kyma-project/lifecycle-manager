@@ -142,7 +142,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
-	r.Metrics.CleanupMetrics(kyma.Name)
+	r.cleanupMetrics(kyma.Name)
 	r.removeAllFinalizers(kyma)
 
 	if err := r.updateKyma(ctx, kyma); err != nil {
@@ -423,8 +423,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		return ctrl.Result{}, err
 	}
 
-	r.Metrics.CleanupMetrics(kyma.Name)
-
+	r.cleanupMetrics(kyma.Name)
 	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 
 	if err := r.updateKyma(ctx, kyma); err != nil {
@@ -433,6 +432,11 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 	}
 	r.Metrics.RecordRequeueReason(metrics.KymaDeletion, queue.IntendedRequeue)
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) cleanupMetrics(kymaName string) {
+	r.Metrics.CleanupMetrics(kymaName)
+	r.ModuleMetrics.CleanupMetrics(kymaName)
 }
 
 func (r *Reconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) error {
