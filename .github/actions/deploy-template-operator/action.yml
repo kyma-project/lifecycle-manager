@@ -72,7 +72,15 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind Deployment
         popd
         make build-manifests
-        modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        echo "name: kyma-project.io/module/template-operator
+        channel: regular
+        version: 1.0.1
+        security: sec-scanners-config.yaml
+        defaultCR: ./config/samples/default-sample-cr.yaml
+        manifest: template-operator.yaml
+        annotations:
+          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
+        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -93,7 +101,15 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        echo "name: kyma-project.io/module/template-operator
+        channel: regular
+        version: 1.0.1
+        security: sec-scanners-config.yaml
+        defaultCR: ./config/samples/default-sample-cr.yaml
+        manifest: template-operator.yaml
+        annotations:
+          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
+        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
