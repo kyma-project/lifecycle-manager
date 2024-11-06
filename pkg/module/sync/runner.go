@@ -375,14 +375,14 @@ func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma,
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
-		module := moduleStatus.GetModule()
-		err := moduleFunc(ctx, module)
+		manifestCR := moduleStatus.GetManifestCR()
+		err := moduleFunc(ctx, manifestCR)
 		if util.IsNotFound(err) {
 			kymaMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
 			moduleMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
-			moduleStatus.State = stateFromManifest(module)
+			moduleStatus.State = stateFromManifest(manifestCR)
 		}
 	}
 	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)

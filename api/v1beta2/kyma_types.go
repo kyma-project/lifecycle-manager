@@ -183,7 +183,7 @@ type ModuleStatus struct {
 	Resource *TrackingObject `json:"resource,omitempty"`
 }
 
-func (m *ModuleStatus) GetModule() *unstructured.Unstructured {
+func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {
 	module := &unstructured.Unstructured{}
 	module.SetGroupVersionKind(m.Manifest.GroupVersionKind())
 	module.SetName(m.Manifest.GetName())
