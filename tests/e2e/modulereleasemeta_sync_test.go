@@ -20,13 +20,13 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("Then the Template Operator v1 ModuleTemplate exists in the KCP Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, v1beta2.DefaultChannel).
+				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
 				Should(Succeed())
 
 			By("And the Template Operator v1 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, v1beta2.DefaultChannel).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
 				Should(Succeed())
 
 			By("And the ModuleReleaseMeta exists on the KCP Cluster with the correct channel-version")
@@ -55,19 +55,19 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 		It("When Template Operator v1 ModuleTemplate is removed from the KCP Cluster", func() {
 			Eventually(DeleteModuleTemplate).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, v1beta2.DefaultChannel).
+				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
 				Should(Succeed())
 
 			By("Then Template Operator v1 ModuleTemplate no longer exists on the KCP Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, v1beta2.DefaultChannel).
+				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
 				Should(Equal(ErrNotFound))
 
 			By("Then Template Operator v1 ModuleTemplate no longer exists on the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, v1beta2.DefaultChannel).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
 				Should(Equal(ErrNotFound))
 		})
 
@@ -82,13 +82,13 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("Then the Template Operator v2 ModuleTemplate exists in the KCP Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, v1beta2.DefaultChannel).
+				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
 				Should(Succeed())
 
 			By("And the Template Operator v2 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, v1beta2.DefaultChannel).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
 				Should(Succeed())
 
 			By("And the ModuleReleaseMeta exists on the KCP Cluster with the correct channel-version")

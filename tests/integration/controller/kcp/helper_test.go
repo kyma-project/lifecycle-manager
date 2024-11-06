@@ -110,8 +110,9 @@ func expectModuleTemplateSpecGetReset(
 	clnt client.Client,
 	module v1beta2.Module,
 	kymaChannel string,
+	namespace string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
 	if err != nil {
 		return err
 	}
