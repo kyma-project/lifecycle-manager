@@ -15,11 +15,9 @@ import (
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=manifests/finalizers,verbs=update
 
-func NewReconciler(mgr manager.Manager,
-	requeueIntervals queue.RequeueIntervals,
-	manifestMetrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestClient declarativev2.ManifestAPIClient,
+func NewReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
+	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	moduleMetrics *metrics.ModuleMetrics, manifestClient declarativev2.ManifestAPIClient,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
@@ -31,7 +29,7 @@ func NewReconciler(mgr manager.Manager,
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
-		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
+		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, moduleMetrics, manifestClient,
 		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),

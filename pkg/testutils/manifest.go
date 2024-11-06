@@ -43,6 +43,7 @@ var (
 	errManifestLastUpdateTimeChangedWithoutStatusDiff = errors.New("manifest last update time is changed without diff in status")
 	errManifestOperationNotContainMessage             = errors.New("manifest last operation does  not contain expected message")
 	errManifestVersionIsIncorrect                     = errors.New("manifest version is incorrect")
+	errManifestConditionNotExists                     = errors.New("manifest condition does not exist")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -73,6 +74,30 @@ func GetManifest(ctx context.Context,
 		return nil, errManifestNotInKymaStatus
 	}
 	return GetManifestWithMetadata(ctx, clnt, manifestKey.GetNamespace(), manifestKey.GetName())
+}
+
+func ConditionExists(ctx context.Context,
+	clnt client.Client,
+	kymaName,
+	kymaNamespace,
+	moduleName,
+	expectedConditionType,
+	expectedConditionReason string,
+	expectedConditionStatus apimetav1.ConditionStatus,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+	for _, condition := range manifest.Status.Conditions {
+		if condition.Type == expectedConditionType &&
+			condition.Reason == expectedConditionReason &&
+			condition.Status == expectedConditionStatus {
+			return nil
+		}
+	}
+
+	return errManifestConditionNotExists
 }
 
 func GetManifestWithMetadata(ctx context.Context,
@@ -415,7 +440,9 @@ func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerNam
 	return nil
 }
 
-func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec, error) {
+func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec,
+	error,
+) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
@@ -436,7 +463,9 @@ func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredS
 	return imageSpec, nil
 }
 
-func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string, enableCredSecretSelector bool) (v1beta2.ImageSpec, error) {
+func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string, enableCredSecretSelector bool) (v1beta2.ImageSpec,
+	error,
+) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
@@ -461,7 +490,8 @@ func WithInvalidInstallImageSpec(ctx context.Context, clnt client.Client,
 	enableResource bool, manifestFilePath string,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		invalidImageSpec, err := CreateOCIImageSpecFromFile("invalid-image-spec", "domain.invalid", manifestFilePath, false)
+		invalidImageSpec, err := CreateOCIImageSpecFromFile("invalid-image-spec", "domain.invalid", manifestFilePath,
+			false)
 		if err != nil {
 			return err
 		}
@@ -473,7 +503,8 @@ func WithInvalidInstallImageSpec(ctx context.Context, clnt client.Client,
 	}
 }
 
-func WithValidInstallImageSpecFromFile(ctx context.Context, clnt client.Client, name, manifestFilePath, serverURL string,
+func WithValidInstallImageSpecFromFile(ctx context.Context, clnt client.Client,
+	name, manifestFilePath, serverURL string,
 	enableResource, enableCredSecretSelector bool,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {

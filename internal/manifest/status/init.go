@@ -18,6 +18,7 @@ func Initialize(manifest *v1beta2.Manifest) error {
 	for _, condition := range []apimetav1.Condition{
 		initResourcesCondition(manifest),
 		initInstallationCondition(manifest),
+		initModuleCRCondition(manifest),
 	} {
 		if meta.FindStatusCondition(status.Conditions, condition.Type) == nil {
 			meta.SetStatusCondition(&status.Conditions, condition)

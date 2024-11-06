@@ -183,10 +183,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
+	moduleMetrics := metrics.NewModuleMetrics()
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics,
 		setupLog)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog, eventRecorder)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, moduleMetrics, setupLog,
+		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, setupLog)
 	if flagVar.EnablePurgeFinalizer {
@@ -386,8 +388,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 
 func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	setupLog logr.Logger,
-	event event.Event,
+	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger, event event.Event,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
@@ -406,7 +407,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
+		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, moduleMetrics,
 		manifestClient,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")

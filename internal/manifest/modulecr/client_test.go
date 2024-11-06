@@ -33,7 +33,7 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 	ctx := context.TODO()
 
 	manifest := testutils.NewTestManifest("test-manifest")
-	manifest.SetFinalizers([]string{modulecr.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
+	manifest.SetFinalizers([]string{finalizer.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
 	moduleCR := unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(
 		schema.GroupVersionKind{
@@ -42,7 +42,8 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 			Kind:    string(templatev1alpha1.SampleKind),
 		},
 	)
-	moduleCR.SetName("test-resource")
+	const moduleName = "test-resource"
+	moduleCR.SetName(moduleName)
 	moduleCR.SetNamespace(shared.DefaultRemoteNamespace)
 	manifest.Spec.Resource = &moduleCR
 	err = kcpClient.Create(ctx, manifest.Spec.Resource)
@@ -59,16 +60,67 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 	err = skrClient.RemoveModuleCR(ctx, kcpClient, manifest)
 	require.NoError(t, err)
 
-	// And in second deletion attempt, the resource should not be found
+	// And in second deletion attempt, the resource should not be found and the finalizer should be removed
 	err = skrClient.RemoveModuleCR(ctx, kcpClient, manifest)
-	require.ErrorIs(t, err, modulecr.ErrRequeueRequired)
+	require.ErrorIs(t, err, finalizer.ErrRequeueRequired)
 
-	// Then the resource CR should be deleted and the finalizer should be removed from Manifest CR
+	// Then the resource CR should be deleted
 	err = kcpClient.Get(ctx, client.ObjectKey{Name: moduleCR.GetName(), Namespace: moduleCR.GetNamespace()},
 		&moduleCR)
 	require.True(t, apierrors.IsNotFound(err))
 
+	// Then the finalizer should be removed
 	err = kcpClient.Get(ctx, client.ObjectKey{Name: manifest.GetName(), Namespace: manifest.GetNamespace()}, manifest)
 	require.NoError(t, err)
-	assert.NotContains(t, manifest.GetFinalizers(), modulecr.CustomResourceManagerFinalizer)
+	assert.NotContains(t, manifest.GetFinalizers(), finalizer.CustomResourceManagerFinalizer)
+}
+
+func TestClient_SyncModuleCR(t *testing.T) {
+	// Given a manifest CR with a resource CR
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	skrClient := modulecr.NewClient(kcpClient)
+	ctx := context.TODO()
+	manifest := testutils.NewTestManifest("test-manifest")
+	manifest.SetFinalizers([]string{finalizer.CustomResourceManagerFinalizer, finalizer.DefaultFinalizer})
+	moduleCR := unstructured.Unstructured{}
+	moduleCR.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Group:   templatev1alpha1.GroupVersion.Group,
+			Version: templatev1alpha1.GroupVersion.Version,
+			Kind:    string(templatev1alpha1.SampleKind),
+		},
+	)
+	const moduleName = "test-resource"
+	moduleCR.SetName(moduleName)
+	moduleCR.SetNamespace(shared.DefaultRemoteNamespace)
+	manifest.Spec.Resource = &moduleCR
+
+	// When syncing the module CR
+	_, err = skrClient.SyncModuleCR(ctx, manifest)
+	require.NoError(t, err)
+
+	// Then the resource CR should be created
+	resource := &unstructured.Unstructured{}
+	resource.SetGroupVersionKind(manifest.Spec.Resource.GroupVersionKind())
+	err = skrClient.Get(ctx, client.ObjectKey{Name: moduleName, Namespace: shared.DefaultRemoteNamespace},
+		resource)
+	require.NoError(t, err)
+	// And the resource should have the managed-by label
+	labels := resource.GetLabels()
+	assert.Equal(t, shared.ManagedByLabelValue, labels[shared.ManagedBy])
+
+	// When the resource is deleted
+	err = kcpClient.Delete(ctx, resource)
+	require.NoError(t, err)
+
+	// And syncing again, it should recreate the resource
+	_, err = skrClient.SyncModuleCR(ctx, manifest)
+	require.NoError(t, err)
+
+	err = skrClient.Get(ctx, client.ObjectKey{Name: moduleName, Namespace: shared.DefaultRemoteNamespace}, resource)
+	require.NoError(t, err)
 }

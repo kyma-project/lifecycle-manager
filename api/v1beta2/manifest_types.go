@@ -17,6 +17,9 @@ limitations under the License.
 package v1beta2
 
 import (
+	"errors"
+	"fmt"
+
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +34,8 @@ const (
 	DefaultCRLayer   LayerName = "default-cr"
 	RawManifestLayer LayerName = "raw-manifest"
 )
+
+var ErrLabelNotFound = errors.New("label is not found")
 
 // InstallInfo defines installation information.
 type InstallInfo struct {
@@ -146,6 +151,22 @@ func init() {
 
 func (manifest *Manifest) SkipReconciliation() bool {
 	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == shared.EnableLabelValue
+}
+
+func (manifest *Manifest) GetKymaName() (string, error) {
+	kymaName, found := manifest.GetLabels()[shared.KymaName]
+	if !found {
+		return "", fmt.Errorf("KymaName label not found %w", ErrLabelNotFound)
+	}
+	return kymaName, nil
+}
+
+func (manifest *Manifest) GetModuleName() (string, error) {
+	moduleName, found := manifest.GetLabels()[shared.ModuleName]
+	if !found {
+		return "", fmt.Errorf("ModuleName label not found %w", ErrLabelNotFound)
+	}
+	return moduleName, nil
 }
 
 func (manifest *Manifest) GetChannel() (string, bool) {
