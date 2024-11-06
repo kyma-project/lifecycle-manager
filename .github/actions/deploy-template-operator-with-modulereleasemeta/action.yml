@@ -22,7 +22,6 @@ runs:
         make build-manifests
         modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
@@ -35,10 +34,6 @@ runs:
         }}
       shell: bash
       run: |
-        sed -i 's/template-operator-fast/template-operator-2.4.2-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
-        sed -i 's/template-operator-regular/template-operator-1.1.1-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
-        sed -i 's/template-operator-regular/template-operator-2.4.2-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml
-
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
 
@@ -79,7 +74,6 @@ runs:
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
       shell: bash
       run: |
-        sed -i 's/template-operator-fast/template-operator-2.4.2-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
         cat <<EOF > mrm.yaml
         apiVersion: operator.kyma-project.io/v1beta2
@@ -126,7 +120,6 @@ runs:
           link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
         modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
@@ -160,7 +153,6 @@ runs:
           link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
         modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
@@ -212,7 +204,6 @@ runs:
         make build-manifests
         modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
     - name: Create Template Operator Module with StatefulSet, with non-working image and apply
@@ -231,7 +222,6 @@ runs:
         make build-statefulset-manifests
         modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
 
@@ -253,7 +243,6 @@ runs:
           link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> module-config-no-cr.yaml
         modulectl create --module-config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.0/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         cat <<EOF > mrm.yaml
@@ -276,7 +265,6 @@ runs:
       if: ${{ matrix.e2e-test == 'ocm-compatible-module-template' }}
       shell: bash
       run: |
-        sed -i 's/template-operator-regular/template-operator-1.0.0-new-ocm-format/g' tests/moduletemplates/moduletemplate_template_operator_regular_new_ocm.yaml
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular_new_ocm.yaml
         cat <<EOF > mrm.yaml
         apiVersion: operator.kyma-project.io/v1beta2
@@ -301,5 +289,6 @@ runs:
         make build-manifests
         modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-1.0.1/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
