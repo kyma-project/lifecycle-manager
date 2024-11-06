@@ -13,7 +13,7 @@
     <option name="EXECUTE_SCRIPT_FILE" value="false" />
     <envs>
       <env name="LOCAL_IMG" value="localhost:5111/lifecycle-manager" />
-      <env name="CLUSTER_IMG" value="k3d-myregistry.localhost:5000/lifecycle-manager" />
+      <env name="CLUSTER_IMG" value="k3d-kcp-registry.localhost:5000/lifecycle-manager"/>
     </envs>
     <method v="2" />
   </configuration>

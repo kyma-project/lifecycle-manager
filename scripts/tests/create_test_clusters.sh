@@ -25,7 +25,7 @@ if k3d cluster list | grep -q "^kcp\s"; then
         -p 9443:443@loadbalancer \
         -p 9080:80@loadbalancer \
         -p 9081:8080@loadbalancer \
-        --registry-create k3d-myregistry.localhost:5111 \
+        --registry-create k3d-kcp-registry.localhost:5111 \
         --image rancher/k3s:v1.28.7-k3s1 \
         --k3s-arg --disable="traefik@server:*" \
         --k3s-arg --tls-san="host.k3d.internal@server:*" \
