@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,11 +35,19 @@ func moduleStillExistsInClusterMock(_ context.Context, _ client.Object) error {
 }
 
 type KymaMockMetrics struct {
-	mock.Mock
+	callCount int
 }
 
 func (m *KymaMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
-	m.Called(kymaName, moduleName)
+	m.callCount++
+}
+
+type ModuleMockMetrics struct {
+	callCount int
+}
+
+func (m *ModuleMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
+	m.callCount++
 }
 
 func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
@@ -82,15 +89,16 @@ func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			t.Parallel()
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, []string{ModuleShouldKeep}, []string{testCase.ModuleInStatus})
-			mockMetrics := &KymaMockMetrics{}
-			const methodToBeCalled = "RemoveModuleStateMetrics"
-			mockMetrics.On(methodToBeCalled, kyma.Name, testCase.ModuleInStatus).Return()
+			kymaMetrics := &KymaMockMetrics{}
+			moduleMetrics := &ModuleMockMetrics{}
 			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule,
-				mockMetrics.RemoveModuleStateMetrics, mockMetrics.RemoveModuleStateMetrics)
+				kymaMetrics.RemoveModuleStateMetrics, moduleMetrics.RemoveModuleStateMetrics)
 			if testCase.expectModuleMetricsGetCalled {
-				mockMetrics.AssertCalled(t, methodToBeCalled, kyma.Name, testCase.ModuleInStatus)
+				assert.Equal(t, 1, kymaMetrics.callCount)
+				assert.Equal(t, 1, moduleMetrics.callCount)
 			} else {
-				mockMetrics.AssertNotCalled(t, methodToBeCalled, kyma.Name, testCase.ModuleInStatus)
+				assert.Equal(t, 0, kymaMetrics.callCount)
+				assert.Equal(t, 0, moduleMetrics.callCount)
 			}
 		})
 	}
@@ -153,9 +161,12 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+			kymaMetrics := &KymaMockMetrics{}
+			moduleMetrics := &ModuleMockMetrics{}
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, testCase.ModulesInKymaSpec, testCase.ModulesInKymaStatus)
-			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule, nil, nil)
+			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule,
+				kymaMetrics.RemoveModuleStateMetrics, moduleMetrics.RemoveModuleStateMetrics)
 			var modulesInFinalModuleStatus []string
 			for _, moduleStatus := range kyma.Status.Modules {
 				modulesInFinalModuleStatus = append(modulesInFinalModuleStatus, moduleStatus.Name)
