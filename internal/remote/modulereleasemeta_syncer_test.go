@@ -34,7 +34,6 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 		WithScheme(scheme).
 		Build()
 
-	// onSyncConcurrentlyFn "pretends" to be the moduleReleaseMetaConcurrentWorker.SyncConcurrently
 	onSyncConcurrentlyFn := func(_ context.Context, kcpModules []v1beta2.ModuleReleaseMeta) {
 		if len(kcpModules) != 3 {
 			t.Errorf("Expected 3 kcp modules, got %d", len(kcpModules))
@@ -50,7 +49,6 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 		}
 	}
 
-	// onDeleteConcurrentlyFn "pretends" to be the moduleReleaseMetaConcurrentWorker.DeleteConcurrently
 	onDeleteConcurrentlyFn := func(_ context.Context, runtimeModules []v1beta2.ModuleReleaseMeta) {
 		if len(runtimeModules) != 1 {
 			t.Errorf("Expected 1 runtime module, got %d", len(runtimeModules))

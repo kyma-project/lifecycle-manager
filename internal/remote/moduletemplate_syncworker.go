@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var (
@@ -109,31 +107,7 @@ func (c *moduleTemplateConcurrentWorker) DeleteConcurrently(ctx context.Context,
 }
 
 func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Client, skrClient client.Client) error {
-	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
-	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
-	objKey := client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group),
-	}
-	err := kcpClient.Get(ctx, objKey, kcpCrd)
-	if err != nil {
-		return fmt.Errorf("failed to get ModuleTemplate CRD from KCP: %w", err)
-	}
-
-	err = skrClient.Get(ctx, objKey, skrCrd)
-
-	if util.IsNotFound(err) || !ContainsLatestVersion(skrCrd, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, skrClient, kcpCrd)
-	}
-
-	if !crdReady(skrCrd) {
-		return errModuleTemplateCRDNotReady
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to get ModuleTemplate CRD from SKR: %w", err)
-	}
-
-	return nil
+	return createCRDInRuntime(ctx, shared.ModuleTemplateKind, errModuleTemplateCRDNotReady, kcpClient, skrClient)
 }
 
 func prepareModuleTemplateForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {

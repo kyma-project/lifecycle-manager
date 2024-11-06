@@ -34,7 +34,6 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl // duplication
 		WithScheme(scheme).
 		Build()
 
-	// onSyncConcurrentlyFn "pretends" to be the moduleTemplateConcurrentWorker.SyncConcurrently
 	onSyncConcurrentlyFn := func(_ context.Context, kcpModules []v1beta2.ModuleTemplate) {
 		if len(kcpModules) != 3 {
 			t.Errorf("Expected 3 kcp modules, got %d", len(kcpModules))
@@ -50,7 +49,6 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl // duplication
 		}
 	}
 
-	// onDeleteConcurrentlyFn "pretends" to be the moduleTemplateConcurrentWorker.DeleteConcurrently
 	onDeleteConcurrentlyFn := func(_ context.Context, runtimeModules []v1beta2.ModuleTemplate) {
 		if len(runtimeModules) != 1 {
 			t.Errorf("Expected 1 runtime module, got %d", len(runtimeModules))
