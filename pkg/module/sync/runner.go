@@ -16,6 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -33,11 +34,10 @@ func New(clnt client.Client) *Runner {
 	}
 }
 
-type ModuleMetrics interface {
-	RemoveModuleStateMetrics(kymaName, moduleName string)
-}
-
-type GetModuleFunc func(ctx context.Context, module client.Object) error
+type (
+	RemoveMetricsFunc func(kymaName, moduleName string)
+	GetModuleFunc     func(ctx context.Context, module client.Object) error
+)
 
 type Runner struct {
 	client.Client
@@ -244,10 +244,11 @@ func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 }
 
 func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
-	metrics ModuleMetrics,
+	kymaMetrics *metrics.KymaMetrics, moduleMetrics *metrics.ModuleMetrics,
 ) {
 	updateModuleStatusFromExistingModules(modules, kyma)
-	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, metrics)
+	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, kymaMetrics.RemoveModuleStateMetrics,
+		moduleMetrics.RemoveModuleCRWarningCondition)
 }
 
 func updateModuleStatusFromExistingModules(
@@ -362,28 +363,23 @@ func stateFromManifest(obj client.Object) shared.State {
 }
 
 func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, moduleFunc GetModuleFunc,
-	metrics ModuleMetrics,
+	kymaMetricsRemoveMetrics, moduleMetricsRemoveMetrics RemoveMetricsFunc,
 ) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatusesToBeDeletedFromKymaStatus {
 		moduleStatus := moduleStatusesToBeDeletedFromKymaStatus[idx]
 		if moduleStatus.Manifest == nil {
-			if metrics != nil {
-				metrics.RemoveModuleStateMetrics(kyma.Name, moduleStatus.Name)
-			}
+			kymaMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
+			moduleMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
-		module := &unstructured.Unstructured{}
-		module.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
-		module.SetName(moduleStatus.Manifest.GetName())
-		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
+		module := moduleStatus.GetModule()
 		err := moduleFunc(ctx, module)
 		if util.IsNotFound(err) {
-			if metrics != nil {
-				metrics.RemoveModuleStateMetrics(kyma.Name, moduleStatus.Name)
-			}
+			kymaMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
+			moduleMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
 			moduleStatus.State = stateFromManifest(module)

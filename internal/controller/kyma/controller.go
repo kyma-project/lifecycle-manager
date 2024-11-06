@@ -71,6 +71,7 @@ type Reconciler struct {
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
+	ModuleMetrics       *metrics.ModuleMetrics
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
@@ -499,7 +500,7 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
-	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
+	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics, r.ModuleMetrics)
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)

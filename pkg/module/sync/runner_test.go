@@ -35,11 +35,11 @@ func moduleStillExistsInClusterMock(_ context.Context, _ client.Object) error {
 	return apierrors.NewAlreadyExists(schema.GroupResource{}, "module-still-exists")
 }
 
-type ModuleMockMetrics struct {
+type KymaMockMetrics struct {
 	mock.Mock
 }
 
-func (m *ModuleMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
+func (m *KymaMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
 	m.Called(kymaName, moduleName)
 }
 
@@ -82,10 +82,11 @@ func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			t.Parallel()
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, []string{ModuleShouldKeep}, []string{testCase.ModuleInStatus})
-			mockMetrics := &ModuleMockMetrics{}
+			mockMetrics := &KymaMockMetrics{}
 			const methodToBeCalled = "RemoveModuleStateMetrics"
 			mockMetrics.On(methodToBeCalled, kyma.Name, testCase.ModuleInStatus).Return()
-			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule, mockMetrics)
+			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule,
+				mockMetrics.RemoveModuleStateMetrics, mockMetrics.RemoveModuleStateMetrics)
 			if testCase.expectModuleMetricsGetCalled {
 				mockMetrics.AssertCalled(t, methodToBeCalled, kyma.Name, testCase.ModuleInStatus)
 			} else {
@@ -154,7 +155,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			t.Parallel()
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, testCase.ModulesInKymaSpec, testCase.ModulesInKymaStatus)
-			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule, nil)
+			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule, nil, nil)
 			var modulesInFinalModuleStatus []string
 			for _, moduleStatus := range kyma.Status.Modules {
 				modulesInFinalModuleStatus = append(modulesInFinalModuleStatus, moduleStatus.Name)

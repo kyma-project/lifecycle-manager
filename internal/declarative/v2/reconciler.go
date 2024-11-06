@@ -326,6 +326,9 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		if moduleCRState == shared.StateWarning {
+			if err := r.RecordModuleCRWarningCondition(manifest); err != nil {
+				return err
+			}
 			status.ConfirmModuleCRCondition(manifest)
 		}
 		return status.SetManifestState(manifest, shared.StateDeleting)
