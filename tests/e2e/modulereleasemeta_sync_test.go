@@ -40,7 +40,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v1Version, kcpClient).
 				Should(Succeed())
 
-			Skip("And the ModuleReleaseMeta exists on the SKR Cluster with the correct channel-version")
+			By("And the ModuleReleaseMeta exists on the SKR Cluster with the correct channel-version")
 			Eventually(ModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, skrClient).
@@ -85,7 +85,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(kcpClient, module, v1beta2.DefaultChannel).
 				Should(Succeed())
 
-			Skip("And the Template Operator v2 ModuleTemplate exists in the SKR Cluster")
+			By("And the Template Operator v2 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(skrClient, module, v1beta2.DefaultChannel).
@@ -102,7 +102,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v2Version, kcpClient).
 				Should(Succeed())
 
-			Skip("And the ModuleReleaseMeta exists on the SKR Cluster with the correct channel-version")
+			By("And the ModuleReleaseMeta exists on the SKR Cluster with the correct channel-version")
 			Eventually(ModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, skrClient).
@@ -126,7 +126,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(module.Name, ControlPlaneNamespace, kcpClient).
 				Should(Equal(ErrNotFound))
 
-			Skip("And the ModuleReleaseMeta no longer exists on the SKR Cluster")
+			By("And the ModuleReleaseMeta no longer exists on the SKR Cluster")
 			Eventually(ModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, skrClient).
