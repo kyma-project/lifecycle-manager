@@ -198,10 +198,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	addHealthChecks(mgr, setupLog)
 
-	kcpClientset := kubernetes.NewForConfigOrDie(config)
-	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, setupLog)
-	go zerodw.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
-
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
@@ -209,6 +205,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
+
+	kcpClientset := kubernetes.NewForConfigOrDie(config)
+	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, setupLog)
+	go zerodw.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
 }
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {

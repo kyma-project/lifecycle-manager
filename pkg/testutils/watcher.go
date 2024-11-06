@@ -46,7 +46,8 @@ func CertificateSecretIsCreatedAfter(ctx context.Context,
 }
 
 func TlsSecretRotated(ctx context.Context, oldValue time.Time,
-	namespacedSecretName types.NamespacedName, kcpClient client.Client) error {
+	namespacedSecretName types.NamespacedName, kcpClient client.Client,
+) error {
 	secret, err := GetTlsSecret(ctx, namespacedSecretName, kcpClient)
 	if err != nil {
 		return fmt.Errorf("failed to fetch tls secret: %w", err)
