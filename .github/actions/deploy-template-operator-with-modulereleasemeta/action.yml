@@ -119,8 +119,11 @@ runs:
         security: sec-scanners-config.yaml
         defaultCR: ./config/samples/default-sample-cr.yaml
         manifest: template-operator.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
         modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
@@ -150,8 +153,11 @@ runs:
         security: sec-scanners-config.yaml
         defaultCR: ./config/samples/default-sample-cr.yaml
         manifest: template-operator.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
         modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
@@ -170,8 +176,11 @@ runs:
         manifest: template-operator.yaml
         security: sec-scanners-config.yaml
         defaultCR: ./config/samples/default-sample-cr.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> misconfigured-module-config.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> misconfigured-module-config.yaml
         
         cat <<EOF > mrm.yaml
         apiVersion: operator.kyma-project.io/v1beta2
@@ -237,8 +246,11 @@ runs:
         version: 1.0.0
         manifest: template-operator.yaml
         security: sec-scanners-config.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> module-config-no-cr.yaml
         modulectl create --module-config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-regular/template-operator-1.0.0/g' ./template.yaml
