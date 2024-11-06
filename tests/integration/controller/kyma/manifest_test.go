@@ -139,7 +139,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel, ControlPlaneNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -209,7 +209,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	})
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel, ControlPlaneNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -343,7 +343,8 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 
 	Context("When operator is referenced just by the label name", func() {
 		It("returns the expected operator", func() {
-			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, kyma.Spec.Channel)
+			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, kyma.Spec.Channel,
+				ControlPlaneNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			foundModuleName := moduleTemplate.Labels[shared.ModuleName]
@@ -353,14 +354,16 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 
 	Context("When operator is referenced by Namespace/Name", func() {
 		It("cannot find the operator", func() {
-			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithNamespacedName, kyma.Spec.Channel)
+			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithNamespacedName, kyma.Spec.Channel,
+				ControlPlaneNamespace)
 			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
 		})
 	})
 
 	Context("When operator is referenced by FQDN", func() {
 		It("cannot find the operator", func() {
-			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithFQDN, kyma.Spec.Channel)
+			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithFQDN, kyma.Spec.Channel,
+				ControlPlaneNamespace)
 			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
 		})
 	})
@@ -510,7 +513,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 // getKCPModuleTemplate is a generic ModuleTemplate validation function.
 func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(validateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel, ControlPlaneNamespace)
 		if err != nil {
 			return err
 		}
@@ -527,7 +530,7 @@ func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(m
 // updateKCPModuleTemplate is a generic ModuleTemplate update function.
 func updateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(updateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel, ControlPlaneNamespace)
 		if err != nil {
 			return err
 		}
