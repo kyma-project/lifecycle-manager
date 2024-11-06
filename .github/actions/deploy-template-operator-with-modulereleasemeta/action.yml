@@ -20,7 +20,7 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -118,7 +118,7 @@ runs:
         icons:
         - name: module-icon
           link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
-        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -151,7 +151,7 @@ runs:
         icons:
         - name: module-icon
           link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
-        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -202,7 +202,7 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
         make build-manifests
-        modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -220,7 +220,7 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -241,7 +241,7 @@ runs:
         icons:
         - name: module-icon
           link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> module-config-no-cr.yaml
-        modulectl create --module-config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -287,7 +287,7 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-1.0.1/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
