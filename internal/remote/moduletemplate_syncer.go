@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -50,7 +49,7 @@ func newModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Setti
 // 1. All ModuleTemplates that have to be created based on the ModuleTemplates existing in the  Control Plane.
 // 2. All ModuleTemplates that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-func (mts *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kyma types.NamespacedName, kcpModules []v1beta2.ModuleTemplate) error {
+func (mts *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error {
 	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModules); err != nil {
@@ -73,7 +72,7 @@ func (mts *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kyma types.Names
 }
 
 // DeleteAllManaged deletes all ModuleTemplates managed by KLM from the SKR cluster.
-func (mts *moduleTemplateSyncer) DeleteAllManaged(ctx context.Context, kyma types.NamespacedName) error {
+func (mts *moduleTemplateSyncer) DeleteAllManaged(ctx context.Context) error {
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
 	if err := mts.skrClient.List(ctx, moduleTemplatesRuntime); err != nil {
 		// if there is no CRD or no module template exists,

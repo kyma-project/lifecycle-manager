@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -76,7 +75,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 	}
 
 	// when
-	err = subject.SyncToSKR(context.Background(), types.NamespacedName{Name: "kyma", Namespace: "kcp-system"}, []v1beta2.ModuleReleaseMeta{mrmKCP1, mrmKCP2, mrmKCP3})
+	err = subject.SyncToSKR(context.Background(), []v1beta2.ModuleReleaseMeta{mrmKCP1, mrmKCP2, mrmKCP3})
 
 	// then
 	assert.NoError(t, err)
@@ -136,7 +135,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_nilList(t *testing.T) {
 
 	// when
 	var nilModuleReleaseMetaList []v1beta2.ModuleReleaseMeta = nil
-	err = subject.SyncToSKR(context.Background(), types.NamespacedName{Name: "kyma", Namespace: "kcp-system"}, nilModuleReleaseMetaList)
+	err = subject.SyncToSKR(context.Background(), nilModuleReleaseMetaList)
 
 	// then
 	assert.NoError(t, err)

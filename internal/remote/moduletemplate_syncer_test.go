@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -76,7 +75,7 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl // duplication
 	}
 
 	// when
-	err = subject.SyncToSKR(context.Background(), types.NamespacedName{Name: "kyma", Namespace: "kcp-system"}, []v1beta2.ModuleTemplate{mtKCP1, mtKCP2, mtKCP3})
+	err = subject.SyncToSKR(context.Background(), []v1beta2.ModuleTemplate{mtKCP1, mtKCP2, mtKCP3})
 
 	// then
 	assert.NoError(t, err)
@@ -136,7 +135,7 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 
 	// when
 	var nilModuleTemplateList []v1beta2.ModuleTemplate = nil
-	err = subject.SyncToSKR(context.Background(), types.NamespacedName{Name: "kyma", Namespace: "kcp-system"}, nilModuleTemplateList)
+	err = subject.SyncToSKR(context.Background(), nilModuleTemplateList)
 
 	// then
 	assert.NoError(t, err)

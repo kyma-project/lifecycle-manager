@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -50,7 +49,7 @@ func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Se
 // 1. All ModuleReleaseMeta that have to be created based on the ModuleReleaseMetas existing in the Control Plane.
 // 2. All ModuleReleaseMeta that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context, kyma types.NamespacedName, kcpModuleReleases []v1beta2.ModuleReleaseMeta) error {
+func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context, kcpModuleReleases []v1beta2.ModuleReleaseMeta) error {
 	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModuleReleases); err != nil {
@@ -73,7 +72,7 @@ func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context, kyma types.Na
 }
 
 // DeleteAllManaged deletes all ModuleReleaseMetas managed by KLM from the SKR cluster.
-func (mts *moduleReleaseMetaSyncer) DeleteAllManaged(ctx context.Context, kyma types.NamespacedName) error {
+func (mts *moduleReleaseMetaSyncer) DeleteAllManaged(ctx context.Context) error {
 	moduleReleaseMetasRuntime := &v1beta2.ModuleReleaseMetaList{Items: []v1beta2.ModuleReleaseMeta{}}
 	if err := mts.skrClient.List(ctx, moduleReleaseMetasRuntime); err != nil {
 		// if there is no CRD or no ModuleReleaseMeta exists,

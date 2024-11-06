@@ -29,13 +29,13 @@ type RemoteCatalog struct {
 
 // moduleTemplateSyncAPI encapsulates the top-level abstration for syncing module templates to a remote cluster.
 type moduleTemplateSyncAPI interface {
-	SyncToSKR(ctx context.Context, kyma types.NamespacedName, kcpModules []v1beta2.ModuleTemplate) error
-	DeleteAllManaged(ctx context.Context, kyma types.NamespacedName) error
+	SyncToSKR(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error
+	DeleteAllManaged(ctx context.Context) error
 }
 
 type moduleReleaseMetaSyncAPI interface {
-	SyncToSKR(ctx context.Context, kyma types.NamespacedName, kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta) error
-	DeleteAllManaged(ctx context.Context, kyma types.NamespacedName) error
+	SyncToSKR(ctx context.Context, kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta) error
+	DeleteAllManaged(ctx context.Context) error
 }
 
 // moduleTemplateSyncAPIFactory is a function that creates moduleTemplateSyncAPI instances.
@@ -90,8 +90,8 @@ func (c *RemoteCatalog) Sync(
 	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
 	moduleReleaseMetas := c.moduleReleaseMetaSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
 
-	mtErr := moduleTemplates.SyncToSKR(ctx, kyma, kcpModules)
-	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, kyma, kcpModuleReleaseMeta)
+	mtErr := moduleTemplates.SyncToSKR(ctx, kcpModules)
+	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, kcpModuleReleaseMeta)
 
 	return errors.Join(mtErr, mrmErr)
 }
@@ -106,5 +106,5 @@ func (c *RemoteCatalog) Delete(
 	}
 
 	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
-	return moduleTemplates.DeleteAllManaged(ctx, kyma)
+	return moduleTemplates.DeleteAllManaged(ctx)
 }
