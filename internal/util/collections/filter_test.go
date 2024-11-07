@@ -8,7 +8,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 )
 
-func TestFilter_empty(t *testing.T) {
+func TestInPlaceFilter_empty(t *testing.T) {
 	// given
 	list := []*string{}
 	predicate := func(*string) bool { return true }
@@ -20,7 +20,7 @@ func TestFilter_empty(t *testing.T) {
 	assert.Empty(t, actual)
 }
 
-func TestFilter_predicate_always_matches(t *testing.T) {
+func TestInPlaceFilter_predicate_always_matches(t *testing.T) {
 	// given
 	initial := listOfStringPtr("a", "b", "c")
 	aCopy := append([]*string(nil), initial...) // we use the copy because the filterInPlace may modify the input list.
@@ -34,7 +34,7 @@ func TestFilter_predicate_always_matches(t *testing.T) {
 	assert.Equal(t, initial, actual)
 }
 
-func TestFilter_predicate_never_matches(t *testing.T) {
+func TestInPlaceFilter_predicate_never_matches(t *testing.T) {
 	// given
 	initial := listOfStringPtr("a", "b", "c")
 	aCopy := append([]*string(nil), initial...) // we use the copy because the filterInPlace may modify the input list.
@@ -47,7 +47,7 @@ func TestFilter_predicate_never_matches(t *testing.T) {
 	assert.Empty(t, actual)
 }
 
-func TestFilter_retains_order(t *testing.T) {
+func TestInPlaceFilter_retains_order(t *testing.T) {
 	// given
 	initial := listOfStringPtr("a", "b", "c", "d", "e", "f", "g")
 	aCopy := append([]*string(nil), initial...) // we use the copy because the filterInPlace may modify the input list.
@@ -94,4 +94,51 @@ func listOfStringPtr(strings ...string) []*string {
 
 func inRange(val, lowerBound, upperBound string) bool {
 	return lowerBound < val && val < upperBound
+}
+
+func Test_Filter(t *testing.T) {
+	t.Run("empty list", func(t *testing.T) {
+		// given
+		list := []string{}
+		predicate := func(string) bool { return true }
+
+		// when
+		actual := collections.Filter(list, predicate)
+
+		// then
+		assert.Empty(t, actual)
+	})
+	t.Run("predicate always true", func(t *testing.T) {
+		// given
+		list := []string{"a", "b", "c"}
+		predicate := func(string) bool { return true }
+
+		// when
+		actual := collections.Filter(list, predicate)
+
+		// then
+		assert.Equal(t, list, actual)
+	})
+	t.Run("predicate always false", func(t *testing.T) {
+		// given
+		list := []string{"a", "b", "c"}
+		predicate := func(string) bool { return false }
+
+		// when
+		actual := collections.Filter(list, predicate)
+
+		// then
+		assert.Empty(t, actual)
+	})
+	t.Run("predicate retains order", func(t *testing.T) {
+		// given
+		list := []string{"a", "b", "c", "d", "e", "f", "g", "h"}
+		predicate := func(val string) bool { return inRange(val, "b", "g") && (val != "d") }
+
+		// when
+		actual := collections.Filter(list, predicate)
+
+		// then
+		assert.Equal(t, []string{"c", "e", "f"}, actual)
+	})
 }

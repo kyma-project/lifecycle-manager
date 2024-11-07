@@ -162,7 +162,8 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 				if len(modulesStatus) != 1 {
 					return ErrWrongModulesStatus
 				}
-				template, err := GetModuleTemplate(ctx, kcpClient, module, v1beta2.DefaultChannel)
+				template, err := GetModuleTemplate(ctx, kcpClient, module, v1beta2.DefaultChannel,
+					ControlPlaneNamespace)
 				if err != nil {
 					return err
 				}
@@ -515,7 +516,7 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
 			return UpdateModuleTemplateSpec(ctx, kcpClient,
-				activeModule, InitSpecKey, valueUpdated, createdKyma.Spec.Channel)
+				activeModule, InitSpecKey, valueUpdated, createdKyma.Spec.Channel, ControlPlaneNamespace)
 		}
 		return nil
 	}

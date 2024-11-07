@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -19,20 +20,29 @@ type Settings struct {
 }
 
 type RemoteCatalog struct {
-	kcpClient          client.Client
-	skrContextFactory  SkrContextProvider
-	settings           Settings
-	syncerAPIFactoryFn syncerAPIFactory
+	kcpClient                         client.Client
+	skrContextFactory                 SkrContextProvider
+	settings                          Settings
+	moduleTemplateSyncAPIFactoryFn    moduleTemplateSyncAPIFactory
+	moduleReleaseMetaSyncAPIFactoryFn moduleReleaseMetaSyncAPIFactory
 }
 
-// syncerAPI encapsulates the top-level abstration for syncing module templates to a remote cluster.
-type syncerAPI interface {
-	SyncToSKR(ctx context.Context, kyma types.NamespacedName, kcpModules []v1beta2.ModuleTemplate) error
-	DeleteAllManaged(ctx context.Context, kyma types.NamespacedName) error
+// moduleTemplateSyncAPI encapsulates the top-level abstration for syncing module templates to a remote cluster.
+type moduleTemplateSyncAPI interface {
+	SyncToSKR(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error
+	DeleteAllManaged(ctx context.Context) error
 }
 
-// syncerAPIFactory is a function that creates a new syncerAPI.
-type syncerAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) syncerAPI
+type moduleReleaseMetaSyncAPI interface {
+	SyncToSKR(ctx context.Context, kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta) error
+	DeleteAllManaged(ctx context.Context) error
+}
+
+// moduleTemplateSyncAPIFactory is a function that creates moduleTemplateSyncAPI instances.
+type moduleTemplateSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI
+
+// moduleReleaseMetaSyncAPIFactory is a function that creates moduleReleaseMetaSyncAPI instances.
+type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI
 
 func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
 	remoteSyncNamespace string,
@@ -47,15 +57,20 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 }
 
 func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
-	var syncerAPIFactoryFn syncerAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) syncerAPI {
-		return newSyncer(kcpClient, skrClient, settings)
+	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI {
+		return newModuleTemplateSyncer(kcpClient, skrClient, settings)
+	}
+
+	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI {
+		return newModuleReleaseMetaSyncer(kcpClient, skrClient, settings)
 	}
 
 	res := &RemoteCatalog{
-		kcpClient:          kcpClient,
-		skrContextFactory:  skrContextFactory,
-		settings:           settings,
-		syncerAPIFactoryFn: syncerAPIFactoryFn,
+		kcpClient:                         kcpClient,
+		skrContextFactory:                 skrContextFactory,
+		settings:                          settings,
+		moduleTemplateSyncAPIFactoryFn:    moduleTemplateSyncerAPIFactoryFn,
+		moduleReleaseMetaSyncAPIFactoryFn: moduleReleaseMetaSyncerAPIFactoryFn,
 	}
 
 	return res
@@ -65,14 +80,20 @@ func (c *RemoteCatalog) Sync(
 	ctx context.Context,
 	kyma types.NamespacedName,
 	kcpModules []v1beta2.ModuleTemplate,
+	kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta,
 ) error {
 	skrContext, err := c.skrContextFactory.Get(kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get SkrContext to update remote catalog: %w", err)
 	}
 
-	moduleTemplates := c.syncerAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
-	return moduleTemplates.SyncToSKR(ctx, kyma, kcpModules)
+	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
+	moduleReleaseMetas := c.moduleReleaseMetaSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
+
+	mtErr := moduleTemplates.SyncToSKR(ctx, kcpModules)
+	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, kcpModuleReleaseMeta)
+
+	return errors.Join(mtErr, mrmErr)
 }
 
 func (c *RemoteCatalog) Delete(
@@ -84,6 +105,6 @@ func (c *RemoteCatalog) Delete(
 		return fmt.Errorf("failed to get SkrContext for deleting RemoteCatalog: %w", err)
 	}
 
-	moduleTemplates := c.syncerAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
-	return moduleTemplates.DeleteAllManaged(ctx, kyma)
+	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
+	return moduleTemplates.DeleteAllManaged(ctx)
 }
