@@ -173,6 +173,7 @@ runs:
         popd
         make build-statefulset-manifests
         modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        sed -i '/^spec:/a\  channel: regular\n' ./template.yaml
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
