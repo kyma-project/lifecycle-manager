@@ -15,5 +15,5 @@ packages:
   internal/istio: 63.3
   internal/pkg/resources: 91.7
   internal/remote: 13.2
-  internal/util/collections: 83.3
+  internal/util/collections: 86
   pkg/templatelookup: 77.7
