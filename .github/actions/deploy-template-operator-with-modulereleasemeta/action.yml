@@ -3,6 +3,10 @@ description: Deploys a test-specific template-operator and corresponding ModuleR
 runs:
   using: composite
   steps:
+    - name: Setup HTTPS server for the manifest file
+      uses: ./lifecycle-manager/.github/actions/setup-https-server
+      with:
+        directory_name: ./template-operator
     - name: Create Template Operator Module and apply ModuleTemplate and ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -111,8 +115,8 @@ runs:
         channel: regular
         version: 1.0.1
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        manifest: template-operator.yaml
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         repository: https://github.com/kyma-project/template-operator
         documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
         icons:
@@ -144,8 +148,8 @@ runs:
         channel: regular
         version: 1.0.1
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        manifest: template-operator.yaml
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         repository: https://github.com/kyma-project/template-operator
         documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
         icons:
@@ -165,9 +169,9 @@ runs:
         echo "name: kyma-project.io/module/template-operator-misconfigured
         channel: regular
         version: 1.1.1
-        manifest: template-operator.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
         repository: https://github.com/kyma-project/template-operator
         documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
         icons:
@@ -234,7 +238,7 @@ runs:
         echo "name: kyma-project.io/module/template-operator
         channel: regular
         version: 1.0.0
-        manifest: template-operator.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
         repository: https://github.com/kyma-project/template-operator
         documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
