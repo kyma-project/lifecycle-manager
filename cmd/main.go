@@ -204,7 +204,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
 	kcpClientset := kubernetes.NewForConfigOrDie(config)
-	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient, setupLog)
+	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient)
 	go zerodw.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

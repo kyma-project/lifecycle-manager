@@ -17,7 +17,7 @@ import (
 var (
 	errOldCreationTime     = errors.New("certificate has an old creation timestamp")
 	errNotSyncedSecret     = errors.New("secret is not synced to skr cluster")
-	errTlsSecretNotRotated = errors.New("tls secret did not rotated")
+	errTLSSecretNotRotated = errors.New("tls secret did not rotated")
 )
 
 func CertificateSecretExists(ctx context.Context, secretName types.NamespacedName, k8sClient client.Client) error {
@@ -45,15 +45,15 @@ func CertificateSecretIsCreatedAfter(ctx context.Context,
 	return nil
 }
 
-func TlsSecretRotated(ctx context.Context, oldValue time.Time,
+func TLSSecretRotated(ctx context.Context, oldValue time.Time,
 	namespacedSecretName types.NamespacedName, kcpClient client.Client,
 ) error {
-	secret, err := GetTlsSecret(ctx, namespacedSecretName, kcpClient)
+	secret, err := GetTLSSecret(ctx, namespacedSecretName, kcpClient)
 	if err != nil {
 		return fmt.Errorf("failed to fetch tls secret: %w", err)
 	}
 	if secret.CreationTimestamp.Time == oldValue {
-		return errTlsSecretNotRotated
+		return errTLSSecretNotRotated
 	}
 	return nil
 }
@@ -120,7 +120,7 @@ func GetCACertificate(ctx context.Context, namespacedCertName types.NamespacedNa
 	return caCert, nil
 }
 
-func GetTlsSecret(ctx context.Context, namespacedSecretName types.NamespacedName, k8sClient client.Client,
+func GetTLSSecret(ctx context.Context, namespacedSecretName types.NamespacedName, k8sClient client.Client,
 ) (*apicorev1.Secret, error) {
 	tlsSecret := &apicorev1.Secret{}
 	if err := k8sClient.Get(ctx, namespacedSecretName, tlsSecret); err != nil {

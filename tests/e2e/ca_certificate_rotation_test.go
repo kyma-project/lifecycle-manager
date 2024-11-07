@@ -38,11 +38,11 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 				Name:      watcher.ResolveTLSCertName(kyma.Name),
 				Namespace: "istio-system",
 			}
-			tlsSecret, err := GetTlsSecret(ctx, namespacedSecretName, kcpClient)
+			tlsSecret, err := GetTLSSecret(ctx, namespacedSecretName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
 
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
-			Eventually(TlsSecretRotated, 4*time.Minute).
+			Eventually(TLSSecretRotated, 4*time.Minute).
 				WithContext(ctx).
 				WithArguments(tlsSecret.CreationTimestamp.Time, namespacedSecretName, kcpClient).
 				Should(Succeed())

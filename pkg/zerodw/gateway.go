@@ -28,11 +28,10 @@ type GatewaySecretHandler struct {
 	*secretManager
 }
 
-func NewGatewaySecretHandler(kcpClient client.Client, log logr.Logger) *GatewaySecretHandler {
+func NewGatewaySecretHandler(kcpClient client.Client) *GatewaySecretHandler {
 	return &GatewaySecretHandler{
 		secretManager: &secretManager{
 			kcpClient: kcpClient,
-			log:       log,
 		},
 	}
 }
@@ -52,11 +51,7 @@ func (gsh *GatewaySecretHandler) ManageGatewaySecret(rootSecret *apicorev1.Secre
 
 func (gsh *GatewaySecretHandler) handleNonExisting(rootSecret *apicorev1.Secret) error {
 	gwSecret := gsh.newGatewaySecret(rootSecret)
-	err := gsh.create(context.Background(), gwSecret)
-	if err == nil {
-		gsh.log.Info("created the gateway secret", "reason", "gateway secret does not exist")
-	}
-	return err
+	return gsh.create(context.Background(), gwSecret)
 }
 
 func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gwSecret *apicorev1.Secret) error {
@@ -78,12 +73,7 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 	gwSecret.Data["tls.crt"] = rootSecret.Data["tls.crt"]
 	gwSecret.Data["tls.key"] = rootSecret.Data["tls.key"]
 	gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
-	err := gsh.update(context.Background(), gwSecret)
-	if err == nil {
-		gsh.log.Info("updated the gateway secret", "reason", "root ca is more recent than the gateway secret")
-	}
-
-	return nil
+	return gsh.update(context.Background(), gwSecret)
 }
 
 func (gsh *GatewaySecretHandler) findGatewaySecret() (*apicorev1.Secret, error) {
