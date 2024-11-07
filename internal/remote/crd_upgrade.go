@@ -9,6 +9,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type SyncCrdsUseCase struct {
@@ -47,11 +49,12 @@ func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool
 	if err != nil {
 		return false, fmt.Errorf("failed to get SKR context: %w", err)
 	}
+
 	kymaCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, skrContext.Client, kyma, shared.KymaKind.Plural())
 	if err != nil {
 		err = client.IgnoreNotFound(err)
 		if err != nil {
-			return false, fmt.Errorf("failed to fetch module template CRDs and update Kyma annotations: %w", err)
+			return false, fmt.Errorf("failed to fetch Kyma CRDs and update Kyma annotations: %w", err)
 		}
 	}
 
@@ -60,11 +63,20 @@ func (s *SyncCrdsUseCase) Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool
 	if err != nil {
 		err = client.IgnoreNotFound(err)
 		if err != nil {
-			return false, fmt.Errorf("failed to fetch kyma CRDs and update Kyma annotations: %w", err)
+			return false, fmt.Errorf("failed to fetch ModuleTemplate CRDs and update Kyma annotations: %w", err)
 		}
 	}
 
-	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
+	moduleReleaseMetaCrdUpdated, err := s.fetchCrdsAndUpdateKymaAnnotations(ctx, skrContext.Client, kyma,
+		shared.ModuleReleaseMetaKind.Plural())
+	if err != nil {
+		err = client.IgnoreNotFound(err)
+		if err != nil {
+			return false, fmt.Errorf("failed to fetch ModuleReleaseMeta CRDs and update Kyma annotations: %w", err)
+		}
+	}
+
+	return kymaCrdUpdated || moduleTemplateCrdUpdated || moduleReleaseMetaCrdUpdated, nil
 }
 
 func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.CustomResourceDefinition) error {
@@ -225,4 +237,61 @@ func cannotFoundResource(err error) bool {
 		}
 	}
 	return false
+}
+
+func crdReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
+	for _, cond := range crd.Status.Conditions {
+		if cond.Type == apiextensionsv1.Established &&
+			cond.Status == apiextensionsv1.ConditionTrue {
+			return true
+		}
+
+		if cond.Type == apiextensionsv1.NamesAccepted &&
+			cond.Status == apiextensionsv1.ConditionFalse {
+			// This indicates a naming conflict, but it's probably not the
+			// job of this function to fail because of that. Instead,
+			// we treat it as a success, since the process should be able to
+			// continue.
+			return true
+		}
+	}
+	return false
+}
+
+func containsCRDNotFoundError(errs []error) bool {
+	for _, err := range errs {
+		unwrappedError := errors.Unwrap(err)
+		if meta.IsNoMatchError(unwrappedError) || CRDNotFoundErr(unwrappedError) {
+			return true
+		}
+	}
+	return false
+}
+
+func createCRDInRuntime(ctx context.Context, crdKind shared.Kind, crdNotReadyErr error, kcpClient client.Client, skrClient client.Client) error {
+	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
+	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
+	objKey := client.ObjectKey{
+		Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group),
+	}
+	err := kcpClient.Get(ctx, objKey, kcpCrd)
+	if err != nil {
+		return fmt.Errorf("failed to get %s CRD from KCP: %w", string(crdKind), err)
+	}
+
+	err = skrClient.Get(ctx, objKey, skrCrd)
+
+	if util.IsNotFound(err) || !ContainsLatestVersion(skrCrd, v1beta2.GroupVersion.Version) {
+		return PatchCRD(ctx, skrClient, kcpCrd)
+	}
+
+	if !crdReady(skrCrd) {
+		return crdNotReadyErr
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get %s CRD from SKR: %w", string(crdKind), err)
+	}
+
+	return nil
 }
