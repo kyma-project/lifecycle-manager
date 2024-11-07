@@ -13,8 +13,8 @@ if [[ -z "$DIRECTORY_TO_SERVE" ]]; then
 fi
 
 echo "Generating self-signed certificate..."
-openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 365 -nodes -subj "/CN=localhost"
+openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -nodes -subj "/CN=localhost"
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
-python3 scripts/tests/https_server.py "$DIRECTORY_TO_SERVE" "$CERT_FILE" "$KEY_FILE" "$PORT"
+nohup python3 scripts/tests/https_server.py "$DIRECTORY_TO_SERVE" "$CERT_FILE" "$KEY_FILE" "$PORT" &
