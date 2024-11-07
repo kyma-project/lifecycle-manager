@@ -103,29 +103,26 @@ func (gsh *GatewaySecretHandler) newGatewaySecret(rootSecret *apicorev1.Secret) 
 }
 
 func WatchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecretHandler *GatewaySecretHandler,
-	setupLog logr.Logger,
+	log logr.Logger,
 ) {
-	secretWatch, err := clientset.CoreV1().Secrets("istio-system").Watch(context.Background(), apimetav1.ListOptions{
+	secretWatch, err := clientset.CoreV1().Secrets(istioNamespace).Watch(context.Background(), apimetav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start watching root certificate")
-		return
+		log.Error(err, "unable to start watching root certificate")
+		panic(err)
 	}
 
 	for event := range secretWatch.ResultChan() {
-		item, ok := event.Object.(*apicorev1.Secret)
-		if !ok {
-			setupLog.Info("unable to convert object to secret", "object", event.Object)
-		}
+		rootCASecret, _ := event.Object.(*apicorev1.Secret)
 
 		switch event.Type {
 		case watch.Added:
 			fallthrough
 		case watch.Modified:
-			err := gatewaySecretHandler.ManageGatewaySecret(item)
+			err := gatewaySecretHandler.ManageGatewaySecret(rootCASecret)
 			if err != nil {
-				setupLog.Error(err, "unable to manage istio gateway secret")
+				log.Error(err, "unable to manage istio gateway secret")
 			}
 		case watch.Deleted:
 			fallthrough
@@ -134,7 +131,7 @@ func WatchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecre
 		case watch.Bookmark:
 			fallthrough
 		default:
-			setupLog.Info("ignored event type", "event", event.Type)
+			continue
 		}
 	}
 }
