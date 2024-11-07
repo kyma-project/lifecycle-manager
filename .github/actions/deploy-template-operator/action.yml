@@ -6,7 +6,7 @@ runs:
     - name: Setup HTTPS server for the manifest file
       uses: ./lifecycle-manager/.github/actions/setup-https-server
       with:
-        directory_name: ./template-operator
+        directory_name: ../template-operator
     - name: Create Template Operator Module and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
