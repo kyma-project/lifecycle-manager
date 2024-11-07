@@ -33,6 +33,12 @@ func (m ModuleReleaseMetaBuilder) WithName(name string) ModuleReleaseMetaBuilder
 	return m
 }
 
+func (m ModuleReleaseMetaBuilder) WithSingleModuleChannelAndVersions(channel, version string) ModuleReleaseMetaBuilder {
+	chanVer := v1beta2.ChannelVersionAssignment{Channel: channel, Version: version}
+	m.moduleReleaseMeta.Spec.Channels = append(m.moduleReleaseMeta.Spec.Channels, chanVer)
+	return m
+}
+
 func (m ModuleReleaseMetaBuilder) WithModuleChannelAndVersions(channelVersions []v1beta2.ChannelVersionAssignment) ModuleReleaseMetaBuilder {
 	m.moduleReleaseMeta.Spec.Channels = append(m.moduleReleaseMeta.Spec.Channels, channelVersions...)
 	return m

@@ -17,13 +17,14 @@ func GetModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	defaultChannel string,
+	namespace string,
 ) (*v1beta2.ModuleTemplate, error) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider)
 	availableModule := templatelookup.AvailableModule{
 		Module: module,
 	}
-	templateInfo := templateLookup.PopulateModuleTemplateInfo(ctx, availableModule, ControlPlaneNamespace,
+	templateInfo := templateLookup.PopulateModuleTemplateInfo(ctx, availableModule, namespace,
 		defaultChannel)
 
 	if templateInfo.Err != nil {
@@ -36,8 +37,9 @@ func ModuleTemplateExists(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	defaultChannel string,
+	namespace string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, defaultChannel)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, defaultChannel, namespace)
 	if moduleTemplate == nil || errors.Is(err, templatelookup.ErrNoTemplatesInListResult) {
 		return ErrNotFound
 	}
@@ -47,7 +49,7 @@ func ModuleTemplateExists(ctx context.Context,
 
 func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
 	for _, module := range kyma.Spec.Modules {
-		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel); err != nil {
+		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel, kyma.Namespace); err != nil {
 			return err
 		}
 	}
@@ -61,8 +63,9 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	key,
 	newValue,
 	kymaChannel string,
+	namespace string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
 	if err != nil {
 		return err
 	}
@@ -77,9 +80,9 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 }
 
 func DeleteModuleTemplate(ctx context.Context,
-	clnt client.Client, module v1beta2.Module, kymaChannel string,
+	clnt client.Client, module v1beta2.Module, kymaChannel string, namespace string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
 	if util.IsNotFound(err) {
 		return nil
 	}
@@ -92,9 +95,9 @@ func DeleteModuleTemplate(ctx context.Context,
 }
 
 func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client, module v1beta2.Module,
-	channel string,
+	channel string, namespace string,
 ) (string, error) {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, channel)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, channel, namespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
 	}
