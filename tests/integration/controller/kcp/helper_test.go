@@ -175,16 +175,24 @@ func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace
 }
 
 func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinition, error) {
-	crd, err := fetchCrd(clnt, shared.KymaKind)
+	return updateCRDPropertyDescription(clnt, shared.KymaKind, "channel", "test change")
+}
+
+func updateModuleReleaseMetaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinition, error) {
+	return updateCRDPropertyDescription(clnt, shared.ModuleReleaseMetaKind, "channels", "test change")
+}
+
+func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind, propertyName, newValue string) (*apiextensionsv1.CustomResourceDefinition, error) {
+	crd, err := fetchCrd(clnt, crdKind)
 	if err != nil {
 		return nil, err
 	}
 
 	crd.SetManagedFields(nil)
 	crdSpecVersions := crd.Spec.Versions
-	channelProperty := getCrdSpec(crd).Properties["channel"]
-	channelProperty.Description = "test change"
-	getCrdSpec(crd).Properties["channel"] = channelProperty
+	channelProperty := getCrdSpec(crd).Properties[propertyName]
+	channelProperty.Description = newValue
+	getCrdSpec(crd).Properties[propertyName] = channelProperty
 	crd.Spec = apiextensionsv1.CustomResourceDefinitionSpec{
 		Versions:              crdSpecVersions,
 		Names:                 crd.Spec.Names,
@@ -199,13 +207,13 @@ func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinitio
 		client.FieldOwner(shared.OperatorName)); err != nil {
 		return nil, err
 	}
-	crd, err = fetchCrd(clnt, shared.KymaKind)
-	kymaCrdName := fmt.Sprintf("%s.%s", shared.KymaKind.Plural(), v1beta2.GroupVersion.Group)
+	crd, err = fetchCrd(clnt, crdKind)
+	crdName := fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group)
 
 	// Replace the cached CRD after updating the KCP CRD to validate that
 	// the Generation values are updated correctly
-	if _, ok := crdCache.Get(kymaCrdName); ok {
-		crdCache.Add(kymaCrdName, *crd)
+	if _, ok := crdCache.Get(crdName); ok {
+		crdCache.Add(crdName, *crd)
 	}
 	if err != nil {
 		return nil, err
