@@ -22,7 +22,6 @@ runs:
         }}
       shell: bash
       run: |
-        make build-manifests
         modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
