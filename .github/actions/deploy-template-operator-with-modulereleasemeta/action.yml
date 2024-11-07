@@ -292,7 +292,6 @@ runs:
       if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
       shell: bash
       run: |
-        make build-manifests
         modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/template-operator-1.0.1/template-operator-regular/g' ./template.yaml
