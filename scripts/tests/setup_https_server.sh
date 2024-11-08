@@ -41,8 +41,8 @@ EOF
 echo "Generating self-signed certificate..."
 openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -nodes -config openssl.cnf
 
-sudo cp $CERT_FILE /etc/ssl/certs/
-sudo update-ca-certificates
+sudo -S cp $CERT_FILE /etc/ssl/certs/
+sudo -S update-ca-certificates
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
