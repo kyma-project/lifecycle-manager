@@ -48,9 +48,8 @@ type ModuleTemplateSpec struct {
 	// Deprecated: This field is deprecated and will be removed in a future release.
 	// +optional
 	// +kubebuilder:deprecatedversion
-	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:Pattern:=`^$|^[a-z]{3,}$`
 	// +kubebuilder:validation:MaxLength:=32
-	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
 	// Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
