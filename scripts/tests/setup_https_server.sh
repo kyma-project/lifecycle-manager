@@ -44,7 +44,10 @@ openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -n
 sudo cp $CERT_FILE /etc/ssl/certs/
 sudo update-ca-certificates
 
-mitmproxy --listen-port 8081 --mode reverse:https://localhost:8080
+curl -Lo mitmproxy https://github.com/mitmproxy/mitmproxy/releases/latest/download/mitmproxy
+chmod +x mitmproxy
+
+./mitmproxy --listen-port 8081 --mode reverse:https://localhost:8080
 export HTTPS_PROXY=http://localhost:8081
 
 # Start Python HTTPS server
