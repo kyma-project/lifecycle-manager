@@ -21,7 +21,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.9.0
-	golang.org/x/time v0.7.0
+	golang.org/x/time v0.8.0
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	ocm.software/ocm v0.17.0
 	sigs.k8s.io/controller-runtime v0.19.1
