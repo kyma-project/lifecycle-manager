@@ -84,6 +84,14 @@ var _ = Describe("Given invalid channel which is rejected by CRD validation rule
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
 		},
 		Entry(
+			"invalid channel with not allowed characters",
+			givenModuleTemplateWithChannel(InValidChannel, false),
+		),
+		Entry(
+			"invalid channel with less than min length",
+			givenModuleTemplateWithChannel(InValidMinLengthChannel, false),
+		),
+		Entry(
 			"invalid channel with more than max length",
 			givenModuleTemplateWithChannel(InValidMaxLengthChannel, false),
 		),
