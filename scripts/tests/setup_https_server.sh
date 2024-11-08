@@ -41,9 +41,11 @@ EOF
 echo "Generating self-signed certificate..."
 openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -nodes -config openssl.cnf
 
-export SSL_CERT_FILE=$CERT_FILE
-#echo "" | sudo -S cp $CERT_FILE /etc/ssl/certs/
-#echo "" | sudo -S update-ca-certificates
+sudo cp $CERT_FILE /etc/ssl/certs/
+sudo update-ca-certificates
+
+mitmproxy --listen-port 8081 --mode reverse:https://localhost:8080
+export HTTPS_PROXY=http://localhost:8081
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
