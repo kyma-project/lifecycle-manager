@@ -44,10 +44,11 @@ openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -n
 sudo cp $CERT_FILE /etc/ssl/certs/
 sudo update-ca-certificates
 
-curl -Lo mitmproxy https://github.com/mitmproxy/mitmproxy/releases/latest/download/mitmproxy
-chmod +x mitmproxy
+wget https://downloads.mitmproxy.org/11.0.0/mitmproxy-11.0.0-linux-x86_64.tar.gz -O mitmproxy.tar.gz
+tar -xzvf mitmproxy.tar.gz
+chmod +x mitmdump
 
-./mitmproxy --listen-port 8081 --mode reverse:https://localhost:8080
+./mitmdump --listen-port 8081 --mode reverse:https://localhost:8080 &
 export HTTPS_PROXY=http://localhost:8081
 
 # Start Python HTTPS server
