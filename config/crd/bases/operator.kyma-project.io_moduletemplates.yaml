@@ -51,6 +51,7 @@ spec:
                   to a target channel. It has to be provided at any given time.
                   Deprecated: This field is deprecated and will be removed in a future release.
                 maxLength: 32
+                pattern: ^$|^[a-z]{3,}$
                 type: string
               customStateCheck:
                 items:
@@ -180,6 +181,7 @@ spec:
                   to a target channel. It has to be provided at any given time.
                   Deprecated: This field is deprecated and will be removed in a future release.
                 maxLength: 32
+                pattern: ^$|^[a-z]{3,}$
                 type: string
               customStateCheck:
                 description: CustomStateCheck is deprecated.
