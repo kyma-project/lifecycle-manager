@@ -31,6 +31,7 @@ CN = localhost  # Common Name, change to your domain/IP if needed
 
 [ v3_ca ]
 subjectAltName = @alt_names
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 
 [ alt_names ]
 DNS.1 = localhost
@@ -43,13 +44,6 @@ openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -n
 
 sudo cp $CERT_FILE /etc/ssl/certs/
 sudo update-ca-certificates
-
-wget https://downloads.mitmproxy.org/11.0.0/mitmproxy-11.0.0-linux-x86_64.tar.gz -O mitmproxy.tar.gz
-tar -xzvf mitmproxy.tar.gz
-chmod +x mitmdump
-
-./mitmdump --listen-port 8081 --mode reverse:https://localhost:8080 &
-export HTTPS_PROXY=http://localhost:8081
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
