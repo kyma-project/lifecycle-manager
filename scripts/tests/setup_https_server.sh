@@ -52,12 +52,9 @@ for cert in $HOME/.local/share/ca-certificates/*.crt; do
     ln -s "$cert" $HOME/.local/share/ca-certificates/$(openssl x509 -hash -noout -in "$cert").0
 done
 
-# Set the environment variable so that SSL/TLS libraries use your custom CA store
-export SSL_CERT_DIR=$HOME/.local/share/ca-certificates
-export CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt
-
-#sudo cp $CERT_FILE /etc/ssl/certs/
-#sudo update-ca-certificates
+# Set the environment variable so that SSL/TLS libraries use the custom CA store
+echo SSL_CERT_DIR=$HOME/.local/share/ca-certificates >> $GITHUB_ENV
+echo CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt >> $GITHUB_ENV
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"

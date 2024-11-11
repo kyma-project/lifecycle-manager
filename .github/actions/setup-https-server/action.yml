@@ -10,4 +10,5 @@ runs:
     - name: Serve HTTPs server
       working-directory: ./lifecycle-manager
       shell: bash
-      run: ./scripts/tests/setup_https_server.sh ${{ inputs.directory_name }}
+      run: |
+        ./scripts/tests/setup_https_server.sh ${{ inputs.directory_name }}
