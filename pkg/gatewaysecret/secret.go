@@ -1,4 +1,4 @@
-package zerodw
+package gatewaysecret
 
 import (
 	"context"

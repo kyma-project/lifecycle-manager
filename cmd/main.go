@@ -63,11 +63,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "ocm.software/ocm/api/ocm"
@@ -214,9 +214,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 func setupIstioGatewaySecretRotation(config *rest.Config, kcpClient *remote.ConfigAndClient, setupLog logr.Logger) {
 	kcpClientset := kubernetes.NewForConfigOrDie(config)
-	gatewaySecretHandler := zerodw.NewGatewaySecretHandler(kcpClient)
+	gatewaySecretHandler := gatewaysecret.NewGatewaySecretHandler(kcpClient)
 
-	go zerodw.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
+	go gatewaysecret.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
 }
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {

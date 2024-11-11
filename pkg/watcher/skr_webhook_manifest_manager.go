@@ -19,9 +19,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 )
 
 type SKRWebhookManifestManager struct {
@@ -87,7 +87,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	_, err = getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
 		Namespace: m.certificateConfig.IstioNamespace,
-		Name:      zerodw.GatewaySecretName,
+		Name:      gatewaysecret.GatewaySecretName,
 	})
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 
 	gatewaySecret, err := getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
 		Namespace: m.certificateConfig.IstioNamespace,
-		Name:      zerodw.GatewaySecretName,
+		Name:      gatewaysecret.GatewaySecretName,
 	})
 	if err != nil {
 		return nil, err

@@ -19,8 +19,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -188,10 +188,10 @@ func createWatcherSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 func createGatewaySecret() *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      zerodw.GatewaySecretName,
+			Name:      gatewaysecret.GatewaySecretName,
 			Namespace: istioSystemNs,
 			Annotations: map[string]string{
-				zerodw.LastModifiedAtAnnotation: apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+				gatewaysecret.LastModifiedAtAnnotation: apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339),
 			},
 		},
 		Data: map[string][]byte{

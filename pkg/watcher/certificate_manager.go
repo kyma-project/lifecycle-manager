@@ -16,9 +16,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/zerodw"
 )
 
 const (
@@ -268,7 +268,7 @@ func (e *CertificateNotReadyError) Error() string {
 func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kymaObjKey client.ObjectKey) error {
 	gatewaySecret, err := getCertificateSecret(ctx, c.kcpClient, client.ObjectKey{
 		Namespace: c.config.IstioNamespace,
-		Name:      zerodw.GatewaySecretName,
+		Name:      gatewaysecret.GatewaySecretName,
 	})
 	if err != nil {
 		return err
@@ -293,7 +293,7 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 }
 
 func isGatewaySecretNewerThanWatcherCert(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
-	if gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[zerodw.LastModifiedAtAnnotation]; ok {
+	if gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[gatewaysecret.LastModifiedAtAnnotation]; ok {
 		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
 			if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
 				return false
