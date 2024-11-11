@@ -44,8 +44,8 @@ openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -n
 # Create a local CA certificate store
 mkdir -p $HOME/.local/share/ca-certificates
 
-# Copy your self-signed certificate to the store
-cp server.crt $HOME/.local/share/ca-certificates/
+# Copy self-signed certificate to the store
+cp $CERT_FILE $HOME/.local/share/ca-certificates/
 
 # Update the certificate bundle
 for cert in $HOME/.local/share/ca-certificates/*.crt; do
