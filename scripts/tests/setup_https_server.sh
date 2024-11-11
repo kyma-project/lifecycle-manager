@@ -38,12 +38,26 @@ DNS.1 = localhost
 IP.1 = 127.0.0.1
 EOF
 
-
-echo "Generating self-signed certificate..."
+echo "Generating certificate..."
 openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 30 -nodes -config openssl.cnf
 
-sudo cp $CERT_FILE /etc/ssl/certs/
-sudo update-ca-certificates
+# Create a local CA certificate store
+mkdir -p $HOME/.local/share/ca-certificates
+
+# Copy your self-signed certificate to the store
+cp server.crt $HOME/.local/share/ca-certificates/
+
+# Update the certificate bundle
+for cert in $HOME/.local/share/ca-certificates/*.crt; do
+    ln -s "$cert" $HOME/.local/share/ca-certificates/$(openssl x509 -hash -noout -in "$cert").0
+done
+
+# Set the environment variable so that SSL/TLS libraries use your custom CA store
+export SSL_CERT_DIR=$HOME/.local/share/ca-certificates
+export CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt
+
+#sudo cp $CERT_FILE /etc/ssl/certs/
+#sudo update-ca-certificates
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
