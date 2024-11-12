@@ -29,8 +29,8 @@
       "options": {
         "env": {
           "LOCAL_IMG": "localhost:5111/lifecycle-manager",
-          "CLUSTER_IMG": "k3d-myregistry.localhost:5000/lifecycle-manager",
-          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+          "CLUSTER_IMG": "k3d-kcp-registry.localhost:5000/lifecycle-manager",
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml"
 
         }
       }

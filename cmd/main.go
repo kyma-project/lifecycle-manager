@@ -183,7 +183,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	moduleMetrics := metrics.NewModuleMetrics()
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics,
+		kymaMetrics, moduleMetrics,
 		setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, moduleMetrics, setupLog,
 		eventRecorder)
@@ -280,15 +280,10 @@ func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager,
-	descriptorProvider *provider.CachedDescriptorProvider,
-	skrContextFactory remote.SkrContextProvider,
-	event event.Event,
-	flagVar *flags.FlagVar,
-	options ctrlruntime.Options,
-	skrWebhookManager *watcher.SKRWebhookManifestManager,
-	kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger,
+func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
+	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
+	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
+	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 	if err := (&kyma.Reconciler{
@@ -308,6 +303,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
+		ModuleMetrics:       moduleMetrics,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
