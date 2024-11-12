@@ -151,6 +151,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		ModuleMetrics:       metrics.NewModuleMetrics(),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

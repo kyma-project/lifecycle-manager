@@ -164,7 +164,7 @@ func GetModuleCRWarningConditionMetric(ctx context.Context, kymaName, moduleName
 }
 
 func getModuleCRWarningConditionMetric(kymaName, moduleName string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf(`%s{kyma_name="%s",module_name="%s",condition="ModuleCRWarning"} (\d+)`,
+	return regexp.MustCompile(fmt.Sprintf(`%s{condition="ModuleCRWarning",kyma_name="%s",module_name="%s"} (\d+)`,
 		metrics.MetricModuleCondition, kymaName, moduleName))
 }
 
