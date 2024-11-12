@@ -79,9 +79,8 @@ type ModuleTemplateSpec struct {
 	// Deprecated: This field is deprecated and will be removed in a future release.
 	// +optional
 	// +kubebuilder:deprecatedversion
-	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:Pattern:=`^$|^[a-z]{3,}$`
 	// +kubebuilder:validation:MaxLength:=32
-	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
 	// Version identifies the version of the Module. Can be empty, or a semantic version.

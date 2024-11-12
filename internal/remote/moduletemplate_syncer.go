@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -13,28 +12,30 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type syncWorker interface {
+// moduleTemplateSyncWorker is an interface for worker synchronizing ModuleTemplates from KCP to SKR.
+type moduleTemplateSyncWorker interface {
 	SyncConcurrently(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error
 	DeleteConcurrently(ctx context.Context, runtimeModules []v1beta2.ModuleTemplate) error
 }
 
-type syncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) syncWorker
+// moduleTemplateSyncWorkerFactory is a factory function for creating new moduleTemplateSyncWorker instance.
+type moduleTemplateSyncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker
 
-// syncer provides a top-level API for synchronizing ModuleTemplates from KCP to SKR.
+// moduleTemplateSyncer provides a top-level API for synchronizing ModuleTemplates from KCP to SKR.
 // It expects a ready-to-use client to the KCP and SKR cluster.
-type syncer struct {
+type moduleTemplateSyncer struct {
 	kcpClient           client.Client
 	skrClient           client.Client
 	settings            *Settings
-	syncWorkerFactoryFn syncWorkerFactory
+	syncWorkerFactoryFn moduleTemplateSyncWorkerFactory
 }
 
-func newSyncer(kcpClient, skrClient client.Client, settings *Settings) *syncer {
-	var syncWokerFactoryFn syncWorkerFactory = func(kcpClient, skrClient client.Client, settings *Settings) syncWorker {
+func newModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateSyncer {
+	var syncWokerFactoryFn moduleTemplateSyncWorkerFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
 		return newModuleTemplateConcurrentWorker(kcpClient, skrClient, settings)
 	}
 
-	return &syncer{
+	return &moduleTemplateSyncer{
 		kcpClient:           kcpClient,
 		skrClient:           skrClient,
 		settings:            settings,
@@ -42,13 +43,13 @@ func newSyncer(kcpClient, skrClient client.Client, settings *Settings) *syncer {
 	}
 }
 
-// Sync first lists all currently available moduleTemplates in the Runtime.
+// SyncToSKR first lists all currently available moduleTemplates in the Runtime.
 // If there is a NoMatchError, it will attempt to install the CRD but only if there are available crs to copy.
 // It will use a 2 stage process:
-// 1. All ModuleTemplates that either have to be created based on the given Control Plane Templates
-// 2. All ModuleTemplates that have to be removed as they were deleted form the Control Plane Templates
+// 1. All ModuleTemplates that have to be created based on the ModuleTemplates existing in the  Control Plane.
+// 2. All ModuleTemplates that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-func (mts *syncer) SyncToSKR(ctx context.Context, kyma types.NamespacedName, kcpModules []v1beta2.ModuleTemplate) error {
+func (mts *moduleTemplateSyncer) SyncToSKR(ctx context.Context, kcpModules []v1beta2.ModuleTemplate) error {
 	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModules); err != nil {
@@ -62,16 +63,16 @@ func (mts *syncer) SyncToSKR(ctx context.Context, kyma types.NamespacedName, kcp
 		if meta.IsNoMatchError(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to list module templates from runtime: %w", err)
+		return fmt.Errorf("failed to list ModuleTemplates from runtime: %w", err)
 	}
 
 	diffsToDelete := moduleTemplatesDiffFor(runtimeModules.Items).NotExistingIn(kcpModules)
-	diffsToDelete = collections.FilterInPlace(diffsToDelete, isManagedByKcp)
+	diffsToDelete = collections.FilterInPlace(diffsToDelete, isModuleTemplateManagedByKcp)
 	return worker.DeleteConcurrently(ctx, collections.Dereference(diffsToDelete))
 }
 
-// DeleteFromSKR deletes all ModuleTemplates managed by KLM from the SKR cluster.
-func (mts *syncer) DeleteAllManaged(ctx context.Context, kyma types.NamespacedName) error {
+// DeleteAllManaged deletes all ModuleTemplates managed by KLM from the SKR cluster.
+func (mts *moduleTemplateSyncer) DeleteAllManaged(ctx context.Context) error {
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
 	if err := mts.skrClient.List(ctx, moduleTemplatesRuntime); err != nil {
 		// if there is no CRD or no module template exists,
@@ -79,13 +80,13 @@ func (mts *syncer) DeleteAllManaged(ctx context.Context, kyma types.NamespacedNa
 		if util.IsNotFound(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to list module templates from skr: %w", err)
+		return fmt.Errorf("failed to list ModuleTemplates from skr: %w", err)
 	}
 	for i := range moduleTemplatesRuntime.Items {
-		if isManagedByKcp(&moduleTemplatesRuntime.Items[i]) {
+		if isModuleTemplateManagedByKcp(&moduleTemplatesRuntime.Items[i]) {
 			if err := mts.skrClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
 				!util.IsNotFound(err) {
-				return fmt.Errorf("failed to delete module template from skr: %w", err)
+				return fmt.Errorf("failed to delete ModuleTemplate from skr: %w", err)
 			}
 		}
 	}
@@ -102,7 +103,7 @@ func moduleTemplatesDiffFor(first []v1beta2.ModuleTemplate) *collections.DiffCal
 	}
 }
 
-func isManagedByKcp(skrTemplate *v1beta2.ModuleTemplate) bool {
+func isModuleTemplateManagedByKcp(skrTemplate *v1beta2.ModuleTemplate) bool {
 	for _, managedFieldEntry := range skrTemplate.ObjectMeta.ManagedFields {
 		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
 			return true

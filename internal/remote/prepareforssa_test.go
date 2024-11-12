@@ -32,7 +32,7 @@ func TestPrepareForSSA(t *testing.T) {
 		assert.Equal(t, "bar", testModule.GetLabels()["foo"])
 		assert.Equal(t, "default", testModule.GetNamespace())
 
-		prepareForSSA(&testModule, "someNamespace")
+		prepareModuleTemplateForSSA(&testModule, "someNamespace")
 
 		assert.Equal(t, "", testModule.GetResourceVersion())
 		assert.EqualValues(t, "", testModule.GetUID())
@@ -46,7 +46,7 @@ func TestPrepareForSSA(t *testing.T) {
 	t.Run("ensure no other fields are modified", func(t *testing.T) {
 		// given
 		testModule := v1beta2.ModuleTemplate{}
-		prepareForSSA(&testModule, "someNamespace")
+		prepareModuleTemplateForSSA(&testModule, "someNamespace")
 
 		afterPrepareJSON, err := json.Marshal(testModule)
 		require.NoError(t, err)

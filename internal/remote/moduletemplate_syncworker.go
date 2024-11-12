@@ -5,24 +5,21 @@ import (
 	"errors"
 	"fmt"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var (
-	errTemplateCRDNotReady = errors.New("module template crd for catalog sync is not ready")
-	errTemplateCleanup     = errors.New("failed to delete obsolete catalog templates")
-	errCatTemplatesApply   = errors.New("could not apply catalog templates")
+	errModuleTemplateCRDNotReady = errors.New("catalog sync: ModuleTemplate CRD is not ready")
+	errModuleTemplateCleanup     = errors.New("catalog sync: Failed to delete obsolete ModuleTemplates")
+	errCatModuleTemplatesApply   = errors.New("catalog sync: Could not apply ModuleTemplates")
 )
 
-// moduleTemplateConcurrentWorker performs synchronization using multiple goroutines.
+// moduleTemplateConcurrentWorker performs ModuleTemplate synchronization using multiple goroutines.
 type moduleTemplateConcurrentWorker struct {
 	namespace  string
 	patchDiff  func(ctx context.Context, obj *v1beta2.ModuleTemplate) error
@@ -33,11 +30,11 @@ type moduleTemplateConcurrentWorker struct {
 // newModuleTemplateConcurrentWorker returns a new moduleTemplateConcurrentWorker instance with default dependencies.
 func newModuleTemplateConcurrentWorker(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
-		return patchDiff(ctx, obj, skrClient, settings.SSAPatchOptions)
+		return patchDiffModuleTemplate(ctx, obj, skrClient, settings.SSAPatchOptions)
 	}
 
 	deleteDiffFn := func(ctx context.Context, obj *v1beta2.ModuleTemplate) error {
-		return patchDelete(ctx, obj, skrClient)
+		return deleteModuleTemplate(ctx, obj, skrClient)
 	}
 
 	createCRDFn := func(ctx context.Context) error {
@@ -59,7 +56,7 @@ func (c *moduleTemplateConcurrentWorker) SyncConcurrently(ctx context.Context, k
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
 		go func() {
-			prepareForSSA(&kcpModules[kcpIndex], c.namespace)
+			prepareModuleTemplateForSSA(&kcpModules[kcpIndex], c.namespace)
 			results <- c.patchDiff(ctx, &kcpModules[kcpIndex])
 		}()
 	}
@@ -78,7 +75,7 @@ func (c *moduleTemplateConcurrentWorker) SyncConcurrently(ctx context.Context, k
 	}
 
 	if len(errs) != 0 {
-		errs = append(errs, errCatTemplatesApply)
+		errs = append(errs, errCatModuleTemplatesApply)
 		return errors.Join(errs...)
 	}
 	return nil
@@ -103,13 +100,17 @@ func (c *moduleTemplateConcurrentWorker) DeleteConcurrently(ctx context.Context,
 	}
 
 	if len(errs) != 0 {
-		errs = append(errs, errTemplateCleanup)
+		errs = append(errs, errModuleTemplateCleanup)
 		return errors.Join(errs...)
 	}
 	return nil
 }
 
-func prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {
+func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Client, skrClient client.Client) error {
+	return createCRDInRuntime(ctx, shared.ModuleTemplateKind, errModuleTemplateCRDNotReady, kcpClient, skrClient)
+}
+
+func prepareModuleTemplateForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
@@ -122,79 +123,22 @@ func prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespace string) {
 	}
 }
 
-func createModuleTemplateCRDInRuntime(ctx context.Context, kcpClient client.Client, skrClient client.Client) error {
-	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
-	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
-	objKey := client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", shared.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group),
-	}
-	err := kcpClient.Get(ctx, objKey, kcpCrd)
-	if err != nil {
-		return fmt.Errorf("failed to get ModuleTemplate CRD from KCP: %w", err)
-	}
-
-	err = skrClient.Get(ctx, objKey, skrCrd)
-
-	if util.IsNotFound(err) || !ContainsLatestVersion(skrCrd, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, skrClient, kcpCrd)
-	}
-
-	if !crdReady(skrCrd) {
-		return errTemplateCRDNotReady
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to get ModuleTemplate CRD from SKR: %w", err)
-	}
-
-	return nil
-}
-
-func crdReady(crd *apiextensionsv1.CustomResourceDefinition) bool {
-	for _, cond := range crd.Status.Conditions {
-		if cond.Type == apiextensionsv1.Established &&
-			cond.Status == apiextensionsv1.ConditionTrue {
-			return true
-		}
-
-		if cond.Type == apiextensionsv1.NamesAccepted &&
-			cond.Status == apiextensionsv1.ConditionFalse {
-			// This indicates a naming conflict, but it's probably not the
-			// job of this function to fail because of that. Instead,
-			// we treat it as a success, since the process should be able to
-			// continue.
-			return true
-		}
-	}
-	return false
-}
-
-func containsCRDNotFoundError(errs []error) bool {
-	for _, err := range errs {
-		unwrappedError := errors.Unwrap(err)
-		if meta.IsNoMatchError(unwrappedError) || CRDNotFoundErr(unwrappedError) {
-			return true
-		}
-	}
-	return false
-}
-
-func patchDiff(ctx context.Context, diff *v1beta2.ModuleTemplate, skrClient client.Client, ssaPatchOptions *client.PatchOptions) error {
+func patchDiffModuleTemplate(ctx context.Context, diff *v1beta2.ModuleTemplate, skrClient client.Client, ssaPatchOptions *client.PatchOptions) error {
 	err := skrClient.Patch(
 		ctx, diff, client.Apply, ssaPatchOptions,
 	)
 	if err != nil {
-		return fmt.Errorf("could not apply module template diff: %w", err)
+		return fmt.Errorf("could not apply ModuleTemplate diff: %w", err)
 	}
 	return nil
 }
 
-func patchDelete(
+func deleteModuleTemplate(
 	ctx context.Context, diff *v1beta2.ModuleTemplate, skrClient client.Client,
 ) error {
 	err := skrClient.Delete(ctx, diff)
 	if err != nil {
-		return fmt.Errorf("could not delete module template: %w", err)
+		return fmt.Errorf("could not delete ModuleTemplate: %w", err)
 	}
 	return nil
 }

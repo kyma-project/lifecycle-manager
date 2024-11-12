@@ -2,7 +2,11 @@ package kcp_test
 
 import (
 	"errors"
+	"fmt"
+	"maps"
+	"slices"
 	"strconv"
+	"strings"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -92,11 +97,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 		By("ModuleTemplate exists in KCP cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, kcpClient, moduleInKCP, kyma.Spec.Channel).
+			WithArguments(ctx, kcpClient, moduleInKCP, kyma.Spec.Channel, ControlPlaneNamespace).
 			Should(Succeed())
 		By("ModuleTemplate exists in SKR cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, skrClient, moduleInKCP,
-			kyma.Spec.Channel).Should(Succeed())
+			kyma.Spec.Channel, RemoteNamespace).Should(Succeed())
 
 		By("No module synced to remote Kyma")
 		Eventually(NotContainsModuleInSpec, Timeout, Interval).
@@ -106,7 +111,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Module Catalog created")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, skrClient, moduleInSKR, kyma.Spec.Channel).
+			WithArguments(ctx, skrClient, moduleInSKR, kyma.Spec.Channel, RemoteNamespace).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(skrClient, skrKyma.GetName(), flags.DefaultRemoteSyncNamespace).
@@ -170,13 +175,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(UpdateModuleTemplateSpec, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(skrClient, moduleInSKR, InitSpecKey, "valueUpdated", kyma.Spec.Channel).
+			WithArguments(skrClient, moduleInSKR, InitSpecKey, "valueUpdated", kyma.Spec.Channel, RemoteNamespace).
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, 2*Timeout, Interval).
 			WithArguments(skrClient,
-				moduleInSKR, kyma.Spec.Channel).
+				moduleInSKR, kyma.Spec.Channel, RemoteNamespace).
 			Should(Succeed())
 	})
 
@@ -301,7 +306,12 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
-	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	moduleInKCP := NewTestModule("module-inkcp", v1beta2.DefaultChannel)
+	moduleReleaseMetaInKCP := builder.NewModuleReleaseMetaBuilder().
+		WithName("modulereleasemeta-inkcp").
+		WithModuleName("module-inkcp").
+		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, "0.1.0").
+		Build()
 	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
 	skrKyma := buildSkrKyma()
 	var skrClient client.Client
@@ -312,9 +322,15 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
+
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, moduleReleaseMetaInKCP).Should(Succeed())
 	})
 
-	annotations := []string{
+	injectedAnnotations := []string{
+		"modulereleasemeta-skr-crd-generation",
+		"modulereleasemeta-kcp-crd-generation",
 		"moduletemplate-skr-crd-generation",
 		"moduletemplate-kcp-crd-generation",
 		"kyma-skr-crd-generation",
@@ -328,9 +344,15 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 				return err
 			}
 
-			for _, annotation := range annotations {
-				if _, ok := kcpKyma.Annotations[annotation]; !ok {
-					return ErrNotContainsExpectedAnnotation
+			relevantKymaAnnotations := collections.Filter(slices.Collect(maps.Keys(kcpKyma.Annotations)), func(val string) bool {
+				return strings.HasSuffix(val, "crd-generation")
+			})
+			if len(relevantKymaAnnotations) < len(injectedAnnotations) {
+				return fmt.Errorf("%w: expected: %d, actual: %d", ErrNotContainsExpectedAnnotation, len(injectedAnnotations), len(relevantKymaAnnotations))
+			}
+			for _, expectedAnnotation := range injectedAnnotations {
+				if _, ok := kcpKyma.Annotations[expectedAnnotation]; !ok {
+					return fmt.Errorf("%w: %s is missing", ErrNotContainsExpectedAnnotation, expectedAnnotation)
 				}
 			}
 
@@ -345,9 +367,9 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 				return err
 			}
 
-			for _, annotation := range annotations {
-				if _, ok := skrKyma.Annotations[annotation]; ok {
-					return ErrContainsUnexpectedAnnotation
+			for _, unwantedAnnotation := range injectedAnnotations {
+				if _, ok := skrKyma.Annotations[unwantedAnnotation]; ok {
+					return fmt.Errorf("%w: %s is present but it should not", ErrContainsUnexpectedAnnotation, unwantedAnnotation)
 				}
 			}
 
@@ -358,6 +380,11 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	It("Kyma CRD should sync to SKR and annotations get updated", func() {
 		var kcpKymaCrd *apiextensionsv1.CustomResourceDefinition
 		var skrKymaCrd *apiextensionsv1.CustomResourceDefinition
+		var skrModuleTemplateCrd *apiextensionsv1.CustomResourceDefinition
+		var kcpModuleTemplateCrd *apiextensionsv1.CustomResourceDefinition
+		var skrModuleReleaseMetaCrd *apiextensionsv1.CustomResourceDefinition
+		var kcpModuleReleaseMetaCrd *apiextensionsv1.CustomResourceDefinition
+
 		By("Update KCP Kyma CRD")
 		Eventually(func() string {
 			var err error
@@ -380,6 +407,42 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			return skrKymaCrd.Spec.Versions[0].Schema
 		}, Timeout, Interval).Should(Equal(kcpKymaCrd.Spec.Versions[0].Schema))
 
+		By("Update ModuleReleaseMeta CRD")
+		Eventually(func() string {
+			var err error
+			kcpModuleReleaseMetaCrd, err = updateModuleReleaseMetaCRD(kcpClient)
+			if err != nil {
+				return ""
+			}
+
+			return getCrdSpec(kcpModuleReleaseMetaCrd).Properties["channels"].Description
+		}, Timeout, Interval).Should(Equal("test change"))
+
+		By("SKR ModuleReleaseMeta CRD should be updated")
+		Eventually(func() *apiextensionsv1.CustomResourceValidation {
+			var err error
+			skrModuleReleaseMetaCrd, err = fetchCrd(skrClient, shared.ModuleReleaseMetaKind)
+			if err != nil {
+				return nil
+			}
+
+			return skrModuleReleaseMetaCrd.Spec.Versions[0].Schema
+		}, Timeout, Interval).Should(Equal(kcpModuleReleaseMetaCrd.Spec.Versions[0].Schema))
+
+		By("Read ModuleTemplate CRDs")
+		Eventually(func() error {
+			var err error
+			skrModuleTemplateCrd, err = fetchCrd(skrClient, shared.ModuleTemplateKind)
+			if err != nil {
+				return err
+			}
+			kcpModuleTemplateCrd, err = fetchCrd(kcpClient, shared.ModuleTemplateKind)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, Timeout, Interval).Should(Succeed())
+
 		By("Kyma CR generation annotations should be updated")
 		Eventually(func() error {
 			kcpKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
@@ -387,11 +450,23 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 				return err
 			}
 
-			if kcpKyma.Annotations["kyma-skr-crd-generation"] != strconv.FormatInt(skrKymaCrd.Generation, 10) {
-				return ErrAnnotationNotUpdated
+			if err = assertCrdGenerationAnnotations(kcpKyma, "kyma-skr-crd-generation", skrKymaCrd); err != nil {
+				return err
 			}
-			if kcpKyma.Annotations["kyma-kcp-crd-generation"] != strconv.FormatInt(kcpKymaCrd.Generation, 10) {
-				return ErrAnnotationNotUpdated
+			if err = assertCrdGenerationAnnotations(kcpKyma, "kyma-kcp-crd-generation", kcpKymaCrd); err != nil {
+				return err
+			}
+			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-skr-crd-generation", skrModuleTemplateCrd); err != nil {
+				return err
+			}
+			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-kcp-crd-generation", kcpModuleTemplateCrd); err != nil {
+				return err
+			}
+			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-skr-crd-generation", skrModuleReleaseMetaCrd); err != nil {
+				return err
+			}
+			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-kcp-crd-generation", kcpModuleReleaseMetaCrd); err != nil {
+				return err
 			}
 
 			return nil
@@ -426,3 +501,12 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		}, Timeout, Interval).WithContext(ctx).Should(Not(HaveOccurred()))
 	})
 })
+
+func assertCrdGenerationAnnotations(kcpKyma *v1beta2.Kyma, annotationName string, targetCrd *apiextensionsv1.CustomResourceDefinition) error {
+	annotationValue := kcpKyma.Annotations[annotationName]
+	targetCrdGeneration := strconv.FormatInt(targetCrd.Generation, 10)
+	if annotationValue != targetCrdGeneration {
+		return fmt.Errorf("%w: expected: %s, actual: %s", ErrAnnotationNotUpdated, targetCrdGeneration, annotationValue)
+	}
+	return nil
+}

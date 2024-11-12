@@ -1,6 +1,6 @@
 package collections
 
-// filterInPlace is a function that filters a slice by a predicate function.
+// FilterInPlace modifies a slice using provided predicate function.
 // It returns a sub-slice of the input list that only contains the elements for which the predicate function returns true.
 // Warning: This function modifies the input list!
 func FilterInPlace[E any](list []*E, predicate func(*E) bool) []*E {
@@ -12,6 +12,17 @@ func FilterInPlace[E any](list []*E, predicate func(*E) bool) []*E {
 		}
 	}
 	return list[:last]
+}
+
+// Filter returns a new slice which results from applying the provided predicate to the input slice.
+func Filter[E any](input []E, predicate func(E) bool) []E {
+	output := []E{}
+	for _, val := range input {
+		if predicate(val) {
+			output = append(output, val)
+		}
+	}
+	return output
 }
 
 // Dereference is a function that dereferences elements of a provided slice of pointers.

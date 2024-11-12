@@ -75,7 +75,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.5.31",
+      "pluginVersion": "7.5.34",
       "targets": [
         {
           "exemplar": true,
@@ -87,6 +87,86 @@
       ],
       "title": "Enabled Modules",
       "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "filterable": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 12,
+      "options": {
+        "showHeader": true
+      },
+      "pluginVersion": "7.5.34",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "lifecycle_mgr_module_state{state=\"Error\"} > 0",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Kyma Manifest in Error state",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": false,
+              "Value": true,
+              "__name__": true,
+              "container": true,
+              "endpoint": true,
+              "instance": true,
+              "instance_id": true,
+              "job": true,
+              "kyma_name": false,
+              "module_name": false,
+              "namespace": true,
+              "pod": true,
+              "prometheus": true,
+              "service": true
+            },
+            "indexByName": {},
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "aliasColors": {},
@@ -104,7 +184,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 2,
@@ -124,7 +204,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.31",
+      "pluginVersion": "7.5.34",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -232,7 +312,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 28
       },
       "hiddenSeries": false,
       "id": 5,
@@ -252,7 +332,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.31",
+      "pluginVersion": "7.5.34",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -360,7 +440,7 @@
         "h": 10,
         "w": 18,
         "x": 0,
-        "y": 31
+        "y": 38
       },
       "hiddenSeries": false,
       "id": 6,
@@ -380,7 +460,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.31",
+      "pluginVersion": "7.5.34",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -496,7 +576,7 @@
         "h": 10,
         "w": 6,
         "x": 18,
-        "y": 31
+        "y": 38
       },
       "id": 8,
       "options": {
@@ -511,7 +591,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.31",
+      "pluginVersion": "7.5.34",
       "targets": [
         {
           "exemplar": true,
