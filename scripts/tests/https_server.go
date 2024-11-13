@@ -17,14 +17,14 @@ func main() {
 
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir(*directory))
-	http.Handle("/", fs)
+	mux.Handle("/", fs)
 
 	addr := fmt.Sprintf(":%s", *port)
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: mux,
 		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS13,
+			MinVersion: tls.VersionTLS12,
 		},
 	}
 
