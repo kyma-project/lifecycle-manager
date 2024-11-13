@@ -58,4 +58,5 @@ echo CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt >> $GITHUB_ENV
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
-nohup python3 scripts/tests/https_server.py "$DIRECTORY_TO_SERVE" "$CERT_FILE" "$KEY_FILE" "$PORT" &
+go run scripts/tests/https_server.go -dir "$DIRECTORY_TO_SERVE" -certfile "$CERT_FILE" -keyfile "$KEY_FILE" -port "$PORT" &
+
