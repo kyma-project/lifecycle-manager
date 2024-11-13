@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
+
+const headerTimeout = 10 * time.Second
 
 func main() {
 	directory := flag.String("dir", ".", "Directory to serve files from")
@@ -19,16 +21,17 @@ func main() {
 	fs := http.FileServer(http.Dir(*directory))
 	mux.Handle("/", fs)
 
-	addr := fmt.Sprintf(":%s", *port)
-	srv := &http.Server{
+	addr := ":" + *port
+	httpsServer := &http.Server{
 		Addr:    addr,
 		Handler: mux,
 		TLSConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		},
+		ReadHeaderTimeout: headerTimeout,
 	}
 
-	err := srv.ListenAndServeTLS(*certFile, *keyFile)
+	err := httpsServer.ListenAndServeTLS(*certFile, *keyFile)
 	if err != nil {
 		log.Fatal("failed to setup http server:", err)
 	}
