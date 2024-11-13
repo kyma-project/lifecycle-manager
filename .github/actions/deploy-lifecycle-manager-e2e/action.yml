@@ -104,6 +104,8 @@ runs:
     - name: Expose Metrics Endpoint
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
+        matrix.e2e-test == 'module-status-decoupling-with-statefulset' ||
+        matrix.e2e-test == 'module-status-decoupling-with-deployment' ||
         matrix.e2e-test == 'purge-metrics' ||
         matrix.e2e-test == 'self-signed-certificate-rotation' ||
         matrix.e2e-test == 'mandatory-module-metrics'}}  

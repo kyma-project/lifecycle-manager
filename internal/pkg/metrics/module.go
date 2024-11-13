@@ -44,9 +44,8 @@ func (m *ModuleMetrics) RemoveModuleCRWarningCondition(kymaName, moduleName stri
 	})
 }
 
-func (m *ModuleMetrics) CleanupMetrics(kymaName, moduleName string) {
+func (m *ModuleMetrics) CleanupMetrics(kymaName string) {
 	m.moduleCRConditionGauge.DeletePartialMatch(prometheus.Labels{
-		KymaNameLabel:   kymaName,
-		moduleNameLabel: moduleName,
+		KymaNameLabel: kymaName,
 	})
 }

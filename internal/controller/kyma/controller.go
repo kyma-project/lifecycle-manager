@@ -71,6 +71,7 @@ type Reconciler struct {
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
+	ModuleMetrics       *metrics.ModuleMetrics
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
@@ -141,7 +142,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
-	r.Metrics.CleanupMetrics(kyma.Name)
+	r.cleanupMetrics(kyma.Name)
 	r.removeAllFinalizers(kyma)
 
 	if err := r.updateKyma(ctx, kyma); err != nil {
@@ -422,8 +423,7 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		return ctrl.Result{}, err
 	}
 
-	r.Metrics.CleanupMetrics(kyma.Name)
-
+	r.cleanupMetrics(kyma.Name)
 	controllerutil.RemoveFinalizer(kyma, shared.KymaFinalizer)
 
 	if err := r.updateKyma(ctx, kyma); err != nil {
@@ -432,6 +432,11 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 	}
 	r.Metrics.RecordRequeueReason(metrics.KymaDeletion, queue.IntendedRequeue)
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) cleanupMetrics(kymaName string) {
+	r.Metrics.CleanupMetrics(kymaName)
+	r.ModuleMetrics.CleanupMetrics(kymaName)
 }
 
 func (r *Reconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -499,7 +504,7 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
-	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
+	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics, r.ModuleMetrics)
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)
