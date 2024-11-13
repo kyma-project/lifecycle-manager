@@ -3,6 +3,10 @@ description: Deploys a test-specific template-operator and corresponding ModuleR
 runs:
   using: composite
   steps:
+    - name: Setup HTTPS server for the manifest file
+      uses: ./lifecycle-manager/.github/actions/setup-https-server
+      with:
+        directory_name: ../template-operator
     - name: Create Template Operator Module and apply ModuleTemplate and ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -19,10 +23,8 @@ runs:
         }}
       shell: bash
       run: |
-        make build-manifests
-        modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
@@ -38,7 +40,7 @@ runs:
         sed -i 's/template-operator-fast/template-operator-2.4.2-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
         sed -i 's/template-operator-regular/template-operator-1.1.1-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
         sed -i 's/template-operator-regular/template-operator-2.4.2-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml
-
+        
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
 
@@ -80,6 +82,7 @@ runs:
       shell: bash
       run: |
         sed -i 's/template-operator-fast/template-operator-2.4.2-e2e-test/g' tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        
         kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
         cat <<EOF > mrm.yaml
         apiVersion: operator.kyma-project.io/v1beta2
@@ -114,16 +117,17 @@ runs:
         popd
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
-        channel: regular
         version: 1.0.1
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        manifest: template-operator.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
-        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        defaultCR: https://localhost:8080//config/samples/default-sample-cr.yaml
+        manifest: https://localhost:8080/template-operator.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
+        modulectl create --config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
@@ -145,16 +149,17 @@ runs:
         popd
         make build-statefulset-manifests
         echo "name: kyma-project.io/module/template-operator
-        channel: regular
         version: 1.0.1
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        manifest: template-operator.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
-        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        defaultCR: https://localhost:8080//config/samples/default-sample-cr.yaml
+        manifest: https://localhost:8080/template-operator.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
+        modulectl create --config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
@@ -165,13 +170,15 @@ runs:
       shell: bash
       run: |
         echo "name: kyma-project.io/module/template-operator-misconfigured
-        channel: regular
         version: 1.1.1
-        manifest: template-operator.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> misconfigured-module-config.yaml
+        defaultCR: https://localhost:8080//config/samples/default-sample-cr.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> misconfigured-module-config.yaml
         
         cat <<EOF > mrm.yaml
         apiVersion: operator.kyma-project.io/v1beta2
@@ -201,9 +208,8 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
         make build-manifests
-        modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
     - name: Create Template Operator Module with StatefulSet, with non-working image and apply
@@ -220,9 +226,8 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-misconfigured-regular/template-operator-misconfigured-1.1.1/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
 
@@ -233,15 +238,16 @@ runs:
       run: |
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
-        channel: regular
         version: 1.0.0
-        manifest: template-operator.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
-        modulectl create --module-config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> module-config-no-cr.yaml
+        modulectl create --config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-regular/template-operator-1.0.0/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
         cat <<EOF > mrm.yaml
@@ -286,8 +292,8 @@ runs:
       if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
       shell: bash
       run: |
-        make build-manifests
-        modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i 's/template-operator-1.0.1/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
         kubectl apply -f module-release-meta.yaml
