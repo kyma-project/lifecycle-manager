@@ -12,7 +12,7 @@ until [ $FOUND -eq 1 ]; do
         echo "Timeout reached. host.k3d.internal address not found."
         exit 1
     fi
-    CURRENT_ENTRIES=$(kubectl get configmap coredns -n kube-system -o yaml | yq eval '.data.NodeHosts' -)
+    CURRENT_ENTRIES=$(kubectl get configmap coredns -n kube-system -o yaml | yq -r '.data.NodeHosts' -)
     if echo "$CURRENT_ENTRIES" | grep -q "host.k3d.internal"; then
         HOST_IP_ADDRESS=$(echo "$CURRENT_ENTRIES" | grep "host.k3d.internal" | awk '{print $1}')
         FOUND=1
@@ -22,10 +22,10 @@ until [ $FOUND -eq 1 ]; do
     fi
 done
 
-NEW_ENTRY="$HOST_IP_ADDRESS $NEW_SKR_HOSTNAME"
+NEW_ENTRY="$HOST_IP_ADDRESS ${NEW_SKR_HOSTNAME}\n"
 
 kubectl get configmap coredns -n kube-system -o yaml | \
-  yq eval '.data.NodeHosts += "'"${NEW_ENTRY}"'"' - | \
+  yq ".data.NodeHosts += \"${NEW_ENTRY}\"" - | \
   kubectl apply -f -
 
 kubectl rollout restart -n kube-system deployment coredns
