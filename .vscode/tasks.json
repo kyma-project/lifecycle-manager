@@ -51,10 +51,10 @@
     {
       "label": "Deploy template-operator",
       "type": "shell",
-      "command": "kubectl apply -f ${cwd}/tests/moduletemplates/${input:templateOperatorVersion}",
+      "command": "kubectl apply -f ${cwd}/tests/e2e/moduletemplate/${input:templateOperatorVersion}",
       "options": {
         "env": {
-          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml"
         }
       }
     },

@@ -35,16 +35,16 @@ runs:
         }}
       shell: bash
       run: |
-        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
-        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v1_regular.yaml
     - name: Create Template Operator Module for installation by version
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'module-install-by-version' }}
       shell: bash
       run: |
-        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
-        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
-        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_direct_version.yaml
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v1_regular.yaml
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_direct_version.yaml
     - name: Create Template Operator Module as Mandatory Module
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'mandatory-module' ||
@@ -52,13 +52,13 @@ runs:
         }}
       shell: bash
       run: |
-        kubectl apply -f tests/moduletemplates/mandatory_moduletemplate_template_operator_v1.yaml
+        kubectl apply -f tests/e2e/moduletemplate/mandatory_moduletemplate_template_operator_v1.yaml
     - name: Apply Template Operator Module V2, fast channel
       working-directory: ./lifecycle-manager
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
       shell: bash
       run: |
-        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
     - name: Create Template Operator Module with Deployment, with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
@@ -202,5 +202,5 @@ runs:
       if: ${{ matrix.e2e-test == 'ocm-compatible-module-template' }}
       shell: bash
       run: |
-        kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular_new_ocm.yaml
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_regular_new_ocm.yaml
 
