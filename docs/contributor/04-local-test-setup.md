@@ -105,7 +105,7 @@ This setup is deployed with the following security features enabled:
    make build-manifests
    
    # create the a ModuleTemplate CR and save it to the template.yaml file
-   modulectl create --module-config-file ./module-config.yaml --registry http://k3d-registry.localhost:5111 --insecure 
+   modulectl create --config-file ./module-config.yaml --registry http://k3d-registry.localhost:5111 --insecure 
    ```
 
 6. Verify images pushed to the local registry:

@@ -3,6 +3,10 @@ description: Deploys a test-specific template-operator.
 runs:
   using: composite
   steps:
+    - name: Setup HTTPS server for the manifest file
+      uses: ./lifecycle-manager/.github/actions/setup-https-server
+      with:
+        directory_name: ../template-operator
     - name: Create Template Operator Module and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -18,9 +22,9 @@ runs:
         }}
       shell: bash
       run: |
-        make build-manifests
-        modulectl create --module-config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        sed -i '/^spec:/a\  channel: regular\n' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
     - name: Create Template Operator Module for regular and fast channels
@@ -73,14 +77,17 @@ runs:
         popd
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
-        channel: regular
         version: 1.0.1
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        manifest: template-operator.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
-        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        manifest: https://localhost:8080/template-operator.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
+        modulectl create --config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        sed -i '/^spec:/a\  channel: regular\n' ./template.yaml
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -102,14 +109,17 @@ runs:
         popd
         make build-statefulset-manifests
         echo "name: kyma-project.io/module/template-operator
-        channel: regular
         version: 1.0.1
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        manifest: template-operator.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> warning-module-config.yaml
-        modulectl create --module-config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        manifest: https://localhost:8080/template-operator.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
+        modulectl create --config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
+        sed -i '/^spec:/a\  channel: regular\n' ./template.yaml
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -120,13 +130,15 @@ runs:
       shell: bash
       run: |
         echo "name: kyma-project.io/module/template-operator-misconfigured
-        channel: regular
         version: 1.1.1
-        manifest: template-operator.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
-        defaultCR: ./config/samples/default-sample-cr.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> misconfigured-module-config.yaml
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> misconfigured-module-config.yaml
     - name: Create Template Operator Module with Deployment, with non-working image and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
@@ -141,7 +153,8 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
         make build-manifests
-        modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        sed -i '/^spec:/a\  channel: regular\n' ./template.yaml
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -159,7 +172,8 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        modulectl create --module-config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
+        sed -i '/^spec:/a\  channel: regular\n' ./template.yaml
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -170,13 +184,16 @@ runs:
       run: |
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
-        channel: regular
         version: 1.0.0
-        manifest: template-operator.yaml
+        manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
-        annotations:
-          operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
-        modulectl create --module-config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
+        repository: https://github.com/kyma-project/template-operator
+        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+        icons:
+        - name: module-icon
+          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> module-config-no-cr.yaml
+        modulectl create --config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
+        sed -i '/^spec:/a\  channel: regular\n' ./template.yaml
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml

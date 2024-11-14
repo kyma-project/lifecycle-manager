@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -180,6 +181,14 @@ type ModuleStatus struct {
 
 	// Resource contains information about the created module CR.
 	Resource *TrackingObject `json:"resource,omitempty"`
+}
+
+func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {
+	module := &unstructured.Unstructured{}
+	module.SetGroupVersionKind(m.Manifest.GroupVersionKind())
+	module.SetName(m.Manifest.GetName())
+	module.SetNamespace(m.Manifest.GetNamespace())
+	return module
 }
 
 // TrackingObject contains TypeMeta and PartialMeta to allow a generation based object tracking.
