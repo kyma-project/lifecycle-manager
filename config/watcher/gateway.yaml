@@ -20,5 +20,5 @@ spec:
         number: 443
         protocol: HTTPS
       tls:
-        credentialName: istio-gateway-secret
+        credentialName: klm-istio-gateway
         mode: MUTUAL

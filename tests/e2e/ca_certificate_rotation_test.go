@@ -15,6 +15,8 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
+const istioNamespace = "istio-system"
+
 var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
@@ -36,7 +38,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			var err error
 			namespacedSecretName := types.NamespacedName{
 				Name:      watcher.ResolveTLSCertName(kyma.Name),
-				Namespace: "istio-system",
+				Namespace: istioNamespace,
 			}
 			tlsSecret, err := GetTLSSecret(ctx, namespacedSecretName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
@@ -50,7 +52,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			By("And new TLS Certificate is created")
 			namespacedCertName := types.NamespacedName{
 				Name:      caCertName,
-				Namespace: "istio-system",
+				Namespace: istioNamespace,
 			}
 			caCertificate, err = GetCACertificate(ctx, namespacedCertName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())

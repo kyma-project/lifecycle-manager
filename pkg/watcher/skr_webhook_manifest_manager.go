@@ -85,11 +85,10 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	_, err = getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
+	if _, err = getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
 		Namespace: m.certificateConfig.IstioNamespace,
 		Name:      gatewaysecret.GatewaySecretName,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 

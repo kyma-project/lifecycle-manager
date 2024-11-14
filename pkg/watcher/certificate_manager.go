@@ -281,7 +281,7 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 		return err
 	}
 
-	if watcherCert != nil && isGatewaySecretNewerThanWatcherCert(gatewaySecret, watcherCert) {
+	if watcherCert != nil && IsGatewaySecretNewerThanWatcherCert(gatewaySecret, watcherCert) {
 		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 			"kyma", kymaObjKey)
 		if err = c.removeSecret(ctx); err != nil {
@@ -292,12 +292,10 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 	return nil
 }
 
-func isGatewaySecretNewerThanWatcherCert(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
-	if gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[gatewaysecret.LastModifiedAtAnnotation]; ok {
-		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
-			if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
-				return false
-			}
+func IsGatewaySecretNewerThanWatcherCert(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
+	if gwSecretLastModifiedAt, err := gatewaysecret.GetLastModifiedAt(gatewaySecret); err == nil {
+		if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
+			return false
 		}
 	}
 
