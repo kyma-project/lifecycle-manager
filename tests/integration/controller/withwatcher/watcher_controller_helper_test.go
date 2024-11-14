@@ -188,7 +188,7 @@ func createWatcherSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 func createGatewaySecret() *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      gatewaysecret.GatewaySecretName,
+			Name:      "klm-istio-gateway",
 			Namespace: istioSystemNs,
 			Annotations: map[string]string{
 				gatewaysecret.LastModifiedAtAnnotation: apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339),

@@ -20,7 +20,7 @@ import (
 
 const (
 	LastModifiedAtAnnotation = "lastModifiedAt"
-	GatewaySecretName        = "klm-istio-gateway" //nolint:gosec // GatewaySecretName is not a credential
+	gatewaySecretName        = "klm-istio-gateway" //nolint:gosec // gatewaySecretName is not a credential
 	kcpRootSecretName        = "klm-watcher"
 	kcpCACertName            = "klm-watcher-serving"
 	istioNamespace           = "istio-system"
@@ -83,7 +83,7 @@ func (gsh *GatewaySecretHandler) newGatewaySecret(rootSecret *apicorev1.Secret) 
 			APIVersion: apicorev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      GatewaySecretName,
+			Name:      gatewaySecretName,
 			Namespace: istioNamespace,
 		},
 		Data: map[string][]byte{
@@ -96,21 +96,7 @@ func (gsh *GatewaySecretHandler) newGatewaySecret(rootSecret *apicorev1.Secret) 
 }
 
 func (gsh *GatewaySecretHandler) findGatewaySecret() (*apicorev1.Secret, error) {
-	return gsh.findSecret(context.Background(), client.ObjectKey{
-		Name:      GatewaySecretName,
-		Namespace: istioNamespace,
-	})
-}
-
-func (gsh *GatewaySecretHandler) findSecret(ctx context.Context, objKey client.ObjectKey) (*apicorev1.Secret, error) {
-	secret := &apicorev1.Secret{}
-
-	err := gsh.kcpClient.Get(ctx, objKey, secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get secret %s: %w", objKey.Name, err)
-	}
-
-	return secret, nil
+	return GetGatewaySecret(context.Background(), gsh.kcpClient)
 }
 
 func (gsh *GatewaySecretHandler) create(ctx context.Context, secret *apicorev1.Secret) error {
@@ -134,6 +120,17 @@ func (gsh *GatewaySecretHandler) updateLastModifiedAt(secret *apicorev1.Secret) 
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+}
+
+func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
+	secret := &apicorev1.Secret{}
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Name:      gatewaySecretName,
+		Namespace: istioNamespace,
+	}, secret); err != nil {
+		return nil, fmt.Errorf("failed to get secret %s: %w", gatewaySecretName, err)
+	}
+	return secret, nil
 }
 
 func GetLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {

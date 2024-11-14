@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	apicorev1 "k8s.io/api/core/v1"
 	"os"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
-	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -85,10 +85,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	if _, err = getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
-		Namespace: m.certificateConfig.IstioNamespace,
-		Name:      gatewaysecret.GatewaySecretName,
-	}); err != nil {
+	if _, err = gatewaysecret.GetGatewaySecret(ctx, m.kcpClient); err != nil {
 		return err
 	}
 
@@ -222,20 +219,22 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context,
 	kymaObjKey client.ObjectKey, remoteNs string,
 ) (*unstructuredResourcesConfig, error) {
-	tlsSecret, err := getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
+	tlsSecret := &apicorev1.Secret{}
+	certObjKey := client.ObjectKey{
 		Namespace: m.certificateConfig.IstioNamespace,
 		Name:      ResolveTLSCertName(kymaObjKey.Name),
-	})
-	if err != nil {
-		return nil, err
 	}
 
-	gatewaySecret, err := getCertificateSecret(ctx, m.kcpClient, client.ObjectKey{
-		Namespace: m.certificateConfig.IstioNamespace,
-		Name:      gatewaysecret.GatewaySecretName,
-	})
+	if err := m.kcpClient.Get(ctx, certObjKey, tlsSecret); err != nil {
+		if util.IsNotFound(err) {
+			return nil, &CertificateNotReadyError{}
+		}
+		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
+	}
+
+	gatewaySecret, err := gatewaysecret.GetGatewaySecret(ctx, m.kcpClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching gateway secret: %w", err)
 	}
 
 	return &unstructuredResourcesConfig{
@@ -250,17 +249,6 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		tlsKey:          tlsSecret.Data[tlsPrivateKeyKey],
 		remoteNs:        remoteNs,
 	}, nil
-}
-
-func getCertificateSecret(ctx context.Context, clnt client.Client, objKey client.ObjectKey) (*apicorev1.Secret, error) {
-	certificateSecret := &apicorev1.Secret{}
-	if err := clnt.Get(ctx, objKey, certificateSecret); err != nil {
-		if util.IsNotFound(err) {
-			return nil, &CertificateNotReadyError{}
-		}
-		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
-	}
-	return certificateSecret, nil
 }
 
 func (m *SKRWebhookManifestManager) getBaseClientObjects() []client.Object {

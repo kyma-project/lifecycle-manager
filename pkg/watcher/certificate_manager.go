@@ -259,6 +259,18 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	return &issuerList.Items[0], nil
 }
 
+func (c *CertificateManager) getCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
+	secret := &apicorev1.Secret{}
+	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.config.IstioNamespace},
+		secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.config.IstioNamespace,
+			err)
+	}
+
+	return secret, nil
+}
+
 type CertificateNotReadyError struct{}
 
 func (e *CertificateNotReadyError) Error() string {
@@ -266,17 +278,11 @@ func (e *CertificateNotReadyError) Error() string {
 }
 
 func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kymaObjKey client.ObjectKey) error {
-	gatewaySecret, err := getCertificateSecret(ctx, c.kcpClient, client.ObjectKey{
-		Namespace: c.config.IstioNamespace,
-		Name:      gatewaysecret.GatewaySecretName,
-	})
+	gatewaySecret, err := gatewaysecret.GetGatewaySecret(ctx, c.kcpClient)
 	if err != nil {
 		return err
 	}
-	watcherCert, err := getCertificateSecret(ctx, c.kcpClient, client.ObjectKey{
-		Namespace: c.config.IstioNamespace,
-		Name:      c.secretName,
-	})
+	watcherCert, err := c.getCertificateSecret(ctx)
 	if err != nil {
 		return err
 	}
