@@ -11,7 +11,6 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"ocm.software/ocm/api/ocm/compdesc"
-	"ocm.software/ocm/api/ocm/compdesc/versions/ocm.software/v3alpha1"
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -144,12 +143,9 @@ func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) 
 	var moduleTemplate v1beta2.ModuleTemplate
 	switch schemaVersion {
 	case compdescv2.SchemaVersion:
-		template := "operator_v1beta2_moduletemplate_kcp-module.yaml"
-		readComponentDescriptorFromYaml(template, &moduleTemplate)
-	case v3alpha1.GroupVersion:
 		fallthrough
 	default:
-		template := "operator_v1beta2_moduletemplate_ocm.software.v3alpha1.yaml"
+		template := "operator_v1beta2_moduletemplate_kcp-module.yaml"
 		readComponentDescriptorFromYaml(template, &moduleTemplate)
 	}
 	return moduleTemplate.Spec.Descriptor
@@ -166,7 +162,7 @@ func readComponentDescriptorFromYaml(template string, moduleTemplate *v1beta2.Mo
 		panic("Can't capture current filename!")
 	}
 	modulePath := filepath.Join(
-		filepath.Dir(filename), "../../../tests/moduletemplates", template,
+		filepath.Dir(filename), "../../../tests/integration/moduletemplate", template,
 	)
 
 	moduleFile, err := os.ReadFile(modulePath)

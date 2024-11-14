@@ -145,11 +145,7 @@
         "moduletemplate_template_operator_regular_new_ocm.yaml",
         "moduletemplate_template_operator_v1_regular.yaml",
         "moduletemplate_template_operator_v2_fast.yaml",
-        "moduletemplate_template_operator_v2_regular_new_version.yaml",
-        "operator_v1beta2_moduletemplate_kcp-module_updated.yaml",
-        "operator_v1beta2_moduletemplate_kcp-module-cred-label.yaml",
-        "operator_v1beta2_moduletemplate_kcp-module.yaml",
-        "operator_v1beta2_moduletemplate_ocm.software.v3alpha1.yaml"
+        "moduletemplate_template_operator_v2_regular_new_version.yaml"
       ]
     },
     {
