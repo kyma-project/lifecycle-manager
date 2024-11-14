@@ -66,6 +66,17 @@ patches:
         value: --is-kyma-managed
     target:
       kind: Deployment
+  - patch: |-
+      - op: add
+        path: /metadata/labels
+        value: {}
+      - op: add
+        path: /metadata/labels/grafana_dashboard
+        value: "1"
+    target:
+      kind: ConfigMap
+      name: dashboard-(overview|status|watcher|mandatory-modules)
+      version: v1
     # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
   - path: patches/unique_manager_webhook_patch.yaml
   - path: patches/adjust_resources_in_deployment.yaml
@@ -77,9 +88,7 @@ patches:
     # kubebuilder operators.
   - path: patches/unique_certificate_name.yaml
 
-# We patch the Metrics ConfigMaps here, as we expect KCP to be watching for grafana dashboards in the 'kyma-system' namespace.
-# Note1: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
-# Note2: the 'grafana_dashboard' label could be applied using a standard JSON patch, but a namespace must be patched here and it's better to have all related customizations in a single place. 
+# Note: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
 transformers:
 - |-
   apiVersion: builtin
@@ -112,46 +121,6 @@ transformers:
     path: metadata/annotations
   - kind: ValidatingWebhookConfiguration
     path: metadata/annotations
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-dashboard-overview-cm
-  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
-  target:
-    kind: ConfigMap
-    name: klm-dashboard-overview
-    version: v1
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-dashboard-status-cm
-  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
-  target:
-    kind: ConfigMap
-    name: klm-dashboard-status
-    version: v1
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-dashboard-watcher-cm
-  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
-  target:
-    kind: ConfigMap
-    name: klm-dashboard-watcher
-    version: v1
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-dashboard-mandatory-modules-cm
-  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
-  target:
-    kind: ConfigMap
-    name: klm-dashboard-mandatory-modules
-    version: v1
 - |-
   apiVersion: builtin
   kind: PatchTransformer
