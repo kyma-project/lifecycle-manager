@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 func TestIsGatewaySecretNewerThanWatcherCert(t *testing.T) {
