@@ -22,7 +22,7 @@ func noCondition() func() error {
 
 func expectCorrectNumberOfModuleStatus(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, "")
+		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, ControlPlaneNamespace)
 		if err != nil {
 			return err
 		}
@@ -35,7 +35,7 @@ func expectCorrectNumberOfModuleStatus(kymaName string) func() error {
 
 func removeModule(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, "")
+		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, ControlPlaneNamespace)
 		Expect(err).ShouldNot(HaveOccurred())
 		createdKyma.Spec.Modules = []v1beta2.Module{}
 		return kcpClient.Update(ctx, createdKyma)

@@ -55,6 +55,11 @@ func (m ModuleTemplateBuilder) WithName(name string) ModuleTemplateBuilder {
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithNamespace(namespace string) ModuleTemplateBuilder {
+	m.moduleTemplate.ObjectMeta.Namespace = namespace
+	return m
+}
+
 func (m ModuleTemplateBuilder) WithVersion(version string) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Version = version
 	return m

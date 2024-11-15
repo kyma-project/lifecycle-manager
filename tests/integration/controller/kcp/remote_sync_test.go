@@ -40,11 +40,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 	SKRTemplate := builder.NewModuleTemplateBuilder().
+		WithNamespace(shared.DefaultRemoteNamespace).
 		WithLabelModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
 	KCPTemplate := builder.NewModuleTemplateBuilder().
+		WithNamespace(ControlPlaneNamespace).
 		WithLabelModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
 		WithModuleCR(defaultCR).
@@ -344,11 +346,13 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 				return err
 			}
 
-			relevantKymaAnnotations := collections.Filter(slices.Collect(maps.Keys(kcpKyma.Annotations)), func(val string) bool {
-				return strings.HasSuffix(val, "crd-generation")
-			})
+			relevantKymaAnnotations := collections.Filter(slices.Collect(maps.Keys(kcpKyma.Annotations)),
+				func(val string) bool {
+					return strings.HasSuffix(val, "crd-generation")
+				})
 			if len(relevantKymaAnnotations) < len(injectedAnnotations) {
-				return fmt.Errorf("%w: expected: %d, actual: %d", ErrNotContainsExpectedAnnotation, len(injectedAnnotations), len(relevantKymaAnnotations))
+				return fmt.Errorf("%w: expected: %d, actual: %d", ErrNotContainsExpectedAnnotation,
+					len(injectedAnnotations), len(relevantKymaAnnotations))
 			}
 			for _, expectedAnnotation := range injectedAnnotations {
 				if _, ok := kcpKyma.Annotations[expectedAnnotation]; !ok {
@@ -369,7 +373,8 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 			for _, unwantedAnnotation := range injectedAnnotations {
 				if _, ok := skrKyma.Annotations[unwantedAnnotation]; ok {
-					return fmt.Errorf("%w: %s is present but it should not", ErrContainsUnexpectedAnnotation, unwantedAnnotation)
+					return fmt.Errorf("%w: %s is present but it should not", ErrContainsUnexpectedAnnotation,
+						unwantedAnnotation)
 				}
 			}
 
@@ -456,16 +461,20 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			if err = assertCrdGenerationAnnotations(kcpKyma, "kyma-kcp-crd-generation", kcpKymaCrd); err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-skr-crd-generation", skrModuleTemplateCrd); err != nil {
+			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-skr-crd-generation",
+				skrModuleTemplateCrd); err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-kcp-crd-generation", kcpModuleTemplateCrd); err != nil {
+			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-kcp-crd-generation",
+				kcpModuleTemplateCrd); err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-skr-crd-generation", skrModuleReleaseMetaCrd); err != nil {
+			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-skr-crd-generation",
+				skrModuleReleaseMetaCrd); err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-kcp-crd-generation", kcpModuleReleaseMetaCrd); err != nil {
+			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-kcp-crd-generation",
+				kcpModuleReleaseMetaCrd); err != nil {
 				return err
 			}
 
@@ -502,7 +511,9 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	})
 })
 
-func assertCrdGenerationAnnotations(kcpKyma *v1beta2.Kyma, annotationName string, targetCrd *apiextensionsv1.CustomResourceDefinition) error {
+func assertCrdGenerationAnnotations(kcpKyma *v1beta2.Kyma, annotationName string,
+	targetCrd *apiextensionsv1.CustomResourceDefinition,
+) error {
 	annotationValue := kcpKyma.Annotations[annotationName]
 	targetCrdGeneration := strconv.FormatInt(targetCrd.Generation, 10)
 	if annotationValue != targetCrdGeneration {

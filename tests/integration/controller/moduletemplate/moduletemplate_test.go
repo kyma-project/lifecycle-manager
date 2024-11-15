@@ -29,6 +29,7 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 		) {
 			template := builder.NewModuleTemplateBuilder().
 				WithName(module.Name).
+				WithNamespace(ControlPlaneNamespace).
 				WithVersion(givenVersion).
 				WithModuleName("").
 				WithChannel(module.Channel).
@@ -123,6 +124,7 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 		) {
 			template := builder.NewModuleTemplateBuilder().
 				WithName(module.Name).
+				WithNamespace(ControlPlaneNamespace).
 				WithModuleName(givenModuleName).
 				WithVersion("").
 				WithChannel(module.Channel).

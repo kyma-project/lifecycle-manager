@@ -27,6 +27,7 @@ const (
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 	BeforeAll(func() {
 		DeployMandatoryModuleTemplate(ctx, kcpClient)
 		DeployModuleTemplates(ctx, kcpClient, kyma)
@@ -36,11 +37,13 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 		DeleteModuleTemplates(ctx, kcpClient, kyma)
 		DeleteMandatoryModuleTemplate(ctx, kcpClient)
 	})
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 }
 
 func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
+		Eventually(CreateNamespace, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma.GetNamespace()).Should(Succeed())
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
@@ -62,6 +65,7 @@ func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithName(createModuleTemplateName(module)).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
@@ -76,6 +80,7 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
 			WithName(createModuleTemplateName(module)).
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
@@ -105,6 +110,7 @@ func createModuleTemplateName(module v1beta2.Module) string {
 
 func newMandatoryModuleTemplate() *v1beta2.ModuleTemplate {
 	return builder.NewModuleTemplateBuilder().
+		WithNamespace(ControlPlaneNamespace).
 		WithName("mandatory-template").
 		WithLabelModuleName("mandatory-template-operator").
 		WithChannel(mandatoryChannel).

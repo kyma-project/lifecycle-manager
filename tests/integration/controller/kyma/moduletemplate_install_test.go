@@ -18,6 +18,10 @@ import (
 var _ = Describe("ModuleTemplate installation", func() {
 	DescribeTable("Test Modules",
 		func(givenCondition func(kyma *v1beta2.Kyma) error, expectedBehavior func(kyma *v1beta2.Kyma) error) {
+			Eventually(CreateNamespace, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
+
 			kyma := NewTestKyma("kyma")
 
 			kyma.Spec.Modules = append(
@@ -97,6 +101,7 @@ func givenKymaAndModuleTemplateCondition(
 		}
 		for _, module := range kyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
+				WithNamespace(ControlPlaneNamespace).
 				WithLabelModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion)

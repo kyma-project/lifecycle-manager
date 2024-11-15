@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -46,7 +45,7 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					Eventually(mandatoryModuleTemplateFinalizerExists).
 						WithContext(ctx).
 						WithArguments(kcpClient, client.ObjectKey{
-							Namespace: apimetav1.NamespaceDefault,
+							Namespace: ControlPlaneNamespace,
 							Name:      "mandatory-module",
 						}).
 						Should(Succeed())
@@ -69,7 +68,7 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 				Eventually(mandatoryModuleTemplateFinalizerExists).
 					WithContext(ctx).
 					WithArguments(kcpClient, client.ObjectKey{
-						Namespace: apimetav1.NamespaceDefault,
+						Namespace: ControlPlaneNamespace,
 						Name:      "mandatory-module",
 					}).
 					Should(Not(Succeed()))
@@ -80,6 +79,7 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	template := builder.NewModuleTemplateBuilder().
+		WithNamespace(ControlPlaneNamespace).
 		WithName("mandatory-module").
 		WithLabelModuleName("mandatory-module").
 		WithChannel(mandatoryChannel).

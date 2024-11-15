@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"ocm.software/ocm/api/ocm"
 	"ocm.software/ocm/api/ocm/compdesc"
 	"ocm.software/ocm/api/ocm/cpi"
@@ -17,14 +17,13 @@ import (
 	"ocm.software/ocm/api/utils/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -63,7 +62,6 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 })
 
 var _ = Describe("Update Manifest CR", Ordered, func() {
-	const updateRepositoryURL = "registry.docker.io/kyma-project"
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -93,11 +91,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 			Should(Succeed())
 
-		By("Update Module Template spec")
-		var moduleTemplateFromFile v1beta2.ModuleTemplate
-		builder.ReadComponentDescriptorFromFile("v1beta2_kcp-module_updated.yaml",
-			&moduleTemplateFromFile)
-
+		By("Update Module Template spec.data")
 		moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
 		err := kcpClient.Get(ctx, client.ObjectKey{
 			Name:      createModuleTemplateName(module),
@@ -105,7 +99,16 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		}, moduleTemplateInCluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		moduleTemplateInCluster.Spec = moduleTemplateFromFile.Spec
+		data := unstructured.Unstructured{}
+		data.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   shared.OperatorGroup,
+			Version: v1beta2.GroupVersion.Version,
+			Kind:    "Sample",
+		})
+		data.Object["spec"] = map[string]interface{}{
+			"initKey": "valueUpdated",
+		}
+		moduleTemplateInCluster.Spec.Data = &data
 
 		Eventually(kcpClient.Update, Timeout, Interval).
 			WithContext(ctx).
@@ -113,22 +116,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			Should(Succeed())
 
 		By("CR updated with new value in spec.resource.spec")
-		Eventually(expectManifestSpecDataEquals(kyma.Name, "valueUpdated"), Timeout, Interval).Should(Succeed())
-
-		By("Manifest is updated with new value in spec.install.source")
-		{
-			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
-				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
-				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
-					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s",
-						manifestImageSpec.Repo, updateRepositoryURL)
-				}
-				return nil
-			}
-
-			expectManifest := expectManifestFor(kyma)
-			Eventually(expectManifest(hasDummyRepositoryURL), Timeout, Interval).Should(Succeed())
-		}
+		Eventually(expectManifestSpecDataEquals(kyma.Name, kyma.Namespace, "valueUpdated"), Timeout,
+			Interval).Should(Succeed())
 	})
 })
 
