@@ -1,18 +1,17 @@
 package e2e_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Istio Gateway Secret Rotation", Ordered, func() {
