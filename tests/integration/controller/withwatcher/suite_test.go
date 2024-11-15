@@ -82,7 +82,6 @@ var (
 
 const (
 	istioSystemNs     = "istio-system"
-	kcpSystemNs       = "kcp-system"
 	gatewayName       = "klm-watcher"
 	caCertificateName = "klm-watcher-serving"
 )
@@ -165,7 +164,7 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	Expect(createNamespace(ctx, istioSystemNs, kcpClient)).To(Succeed())
-	Expect(createNamespace(ctx, kcpSystemNs, kcpClient)).To(Succeed())
+	Expect(createNamespace(ctx, ControlPlaneNamespace, kcpClient)).To(Succeed())
 
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
@@ -191,7 +190,7 @@ var _ = BeforeSuite(func() {
 
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          gatewayName,
-		IstioGatewayNamespace:     kcpSystemNs,
+		IstioGatewayNamespace:     ControlPlaneNamespace,
 		LocalGatewayPortOverwrite: "",
 	}
 
@@ -228,7 +227,7 @@ var _ = BeforeSuite(func() {
 		Event:                 event.NewRecorderWrapper(mgr.GetEventRecorderFor("watcher")),
 		Scheme:                k8sclientscheme.Scheme,
 		RequeueIntervals:      intervals,
-		IstioGatewayNamespace: kcpSystemNs,
+		IstioGatewayNamespace: ControlPlaneNamespace,
 	}).SetupWithManager(
 		mgr, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,

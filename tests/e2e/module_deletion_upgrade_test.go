@@ -85,7 +85,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 
 		It("When new version of ModuleTemplate is applied", func() {
 			cmd := exec.Command("kubectl", "apply", "-f",
-				"../moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml")
+				"./moduletemplate/moduletemplate_template_operator_v2_regular_new_version.yaml")
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
