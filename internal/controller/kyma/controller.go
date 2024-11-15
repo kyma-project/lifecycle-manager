@@ -342,9 +342,24 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 		}
 		return nil
 	})
+
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
+		err := fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
+		return r.requeueWithError(ctx, kyma, err)
+	}
+
+	for _, mt := range moduleTemplateList.Items {
+		if needUpdateForMandatoryModuleLabel(mt) {
+			if err := r.Update(ctx, &mt); err != nil {
+				return r.requeueWithError(ctx, kyma, err)
+			}
+		}
+	}
+
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
-			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
+			if err := r.syncModuleCatalog(ctx, kyma, moduleTemplateList); err != nil {
 				r.Metrics.RecordRequeueReason(metrics.ModuleCatalogSync, queue.UnexpectedRequeue)
 				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionFalse)
 				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
@@ -512,12 +527,8 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	return nil
 }
 
-func (r *Reconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
-		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
-	}
-
+func (r *Reconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma,
+	moduleTemplateList *v1beta2.ModuleTemplateList) error {
 	var modulesToSync []v1beta2.ModuleTemplate
 	for _, mt := range moduleTemplateList.Items {
 		if mt.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
@@ -531,7 +542,8 @@ func (r *Reconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) 
 	}
 
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace)
-	if err := remoteCatalog.Sync(ctx, kyma.GetNamespacedName(), modulesToSync, moduleReleaseMetaList.Items); err != nil {
+	if err := remoteCatalog.Sync(ctx, kyma.GetNamespacedName(), modulesToSync,
+		moduleReleaseMetaList.Items); err != nil {
 		return err
 	}
 
@@ -615,4 +627,28 @@ func (r *Reconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 
 func (r *Reconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
+}
+
+func needUpdateForMandatoryModuleLabel(moduleTemplate v1beta2.ModuleTemplate) bool {
+	if moduleTemplate.Labels == nil {
+		moduleTemplate.Labels = make(map[string]string)
+	}
+
+	if moduleTemplate.Spec.Mandatory {
+		if moduleTemplate.Labels[shared.IsMandatoryModule] == shared.EnableLabelValue {
+			return false
+		}
+
+		moduleTemplate.Labels[shared.IsMandatoryModule] = shared.EnableLabelValue
+		return true
+	}
+
+	if !moduleTemplate.Spec.Mandatory {
+		if moduleTemplate.Labels[shared.IsMandatoryModule] == shared.EnableLabelValue {
+			delete(moduleTemplate.Labels, shared.IsMandatoryModule)
+			return true
+		}
+	}
+
+	return false
 }
