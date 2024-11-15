@@ -18,7 +18,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -42,7 +41,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithArguments(crd).Should(Succeed())
 
 		template := builder.NewModuleTemplateBuilder().
-			WithNamespace(testutils.ControlPlaneNamespace).
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
@@ -60,7 +59,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
-			WithNamespace(testutils.ControlPlaneNamespace).
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
@@ -77,7 +76,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
-			WithNamespace(testutils.ControlPlaneNamespace).
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).

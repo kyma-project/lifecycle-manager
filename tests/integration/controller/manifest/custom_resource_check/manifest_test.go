@@ -16,7 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,7 +30,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 
 	It(
 		"setup OCI", func() {
-			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			err := PushToRemoteOCIRegistry(server, manifestFilePath, installName)
 			Expect(err).NotTo(HaveOccurred())
 		},
 	)
@@ -41,16 +41,16 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 	)
 	It("Install OCI specs including an nginx deployment", func() {
 		By("Install test Manifest CR")
-		testManifest := testutils.NewTestManifest("warning-check")
+		testManifest := NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
-		validImageSpec, err := testutils.CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
+		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath,
 			false)
 		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(testutils.InstallManifest(ctx, kcpClient, testManifest, imageSpecByte, true)).To(Succeed())
+		Expect(InstallManifest(ctx, kcpClient, testManifest, imageSpecByte, true)).To(Succeed())
 
 		By("Ensure that deployment and Sample CR are deployed and ready")
 		deploy := &apiappsv1.Deployment{}
@@ -61,12 +61,12 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR is in the \"Ready\" state")
-		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
+		Eventually(ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("Verify manifest status list all resources correctly")
-		status, err := testutils.GetManifestStatus(ctx, kcpClient, manifestName)
+		status, err := GetManifestStatus(ctx, kcpClient, manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 		expectedDeployment := asResource(deploymentName, "default", "apps", "v1", "Deployment")
@@ -80,7 +80,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR stays in the \"Ready\" state")
-		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
+		Eventually(ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
@@ -89,7 +89,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 			standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR stays in the \"Ready\"")
-		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
+		Eventually(ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
@@ -102,7 +102,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Eventually(verifyObjectExists(ctx, kcpClient, sampleCR), standardTimeout,
 			standardInterval).Should(BeTrue())
 
-		Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, testManifest), standardTimeout,
+		Eventually(DeleteManifestAndVerify(ctx, kcpClient, testManifest), standardTimeout,
 			standardInterval).Should(Succeed())
 
 		By("verify target resources got deleted")
