@@ -120,7 +120,6 @@ func (gsh *GatewaySecretHandler) updateLastModifiedAt(secret *apicorev1.Secret) 
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
-	fmt.Printf("Updated lastModifiedAt annotation to %s\n", secret.Annotations[LastModifiedAtAnnotation])
 }
 
 func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
