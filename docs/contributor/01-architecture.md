@@ -22,7 +22,7 @@ To run, Lifecycle Manager uses the following workflow:
 
 3. To manage a module, Lifecycle Manager requires its definition and version-related metadata. The ModuleTemplate and ModuleReleaseMeta CRs represent the definition and version-related metadata for a module. The ModuleTemplate CR represents a module in a particular version, while the ModuleReleaseMeta CR describes the mapping between module versions and available channels. All ModuleTemplate CRs, along with their related ModuleReleaseMeta CRs, exist in Kyma Control Plane which is the central cluster with Kyma infrastructure. The set of ModuleTemplate CRs and related ModuleReleaseMeta CRs available for a particular Kyma runtime is called the Module Catalog. Lifecycle Manager creates the Module Catalog based on labels, such as `internal`, or `beta`, and uses the synchronization mechanism to update the Module Catalog portfolio.
 
-4. Lifecycle Manager uses ModuleRelease Meta and ModuleTemplate CRs to read module's definition and creates a Manifest CR. The Manifest CR represents resources that make up a module and are to be installed on a remote cluster by Lifecycle Manager.
+4. Lifecycle Manager uses ModuleReleaseMeta and ModuleTemplate CRs to read a module's definition and create a Manifest CR. The Manifest CR represents resources that make up a module and are to be installed on a remote cluster by Lifecycle Manager.
 
 5. Lifecycle Manager reconciles, namely watches and updates, a set of resources that make up a module. This process lasts until a module is listed in the remote cluster Kyma CR.
 
