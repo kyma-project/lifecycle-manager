@@ -155,7 +155,9 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

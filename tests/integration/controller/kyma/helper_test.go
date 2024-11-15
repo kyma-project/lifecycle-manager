@@ -41,9 +41,6 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		Eventually(CreateNamespace, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(kcpClient, kyma.GetNamespace()).Should(Succeed())
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())

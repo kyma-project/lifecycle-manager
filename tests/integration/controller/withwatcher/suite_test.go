@@ -235,7 +235,9 @@ var _ = BeforeSuite(func() {
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

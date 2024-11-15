@@ -171,6 +171,9 @@ var _ = BeforeSuite(func() {
 		).Complete(reconciler)
 	Expect(err).ToNot(HaveOccurred())
 
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

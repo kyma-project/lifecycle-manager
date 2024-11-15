@@ -18,10 +18,6 @@ import (
 var _ = Describe("ModuleTemplate installation", func() {
 	DescribeTable("Test Modules",
 		func(givenCondition func(kyma *v1beta2.Kyma) error, expectedBehavior func(kyma *v1beta2.Kyma) error) {
-			Eventually(CreateNamespace, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
-
 			kyma := NewTestKyma("kyma")
 
 			kyma.Spec.Modules = append(

@@ -96,7 +96,9 @@ var _ = BeforeSuite(func() {
 
 	descriptorProvider = provider.NewCachedDescriptorProvider()
 	kcpClient = mgr.GetClient()
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

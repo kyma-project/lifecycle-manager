@@ -132,7 +132,9 @@ var _ = BeforeSuite(func() {
 	SetDefaultEventuallyTimeout(Timeout)
 	SetDefaultConsistentlyDuration(ConsistentCheckTimeout)
 	SetDefaultConsistentlyPollingInterval(Interval)
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)
