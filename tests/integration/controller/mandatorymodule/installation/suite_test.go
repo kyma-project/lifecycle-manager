@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
+	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -86,6 +87,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 

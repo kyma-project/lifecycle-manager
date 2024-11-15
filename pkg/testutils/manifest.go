@@ -48,7 +48,7 @@ var (
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return builder.NewManifestBuilder().WithName(fmt.Sprintf("%s-%s", prefix,
-		random.Name())).WithNamespace(apimetav1.NamespaceDefault).WithLabel(shared.KymaName,
+		random.Name())).WithNamespace(ControlPlaneNamespace).WithLabel(shared.KymaName,
 		string(uuid.NewUUID())).Build()
 }
 
@@ -648,7 +648,7 @@ func GetManifestWithName(ctx context.Context, clnt client.Client, manifestName s
 	manifest := &v1beta2.Manifest{}
 	err := clnt.Get(
 		ctx, client.ObjectKey{
-			Namespace: apimetav1.NamespaceDefault,
+			Namespace: ControlPlaneNamespace,
 			Name:      manifestName,
 		}, manifest,
 	)

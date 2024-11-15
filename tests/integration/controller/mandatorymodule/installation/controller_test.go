@@ -56,7 +56,7 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 		It("And Manifest CR for the Mandatory Module should be created with correct Owner Reference", func() {
 			Eventually(checkMandatoryManifestForKyma).
 				WithContext(ctx).
-				WithArguments(kyma, "kyma-project.io/template-operator").
+				WithArguments(kyma, DefaultFQDN).
 				Should(Succeed())
 		})
 	})
@@ -71,7 +71,7 @@ var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 		It("When Kyma has 'skip-reconciliation' label, then no Mandatory Module Manifest should be created", func() {
 			Eventually(checkMandatoryManifestForKyma).
 				WithContext(ctx).
-				WithArguments(kyma, "kyma-project.io/template-operator").
+				WithArguments(kyma, DefaultFQDN).
 				Should(Equal(ErrNoMandatoryManifest))
 		})
 	})

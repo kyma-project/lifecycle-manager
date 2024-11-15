@@ -21,10 +21,9 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var ErrNoMandatoryManifest = errors.New("manifest for mandatory Module not found")
-
 const (
 	mandatoryChannel = "dummychannel"
+	mandatoryModule  = "mandatory-module"
 )
 
 var _ = Describe("Mandatory Module Deletion", Ordered, func() {
@@ -39,14 +38,14 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					Should(Succeed())
 				Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
 					WithContext(ctx).
-					WithArguments(kcpClient, shared.FQDN, "kyma-project.io/template-operator").
+					WithArguments(kcpClient, shared.FQDN, DefaultFQDN).
 					Should(Succeed())
 				By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
 					Eventually(mandatoryModuleTemplateFinalizerExists).
 						WithContext(ctx).
 						WithArguments(kcpClient, client.ObjectKey{
 							Namespace: ControlPlaneNamespace,
-							Name:      "mandatory-module",
+							Name:      mandatoryModule,
 						}).
 						Should(Succeed())
 				})
@@ -62,14 +61,14 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 		It("Then mandatory Manifest is deleted", func() {
 			Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
 				WithContext(ctx).
-				WithArguments(kcpClient, shared.FQDN, "kyma-project.io/template-operator").
+				WithArguments(kcpClient, shared.FQDN, DefaultFQDN).
 				Should(Not(Succeed()))
 			By("And finalizer is removed from mandatory ModuleTemplate", func() {
 				Eventually(mandatoryModuleTemplateFinalizerExists).
 					WithContext(ctx).
 					WithArguments(kcpClient, client.ObjectKey{
 						Namespace: ControlPlaneNamespace,
-						Name:      "mandatory-module",
+						Name:      mandatoryModule,
 					}).
 					Should(Not(Succeed()))
 			})
@@ -80,12 +79,12 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	template := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithName("mandatory-module").
-		WithLabelModuleName("mandatory-module").
+		WithName(mandatoryModule).
+		WithLabelModuleName(mandatoryModule).
 		WithChannel(mandatoryChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()
-	mandatoryManifest := NewTestManifest("mandatory-module")
+	mandatoryManifest := NewTestManifest(mandatoryModule)
 	mandatoryManifest.Labels[shared.IsMandatoryModule] = "true"
 
 	BeforeAll(func() {
@@ -102,7 +101,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
 
 		installName := filepath.Join("main-dir", "installs")
-		mandatoryManifest.Annotations = map[string]string{shared.FQDN: "kyma-project.io/template-operator"}
+		mandatoryManifest.Annotations = map[string]string{shared.FQDN: DefaultFQDN}
 		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath,
 			false)
