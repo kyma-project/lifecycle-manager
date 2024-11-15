@@ -39,13 +39,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
-	SKRTemplate := builder.NewModuleTemplateBuilder().
-		WithNamespace(shared.DefaultRemoteNamespace).
+	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
+		WithNamespace(ControlPlaneNamespace).
 		WithLabelModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
-	KCPTemplate := builder.NewModuleTemplateBuilder().
+	TemplateForKCPEnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithLabelModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
@@ -92,10 +92,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	It("ModuleTemplates should be synchronized in both clusters", func() {
 		By("Module Template created")
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-			WithArguments(KCPTemplate).
+			WithArguments(TemplateForKCPEnabledModule).
 			Should(Succeed())
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-			WithArguments(SKRTemplate).
+			WithArguments(TemplateForSKREnabledModule).
 			Should(Succeed())
 		By("ModuleTemplate exists in KCP cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
@@ -163,7 +163,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("ModuleTemplate descriptor should be saved in cache")
-		Expect(IsDescriptorCached(SKRTemplate)).Should(BeTrue())
+		Expect(IsDescriptorCached(TemplateForSKREnabledModule)).Should(BeTrue())
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).

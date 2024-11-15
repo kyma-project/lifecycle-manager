@@ -23,8 +23,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -332,10 +330,14 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 
 	Context("When operator is referenced just by the label name", func() {
 		It("returns the expected operator", func() {
-			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, kyma.Spec.Channel,
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, moduleReferencedWithLabel, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				Should(Succeed())
+
+			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, v1beta2.DefaultChannel,
 				ControlPlaneNamespace)
 			Expect(err).ToNot(HaveOccurred())
-
 			foundModuleName := moduleTemplate.Labels[shared.ModuleName]
 			Expect(foundModuleName).To(Equal(moduleReferencedWithLabel.Name))
 		})
@@ -343,17 +345,20 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 
 	Context("When operator is referenced by Namespace/Name", func() {
 		It("cannot find the operator", func() {
-			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithNamespacedName, kyma.Spec.Channel,
-				ControlPlaneNamespace)
-			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, moduleReferencedWithNamespacedName, v1beta2.DefaultChannel,
+					ControlPlaneNamespace).
+				Should(Equal(ErrNotFound))
 		})
 	})
 
 	Context("When operator is referenced by FQDN", func() {
 		It("cannot find the operator", func() {
-			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithFQDN, kyma.Spec.Channel,
-				ControlPlaneNamespace)
-			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, moduleReferencedWithFQDN, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				Should(Equal(ErrNotFound))
 		})
 	})
 })
