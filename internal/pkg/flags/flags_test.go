@@ -163,7 +163,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultRootCASecretNamespace",
 			constValue:    DefaultRootCASecretNamespace,
-			expectedValue: "kcp-system",
+			expectedValue: "istio-system",
 		},
 		{
 			constName:     "DefaultIstioNamespace",
