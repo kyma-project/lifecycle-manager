@@ -84,6 +84,10 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		Eventually(CreateCR, Timeout, Interval).WithContext(ctx).
 			WithArguments(kcpClient, template).
 			Should(Succeed())
+		managedModule := NewTestModuleWithFixName(module.Name, module.Channel, "")
+		Eventually(ModuleTemplateExists, Timeout, Interval).
+			WithArguments(ctx, kcpClient, managedModule, module.Channel, ControlPlaneNamespace).
+			Should(Succeed())
 	}
 }
 
