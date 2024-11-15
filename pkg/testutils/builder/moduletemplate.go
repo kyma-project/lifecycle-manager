@@ -129,7 +129,7 @@ func (m ModuleTemplateBuilder) WithOCMPrivateRepo() ModuleTemplateBuilder {
 		m.moduleTemplate.Labels = make(map[string]string)
 	}
 	var moduleTemplate v1beta2.ModuleTemplate
-	template := "operator_v1beta2_moduletemplate_kcp-module-cred-label.yaml"
+	template := "v1beta2_kcp-module-cred-label.yaml"
 	readComponentDescriptorFromYaml(template, &moduleTemplate)
 	m.moduleTemplate.Spec.Descriptor = moduleTemplate.Spec.Descriptor
 	return m
@@ -145,7 +145,7 @@ func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) 
 	case compdescv2.SchemaVersion:
 		fallthrough
 	default:
-		template := "operator_v1beta2_moduletemplate_kcp-module.yaml"
+		template := "v1beta2_template_operator_current_ocm.yaml"
 		readComponentDescriptorFromYaml(template, &moduleTemplate)
 	}
 	return moduleTemplate.Spec.Descriptor
