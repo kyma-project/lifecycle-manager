@@ -299,7 +299,7 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 }
 
 func IsGatewaySecretNewerThanWatcherCert(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
-	if gwSecretLastModifiedAt, err := gatewaysecret.GetLastModifiedAt(gatewaySecret); err == nil {
+	if gwSecretLastModifiedAt, err := gatewaysecret.GetValidLastModifiedAt(gatewaySecret); err == nil {
 		if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
 			return false
 		}

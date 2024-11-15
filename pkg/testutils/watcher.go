@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -15,9 +16,10 @@ import (
 )
 
 var (
-	errOldCreationTime     = errors.New("certificate has an old creation timestamp")
-	errNotSyncedSecret     = errors.New("secret is not synced to skr cluster")
-	errTLSSecretNotRotated = errors.New("tls secret did not rotated")
+	errOldCreationTime        = errors.New("certificate has an old creation timestamp")
+	errNotSyncedSecret        = errors.New("secrets are not synced")
+	errTLSSecretNotRotated    = errors.New("tls secret did not rotated")
+	errCreationTimeNotUpdated = errors.New("gateway secret has an old creation timestamp")
 )
 
 func CertificateSecretExists(ctx context.Context, secretName types.NamespacedName, k8sClient client.Client) error {
@@ -72,12 +74,41 @@ func CertificateSecretIsSyncedToSkrCluster(ctx context.Context,
 		return fmt.Errorf("failed to fetch kcp certificate secret %w", err)
 	}
 
-	for k, d := range kcpCertificateSecret.Data {
-		if !bytes.Equal(d, skrCertificateSecret.Data[k]) {
+	err = verifySecretsHaveSameData(kcpCertificateSecret, skrCertificateSecret)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func IstioGatewaySecretIsSyncedToRootCA(ctx context.Context,
+	rootCASecretName types.NamespacedName, kcpClient client.Client,
+) error {
+	rootCASecret, err := fetchCertificateSecret(ctx, rootCASecretName, kcpClient)
+	if err != nil {
+		return fmt.Errorf("failed to fetch root CA secret: %w", err)
+	}
+
+	gatewaySecret, err := gatewaysecret.GetGatewaySecret(ctx, kcpClient)
+	if err != nil {
+		return fmt.Errorf("failed to fetch istio gateway secret: %w", err)
+	}
+
+	err = verifySecretsHaveSameData(rootCASecret, gatewaySecret)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func verifySecretsHaveSameData(secretA *apicorev1.Secret, secretB *apicorev1.Secret) error {
+	for k, d := range secretA.Data {
+		if !bytes.Equal(d, secretB.Data[k]) {
 			return errNotSyncedSecret
 		}
 	}
-
 	return nil
 }
 
@@ -128,4 +159,21 @@ func GetTLSSecret(ctx context.Context, namespacedSecretName types.NamespacedName
 	}
 
 	return tlsSecret, nil
+}
+
+func GatewaySecretCreationTimeIsUpdated(ctx context.Context, oldTime time.Time, kcpClient client.Client) error {
+	gwSecret, err := gatewaysecret.GetGatewaySecret(ctx, kcpClient)
+	if err != nil {
+		return fmt.Errorf("failed to get gateway secret %w", err)
+	}
+
+	currentTime, err := gatewaysecret.GetValidLastModifiedAt(gwSecret)
+	if err != nil {
+		return fmt.Errorf("failed to get last modified time %w", err)
+	}
+
+	if currentTime != oldTime {
+		return nil
+	}
+	return errCreationTimeNotUpdated
 }

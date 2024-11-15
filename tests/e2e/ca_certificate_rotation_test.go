@@ -15,8 +15,6 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-const istioNamespace = "istio-system"
-
 var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
@@ -28,7 +26,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	Context("Given KCP Cluster and rotated CA certificate", func() {
 		kcpSecretName := types.NamespacedName{
 			Name:      kyma.Name + "-webhook-tls",
-			Namespace: "istio-system",
+			Namespace: istioNamespace,
 		}
 		skrSecretName := types.NamespacedName{
 			Name:      watcher.SkrTLSName,

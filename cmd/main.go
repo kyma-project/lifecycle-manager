@@ -115,7 +115,7 @@ func main() {
 	}
 
 	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged, flagVar.IstioNamespace,
-		flagVar.IstioGatewayNamespace, flagVar.RemoteSyncNamespace)
+		flagVar.RootCASecretNamespace, flagVar.RemoteSyncNamespace)
 	setupManager(flagVar, cacheOptions, scheme, setupLog)
 }
 
@@ -348,8 +348,8 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		KeySize:             flagVar.SelfSignedCertKeySize,
 	}
 	gatewayConfig := watcher.GatewayConfig{
-		IstioGatewayName:          flagVar.IstioGatewayName,
-		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
+		IstioGatewayName:          flagVar.RootCASecretName,
+		IstioGatewayNamespace:     flagVar.RootCASecretNamespace,
 		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
 	}
 
@@ -433,7 +433,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, ev
 			Error:   flags.DefaultKymaRequeueErrInterval,
 			Warning: flags.DefaultKymaRequeueWarningInterval,
 		},
-		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
+		IstioGatewayNamespace: flagVar.RootCASecretNamespace,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create watcher controller")
 		os.Exit(bootstrapFailedExitCode)

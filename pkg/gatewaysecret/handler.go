@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -21,7 +22,6 @@ import (
 const (
 	LastModifiedAtAnnotation = "lastModifiedAt"
 	gatewaySecretName        = "klm-istio-gateway" //nolint:gosec // gatewaySecretName is not a credential
-	kcpRootSecretName        = "klm-watcher"
 	kcpCACertName            = "klm-watcher-serving"
 	istioNamespace           = "istio-system"
 )
@@ -64,7 +64,7 @@ func (gsh *GatewaySecretHandler) handleExisting(rootSecret *apicorev1.Secret, gw
 		return fmt.Errorf("failed to get CA certificate: %w", err)
 	}
 
-	if gwSecretLastModifiedAt, err := GetLastModifiedAt(gwSecret); err == nil {
+	if gwSecretLastModifiedAt, err := GetValidLastModifiedAt(gwSecret); err == nil {
 		if caCert.Status.NotBefore != nil && gwSecretLastModifiedAt.After(caCert.Status.NotBefore.Time) {
 			return nil
 		}
@@ -120,6 +120,7 @@ func (gsh *GatewaySecretHandler) updateLastModifiedAt(secret *apicorev1.Secret) 
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+	fmt.Printf("Updated lastModifiedAt annotation to %s\n", secret.Annotations[LastModifiedAtAnnotation])
 }
 
 func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
@@ -133,7 +134,7 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 	return secret, nil
 }
 
-func GetLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {
+func GetValidLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {
 	if gwSecretLastModifiedAtValue, ok := secret.Annotations[LastModifiedAtAnnotation]; ok {
 		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
 			return gwSecretLastModifiedAt, nil
@@ -146,7 +147,7 @@ func WatchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecre
 	log logr.Logger,
 ) {
 	secretWatch, err := clientset.CoreV1().Secrets(istioNamespace).Watch(context.Background(), apimetav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
+		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, flags.DefaultRootCASecretName).String(),
 	})
 	if err != nil {
 		log.Error(err, "unable to start watching root certificate")
