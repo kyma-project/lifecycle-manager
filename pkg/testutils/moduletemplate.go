@@ -79,6 +79,18 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	return nil
 }
 
+func ModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Client, module v1beta2.Module, key, value,
+	kymaChannel string, namespace string) error {
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
+	if err != nil {
+		return err
+	}
+	if moduleTemplate.Labels[key] != value {
+		return fmt.Errorf("label %s:%s not found", key, value)
+	}
+	return nil
+}
+
 func DeleteModuleTemplate(ctx context.Context,
 	clnt client.Client, module v1beta2.Module, kymaChannel string, namespace string,
 ) error {

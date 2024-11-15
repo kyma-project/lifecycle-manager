@@ -39,6 +39,14 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 			})
+			By("And the Mandatory ModuleTemplate has the correct mandatory-module label", func() {
+				Eventually(ModuleTemplateHasExpectedLabel).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", shared.IsMandatoryModule,
+						shared.EnableLabelValue, "regular", "kcp-system").
+					Should(Succeed())
+			})
+
 			By("And the mandatory ModuleTemplate is not synchronised to the SKR cluster", func() {
 				Consistently(CheckIfExists).
 					WithContext(ctx).
@@ -46,6 +54,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						shared.OperatorGroup, "v1beta2", string(shared.ModuleTemplateKind), skrClient).
 					Should(Not(Succeed()))
 			})
+
 		})
 
 		It("When the mandatory Manifest is labelled to skip reconciliation", func() {
