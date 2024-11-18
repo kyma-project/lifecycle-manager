@@ -1,6 +1,6 @@
 module-name: lifecycle-manager
 protecode:
-  - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:1.2.2
+  - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:1.2.3
 whitesource:
   language: golang-mod
   exclude:
