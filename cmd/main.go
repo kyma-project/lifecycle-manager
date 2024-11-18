@@ -204,7 +204,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
-	setupIstioGatewaySecretRotation(config, kcpClient, setupLog)
+	go setupIstioGatewaySecretRotation(config, kcpClient, setupLog)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -216,7 +216,7 @@ func setupIstioGatewaySecretRotation(config *rest.Config, kcpClient *remote.Conf
 	kcpClientset := kubernetes.NewForConfigOrDie(config)
 	gatewaySecretHandler := gatewaysecret.NewGatewaySecretHandler(kcpClient)
 
-	go gatewaysecret.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
+	gatewaysecret.WatchChangesOnRootCertificate(kcpClientset, gatewaySecretHandler, setupLog)
 }
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {
