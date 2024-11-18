@@ -16,7 +16,6 @@ import (
 
 var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -41,10 +40,10 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					Should(Succeed())
 			})
 			By("And the Mandatory ModuleTemplate has the correct mandatory-module label", func() {
-				Eventually(ModuleTemplateHasExpectedLabel).
+				Eventually(MandatoryModuleTemplateHasExpectedLabel).
 					WithContext(ctx).
-					WithArguments(kcpClient, module, shared.IsMandatoryModule,
-						shared.EnableLabelValue, "regular", "kcp-system").
+					WithArguments(kcpClient, "template-operator", shared.IsMandatoryModule,
+						shared.EnableLabelValue).
 					Should(Succeed())
 			})
 
