@@ -10,7 +10,7 @@ The API of Lifecycle Manager is based on Kubernetes Custom Resource Definitions 
 ## Synchronization of Module Catalog with Remote Clusters
 
 Lifecycle Manager ensures the Module Catalog is correctly synchronized with users' runtimes.
-The Module Catalog consists of all modules, represented by ModuleTemplates CR, that are available for a user. The Module Catalog portfolio may vary for different users.
+The Module Catalog consists of all modules, represented by ModuleTemplate CRs and related ModuleReleaseMetas CRs, that are available for a user. The Module Catalog portfolio may vary for different users.
 The synchronization mechanism described below is essential to allow users to enable modules in their clusters.
 The mechanism is controlled by the set of labels that are configured on Kyma and ModuleTemplate CRs in the Control Plane. The labels are: `operator.kyma-project.io/sync`, `operator.kyma-project.io/internal`, and `operator.kyma-project.io/beta`.
 The v1beta2 API introduces three groups of modules:
@@ -20,6 +20,7 @@ The v1beta2 API introduces three groups of modules:
 * Beta modules, synchronized per-cluster only if configured explicitly on the corresponding Kyma CRs. To mark a ModuleTemplate CR as `beta`, use the `operator.kyma-project.io/beta` label and set it to `true`.
 
 By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with remote clusters.
+For every synchronized ModuleTemplate CR, all related ModuleReleaseMetas CRs are synchronized as well.
 
 **NOTE:** The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the control-plane mode. Lifecycle Manager running in the single-cluster mode, doesn't require any CR synchronization.
 

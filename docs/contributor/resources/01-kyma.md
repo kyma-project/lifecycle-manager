@@ -114,7 +114,7 @@ The conditions represent individual elements of the reconciliation that can eith
 Currently, we maintain conditions for:
 
 * Module (Manifest CR) synchronization
-* Module Catalog (ModuleTemplate CR) synchronization
+* Module Catalog (ModuleTemplate CR and ModuleReleaseMeta CR) synchronization
 * Watcher Installation Consistency
 
 We also calculate the **.status.state** readiness based on all the conditions available.
