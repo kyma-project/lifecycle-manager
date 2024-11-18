@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	k8slabels "k8s.io/apimachinery/pkg/labels"
 )
 
 // GetMandatory returns ModuleTemplates TOs (Transfer Objects) which are marked are mandatory modules.

@@ -80,7 +80,8 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 }
 
 func ModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Client, module v1beta2.Module, key, value,
-	kymaChannel string, namespace string) error {
+	kymaChannel string, namespace string,
+) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
 	if err != nil {
 		return err

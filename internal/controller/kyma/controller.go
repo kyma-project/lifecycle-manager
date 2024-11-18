@@ -528,7 +528,8 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 }
 
 func (r *Reconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma,
-	moduleTemplateList *v1beta2.ModuleTemplateList) error {
+	moduleTemplateList *v1beta2.ModuleTemplateList,
+) error {
 	var modulesToSync []v1beta2.ModuleTemplate
 	for _, mt := range moduleTemplateList.Items {
 		if mt.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {

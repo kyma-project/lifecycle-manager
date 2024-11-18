@@ -54,7 +54,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						shared.OperatorGroup, "v1beta2", string(shared.ModuleTemplateKind), skrClient).
 					Should(Not(Succeed()))
 			})
-
 		})
 
 		It("When the mandatory Manifest is labelled to skip reconciliation", func() {

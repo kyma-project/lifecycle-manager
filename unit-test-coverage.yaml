@@ -16,4 +16,4 @@ packages:
   internal/pkg/resources: 91.7
   internal/remote: 13.2
   internal/util/collections: 86
-  pkg/templatelookup: 77.7
+  pkg/templatelookup: 77.3
