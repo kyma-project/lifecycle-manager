@@ -163,7 +163,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultIstioGatewayNamespace",
 			constValue:    DefaultIstioGatewayNamespace,
-			expectedValue: "istio-system",
+			expectedValue: "kcp-system",
 		},
 		{
 			constName:     "DefaultIstioNamespace",
