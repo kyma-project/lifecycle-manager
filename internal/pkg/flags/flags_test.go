@@ -156,13 +156,13 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "kyma-system",
 		},
 		{
-			constName:     "DefaultRootCASecretName",
-			constValue:    DefaultRootCASecretName,
+			constName:     "DefaultIstioGatewayName",
+			constValue:    DefaultIstioGatewayName,
 			expectedValue: "klm-watcher",
 		},
 		{
-			constName:     "DefaultRootCASecretNamespace",
-			constValue:    DefaultRootCASecretNamespace,
+			constName:     "DefaultIstioGatewayNamespace",
+			constValue:    DefaultIstioGatewayNamespace,
 			expectedValue: "istio-system",
 		},
 		{

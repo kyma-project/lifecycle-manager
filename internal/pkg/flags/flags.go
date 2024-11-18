@@ -39,8 +39,8 @@ const (
 	DefaultMaxConcurrentWatcherReconciles                               = 1
 	DefaultMaxConcurrentMandatoryModuleReconciles                       = 1
 	DefaultMaxConcurrentMandatoryModuleDeletionReconciles               = 1
-	DefaultRootCASecretName                                             = "klm-watcher"
-	DefaultRootCASecretNamespace                                        = "istio-system"
+	DefaultIstioGatewayName                                             = "klm-watcher"
+	DefaultIstioGatewayNamespace                                        = "kcp-system"
 	DefaultIstioNamespace                                               = "istio-system"
 	DefaultCaCertName                                                   = "klm-watcher-serving"
 	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour
@@ -164,9 +164,9 @@ func DefineFlagVar() *FlagVar {
 			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
 	flag.StringVar(&flagVar.IstioNamespace, "istio-namespace", DefaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
-	flag.StringVar(&flagVar.RootCASecretName, "root-ca-secret-name", DefaultRootCASecretName,
+	flag.StringVar(&flagVar.IstioGatewayName, "istio-gateway-name", DefaultIstioGatewayName,
 		"Cluster Resource Name of Istio Gateway")
-	flag.StringVar(&flagVar.RootCASecretNamespace, "root-ca-secret-namespace", DefaultRootCASecretNamespace,
+	flag.StringVar(&flagVar.IstioGatewayNamespace, "istio-gateway-namespace", DefaultIstioGatewayNamespace,
 		"Cluster Resource Namespace of Istio Gateway")
 	flag.StringVar(&flagVar.ListenerPortOverwrite, "listener-port-overwrite", "",
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when "+
@@ -265,8 +265,8 @@ type FlagVar struct {
 	ClientQPS                                      float64
 	ClientBurst                                    int
 	IstioNamespace                                 string
-	RootCASecretName                               string
-	RootCASecretNamespace                          string
+	IstioGatewayName                               string
+	IstioGatewayNamespace                          string
 	AdditionalDNSNames                             string
 	// ListenerPortOverwrite is used to enable the user to overwrite the port
 	// used to expose the KCP cluster for the watcher. By default, it will be

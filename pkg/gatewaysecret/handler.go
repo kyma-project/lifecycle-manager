@@ -15,13 +15,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
 	LastModifiedAtAnnotation = "lastModifiedAt"
 	gatewaySecretName        = "klm-istio-gateway" //nolint:gosec // gatewaySecretName is not a credential
+	kcpRootSecretName        = "klm-watcher"
 	kcpCACertName            = "klm-watcher-serving"
 	istioNamespace           = "istio-system"
 )
@@ -149,7 +149,7 @@ func WatchChangesOnRootCertificate(clientset *kubernetes.Clientset, gatewaySecre
 	defer cancel()
 
 	secretWatch, err := clientset.CoreV1().Secrets(istioNamespace).Watch(ctx, apimetav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, flags.DefaultRootCASecretName).String(),
+		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
 	})
 	if err != nil {
 		log.Error(err, "unable to start watching root certificate")
