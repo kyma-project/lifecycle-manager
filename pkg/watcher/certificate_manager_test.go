@@ -33,7 +33,7 @@ func TestIsGatewaySecretNewerThanWatcherCert(t *testing.T) {
 				watcherSecret: &apicorev1.Secret{
 					ObjectMeta: apimetav1.ObjectMeta{
 						CreationTimestamp: apimetav1.Time{
-							Time: time.Date(2024, 11, 0o1, 0, 0, 5, 0, time.UTC),
+							Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
 						},
 					},
 				},

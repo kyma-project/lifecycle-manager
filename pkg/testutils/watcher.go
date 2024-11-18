@@ -173,7 +173,7 @@ func GatewaySecretCreationTimeIsUpdated(ctx context.Context, oldTime time.Time, 
 		return fmt.Errorf("failed to get last modified time %w", err)
 	}
 
-	if currentTime != oldTime {
+	if currentTime.After(oldTime) {
 		return nil
 	}
 	return errCreationTimeNotUpdated
