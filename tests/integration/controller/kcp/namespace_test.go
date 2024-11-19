@@ -8,9 +8,10 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var errLabelNotExist = errors.New("label does not exist on namespace")
@@ -35,7 +36,7 @@ var _ = Describe("Remote Namespace is correctly labelled", Ordered, func() {
 			"namespaces.warden.kyma-project.io/validate": "enabled",
 		}
 		Eventually(namespaceHasExpectedLabels, Timeout, Interval).WithContext(ctx).WithArguments(skrClient,
-			"kyma-system", expectedLabels).Should(Succeed())
+			RemoteNamespace, expectedLabels).Should(Succeed())
 	})
 })
 

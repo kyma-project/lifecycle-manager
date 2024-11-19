@@ -26,8 +26,10 @@ import (
 
 	"go.uber.org/zap/zapcore"
 	apiadmissionv1 "k8s.io/api/admission/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,6 +47,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -57,11 +61,6 @@ var (
 	webhookServerCancel  context.CancelFunc
 	cfg                  *rest.Config
 	scheme               *machineryruntime.Scheme
-)
-
-const (
-	Timeout  = time.Second * 10
-	Interval = time.Millisecond * 250
 )
 
 func TestAPIs(t *testing.T) {
@@ -90,6 +89,9 @@ var _ = BeforeSuite(func() {
 
 	scheme = machineryruntime.NewScheme()
 	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apicorev1.AddToScheme(scheme)).NotTo(HaveOccurred())
+
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiadmissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
@@ -98,7 +100,9 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(webhookServerContext).
+		WithArguments(k8sClient, ControlPlaneNamespace).Should(Succeed())
 	SetupWebhook()
 })
 

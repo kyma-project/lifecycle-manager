@@ -82,7 +82,6 @@ var (
 
 const (
 	istioSystemNs     = "istio-system"
-	kcpSystemNs       = "kcp-system"
 	gatewayName       = "klm-watcher"
 	caCertificateName = "klm-watcher-serving"
 )
@@ -146,7 +145,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: metricsBindAddress,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.GetCacheOptions(false, "istio-system", "kcp-system", "kyma-system"),
+			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace, RemoteNamespace),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -165,7 +164,7 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	Expect(createNamespace(ctx, istioSystemNs, kcpClient)).To(Succeed())
-	Expect(createNamespace(ctx, kcpSystemNs, kcpClient)).To(Succeed())
+	Expect(createNamespace(ctx, ControlPlaneNamespace, kcpClient)).To(Succeed())
 
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
@@ -191,7 +190,7 @@ var _ = BeforeSuite(func() {
 
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          gatewayName,
-		IstioGatewayNamespace:     kcpSystemNs,
+		IstioGatewayNamespace:     ControlPlaneNamespace,
 		LocalGatewayPortOverwrite: "",
 	}
 
@@ -228,14 +227,16 @@ var _ = BeforeSuite(func() {
 		Event:                 event.NewRecorderWrapper(mgr.GetEventRecorderFor("watcher")),
 		Scheme:                k8sclientscheme.Scheme,
 		RequeueIntervals:      intervals,
-		IstioGatewayNamespace: kcpSystemNs,
+		IstioGatewayNamespace: ControlPlaneNamespace,
 	}).SetupWithManager(
 		mgr, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

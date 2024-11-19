@@ -19,7 +19,7 @@ func TestParse(t *testing.T) {
 	}{
 		{
 			"should parse raw-manifest layer from mediaType: application/x-tar",
-			"moduletemplate_template_operator_regular_new_ocm.yaml",
+			"v1beta2_template_operator_new_ocm.yaml",
 			img.Layer{
 				LayerName: "raw-manifest",
 				LayerRepresentation: &img.OCI{
@@ -31,7 +31,7 @@ func TestParse(t *testing.T) {
 			},
 		}, {
 			"should parse raw-manifest layer from mediaType: application/octet-stream",
-			"moduletemplate_template_operator_v1_regular.yaml",
+			"v1beta2_template_operator_current_ocm.yaml",
 			img.Layer{
 				LayerName: "raw-manifest",
 				LayerRepresentation: &img.OCI{

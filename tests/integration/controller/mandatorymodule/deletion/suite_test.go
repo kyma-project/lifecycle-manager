@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
+	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -95,6 +96,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 
@@ -104,7 +106,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: useRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.GetCacheOptions(false, "istio-system", "kcp-system", "kyma-system"),
+			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace, RemoteNamespace),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -132,7 +134,9 @@ var _ = BeforeSuite(func() {
 	SetDefaultEventuallyTimeout(Timeout)
 	SetDefaultConsistentlyDuration(ConsistentCheckTimeout)
 	SetDefaultConsistentlyPollingInterval(Interval)
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

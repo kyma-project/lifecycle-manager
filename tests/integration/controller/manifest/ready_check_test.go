@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -29,7 +29,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	installName := filepath.Join(customDir, "installs")
 	It(
 		"setup OCI", func() {
-			err := testutils.PushToRemoteOCIRegistry(server, manifestFilePath, installName)
+			err := PushToRemoteOCIRegistry(server, manifestFilePath, installName)
 			Expect(err).NotTo(HaveOccurred())
 		},
 	)
@@ -39,17 +39,17 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		},
 	)
 	It("Install OCI specs including an nginx deployment", func() {
-		testManifest := testutils.NewTestManifest("custom-check-oci")
+		testManifest := NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
-		validImageSpec, err := testutils.CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
+		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath,
 			false)
 		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(testutils.InstallManifest(ctx, kcpClient, testManifest, imageSpecByte, false)).To(Succeed())
+		Expect(InstallManifest(ctx, kcpClient, testManifest, imageSpecByte, false)).To(Succeed())
 
-		Eventually(testutils.ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
+		Eventually(ExpectManifestStateIn(ctx, kcpClient, shared.StateReady), standardTimeout,
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
@@ -60,7 +60,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(verifyDeploymentInstallation(ctx, kcpClient, deploy)).To(Succeed())
 
 		By("Verifying manifest status contains all resources")
-		status, err := testutils.GetManifestStatus(ctx, kcpClient, manifestName)
+		status, err := GetManifestStatus(ctx, kcpClient, manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 
@@ -90,7 +90,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Eventually(verifyObjectExists(ctx, kcpClient, expectedCRD.ToUnstructured()), standardTimeout,
 			standardInterval).Should(BeTrue())
 
-		Eventually(testutils.DeleteManifestAndVerify(ctx, kcpClient, testManifest), standardTimeout,
+		Eventually(DeleteManifestAndVerify(ctx, kcpClient, testManifest), standardTimeout,
 			standardInterval).Should(Succeed())
 
 		Eventually(verifyObjectExists(ctx, kcpClient, expectedDeployment.ToUnstructured()), standardTimeout,

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -27,9 +26,9 @@ const (
 	credSecretValue = "operator-regcred"
 )
 
-func expectManifestSpecDataEquals(kymaName, value string) func() error {
+func expectManifestSpecDataEquals(kymaName, kymaNamespace, value string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, apimetav1.NamespaceDefault)
+		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
 		if err != nil {
 			return err
 		}
@@ -123,6 +122,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 
 	It("expect Manifest.Spec.installs contains credSecretSelector", func() {
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCMPrivateRepo().Build()

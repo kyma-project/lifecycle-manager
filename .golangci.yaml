@@ -181,11 +181,7 @@ issues:
         - err113 # Dynamic error creation in unit and integration test utils is ok
     - path: tests/e2e/
       linters: [ gci ] # Disable gci due to the test utilities dot import.
-    - path: tests/integration/watcher/certificate_suite_test.go
-      linters: [ gci ] # Disable gci due to the test utilities dot import.
-    - path: tests/integration/declarative/declarative_test.go
-      linters: [ gci ] # Disable gci due to the test utilities dot import.
-    - path: tests/integration/controller/(.*)/(.*)_test.go
+    - path: tests/integration/
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - linters:
       - importas

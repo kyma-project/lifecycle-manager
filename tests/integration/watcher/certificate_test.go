@@ -8,7 +8,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -28,7 +28,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	}{
 		{
 			name:      "Should create a valid CertificateCR",
-			namespace: testutils.NewTestNamespace("testcase-1"),
+			namespace: NewTestNamespace("testcase-1"),
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        "test-kyma-1",
@@ -36,13 +36,13 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 				},
 			},
-			issuer:         testutils.NewTestIssuer("testcase-1"),
+			issuer:         NewTestIssuer("testcase-1"),
 			wantCreateErr:  false,
 			wantNewCertErr: false,
 		},
 		{
 			name:      "Should fail since no Issuer can be found",
-			namespace: testutils.NewTestNamespace("testcase-2"),
+			namespace: NewTestNamespace("testcase-2"),
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        "test-kyma-2",
@@ -56,7 +56,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 		},
 		{
 			name:      "Should fail since KymaCR is missing domain annotation",
-			namespace: testutils.NewTestNamespace("testcase-3"),
+			namespace: NewTestNamespace("testcase-3"),
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      "test-kyma-3",

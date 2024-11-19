@@ -53,6 +53,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -112,7 +114,7 @@ var _ = BeforeSuite(func() {
 	if !found {
 		metricsBindAddress = ":0"
 	}
-	cacheOpts := internal.GetCacheOptions(false, "istio-system", "kcp-system", "kyma-system")
+	cacheOpts := internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace, RemoteNamespace)
 	syncPeriod := 2 * time.Second
 	cacheOpts.SyncPeriod = &syncPeriod
 
@@ -172,7 +174,9 @@ var _ = BeforeSuite(func() {
 			},
 		).Complete(reconciler)
 	Expect(err).ToNot(HaveOccurred())
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)
