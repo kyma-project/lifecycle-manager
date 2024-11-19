@@ -101,7 +101,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: useRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.GetCacheOptions(false, "istio-system", "kcp-system", "kyma-system"),
+			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace, RemoteNamespace),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -121,7 +121,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

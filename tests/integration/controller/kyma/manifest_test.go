@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"ocm.software/ocm/api/ocm"
 	"ocm.software/ocm/api/ocm/compdesc"
 	"ocm.software/ocm/api/ocm/cpi"
@@ -17,22 +17,19 @@ import (
 	"ocm.software/ocm/api/utils/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
-	// see: PROJECT_ROOT/config/samples/component-integration-installed/operator_v1beta2_moduletemplate_kcp-module.yaml
+	// see: PROJECT_ROOT/tests/integration/moduletemplate/v1beta2_template_operator_current_ocm.yaml
 	testModuleTemplateRawManifestLayerDigest = "sha256:" +
-		"1735cfa45bf07b63427c8e11717278f8847e352a66af7633611db902386d18ed"
+		"1ea2baf45791beafabfee533031b715af8f7a4ffdfbbf30d318f52f7652c36ca"
 
 	// corresponds to the template-operator version: https://github.com/kyma-project/template-operator/commit/fc1cf2b4
 	updatedModuleTemplateRawManifestLayerDigest = "sha256:" +
@@ -63,7 +60,6 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 })
 
 var _ = Describe("Update Manifest CR", Ordered, func() {
-	const updateRepositoryURL = "registry.docker.io/kyma-project"
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -93,11 +89,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 			Should(Succeed())
 
-		By("Update Module Template spec")
-		var moduleTemplateFromFile v1beta2.ModuleTemplate
-		builder.ReadComponentDescriptorFromFile("operator_v1beta2_moduletemplate_kcp-module_updated.yaml",
-			&moduleTemplateFromFile)
-
+		By("Update Module Template spec.data")
 		moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
 		err := kcpClient.Get(ctx, client.ObjectKey{
 			Name:      createModuleTemplateName(module),
@@ -105,7 +97,16 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		}, moduleTemplateInCluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		moduleTemplateInCluster.Spec = moduleTemplateFromFile.Spec
+		data := unstructured.Unstructured{}
+		data.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   shared.OperatorGroup,
+			Version: v1beta2.GroupVersion.Version,
+			Kind:    "Sample",
+		})
+		data.Object["spec"] = map[string]interface{}{
+			"initKey": "valueUpdated",
+		}
+		moduleTemplateInCluster.Spec.Data = &data
 
 		Eventually(kcpClient.Update, Timeout, Interval).
 			WithContext(ctx).
@@ -113,22 +114,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			Should(Succeed())
 
 		By("CR updated with new value in spec.resource.spec")
-		Eventually(expectManifestSpecDataEquals(kyma.Name, "valueUpdated"), Timeout, Interval).Should(Succeed())
-
-		By("Manifest is updated with new value in spec.install.source")
-		{
-			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
-				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
-				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
-					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s",
-						manifestImageSpec.Repo, updateRepositoryURL)
-				}
-				return nil
-			}
-
-			expectManifest := expectManifestFor(kyma)
-			Eventually(expectManifest(hasDummyRepositoryURL), Timeout, Interval).Should(Succeed())
-		}
+		Eventually(expectManifestSpecDataEquals(kyma.Name, kyma.Namespace, "valueUpdated"), Timeout,
+			Interval).Should(Succeed())
 	})
 })
 
@@ -343,10 +330,14 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 
 	Context("When operator is referenced just by the label name", func() {
 		It("returns the expected operator", func() {
-			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, kyma.Spec.Channel,
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, moduleReferencedWithLabel, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				Should(Succeed())
+
+			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, v1beta2.DefaultChannel,
 				ControlPlaneNamespace)
 			Expect(err).ToNot(HaveOccurred())
-
 			foundModuleName := moduleTemplate.Labels[shared.ModuleName]
 			Expect(foundModuleName).To(Equal(moduleReferencedWithLabel.Name))
 		})
@@ -354,17 +345,20 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 
 	Context("When operator is referenced by Namespace/Name", func() {
 		It("cannot find the operator", func() {
-			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithNamespacedName, kyma.Spec.Channel,
-				ControlPlaneNamespace)
-			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, moduleReferencedWithNamespacedName, v1beta2.DefaultChannel,
+					ControlPlaneNamespace).
+				Should(Equal(ErrNotFound))
 		})
 	})
 
 	Context("When operator is referenced by FQDN", func() {
 		It("cannot find the operator", func() {
-			_, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithFQDN, kyma.Spec.Channel,
-				ControlPlaneNamespace)
-			Expect(err.Error()).Should(ContainSubstring(templatelookup.ErrNoTemplatesInListResult.Error()))
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, moduleReferencedWithFQDN, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				Should(Equal(ErrNotFound))
 		})
 	})
 })
@@ -571,9 +565,12 @@ func updateComponentResources(descriptor *v1beta2.Descriptor) {
 		res.Version = updatedModuleTemplateVersion
 
 		if res.Name == string(v1beta2.RawManifestLayer) {
-			object, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
+			access, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
 			Expect(ok).To(BeTrue())
-			object.Object["digest"] = updatedModuleTemplateRawManifestLayerDigest
+			globalAccess, ok := access.Object["globalAccess"].(map[string]interface{})
+			Expect(ok).To(BeTrue())
+			globalAccess["digest"] = updatedModuleTemplateRawManifestLayerDigest
+			access.Object["localReference"] = updatedModuleTemplateRawManifestLayerDigest
 		}
 	}
 }
@@ -619,11 +616,16 @@ func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate
 		}
 
 		if res.Name == string(v1beta2.RawManifestLayer) {
-			object, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
+			access, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
 			Expect(ok).To(BeTrue())
-			if object.Object["digest"] != updatedModuleTemplateRawManifestLayerDigest {
-				return fmt.Errorf("Invalid digest: %s, expected: %s",
-					object.Object["digest"], updatedModuleTemplateRawManifestLayerDigest)
+			globalAccess, ok := access.Object["globalAccess"].(map[string]interface{})
+			Expect(ok).To(BeTrue())
+			if globalAccess["digest"] != updatedModuleTemplateRawManifestLayerDigest {
+				return fmt.Errorf("Invalid access.globalAccess.digest: %s, expected: %s",
+					globalAccess["digest"], updatedModuleTemplateRawManifestLayerDigest)
+			} else if access.Object["localReference"] != updatedModuleTemplateRawManifestLayerDigest {
+				return fmt.Errorf("Invalid access.localReference: %s, expected: %s",
+					access.Object["localReference"], updatedModuleTemplateRawManifestLayerDigest)
 			}
 		}
 	}

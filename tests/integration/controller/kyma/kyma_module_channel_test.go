@@ -280,6 +280,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
 			template := builder.NewModuleTemplateBuilder().
+				WithNamespace(ControlPlaneNamespace).
 				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
 				WithLabelModuleName(module.Name).
 				WithChannel(module.Channel).
@@ -291,6 +292,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 		By("Cleaning up standard ModuleTemplate set in fast")
 		for _, module := range kyma.Spec.Modules {
 			template := builder.NewModuleTemplateBuilder().
+				WithNamespace(ControlPlaneNamespace).
 				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
 				WithLabelModuleName(module.Name).
 				WithChannel(module.Channel).
@@ -309,7 +311,7 @@ func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error
 }
 
 func templateInfosMatchChannel(kymaName, channel string) error {
-	kyma, err := GetKyma(ctx, kcpClient, kymaName, "")
+	kyma, err := GetKyma(ctx, kcpClient, kymaName, ControlPlaneNamespace)
 	if err != nil {
 		return err
 	}
@@ -386,6 +388,7 @@ func whenUpdatingEveryModuleChannel(kymaName, kymaNamespace, channel string) fun
 func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()

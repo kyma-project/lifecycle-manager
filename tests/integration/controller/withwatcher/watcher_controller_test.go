@@ -38,7 +38,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			WithArguments([]string{}).Should(Succeed())
 	})
 
-	allVirtualServicesDeleted := allVirtualServicesDeletedForNs(kcpSystemNs)
+	allVirtualServicesDeleted := allVirtualServicesDeletedForNs(ControlPlaneNamespace)
 
 	DescribeTable("Test VirtualService",
 		func(
@@ -51,7 +51,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Eventually(givenCondition, timeout, interval).
 				WithArguments(customIstioClient).Should(Succeed())
 			Eventually(expectedVirtualServiceBehavior, timeout, interval).
-				WithArguments(customIstioClient, kcpSystemNs).Should(Succeed())
+				WithArguments(customIstioClient, ControlPlaneNamespace).Should(Succeed())
 			Eventually(expectedWatcherCRBehavior, timeout, interval).
 				WithArguments(watcherNames).Should(Succeed())
 		},
@@ -125,7 +125,7 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 		return err
 	}
 	gateways, err := customIstioClient.ListGatewaysByLabelSelector(ctx, &watcher.Spec.Gateway.LabelSelector,
-		kcpSystemNs)
+		ControlPlaneNamespace)
 	if err != nil {
 		return err
 	}

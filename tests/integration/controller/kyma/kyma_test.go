@@ -376,6 +376,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Should deploy ModuleTemplate", func() {
 		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithModuleCR(data).
@@ -429,7 +430,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		},
 		Entry("When update Module Template spec.data.spec field, module should not updated",
 			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
-			expectManifestSpecDataEquals(kyma.Name, InitSpecValue)),
+			expectManifestSpecDataEquals(kyma.Name, kyma.Namespace, InitSpecValue)),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
 			UpdateAllManifestState(kyma.GetName(), kyma.GetNamespace(), shared.StateProcessing),
 			expectKymaStatusModules(ctx, kyma, module.Name, shared.StateReady)),
@@ -466,6 +467,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		It("Should deploy ModuleTemplate", func() {
 			for _, module := range kyma.Spec.Modules {
 				template := builder.NewModuleTemplateBuilder().
+					WithNamespace(ControlPlaneNamespace).
 					WithLabelModuleName(module.Name).
 					WithChannel(module.Channel).
 					WithOCM(compdescv2.SchemaVersion).
@@ -510,7 +512,7 @@ func expectKymaStatusModules(ctx context.Context,
 
 func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, "")
+		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, ControlPlaneNamespace)
 		if err != nil {
 			return err
 		}

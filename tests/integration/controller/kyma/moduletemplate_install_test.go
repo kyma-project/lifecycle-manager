@@ -97,6 +97,7 @@ func givenKymaAndModuleTemplateCondition(
 		}
 		for _, module := range kyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
+				WithNamespace(ControlPlaneNamespace).
 				WithLabelModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion)

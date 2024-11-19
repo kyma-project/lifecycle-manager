@@ -23,6 +23,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
@@ -39,6 +41,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithArguments(crd).Should(Succeed())
 
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
@@ -56,6 +59,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
@@ -72,6 +76,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
