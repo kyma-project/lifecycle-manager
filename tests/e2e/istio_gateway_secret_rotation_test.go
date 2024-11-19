@@ -6,7 +6,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -22,7 +21,7 @@ var _ = Describe("Istio Gateway Secret Rotation", Ordered, func() {
 	Context("Given KCP Cluster, rotated CA certificate, and Istio Gateway Secret", func() {
 		It("Then Istio Gateway Secret is a copy of CA Certificate", func() {
 			namespacedRootCASecretName := types.NamespacedName{
-				Name:      flags.DefaultRootCASecretName,
+				Name:      "klm-watcher",
 				Namespace: istioNamespace,
 			}
 
