@@ -34,9 +34,6 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      random.Name(),
 				Namespace: apimetav1.NamespaceDefault,
-				Labels: map[string]string{
-					shared.IsMandatoryModule: shared.EnableLabelValue,
-				},
 			},
 			Spec: v1beta2.ModuleTemplateSpec{
 				Data: data,
