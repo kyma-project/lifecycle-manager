@@ -24,7 +24,7 @@ func TestNewGatewaySecret(t *testing.T) {
 	require.True(t, gwSecret.Name == "klm-istio-gateway")
 	require.True(t, gwSecret.Namespace == "istio-system")
 
-	require.Equal(t, string(gwSecret.Data["tls.crt"]), newTLSCertValue)
-	require.Equal(t, string(gwSecret.Data["tls.key"]), newTLSKeyValue)
-	require.Equal(t, string(gwSecret.Data["ca.crt"]), newCACertValue)
+	require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
+	require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
+	require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
 }

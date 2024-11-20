@@ -212,9 +212,9 @@ func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 
 	gatewaysecret.CopyRootSecretDataIntoGatewaySecret(gwSecret, caCert, rootSecret)
 
-	require.Equal(t, string(gwSecret.Data["tls.crt"]), newTLSCertValue)
-	require.Equal(t, string(gwSecret.Data["tls.key"]), newTLSKeyValue)
-	require.Equal(t, string(gwSecret.Data["ca.crt"]), newCACertValue)
+	require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
+	require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
+	require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
 }
 
 type MockSecretManager struct {
@@ -247,9 +247,9 @@ func TestWatchEventsNewGatewaySecret(t *testing.T) {
 		return nil, &meta.NoResourceMatchError{}
 	}
 	createFunc := func(ctx context.Context, gwSecret *apicorev1.Secret) error {
-		require.Equal(t, string(gwSecret.Data["tls.crt"]), newTLSCertValue)
-		require.Equal(t, string(gwSecret.Data["tls.key"]), newTLSKeyValue)
-		require.Equal(t, string(gwSecret.Data["ca.crt"]), newCACertValue)
+		require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
+		require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
+		require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
 
 		return nil
 	}
@@ -310,9 +310,9 @@ func TestWatchEventsExistingGatewaySecret(t *testing.T) {
 		}, nil
 	}
 	updateFunc := func(ctx context.Context, gwSecret *apicorev1.Secret) error {
-		require.Equal(t, string(gwSecret.Data["tls.crt"]), newTLSCertValue)
-		require.Equal(t, string(gwSecret.Data["tls.key"]), newTLSKeyValue)
-		require.Equal(t, string(gwSecret.Data["ca.crt"]), newCACertValue)
+		require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
+		require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
+		require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
 
 		return nil
 	}
