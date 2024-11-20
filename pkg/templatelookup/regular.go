@@ -247,11 +247,11 @@ func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *Modul
 		"template", moduleTemplateInfo.Name,
 		"newTemplateGeneration", moduleTemplateInfo.GetGeneration(),
 		"previousTemplateGeneration", moduleStatus.Template.GetGeneration(),
-		"newTemplateChannel", moduleTemplateInfo.Spec.Channel,
+		"newTemplateChannel", moduleTemplateInfo.DesiredChannel,
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
-	if moduleTemplateInfo.Spec.Channel == moduleStatus.Channel && moduleTemplateInfo.Spec.Channel != string(shared.NoneChannel) {
+	if moduleTemplateInfo.DesiredChannel == moduleStatus.Channel && moduleTemplateInfo.DesiredChannel != string(shared.NoneChannel) {
 		return
 	}
 	checkLog.Info("outdated ModuleTemplate: channel skew")
@@ -287,7 +287,7 @@ func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *Modul
 	if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
 		msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
 			"as a higher version (%s) of the module was previously installed",
-			moduleStatus.Channel, moduleTemplateInfo.Spec.Channel, versionInStatus.String())
+			moduleStatus.Channel, moduleTemplateInfo.DesiredChannel, versionInStatus.String())
 		checkLog.Info(msg)
 		moduleTemplateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 	}
