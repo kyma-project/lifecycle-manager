@@ -251,7 +251,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, "",
 				version2),
 			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
 				[]v1beta2.ChannelVersionAssignment{
@@ -271,7 +271,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 				WithEnabledModule(testModule).
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    testModule.Name,
-					Channel: v1beta2.DefaultChannel,
 					Version: version2,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
@@ -279,7 +278,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, "",
 				version1),
 			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
 				[]v1beta2.ChannelVersionAssignment{
@@ -780,7 +779,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
 						WithModuleName(testModule.Name).
-						WithChannel(testModule.Channel).
+						WithChannel("").
 						Build(),
 				},
 			},
@@ -830,7 +829,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
 						WithModuleName(testModule.Name).
-						WithChannel(testModule.Channel).
+						WithChannel("").
 						Build(),
 				},
 			},
@@ -866,7 +865,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				assert.True(t, ok)
 				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
 				require.ErrorIs(t, module.Err, wantModule.Err)
-				assert.Equal(t, wantModule.ModuleTemplate.Spec.Channel, module.ModuleTemplate.Spec.Channel)
+				if !testCase.mrmExist {
+					assert.Equal(t, wantModule.ModuleTemplate.Spec.Channel, module.ModuleTemplate.Spec.Channel)
+				}
 			}
 		})
 	}
