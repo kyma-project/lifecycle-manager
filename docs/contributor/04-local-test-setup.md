@@ -117,7 +117,7 @@ This setup is deployed with the following security features enabled:
    The output should look like the following:
 
    ```shell
-   {"repositories":["component-descriptors/kyma-project.io/template-operator"]}
+   {"repositories":["component-descriptors/kyma-project.io/module/template-operator"]}
    ```
 
 7. Open the generated `template.yaml` file and change the following line:
@@ -240,7 +240,7 @@ status:
       operation: kyma is ready
    modules:
       - channel: regular
-        fqdn: kyma-project.io/template-operator
+        fqdn: kyma-project.io/module/template-operator
         manifest:
            apiVersion: operator.kyma-project.io/v1beta2
            kind: Manifest

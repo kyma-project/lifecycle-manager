@@ -16,10 +16,8 @@ import (
 )
 
 const (
-	ControlPlaneNamespace = "kcp-system"
-	KLMPodPrefix          = "klm-controller-manager"
-	KLMPodContainer       = "manager"
-	RemoteNamespace       = "kyma-system"
+	KLMPodPrefix    = "klm-controller-manager"
+	KLMPodContainer = "manager"
 )
 
 var (

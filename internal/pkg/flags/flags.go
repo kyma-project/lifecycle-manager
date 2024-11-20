@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -47,7 +48,7 @@ const (
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
 	DefaultSelfSignedCertKeySize                                        = 4096
-	DefaultRemoteSyncNamespace                                          = "kyma-system"
+	DefaultRemoteSyncNamespace                                          = shared.DefaultRemoteNamespace
 	DefaultMetricsAddress                                               = ":8080"
 	DefaultProbeAddress                                                 = ":8081"
 	DefaultKymaListenerAddress                                          = ":8082"

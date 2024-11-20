@@ -57,6 +57,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
@@ -69,6 +70,7 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
@@ -182,7 +184,9 @@ func updateModuleReleaseMetaCRD(clnt client.Client) (*apiextensionsv1.CustomReso
 	return updateCRDPropertyDescription(clnt, shared.ModuleReleaseMetaKind, "channels", "test change")
 }
 
-func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind, propertyName, newValue string) (*apiextensionsv1.CustomResourceDefinition, error) {
+func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind,
+	propertyName, newValue string,
+) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd, err := fetchCrd(clnt, crdKind)
 	if err != nil {
 		return nil, err

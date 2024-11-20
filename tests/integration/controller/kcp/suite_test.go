@@ -47,7 +47,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -86,7 +86,7 @@ var _ = BeforeSuite(func() {
 	var err error
 	By("bootstrapping test environment")
 
-	externalCRDs, err := testutils.AppendExternalCRDs(
+	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
@@ -121,7 +121,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: UseRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.GetCacheOptions(false, "istio-system", "kcp-system", "kyma-system"),
+			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace, RemoteNamespace),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -155,7 +155,9 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
-
+	Eventually(CreateNamespace, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)

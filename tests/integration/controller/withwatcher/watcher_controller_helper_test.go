@@ -140,7 +140,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
-			Namespace: kcpSystemNs,
+			Namespace: ControlPlaneNamespace,
 			Labels: map[string]string{
 				shared.ManagedBy: managerInstanceName,
 			},
@@ -149,7 +149,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      managerInstanceName + "-svc",
-				Namespace: kcpSystemNs,
+				Namespace: ControlPlaneNamespace,
 			},
 			LabelsToWatch: map[string]string{
 				managerInstanceName + "-watchable": "true",
@@ -206,7 +206,7 @@ func createGatewaySecret() *apicorev1.Secret {
 func getWatcher(name string) (*v1beta2.Watcher, error) {
 	watcherCR := &v1beta2.Watcher{}
 	err := kcpClient.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: kcpSystemNs},
+		client.ObjectKey{Name: name, Namespace: ControlPlaneNamespace},
 		watcherCR)
 	return watcherCR, err
 }

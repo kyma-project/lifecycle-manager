@@ -39,6 +39,14 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 			})
+			By("And the Mandatory ModuleTemplate has the correct mandatory-module label", func() {
+				Eventually(MandatoryModuleTemplateHasExpectedLabel).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", shared.IsMandatoryModule,
+						shared.EnableLabelValue).
+					Should(Succeed())
+			})
+
 			By("And the mandatory ModuleTemplate is not synchronised to the SKR cluster", func() {
 				Consistently(CheckIfExists).
 					WithContext(ctx).
@@ -152,7 +160,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 
 		It("When new version of ModuleTemplate is applied", func() {
 			cmd := exec.Command("kubectl", "apply", "-f",
-				"../moduletemplates/mandatory_moduletemplate_template_operator_v2.yaml")
+				"./moduletemplate/mandatory_moduletemplate_template_operator_v2.yaml")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 		})

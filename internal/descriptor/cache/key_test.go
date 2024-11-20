@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
@@ -21,6 +22,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 			name: "ModuleVersionAnnotation is not nil and valid semver",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
+				WithNamespace(testutils.ControlPlaneNamespace).
 				WithAnnotation(shared.ModuleVersionAnnotation, "1.0.0").
 				WithChannel("channel").
 				WithGeneration(1).
@@ -31,6 +33,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 			name: "ModuleVersionAnnotation is not nil but invalid semver",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
+				WithNamespace(testutils.ControlPlaneNamespace).
 				WithGeneration(1).
 				WithAnnotation(shared.ModuleVersionAnnotation, "not-semver").
 				WithChannel("channel").
@@ -41,6 +44,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 			name: "ModuleVersionAnnotation is not nil but module version is empty",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
+				WithNamespace(testutils.ControlPlaneNamespace).
 				WithGeneration(2).
 				WithAnnotation(shared.ModuleVersionAnnotation, "").
 				WithChannel("channel").
@@ -51,6 +55,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 			name: "ModuleVersionAnnotation is nil",
 			template: builder.NewModuleTemplateBuilder().
 				WithName("name").
+				WithNamespace(testutils.ControlPlaneNamespace).
 				WithGeneration(3).
 				WithChannel("channel").
 				Build(),

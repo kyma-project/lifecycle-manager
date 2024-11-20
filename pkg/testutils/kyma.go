@@ -28,7 +28,7 @@ var (
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
-	return NewKymaWithSyncLabel(name, apimetav1.NamespaceDefault, v1beta2.DefaultChannel)
+	return NewKymaWithSyncLabel(name, ControlPlaneNamespace, v1beta2.DefaultChannel)
 }
 
 // NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
@@ -235,9 +235,7 @@ func UpdateKymaLabel(
 
 func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*v1beta2.Kyma, error) {
 	kymaInCluster := &v1beta2.Kyma{}
-	if namespace == "" {
-		namespace = apimetav1.NamespaceDefault
-	}
+
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,

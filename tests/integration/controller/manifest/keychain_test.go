@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -50,7 +50,7 @@ func CreateOCIImageSpecWithCredSelect(name, repo, digest, secretLabelValue strin
 		Repo:               repo,
 		Type:               "oci-ref",
 		Ref:                digest,
-		CredSecretSelector: testutils.CredSecretLabelSelector(secretLabelValue),
+		CredSecretSelector: CredSecretLabelSelector(secretLabelValue),
 	}
 	return imageSpec
 }
@@ -76,7 +76,7 @@ func installCredSecret(clnt client.Client, secretLabelValue string) func() error
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
-		secret.Labels[testutils.OCIRegistryCredLabelKeyForTest] = secretLabelValue
+		secret.Labels[OCIRegistryCredLabelKeyForTest] = secretLabelValue
 		err = clnt.Create(ctx, secret)
 		if apierrors.IsAlreadyExists(err) {
 			return nil
