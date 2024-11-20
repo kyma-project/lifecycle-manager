@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	module := NewTemplateOperator("fast")
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
