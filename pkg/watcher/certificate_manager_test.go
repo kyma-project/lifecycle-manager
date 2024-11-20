@@ -101,8 +101,8 @@ func TestIsGatewaySecretNewerThanWatcherCert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := watcher.IsGatewaySecretNewerThanWatcherCert(tt.args.gatewaySecret, tt.args.watcherSecret); got != tt.want {
-				t.Errorf("IsGatewaySecretNewerThanWatcherCert() = %v, want %v", got, tt.want)
+			if got := watcher.SecretRequiresRotation(tt.args.gatewaySecret, tt.args.watcherSecret); got != tt.want {
+				t.Errorf("SecretRequiresRotation() = %v, want %v", got, tt.want)
 			}
 		})
 	}

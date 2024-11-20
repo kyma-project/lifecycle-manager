@@ -282,12 +282,12 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 	if err != nil {
 		return err
 	}
-	watcherCert, err := c.getCertificateSecret(ctx)
+	watcherSecret, err := c.getCertificateSecret(ctx)
 	if err != nil {
 		return err
 	}
 
-	if watcherCert != nil && IsGatewaySecretNewerThanWatcherCert(gatewaySecret, watcherCert) {
+	if watcherSecret != nil && SecretRequiresRotation(gatewaySecret, watcherSecret) {
 		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 			"kyma", kymaObjKey)
 		if err = c.removeSecret(ctx); err != nil {
@@ -298,7 +298,7 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 	return nil
 }
 
-func IsGatewaySecretNewerThanWatcherCert(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
+func SecretRequiresRotation(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
 	if gwSecretLastModifiedAt, err := gatewaysecret.GetValidLastModifiedAt(gatewaySecret); err == nil {
 		if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
 			return false
