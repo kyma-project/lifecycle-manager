@@ -336,7 +336,7 @@ func TestWatchEventsExistingGatewaySecret(t *testing.T) {
 	}()
 
 	events <- watch.Event{
-		Type: watch.Added,
+		Type: watch.Modified,
 		Object: &apicorev1.Secret{
 			Data: map[string][]byte{
 				"tls.crt": []byte(newTLSCertValue),
