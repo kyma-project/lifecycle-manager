@@ -32,7 +32,6 @@ import (
 const (
 	kcpConfigEnvVar, skrConfigEnvVar = "KCP_KUBECONFIG", "SKR_KUBECONFIG"
 	clientQPS, clientBurst           = 1000, 2000
-	istioNamespace                   = "istio-system"
 )
 
 var errEmptyEnvVar = errors.New("environment variable is empty")

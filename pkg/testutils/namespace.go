@@ -14,6 +14,7 @@ import (
 const (
 	RemoteNamespace       = shared.DefaultRemoteNamespace
 	ControlPlaneNamespace = "kcp-system"
+	IstioNamespace        = "istio-system"
 )
 
 func CreateNamespace(ctx context.Context, clnt client.Client, name string) error {

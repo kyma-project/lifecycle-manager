@@ -26,7 +26,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	Context("Given KCP Cluster and rotated CA certificate", func() {
 		kcpSecretName := types.NamespacedName{
 			Name:      kyma.Name + "-webhook-tls",
-			Namespace: istioNamespace,
+			Namespace: IstioNamespace,
 		}
 		skrSecretName := types.NamespacedName{
 			Name:      watcher.SkrTLSName,
@@ -36,7 +36,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			var err error
 			namespacedSecretName := types.NamespacedName{
 				Name:      watcher.ResolveTLSCertName(kyma.Name),
-				Namespace: istioNamespace,
+				Namespace: IstioNamespace,
 			}
 			tlsSecret, err := GetTLSSecret(ctx, namespacedSecretName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
@@ -50,7 +50,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			By("And new TLS Certificate is created")
 			namespacedCertName := types.NamespacedName{
 				Name:      caCertName,
-				Namespace: istioNamespace,
+				Namespace: IstioNamespace,
 			}
 			caCertificate, err = GetCACertificate(ctx, namespacedCertName, kcpClient)
 			Expect(err).NotTo(HaveOccurred())

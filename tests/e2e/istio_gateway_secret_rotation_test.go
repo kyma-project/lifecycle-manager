@@ -22,7 +22,7 @@ var _ = Describe("Istio Gateway Secret Rotation", Ordered, func() {
 		It("Then Istio Gateway Secret is a copy of CA Certificate", func() {
 			namespacedRootCASecretName := types.NamespacedName{
 				Name:      "klm-watcher",
-				Namespace: istioNamespace,
+				Namespace: IstioNamespace,
 			}
 
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
