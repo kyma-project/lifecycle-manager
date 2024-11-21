@@ -13,7 +13,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/onsi/ginkgo/v2/dsl/core"
 )
 
 var (
@@ -138,16 +137,6 @@ func CRIsInState(ctx context.Context, group, version, kind, name, namespace stri
 	if err != nil || !stateExists {
 		return ErrFetchingStatus
 	}
-
-	statusPath = []string{"status", "modules", "message"}
-	messageFromCR, exist, _ := unstructured.NestedString(resourceCR.Object, statusPath...)
-
-	if !exist {
-		core.GinkgoWriter.Printf("MESSAGE CR: %v\n", messageFromCR)
-		statusPath = []string{"status", "modules[0]", "message"}
-		messageFromCR, exist, _ = unstructured.NestedString(resourceCR.Object, statusPath...)
-	}
-	core.GinkgoWriter.Printf("MESSAGE CR: %v\n", messageFromCR)
 
 	if stateFromCR != string(expectedState) {
 		return fmt.Errorf("%w: expect %s, but in %s",
