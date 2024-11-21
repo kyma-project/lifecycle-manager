@@ -147,13 +147,31 @@ func TestGatewaySecretRequiresUpdate(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "gateway secret is newer but has parsing error for lastModifiedAt",
+			name: "gateway secret has parsing error for lastModifiedAt",
 			args: args{
 				gwSecret: &apicorev1.Secret{
 					ObjectMeta: apimetav1.ObjectMeta{
 						Annotations: map[string]string{
 							"lastModifiedAt": "2024-11-01T00:00:00",
 						},
+					},
+				},
+				caCert: certmanagerv1.Certificate{
+					Status: certmanagerv1.CertificateStatus{
+						NotBefore: &apimetav1.Time{
+							Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "gateway secret is missing lastModifiedAt",
+			args: args{
+				gwSecret: &apicorev1.Secret{
+					ObjectMeta: apimetav1.ObjectMeta{
+						Annotations: map[string]string{},
 					},
 				},
 				caCert: certmanagerv1.Certificate{
@@ -182,11 +200,6 @@ func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 
 	// Current gateway secret
 	gwSecret := &apicorev1.Secret{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Annotations: map[string]string{
-				"lastModifiedAt": "2024-11-01T00:00:00Z",
-			},
-		},
 		Data: map[string][]byte{
 			"tls.crt": []byte(oldTLSCertValue),
 			"tls.key": []byte(oldTLSKeyValue),
@@ -194,14 +207,6 @@ func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 		},
 	}
 
-	// Newer than gateway secret
-	caCert := certmanagerv1.Certificate{
-		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
-			},
-		},
-	}
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
 			"tls.crt": []byte(newTLSCertValue),
@@ -210,7 +215,7 @@ func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 		},
 	}
 
-	gatewaysecret.CopyRootSecretDataIntoGatewaySecret(gwSecret, caCert, rootSecret)
+	gatewaysecret.CopyRootSecretDataIntoGatewaySecret(gwSecret, rootSecret)
 
 	require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
 	require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))

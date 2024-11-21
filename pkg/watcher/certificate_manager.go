@@ -277,11 +277,9 @@ func (e *CertificateNotReadyError) Error() string {
 	return "Certificate-Secret does not exist"
 }
 
-func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kymaObjKey client.ObjectKey) error {
-	gatewaySecret, err := gatewaysecret.GetGatewaySecret(ctx, c.kcpClient)
-	if err != nil {
-		return err
-	}
+func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, gatewaySecret *apicorev1.Secret,
+	kymaObjKey client.ObjectKey,
+) error {
 	watcherSecret, err := c.getCertificateSecret(ctx)
 	if err != nil {
 		return err

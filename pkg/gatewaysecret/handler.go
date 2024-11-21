@@ -61,25 +61,17 @@ func (gsh *GatewaySecretHandler) handleExisting(ctx context.Context,
 	if err != nil {
 		return err
 	}
-
-	if copied := CopyRootSecretDataIntoGatewaySecret(gwSecret, caCert, rootSecret); !copied {
+	if !GatewaySecretRequiresUpdate(gwSecret, caCert) {
 		return nil
 	}
-
+	CopyRootSecretDataIntoGatewaySecret(gwSecret, rootSecret)
 	return gsh.Update(ctx, gwSecret)
 }
 
-func CopyRootSecretDataIntoGatewaySecret(gwSecret *apicorev1.Secret, caCert certmanagerv1.Certificate,
-	rootSecret *apicorev1.Secret,
-) bool {
-	if !GatewaySecretRequiresUpdate(gwSecret, caCert) {
-		return false
-	}
-
+func CopyRootSecretDataIntoGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
 	gwSecret.Data["tls.crt"] = rootSecret.Data["tls.crt"]
 	gwSecret.Data["tls.key"] = rootSecret.Data["tls.key"]
 	gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
-	return true
 }
 
 func GatewaySecretRequiresUpdate(gwSecret *apicorev1.Secret, caCert certmanagerv1.Certificate) bool {

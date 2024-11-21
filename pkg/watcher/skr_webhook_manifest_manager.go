@@ -85,7 +85,8 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	if _, err = gatewaysecret.GetGatewaySecret(ctx, m.kcpClient); err != nil {
+	var gatewaySecret *apicorev1.Secret
+	if gatewaySecret, err = gatewaysecret.GetGatewaySecret(ctx, m.kcpClient); err != nil {
 		return err
 	}
 
@@ -100,14 +101,14 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	m.updateCertNotRenewMetrics(certificate, kyma)
 
-	if err := certificateMgr.RemoveSecretAfterCARotated(ctx, kymaObjKey); err != nil {
+	if err := certificateMgr.RemoveSecretAfterCARotated(ctx, gatewaySecret, kymaObjKey); err != nil {
 		return fmt.Errorf("error verify CA cert rotation: %w", err)
 	}
 
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
 	resources, err := m.getSKRClientObjectsForInstall(
-		ctx, kymaObjKey, m.config.RemoteSyncNamespace, logger)
+		ctx, kymaObjKey, m.config.RemoteSyncNamespace, gatewaySecret, logger)
 	if err != nil {
 		return err
 	}
@@ -173,10 +174,10 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 }
 
 func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Context,
-	kymaObjKey client.ObjectKey, remoteNs string, logger logr.Logger,
+	kymaObjKey client.ObjectKey, remoteNs string, gatewaySecret *apicorev1.Secret, logger logr.Logger,
 ) ([]client.Object, error) {
 	var skrClientObjects []client.Object
-	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kymaObjKey, remoteNs)
+	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kymaObjKey, remoteNs, gatewaySecret)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +218,7 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 }
 
 func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context,
-	kymaObjKey client.ObjectKey, remoteNs string,
+	kymaObjKey client.ObjectKey, remoteNs string, gatewaySecret *apicorev1.Secret,
 ) (*unstructuredResourcesConfig, error) {
 	tlsSecret := &apicorev1.Secret{}
 	certObjKey := client.ObjectKey{
@@ -230,11 +231,6 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 			return nil, &CertificateNotReadyError{}
 		}
 		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
-	}
-
-	gatewaySecret, err := gatewaysecret.GetGatewaySecret(ctx, m.kcpClient)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching gateway secret: %w", err)
 	}
 
 	return &unstructuredResourcesConfig{
