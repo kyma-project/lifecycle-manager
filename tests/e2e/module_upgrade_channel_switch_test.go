@@ -95,7 +95,7 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 		})
 
 		It("Then Module stay in newer version", func() {
-			expectedErrorMessage := "module template update not allowed: ignore channel skew (from regular to fast), as a higher version (2.4.2-e2e-test) of the module was previously installed"
+			expectedErrorMessage := "module template update not allowed: ignore channel skew (from fast to regular), as a higher version (2.4.2-e2e-test) of the module was previously installed"
 
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
