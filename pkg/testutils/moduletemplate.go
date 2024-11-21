@@ -7,6 +7,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -75,6 +76,31 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{key: newValue}
 	if err := clnt.Update(ctx, moduleTemplate); err != nil {
 		return fmt.Errorf("update module tempate: %w", err)
+	}
+	return nil
+}
+
+func MandatoryModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Client, moduleName, key, value string,
+) error {
+	mandatoryModuleTemplates, err := templatelookup.GetMandatory(ctx, clnt)
+	if err != nil {
+		return err
+	}
+
+	var moduleTemplate *v1beta2.ModuleTemplate
+	for _, moduleTemplateInfo := range mandatoryModuleTemplates {
+		if moduleTemplateInfo.ModuleTemplate.Labels[shared.ModuleName] == moduleName {
+			moduleTemplate = moduleTemplateInfo.ModuleTemplate
+			break
+		}
+	}
+
+	if moduleTemplate == nil {
+		return fmt.Errorf("module template not found, %s", moduleName)
+	}
+
+	if moduleTemplate.Labels[key] != value {
+		return fmt.Errorf("label %s:%s not found", key, value)
 	}
 	return nil
 }
