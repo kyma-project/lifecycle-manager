@@ -274,20 +274,25 @@ func markInvalidSkewUpdate(ctx context.Context, moduleTemplateInfo *ModuleTempla
 		"newVersion", versionInStatus.String(),
 	)
 
-	// channel skews have to be handled with more detail. If a channel is changed this means
-	// that the downstream kyma might have changed its target channel for the module, meaning
-	// the old moduleStatus is reflecting the previous desired state.
-	// when increasing channel stability, this means we could potentially have a downgrade
-	// of module versions here (fast: v2.0.0 get downgraded to regular: v1.0.0). In this
-	// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
-	// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
-	if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
+	if !isValidVersionChange(versionInTemplate, versionInStatus) {
 		msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
 			"as a higher version (%s) of the module was previously installed",
 			moduleStatus.Channel, moduleTemplateInfo.DesiredChannel, versionInStatus.String())
 		checkLog.Info(msg)
 		moduleTemplateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 	}
+}
+
+func isValidVersionChange(newVersion *semver.Version, oldVersion *semver.Version) bool {
+	filteredNewVersion := filterVersion(newVersion)
+	filteredOldVersion := filterVersion(oldVersion)
+	return !filteredNewVersion.LessThan(filteredOldVersion)
+}
+
+func filterVersion(version *semver.Version) *semver.Version {
+	filteredVersion, _ := semver.NewVersion(fmt.Sprintf("%d.%d.%d",
+		version.Major(), version.Minor(), version.Patch()))
+	return filteredVersion
 }
 
 func getDesiredChannel(moduleChannel, globalChannel string) string {

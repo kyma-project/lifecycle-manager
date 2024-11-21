@@ -194,9 +194,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLog)
 	}
-	if flagVar.EnableWebhooks {
-		enableWebhooks(mgr, setupLog)
-	}
 
 	addHealthChecks(mgr, setupLog)
 
@@ -268,14 +265,6 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 	}
 	scheduler.StartAsync()
 	setupLog.V(log.DebugLevel).Info("scheduled job for cleaning up metrics")
-}
-
-func enableWebhooks(mgr manager.Manager, setupLog logr.Logger) {
-	if err := (&v1beta2.ModuleTemplate{}).
-		SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
-		os.Exit(1)
-	}
 }
 
 func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {

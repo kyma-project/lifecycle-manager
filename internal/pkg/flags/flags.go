@@ -156,8 +156,6 @@ func DefineFlagVar() *FlagVar {
 
 	flag.Float64Var(&flagVar.ClientQPS, "k8s-client-qps", DefaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.ClientBurst, "k8s-client-burst", DefaultClientBurst, "kubernetes client Burst")
-	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
-		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
@@ -244,7 +242,6 @@ type FlagVar struct {
 	LeaderElectionRenewDeadline                    time.Duration
 	EnablePurgeFinalizer                           bool
 	EnableKcpWatcher                               bool
-	EnableWebhooks                                 bool
 	ProbeAddr                                      string
 	KymaListenerAddr, ManifestListenerAddr         string
 	MaxConcurrentKymaReconciles                    int
