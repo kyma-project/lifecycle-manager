@@ -120,10 +120,12 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
 				Should(Succeed())
 
-			Eventually(ModuleMessageInKymaStatusIsCorrect).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, expectedErrorMessage).
-				Should(Succeed())
+			By("And the Module Status has correct error message", func() {
+				Eventually(ModuleMessageInKymaStatusIsCorrect).
+					WithContext(ctx).
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, expectedErrorMessage).
+					Should(Succeed())
+			})
 		})
 	})
 })
