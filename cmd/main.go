@@ -195,6 +195,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLog)
 	}
 
+	if flagVar.EnableWebhooks {
+		// enable conversion webhook for CRDs
+	}
+
 	addHealthChecks(mgr, setupLog)
 
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
