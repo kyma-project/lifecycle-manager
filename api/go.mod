@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
-	k8s.io/apimachinery v0.31.2
+	k8s.io/apimachinery v0.31.3
 	ocm.software/ocm v0.17.0
 	sigs.k8s.io/controller-runtime v0.19.1
 )
