@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	module := NewTemplateOperator("fast")
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -95,6 +95,8 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 		})
 
 		It("Then Module stay in newer version", func() {
+			expectedErrorMessage := "module template update not allowed: ignore channel skew (from regular to fast), as a higher version (2.4.2-e2e-test) of the module was previously installed"
+
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
@@ -116,6 +118,11 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
+				Should(Succeed())
+
+			Eventually(ModuleMessageInKymaStatusIsCorrect).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, expectedErrorMessage).
 				Should(Succeed())
 		})
 	})
