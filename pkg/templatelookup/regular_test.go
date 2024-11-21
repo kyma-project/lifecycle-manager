@@ -796,6 +796,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 							Generation: 1,
 						},
 					},
+					Version: "1.0.0",
 				}).Build(),
 			mrmExist: false,
 			want: templatelookup.ModuleTemplatesByModuleName{
@@ -821,6 +822,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 							Generation: 1,
 						},
 					},
+					Version: "1.0.0",
 				}).Build(),
 			mrmExist: true,
 			want: templatelookup.ModuleTemplatesByModuleName{
@@ -840,19 +842,26 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
-				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
-					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
-					WithModuleName(module.Name).
-					WithLabelModuleName(module.Name).
-					WithChannel(module.Channel).
-					WithOCM(compdescv2.SchemaVersion).Build())
 				if testCase.mrmExist {
+					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
+						WithModuleName(module.Name).
+						WithLabelModuleName(module.Name).
+						WithChannel("").
+						WithOCM(compdescv2.SchemaVersion).Build())
 					moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
 						*builder.NewModuleReleaseMetaBuilder().
 							WithModuleName(module.Name).
 							WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 								{Channel: module.Channel, Version: testModule.Version},
 							}).Build())
+				} else {
+					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
+						WithModuleName(module.Name).
+						WithLabelModuleName(module.Name).
+						WithChannel(module.Channel).
+						WithOCM(compdescv2.SchemaVersion).Build())
 				}
 			}
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
