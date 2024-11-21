@@ -196,7 +196,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	if flagVar.EnableWebhooks {
-		// enable conversion webhook for CRDs
+		// enable conversion webhook for CRDs here
+
+		setupLog.Info("currently no configured webhooks")
 	}
 
 	addHealthChecks(mgr, setupLog)
