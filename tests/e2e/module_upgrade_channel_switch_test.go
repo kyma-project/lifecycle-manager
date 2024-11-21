@@ -41,6 +41,12 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+
+			By("And Manifest CR is in \"Ready\" State")
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient, shared.StateReady).
+				Should(Succeed())
 		})
 
 		It("When upgrade version by switch Channel", func() {
@@ -72,6 +78,12 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+
+			By("And Manifest CR is in \"Ready\" State")
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
