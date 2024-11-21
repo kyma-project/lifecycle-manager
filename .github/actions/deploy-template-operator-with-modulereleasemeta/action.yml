@@ -41,6 +41,10 @@ runs:
         sed -i 's/template-operator-regular/template-operator-1.1.1-e2e-test/g' tests/e2e/moduletemplate/moduletemplate_template_operator_v1_regular.yaml
         sed -i 's/template-operator-regular/template-operator-2.4.2-e2e-test/g' tests/e2e/moduletemplate/moduletemplate_template_operator_v2_regular_new_version.yaml
         
+        sed -i '/^  channel: fast$/d' tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
+        sed -i '/^  channel: regular$/d' tests/e2e/moduletemplate/moduletemplate_template_operator_v1_regular.yaml
+        sed -i '/^  channel: regular$/d' tests/e2e/moduletemplate/moduletemplate_template_operator_v2_regular_new_version.yaml
+        
         kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
         kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v1_regular.yaml
 
