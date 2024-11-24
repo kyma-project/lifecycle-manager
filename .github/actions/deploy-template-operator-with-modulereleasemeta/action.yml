@@ -148,7 +148,8 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        ./.github/scripts/release/generate_moduletemplate.sh 1.0.0 template-operator
+        cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
+        ./generate_moduletemplate.sh 1.0.0 template-operator
     - name: Create non-working image patch for Template Operator Module and create associated module config file and applying ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'||
