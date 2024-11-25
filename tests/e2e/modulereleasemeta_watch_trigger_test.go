@@ -67,7 +67,8 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 			By("And the Module Status has correct error message", func() {
 				Eventually(ModuleMessageInKymaStatusIsCorrect).
 					WithContext(ctx).
-					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, "failed to get module template: ModuleTemplate.operator.kyma-project.io \"template-operator-1.2.3\" not found").
+					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+						"failed to get module template: ModuleTemplate.operator.kyma-project.io \"template-operator-1.2.3\" not found").
 					Should(Succeed())
 			})
 		})
@@ -75,7 +76,7 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 		It("When ModuleReleaseMeta channels get updated with valid version", func() {
 			Eventually(UpdateAllModuleReleaseMetaChannelVersions).
 				WithContext(ctx).
-				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, "1.0.1").
+				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, moduleVersionToBeUsed).
 				Should(Succeed())
 		})
 		It("Then KCP Kyma CR should be requeued and gets into \"Ready\" State", func() {

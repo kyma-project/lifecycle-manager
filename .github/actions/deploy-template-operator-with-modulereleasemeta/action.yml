@@ -9,6 +9,7 @@ runs:
         directory_name: ../template-operator
     - name: Copy generate moduletemplate script to template-operator directory
       working-directory: template-operator
+      shell: bash
       run: |
         cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
     - name: Create Template Operator Module and apply ModuleTemplate and ModuleReleaseMeta
