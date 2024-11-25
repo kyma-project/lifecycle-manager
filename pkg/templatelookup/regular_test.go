@@ -251,7 +251,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, "",
 				version2),
 			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
 				[]v1beta2.ChannelVersionAssignment{
@@ -271,7 +271,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 				WithEnabledModule(testModule).
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    testModule.Name,
-					Channel: v1beta2.DefaultChannel,
 					Version: version2,
 					Template: &v1beta2.TrackingObject{
 						PartialMeta: v1beta2.PartialMeta{
@@ -279,7 +278,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 						},
 					},
 				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
+			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, "",
 				version1),
 			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
 				[]v1beta2.ChannelVersionAssignment{
@@ -780,7 +779,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
 						WithModuleName(testModule.Name).
-						WithChannel(testModule.Channel).
+						WithChannel("").
 						Build(),
 				},
 			},
@@ -797,6 +796,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 							Generation: 1,
 						},
 					},
+					Version: "1.0.0",
 				}).Build(),
 			mrmExist: false,
 			want: templatelookup.ModuleTemplatesByModuleName{
@@ -822,6 +822,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 							Generation: 1,
 						},
 					},
+					Version: "1.0.0",
 				}).Build(),
 			mrmExist: true,
 			want: templatelookup.ModuleTemplatesByModuleName{
@@ -830,7 +831,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					Err:            nil,
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
 						WithModuleName(testModule.Name).
-						WithChannel(testModule.Channel).
+						WithChannel("").
 						Build(),
 				},
 			},
@@ -841,19 +842,26 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
-				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
-					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
-					WithModuleName(module.Name).
-					WithLabelModuleName(module.Name).
-					WithChannel(module.Channel).
-					WithOCM(compdescv2.SchemaVersion).Build())
 				if testCase.mrmExist {
+					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
+						WithModuleName(module.Name).
+						WithLabelModuleName(module.Name).
+						WithChannel("").
+						WithOCM(compdescv2.SchemaVersion).Build())
 					moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
 						*builder.NewModuleReleaseMetaBuilder().
 							WithModuleName(module.Name).
 							WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 								{Channel: module.Channel, Version: testModule.Version},
 							}).Build())
+				} else {
+					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
+						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
+						WithModuleName(module.Name).
+						WithLabelModuleName(module.Name).
+						WithChannel(module.Channel).
+						WithOCM(compdescv2.SchemaVersion).Build())
 				}
 			}
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
@@ -866,7 +874,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				assert.True(t, ok)
 				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
 				require.ErrorIs(t, module.Err, wantModule.Err)
-				assert.Equal(t, wantModule.ModuleTemplate.Spec.Channel, module.ModuleTemplate.Spec.Channel)
+				if !testCase.mrmExist {
+					assert.Equal(t, wantModule.ModuleTemplate.Spec.Channel, module.ModuleTemplate.Spec.Channel)
+				}
 			}
 		})
 	}
