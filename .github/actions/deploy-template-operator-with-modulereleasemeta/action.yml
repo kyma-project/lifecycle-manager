@@ -31,14 +31,14 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        sed -i '/^kind: Deployment/,/metadata:/ s/name: ${{ env.ModuleDeploymentName }}/name: ${{ env.ModuleDeploymentNameInOlderVersion }}/' template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
       shell: bash
       run: |
         make build-manifests
-        sed -i '/^kind: Deployment/,/metadata:/ s/name: ${{ env.ModuleDeploymentName }}/name: ${{ env.ModuleDeploymentNameInNewerVersion }}/' template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }}
     - name: Create and apply Template Operator ModuleTemplate with StatefulSet, with final state and final deletion state as `Warning`
       working-directory: template-operator
@@ -120,7 +120,8 @@ runs:
         matrix.e2e-test == 'skip-manifest-reconciliation' ||
         matrix.e2e-test == 'misconfigured-kyma-secret' ||
         matrix.e2e-test == 'unmanage-module' ||
-        matrix.e2e-test == 'modulereleasemeta-watch-trigger'
+        matrix.e2e-test == 'modulereleasemeta-watch-trigger' ||
+        matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate'
         }}
       shell: bash
       run: |
