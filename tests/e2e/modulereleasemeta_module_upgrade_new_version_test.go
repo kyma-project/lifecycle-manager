@@ -9,11 +9,10 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Module Upgrade By New Version", Ordered, func() {
+var _ = Describe("Module with ModuleReleaseMeta Upgrade By New Version", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
-	newTemplateFilePath := "./moduletemplate/moduletemplate_template_operator_v2_regular_new_version.yaml"
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -45,10 +44,11 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When Module Template Version is Upgraded", func() {
-			Expect(ApplyYAML(ctx,
-				kcpClient,
-				newTemplateFilePath)).
+		It("When version in ModuleReleaseMeta has been upgraded", func() {
+
+			Eventually(UpdateChannelVersionInModuleReleaseMeta).
+				WithContext(ctx).
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, "2.4.2-e2e-test").
 				Should(Succeed())
 		})
 

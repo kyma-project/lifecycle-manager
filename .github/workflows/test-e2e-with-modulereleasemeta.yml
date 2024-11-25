@@ -41,11 +41,11 @@ jobs:
           - module-without-default-cr
           - module-consistency
           - non-blocking-deletion
-          - upgrade-under-deletion
+          - modulereleasemeta-upgrade-under-deletion
           - purge-controller
           - purge-metrics
           - module-upgrade-channel-switch
-          - module-upgrade-new-version
+          - modulereleasemeta-module-upgrade-new-version
           - unmanage-module
           - skip-manifest-reconciliation
           - ca-certificate-rotation
@@ -100,7 +100,18 @@ jobs:
 
       - name: Deploy template-operator
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
-
+        env:
+          ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
+          ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
+          NewerVersion: 2.4.2-e2e-test
+          OlderVersion: 1.1.1-e2e-test
+          VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
+          VersionForDeploymentInWarning: 1.0.0-warning-deployment
+          VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment
+          VersionForMisconfiguredStatefulSetImage: 1.0.0-misconfigured-statefulset
+          VersionForNoDefaultCR: 1.0.0-no-default-cr
+          MisconfiguredModuleName: template-operator-misconfigured
+          ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         run: |

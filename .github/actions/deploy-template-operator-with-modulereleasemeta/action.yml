@@ -5,18 +5,6 @@ inputs:
     description: 'Version of the template operator to be deployed, should be aligned with the latest version released in github.'
     required: true
     default: '1.0.1'
-env:
-  ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
-  ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
-  NewerVersion: 2.4.2-e2e-test
-  OlderVersion: 1.1.1-e2e-test
-  VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
-  VersionForDeploymentInWarning: 1.0.0-warning-deployment
-  VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment
-  VersionForMisconfiguredStatefulSetImage: 1.0.0-misconfigured-statefulset
-  VersionForNoDefaultCR: 1.0.0-no-default-cr
-  MisconfiguredModuleName: template-operator-misconfigured
-  ModuleName: template-operator
 runs:
   using: composite
   steps:
@@ -140,16 +128,12 @@ runs:
     - name: Apply Template Operator Module and ModuleReleaseMeta for regular and fast channels
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
-        matrix.e2e-test == 'module-upgrade-new-version' ||
-        matrix.e2e-test == 'upgrade-under-deletion' ||
+        matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
+        matrix.e2e-test == 'modulereleasemeta-upgrade-under-deletion' ||
         matrix.e2e-test == 'modulereleasemeta-sync'
         }}
       shell: bash
       run: |
-
-        sed -i 's/template-operator-regular/template-operator-2.4.2-e2e-test/g' tests/e2e/moduletemplate/moduletemplate_template_operator_v2_regular_new_version.yaml
-        
-        sed -i '/^  channel: regular$/d' tests/e2e/moduletemplate/moduletemplate_template_operator_v2_regular_new_version.yaml
         
         ./generate_modulereleasemeta.sh template-operator fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
     - name: Create Template Operator Module for installation by version

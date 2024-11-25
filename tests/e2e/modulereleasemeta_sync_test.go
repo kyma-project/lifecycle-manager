@@ -74,7 +74,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 		It("When Template Operator v2 ModuleTemplate is applied in the KCP Cluster", func() {
 			v2Version := "2.4.2-e2e-test"
 			By("And ModuleReleaseMeta is updated with the correct channel-version")
-			Eventually(UpdateChannelVersionIfModuleReleaseMetaExists).
+			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
 				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v2Version).
 				Should(Succeed())

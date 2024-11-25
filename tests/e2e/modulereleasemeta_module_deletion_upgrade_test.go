@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	"os/exec"
-
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -14,7 +12,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
+var _ = Describe("Kyma Module with ModuleReleaseMeta Upgrade Under Deletion", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
@@ -83,13 +81,11 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When new version of ModuleTemplate is applied", func() {
-			cmd := exec.Command("kubectl", "apply", "-f",
-				"./moduletemplate/moduletemplate_template_operator_v2_regular_new_version.yaml")
-			out, err := cmd.CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			GinkgoWriter.Printf(string(out))
-
+		It("When ModuleReleaseMeta is updated with new version", func() {
+			Eventually(UpdateChannelVersionInModuleReleaseMeta).
+				WithContext(ctx).
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, "2.4.2-e2e-test").
+				Should(Succeed())
 		})
 
 		It("Then Kyma Module is updated on SKR Cluster", func() {
