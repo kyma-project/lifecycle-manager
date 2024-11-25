@@ -48,3 +48,7 @@ EOF
 kubectl apply -f module-release-meta.yaml
 
 echo "ModuleReleaseMeta created successfully"
+
+rm -f module-config-for-e2e.yaml
+rm -f module-release-meta.yaml
+rm -f template.yaml
