@@ -250,9 +250,10 @@ func TestWatchEvents(t *testing.T) {
 	waitGroup.Add(1)
 
 	calledTimes := 0
+	//nolint:unparam The function has to have this signature to be used in WatchEvents
 	mockManageSecretFunc := func(_ context.Context, _ *apicorev1.Secret) error {
 		calledTimes += 1
-		return nil //nolint:unparam
+		return nil
 	}
 
 	events := make(chan watch.Event, 1)
