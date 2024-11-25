@@ -89,7 +89,6 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
-
 		})
 
 		It("Then Kyma Module is updated on SKR Cluster", func() {

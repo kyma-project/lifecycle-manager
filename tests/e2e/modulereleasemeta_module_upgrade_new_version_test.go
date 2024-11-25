@@ -45,7 +45,6 @@ var _ = Describe("Module with ModuleReleaseMeta Upgrade By New Version", Ordered
 		})
 
 		It("When version in ModuleReleaseMeta has been upgraded", func() {
-
 			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
 				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).

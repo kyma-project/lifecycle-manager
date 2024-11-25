@@ -103,7 +103,8 @@ func DeleteModuleReleaseMeta(ctx context.Context, moduleName, namespace string, 
 }
 
 func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client client.Client,
-	namespace, name, version string) error {
+	namespace, name, version string,
+) error {
 	meta := &v1beta2.ModuleReleaseMeta{}
 	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
 		return err

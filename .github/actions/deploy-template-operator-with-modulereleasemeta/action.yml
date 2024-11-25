@@ -189,6 +189,7 @@ runs:
         kubectl delete moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system
         
         # Create ModuleTemplate with name <modulename>-<channel>
+        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
