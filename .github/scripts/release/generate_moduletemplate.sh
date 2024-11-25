@@ -6,6 +6,7 @@ set -E
 set -o pipefail
 
 RELEASE_VERSION=$1
+MODULE_NAME=$2
 
 cat <<EOF > module-config.yaml
 name: kyma-project.io/module/template-operator
