@@ -1,5 +1,10 @@
 name: Deploy template-operator With ModuleReleaseMeta
 description: Deploys a test-specific template-operator and corresponding ModuleReleaseMeta.
+inputs:
+  module_version:
+    description: 'Version of the template operator to be deployed, should be aligned with the latest version released in github.'
+    required: true
+    default: '1.0.1'
 runs:
   using: composite
   steps:
@@ -91,25 +96,10 @@ runs:
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
       shell: bash
       run: |
-        sed -i 's/template-operator-fast/template-operator-2.4.2-e2e-test/g' tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
-        sed -i '/^  channel: fast$/d' tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
-        
-        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
-        cat <<EOF > mrm.yaml
-        apiVersion: operator.kyma-project.io/v1beta2
-        kind: ModuleReleaseMeta
-        metadata:
-          name: template-operator
-          namespace: kcp-system
-        spec:
-          channels:
-            - channel: fast
-              version: 2.4.2-e2e-test
-            - channel: regular
-              version: 1.0.1
-          moduleName: template-operator
-        EOF
-        kubectl apply -f mrm.yaml
+        make build-manifests
+        sed -i 's/template-operator-controller-manager/template-operator-v2-controller-manager/g' template-operator.yaml
+        ./generate_moduletemplate.sh template-operator 2.4.2-e2e-test
+        ./generate_modulereleasemeta.sh fast:2.4.2-e2e-test regular:${{ inputs.module_version }}
     - name: Create Template Operator Module with Deployment, with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
@@ -128,7 +118,7 @@ runs:
         popd
         make build-manifests
         ./generate_moduletemplate.sh template-operator 1.0.1
-        ./generate_modulereleasemeta.sh regular:1.0.1
+        ./generate_modulereleasemeta.sh template-operator regular:1.0.1
     - name: Create Template Operator Module with StatefulSet, with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
