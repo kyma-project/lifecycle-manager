@@ -92,7 +92,7 @@ runs:
       run: |
         kubectl apply -f tests/e2e/moduletemplate/mandatory_moduletemplate_template_operator_v1.yaml
     - name: Apply Template Operator Module V2 and ModuleReleaseMeta, fast channel
-      working-directory: ./lifecycle-manager
+      working-directory: template-operator
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
       shell: bash
       run: |

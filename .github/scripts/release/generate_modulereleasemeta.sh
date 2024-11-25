@@ -27,5 +27,6 @@ EOF
 done
 kubectl apply -f module-release-meta.yaml
 
+cat module-release-meta.yaml
 echo "ModuleReleaseMeta created successfully"
 rm -f module-release-meta.yaml
