@@ -9,7 +9,7 @@ RELEASE_VERSION=$2
 INCLUDE_DEFAULT_CR=${3:-true}
 
 cat <<EOF > module-config-for-e2e.yaml
-name: kyma-project.io/module/template-operator
+name: kyma-project.io/module/${MODULE_NAME}
 version: ${RELEASE_VERSION}
 security: sec-scanners-config.yaml
 manifest: https://localhost:8080/template-operator.yaml

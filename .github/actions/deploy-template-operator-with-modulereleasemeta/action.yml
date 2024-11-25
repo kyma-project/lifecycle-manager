@@ -5,6 +5,11 @@ inputs:
     description: 'Version of the template operator to be deployed, should be aligned with the latest version released in github.'
     required: true
     default: '1.0.1'
+env:
+  ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
+  ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
+  FastChannelVersion: 2.4.2-e2e-test
+  MisconfiguredModuleName: template-operator-misconfigured
 runs:
   using: composite
   steps:
@@ -97,9 +102,9 @@ runs:
       shell: bash
       run: |
         make build-manifests
-        sed -i 's/template-operator-controller-manager/template-operator-v2-controller-manager/g' template-operator.yaml
-        ./generate_moduletemplate.sh template-operator 2.4.2-e2e-test
-        ./generate_modulereleasemeta.sh fast:2.4.2-e2e-test regular:${{ inputs.module_version }}
+        sed -i 's/template-operator-controller-manager/${{ env.ModuleDeploymentNameInNewerVersion }}/g' template-operator.yaml
+        ./generate_moduletemplate.sh template-operator ${{ env.FastChannelVersion }}
+        ./generate_modulereleasemeta.sh template-operator fast:${{ env.FastChannelVersion }} regular:${{ inputs.module_version }}
     - name: Create Template Operator Module with Deployment, with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
@@ -152,8 +157,8 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
         make build-manifests
-        ./generate_moduletemplate.sh template-operator-misconfigured 1.1.1
-        ./generate_modulereleasemeta.sh template-operator-misconfigured regular:1.1.1
+        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} 1.1.1
+        ./generate_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:1.1.1
     - name: Create Template Operator Module with StatefulSet, with non-working image and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
@@ -168,8 +173,8 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        ./generate_moduletemplate.sh template-operator-misconfigured 1.1.1
-        ./generate_modulereleasemeta.sh template-operator-misconfigured regular:1.1.1
+        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} 1.1.1
+        ./generate_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:1.1.1
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
