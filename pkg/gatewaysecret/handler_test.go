@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -27,6 +26,26 @@ const (
 	newTLSKeyValue  = "value2"
 	newCACertValue  = "value3"
 )
+
+func TestNewGatewaySecret(t *testing.T) {
+	t.Parallel()
+
+	rootSecret := &apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt": []byte(newTLSCertValue),
+			"tls.key": []byte(newTLSKeyValue),
+			"ca.crt":  []byte(newCACertValue),
+		},
+	}
+	gwSecret := gatewaysecret.NewGatewaySecret(rootSecret)
+
+	require.Equal(t, "klm-istio-gateway", gwSecret.Name)
+	require.Equal(t, "istio-system", gwSecret.Namespace)
+
+	require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
+	require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
+	require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
+}
 
 func TestGetValidLastModifiedAt(t *testing.T) {
 	tests := []struct {
@@ -198,7 +217,6 @@ func TestGatewaySecretRequiresUpdate(t *testing.T) {
 func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 	t.Parallel()
 
-	// Current gateway secret
 	gwSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
 			"tls.crt": []byte(oldTLSCertValue),
@@ -222,44 +240,8 @@ func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 	require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
 }
 
-type MockSecretManager struct {
-	findGatewaySecretFunc    func(ctx context.Context) (*apicorev1.Secret, error)
-	getRootCACertificateFunc func(ctx context.Context) (certmanagerv1.Certificate, error)
-	createFunc               func(ctx context.Context, secret *apicorev1.Secret) error
-	updateFunc               func(ctx context.Context, secret *apicorev1.Secret) error
-}
-
-func (m MockSecretManager) FindGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
-	return m.findGatewaySecretFunc(ctx)
-}
-
-func (m MockSecretManager) GetRootCACertificate(ctx context.Context) (certmanagerv1.Certificate, error) {
-	return m.getRootCACertificateFunc(ctx)
-}
-
-func (m MockSecretManager) Create(ctx context.Context, secret *apicorev1.Secret) error {
-	return m.createFunc(ctx, secret)
-}
-
-func (m MockSecretManager) Update(ctx context.Context, secret *apicorev1.Secret) error {
-	return m.updateFunc(ctx, secret)
-}
-
-func TestWatchEventsNewGatewaySecret(t *testing.T) {
+func TestWatchEvents(t *testing.T) {
 	t.Parallel()
-
-	findGatewaySecretFunc := func(ctx context.Context) (*apicorev1.Secret, error) {
-		return nil, &meta.NoResourceMatchError{}
-	}
-	createFunc := func(ctx context.Context, gwSecret *apicorev1.Secret) error {
-		require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
-		require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
-		require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
-
-		return nil
-	}
-	mockManager := MockSecretManager{findGatewaySecretFunc: findGatewaySecretFunc, createFunc: createFunc}
-	handler := gatewaysecret.GatewaySecretHandler{SecretManager: mockManager}
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -267,10 +249,16 @@ func TestWatchEventsNewGatewaySecret(t *testing.T) {
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 
+	calledTimes := 0
+	mockManageSecretFunc := func(_ context.Context, _ *apicorev1.Secret) error {
+		calledTimes += 1
+		return nil
+	}
+
 	events := make(chan watch.Event, 1)
 	go func() {
 		defer waitGroup.Done()
-		gatewaysecret.WatchEvents(ctx, events, &handler, logr.Logger{})
+		gatewaysecret.WatchEvents(ctx, events, mockManageSecretFunc, logr.Logger{})
 	}()
 
 	events <- watch.Event{
@@ -283,63 +271,6 @@ func TestWatchEventsNewGatewaySecret(t *testing.T) {
 			},
 		},
 	}
-	close(events)
-
-	waitGroup.Wait()
-}
-
-func TestWatchEventsExistingGatewaySecret(t *testing.T) {
-	t.Parallel()
-
-	findGatewaySecretFunc := func(ctx context.Context) (*apicorev1.Secret, error) {
-		return &apicorev1.Secret{
-			ObjectMeta: apimetav1.ObjectMeta{
-				Annotations: map[string]string{
-					"lastModifiedAt": "2024-11-01T00:00:00Z",
-				},
-			},
-			Data: map[string][]byte{
-				"tls.crt": []byte(oldTLSCertValue),
-				"tls.key": []byte(oldTLSKeyValue),
-				"ca.crt":  []byte(oldCACertValue),
-			},
-		}, nil
-	}
-	getRootCACertificateFunc := func(ctx context.Context) (certmanagerv1.Certificate, error) {
-		return certmanagerv1.Certificate{
-			Status: certmanagerv1.CertificateStatus{
-				NotBefore: &apimetav1.Time{
-					Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
-				},
-			},
-		}, nil
-	}
-	updateFunc := func(ctx context.Context, gwSecret *apicorev1.Secret) error {
-		require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
-		require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
-		require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
-
-		return nil
-	}
-
-	mockManager := MockSecretManager{
-		findGatewaySecretFunc:    findGatewaySecretFunc,
-		getRootCACertificateFunc: getRootCACertificateFunc, updateFunc: updateFunc,
-	}
-	handler := gatewaysecret.GatewaySecretHandler{SecretManager: mockManager}
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
-
-	var waitGroupg sync.WaitGroup
-	waitGroupg.Add(1)
-
-	events := make(chan watch.Event, 1)
-	go func() {
-		defer waitGroupg.Done()
-		gatewaysecret.WatchEvents(ctx, events, &handler, logr.Logger{})
-	}()
-
 	events <- watch.Event{
 		Type: watch.Modified,
 		Object: &apicorev1.Secret{
@@ -351,6 +282,7 @@ func TestWatchEventsExistingGatewaySecret(t *testing.T) {
 		},
 	}
 	close(events)
+	waitGroup.Wait()
 
-	waitGroupg.Wait()
+	require.Equal(t, 2, calledTimes)
 }

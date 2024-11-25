@@ -214,7 +214,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 func setupIstioGatewaySecretRotation(config *rest.Config, kcpClient *remote.ConfigAndClient, setupLog logr.Logger) {
 	kcpClientset := kubernetes.NewForConfigOrDie(config)
-	gatewaySecretHandler := gatewaysecret.NewGatewaySecretHandler(gatewaysecret.NewSecretManagerImpl(kcpClient))
+	gatewaySecretHandler := gatewaysecret.NewGatewaySecretHandler(kcpClient)
 
 	gatewaysecret.StartRootCertificateWatch(kcpClientset, gatewaySecretHandler, setupLog)
 }

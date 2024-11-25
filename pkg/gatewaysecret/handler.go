@@ -3,6 +3,8 @@ package gatewaysecret
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -27,12 +29,12 @@ const (
 var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
 
 type GatewaySecretHandler struct {
-	SecretManager
+	kcpClient client.Client
 }
 
-func NewGatewaySecretHandler(secretManager SecretManager) *GatewaySecretHandler {
+func NewGatewaySecretHandler(kcpClient client.Client) *GatewaySecretHandler {
 	return &GatewaySecretHandler{
-		secretManager,
+		kcpClient: kcpClient,
 	}
 }
 
@@ -92,6 +94,73 @@ func GetValidLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {
 	return time.Time{}, errCouldNotGetLastModifiedAt
 }
 
+func (gsh *GatewaySecretHandler) FindGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
+	return GetGatewaySecret(ctx, gsh.kcpClient)
+}
+
+func (gsh *GatewaySecretHandler) Create(ctx context.Context, secret *apicorev1.Secret) error {
+	gsh.updateLastModifiedAt(secret)
+	if err := gsh.kcpClient.Create(ctx, secret); err != nil {
+		return fmt.Errorf("failed to create secret %s: %w", secret.Name, err)
+	}
+	return nil
+}
+
+func (gsh *GatewaySecretHandler) Update(ctx context.Context, secret *apicorev1.Secret) error {
+	gsh.updateLastModifiedAt(secret)
+	if err := gsh.kcpClient.Update(ctx, secret); err != nil {
+		return fmt.Errorf("failed to update secret %s: %w", secret.Name, err)
+	}
+	return nil
+}
+
+func (gsh *GatewaySecretHandler) GetRootCACertificate(ctx context.Context) (certmanagerv1.Certificate, error) {
+	caCert := certmanagerv1.Certificate{}
+	if err := gsh.kcpClient.Get(ctx,
+		client.ObjectKey{Namespace: istioNamespace, Name: kcpCACertName},
+		&caCert); err != nil {
+		return certmanagerv1.Certificate{}, fmt.Errorf("failed to get CA certificate: %w", err)
+	}
+	return caCert, nil
+}
+
+func (gsh *GatewaySecretHandler) updateLastModifiedAt(secret *apicorev1.Secret) {
+	if secret.Annotations == nil {
+		secret.Annotations = make(map[string]string)
+	}
+	secret.Annotations[LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+}
+
+func NewGatewaySecret(rootSecret *apicorev1.Secret) *apicorev1.Secret {
+	gwSecret := &apicorev1.Secret{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: apicorev1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      gatewaySecretName,
+			Namespace: istioNamespace,
+		},
+		Data: map[string][]byte{
+			"tls.crt": rootSecret.Data["tls.crt"],
+			"tls.key": rootSecret.Data["tls.key"],
+			"ca.crt":  rootSecret.Data["ca.crt"],
+		},
+	}
+	return gwSecret
+}
+
+func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
+	secret := &apicorev1.Secret{}
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Name:      gatewaySecretName,
+		Namespace: istioNamespace,
+	}, secret); err != nil {
+		return nil, fmt.Errorf("failed to get secret %s: %w", gatewaySecretName, err)
+	}
+	return secret, nil
+}
+
 func StartRootCertificateWatch(clientset *kubernetes.Clientset, gatewaySecretHandler *GatewaySecretHandler,
 	log logr.Logger,
 ) {
@@ -106,18 +175,18 @@ func StartRootCertificateWatch(clientset *kubernetes.Clientset, gatewaySecretHan
 		panic(err)
 	}
 
-	WatchEvents(ctx, secretWatch.ResultChan(), gatewaySecretHandler, log)
+	WatchEvents(ctx, secretWatch.ResultChan(), gatewaySecretHandler.ManageGatewaySecret, log)
 }
 
 func WatchEvents(ctx context.Context, watchEvents <-chan watch.Event,
-	gatewaySecretHandler *GatewaySecretHandler, log logr.Logger,
+	manageGatewaySecretFunc func(context.Context, *apicorev1.Secret) error, log logr.Logger,
 ) {
 	for event := range watchEvents {
 		rootCASecret, _ := event.Object.(*apicorev1.Secret)
 
 		switch event.Type {
 		case watch.Added, watch.Modified:
-			err := gatewaySecretHandler.ManageGatewaySecret(ctx, rootCASecret)
+			err := manageGatewaySecretFunc(ctx, rootCASecret)
 			if err != nil {
 				log.Error(err, "unable to manage istio gateway secret")
 			}
