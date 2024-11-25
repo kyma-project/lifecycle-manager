@@ -184,8 +184,10 @@ runs:
       if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
       shell: bash
       run: |
-        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        # Delete the ModuleTemplate in cluster with name <modulename>-<version>
+        kubectl delete moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system
+        
+        # Create ModuleTemplate with name <modulename>-<channel>
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        sed -i 's/template-operator-1.0.1/template-operator-regular/g' ./template.yaml
+        sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
-        kubectl apply -f module-release-meta.yaml
