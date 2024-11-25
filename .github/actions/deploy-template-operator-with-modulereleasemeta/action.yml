@@ -30,16 +30,15 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
-        
         make build-manifests
-        sed -i '/kind: Deployment/,/metadata:/ { /name: ${{ env.ModuleDeploymentName }}/ s/${{ env.ModuleDeploymentName }}/${{ env.ModuleDeploymentNameInOlderVersion }}/ }' template-operator.yaml
+        sed -i '/^kind: Deployment/,/metadata:/ s/name: ${{ env.ModuleDeploymentName }}/name: ${{ env.ModuleDeploymentNameInOlderVersion }}/' template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
       shell: bash
       run: |
         make build-manifests
-        sed -i '/kind: Deployment/,/metadata:/ { /name: ${{ env.ModuleDeploymentName }}/ s/${{ env.ModuleDeploymentName }}/${{ env.ModuleDeploymentNameInNewerVersion }}/ }' template-operator.yaml
+        sed -i '/^kind: Deployment/,/metadata:/ s/name: ${{ env.ModuleDeploymentName }}/name: ${{ env.ModuleDeploymentNameInNewerVersion }}/' template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }}
     - name: Create and apply Template Operator ModuleTemplate with StatefulSet, with final state and final deletion state as `Warning`
       working-directory: template-operator
@@ -185,11 +184,12 @@ runs:
       if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
       shell: bash
       run: |
+        # Export the existing ModuleTemplate
+        kubectl get moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system -oyaml > template.yaml
+        
         # Delete the ModuleTemplate in cluster with name <modulename>-<version>
         kubectl delete moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system
         
         # Create ModuleTemplate with name <modulename>-<channel>
-        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
-        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
