@@ -120,21 +120,7 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind Deployment
         popd
         make build-manifests
-        echo "name: kyma-project.io/module/template-operator
-        version: 1.0.1
-        security: sec-scanners-config.yaml
-        defaultCR: https://localhost:8080//config/samples/default-sample-cr.yaml
-        manifest: https://localhost:8080/template-operator.yaml
-        repository: https://github.com/kyma-project/template-operator
-        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
-        icons:
-        - name: module-icon
-          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> warning-module-config.yaml
-        modulectl create --config-file ./warning-module-config.yaml --registry http://localhost:5111 --insecure
-        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        kubectl get crds
-        kubectl apply -f template.yaml
-        kubectl apply -f module-release-meta.yaml
+        ./generate_moduletemplate.sh 1.0.1 template-operator
     - name: Create Template Operator Module with StatefulSet, with final state and final deletion state as `Warning` and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
@@ -182,65 +168,14 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
         ./generate_moduletemplate.sh 1.1.1 template-operator-misconfigured
-
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
       shell: bash
       run: |
         make build-manifests
-        echo "name: kyma-project.io/module/template-operator
-        version: 1.0.0
-        manifest: https://localhost:8080/template-operator.yaml
-        security: sec-scanners-config.yaml
-        repository: https://github.com/kyma-project/template-operator
-        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
-        icons:
-        - name: module-icon
-          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> module-config-no-cr.yaml
-        modulectl create --config-file ./module-config-no-cr.yaml --registry http://localhost:5111 --insecure
-        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        kubectl get crds
-        kubectl apply -f template.yaml
-        cat <<EOF > mrm.yaml
-        apiVersion: operator.kyma-project.io/v1beta2
-        kind: ModuleReleaseMeta
-        metadata:
-          name: template-operator
-          namespace: kcp-system
-        spec:
-          channels:
-            - channel: regular
-              version: 1.0.0
-          moduleName: template-operator
-        EOF
-
-        kubectl apply -f mrm.yaml
-
-    - name: Apply ModuleReleaseMeta and Template Operator Module in OCM format
-      working-directory: ./lifecycle-manager
-      if: ${{ matrix.e2e-test == 'ocm-compatible-module-template' }}
-      shell: bash
-      run: |
-        sed -i 's/template-operator-regular/template-operator-1.0.0-new-ocm-format/g' tests/e2e/moduletemplate/moduletemplate_template_operator_regular_new_ocm.yaml
-        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_regular_new_ocm.yaml
-        cat <<EOF > mrm.yaml
-        apiVersion: operator.kyma-project.io/v1beta2
-        kind: ModuleReleaseMeta
-        metadata:
-          name: template-operator
-          namespace: kcp-system
-        spec:
-          channels:
-            - channel: regular
-              version: 1.0.0-new-ocm-format
-          moduleName: template-operator
-        EOF
-
-        kubectl apply -f mrm.yaml
-
+        ./generate_moduletemplate.sh 1.0.0 template-operator false
     - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}

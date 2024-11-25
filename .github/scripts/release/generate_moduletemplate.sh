@@ -7,12 +7,12 @@ set -o pipefail
 
 RELEASE_VERSION=$1
 MODULE_NAME=$2
+INCLUDE_DEFAULT_CR=${3:-true}
 
-cat <<EOF > module-config.yaml
+cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/template-operator
 version: ${RELEASE_VERSION}
 security: sec-scanners-config.yaml
-defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml
 manifest: https://localhost:8080/template-operator.yaml
 repository: https://github.com/kyma-project/template-operator
 documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
@@ -21,7 +21,13 @@ icons:
   link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png"
 EOF
 
-modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+if [ "${INCLUDE_DEFAULT_CR}" == "true" ]; then
+  cat <<EOF >> module-config-for-e2e.yaml
+defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml
+EOF
+fi
+
+modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
 sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
 kubectl apply -f template.yaml
 
@@ -35,8 +41,8 @@ metadata:
   namespace: kcp-system
 spec:
   channels:
-    - channel: regular
-      version: ${RELEASE_VERSION}
+  - channel: regular
+    version: ${RELEASE_VERSION}
   moduleName: ${MODULE_NAME}
 EOF
 kubectl apply -f module-release-meta.yaml
