@@ -30,15 +30,16 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
+        
         make build-manifests
-        sed -i 's/template-operator-controller-manager/${{ env.ModuleDeploymentNameInOlderVersion }}/g' template-operator.yaml
+        sed -i '/kind: Deployment/,/metadata:/ { /name: ${{ env.ModuleDeploymentName }}/ s/${{ env.ModuleDeploymentName }}/${{ env.ModuleDeploymentNameInOlderVersion }}/ }' template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
       shell: bash
       run: |
         make build-manifests
-        sed -i 's/template-operator-controller-manager/${{ env.ModuleDeploymentNameInNewerVersion }}/g' template-operator.yaml
+        sed -i '/kind: Deployment/,/metadata:/ { /name: ${{ env.ModuleDeploymentName }}/ s/${{ env.ModuleDeploymentName }}/${{ env.ModuleDeploymentNameInNewerVersion }}/ }' template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }}
     - name: Create and apply Template Operator ModuleTemplate with StatefulSet, with final state and final deletion state as `Warning`
       working-directory: template-operator

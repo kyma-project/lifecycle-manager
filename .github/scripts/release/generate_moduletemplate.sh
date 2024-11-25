@@ -8,6 +8,8 @@ MODULE_NAME=$1
 RELEASE_VERSION=$2
 INCLUDE_DEFAULT_CR=${3:-true}
 
+cat template-operator.yaml
+
 cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
 version: ${RELEASE_VERSION}
@@ -17,7 +19,7 @@ repository: https://github.com/kyma-project/template-operator
 documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
 icons:
 - name: module-icon
-  link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png"
+  link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png
 EOF
 
 if [ "${INCLUDE_DEFAULT_CR}" == "true" ]; then

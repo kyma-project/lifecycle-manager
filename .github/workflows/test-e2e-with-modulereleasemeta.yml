@@ -101,6 +101,7 @@ jobs:
       - name: Deploy template-operator
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         env:
+          ModuleDeploymentName: template-operator-controller-manager
           ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
           ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
           NewerVersion: 2.4.2-e2e-test
