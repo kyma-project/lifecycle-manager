@@ -12,7 +12,7 @@ runs:
       shell: bash
       run: |
         cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
-    - name: Create Template Operator Module and apply ModuleTemplate and ModuleReleaseMeta
+    - name: Create Template Operator Module based on latest release and apply ModuleTemplate and ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
         matrix.e2e-test == 'non-blocking-deletion' ||

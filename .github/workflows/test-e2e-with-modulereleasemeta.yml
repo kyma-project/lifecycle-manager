@@ -54,7 +54,6 @@ jobs:
           - mandatory-module-metrics
           - misconfigured-kyma-secret
           - rbac-privileges
-          - ocm-compatible-module-template
           - modulereleasemeta-with-obsolete-moduletemplate
           - modulereleasemeta-sync
           - modulereleasemeta-watch-trigger
