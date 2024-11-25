@@ -126,7 +126,7 @@ runs:
       run: |
         kubectl apply -f module-release-meta.yaml
     - name: Apply Template Operator Module and ModuleReleaseMeta for regular and fast channels
-      working-directory: lifecycle-manager
+      working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
         matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
         matrix.e2e-test == 'modulereleasemeta-upgrade-under-deletion' ||
@@ -134,14 +134,7 @@ runs:
         }}
       shell: bash
       run: |
-        
-        ./generate_modulereleasemeta.sh template-operator fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
-    - name: Create Template Operator Module for installation by version
-      working-directory: lifecycle-manager
-      if: ${{ matrix.e2e-test == 'module-install-by-version' }}
-      shell: bash
-      run: |
-        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_direct_version.yaml
+        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
     - name: Create Template Operator Module as Mandatory Module
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'mandatory-module' ||
@@ -155,7 +148,7 @@ runs:
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
       shell: bash
       run: |
-        ./generate_modulereleasemeta.sh template-operator fast:${{ env.NewerVersion }} regular:${{ inputs.module_version }}
+        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ inputs.module_version }}
     - name: Create and apply ModuleReleaseMeta with version when deployment is in warning state
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}

@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("Module Install By Version", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	templateOperatorModule := NewTemplateOperatorWithVersion("2.4.2-e2e-test")
+	templateOperatorModule := NewTemplateOperatorWithVersion(NewerVersion)
 	moduleCR := builder.NewModuleCRBuilder().
 		WithName("sample-2.4.2-e2e-test").
 		WithNamespace(RemoteNamespace).Build()
@@ -50,7 +50,8 @@ var _ = Describe("Module Install By Version", Ordered, func() {
 			By("And Module is in \"Ready\" State")
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), templateOperatorModule.Name, shared.StateReady).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), templateOperatorModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		})
 	})

@@ -76,7 +76,7 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 		It("When ModuleReleaseMeta channels get updated with valid version", func() {
 			Eventually(UpdateAllModuleReleaseMetaChannelVersions).
 				WithContext(ctx).
-				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, moduleVersionToBeUsed).
+				WithArguments(kcpClient, moduleReleaseMetaNamespace, moduleReleaseMetaName, ModuleVersionToBeUsed).
 				Should(Succeed())
 		})
 		It("Then KCP Kyma CR should be requeued and gets into \"Ready\" State", func() {

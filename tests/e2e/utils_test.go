@@ -40,7 +40,8 @@ const (
 	ConsistentDuration    = 20 * time.Second
 	interval              = 500 * time.Millisecond
 	moduleCRFinalizer     = "cr-finalizer"
-	moduleVersionToBeUsed = "1.0.1"
+	ModuleVersionToBeUsed = "1.0.1"
+	NewerVersion          = "2.4.2-e2e-test"
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {

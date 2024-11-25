@@ -48,7 +48,7 @@ var _ = Describe("Module with ModuleReleaseMeta Upgrade By New Version", Ordered
 
 			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, "2.4.2-e2e-test").
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).
 				Should(Succeed())
 		})
 

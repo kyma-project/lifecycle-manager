@@ -84,7 +84,7 @@ var _ = Describe("Kyma Module with ModuleReleaseMeta Upgrade Under Deletion", Or
 		It("When ModuleReleaseMeta is updated with new version", func() {
 			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, "2.4.2-e2e-test").
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).
 				Should(Succeed())
 		})
 
