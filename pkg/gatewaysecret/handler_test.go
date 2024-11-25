@@ -252,7 +252,7 @@ func TestWatchEvents(t *testing.T) {
 	calledTimes := 0
 	mockManageSecretFunc := func(_ context.Context, _ *apicorev1.Secret) error {
 		calledTimes += 1
-		return nil
+		return nil //nolint:unparam
 	}
 
 	events := make(chan watch.Event, 1)
