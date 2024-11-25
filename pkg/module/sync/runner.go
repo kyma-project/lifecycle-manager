@@ -319,7 +319,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
 		State:   manifestObject.Status.State,
-		Channel: module.Template.Spec.Channel,
+		Channel: module.Template.DesiredChannel,
 		Version: manifestObject.Spec.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{

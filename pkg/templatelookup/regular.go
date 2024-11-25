@@ -77,7 +77,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 					templateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 					continue
 				}
-				markInvalidChannelSkewUpdate(ctx, &templateInfo, moduleStatus, descriptor.Version)
+				markInvalidSkewUpdate(ctx, &templateInfo, moduleStatus, descriptor.Version)
 			}
 		}
 		templates[module.Name] = &templateInfo
@@ -231,8 +231,8 @@ func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
 	return moduleStatus.Name == moduleName
 }
 
-// markInvalidChannelSkewUpdate verifies if the given ModuleTemplate is invalid for update when channel switch is detected.
-func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *ModuleTemplateInfo,
+// markInvalidSkewUpdate verifies if the given ModuleTemplate is invalid for update.
+func markInvalidSkewUpdate(ctx context.Context, moduleTemplateInfo *ModuleTemplateInfo,
 	moduleStatus *v1beta2.ModuleStatus, templateVersion string,
 ) {
 	if moduleStatus.Template == nil {
@@ -247,13 +247,10 @@ func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *Modul
 		"template", moduleTemplateInfo.Name,
 		"newTemplateGeneration", moduleTemplateInfo.GetGeneration(),
 		"previousTemplateGeneration", moduleStatus.Template.GetGeneration(),
-		"newTemplateChannel", moduleTemplateInfo.Spec.Channel,
+		"newTemplateChannel", moduleTemplateInfo.DesiredChannel,
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
-	if moduleTemplateInfo.Spec.Channel == moduleStatus.Channel && moduleTemplateInfo.Spec.Channel != string(shared.NoneChannel) {
-		return
-	}
 	checkLog.Info("outdated ModuleTemplate: channel skew")
 
 	versionInTemplate, err := semver.NewVersion(templateVersion)
@@ -287,7 +284,7 @@ func markInvalidChannelSkewUpdate(ctx context.Context, moduleTemplateInfo *Modul
 	if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
 		msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
 			"as a higher version (%s) of the module was previously installed",
-			moduleStatus.Channel, moduleTemplateInfo.Spec.Channel, versionInStatus.String())
+			moduleStatus.Channel, moduleTemplateInfo.DesiredChannel, versionInStatus.String())
 		checkLog.Info(msg)
 		moduleTemplateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 	}
