@@ -7,6 +7,10 @@ runs:
       uses: ./lifecycle-manager/.github/actions/setup-https-server
       with:
         directory_name: ../template-operator
+    - name: Copy generate moduletemplate script to template-operator directory
+      working-directory: template-operator
+      run: |
+        cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
     - name: Create Template Operator Module and apply ModuleTemplate and ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -148,39 +152,7 @@ runs:
         kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
-        ./generate_moduletemplate.sh 1.0.0 template-operator
-    - name: Create non-working image patch for Template Operator Module and create associated module config file and applying ModuleReleaseMeta
-      working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'||
-        matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
-      shell: bash
-      run: |
-        echo "name: kyma-project.io/module/template-operator-misconfigured
-        version: 1.1.1
-        manifest: https://localhost:8080/template-operator.yaml
-        security: sec-scanners-config.yaml
-        defaultCR: https://localhost:8080//config/samples/default-sample-cr.yaml
-        repository: https://github.com/kyma-project/template-operator
-        documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
-        icons:
-        - name: module-icon
-          link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> misconfigured-module-config.yaml
-        
-        cat <<EOF > mrm.yaml
-        apiVersion: operator.kyma-project.io/v1beta2
-        kind: ModuleReleaseMeta
-        metadata:
-          name: template-operator-misconfigured
-          namespace: kcp-system
-        spec:
-          channels:
-            - channel: regular
-              version: 1.1.1
-          moduleName: template-operator-misconfigured
-        EOF
-
-        kubectl apply -f mrm.yaml
+        ./generate_moduletemplate.sh 1.0.1 template-operator
     - name: Create Template Operator Module with Deployment, with non-working image and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
@@ -195,10 +167,7 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
         make build-manifests
-        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
-        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        kubectl get crds
-        kubectl apply -f template.yaml
+        ./generate_moduletemplate.sh 1.1.1 template-operator-misconfigured
     - name: Create Template Operator Module with StatefulSet, with non-working image and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
@@ -213,10 +182,8 @@ runs:
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
         make build-statefulset-manifests
-        modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
-        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-        kubectl get crds
-        kubectl apply -f template.yaml
+        cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
+        ./generate_moduletemplate.sh 1.1.1 template-operator-misconfigured
 
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
       working-directory: template-operator
