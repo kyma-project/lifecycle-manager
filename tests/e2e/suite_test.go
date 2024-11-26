@@ -100,29 +100,52 @@ var _ = BeforeSuite(func() {
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 
-	go func() {
-		defer GinkgoRecover()
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				kcpKymaList := v1beta2.KymaList{}
-				err := kcpClient.List(ctx, &kcpKymaList)
-				if err == nil {
-					for _, kyma := range kcpKymaList.Items {
-						GinkgoWriter.Printf("kyma (%s) in cluster: Spec: %+v, Status: %+v\n", kyma.Name, kyma.Spec,
-							kyma.Status)
-					}
-				} else {
-					GinkgoWriter.Printf("error listing kcpKymaList: %v\n", err)
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	go logKymaInstances(ctx, kcpClient)
+	go logManifestInstances(ctx, kcpClient)
 })
+
+func logKymaInstances(ctx context.Context, kcpClient client.Client) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			kcpKymaList := v1beta2.KymaList{}
+			err := kcpClient.List(ctx, &kcpKymaList)
+			if err == nil {
+				for _, kyma := range kcpKymaList.Items {
+					GinkgoWriter.Printf("kyma (%s) in cluster: Spec: %+v, Status: %+v\n", kyma.Name, kyma.Spec,
+						kyma.Status)
+				}
+			} else {
+				GinkgoWriter.Printf("error listing kcpKymaList: %v\n", err)
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func logManifestInstances(ctx context.Context, kcpClient client.Client) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			manifestList := v1beta2.ManifestList{}
+			err := kcpClient.List(ctx, &manifestList)
+			if err == nil {
+				for _, manifest := range manifestList.Items {
+					GinkgoWriter.Printf("manifest (%s) in cluster: Status: %+v\n", manifest.Name, manifest.Status)
+				}
+			} else {
+				GinkgoWriter.Printf("error listing manifestList: %v\n", err)
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
 
 var _ = AfterSuite(func() {
 	By("Print out all remaining resources for debugging")
