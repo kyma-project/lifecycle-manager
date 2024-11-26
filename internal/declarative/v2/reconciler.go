@@ -34,7 +34,6 @@ var (
 	ErrManagerInErrorState            = errors.New("manager is in error state")
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
-	ErrStateRequireUpdate = errors.New("manifest state requires update")
 )
 
 const (
@@ -335,9 +334,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 			}
 			status.ConfirmModuleCRCondition(manifest)
 		}
-		if status.RequireManifestStateUpdateAfterSyncResource(manifest, shared.StateDeleting) {
-			return ErrStateRequireUpdate
-		}
+		return status.SetManifestState(manifest, shared.StateDeleting)
 	}
 
 	managerState, err := r.checkManagerState(ctx, skrClient, target)
@@ -345,10 +342,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
-	if status.RequireManifestStateUpdateAfterSyncResource(manifest, managerState) {
-		return ErrStateRequireUpdate
-	}
-	return nil
+	return status.SetManifestState(manifest, managerState)
 }
 
 func (r *Reconciler) RecordModuleCRWarningCondition(manifest *v1beta2.Manifest) error {

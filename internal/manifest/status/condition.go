@@ -74,14 +74,3 @@ func ConfirmResourcesCondition(manifest *v1beta2.Manifest) {
 		manifest.SetStatus(status.WithOperation(resourceCondition.Message))
 	}
 }
-
-func ConfirmInstallationCondition(manifest *v1beta2.Manifest) {
-	status := manifest.GetStatus()
-	installationCondition := initInstallationCondition(manifest)
-
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) {
-		installationCondition.Status = apimetav1.ConditionTrue
-		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		manifest.SetStatus(status.WithOperation(installationCondition.Message))
-	}
-}
