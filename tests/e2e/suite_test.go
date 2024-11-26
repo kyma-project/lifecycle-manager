@@ -136,7 +136,8 @@ func logManifestInstances(ctx context.Context, kcpClient client.Client) {
 			err := kcpClient.List(ctx, &manifestList)
 			if err == nil {
 				for _, manifest := range manifestList.Items {
-					GinkgoWriter.Printf("manifest (%s) in cluster: Status: %+v\n", manifest.Name, manifest.Status)
+					GinkgoWriter.Printf("manifest (%s) in cluster: Spec: %+v, Status: %+v\n", manifest.Name,
+						manifest.Spec, manifest.Status)
 				}
 			} else {
 				GinkgoWriter.Printf("error listing manifestList: %v\n", err)
