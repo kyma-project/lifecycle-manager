@@ -43,8 +43,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Equal(ErrNotFound))
-			kyma, _ := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-			GinkgoWriter.Printf("kyma %v\n", kyma)
+
 			By("And Kyma Module state of KCP Kyma CR is in \"Ready\" State")
 			Eventually(CheckModuleState).
 				WithContext(ctx).

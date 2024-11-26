@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
@@ -97,6 +98,29 @@ var _ = BeforeSuite(func() {
 	go func() {
 		defer GinkgoRecover()
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
+	}()
+
+	go func() {
+		defer GinkgoRecover()
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				kcpKymaList := v1beta2.KymaList{}
+				err := kcpClient.List(ctx, &kcpKymaList)
+				if err == nil {
+					for _, kyma := range kcpKymaList.Items {
+						GinkgoWriter.Printf("kyma (%s) in cluster: Spec: %+v, Status: %+v\n", kyma.Name, kyma.Spec,
+							kyma.Status)
+					}
+				} else {
+					GinkgoWriter.Printf("error listing kcpKymaList: %v\n", err)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
 	}()
 })
 
