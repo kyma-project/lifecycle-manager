@@ -35,4 +35,7 @@ cat template.yaml
 echo "ModuleTemplate created successfully"
 
 rm -f module-config-for-e2e.yaml
+rm -f template-operator.yaml
 rm -f template.yaml
+rm -f default-sample-cr.yaml
+echo "Temporary files removed successfully"
