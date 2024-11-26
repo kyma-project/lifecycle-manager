@@ -44,63 +44,29 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
-        pushd config/overlays/statefulset
-        echo \
-        "- op: replace
-          path: /spec/template/spec/containers/0/args/1
-          value: --final-state=Warning
-        - op: replace
-          path: /spec/template/spec/containers/0/args/2
-          value: --final-deletion-state=Warning" >> warning_patch.yaml
-        cat warning_patch.yaml
-        kustomize edit add patch --path warning_patch.yaml --kind StatefulSet
-        popd
         make build-statefulset-manifests
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args[1] = "--final-state=Warning" | .spec.template.spec.containers[0].args[2] = "--final-deletion-state=Warning")' -i template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
     - name: Create and apply Template Operator ModuleTemplate with Deployment, with final state and final deletion state as `Warning`
       working-directory: template-operator
       shell: bash
       run: |
-        pushd config/overlays/deployment
-        echo \
-        "- op: replace
-          path: /spec/template/spec/containers/0/args/1
-          value: --final-state=Warning
-        - op: replace
-          path: /spec/template/spec/containers/0/args/2
-          value: --final-deletion-state=Warning" >> warning_patch.yaml
-        cat warning_patch.yaml
-        kustomize edit add patch --path warning_patch.yaml --kind Deployment
-        popd
         make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args[1] = "--final-state=Warning" | .spec.template.spec.containers[0].args[2] = "--final-deletion-state=Warning")' -i template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
     - name: Create and apply Template Operator Module with Deployment, with non-working image
       working-directory: template-operator
       shell: bash
       run: |
-        pushd config/overlays/deployment
-        echo \
-        "- op: replace
-          path: /spec/template/spec/containers/0/image
-          value: non-working-path" >> image_patch.yaml
-        cat image_patch.yaml
-        kustomize edit add patch --path image_patch.yaml --kind Deployment
-        popd
         make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
     - name: Create and apply Template Operator Module with StatefulSet, with non-working image
       working-directory: template-operator
       shell: bash
       run: |
-        pushd config/overlays/statefulset
-        echo \
-        "- op: replace
-          path: /spec/template/spec/containers/0/image
-          value: non-working-path" >> image_patch.yaml
-        cat image_patch.yaml
-        kustomize edit add patch --path image_patch.yaml --kind StatefulSet
-        popd
         make build-statefulset-manifests
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
     - name: Create and apply Template Operator ModuleTemplate without default CR
       working-directory: template-operator
