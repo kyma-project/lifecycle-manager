@@ -38,7 +38,7 @@ func NewGatewaySecretHandler(kcpClient client.Client) *GatewaySecretHandler {
 	}
 }
 
-func (gsh *GatewaySecretHandler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
+func (gsh *GatewaySecretHandler) manageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	gwSecret, err := gsh.FindGatewaySecret(ctx)
 
 	if util.IsNotFound(err) {
@@ -161,7 +161,7 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 	return secret, nil
 }
 
-func StartRootCertificateWatch(clientset *kubernetes.Clientset, gatewaySecretHandler *GatewaySecretHandler,
+func (gsh *GatewaySecretHandler) StartRootCertificateWatch(clientset *kubernetes.Clientset,
 	log logr.Logger,
 ) {
 	ctx, cancel := context.WithCancel(context.TODO())
@@ -175,7 +175,7 @@ func StartRootCertificateWatch(clientset *kubernetes.Clientset, gatewaySecretHan
 		panic(err)
 	}
 
-	WatchEvents(ctx, secretWatch.ResultChan(), gatewaySecretHandler.ManageGatewaySecret, log)
+	WatchEvents(ctx, secretWatch.ResultChan(), gsh.manageGatewaySecret, log)
 }
 
 func WatchEvents(ctx context.Context, watchEvents <-chan watch.Event,
