@@ -5,6 +5,9 @@ env:
 on:
   workflow_dispatch:
     inputs:
+      image_tag:
+        description: With image tag for KLM image (PR-XXX)
+        required: true
       k8s_version:
         description: With Kubernetes version
         required: false
