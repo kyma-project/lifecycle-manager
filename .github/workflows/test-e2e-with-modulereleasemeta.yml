@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: With image tag for KLM image (PR-XXX)
+        description: "With image tag for KLM image (format: PR-XXX)"
         required: true
       k8s_version:
         description: With Kubernetes version
