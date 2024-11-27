@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: With image tag for KLM image
+        description: "With image tag for KLM image (format: PR-XXX or full commit SHA)"
         required: true
       k8s_version:
-        description: With Kubernetes version
+        description: "With Kubernetes version (format: x.y.z)"
         required: false
   pull_request:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
