@@ -44,7 +44,6 @@ const (
 	DefaultIstioGatewayNamespace                                        = "kcp-system"
 	DefaultIstioNamespace                                               = "istio-system"
 	DefaultCaCertName                                                   = "klm-watcher-serving"
-	DefaultCaCertCacheTTL                                 time.Duration = 1 * time.Hour
 	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
@@ -204,8 +203,6 @@ func DefineFlagVar() *FlagVar {
 		"Name of the namespace for syncing remote Kyma and module catalog")
 	flag.StringVar(&flagVar.CaCertName, "ca-cert-name", DefaultCaCertName,
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
-	flag.DurationVar(&flagVar.CaCertCacheTTL, "ca-cert-cache-ttl", DefaultCaCertCacheTTL,
-		"The ttl for the CA Certificate Cache")
 	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", DefaultSelfSignedCertDuration,
 		"The lifetime duration of self-signed certificate, minimum accepted duration is 1 hour.")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
@@ -288,7 +285,6 @@ type FlagVar struct {
 	SkipPurgingFor                         string
 	RemoteSyncNamespace                    string
 	CaCertName                             string
-	CaCertCacheTTL                         time.Duration
 	IsKymaManaged                          bool
 	SelfSignedCertDuration                 time.Duration
 	SelfSignedCertRenewBefore              time.Duration
