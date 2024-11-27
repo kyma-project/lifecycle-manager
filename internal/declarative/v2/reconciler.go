@@ -30,8 +30,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
-	"same oci layer, prevent sync resource to be deleted")
+var (
+	ErrManagerInErrorState            = errors.New("manager is in error state")
+	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
+		"same oci layer, prevent sync resource to be deleted")
+)
 
 const (
 	namespaceNotBeRemoved  = "kyma-system"
@@ -376,7 +379,9 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 	if err != nil {
 		return shared.StateError, err
 	}
-
+	if managerState == shared.StateError {
+		return shared.StateError, ErrManagerInErrorState
+	}
 	return managerState, nil
 }
 

@@ -9,10 +9,11 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
+var _ = Describe("Module with ModuleReleaseMeta Upgrade By New Version", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
+
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
@@ -41,21 +42,16 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+		})
 
-			By("And Manifest CR is in \"Ready\" State")
-			Eventually(CheckManifestIsInState).
+		It("When version in ModuleReleaseMeta has been upgraded", func() {
+			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient, shared.StateReady).
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).
 				Should(Succeed())
 		})
 
-		It("When upgrade version by switch Channel", func() {
-			Eventually(UpdateKymaModuleChannel).
-				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, "fast").
-				Should(Succeed())
-		})
-
+		//nolint:dupl //this nolint can be removed after this issue https://github.com/kyma-project/lifecycle-manager/issues/2060 get resolvedSS
 		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
@@ -80,52 +76,23 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 
-			By("And Manifest CR is in \"Ready\" State")
-			Eventually(CheckManifestIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient, shared.StateReady).
-				Should(Succeed())
-		})
+			By("And Kyma Module Version in Kyma Status is updated")
+			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(ctx, kcpClient, module,
+				kyma.Spec.Channel, ControlPlaneNamespace)
+			Expect(err).ToNot(HaveOccurred())
 
-		It("When downgrade version by switch Channel", func() {
-			Eventually(UpdateKymaModuleChannel).
+			Eventually(ModuleVersionInKymaStatusIsCorrect).
 				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, v1beta2.DefaultChannel).
-				Should(Succeed())
-		})
-
-		It("Then Module stay in newer version", func() {
-			expectedErrorMessage := "module template update not allowed: ignore channel skew (from fast to regular), as a higher version (2.4.2-e2e-test) of the module was previously installed"
-
-			Eventually(ModuleCRExists).
-				WithContext(ctx).
-				WithArguments(skrClient, moduleCR).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					newModuleTemplateVersion).
 				Should(Succeed())
 
-			By("And new Module Operator Deployment exists")
-			Eventually(DeploymentIsReady).
+			By("And Manifest Version is updated")
+			Eventually(ManifestVersionIsCorrect).
 				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					newModuleTemplateVersion).
 				Should(Succeed())
-
-			By("And old Module Operator Deployment does not exist")
-			Eventually(DeploymentIsReady).
-				WithContext(ctx).
-				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
-				Should(Equal(ErrNotFound))
-
-			By("And KCP Kyma CR is in \"Warning\" State")
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
-				Should(Succeed())
-
-			By("And the Module Status has correct error message", func() {
-				Eventually(ModuleMessageInKymaStatusIsCorrect).
-					WithContext(ctx).
-					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, expectedErrorMessage).
-					Should(Succeed())
-			})
 		})
 	})
 })

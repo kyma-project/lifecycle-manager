@@ -132,7 +132,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, v1beta2.Module{
 					Name:    TestModuleName,
-					Channel: "regular",
+					Channel: v1beta2.DefaultChannel,
 					Managed: true,
 				}).
 				Should(Succeed())

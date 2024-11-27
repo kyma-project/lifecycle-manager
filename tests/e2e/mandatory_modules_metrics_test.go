@@ -19,11 +19,10 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
-		const deployName = "template-operator-v1-controller-manager"
 		It("Then mandatory module is installed on the SKR cluster", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, deployName,
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion,
 					TestModuleResourceNamespace).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State", func() {
@@ -68,7 +67,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 		It("Then mandatory SKR module is removed", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(skrClient, deployName,
+				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion,
 					TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
