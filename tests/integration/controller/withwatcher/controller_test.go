@@ -44,9 +44,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	tlsSecret := createTLSSecret(kymaObjKey)
-	caCertificate := createCaCertificate()
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
+	tlsSecret := createWatcherSecret(kymaObjKey)
+	gatewaySecret := createGatewaySecret()
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, gatewaySecret)
 	var skrClient client.Client
 	var err error
 	BeforeAll(func() {

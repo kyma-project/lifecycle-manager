@@ -15,6 +15,7 @@ rules:
     - watch
     - create
     - delete
+    - update
 - apiGroups:
     - cert-manager.io
   resources:

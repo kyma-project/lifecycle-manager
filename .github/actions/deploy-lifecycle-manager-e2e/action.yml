@@ -81,7 +81,8 @@ runs:
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
         popd
     - name: Patch CA certificate renewBefore
-      if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
+      if: ${{matrix.e2e-test == 'ca-certificate-rotation' ||
+        matrix.e2e-test == 'istio-gateway-secret-rotation'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |

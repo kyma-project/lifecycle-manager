@@ -19,19 +19,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type SKRWebhookManifestManager struct {
-	kcpClient          client.Client
-	skrContextFactory  remote.SkrContextProvider
-	config             SkrWebhookManagerConfig
-	kcpAddr            string
-	baseResources      []*unstructured.Unstructured
-	caCertificateCache *CACertificateCache
-	WatcherMetrics     *metrics.WatcherMetrics
-	certificateConfig  CertificateConfig
+	kcpClient         client.Client
+	skrContextFactory remote.SkrContextProvider
+	config            SkrWebhookManagerConfig
+	kcpAddr           string
+	baseResources     []*unstructured.Unstructured
+	WatcherMetrics    *metrics.WatcherMetrics
+	certificateConfig CertificateConfig
 }
 
 type SkrWebhookManagerConfig struct {
@@ -49,7 +49,6 @@ const rawManifestFilePathTpl = "%s/resources.yaml"
 func NewSKRWebhookManifestManager(
 	kcpClient client.Client,
 	skrContextFactory remote.SkrContextProvider,
-	caCertificateCache *CACertificateCache,
 	managerConfig SkrWebhookManagerConfig,
 	certificateConfig CertificateConfig,
 	resolvedKcpAddr string,
@@ -68,14 +67,13 @@ func NewSKRWebhookManifestManager(
 	}
 
 	return &SKRWebhookManifestManager{
-		kcpClient:          kcpClient,
-		skrContextFactory:  skrContextFactory,
-		config:             managerConfig,
-		certificateConfig:  certificateConfig,
-		kcpAddr:            resolvedKcpAddr,
-		baseResources:      baseResources,
-		caCertificateCache: caCertificateCache,
-		WatcherMetrics:     metrics.NewWatcherMetrics(),
+		kcpClient:         kcpClient,
+		skrContextFactory: skrContextFactory,
+		config:            managerConfig,
+		certificateConfig: certificateConfig,
+		kcpAddr:           resolvedKcpAddr,
+		baseResources:     baseResources,
+		WatcherMetrics:    metrics.NewWatcherMetrics(),
 	}, nil
 }
 
@@ -87,9 +85,14 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
+	var gatewaySecret *apicorev1.Secret
+	if gatewaySecret, err = gatewaysecret.GetGatewaySecret(ctx, m.kcpClient); err != nil {
+		return err
+	}
+
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificateMgr := NewCertificateManager(m.kcpClient, kyma.Name,
-		m.certificateConfig, m.caCertificateCache)
+		m.certificateConfig)
 
 	certificate, err := certificateMgr.CreateSelfSignedCert(ctx, kyma)
 	if err != nil {
@@ -98,14 +101,14 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	m.updateCertNotRenewMetrics(certificate, kyma)
 
-	if err := certificateMgr.RemoveSecretAfterCARotated(ctx, kymaObjKey); err != nil {
+	if err := certificateMgr.RemoveSecretAfterCARotated(ctx, gatewaySecret, kymaObjKey); err != nil {
 		return fmt.Errorf("error verify CA cert rotation: %w", err)
 	}
 
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
 	resources, err := m.getSKRClientObjectsForInstall(
-		ctx, kymaObjKey, m.config.RemoteSyncNamespace, logger)
+		ctx, kymaObjKey, m.config.RemoteSyncNamespace, gatewaySecret, logger)
 	if err != nil {
 		return err
 	}
@@ -145,7 +148,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 	certificate := NewCertificateManager(m.kcpClient, kyma.Name,
-		m.certificateConfig, m.caCertificateCache)
+		m.certificateConfig)
 	if err = certificate.Remove(ctx); err != nil {
 		return err
 	}
@@ -171,10 +174,10 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 }
 
 func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Context,
-	kymaObjKey client.ObjectKey, remoteNs string, logger logr.Logger,
+	kymaObjKey client.ObjectKey, remoteNs string, gatewaySecret *apicorev1.Secret, logger logr.Logger,
 ) ([]client.Object, error) {
 	var skrClientObjects []client.Object
-	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kymaObjKey, remoteNs)
+	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kymaObjKey, remoteNs, gatewaySecret)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +218,7 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 }
 
 func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context,
-	kymaObjKey client.ObjectKey, remoteNs string,
+	kymaObjKey client.ObjectKey, remoteNs string, gatewaySecret *apicorev1.Secret,
 ) (*unstructuredResourcesConfig, error) {
 	tlsSecret := &apicorev1.Secret{}
 	certObjKey := client.ObjectKey{
@@ -237,7 +240,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		cpuResLimit:     m.config.SkrWebhookCPULimits,
 		memResLimit:     m.config.SkrWebhookMemoryLimits,
 		skrWatcherImage: m.config.SkrWatcherImage,
-		caCert:          tlsSecret.Data[caCertKey],
+		caCert:          gatewaySecret.Data[caCertKey],
 		tlsCert:         tlsSecret.Data[tlsCertKey],
 		tlsKey:          tlsSecret.Data[tlsPrivateKeyKey],
 		remoteNs:        remoteNs,

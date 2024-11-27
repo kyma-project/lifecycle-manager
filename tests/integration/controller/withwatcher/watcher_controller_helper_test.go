@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	istioapiv1beta1 "istio.io/api/networking/v1beta1"
@@ -18,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -44,7 +46,7 @@ var (
 )
 
 func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
-	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer, caCert *certmanagerv1.Certificate,
+	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer, gatewaySecret *apicorev1.Secret,
 ) {
 	BeforeAll(func() {
 		By("Creating watcher CR")
@@ -56,7 +58,7 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		By("Creating Cert-Manager Issuer")
 		Expect(kcpClient.Create(ctx, issuer)).To(Succeed())
 		By("Creating CA Certificate")
-		Expect(kcpClient.Create(ctx, caCert)).To(Succeed())
+		Expect(kcpClient.Create(ctx, gatewaySecret)).To(Succeed())
 	})
 
 	AfterAll(func() {
@@ -70,7 +72,7 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		By("Deleting Cert-Manager Issuer")
 		Expect(kcpClient.Delete(ctx, issuer)).To(Succeed())
 		By("Deleting CA Certificate")
-		Expect(kcpClient.Delete(ctx, caCert)).To(Succeed())
+		Expect(kcpClient.Delete(ctx, gatewaySecret)).To(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -126,33 +128,6 @@ func isEven(idx int) bool {
 	return idx%2 == 0
 }
 
-func createCaCertificate() *certmanagerv1.Certificate {
-	return &certmanagerv1.Certificate{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       certmanagerv1.CertificateKind,
-			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      "klm-watcher-serving",
-			Namespace: istioSystemNs,
-		},
-		Spec: certmanagerv1.CertificateSpec{
-			DNSNames:   []string{"listener.kyma.cloud.sap"},
-			IsCA:       true,
-			CommonName: "klm-watcher-selfsigned-ca",
-			SecretName: "klm-watcher-root-secret",
-			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: map[string]string{
-					shared.ManagedBy: shared.OperatorName,
-				},
-			},
-			PrivateKey: &certmanagerv1.CertificatePrivateKey{
-				Algorithm: "RSA",
-			},
-		},
-	}
-}
-
 func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watcher {
 	field := v1beta2.SpecField
 	if statusOnly {
@@ -192,13 +167,31 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 	}
 }
 
-func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
+func createWatcherSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
 				shared.ManagedBy: shared.OperatorName,
+			},
+		},
+		Data: map[string][]byte{
+			"ca.crt":  []byte("jelly"),
+			"tls.crt": []byte("jellyfish"),
+			"tls.key": []byte("jellyfishes"),
+		},
+		Type: apicorev1.SecretTypeOpaque,
+	}
+}
+
+func createGatewaySecret() *apicorev1.Secret {
+	return &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      "klm-istio-gateway",
+			Namespace: istioSystemNs,
+			Annotations: map[string]string{
+				gatewaysecret.LastModifiedAtAnnotation: apimetav1.Now().Add(-1 * time.Hour).Format(time.RFC3339),
 			},
 		},
 		Data: map[string][]byte{

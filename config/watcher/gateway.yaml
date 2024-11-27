@@ -20,5 +20,5 @@ spec:
         number: 443
         protocol: HTTPS
       tls:
-        credentialName: klm-watcher
+        credentialName: klm-istio-gateway
         mode: MUTUAL
