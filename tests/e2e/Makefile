@@ -67,28 +67,6 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 
 ##@ E2E Tests
 
-test: kyma-deprovision-with-foreground-propagation \
-	   kyma-deprovision-with-background-propagation \
-	   kyma-metrics \
-	   mandatory-module-metrics \
-	   watcher-enqueue \
-	   module-status-decoupling-with-deployment \
-	   module-status-decoupling-with-statefulset \
-	   module-without-default-cr \
-	   module-consistency \
-	   mandatory-module \
-	   non-blocking-deletion \
-	   skip-manifest-reconciliation \
-	   upgrade-under-deletion \
-	   purge-controller \
-	   purge-metrics \
-	   module-upgrade-channel-switch \
-	   module-upgrade-new-version \
-	   module-install-by-version \
-	   ca-certificate-rotation \
-	   self-signed-certificate-rotation \
-	   misconfigured-kyma-secret
-
 kyma-deprovision-with-foreground-propagation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
 
@@ -128,6 +106,9 @@ skip-manifest-reconciliation:
 upgrade-under-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
 
+modulereleasemeta-upgrade-under-deletion:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
+
 unmanage-module:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Unmanaging Kyma Module"
 
@@ -142,6 +123,9 @@ module-upgrade-channel-switch:
 
 module-upgrade-new-version:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By New Version"
+
+modulereleasemeta-module-upgrade-new-version:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module with ModuleReleaseMeta Upgrade By New Version"
 
 module-install-by-version:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Install By Version"

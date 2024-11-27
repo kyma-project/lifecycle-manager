@@ -50,14 +50,8 @@ var _ = Describe("Module Upgrade By New Version", Ordered, func() {
 				kcpClient,
 				newTemplateFilePath)).
 				Should(Succeed())
-
-			By("And ModuleReleaseMeta is updated if it exists")
-			Eventually(UpdateChannelVersionIfModuleReleaseMetaExists).
-				WithContext(ctx).
-				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, "2.4.2-e2e-test").
-				Should(Succeed())
 		})
-
+		//nolint:dupl //this test will be deleted during this issue https://github.com/kyma-project/lifecycle-manager/issues/2060
 		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).

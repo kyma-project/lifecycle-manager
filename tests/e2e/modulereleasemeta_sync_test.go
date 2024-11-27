@@ -72,11 +72,10 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 		})
 
 		It("When Template Operator v2 ModuleTemplate is applied in the KCP Cluster", func() {
-			v2Version := "2.4.2-e2e-test"
 			By("And ModuleReleaseMeta is updated with the correct channel-version")
-			Eventually(UpdateChannelVersionIfModuleReleaseMetaExists).
+			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v2Version).
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).
 				Should(Succeed())
 
 			By("Then the Template Operator v2 ModuleTemplate exists in the KCP Cluster")
@@ -99,7 +98,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
-				WithArguments(module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v2Version, kcpClient).
+				WithArguments(module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion, kcpClient).
 				Should(Succeed())
 
 			By("And the ModuleReleaseMeta exists on the SKR Cluster with the correct channel-version")
@@ -110,7 +109,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
-				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v2Version, skrClient).
+				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, NewerVersion, skrClient).
 				Should(Succeed())
 		})
 
