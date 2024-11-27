@@ -16,8 +16,8 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
-        cp ../lifecycle-manager/.github/scripts/release/generate_moduletemplate.sh .
-        cp ../lifecycle-manager/.github/scripts/release/generate_modulereleasemeta.sh .
+        cp ../lifecycle-manager/.github/scripts/release/deploy_moduletemplate.sh .
+        cp ../lifecycle-manager/.github/scripts/release/deploy_modulereleasemeta.sh .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
       shell: bash
@@ -32,14 +32,14 @@ runs:
       run: |
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
       shell: bash
       run: |
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }}
     - name: Create and apply ModuleReleaseMeta from the latest release
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -67,7 +67,7 @@ runs:
         }}
       shell: bash
       run: |
-        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
     - name: Create Template Operator Module as Mandatory Module
       working-directory: lifecycle-manager
       if: ${{ matrix.e2e-test == 'mandatory-module' ||
@@ -81,7 +81,7 @@ runs:
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
       shell: bash
       run: |
-        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ inputs.module_version }}
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ inputs.module_version }}
     - name: Create ModuleTemplate and MetaReleaseMeta for Module Status test with Deployment
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
@@ -90,14 +90,14 @@ runs:
         # Create and apply ModuleReleaseMeta with version when deployment is in warning state
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
-        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
         
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
-        ./generate_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
+        ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
     - name: Create ModuleTemplate and MetaReleaseMeta for Module Status test with StatefulSet
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
@@ -106,22 +106,22 @@ runs:
         # Create and apply ModuleReleaseMeta with version when statefulset is in warning state
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
-        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
         
         # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
-        ./generate_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
+        ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
       shell: bash
       run: |
         make build-manifests
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false
-        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
     - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
