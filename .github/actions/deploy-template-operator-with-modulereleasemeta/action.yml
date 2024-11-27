@@ -40,40 +40,6 @@ runs:
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }}
-    - name: Create and apply Template Operator ModuleTemplate with StatefulSet, with final state and final deletion state as `Warning`
-      working-directory: template-operator
-      shell: bash
-      run: |
-        make build-statefulset-manifests
-        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args[1] = "--final-state=Warning" | .spec.template.spec.containers[0].args[2] = "--final-deletion-state=Warning")' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
-    - name: Create and apply Template Operator ModuleTemplate with Deployment, with final state and final deletion state as `Warning`
-      working-directory: template-operator
-      shell: bash
-      run: |
-        make build-manifests
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args[1] = "--final-state=Warning" | .spec.template.spec.containers[0].args[2] = "--final-deletion-state=Warning")' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
-    - name: Create and apply Template Operator Module with Deployment, with non-working image
-      working-directory: template-operator
-      shell: bash
-      run: |
-        make build-manifests
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
-    - name: Create and apply Template Operator Module with StatefulSet, with non-working image
-      working-directory: template-operator
-      shell: bash
-      run: |
-        make build-statefulset-manifests
-        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
-        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
-    - name: Create and apply Template Operator ModuleTemplate without default CR
-      working-directory: template-operator
-      shell: bash
-      run: |
-        make build-manifests
-        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false
     - name: Create and apply ModuleReleaseMeta from the latest release
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -116,35 +82,45 @@ runs:
       shell: bash
       run: |
         ./generate_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ inputs.module_version }}
-    - name: Create and apply ModuleReleaseMeta with version when deployment is in warning state
+    - name: Create ModuleTemplate and MetaReleaseMeta for Module Status test with Deployment
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
       shell: bash
       run: |
+        # Create and apply ModuleReleaseMeta with version when deployment is in warning state
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
+        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
         ./generate_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
-    - name: Create and apply ModuleReleaseMeta with version when statefulset is in warning state
-      working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
-      shell: bash
-      run: |
-        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
-    - name: Create and apply ModuleReleaseMeta with version when deployment is misconfigured
-      working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
-      shell: bash
-      run: |
+        
+        # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
+        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
         ./generate_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
-    - name: Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
+    - name: Create ModuleTemplate and MetaReleaseMeta for Module Status test with StatefulSet
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
       shell: bash
       run: |
+        # Create and apply ModuleReleaseMeta with version when statefulset is in warning state
+        make build-statefulset-manifests
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
+        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
+        ./generate_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
+        
+        # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
+        make build-statefulset-manifests
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
+        ./generate_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
         ./generate_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
       shell: bash
       run: |
+        make build-manifests
+        ./generate_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false
         ./generate_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
     - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
       working-directory: template-operator

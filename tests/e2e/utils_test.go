@@ -33,15 +33,16 @@ var (
 )
 
 const (
-	localHostname         = "0.0.0.0"
-	skrHostname           = "skr.cluster.local"
-	defaultRemoteKymaName = "default"
-	EventuallyTimeout     = 10 * time.Second
-	ConsistentDuration    = 20 * time.Second
-	interval              = 500 * time.Millisecond
-	moduleCRFinalizer     = "cr-finalizer"
-	ModuleVersionToBeUsed = "1.0.1"
-	NewerVersion          = "2.4.2-e2e-test"
+	localHostname           = "0.0.0.0"
+	skrHostname             = "skr.cluster.local"
+	defaultRemoteKymaName   = "default"
+	EventuallyTimeout       = 10 * time.Second
+	ConsistentDuration      = 20 * time.Second
+	interval                = 500 * time.Millisecond
+	moduleCRFinalizer       = "cr-finalizer"
+	ModuleVersionToBeUsed   = "1.0.1"
+	NewerVersion            = "2.4.2-e2e-test"
+	MisconfiguredModuleName = "template-operator-misconfigured"
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {

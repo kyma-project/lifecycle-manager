@@ -28,7 +28,7 @@ const (
 func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
-	moduleWrongConfig := NewTestModuleWithFixName("template-operator-misconfigured", v1beta2.DefaultChannel, "")
+	moduleWrongConfig := NewTestModuleWithFixName(MisconfiguredModuleName, v1beta2.DefaultChannel, "")
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
