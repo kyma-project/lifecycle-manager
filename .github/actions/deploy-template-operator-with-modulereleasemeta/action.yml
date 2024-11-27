@@ -58,7 +58,7 @@ runs:
       shell: bash
       run: |
         kubectl apply -f module-release-meta.yaml
-    - name: Apply Template Operator Module and ModuleReleaseMeta for regular and fast channels
+    - name: Create and apply ModuleReleaseMeta for regular and fast channels
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
         matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
