@@ -100,51 +100,46 @@ var _ = BeforeSuite(func() {
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 
-	go logKymaInstances(ctx, kcpClient)
-	go logManifestInstances(ctx, kcpClient)
+	go logInstancesWithTicker(logKyma)
+	go logInstancesWithTicker(logManifest)
 })
 
-func logKymaInstances(ctx context.Context, kcpClient client.Client) {
+func logInstancesWithTicker(logFunc func(context.Context, client.Client)) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			kcpKymaList := v1beta2.KymaList{}
-			err := kcpClient.List(ctx, &kcpKymaList)
-			if err == nil {
-				for _, kyma := range kcpKymaList.Items {
-					GinkgoWriter.Printf("kyma (%s) in cluster: Spec: %+v, Status: %+v\n", kyma.Name, kyma.Spec,
-						kyma.Status)
-				}
-			} else {
-				GinkgoWriter.Printf("error listing kcpKymaList: %v\n", err)
-			}
+			logFunc(ctx, kcpClient)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func logManifestInstances(ctx context.Context, kcpClient client.Client) {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			manifestList := v1beta2.ManifestList{}
-			err := kcpClient.List(ctx, &manifestList)
-			if err == nil {
-				for _, manifest := range manifestList.Items {
-					GinkgoWriter.Printf("manifest (%s) in cluster: Spec: %+v, Status: %+v\n", manifest.Name,
-						manifest.Spec, manifest.Status)
-				}
-			} else {
-				GinkgoWriter.Printf("error listing manifestList: %v\n", err)
-			}
-		case <-ctx.Done():
-			return
+func logKyma(ctx context.Context, kcpClient client.Client) {
+	kcpKymaList := v1beta2.KymaList{}
+	err := kcpClient.List(ctx, &kcpKymaList)
+	if err == nil {
+		for _, kyma := range kcpKymaList.Items {
+			GinkgoWriter.Printf("kyma (%s) in cluster: Spec: %+v, Status: %+v\n", kyma.Name, kyma.Spec,
+				kyma.Status)
 		}
+	} else {
+		GinkgoWriter.Printf("error listing kcpKymaList: %v\n", err)
+	}
+}
+
+func logManifest(ctx context.Context, kcpClient client.Client) {
+	manifestList := v1beta2.ManifestList{}
+	err := kcpClient.List(ctx, &manifestList)
+	if err == nil {
+		for _, manifest := range manifestList.Items {
+			GinkgoWriter.Printf("manifest (%s) in cluster: Spec: %+v, Status: %+v\n", manifest.Name,
+				manifest.Spec, manifest.Status)
+		}
+	} else {
+		GinkgoWriter.Printf("error listing manifestList: %v\n", err)
 	}
 }
 
