@@ -17,4 +17,4 @@ packages:
   internal/remote: 13.2
   internal/util/collections: 86
   pkg/templatelookup: 77.1
-  pkg/gatewaysecret: 80
+  pkg/gatewaysecret: 27.7
