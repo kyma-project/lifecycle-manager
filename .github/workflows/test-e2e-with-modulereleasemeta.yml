@@ -32,6 +32,7 @@ jobs:
         env:
           ITERATIONS: 40
           SLEEP_SECONDS: 30
+          IMAGE: ${{ env.IMAGE }}
         run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
     name: E2E With ModuleReleaseMeta
