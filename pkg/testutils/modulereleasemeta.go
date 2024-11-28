@@ -14,14 +14,11 @@ import (
 
 var ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
 
-func UpdateChannelVersionIfModuleReleaseMetaExists(ctx context.Context, clnt client.Client,
+func UpdateChannelVersionInModuleReleaseMeta(ctx context.Context, clnt client.Client,
 	moduleName, namespace, channel, version string,
 ) error {
 	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
 	if err != nil {
-		if util.IsNotFound(err) {
-			return nil
-		}
 		return fmt.Errorf("get module release meta: %w", err)
 	}
 
@@ -105,7 +102,9 @@ func DeleteModuleReleaseMeta(ctx context.Context, moduleName, namespace string, 
 	return nil
 }
 
-func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client client.Client, namespace, name, version string) error {
+func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client client.Client,
+	namespace, name, version string,
+) error {
 	meta := &v1beta2.ModuleReleaseMeta{}
 	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
 		return err

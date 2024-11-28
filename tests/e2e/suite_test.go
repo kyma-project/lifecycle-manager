@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
@@ -98,7 +99,49 @@ var _ = BeforeSuite(func() {
 		defer GinkgoRecover()
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
+
+	go logInstancesWithTicker(logKyma)
+	go logInstancesWithTicker(logManifest)
 })
+
+func logInstancesWithTicker(logFunc func(context.Context, client.Client)) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			logFunc(ctx, kcpClient)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func logKyma(ctx context.Context, kcpClient client.Client) {
+	kcpKymaList := v1beta2.KymaList{}
+	err := kcpClient.List(ctx, &kcpKymaList)
+	if err == nil {
+		for _, kyma := range kcpKymaList.Items {
+			GinkgoWriter.Printf("kyma (%s) in cluster: Spec: %+v, Status: %+v\n", kyma.Name, kyma.Spec,
+				kyma.Status)
+		}
+	} else {
+		GinkgoWriter.Printf("error listing kcpKymaList: %v\n", err)
+	}
+}
+
+func logManifest(ctx context.Context, kcpClient client.Client) {
+	manifestList := v1beta2.ManifestList{}
+	err := kcpClient.List(ctx, &manifestList)
+	if err == nil {
+		for _, manifest := range manifestList.Items {
+			GinkgoWriter.Printf("manifest (%s) in cluster: Spec: %+v, Status: %+v\n", manifest.Name,
+				manifest.Spec, manifest.Status)
+		}
+	} else {
+		GinkgoWriter.Printf("error listing manifestList: %v\n", err)
+	}
+}
 
 var _ = AfterSuite(func() {
 	By("Print out all remaining resources for debugging")

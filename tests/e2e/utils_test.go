@@ -33,13 +33,16 @@ var (
 )
 
 const (
-	localHostname         = "0.0.0.0"
-	skrHostname           = "skr.cluster.local"
-	defaultRemoteKymaName = "default"
-	EventuallyTimeout     = 10 * time.Second
-	ConsistentDuration    = 20 * time.Second
-	interval              = 500 * time.Millisecond
-	moduleCRFinalizer     = "cr-finalizer"
+	localHostname           = "0.0.0.0"
+	skrHostname             = "skr.cluster.local"
+	defaultRemoteKymaName   = "default"
+	EventuallyTimeout       = 10 * time.Second
+	ConsistentDuration      = 20 * time.Second
+	interval                = 500 * time.Millisecond
+	moduleCRFinalizer       = "cr-finalizer"
+	ModuleVersionToBeUsed   = "1.0.1"
+	NewerVersion            = "2.4.2-e2e-test"
+	MisconfiguredModuleName = "template-operator-misconfigured"
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
@@ -73,7 +76,8 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 		By("And Runtime Watcher deployment is up and running in SKR", func() {
 			Eventually(CheckPodLogs).
 				WithContext(ctx).
-				WithArguments(RemoteNamespace, watcher.SkrResourceName, "server", "Starting server for validation endpoint", skrRESTConfig,
+				WithArguments(RemoteNamespace, watcher.SkrResourceName, "server",
+					"Starting server for validation endpoint", skrRESTConfig,
 					skrClient, &apimetav1.Time{Time: time.Now().Add(-5 * time.Minute)}).
 				Should(Succeed())
 		})
