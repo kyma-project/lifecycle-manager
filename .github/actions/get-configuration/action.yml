@@ -42,7 +42,7 @@ runs:
           # Manually executed workflow should use the latest image of main branch
           echo "klm_version_tag=latest" >> $GITHUB_OUTPUT
           echo "klm_image_repo=prod" >> $GITHUB_OUTPUT
-          echo "k8s_version=${{ github.event.inputs.k8s_version }}" >> $GITHUB_OUTPUT
+          echo "k8s_version=${{ github.event.inputs.k8s_version || '1.30.3' }}" >> $GITHUB_OUTPUT
         fi
     - name: Expose environment variables
       shell: bash

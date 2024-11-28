@@ -22,10 +22,10 @@ jobs:
       - name: Set Image
         run: |
           if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
-            echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}"
+            echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
           else
             # Manually executed workflow should use the latest image of main branch
-            echo "IMAGE=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest"
+            echo "IMAGE=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest" >> $GITHUB_OUTPUT
           fi
       - name: Wait for the Docker image
         timeout-minutes: 20
