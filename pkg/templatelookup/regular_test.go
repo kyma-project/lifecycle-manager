@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/type"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -978,7 +979,7 @@ func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersi
 		WithLabelModuleName(moduleName).
 		WithChannel(moduleChannel).
 		WithVersion(moduleVersion).
-		WithDescriptor(&v1beta2.Descriptor{
+		WithDescriptor(&_type.Descriptor{
 			ComponentDescriptor: &compdesc.ComponentDescriptor{
 				Metadata: compdesc.Metadata{
 					ConfiguredVersion: compdescv2.SchemaVersion,

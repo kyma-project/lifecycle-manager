@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/type"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,7 +73,7 @@ func TestAdd_OnInvalidRawDescriptor_ReturnsErrDecode(t *testing.T) {
 
 func TestAdd_OnDescriptorTypeButNull_ReturnsNoError(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	template := builder.NewModuleTemplateBuilder().WithDescriptor(&v1beta2.Descriptor{}).Build()
+	template := builder.NewModuleTemplateBuilder().WithDescriptor(&_type.Descriptor{}).Build()
 
 	err := descriptorProvider.Add(template)
 
@@ -85,7 +86,7 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 		DescriptorCache: descriptorCache,
 	}
 
-	expected := &v1beta2.Descriptor{
+	expected := &_type.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{
 			Metadata: compdesc.Metadata{
 				ConfiguredVersion: "v2",
