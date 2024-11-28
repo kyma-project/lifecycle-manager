@@ -1,4 +1,4 @@
-package _type
+package types
 
 import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"

@@ -15,7 +15,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/type"
+	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 

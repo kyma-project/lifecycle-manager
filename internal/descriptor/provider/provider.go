@@ -2,12 +2,12 @@ package provider
 
 import (
 	"errors"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/type"
 
 	"ocm.software/ocm/api/ocm/compdesc"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 )
 
 var (
@@ -27,13 +27,13 @@ func NewCachedDescriptorProvider() *CachedDescriptorProvider {
 	}
 }
 
-func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplate) (*_type.Descriptor, error) {
+func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplate) (*types.Descriptor, error) {
 	if template == nil {
 		return nil, ErrTemplateNil
 	}
 
 	if template.Spec.Descriptor.Object != nil {
-		desc, ok := template.Spec.Descriptor.Object.(*_type.Descriptor)
+		desc, ok := template.Spec.Descriptor.Object.(*types.Descriptor)
 		if !ok {
 			return nil, ErrTypeAssert
 		}
@@ -57,8 +57,8 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 		return nil, errors.Join(ErrDecode, err)
 	}
 
-	template.Spec.Descriptor.Object = &_type.Descriptor{ComponentDescriptor: ocmDesc}
-	descriptor, ok := template.Spec.Descriptor.Object.(*_type.Descriptor)
+	template.Spec.Descriptor.Object = &types.Descriptor{ComponentDescriptor: ocmDesc}
+	descriptor, ok := template.Spec.Descriptor.Object.(*types.Descriptor)
 	if !ok {
 		return nil, ErrTypeAssert
 	}
@@ -77,7 +77,7 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	}
 
 	if template.Spec.Descriptor.Object != nil {
-		desc, ok := template.Spec.Descriptor.Object.(*_type.Descriptor)
+		desc, ok := template.Spec.Descriptor.Object.(*types.Descriptor)
 		if ok && desc != nil {
 			c.DescriptorCache.Set(key, desc)
 			return nil
@@ -91,8 +91,8 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 		return errors.Join(ErrDecode, err)
 	}
 
-	template.Spec.Descriptor.Object = &_type.Descriptor{ComponentDescriptor: ocmDesc}
-	descriptor, ok := template.Spec.Descriptor.Object.(*_type.Descriptor)
+	template.Spec.Descriptor.Object = &types.Descriptor{ComponentDescriptor: ocmDesc}
+	descriptor, ok := template.Spec.Descriptor.Object.(*types.Descriptor)
 	if !ok {
 		return ErrTypeAssert
 	}

@@ -2,8 +2,8 @@ package cache
 
 import (
 	"sync"
-	
-	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/type"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 )
 
 type DescriptorCache struct {
@@ -16,19 +16,19 @@ func NewDescriptorCache() *DescriptorCache {
 	}
 }
 
-func (d *DescriptorCache) Get(key DescriptorKey) *_type.Descriptor {
+func (d *DescriptorCache) Get(key DescriptorKey) *types.Descriptor {
 	value, ok := d.cache.Load(key)
 	if !ok {
 		return nil
 	}
-	desc, ok := value.(*_type.Descriptor)
+	desc, ok := value.(*types.Descriptor)
 	if !ok {
 		return nil
 	}
 
-	return &_type.Descriptor{ComponentDescriptor: desc.Copy()}
+	return &types.Descriptor{ComponentDescriptor: desc.Copy()}
 }
 
-func (d *DescriptorCache) Set(key DescriptorKey, value *_type.Descriptor) {
+func (d *DescriptorCache) Set(key DescriptorKey, value *types.Descriptor) {
 	d.cache.Store(key, value)
 }

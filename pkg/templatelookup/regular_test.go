@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/type"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
