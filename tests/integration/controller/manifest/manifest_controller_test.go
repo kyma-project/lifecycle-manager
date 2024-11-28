@@ -9,6 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
@@ -150,7 +151,7 @@ var _ = Describe(
 							standardInterval).
 							WithContext(ctx).
 							WithArguments(kcpClient, manifest.GetName(),
-								"installation is ready and resources can be used").
+								status.ResourcesAreReadyMsg).
 							Should(Succeed())
 					})
 

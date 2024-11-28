@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	resourcesAreReadyMsg   = "resources are ready"
+	ResourcesAreReadyMsg   = "resources are ready"
 	waitingForResourcesMsg = "waiting for resources to become ready"
 )
 
@@ -18,7 +18,7 @@ func RequireManifestStateUpdateAfterSyncResource(manifest *v1beta2.Manifest, new
 			manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(waitingForResourcesMsg))
 		} else {
 			ConfirmInstallationCondition(manifest)
-			manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(resourcesAreReadyMsg))
+			manifest.SetStatus(manifestStatus.WithState(newState).WithOperation(ResourcesAreReadyMsg))
 		}
 		return true
 	}
