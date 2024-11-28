@@ -5,6 +5,9 @@ env:
 on:
   workflow_dispatch:
     inputs:
+      image_tag:
+        description: With image tag for KLM image
+        required: true
       k8s_version:
         description: With Kubernetes version
         required: false
@@ -24,7 +27,7 @@ jobs:
         env:
           ITERATIONS: 40
           SLEEP_SECONDS: 30
-        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.pull_request.head.sha }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
+        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.image_tag || github.event.pull_request.head.sha }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
     name: E2E With ModuleReleaseMeta
     needs: wait-for-image-build
