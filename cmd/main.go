@@ -38,7 +38,6 @@ import (
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -204,19 +203,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
-	go setupIstioGatewaySecretRotation(config, kcpClient, setupLog)
+	go gatewaysecret.NewGatewaySecretHandler(kcpClient).
+		StartRootCertificateWatch(kubernetes.NewForConfigOrDie(config), setupLog)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
-}
-
-func setupIstioGatewaySecretRotation(config *rest.Config, kcpClient *remote.ConfigAndClient, setupLog logr.Logger) {
-	kcpClientset := kubernetes.NewForConfigOrDie(config)
-	gatewaySecretHandler := gatewaysecret.NewGatewaySecretHandler(kcpClient)
-
-	gatewaySecretHandler.StartRootCertificateWatch(kcpClientset, setupLog)
 }
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {

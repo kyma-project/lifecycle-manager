@@ -172,7 +172,7 @@ func (gsh *GatewaySecretHandler) StartRootCertificateWatch(clientset *kubernetes
 	})
 	if err != nil {
 		log.Error(err, "unable to start watching root certificate")
-		panic(err)
+		return
 	}
 
 	WatchEvents(ctx, secretWatch.ResultChan(), gsh.manageGatewaySecret, log)
