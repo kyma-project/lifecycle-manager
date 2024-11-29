@@ -28,46 +28,52 @@ const (
 
 var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
 
-type GatewaySecretHandler struct {
-	kcpClient client.Client
+type Handler struct {
+	kcpClient    client.Client
+	kcpClientset *kubernetes.Clientset
+	log          logr.Logger
 }
 
-func NewGatewaySecretHandler(kcpClient client.Client) *GatewaySecretHandler {
-	return &GatewaySecretHandler{
-		kcpClient: kcpClient,
+func NewGatewaySecretHandler(kcpClient client.Client, kcpClientset *kubernetes.Clientset,
+	log logr.Logger,
+) *Handler {
+	return &Handler{
+		kcpClient:    kcpClient,
+		kcpClientset: kcpClientset,
+		log:          log,
 	}
 }
 
-func (gsh *GatewaySecretHandler) manageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
-	gwSecret, err := gsh.FindGatewaySecret(ctx)
+func (h *Handler) manageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
+	gwSecret, err := h.FindGatewaySecret(ctx)
 
 	if util.IsNotFound(err) {
-		return gsh.handleNonExisting(ctx, rootSecret)
+		return h.handleNonExisting(ctx, rootSecret)
 	}
 	if err != nil {
 		return err
 	}
 
-	return gsh.handleExisting(ctx, rootSecret, gwSecret)
+	return h.handleExisting(ctx, rootSecret, gwSecret)
 }
 
-func (gsh *GatewaySecretHandler) handleNonExisting(ctx context.Context, rootSecret *apicorev1.Secret) error {
+func (h *Handler) handleNonExisting(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	gwSecret := NewGatewaySecret(rootSecret)
-	return gsh.Create(ctx, gwSecret)
+	return h.Create(ctx, gwSecret)
 }
 
-func (gsh *GatewaySecretHandler) handleExisting(ctx context.Context,
+func (h *Handler) handleExisting(ctx context.Context,
 	rootSecret *apicorev1.Secret, gwSecret *apicorev1.Secret,
 ) error {
-	caCert, err := gsh.GetRootCACertificate(ctx)
+	caCert, err := h.GetRootCACertificate(ctx)
 	if err != nil {
 		return err
 	}
-	if !GatewaySecretRequiresUpdate(gwSecret, caCert) {
+	if !RequiresUpdate(gwSecret, caCert) {
 		return nil
 	}
 	CopyRootSecretDataIntoGatewaySecret(gwSecret, rootSecret)
-	return gsh.Update(ctx, gwSecret)
+	return h.Update(ctx, gwSecret)
 }
 
 func CopyRootSecretDataIntoGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
@@ -76,7 +82,7 @@ func CopyRootSecretDataIntoGatewaySecret(gwSecret *apicorev1.Secret, rootSecret 
 	gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
 }
 
-func GatewaySecretRequiresUpdate(gwSecret *apicorev1.Secret, caCert certmanagerv1.Certificate) bool {
+func RequiresUpdate(gwSecret *apicorev1.Secret, caCert certmanagerv1.Certificate) bool {
 	if gwSecretLastModifiedAt, err := GetValidLastModifiedAt(gwSecret); err == nil {
 		if caCert.Status.NotBefore != nil && gwSecretLastModifiedAt.After(caCert.Status.NotBefore.Time) {
 			return false
@@ -94,29 +100,29 @@ func GetValidLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {
 	return time.Time{}, errCouldNotGetLastModifiedAt
 }
 
-func (gsh *GatewaySecretHandler) FindGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
-	return GetGatewaySecret(ctx, gsh.kcpClient)
+func (h *Handler) FindGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
+	return GetGatewaySecret(ctx, h.kcpClient)
 }
 
-func (gsh *GatewaySecretHandler) Create(ctx context.Context, secret *apicorev1.Secret) error {
-	gsh.updateLastModifiedAt(secret)
-	if err := gsh.kcpClient.Create(ctx, secret); err != nil {
+func (h *Handler) Create(ctx context.Context, secret *apicorev1.Secret) error {
+	h.updateLastModifiedAt(secret)
+	if err := h.kcpClient.Create(ctx, secret); err != nil {
 		return fmt.Errorf("failed to create secret %s: %w", secret.Name, err)
 	}
 	return nil
 }
 
-func (gsh *GatewaySecretHandler) Update(ctx context.Context, secret *apicorev1.Secret) error {
-	gsh.updateLastModifiedAt(secret)
-	if err := gsh.kcpClient.Update(ctx, secret); err != nil {
+func (h *Handler) Update(ctx context.Context, secret *apicorev1.Secret) error {
+	h.updateLastModifiedAt(secret)
+	if err := h.kcpClient.Update(ctx, secret); err != nil {
 		return fmt.Errorf("failed to update secret %s: %w", secret.Name, err)
 	}
 	return nil
 }
 
-func (gsh *GatewaySecretHandler) GetRootCACertificate(ctx context.Context) (certmanagerv1.Certificate, error) {
+func (h *Handler) GetRootCACertificate(ctx context.Context) (certmanagerv1.Certificate, error) {
 	caCert := certmanagerv1.Certificate{}
-	if err := gsh.kcpClient.Get(ctx,
+	if err := h.kcpClient.Get(ctx,
 		client.ObjectKey{Namespace: istioNamespace, Name: kcpCACertName},
 		&caCert); err != nil {
 		return certmanagerv1.Certificate{}, fmt.Errorf("failed to get CA certificate: %w", err)
@@ -124,7 +130,7 @@ func (gsh *GatewaySecretHandler) GetRootCACertificate(ctx context.Context) (cert
 	return caCert, nil
 }
 
-func (gsh *GatewaySecretHandler) updateLastModifiedAt(secret *apicorev1.Secret) {
+func (h *Handler) updateLastModifiedAt(secret *apicorev1.Secret) {
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
@@ -161,21 +167,42 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 	return secret, nil
 }
 
-func (gsh *GatewaySecretHandler) StartRootCertificateWatch(clientset *kubernetes.Clientset,
-	log logr.Logger,
-) {
+func (h *Handler) StartRootCertificateWatch() {
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
-	secretWatch, err := clientset.CoreV1().Secrets(istioNamespace).Watch(ctx, apimetav1.ListOptions{
+	h.handleAlreadyCreatedRootCertificate(ctx)
+	h.handleNewRootCertificates(ctx)
+}
+
+func (h *Handler) handleAlreadyCreatedRootCertificate(ctx context.Context) {
+	rootCASecrets, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).List(ctx, apimetav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
 	})
 	if err != nil {
-		log.Error(err, "unable to start watching root certificate")
+		h.log.Error(err, "unable to list root certificate")
+		panic(err)
+	}
+	if len(rootCASecrets.Items) != 1 {
+		panic(fmt.Errorf("expected exactly one root CA secret, found %d", len(rootCASecrets.Items)))
+	}
+	rootCASecret := &rootCASecrets.Items[0]
+	err = h.manageGatewaySecret(ctx, rootCASecret)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (h *Handler) handleNewRootCertificates(ctx context.Context) {
+	secretWatch, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Watch(ctx, apimetav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
+	})
+	if err != nil {
+		h.log.Error(err, "unable to start watching root certificate")
 		panic(err)
 	}
 
-	WatchEvents(ctx, secretWatch.ResultChan(), gsh.manageGatewaySecret, log)
+	WatchEvents(ctx, secretWatch.ResultChan(), h.manageGatewaySecret, h.log)
 }
 
 func WatchEvents(ctx context.Context, watchEvents <-chan watch.Event,
