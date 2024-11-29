@@ -26,7 +26,10 @@ const (
 	istioNamespace           = "istio-system"
 )
 
-var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
+var (
+	errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
+	errExpectedOneRootCASecret   = errors.New("expected exactly one root CA secret")
+)
 
 type Handler struct {
 	kcpClient    client.Client
@@ -184,7 +187,9 @@ func (h *Handler) handleAlreadyCreatedRootCertificate(ctx context.Context) {
 		panic(err)
 	}
 	if len(rootCASecrets.Items) != 1 {
-		panic(fmt.Errorf("expected exactly one root CA secret, found %d", len(rootCASecrets.Items)))
+		h.log.Error(errExpectedOneRootCASecret, errExpectedOneRootCASecret.Error(),
+			"found", len(rootCASecrets.Items))
+		panic(fmt.Errorf("%w: found %d", errExpectedOneRootCASecret, len(rootCASecrets.Items)))
 	}
 	rootCASecret := &rootCASecrets.Items[0]
 	err = h.manageGatewaySecret(ctx, rootCASecret)
