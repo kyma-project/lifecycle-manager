@@ -207,7 +207,7 @@ func TestGatewaySecretRequiresUpdate(t *testing.T) {
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
 			if got := gatewaysecret.RequiresUpdate(
-				testcase.args.gwSecret, testcase.args.caCert); got != testcase.want {
+				testcase.args.gwSecret, &testcase.args.caCert); got != testcase.want {
 				t.Errorf("RequiresUpdate() = %v, want %v", got, testcase.want)
 			}
 		})

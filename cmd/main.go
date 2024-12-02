@@ -21,6 +21,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -36,7 +37,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -62,7 +62,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -203,8 +202,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
-	go gatewaysecret.NewGatewaySecretHandler(kcpClient, kubernetes.NewForConfigOrDie(config), setupLog).
-		StartRootCertificateWatch()
+	if err := gatewaysecret.NewGatewaySecretHandler(config, setupLog).
+		StartRootCertificateWatch(); err != nil {
+		setupLog.Error(err, "unable to start root certificate watch")
+		os.Exit(bootstrapFailedExitCode)
+	}
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
