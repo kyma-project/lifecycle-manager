@@ -19,7 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -979,7 +979,7 @@ func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersi
 		WithLabelModuleName(moduleName).
 		WithChannel(moduleChannel).
 		WithVersion(moduleVersion).
-		WithDescriptor(&_type.Descriptor{
+		WithDescriptor(&types.Descriptor{
 			ComponentDescriptor: &compdesc.ComponentDescriptor{
 				Metadata: compdesc.Metadata{
 					ConfiguredVersion: compdescv2.SchemaVersion,

@@ -10,7 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	_type "github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
@@ -73,7 +73,7 @@ func TestAdd_OnInvalidRawDescriptor_ReturnsErrDecode(t *testing.T) {
 
 func TestAdd_OnDescriptorTypeButNull_ReturnsNoError(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	template := builder.NewModuleTemplateBuilder().WithDescriptor(&_type.Descriptor{}).Build()
+	template := builder.NewModuleTemplateBuilder().WithDescriptor(&types.Descriptor{}).Build()
 
 	err := descriptorProvider.Add(template)
 
@@ -86,7 +86,7 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 		DescriptorCache: descriptorCache,
 	}
 
-	expected := &_type.Descriptor{
+	expected := &types.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{
 			Metadata: compdesc.Metadata{
 				ConfiguredVersion: "v2",
