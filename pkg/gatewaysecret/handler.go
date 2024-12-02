@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/client-go/rest"
 	"time"
+
+	"k8s.io/client-go/rest"
 
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
@@ -26,9 +27,7 @@ const (
 	istioNamespace           = "istio-system"
 )
 
-var (
-	errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
-)
+var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
 
 type Handler struct {
 	certManagerClient *CertManagerClient

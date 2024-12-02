@@ -21,12 +21,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-co-op/gocron"

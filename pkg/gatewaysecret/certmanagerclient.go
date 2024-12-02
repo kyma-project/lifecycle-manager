@@ -2,6 +2,7 @@ package gatewaysecret
 
 import (
 	"context"
+
 	"k8s.io/client-go/rest"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
