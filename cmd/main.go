@@ -36,7 +36,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
@@ -204,7 +203,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
-	go setupIstioGatewaySecretRotation(config, kcpClient, setupLog)
+	startCAWatch(config, setupLog)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -212,11 +211,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 }
 
-func setupIstioGatewaySecretRotation(config *rest.Config, kcpClient *remote.ConfigAndClient, setupLog logr.Logger) {
-	kcpClientset := kubernetes.NewForConfigOrDie(config)
-	gatewaySecretHandler := gatewaysecret.NewGatewaySecretHandler(kcpClient)
-
-	gatewaySecretHandler.StartRootCertificateWatch(kcpClientset, setupLog)
+func startCAWatch(config *rest.Config, setupLog logr.Logger) {
+	if err := gatewaysecret.NewGatewaySecretHandler(config, setupLog).
+		StartRootCertificateWatch(); err != nil {
+		setupLog.Error(err, "unable to start root certificate watch")
+		os.Exit(bootstrapFailedExitCode)
+	}
 }
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {
