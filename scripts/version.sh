@@ -11,25 +11,36 @@ KUBECTL_VERSION_DEFAULT="1.31.3"
 GO_VERSION_DEFAULT="1.23.3"
 K3D_VERSION_DEFAULT="5.6.0"
 DOCKER_VERSION_DEFAULT="27.3.1"
+ISTIOCTL_VERSION_DEFAULT="1.24.1"
 
+versioning_error=false
 # Check if required tools are installed
 if ! command -v kubectl &> /dev/null; then
   echo "kubectl is not installed. Please install kubectl."
-  exit 1
+  versioning_error=true
 fi
 
 if ! command -v go &> /dev/null; then
   echo "Go is not installed. Please install Go."
-  exit 1
+  versioning_error=true
 fi
 
 if ! command -v k3d &> /dev/null; then
   echo "k3d is not installed. Please install k3d."
-  exit 1
+  versioning_error=true
 fi
 
 if ! command -v docker &> /dev/null; then
   echo "Docker is not installed. Please install Docker."
+  versioning_error=true
+fi
+
+if ! command -v istioctl &> /dev/null; then
+  echo "istioctl is not installed. Please install istioctl."
+  versioning_error=true
+fi
+
+if $versioning_error; then
   exit 1
 fi
 
@@ -38,6 +49,7 @@ KUBECTL_VERSION_INSTALLED=$(kubectl version --client | head -n1 | awk '{print $3
 GO_VERSION_INSTALLED=$(go version | awk '{print $3}' | sed 's/go//')
 K3D_VERSION_INSTALLED=$(k3d --version | head -n1 | awk '{print $3}' | sed 's/v//')
 DOCKER_VERSION_INSTALLED=$(docker --version | awk '{print $3}' | cut -d',' -f1)
+ISTIOCTL_VERSION_INSTALLED=$(istioctl version --short --remote=false | awk '{print $3}' | sed 's/v//')
 
 # Function to compare two versions
 # Returns:
@@ -85,27 +97,31 @@ if [[ ! $DOCKER_VERSION_INSTALLED =~ $SEM_VER_REGEX ]]; then
   exit 2
 fi
 
+if [[ ! $ISTIOCTL_VERSION_INSTALLED =~ $SEM_VER_REGEX ]]; then
+  echo "Invalid Docker version: $ISTIOCTL_VERSION_INSTALLED"
+  exit 2
+fi
+
 # Check if the installed versions are up to date
 [[ $(version_comparator "$KUBECTL_VERSION_INSTALLED" "$KUBECTL_VERSION_DEFAULT") -eq 1 ]] \
   && print_warning "kubectl" "$KUBECTL_VERSION_DEFAULT" \
-  || echo "kubectl version is up to date, using: v$KUBECTL_VERSION_INSTALLED"
-
+  || echo "kubectl  version is up to date, using: v$KUBECTL_VERSION_INSTALLED"
 
 [[ $(version_comparator "$GO_VERSION_INSTALLED" "$GO_VERSION_DEFAULT") -eq 1 ]] \
   && print_warning "Go" "$GO_VERSION_DEFAULT" \
-  || echo "GoLang  version is up to date, using: go$GO_VERSION_INSTALLED"
-
-
+  || echo "GoLang   version is up to date, using: go$GO_VERSION_INSTALLED"
 
 [[ $(version_comparator "$K3D_VERSION_INSTALLED" "$K3D_VERSION_DEFAULT") -eq 1 ]] \
   && print_warning "k3d" "$K3D_VERSION_DEFAULT" \
-  || echo "k3d     version is up to date, using: v$K3D_VERSION_INSTALLED"
-
-
+  || echo "k3d      version is up to date, using: v$K3D_VERSION_INSTALLED"
 
 [[ $(version_comparator "$DOCKER_VERSION_INSTALLED" "$DOCKER_VERSION_DEFAULT") -eq 1 ]] \
   && print_warning "docker" "$DOCKER_VERSION_DEFAULT" \
-  || echo "docker  version is up to date, using: v$DOCKER_VERSION_INSTALLED"
+  || echo "docker   version is up to date, using: v$DOCKER_VERSION_INSTALLED"
+
+[[ $(version_comparator "$ISTIOCTL_VERSION_INSTALLED" "$ISTIOCTL_VERSION_DEFAULT") -eq 1 ]] \
+  && print_warning "docker" "$ISTIOCTL_VERSION_DEFAULT" \
+  || echo "istioctl version is up to date, using: v$ISTIOCTL_VERSION_INSTALLED"
 
 # Exit with success
 exit 0
