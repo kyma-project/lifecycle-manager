@@ -244,7 +244,6 @@ func TestWatchEvents(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
 
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
@@ -258,7 +257,7 @@ func TestWatchEvents(t *testing.T) {
 	events := make(chan watch.Event, 1)
 	go func() {
 		defer waitGroup.Done()
-		gatewaysecret.WatchEvents(ctx, events, mockManageSecretFunc, logr.Logger{})
+		gatewaysecret.WatchEvents(ctx, cancel, events, mockManageSecretFunc, logr.Logger{})
 	}()
 
 	events <- watch.Event{

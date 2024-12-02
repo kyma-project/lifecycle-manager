@@ -158,12 +158,13 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 
 func (h *Handler) StartRootCertificateWatch() error {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	if err := h.handleAlreadyCreatedRootCertificate(ctx); err != nil {
+		cancel()
 		return err
 	}
-	if err := h.handleNewRootCertificates(ctx); err != nil {
+	if err := h.handleNewRootCertificates(ctx, cancel); err != nil {
+		cancel()
 		return err
 	}
 	return nil
@@ -182,7 +183,7 @@ func (h *Handler) handleAlreadyCreatedRootCertificate(ctx context.Context) error
 	return h.manageGatewaySecret(ctx, rootCASecret)
 }
 
-func (h *Handler) handleNewRootCertificates(ctx context.Context) error {
+func (h *Handler) handleNewRootCertificates(ctx context.Context, cancel context.CancelFunc) error {
 	secretWatch, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Watch(ctx, apimetav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
 	})
@@ -191,13 +192,15 @@ func (h *Handler) handleNewRootCertificates(ctx context.Context) error {
 		return fmt.Errorf("unable to start watching root certificate: %w", err)
 	}
 
-	go WatchEvents(ctx, secretWatch.ResultChan(), h.manageGatewaySecret, h.log)
+	go WatchEvents(ctx, cancel, secretWatch.ResultChan(), h.manageGatewaySecret, h.log)
 	return nil
 }
 
-func WatchEvents(ctx context.Context, watchEvents <-chan watch.Event,
+func WatchEvents(ctx context.Context, cancel context.CancelFunc, watchEvents <-chan watch.Event,
 	manageGatewaySecretFunc func(context.Context, *apicorev1.Secret) error, log logr.Logger,
 ) {
+	defer cancel()
+
 	for event := range watchEvents {
 		rootCASecret, _ := event.Object.(*apicorev1.Secret)
 
