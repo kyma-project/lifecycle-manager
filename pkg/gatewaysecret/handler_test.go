@@ -206,9 +206,9 @@ func TestGatewaySecretRequiresUpdate(t *testing.T) {
 	}
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			if got := gatewaysecret.GatewaySecretRequiresUpdate(
-				testcase.args.gwSecret, testcase.args.caCert); got != testcase.want {
-				t.Errorf("GatewaySecretRequiresUpdate() = %v, want %v", got, testcase.want)
+			if got := gatewaysecret.RequiresUpdate(
+				testcase.args.gwSecret, &testcase.args.caCert); got != testcase.want {
+				t.Errorf("RequiresUpdate() = %v, want %v", got, testcase.want)
 			}
 		})
 	}
@@ -244,7 +244,6 @@ func TestWatchEvents(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
 
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
@@ -258,7 +257,7 @@ func TestWatchEvents(t *testing.T) {
 	events := make(chan watch.Event, 1)
 	go func() {
 		defer waitGroup.Done()
-		gatewaysecret.WatchEvents(ctx, events, mockManageSecretFunc, logr.Logger{})
+		gatewaysecret.WatchEvents(ctx, cancel, events, mockManageSecretFunc, logr.Logger{})
 	}()
 
 	events <- watch.Event{

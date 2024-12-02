@@ -178,7 +178,7 @@ var _ = Describe("RBAC Privileges", func() {
 				{
 					APIGroups: []string{""},
 					Resources: []string{"secrets"},
-					Verbs:     []string{"list", "watch", "create", "delete", "update"},
+					Verbs:     []string{"list", "watch", "get", "create", "delete", "update"},
 				},
 				{
 					APIGroups: []string{"cert-manager.io"},
