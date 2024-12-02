@@ -27,8 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
@@ -39,6 +37,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -63,6 +62,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -203,15 +203,19 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
-	if err := gatewaysecret.NewGatewaySecretHandler(config, setupLog).
-		StartRootCertificateWatch(); err != nil {
-		setupLog.Error(err, "unable to start root certificate watch")
-		os.Exit(bootstrapFailedExitCode)
-	}
+	startCAWatch(config, setupLog)
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
+	}
+}
+
+func startCAWatch(config *rest.Config, setupLog logr.Logger) {
+	if err := gatewaysecret.NewGatewaySecretHandler(config, setupLog).
+		StartRootCertificateWatch(); err != nil {
+		setupLog.Error(err, "unable to start root certificate watch")
+		os.Exit(bootstrapFailedExitCode)
 	}
 }
 

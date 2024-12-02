@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/client-go/rest"
-
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -93,10 +92,9 @@ func GetValidLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {
 }
 
 func (h *Handler) findGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
-	secret := &apicorev1.Secret{}
-	var err error
-	if secret, err = h.kcpClientset.CoreV1().Secrets(istioNamespace).Get(ctx, gatewaySecretName,
-		apimetav1.GetOptions{}); err != nil {
+	secret, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Get(ctx, gatewaySecretName,
+		apimetav1.GetOptions{})
+	if err != nil {
 		return nil, fmt.Errorf("failed to get secret %s: %w", gatewaySecretName, err)
 	}
 	return secret, nil
@@ -104,7 +102,8 @@ func (h *Handler) findGatewaySecret(ctx context.Context) (*apicorev1.Secret, err
 
 func (h *Handler) Create(ctx context.Context, secret *apicorev1.Secret) error {
 	h.updateLastModifiedAt(secret)
-	if _, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Create(ctx, secret, apimetav1.CreateOptions{}); err != nil {
+	if _, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Create(ctx, secret,
+		apimetav1.CreateOptions{}); err != nil {
 		return fmt.Errorf("failed to create secret %s: %w", secret.Name, err)
 	}
 	return nil
@@ -112,7 +111,8 @@ func (h *Handler) Create(ctx context.Context, secret *apicorev1.Secret) error {
 
 func (h *Handler) Update(ctx context.Context, secret *apicorev1.Secret) error {
 	h.updateLastModifiedAt(secret)
-	if _, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Update(ctx, secret, apimetav1.UpdateOptions{}); err != nil {
+	if _, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Update(ctx, secret,
+		apimetav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("failed to update secret %s: %w", secret.Name, err)
 	}
 	return nil

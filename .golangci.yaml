@@ -54,6 +54,8 @@ linters-settings:
     no-unaliased: true
     no-extra-aliases: true
     alias:
+      - pkg: github.com/cert-manager/cert-manager/pkg/client/clientset/versioned
+        alias: certmanagerclientset
       - pkg: github.com/kyma-project/template-operator/api/v1alpha1
         alias: templatev1alpha1
       - pkg: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
