@@ -68,7 +68,7 @@ type Reconciler struct {
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers/finalizers,verbs=update
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;create;update;delete
 // +kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=list;get;
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
