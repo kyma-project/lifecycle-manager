@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/client-go/rest"
@@ -19,12 +20,14 @@ type RemoteClusterLookup struct {
 	ConfigGetter RESTConfigGetter
 }
 
+var errTypeAssertManifest = errors.New("value can not be converted to v1beta2.Manifest")
+
 func (r *RemoteClusterLookup) ConfigResolver(
 	ctx context.Context, obj declarativev2.Object,
 ) (*declarativev2.ClusterInfo, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return nil, v1beta2.ErrTypeAssertManifest
+		return nil, errTypeAssertManifest
 	}
 	// in single cluster mode return the default cluster info
 	// since the resources need to be installed in the same cluster

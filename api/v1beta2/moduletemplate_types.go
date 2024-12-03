@@ -25,8 +25,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"ocm.software/ocm/api/ocm/compdesc"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -45,31 +43,6 @@ type ModuleTemplate struct {
 	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
-}
-
-// +k8s:deepcopy-gen=false
-type Descriptor struct {
-	*compdesc.ComponentDescriptor
-}
-
-func (d *Descriptor) SetGroupVersionKind(kind schema.GroupVersionKind) {
-	d.Version = kind.Version
-}
-
-func (d *Descriptor) GroupVersionKind() schema.GroupVersionKind {
-	return schema.GroupVersionKind{
-		Group:   "ocm.kyma-project.io",
-		Version: d.Metadata.ConfiguredVersion,
-		Kind:    "Descriptor",
-	}
-}
-
-func (d *Descriptor) GetObjectKind() schema.ObjectKind {
-	return d
-}
-
-func (d *Descriptor) DeepCopyObject() machineryruntime.Object {
-	return &Descriptor{ComponentDescriptor: d.Copy()}
 }
 
 // ModuleTemplateSpec defines the desired state of ModuleTemplate.
@@ -212,7 +185,7 @@ type Resource struct {
 
 //nolint:gochecknoinits // registers ModuleTemplate CRD on startup
 func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
+	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }
 
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {

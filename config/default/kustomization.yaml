@@ -1,11 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Value of this field is prepended to the
-# names of all resources, e.g. a deployment named
-# "wordpress" becomes "alices-wordpress".
-# Note that it should also match with the prefix (text before '-') of the namespace
-# field above.
+# Value of this field is prepended to the names of all resources
 namePrefix: klm-
 
 # Labels to add to all resources and selectors.
@@ -19,14 +15,7 @@ commonLabels:
 
 
 patches:
-# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-# crd/kustomization.yaml
 - path: manager_webhook_patch.yaml
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
-# Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
-# 'CERTMANAGER' needs to be enabled to use ca injection
-# the following config is for teaching kustomize how to do var substitution
-- path: webhookcainjection_patch.yaml
 
 resources:
 - ../manager
@@ -65,8 +54,6 @@ transformers:
   fieldSpecs:
   - kind: CustomResourceDefinition
     path: metadata/annotations
-  - kind: ValidatingWebhookConfiguration
-    path: metadata/annotations
 - |-
   apiVersion: builtin
   kind: PatchTransformer
@@ -78,14 +65,3 @@ transformers:
     name: klm-controller-manager-webhook-serving
     version: v1
     group: cert-manager.io
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-validating-webhook-namespace
-  patch: '[{"op": "replace", "path": "/webhooks/0/clientConfig/service/namespace", "value": "kcp-system"}]'
-  target:
-    kind: ValidatingWebhookConfiguration
-    name: klm-validating-webhook-configuration
-    version: v1
-    group: admissionregistration.k8s.io

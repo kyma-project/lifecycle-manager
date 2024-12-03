@@ -107,5 +107,5 @@ const (
 
 //nolint:gochecknoinits // registers ModuleTemplate CRD on startup
 func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &v1beta2.Descriptor{})
+	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }
