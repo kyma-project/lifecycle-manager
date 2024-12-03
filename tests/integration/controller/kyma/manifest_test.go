@@ -22,6 +22,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -374,7 +375,7 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 }
 
 func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
-	moduleTemplateDescriptor *v1beta2.Descriptor,
+	moduleTemplateDescriptor *types.Descriptor,
 ) error {
 	if err := validateManifestSpecInstallSourceName(manifestImageSpec, moduleTemplateDescriptor); err != nil {
 		return err
@@ -392,7 +393,7 @@ func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
 }
 
 func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
-	moduleTemplateDescriptor *v1beta2.Descriptor,
+	moduleTemplateDescriptor *types.Descriptor,
 ) error {
 	actualSourceName := manifestImageSpec.Name
 	expectedSourceName := moduleTemplateDescriptor.Name
@@ -404,7 +405,7 @@ func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
 }
 
 func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
-	moduleTemplateDescriptor *v1beta2.Descriptor,
+	moduleTemplateDescriptor *types.Descriptor,
 ) error {
 	actualSourceRef := manifestImageSpec.Ref
 
@@ -443,7 +444,7 @@ func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(ma
 }
 
 func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
-	moduleTemplateDescriptor *v1beta2.Descriptor,
+	moduleTemplateDescriptor *types.Descriptor,
 ) error {
 	actualSourceRepo := manifestImageSpec.Repo
 
@@ -554,11 +555,11 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 	}
 }
 
-func updateComponentVersion(descriptor *v1beta2.Descriptor) {
+func updateComponentVersion(descriptor *types.Descriptor) {
 	descriptor.ComponentSpec.Version = updatedModuleTemplateVersion
 }
 
-func updateComponentResources(descriptor *v1beta2.Descriptor) {
+func updateComponentResources(descriptor *types.Descriptor) {
 	resources := descriptor.ComponentSpec.Resources
 	for i := range resources {
 		res := &resources[i]
@@ -575,7 +576,7 @@ func updateComponentResources(descriptor *v1beta2.Descriptor) {
 	}
 }
 
-func updateComponentSources(descriptor *v1beta2.Descriptor) {
+func updateComponentSources(descriptor *types.Descriptor) {
 	sources := descriptor.ComponentSpec.Sources
 	for i := range sources {
 		src := &sources[i]
