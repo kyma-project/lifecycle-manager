@@ -39,8 +39,8 @@ func TestRequireManifestStateUpdateAfterSyncResource(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			manifest := &v1beta2.Manifest{}
 			manifest.SetGeneration(1)
 			manifestStatus := shared.Status{
@@ -49,17 +49,17 @@ func TestRequireManifestStateUpdateAfterSyncResource(t *testing.T) {
 			manifestStatus = manifestStatus.WithOperation(status.ResourcesAreReadyMsg)
 			manifest.SetStatus(manifestStatus)
 
-			updated := status.RequireManifestStateUpdateAfterSyncResource(manifest, tt.newState)
-			if updated != tt.expectUpdate {
-				t.Errorf("expected update to be %v, got %v", tt.expectUpdate, updated)
+			updated := status.RequireManifestStateUpdateAfterSyncResource(manifest, testCase.newState)
+			if updated != testCase.expectUpdate {
+				t.Errorf("expected update to be %v, got %v", testCase.expectUpdate, updated)
 			}
 
-			if manifest.GetStatus().State != tt.expectedState {
-				t.Errorf("expected state to be %v, got %v", tt.expectedState, manifest.GetStatus().State)
+			if manifest.GetStatus().State != testCase.expectedState {
+				t.Errorf("expected state to be %v, got %v", testCase.expectedState, manifest.GetStatus().State)
 			}
 
-			if manifest.GetStatus().Operation != tt.expectedOp {
-				t.Errorf("expected operation to be %v, got %v", tt.expectedOp, manifest.GetStatus().Operation)
+			if manifest.GetStatus().Operation != testCase.expectedOp {
+				t.Errorf("expected operation to be %v, got %v", testCase.expectedOp, manifest.GetStatus().Operation)
 			}
 		})
 	}
