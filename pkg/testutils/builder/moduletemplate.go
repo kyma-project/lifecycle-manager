@@ -15,6 +15,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -37,7 +38,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 			Spec: v1beta2.ModuleTemplateSpec{
 				Data: data,
 				Descriptor: machineryruntime.RawExtension{
-					Object: &v1beta2.Descriptor{
+					Object: &types.Descriptor{
 						ComponentDescriptor: &compdesc.ComponentDescriptor{
 							Metadata: compdesc.Metadata{
 								ConfiguredVersion: compdescv2.SchemaVersion,
@@ -114,7 +115,7 @@ func (m ModuleTemplateBuilder) WithModuleCR(data *unstructured.Unstructured) Mod
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithDescriptor(descriptor *v1beta2.Descriptor) ModuleTemplateBuilder {
+func (m ModuleTemplateBuilder) WithDescriptor(descriptor *types.Descriptor) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Descriptor.Object = descriptor
 	return m
 }
