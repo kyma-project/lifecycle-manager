@@ -1,13 +1,30 @@
 #!/bin/bash
 
-# Change to the directory where the script is located
-cd "$(dirname "$0")"
+# Parse arguments
+SKIP_VERSION_CHECK=false
+if [ "$1" == "--skip-version-check" ]; then
+  SKIP_VERSION_CHECK=true
+  shift
+fi
 
-./../version.sh
-if [ $? -ne 0 ]; then
-  echo "[$(basename $0)] Versioning check failed. Exiting..."
+# Check for invalid or extra arguments
+if [ $# -ne 0 ]; then
+  echo "[$(basename $0)] Invalid argument(s): $@"
+  echo "Usage: $(basename $0) [--skip-version-check]"
   exit 1
 fi
+
+# Run version check unless skipped
+if [ "$SKIP_VERSION_CHECK" = false ]; then
+  ./../version.sh
+  if [ $? -ne 0 ]; then
+    echo "[$(basename $0)] Versioning check failed. Exiting..."
+    exit 1
+  fi
+fi
+
+# Change to the directory where the script is located
+cd "$(dirname "$0")"
 
 # create SKR cluster
 if k3d cluster list | grep -q "^skr\s"; then

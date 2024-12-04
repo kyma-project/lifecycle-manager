@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Changing directory to the root of the project with git
+cd "$(git rev-parse --show-toplevel)"
+
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --image-registry) KLM_IMAGE_REGISTRY="$2"; shift ;;
