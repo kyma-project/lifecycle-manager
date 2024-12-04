@@ -50,6 +50,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
@@ -177,6 +178,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			os.Exit(bootstrapFailedExitCode)
 		}
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLog)
+		setupIstioGatewaySecretReconciler(mgr, options, eventRecorder, flagVar, setupLog)
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
@@ -483,6 +485,30 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
+		os.Exit(bootstrapFailedExitCode)
+	}
+}
+
+func setupIstioGatewaySecretReconciler(mgr ctrl.Manager,
+	options ctrlruntime.Options,
+	event event.Event,
+	flagVar *flags.FlagVar,
+	setupLog logr.Logger,
+) {
+	// TODO: Should we introduce separate reconciles and intervals for this controller or is it fine to use the watcher?
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
+
+	if err := (&istiogatewaysecret.Reconciler{
+		Client: mgr.GetClient(),
+		Event:  event,
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.WatcherRequeueSuccessInterval,
+			Busy:    flags.DefaultKymaRequeueBusyInterval,
+			Error:   flags.DefaultKymaRequeueErrInterval,
+			Warning: flags.DefaultKymaRequeueWarningInterval,
+		},
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IstioGatewaySecret")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }
