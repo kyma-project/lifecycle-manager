@@ -32,7 +32,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get istio gateway secret: %w", err)
 	}
 
-	err := gatewaysecret.ManageGatewaySecret(ctx, secret)
+	// TODO just testing if e2e tests succeed and the controller works
+	handler := gatewaysecret.Handler{
+		CertManagerClient: nil,
+		KcpClientset:      nil,
+		Log:               logger,
+	}
+	err := handler.ManageGatewaySecret(ctx, secret)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to manage gateway secret: %w", err)
+	}
 
 	return ctrl.Result{}, nil
 }
