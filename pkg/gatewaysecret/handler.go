@@ -90,15 +90,6 @@ func CopySecretData(from, to *apicorev1.Secret) {
 	to.Data[caCrt] = from.Data[caCrt]
 }
 
-func ParseLastModifiedTime(secret *apicorev1.Secret) (time.Time, error) {
-	if gwSecretLastModifiedAtValue, ok := secret.Annotations[LastModifiedAtAnnotation]; ok {
-		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
-			return gwSecretLastModifiedAt, nil
-		}
-	}
-	return time.Time{}, errCouldNotGetLastModifiedAt
-}
-
 func setLastModifiedToNow(secret *apicorev1.Secret) {
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)

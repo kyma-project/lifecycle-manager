@@ -3,6 +3,7 @@ package gatewaysecret
 import (
 	"context"
 	"fmt"
+	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,7 +14,7 @@ const (
 	secretKind        = "Secret"
 	gatewaySecretName = "klm-istio-gateway" //nolint:gosec // gatewaySecretName is not a credential
 	istioNamespace    = "istio-system"
-	
+
 	tlsCrt = "tls.crt"
 	tlsKey = "tls.key"
 	caCrt  = "ca.crt"
@@ -46,4 +47,13 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 		return nil, fmt.Errorf("failed to get gateway secret %s: %w", gatewaySecretName, err)
 	}
 	return secret, nil
+}
+
+func ParseLastModifiedTime(secret *apicorev1.Secret) (time.Time, error) {
+	if gwSecretLastModifiedAtValue, ok := secret.Annotations[LastModifiedAtAnnotation]; ok {
+		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+			return gwSecretLastModifiedAt, nil
+		}
+	}
+	return time.Time{}, errCouldNotGetLastModifiedAt
 }
