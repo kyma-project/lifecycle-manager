@@ -38,7 +38,6 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -178,6 +177,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			os.Exit(bootstrapFailedExitCode)
 		}
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLog)
+		setupIstioReconciler(mgr, flagVar, options, setupLog)
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
@@ -195,7 +195,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLog)
 	}
-	setupIstioReconciler(mgr, flagVar, options, setupLog)
 
 	if flagVar.EnableWebhooks {
 		// enable conversion webhook for CRDs here
@@ -208,19 +207,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
-	startCAWatch(config, setupLog)
-
 	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
-	}
-}
-
-func startCAWatch(config *rest.Config, setupLog logr.Logger) {
-	if err := gatewaysecret.NewGatewaySecretHandler(config, setupLog).
-		StartRootCertificateWatch(); err != nil {
-		setupLog.Error(err, "unable to start root certificate watch")
-		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
@@ -492,7 +481,15 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	if err := istio.NewReconciler(mgr.GetClient()).SetupWithManager(mgr, options); err != nil {
+	handler := gatewaysecret.NewGatewaySecretHandler(mgr.GetConfig(), setupLog)
+	requeueIntervals := queue.RequeueIntervals{
+		Success: flagVar.WatcherRequeueSuccessInterval,
+		Busy:    flags.DefaultKymaRequeueBusyInterval,
+		Error:   flags.DefaultKymaRequeueErrInterval,
+		Warning: flags.DefaultKymaRequeueWarningInterval,
+	}
+
+	if err := istio.NewReconciler(mgr.GetClient(), requeueIntervals, handler).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Istio")
 		os.Exit(bootstrapFailedExitCode)
 	}

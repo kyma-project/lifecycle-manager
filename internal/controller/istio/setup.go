@@ -12,7 +12,9 @@ import (
 )
 
 const (
-	controllerName    = "istio-controller"
+	controllerName = "istio-controller"
+
+	// TODO move to config
 	kcpRootSecretName = "klm-watcher" //nolint:gosec // gatewaySecretName is not a credential
 	istioNamespace    = "istio-system"
 )
@@ -25,12 +27,14 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			return isRootSecret(e.ObjectNew)
 		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isRootSecret(e.Object)
-		},
-		GenericFunc: func(e event.GenericEvent) bool {
-			return isRootSecret(e.Object)
-		},
+
+		// TODO probably not needed
+		//DeleteFunc: func(e event.DeleteEvent) bool {
+		//	return isRootSecret(e.Object)
+		//},
+		//GenericFunc: func(e event.GenericEvent) bool {
+		//	return isRootSecret(e.Object)
+		//},
 	}
 
 	if err := ctrl.NewControllerManagedBy(mgr).

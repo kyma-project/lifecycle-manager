@@ -9,8 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -153,70 +151,4 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 		return nil, fmt.Errorf("failed to get secret %s: %w", gatewaySecretName, err)
 	}
 	return secret, nil
-}
-
-func (h *Handler) StartRootCertificateWatch() error {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	if err := h.handleAlreadyCreatedRootCertificate(ctx); err != nil {
-		cancel()
-		return err
-	}
-	if err := h.handleNewRootCertificates(ctx, cancel); err != nil {
-		cancel()
-		return err
-	}
-	return nil
-}
-
-func (h *Handler) handleAlreadyCreatedRootCertificate(ctx context.Context) error {
-	rootCASecret, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Get(ctx, kcpRootSecretName,
-		apimetav1.GetOptions{})
-	if err != nil {
-		if util.IsNotFound(err) {
-			return nil
-		}
-		h.log.Error(err, "unable to get root certificate")
-		return fmt.Errorf("unable to get root certificate: %w", err)
-	}
-	return h.manageGatewaySecret(ctx, rootCASecret)
-}
-
-func (h *Handler) handleNewRootCertificates(ctx context.Context, cancel context.CancelFunc) error {
-	secretWatch, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Watch(ctx, apimetav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(apimetav1.ObjectNameField, kcpRootSecretName).String(),
-	})
-	if err != nil {
-		h.log.Error(err, "unable to start watching root certificate")
-		return fmt.Errorf("unable to start watching root certificate: %w", err)
-	}
-
-	go WatchEvents(ctx, cancel, secretWatch.ResultChan(), h.manageGatewaySecret, h.log)
-	return nil
-}
-
-func WatchEvents(ctx context.Context, cancel context.CancelFunc, watchEvents <-chan watch.Event,
-	manageGatewaySecretFunc func(context.Context, *apicorev1.Secret) error, log logr.Logger,
-) {
-	defer cancel()
-
-	for event := range watchEvents {
-		rootCASecret, _ := event.Object.(*apicorev1.Secret)
-
-		switch event.Type {
-		case watch.Added, watch.Modified:
-			err := manageGatewaySecretFunc(ctx, rootCASecret)
-			if err != nil {
-				log.Error(err, "unable to manage istio gateway secret")
-			}
-		case watch.Deleted:
-			// ignored because it is an invalid state and cert manager should not delete the root secret
-			// even if it is deleted, the certificate manager will recreate it, and trigger the watch event
-			fallthrough
-		case watch.Error, watch.Bookmark:
-			fallthrough
-		default:
-			continue
-		}
-	}
 }

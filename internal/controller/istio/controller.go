@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 
 	apicorev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -15,11 +16,15 @@ import (
 
 type Reconciler struct {
 	client.Client
+	queue.RequeueIntervals
+	handler *gatewaysecret.Handler
 }
 
-func NewReconciler(client client.Client) *Reconciler {
+func NewReconciler(client client.Client, requeueIntervals queue.RequeueIntervals, handler *gatewaysecret.Handler) *Reconciler {
 	return &Reconciler{
-		Client: client,
+		Client:           client,
+		RequeueIntervals: requeueIntervals,
+		handler:          handler,
 	}
 }
 
@@ -32,13 +37,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get istio gateway secret: %w", err)
 	}
 
-	// TODO just testing if e2e tests succeed and the controller works
-	handler := gatewaysecret.Handler{
-		CertManagerClient: nil,
-		KcpClientset:      nil,
-		Log:               logger,
-	}
-	err := handler.ManageGatewaySecret(ctx, secret)
+	err := r.handler.ManageGatewaySecret(ctx, secret)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to manage gateway secret: %w", err)
 	}
