@@ -21,6 +21,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/istio"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -194,6 +195,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLog)
 	}
+	setupIstioReconciler(mgr, flagVar, options, setupLog)
 
 	if flagVar.EnableWebhooks {
 		// enable conversion webhook for CRDs here
@@ -208,7 +210,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	startCAWatch(config, setupLog)
 
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
@@ -483,6 +485,17 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
+		os.Exit(bootstrapFailedExitCode)
+	}
+}
+
+func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
+
+	if err := (&istio.Reconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Istio")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }
