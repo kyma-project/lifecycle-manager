@@ -29,7 +29,7 @@ func (h *CertManagerClient) GetRootCACertificate(ctx context.Context) (*certmana
 }
 
 func RequiresUpdate(gwSecret *apicorev1.Secret, caCert *certmanagerv1.Certificate) bool {
-	if gwSecretLastModifiedAt, err := GetValidLastModifiedAt(gwSecret); err == nil {
+	if gwSecretLastModifiedAt, err := ParseLastModifiedTime(gwSecret); err == nil {
 		if caCert.Status.NotBefore != nil && gwSecretLastModifiedAt.After(caCert.Status.NotBefore.Time) {
 			return false
 		}

@@ -3,15 +3,15 @@ package istio
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 
 	apicorev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
 type Reconciler struct {

@@ -10,59 +10,44 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
 	LastModifiedAtAnnotation = "lastModifiedAt"
-	gatewaySecretName        = "klm-istio-gateway" //nolint:gosec // gatewaySecretName is not a credential
-	kcpRootSecretName        = "klm-watcher"
-	kcpCACertName            = "klm-watcher-serving"
-	istioNamespace           = "istio-system"
+
+	// TODO move to config?
+	kcpCACertName = "klm-watcher-serving"
 )
 
 var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
 
 type Handler struct {
 	certManagerClient *CertManagerClient
-	kcpClientset      *kubernetes.Clientset
+	kcpSecretClient   v1.SecretInterface
 	log               logr.Logger
 }
 
-func NewGatewaySecretHandler(config *rest.Config,
-	log logr.Logger,
-) *Handler {
+func NewGatewaySecretHandler(config *rest.Config, log logr.Logger) *Handler {
 	return &Handler{
 		certManagerClient: NewCertManagerClient(config),
-		kcpClientset:      kubernetes.NewForConfigOrDie(config),
+		kcpSecretClient:   kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(istioNamespace),
 		log:               log,
 	}
 }
 
 func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	gwSecret, err := h.findGatewaySecret(ctx)
-
 	if util.IsNotFound(err) {
-		return h.handleNonExisting(ctx, rootSecret)
+		return h.Create(ctx, NewGatewaySecret(rootSecret))
 	}
 	if err != nil {
 		return err
 	}
 
-	return h.handleExisting(ctx, rootSecret, gwSecret)
-}
-
-func (h *Handler) handleNonExisting(ctx context.Context, rootSecret *apicorev1.Secret) error {
-	gwSecret := NewGatewaySecret(rootSecret)
-	return h.Create(ctx, gwSecret)
-}
-
-func (h *Handler) handleExisting(ctx context.Context,
-	rootSecret *apicorev1.Secret, gwSecret *apicorev1.Secret,
-) error {
 	caCert, err := h.certManagerClient.GetRootCACertificate(ctx)
 	if err != nil {
 		return err
@@ -70,17 +55,42 @@ func (h *Handler) handleExisting(ctx context.Context,
 	if !RequiresUpdate(gwSecret, caCert) {
 		return nil
 	}
-	CopyRootSecretDataIntoGatewaySecret(gwSecret, rootSecret)
+
+	CopySecretData(rootSecret, gwSecret)
 	return h.Update(ctx, gwSecret)
 }
 
-func CopyRootSecretDataIntoGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
-	gwSecret.Data["tls.crt"] = rootSecret.Data["tls.crt"]
-	gwSecret.Data["tls.key"] = rootSecret.Data["tls.key"]
-	gwSecret.Data["ca.crt"] = rootSecret.Data["ca.crt"]
+func (h *Handler) findGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
+	secret, err := h.kcpSecretClient.Get(ctx, gatewaySecretName, apimetav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret %s: %w", gatewaySecretName, err)
+	}
+	return secret, nil
 }
 
-func GetValidLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {
+func (h *Handler) Create(ctx context.Context, secret *apicorev1.Secret) error {
+	setLastModifiedToNow(secret)
+	if _, err := h.kcpSecretClient.Create(ctx, secret, apimetav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("failed to create secret %s: %w", secret.Name, err)
+	}
+	return nil
+}
+
+func (h *Handler) Update(ctx context.Context, secret *apicorev1.Secret) error {
+	setLastModifiedToNow(secret)
+	if _, err := h.kcpSecretClient.Update(ctx, secret, apimetav1.UpdateOptions{}); err != nil {
+		return fmt.Errorf("failed to update secret %s: %w", secret.Name, err)
+	}
+	return nil
+}
+
+func CopySecretData(from, to *apicorev1.Secret) {
+	to.Data[tlsCrt] = from.Data[tlsCrt]
+	to.Data[tlsKey] = from.Data[tlsKey]
+	to.Data[caCrt] = from.Data[caCrt]
+}
+
+func ParseLastModifiedTime(secret *apicorev1.Secret) (time.Time, error) {
 	if gwSecretLastModifiedAtValue, ok := secret.Annotations[LastModifiedAtAnnotation]; ok {
 		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
 			return gwSecretLastModifiedAt, nil
@@ -89,66 +99,9 @@ func GetValidLastModifiedAt(secret *apicorev1.Secret) (time.Time, error) {
 	return time.Time{}, errCouldNotGetLastModifiedAt
 }
 
-func (h *Handler) findGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
-	secret, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Get(ctx, gatewaySecretName,
-		apimetav1.GetOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get secret %s: %w", gatewaySecretName, err)
-	}
-	return secret, nil
-}
-
-func (h *Handler) Create(ctx context.Context, secret *apicorev1.Secret) error {
-	h.updateLastModifiedAt(secret)
-	if _, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Create(ctx, secret,
-		apimetav1.CreateOptions{}); err != nil {
-		return fmt.Errorf("failed to create secret %s: %w", secret.Name, err)
-	}
-	return nil
-}
-
-func (h *Handler) Update(ctx context.Context, secret *apicorev1.Secret) error {
-	h.updateLastModifiedAt(secret)
-	if _, err := h.kcpClientset.CoreV1().Secrets(istioNamespace).Update(ctx, secret,
-		apimetav1.UpdateOptions{}); err != nil {
-		return fmt.Errorf("failed to update secret %s: %w", secret.Name, err)
-	}
-	return nil
-}
-
-func (h *Handler) updateLastModifiedAt(secret *apicorev1.Secret) {
+func setLastModifiedToNow(secret *apicorev1.Secret) {
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
-}
-
-func NewGatewaySecret(rootSecret *apicorev1.Secret) *apicorev1.Secret {
-	gwSecret := &apicorev1.Secret{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: apicorev1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      gatewaySecretName,
-			Namespace: istioNamespace,
-		},
-		Data: map[string][]byte{
-			"tls.crt": rootSecret.Data["tls.crt"],
-			"tls.key": rootSecret.Data["tls.key"],
-			"ca.crt":  rootSecret.Data["ca.crt"],
-		},
-	}
-	return gwSecret
-}
-
-func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
-	secret := &apicorev1.Secret{}
-	if err := clnt.Get(ctx, client.ObjectKey{
-		Name:      gatewaySecretName,
-		Namespace: istioNamespace,
-	}, secret); err != nil {
-		return nil, fmt.Errorf("failed to get secret %s: %w", gatewaySecretName, err)
-	}
-	return secret, nil
 }
