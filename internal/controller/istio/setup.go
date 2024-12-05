@@ -11,26 +11,24 @@ import (
 )
 
 const (
-	controllerName = "istio-controller"
-
-	// TODO move to config
-	namespace = "kcp-system"
-	name      = "ístio-gateway"
+	controllerName    = "istio-controller"
+	gatewaySecretName = "klm-istio-gateway" //nolint:gosec // gatewaySecretName is not a credential
+	istioNamespace    = "istio-system"
 )
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
 	secretPredicate := predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
-			return e.Object.GetNamespace() == namespace && e.Object.GetName() == name
+			return e.Object.GetNamespace() == istioNamespace && e.Object.GetName() == gatewaySecretName
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			return e.ObjectNew.GetNamespace() == namespace && e.ObjectNew.GetName() == name
+			return e.ObjectNew.GetNamespace() == istioNamespace && e.ObjectNew.GetName() == gatewaySecretName
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return e.Object.GetNamespace() == namespace && e.Object.GetName() == name
+			return e.Object.GetNamespace() == istioNamespace && e.Object.GetName() == gatewaySecretName
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
-			return e.Object.GetNamespace() == namespace && e.Object.GetName() == name
+			return e.Object.GetNamespace() == istioNamespace && e.Object.GetName() == gatewaySecretName
 		},
 	}
 

@@ -29,6 +29,5 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.Get(ctx, req.NamespacedName, secret); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get istio gateway secret: %w", err)
 	}
-
 	return ctrl.Result{}, nil
 }

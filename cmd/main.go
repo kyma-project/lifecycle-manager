@@ -492,9 +492,7 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	if err := (&istio.Reconciler{
-		Client: mgr.GetClient(),
-	}).SetupWithManager(mgr, options); err != nil {
+	if err := istio.NewReconciler(mgr.GetClient()).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Istio")
 		os.Exit(bootstrapFailedExitCode)
 	}
