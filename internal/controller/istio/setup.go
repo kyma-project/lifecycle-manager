@@ -51,5 +51,4 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 
 func isRootSecret(object client.Object) bool {
 	return object.GetNamespace() == istioNamespace && object.GetName() == kcpRootSecretName
-
 }
