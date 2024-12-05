@@ -137,6 +137,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err != nil {
 			r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+			setModuleStatusesToError(kyma, util.NestedErrorMessage(err))
 			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
@@ -672,4 +673,14 @@ func needUpdateForMandatoryModuleLabel(moduleTemplate v1beta2.ModuleTemplate) bo
 	}
 
 	return false
+}
+
+func setModuleStatusesToError(kyma *v1beta2.Kyma, optMessage string) {
+	moduleStatuses := kyma.Status.Modules
+	for i := range moduleStatuses {
+		moduleStatuses[i].State = shared.StateError
+		if optMessage != "" {
+			moduleStatuses[i].Message = optMessage
+		}
+	}
 }
