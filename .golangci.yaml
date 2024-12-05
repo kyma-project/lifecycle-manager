@@ -54,14 +54,14 @@ linters-settings:
     no-unaliased: true
     no-extra-aliases: true
     alias:
-      - pkg: github.com/cert-manager/cert-manager/pkg/client/clientset/versioned
-        alias: certmanagerclientset
       - pkg: github.com/kyma-project/template-operator/api/v1alpha1
         alias: templatev1alpha1
       - pkg: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
         alias: certmanagerv1
       - pkg: github.com/cert-manager/cert-manager/pkg/apis/meta/v1
         alias: certmanagermetav1
+      - pkg: github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1
+        alias: certmanagerclientv1
       - pkg: github.com/google/go-containerregistry/pkg/v1
         alias: containerregistryv1
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics

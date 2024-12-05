@@ -13,7 +13,7 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -28,7 +28,7 @@ var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time faile
 
 type Handler struct {
 	certificateClient certmanagerclientv1.CertificateInterface
-	kcpSecretClient   v1.SecretInterface
+	kcpSecretClient   corev1.SecretInterface
 	log               logr.Logger
 }
 

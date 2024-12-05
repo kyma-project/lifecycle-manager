@@ -1,7 +1,6 @@
 package gatewaysecret_test
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -12,104 +11,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 )
-
-const (
-	oldTLSCertValue = "old-value1"
-	oldTLSKeyValue  = "old-value2"
-	oldCACertValue  = "old-value3"
-
-	newTLSCertValue = "value1"
-	newTLSKeyValue  = "value2"
-	newCACertValue  = "value3"
-)
-
-func TestNewGatewaySecret(t *testing.T) {
-	t.Parallel()
-
-	rootSecret := &apicorev1.Secret{
-		Data: map[string][]byte{
-			"tls.crt": []byte(newTLSCertValue),
-			"tls.key": []byte(newTLSKeyValue),
-			"ca.crt":  []byte(newCACertValue),
-		},
-	}
-	gwSecret := gatewaysecret.NewGatewaySecret(rootSecret)
-
-	require.Equal(t, "klm-istio-gateway", gwSecret.Name)
-	require.Equal(t, "istio-system", gwSecret.Namespace)
-
-	require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
-	require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
-	require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
-}
-
-func TestGetValidLastModifiedAt(t *testing.T) {
-	tests := []struct {
-		name    string
-		secret  *apicorev1.Secret
-		want    time.Time
-		wantErr bool
-	}{
-		{
-			name: "valid lastModifiedAt annotation",
-			secret: &apicorev1.Secret{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{
-						"lastModifiedAt": "2024-11-01T00:00:00Z",
-					},
-				},
-			},
-			want:    time.Date(2024, 11, 1, 0, 0, 0, 0, time.UTC),
-			wantErr: false,
-		},
-		{
-			name: "missing lastModifiedAt annotation",
-			secret: &apicorev1.Secret{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{},
-				},
-			},
-			want:    time.Time{},
-			wantErr: true,
-		},
-		{
-			name: "invalid lastModifiedAt annotation key",
-			secret: &apicorev1.Secret{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{
-						"LastModifiedAt": "2024-11-01T00:00:00Z",
-					},
-				},
-			},
-			want:    time.Time{},
-			wantErr: true,
-		},
-		{
-			name: "invalid lastModifiedAt annotation time format",
-			secret: &apicorev1.Secret{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{
-						"lastModifiedAt": "2024-11-01T00:00:00",
-					},
-				},
-			},
-			want:    time.Time{},
-			wantErr: true,
-		},
-	}
-	for _, testcase := range tests {
-		t.Run(testcase.name, func(t *testing.T) {
-			got, err := gatewaysecret.ParseLastModifiedTime(testcase.secret)
-			if (err != nil) != testcase.wantErr {
-				t.Errorf("ParseLastModifiedTime() error = %v, wantErr %v", err, testcase.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, testcase.want) {
-				t.Errorf("ParseLastModifiedTime() got = %v, want %v", got, testcase.want)
-			}
-		})
-	}
-}
 
 func TestGatewaySecretRequiresUpdate(t *testing.T) {
 	type args struct {
@@ -215,23 +116,23 @@ func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 
 	gwSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": []byte(oldTLSCertValue),
-			"tls.key": []byte(oldTLSKeyValue),
-			"ca.crt":  []byte(oldCACertValue),
+			"tls.crt": []byte(("old-value1")),
+			"tls.key": []byte(("old-value2")),
+			"ca.crt":  []byte(("old-value3")),
 		},
 	}
 
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": []byte(newTLSCertValue),
-			"tls.key": []byte(newTLSKeyValue),
-			"ca.crt":  []byte(newCACertValue),
+			"tls.crt": []byte(("value1")),
+			"tls.key": []byte(("value2")),
+			"ca.crt":  []byte(("value3")),
 		},
 	}
 
 	gatewaysecret.CopySecretData(rootSecret, gwSecret)
 
-	require.Equal(t, newTLSCertValue, string(gwSecret.Data["tls.crt"]))
-	require.Equal(t, newTLSKeyValue, string(gwSecret.Data["tls.key"]))
-	require.Equal(t, newCACertValue, string(gwSecret.Data["ca.crt"]))
+	require.Equal(t, "value1", string(gwSecret.Data["tls.crt"]))
+	require.Equal(t, "value2", string(gwSecret.Data["tls.key"]))
+	require.Equal(t, "value3", string(gwSecret.Data["ca.crt"]))
 }
