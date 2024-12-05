@@ -44,7 +44,7 @@ func NewGatewaySecretHandler(config *rest.Config,
 	}
 }
 
-func (h *Handler) manageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
+func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	gwSecret, err := h.findGatewaySecret(ctx)
 
 	if util.IsNotFound(err) {
