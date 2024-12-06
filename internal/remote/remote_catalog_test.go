@@ -17,6 +17,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+func Test_GetModuleReleaseMetasToSync_ReturnsError_ForErrorClient(t *testing.T) {
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
+	kyma := newKymaBuilder().build()
+
+	err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), &[]v1beta2.ModuleReleaseMeta{}, kyma)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list ModuleReleaseMetas")
+}
+
 func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaNonInternalMRM_ForNonBetaNonInternalKyma(t *testing.T) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().build()
@@ -70,6 +80,15 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma
 	assert.Equal(t, "regular-module", mrms[3].Spec.ModuleName)
 }
 
+func Test_GetModuleTemplatesToSync_ReturnsError_ForErrorClient(t *testing.T) {
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
+
+	err := remoteCatalog.GetModuleTemplatesToSync(context.Background(), &[]v1beta2.ModuleTemplate{}, &[]v1beta2.ModuleReleaseMeta{})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list ModuleTemplates")
+}
+
 func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 
@@ -88,6 +107,15 @@ func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandato
 	assert.Len(t, mts, 2)
 	assert.Equal(t, "regular-module-1.0.0", mts[0].ObjectMeta.Name)
 	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
+}
+
+func Test_GetOldModuleTemplatesToSync_ReturnsError_ForErrorClient(t *testing.T) {
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
+
+	err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), &[]v1beta2.ModuleTemplate{}, newKymaBuilder().build())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list ModuleTemplates")
 }
 
 func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaNonInternalKyma(t *testing.T) {
@@ -374,4 +402,18 @@ func (b *kymaBuilder) withBetaEnabled() *kymaBuilder {
 func (b *kymaBuilder) withInternalEnabled() *kymaBuilder {
 	b.kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
 	return b
+}
+
+type errorClient struct {
+	client.Client
+}
+
+func newErrorClient() errorClient {
+	return errorClient{
+		Client: fake.NewClientBuilder().WithScheme(machineryruntime.NewScheme()).Build(),
+	}
+}
+
+func (c errorClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	return assert.AnError
 }
