@@ -66,7 +66,7 @@ var _ = Describe("KCP Kyma Module status on SKR connection lost", Ordered, func(
 		It("And KCP Kyma CR status.modules are in \"Error\" State", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateError).
 				Should(Succeed())
 		})
 	})
