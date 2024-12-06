@@ -21,6 +21,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -49,7 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/istio"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
@@ -482,14 +484,18 @@ func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrl
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
 	handler := gatewaysecret.NewGatewaySecretHandler(mgr.GetConfig(), setupLog)
-	requeueIntervals := queue.RequeueIntervals{
-		Success: flagVar.WatcherRequeueSuccessInterval,
-		Busy:    flags.DefaultKymaRequeueBusyInterval,
-		Error:   flags.DefaultKymaRequeueErrInterval,
-		Warning: flags.DefaultKymaRequeueWarningInterval,
+
+	var getSecretFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+		secret := &apicorev1.Secret{}
+		err := mgr.GetClient().Get(ctx, name, secret)
+		if err != nil {
+			return nil, err
+		}
+
+		return secret, nil
 	}
 
-	if err := istio.NewReconciler(mgr.GetClient(), requeueIntervals, handler).SetupWithManager(mgr, options); err != nil {
+	if err := istiogatewaysecret.NewReconciler(getSecretFunc, handler).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Istio")
 		os.Exit(bootstrapFailedExitCode)
 	}

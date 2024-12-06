@@ -43,7 +43,8 @@ func NewGatewaySecretHandler(config *rest.Config, log logr.Logger) *Handler {
 func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	gwSecret, err := h.findGatewaySecret(ctx)
 	if util.IsNotFound(err) {
-		return h.Create(ctx, NewGatewaySecret(rootSecret))
+		// Create gateway secret with the root secret data
+		return h.createGatewaySecret(ctx, rootSecret)
 	}
 	if err != nil {
 		return err
@@ -91,6 +92,10 @@ func (h *Handler) Update(ctx context.Context, secret *apicorev1.Secret) error {
 		return fmt.Errorf("failed to update secret %s: %w", secret.Name, err)
 	}
 	return nil
+}
+
+func (h *Handler) createGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error {
+	return h.Create(ctx, NewGatewaySecret(secret))
 }
 
 func RequiresUpdate(gwSecret *apicorev1.Secret, caCert *certmanagerv1.Certificate) bool {

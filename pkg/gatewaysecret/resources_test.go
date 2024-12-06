@@ -1,6 +1,7 @@
 package gatewaysecret_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 )
@@ -99,4 +101,38 @@ func TestParseLastModifiedTime(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetGatewaySecret_Error(t *testing.T) {
+	clnt := fake.NewClientBuilder().Build()
+
+	_, err := gatewaysecret.GetGatewaySecret(context.TODO(), clnt)
+
+	require.Error(t, err)
+}
+
+func TestParseLastModifiedTime_MissingAnnotation(t *testing.T) {
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{},
+		},
+	}
+
+	_, err := gatewaysecret.ParseLastModifiedTime(secret)
+
+	require.Error(t, err)
+}
+
+func TestParseLastModifiedTime_InvalidTimeFormat(t *testing.T) {
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{
+				"lastModifiedAt": "invalid-time-format",
+			},
+		},
+	}
+
+	_, err := gatewaysecret.ParseLastModifiedTime(secret)
+	
+	require.Error(t, err)
 }
