@@ -63,6 +63,7 @@ jobs:
           - rbac-privileges
           - modulereleasemeta-with-obsolete-moduletemplate
           - modulereleasemeta-sync
+          - module-status-on-skr-connection-lost
           - modulereleasemeta-watch-trigger
 
     runs-on: ubuntu-latest
