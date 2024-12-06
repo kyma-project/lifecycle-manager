@@ -133,6 +133,7 @@
         "mandatory-module-metrics",
         "misconfigured-kyma-secret",
         "ocm-compatible-module-template",
+        "modulereleasemeta-sync",
       ]
     },
     {

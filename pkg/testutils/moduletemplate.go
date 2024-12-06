@@ -2,7 +2,6 @@ package testutils
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -43,13 +42,25 @@ func ModuleTemplateExists(ctx context.Context,
 ) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, defaultChannel, namespace)
 	if moduleTemplate == nil || errors.Is(err, templatelookup.ErrNoTemplatesInListResult) {
-		fmt.Println("======= ModuleTemplateExists doesn't exist=======")
 		return ErrNotFound
 	}
 
-	fmt.Println("======= ModuleTemplateExists =======")
-	fmt.Println(json.MarshalIndent(moduleTemplate, "", "  "))
+	return nil
+}
 
+func ModuleTemplateExistsByName(ctx context.Context,
+	clnt client.Client,
+	moduleName string,
+	namespace string,
+) error {
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      moduleName,
+	}, &v1beta2.ModuleTemplate{}); err != nil {
+		if util.IsNotFound(err) {
+			return ErrNotFound
+		}
+	}
 	return nil
 }
 
