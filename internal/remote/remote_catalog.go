@@ -87,7 +87,7 @@ func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kym
 		return err
 	}
 
-	// TODO: https://github.com/kyma-project/lifecycle-manager/issues/2096
+	// https://github.com/kyma-project/lifecycle-manager/issues/2096
 	// Remove this block after the migration to the new ModuleTemplate format is completed.
 	oldModuleTemplate, err := c.GetOldModuleTemplatesToSync(ctx, kyma)
 	if err != nil {
@@ -193,7 +193,7 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	return moduleTemplates, nil
 }
 
-// TODO: https://github.com/kyma-project/lifecycle-manager/issues/2096
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
 	ctx context.Context,

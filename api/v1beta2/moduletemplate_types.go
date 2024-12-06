@@ -188,7 +188,7 @@ func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }
 
-// TODO: https://github.com/kyma-project/lifecycle-manager/issues/2096
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	if m.HasSyncDisabled() {
@@ -210,7 +210,7 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	return true
 }
 
-// TODO: https://github.com/kyma-project/lifecycle-manager/issues/2096
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) IsInternal() bool {
 	if isInternal, found := m.Labels[shared.InternalLabel]; found {
@@ -254,7 +254,7 @@ func (m *ModuleTemplate) GetVersion() (*semver.Version, error) {
 	return version, nil
 }
 
-// TODO: https://github.com/kyma-project/lifecycle-manager/issues/2096
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) IsBeta() bool {
 	if isBeta, found := m.Labels[shared.BetaLabel]; found {
@@ -267,7 +267,7 @@ func (m *ModuleTemplate) IsMandatory() bool {
 	return m.Spec.Mandatory
 }
 
-// TODO: https://github.com/kyma-project/lifecycle-manager/issues/2090
+// https://github.com/kyma-project/lifecycle-manager/issues/2090
 // Will be deprecated.
 func (m *ModuleTemplate) HasSyncDisabled() bool {
 	if isSync, found := m.Labels[shared.SyncLabel]; found {
