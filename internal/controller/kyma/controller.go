@@ -124,6 +124,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
 		if err != nil {
 			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+			setModuleStatusesToError(kyma, err.Error())
 			return r.requeueWithError(ctx, kyma, err)
 		}
 
