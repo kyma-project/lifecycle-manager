@@ -4,10 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +11,11 @@ import (
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
 func Test_GetModuleReleaseMetasToSync_ReturnsError_ForErrorClient(t *testing.T) {
@@ -152,7 +153,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMa
 
 	require.NoError(t, err)
 	assert.Len(t, mts, 2)
-	assert.Equal(t, "old-internal-module-regular", mts[0].ObjectMeta.Name)
+	assert.Equal(t, "old-internal-module-fast", mts[0].ObjectMeta.Name)
 	assert.Equal(t, "old-module-regular", mts[1].ObjectMeta.Name)
 }
 
@@ -166,8 +167,8 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonManda
 	require.NoError(t, err)
 	assert.Len(t, mts, 4)
 	assert.Equal(t, "old-beta-module-regular", mts[0].ObjectMeta.Name)
-	assert.Equal(t, "old-internal-beta-module-regular", mts[1].ObjectMeta.Name)
-	assert.Equal(t, "old-internal-module-regular", mts[2].ObjectMeta.Name)
+	assert.Equal(t, "old-internal-beta-module-fast", mts[1].ObjectMeta.Name)
+	assert.Equal(t, "old-internal-module-fast", mts[2].ObjectMeta.Name)
 	assert.Equal(t, "old-module-regular", mts[3].ObjectMeta.Name)
 }
 
@@ -232,19 +233,19 @@ func fakeClient() client.Client {
 		withBetaEnabled().
 		build()
 	mt9 := newModuleTemplateBuilder().
-		withName("old-internal-module-regular").
-		withChannel("regular").
+		withName("old-internal-module-fast").
+		withChannel("fast").
 		withInternalEnabled().
 		build()
 	mt10 := newModuleTemplateBuilder().
-		withName("old-internal-beta-module-regular").
-		withChannel("regular").
+		withName("old-internal-beta-module-fast").
+		withChannel("fast").
 		withBetaEnabled().
 		withInternalEnabled().
 		build()
 	mt11 := newModuleTemplateBuilder().
-		withName("old-sync-disabled-module-regular").
-		withChannel("regular").
+		withName("old-sync-disabled-module-experimental").
+		withChannel("experimental").
 		withSyncDisabled().
 		build()
 	mt12 := newModuleTemplateBuilder().
