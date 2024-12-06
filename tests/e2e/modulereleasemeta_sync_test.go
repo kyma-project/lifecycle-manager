@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -49,6 +50,82 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v1Version, skrClient).
+				Should(Succeed())
+		})
+
+		It("When the ModuleReleaseMeta is set to beta", func() {
+			Eventually(SetModuleReleaseMetaBeta).
+				WithContext(ctx).
+				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				Should(Succeed())
+
+			By("Then the ModuleReleaseMeta no longer exists on the SKR Cluster")
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Equal(ErrNotFound))
+
+			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
+				Should(Equal(ErrNotFound))
+		})
+
+		It("When the Kyma is set to beta", func() {
+			Eventually(UpdateKymaLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, shared.BetaLabel, shared.EnableLabelValue).
+				Should(Succeed())
+
+			By("Then the ModuleReleaseMeta exists on the SKR Cluster")
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Succeed())
+
+			By("And the Template Operator v1 ModuleTemplate exists in the SKR Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
+				Should(Succeed())
+		})
+
+		It("When the ModuleReleaseMeta is set to internal", func() {
+			Eventually(SetModuleReleaseMetaInternal).
+				WithContext(ctx).
+				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				Should(Succeed())
+
+			By("Then the ModuleReleaseMeta no longer exists on the SKR Cluster")
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Equal(ErrNotFound))
+
+			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
+				Should(Equal(ErrNotFound))
+		})
+
+		It("When the Kyma is set to internal", func() {
+			Eventually(UpdateKymaLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, shared.InternalLabel, shared.EnableLabelValue).
+				Should(Succeed())
+
+			By("Then the ModuleReleaseMeta exists on the SKR Cluster")
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Succeed())
+
+			By("And the Template Operator v1 ModuleTemplate exists in the SKR Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
 				Should(Succeed())
 		})
 
@@ -129,6 +206,18 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(ModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Equal(ErrNotFound))
+
+			By("Then the Template Operator v2 ModuleTemplate exists in the KCP Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				Should(Succeed())
+
+			By("And Template Operator v2 ModuleTemplate no longer exists on the SKR Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
 				Should(Equal(ErrNotFound))
 		})
 	})
