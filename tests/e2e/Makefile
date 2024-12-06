@@ -151,9 +151,12 @@ ocm-compatible-module-template:
 modulereleasemeta-with-obsolete-moduletemplate:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta With Obsolete ModuleTemplate"
 
-
 modulereleasemeta-watch-trigger:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Watch Trigger"
   
 modulereleasemeta-sync:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Sync"
+
+module-status-on-skr-connection-lost:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma Module status on SKR connection lost"
+
