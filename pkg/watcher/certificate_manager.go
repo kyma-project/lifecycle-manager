@@ -297,7 +297,7 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, gat
 }
 
 func SecretRequiresRotation(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
-	if gwSecretLastModifiedAt, err := gatewaysecret.GetValidLastModifiedAt(gatewaySecret); err == nil {
+	if gwSecretLastModifiedAt, err := gatewaysecret.ParseLastModifiedTime(gatewaySecret); err == nil {
 		if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
 			return false
 		}

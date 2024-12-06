@@ -21,6 +21,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -37,7 +39,6 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -50,6 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest"
@@ -177,6 +179,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			os.Exit(bootstrapFailedExitCode)
 		}
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLog)
+		setupIstioReconciler(mgr, flagVar, options, setupLog)
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
@@ -206,19 +209,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
 
-	startCAWatch(config, setupLog)
-
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
-	}
-}
-
-func startCAWatch(config *rest.Config, setupLog logr.Logger) {
-	if err := gatewaysecret.NewGatewaySecretHandler(config, setupLog).
-		StartRootCertificateWatch(); err != nil {
-		setupLog.Error(err, "unable to start root certificate watch")
-		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
@@ -483,6 +476,27 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
+		os.Exit(bootstrapFailedExitCode)
+	}
+}
+
+func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
+
+	handler := gatewaysecret.NewGatewaySecretHandler(mgr.GetConfig(), setupLog)
+
+	var getSecretFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+		secret := &apicorev1.Secret{}
+		err := mgr.GetClient().Get(ctx, name, secret)
+		if err != nil {
+			return nil, err
+		}
+
+		return secret, nil
+	}
+
+	if err := istiogatewaysecret.NewReconciler(getSecretFunc, handler).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Istio")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }
