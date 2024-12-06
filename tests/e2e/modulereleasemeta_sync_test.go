@@ -1,8 +1,11 @@
 package e2e_test
 
 import (
+	"context"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
@@ -209,15 +212,27 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Equal(ErrNotFound))
 
 			By("Then the Template Operator v2 ModuleTemplate exists in the KCP Cluster")
-			Eventually(ModuleTemplateExists).
+			Eventually(func(ctx context.Context, clnt client.Client, moduleName, namespace string) error {
+				mrm := &v1beta2.ModuleReleaseMeta{}
+				return clnt.Get(ctx, client.ObjectKey{
+					Namespace: namespace,
+					Name:      moduleName,
+				}, mrm)
+			}).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace).
 				Should(Succeed())
 
 			By("And Template Operator v2 ModuleTemplate no longer exists on the SKR Cluster")
-			Eventually(ModuleTemplateExists).
+			Eventually(func(ctx context.Context, clnt client.Client, moduleName, namespace string) error {
+				mrm := &v1beta2.ModuleReleaseMeta{}
+				return clnt.Get(ctx, client.ObjectKey{
+					Namespace: namespace,
+					Name:      moduleName,
+				}, mrm)
+			}).
 				WithContext(ctx).
-				WithArguments(skrClient, module, v1beta2.DefaultChannel, RemoteNamespace).
+				WithArguments(skrClient, module.Name, RemoteNamespace).
 				Should(Equal(ErrNotFound))
 		})
 	})
