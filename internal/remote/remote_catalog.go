@@ -77,23 +77,23 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 }
 
 func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
-	moduleReleaseMetas, err := c.GetModuleReleaseMetasToSync(ctx, kyma)
-	if err != nil {
+	moduleReleaseMetas := &[]v1beta2.ModuleReleaseMeta{}
+	if err := c.GetModuleReleaseMetasToSync(ctx, moduleReleaseMetas, kyma); err != nil {
 		return err
 	}
 
-	moduleTemplates, err := c.GetModuleTemplatesToSync(ctx, moduleReleaseMetas)
-	if err != nil {
+	moduleTemplates := &[]v1beta2.ModuleTemplate{}
+	if err := c.GetModuleTemplatesToSync(ctx, moduleTemplates, moduleReleaseMetas); err != nil {
 		return err
 	}
 
 	// https://github.com/kyma-project/lifecycle-manager/issues/2096
 	// Remove this block after the migration to the new ModuleTemplate format is completed.
-	oldModuleTemplate, err := c.GetOldModuleTemplatesToSync(ctx, kyma)
-	if err != nil {
+	oldModuleTemplate := &[]v1beta2.ModuleTemplate{}
+	if err := c.GetOldModuleTemplatesToSync(ctx, oldModuleTemplate, kyma); err != nil {
 		return err
 	}
-	moduleTemplates = append(moduleTemplates, oldModuleTemplate...)
+	*moduleTemplates = append(*moduleTemplates, *oldModuleTemplate...)
 
 	return c.sync(ctx, kyma.GetNamespacedName(), moduleTemplates, moduleReleaseMetas)
 }
@@ -101,8 +101,8 @@ func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kym
 func (c *RemoteCatalog) sync(
 	ctx context.Context,
 	kyma types.NamespacedName,
-	kcpModules []v1beta2.ModuleTemplate,
-	kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta,
+	kcpModules *[]v1beta2.ModuleTemplate,
+	kcpModuleReleaseMeta *[]v1beta2.ModuleReleaseMeta,
 ) error {
 	skrContext, err := c.skrContextFactory.Get(kyma)
 	if err != nil {
@@ -112,8 +112,8 @@ func (c *RemoteCatalog) sync(
 	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
 	moduleReleaseMetas := c.moduleReleaseMetaSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
 
-	mtErr := moduleTemplates.SyncToSKR(ctx, kcpModules)
-	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, kcpModuleReleaseMeta)
+	mtErr := moduleTemplates.SyncToSKR(ctx, *kcpModules)
+	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, *kcpModuleReleaseMeta)
 
 	return errors.Join(mtErr, mrmErr)
 }
@@ -135,14 +135,14 @@ func (c *RemoteCatalog) Delete(
 // A ModuleReleaseMeta that is Beta or Internal is synced only if the Kyma is also Beta or Internal.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
+	moduleReleaseMetas *[]v1beta2.ModuleReleaseMeta,
 	kyma *v1beta2.Kyma,
-) ([]v1beta2.ModuleReleaseMeta, error) {
+) error {
 	moduleReleaseMetaList := &v1beta2.ModuleReleaseMetaList{}
 	if err := c.kcpClient.List(ctx, moduleReleaseMetaList); err != nil {
-		return nil, fmt.Errorf("failed to list ModuleReleaseMetas: %w", err)
+		return fmt.Errorf("failed to list ModuleReleaseMetas: %w", err)
 	}
 
-	filteredModuleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
 		if moduleReleaseMeta.IsBeta() && !kyma.IsBeta() {
 			continue
@@ -150,10 +150,10 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 		if moduleReleaseMeta.IsInternal() && !kyma.IsInternal() {
 			continue
 		}
-		filteredModuleReleaseMetas = append(filteredModuleReleaseMetas, moduleReleaseMeta)
+		*moduleReleaseMetas = append(*moduleReleaseMetas, moduleReleaseMeta)
 	}
 
-	return filteredModuleReleaseMetas, nil
+	return nil
 }
 
 // GetModuleTemplatesToSync returns a list of ModuleTemplates that should be synced to the SKR.
@@ -161,21 +161,21 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 // it must be referenced by a ModuleReleaseMeta that is synced.
 func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	ctx context.Context,
-	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
-) ([]v1beta2.ModuleTemplate, error) {
+	moduleTemplates *[]v1beta2.ModuleTemplate,
+	moduleReleaseMetas *[]v1beta2.ModuleReleaseMeta,
+) error {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
 	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
-		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
+		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
 	moduleTemplatesToSync := map[string]bool{}
-	for _, moduleReleaseMeta := range moduleReleaseMetas {
+	for _, moduleReleaseMeta := range *moduleReleaseMetas {
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
 			moduleTemplatesToSync[fmt.Sprintf("%s-%s", moduleReleaseMeta.Spec.ModuleName, channel.Version)] = true
 		}
 	}
 
-	moduleTemplates := []v1beta2.ModuleTemplate{}
 	for _, moduleTemplate := range moduleTemplateList.Items {
 		if moduleTemplate.IsMandatory() {
 			continue
@@ -186,34 +186,34 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 		}
 
 		if _, found := moduleTemplatesToSync[moduleTemplate.Name]; found {
-			moduleTemplates = append(moduleTemplates, moduleTemplate)
+			*moduleTemplates = append(*moduleTemplates, moduleTemplate)
 		}
 	}
 
-	return moduleTemplates, nil
+	return nil
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
 	ctx context.Context,
+	moduleTemplates *[]v1beta2.ModuleTemplate,
 	kyma *v1beta2.Kyma,
-) ([]v1beta2.ModuleTemplate, error) {
+) error {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
 	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
-		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
+		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
-	moduleTemplates := []v1beta2.ModuleTemplate{}
 	for _, moduleTemplate := range moduleTemplateList.Items {
 		if moduleTemplate.Spec.Channel == "" {
 			continue
 		}
 
 		if moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
-			moduleTemplates = append(moduleTemplates, moduleTemplate)
+			*moduleTemplates = append(*moduleTemplates, moduleTemplate)
 		}
 	}
 
-	return moduleTemplates, nil
+	return nil
 }
