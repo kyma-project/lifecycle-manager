@@ -82,7 +82,7 @@ func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kym
 		return err
 	}
 
-	moduleTemplates, err := c.GetModuleTemplatesToSync(ctx, &moduleReleaseMetas)
+	moduleTemplates, err := c.GetModuleTemplatesToSync(ctx, moduleReleaseMetas)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 // it must be referenced by a ModuleReleaseMeta that is synced.
 func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	ctx context.Context,
-	moduleReleaseMetas *[]v1beta2.ModuleReleaseMeta,
+	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
 ) ([]v1beta2.ModuleTemplate, error) {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
 	if err := c.kcpClient.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
@@ -169,7 +169,7 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	}
 
 	moduleTemplatesToSync := map[string]bool{}
-	for _, moduleReleaseMeta := range *moduleReleaseMetas {
+	for _, moduleReleaseMeta := range moduleReleaseMetas {
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
 			moduleTemplatesToSync[fmt.Sprintf("%s-%s", moduleReleaseMeta.Spec.ModuleName, channel.Version)] = true
 		}
