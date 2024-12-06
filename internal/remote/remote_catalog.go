@@ -138,7 +138,7 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	kyma *v1beta2.Kyma,
 ) ([]v1beta2.ModuleReleaseMeta, error) {
 	moduleReleaseMetaList := &v1beta2.ModuleReleaseMetaList{}
-	if err := c.kcpClient.List(ctx, moduleReleaseMetaList, &client.ListOptions{}); err != nil {
+	if err := c.kcpClient.List(ctx, moduleReleaseMetaList); err != nil {
 		return nil, fmt.Errorf("failed to list ModuleReleaseMetas: %w", err)
 	}
 
@@ -164,7 +164,7 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
 ) ([]v1beta2.ModuleTemplate, error) {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := c.kcpClient.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
+	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
 		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
@@ -200,7 +200,7 @@ func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
 	kyma *v1beta2.Kyma,
 ) ([]v1beta2.ModuleTemplate, error) {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := c.kcpClient.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
+	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
 		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
