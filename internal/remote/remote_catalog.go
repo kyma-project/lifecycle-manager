@@ -77,25 +77,25 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 }
 
 func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
-	moduleReleaseMetas := &[]v1beta2.ModuleReleaseMeta{}
-	if err := c.GetModuleReleaseMetasToSync(ctx, moduleReleaseMetas, kyma); err != nil {
+	moduleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
+	if err := c.GetModuleReleaseMetasToSync(ctx, &moduleReleaseMetas, kyma); err != nil {
 		return err
 	}
 
-	moduleTemplates := &[]v1beta2.ModuleTemplate{}
-	if err := c.GetModuleTemplatesToSync(ctx, moduleTemplates, moduleReleaseMetas); err != nil {
+	moduleTemplates := []v1beta2.ModuleTemplate{}
+	if err := c.GetModuleTemplatesToSync(ctx, &moduleTemplates, &moduleReleaseMetas); err != nil {
 		return err
 	}
 
 	// https://github.com/kyma-project/lifecycle-manager/issues/2096
 	// Remove this block after the migration to the new ModuleTemplate format is completed.
-	oldModuleTemplate := &[]v1beta2.ModuleTemplate{}
-	if err := c.GetOldModuleTemplatesToSync(ctx, oldModuleTemplate, kyma); err != nil {
+	oldModuleTemplate := []v1beta2.ModuleTemplate{}
+	if err := c.GetOldModuleTemplatesToSync(ctx, &oldModuleTemplate, kyma); err != nil {
 		return err
 	}
-	*moduleTemplates = append(*moduleTemplates, *oldModuleTemplate...)
+	moduleTemplates = append(moduleTemplates, oldModuleTemplate...)
 
-	return c.sync(ctx, kyma.GetNamespacedName(), moduleTemplates, moduleReleaseMetas)
+	return c.sync(ctx, kyma.GetNamespacedName(), &moduleTemplates, &moduleReleaseMetas)
 }
 
 func (c *RemoteCatalog) sync(
