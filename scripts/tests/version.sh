@@ -45,7 +45,7 @@ if $versioning_error; then
 fi
 
 # Versions installed on current system
-KUBECTL_VERSION_INSTALLED=$(kubectl version --client | head -n1 | awk '{print $3}' | sed 's/v//')
+KUBECTL_VERSION_INSTALLED=$(kubectl version --client | grep -E '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}' | head -n1 | awk '{print $3}' | sed 's/v//')
 GO_VERSION_INSTALLED=$(go version | awk '{print $3}' | sed 's/go//')
 K3D_VERSION_INSTALLED=$(k3d --version | head -n1 | awk '{print $3}' | sed 's/v//')
 DOCKER_VERSION_INSTALLED=$(docker --version | awk '{print $3}' | cut -d',' -f1)
