@@ -48,6 +48,22 @@ func ModuleTemplateExists(ctx context.Context,
 	return nil
 }
 
+func ModuleTemplateExistsByName(ctx context.Context,
+	clnt client.Client,
+	moduleName string,
+	namespace string,
+) error {
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      moduleName,
+	}, &v1beta2.ModuleTemplate{}); err != nil {
+		if util.IsNotFound(err) {
+			return ErrNotFound
+		}
+	}
+	return nil
+}
+
 func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
 	for _, module := range kyma.Spec.Modules {
 		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel, kyma.Namespace); err != nil {

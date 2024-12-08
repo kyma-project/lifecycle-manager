@@ -188,8 +188,10 @@ func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }
 
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
+// Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
-	if m.syncDisabled() {
+	if m.HasSyncDisabled() {
 		return false
 	}
 
@@ -208,13 +210,8 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	return true
 }
 
-func (m *ModuleTemplate) syncDisabled() bool {
-	if isSync, found := m.Labels[shared.SyncLabel]; found {
-		return strings.ToLower(isSync) == shared.DisableLabelValue
-	}
-	return false
-}
-
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
+// Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) IsInternal() bool {
 	if isInternal, found := m.Labels[shared.InternalLabel]; found {
 		return strings.ToLower(isInternal) == shared.EnableLabelValue
@@ -257,6 +254,8 @@ func (m *ModuleTemplate) GetVersion() (*semver.Version, error) {
 	return version, nil
 }
 
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
+// Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) IsBeta() bool {
 	if isBeta, found := m.Labels[shared.BetaLabel]; found {
 		return strings.ToLower(isBeta) == shared.EnableLabelValue
@@ -266,4 +265,13 @@ func (m *ModuleTemplate) IsBeta() bool {
 
 func (m *ModuleTemplate) IsMandatory() bool {
 	return m.Spec.Mandatory
+}
+
+// https://github.com/kyma-project/lifecycle-manager/issues/2090
+// Will be deprecated.
+func (m *ModuleTemplate) HasSyncDisabled() bool {
+	if isSync, found := m.Labels[shared.SyncLabel]; found {
+		return strings.ToLower(isSync) == shared.DisableLabelValue
+	}
+	return false
 }
