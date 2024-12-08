@@ -20,6 +20,7 @@ fi
 
 # Exporting the path to the kubeconfig file
 export KUBECONFIG=$HOME/.k3d/kcp-local.yaml
+export SKR_HOST
 
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
