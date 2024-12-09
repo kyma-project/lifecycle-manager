@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func TestPathExtractor_ExtractLayer(t *testing.T) {
@@ -78,7 +79,7 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 				LayerName: "raw-manifest",
 				LayerRepresentation: &img.OCI{
 					Repo: "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator/component-descriptors",
-					Name: "kyma-project.io/module/template-operator",
+					Name: testutils.DefaultFQDN,
 					Ref:  "sha256:d2cc278224a71384b04963a83e784da311a268a2b3fa8732bc31e70ca0c5bc52",
 					Type: "oci-dir",
 				},
@@ -91,7 +92,7 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 				LayerName: "raw-manifest",
 				LayerRepresentation: &img.OCI{
 					Repo: "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator/component-descriptors",
-					Name: "kyma-project.io/module/template-operator",
+					Name: testutils.DefaultFQDN,
 					Ref:  "sha256:1ea2baf45791beafabfee533031b715af8f7a4ffdfbbf30d318f52f7652c36ca",
 					Type: "oci-ref",
 				},
