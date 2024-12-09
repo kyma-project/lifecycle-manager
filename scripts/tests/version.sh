@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# TODO: where to extract the latest version of the tools from?
-
 # Source: https://semver.org/
 # Using a simplified version of semantic versioning regex pattern, which is bash compatible
 SEM_VER_REGEX="^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
@@ -49,7 +47,7 @@ KUBECTL_VERSION_INSTALLED=$(kubectl version --client | grep -E '[0-9]{1,}.[0-9]{
 GO_VERSION_INSTALLED=$(go version | awk '{print $3}' | sed 's/go//')
 K3D_VERSION_INSTALLED=$(k3d --version | head -n1 | awk '{print $3}' | sed 's/v//')
 DOCKER_VERSION_INSTALLED=$(docker --version | awk '{print $3}' | cut -d',' -f1)
-ISTIOCTL_VERSION_INSTALLED=$(istioctl version --short --remote=false | awk '{print $3}' | sed 's/v//')
+ISTIOCTL_VERSION_INSTALLED=$(istioctl version --short --remote=false | awk '{print $NF}' | sed 's/v//')
 
 # Function to compare two versions
 # Returns:
@@ -98,7 +96,7 @@ if [[ ! $DOCKER_VERSION_INSTALLED =~ $SEM_VER_REGEX ]]; then
 fi
 
 if [[ ! $ISTIOCTL_VERSION_INSTALLED =~ $SEM_VER_REGEX ]]; then
-  echo "Invalid Docker version: $ISTIOCTL_VERSION_INSTALLED"
+  echo "Invalid istioctl version: $ISTIOCTL_VERSION_INSTALLED"
   exit 2
 fi
 
@@ -120,7 +118,7 @@ fi
   || echo "docker   version is up to date, using: v$DOCKER_VERSION_INSTALLED"
 
 [[ $(version_comparator "$ISTIOCTL_VERSION_INSTALLED" "$ISTIOCTL_VERSION_DEFAULT") -eq 1 ]] \
-  && print_warning "docker" "$ISTIOCTL_VERSION_DEFAULT" \
+  && print_warning "istioctl" "$ISTIOCTL_VERSION_DEFAULT" \
   || echo "istioctl version is up to date, using: v$ISTIOCTL_VERSION_INSTALLED"
 
 # Exit with success
