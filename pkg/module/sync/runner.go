@@ -246,12 +246,12 @@ func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
 	kymaMetrics *metrics.KymaMetrics, moduleMetrics *metrics.ModuleMetrics,
 ) {
-	UpdateModuleStatusFromExistingModules(kyma, modules)
+	updateModuleStatusFromExistingModules(kyma, modules)
 	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, kymaMetrics.RemoveModuleStateMetrics,
 		moduleMetrics.RemoveModuleCRWarningCondition)
 }
 
-func UpdateModuleStatusFromExistingModules(
+func updateModuleStatusFromExistingModules(
 	kyma *v1beta2.Kyma,
 	modules common.Modules,
 ) {
