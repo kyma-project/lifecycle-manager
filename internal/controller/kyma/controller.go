@@ -124,6 +124,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
 		if err != nil {
 			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+			setModuleStatusesToError(kyma, err.Error())
 			return r.requeueWithError(ctx, kyma, err)
 		}
 
@@ -137,6 +138,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err != nil {
 			r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
 			r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+			setModuleStatusesToError(kyma, util.NestedErrorMessage(err))
 			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
@@ -672,4 +674,14 @@ func needUpdateForMandatoryModuleLabel(moduleTemplate v1beta2.ModuleTemplate) bo
 	}
 
 	return false
+}
+
+func setModuleStatusesToError(kyma *v1beta2.Kyma, message string) {
+	moduleStatuses := kyma.Status.Modules
+	for i := range moduleStatuses {
+		moduleStatuses[i].State = shared.StateError
+		if message != "" {
+			moduleStatuses[i].Message = message
+		}
+	}
 }

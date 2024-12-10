@@ -10,12 +10,9 @@ runs:
     - name: Install k3d
       shell: bash
       run: |
-        curl -s https://github.com/k3d-io/k3d/releases/download/v${{ inputs.k3d_version }}/k3d-linux-amd64 -o k3d
+        curl -L -s https://github.com/k3d-io/k3d/releases/download/v${{ inputs.k3d_version }}/k3d-linux-amd64 -o k3d
         chmod +x k3d
         mkdir -p ./bin 
         mv k3d ./bin/
-        
         echo "$(pwd)/bin" >> $GITHUB_PATH
-        
-        k3d --version
         
