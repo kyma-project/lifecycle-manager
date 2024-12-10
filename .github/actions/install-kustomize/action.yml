@@ -1,9 +1,6 @@
 name: Install kustomize
 description: Downloads kustomize and installs it locally.
 inputs:
-  token:
-    description: 'A Github PAT'
-    required: true
   kustomize_version:
     description: The version of kustomize to install. For example, 5.4.2.
     required: true
@@ -15,27 +12,6 @@ runs:
       shell: bash
       run: |
         mkdir -p ./kustomize/bin
-        curl -s https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${{ inputs.kustomize_version }}/kustomize_v{{ inputs.kustomize_version }}_linux_amd64.tar.gz -o kustomize.tar.gz
+        curl -L -s https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${{ inputs.kustomize_version }}/kustomize_v${{ inputs.kustomize_version }}_linux_amd64.tar.gz -o kustomize.tar.gz
         tar -xzf kustomize.tar.gz -C ./kustomize/bin
-        echo "$(pwd)/kustomize/bin" >> $GITHUB_PATH
-
-    - name: Install kustomize
-      working-directory: tools
-      id: install-kustomize
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.token }} # this is needed for use within the install_kustomize.sh
-      run: |
-        curl -H "Authorization: Bearer ${{ inputs.token }}" \
-        -H "Accept: application/vnd.github+json" \
-        -o ./kustomize/install_kustomize.sh "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
-        chmod +x ./kustomize/install_kustomize.sh
-
-        ./kustomize/install_kustomize.sh ${{ inputs.kustomize_version }} ./kustomize/bin
-
-    - name: Make kustomize executable and add to PATH
-      working-directory: tools
-      shell: bash
-      run: |
-        chmod +x ./kustomize/bin/kustomize
         echo "$(pwd)/kustomize/bin" >> $GITHUB_PATH
