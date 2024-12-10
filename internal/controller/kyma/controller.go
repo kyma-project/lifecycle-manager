@@ -72,6 +72,7 @@ type Reconciler struct {
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
 	ModuleMetrics       *metrics.ModuleMetrics
+	RemoteCatalog       *remote.RemoteCatalog
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
@@ -351,10 +352,10 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
-			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
+			if err := r.RemoteCatalog.SyncModuleCatalog(ctx, kyma); err != nil {
 				r.Metrics.RecordRequeueReason(metrics.ModuleCatalogSync, queue.UnexpectedRequeue)
 				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionFalse)
-				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
+				return fmt.Errorf("failed to synchronize remote module catalog: %w", err)
 			}
 			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionTrue)
 			return nil
@@ -405,9 +406,8 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 	}
 
 	if r.SyncKymaEnabled(kyma) {
-		if err := remote.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace).
-			Delete(ctx, kyma.GetNamespacedName()); err != nil {
-			err = fmt.Errorf("could not delete remote module catalog: %w", err)
+		if err := r.RemoteCatalog.Delete(ctx, kyma.GetNamespacedName()); err != nil {
+			err = fmt.Errorf("failed to delete remote module catalog: %w", err)
 			r.Metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, err)
 		}
@@ -516,34 +516,6 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)
 	}
-	return nil
-}
-
-func (r *Reconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma,
-) error {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
-		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
-	}
-
-	var modulesToSync []v1beta2.ModuleTemplate
-	for _, mt := range moduleTemplateList.Items {
-		if mt.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
-			modulesToSync = append(modulesToSync, mt)
-		}
-	}
-
-	moduleReleaseMetaList := &v1beta2.ModuleReleaseMetaList{}
-	if err := r.List(ctx, moduleReleaseMetaList, &client.ListOptions{}); err != nil {
-		return fmt.Errorf("could not aggregate module release metas for module catalog sync: %w", err)
-	}
-
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(r.Client, r.SkrContextFactory, r.RemoteSyncNamespace)
-	if err := remoteCatalog.Sync(ctx, kyma.GetNamespacedName(), modulesToSync,
-		moduleReleaseMetaList.Items); err != nil {
-		return err
-	}
-
 	return nil
 }
 
