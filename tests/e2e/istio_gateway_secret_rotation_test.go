@@ -34,7 +34,7 @@ var _ = Describe("Istio Gateway Secret Rotation", Ordered, func() {
 			By("And LastModifiedAt timestamp is valid")
 			gwSecret, err := gatewaysecret.GetGatewaySecret(ctx, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
-			lastModifiedAtTime, err := gatewaysecret.GetValidLastModifiedAt(gwSecret)
+			lastModifiedAtTime, err := gatewaysecret.ParseLastModifiedTime(gwSecret)
 			Expect(err).To(Succeed())
 
 			By("And LastModifiedAt timestamp is updated")
