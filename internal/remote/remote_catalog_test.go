@@ -105,6 +105,24 @@ func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandato
 	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
 }
 
+func Test_FilterModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+
+	mts := remoteCatalog.FilterModuleTemplatesToSync(moduleTemplates().Items, []v1beta2.ModuleReleaseMeta{
+		*newModuleReleaseMetaBuilder().
+			withName("regular-module").
+			withChannelVersion("regular", "1.0.0").
+			withChannelVersion("fast", "2.0.0").
+			withChannelVersion("sync-disabled", "3.0.0").
+			withChannelVersion("mandatory", "4.0.0").
+			build(),
+	})
+
+	assert.Len(t, mts, 2)
+	assert.Equal(t, "regular-module-1.0.0", mts[0].ObjectMeta.Name)
+	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
+}
+
 func Test_GetOldModuleTemplatesToSync_ReturnsError_ForErrorClient(t *testing.T) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
 
@@ -163,7 +181,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonManda
 	assert.Equal(t, "old-module-regular", mts[3].ObjectMeta.Name)
 }
 
-func fakeClient() client.Client {
+func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
 	mrm1 := newModuleReleaseMetaBuilder().
 		withName("regular-module").
 		withChannelVersion("regular", "1.0.0").
@@ -191,6 +209,19 @@ func fakeClient() client.Client {
 		withInternalEnabled().
 		build()
 
+	mrms := v1beta2.ModuleReleaseMetaList{
+		Items: []v1beta2.ModuleReleaseMeta{
+			*mrm1,
+			*mrm2,
+			*mrm3,
+			*mrm4,
+		},
+	}
+
+	return mrms
+}
+
+func moduleTemplates() v1beta2.ModuleTemplateList {
 	mt1 := newModuleTemplateBuilder().
 		withName("regular-module-1.0.0").
 		build()
@@ -245,16 +276,7 @@ func fakeClient() client.Client {
 		withMandatoryEnabled().
 		build()
 
-	mrms := &v1beta2.ModuleReleaseMetaList{
-		Items: []v1beta2.ModuleReleaseMeta{
-			*mrm1,
-			*mrm2,
-			*mrm3,
-			*mrm4,
-		},
-	}
-
-	mts := &v1beta2.ModuleTemplateList{
+	mts := v1beta2.ModuleTemplateList{
 		Items: []v1beta2.ModuleTemplate{
 			*mt1,
 			*mt2,
@@ -271,10 +293,17 @@ func fakeClient() client.Client {
 		},
 	}
 
+	return mts
+}
+
+func fakeClient() client.Client {
+	mrms := moduleReleaseMetas()
+	mts := moduleTemplates()
+
 	scheme := machineryruntime.NewScheme()
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
-	return fake.NewClientBuilder().WithScheme(scheme).WithLists(mrms, mts).Build()
+	return fake.NewClientBuilder().WithScheme(scheme).WithLists(&mrms, &mts).Build()
 }
 
 type moduleReleaseMetaBuilder struct {

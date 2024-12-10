@@ -168,6 +168,13 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
+	return c.FilterModuleTemplatesToSync(moduleTemplateList.Items, moduleReleaseMetas), nil
+}
+
+func (c *RemoteCatalog) FilterModuleTemplatesToSync(
+	moduleTemplates []v1beta2.ModuleTemplate,
+	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
+) []v1beta2.ModuleTemplate {
 	moduleTemplatesToSync := map[string]bool{}
 	for _, moduleReleaseMeta := range moduleReleaseMetas {
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
@@ -175,8 +182,8 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 		}
 	}
 
-	moduleTemplates := []v1beta2.ModuleTemplate{}
-	for _, moduleTemplate := range moduleTemplateList.Items {
+	filteredModuleTemplates := []v1beta2.ModuleTemplate{}
+	for _, moduleTemplate := range moduleTemplates {
 		if moduleTemplate.IsMandatory() {
 			continue
 		}
@@ -186,11 +193,11 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 		}
 
 		if _, found := moduleTemplatesToSync[moduleTemplate.Name]; found {
-			moduleTemplates = append(moduleTemplates, moduleTemplate)
+			filteredModuleTemplates = append(filteredModuleTemplates, moduleTemplate)
 		}
 	}
 
-	return moduleTemplates, nil
+	return filteredModuleTemplates
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
