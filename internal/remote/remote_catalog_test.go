@@ -22,7 +22,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsError_ForErrorClient(t *testing.T) 
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().build()
 
-	err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), &[]v1beta2.ModuleReleaseMeta{}, kyma)
+	_, err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), kyma)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list ModuleReleaseMetas")
@@ -32,8 +32,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaNonInternalMRM_ForNonBetaNon
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().build()
 
-	mrms := []v1beta2.ModuleReleaseMeta{}
-	err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), &mrms, kyma)
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mrms, 1)
@@ -44,8 +43,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonIntern
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withBetaEnabled().build()
 
-	mrms := []v1beta2.ModuleReleaseMeta{}
-	err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), &mrms, kyma)
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mrms, 2)
@@ -57,8 +55,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaIntern
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withInternalEnabled().build()
 
-	mrms := []v1beta2.ModuleReleaseMeta{}
-	err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), &mrms, kyma)
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mrms, 2)
@@ -70,8 +67,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withBetaEnabled().withInternalEnabled().build()
 
-	mrms := []v1beta2.ModuleReleaseMeta{}
-	err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), &mrms, kyma)
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mrms, 4)
@@ -84,7 +80,7 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma
 func Test_GetModuleTemplatesToSync_ReturnsError_ForErrorClient(t *testing.T) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
 
-	err := remoteCatalog.GetModuleTemplatesToSync(context.Background(), &[]v1beta2.ModuleTemplate{}, &[]v1beta2.ModuleReleaseMeta{})
+	_, err := remoteCatalog.GetModuleTemplatesToSync(context.Background(), []v1beta2.ModuleReleaseMeta{})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list ModuleTemplates")
@@ -93,8 +89,7 @@ func Test_GetModuleTemplatesToSync_ReturnsError_ForErrorClient(t *testing.T) {
 func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 
-	mts := []v1beta2.ModuleTemplate{}
-	err := remoteCatalog.GetModuleTemplatesToSync(context.Background(), &mts, &[]v1beta2.ModuleReleaseMeta{
+	mts, err := remoteCatalog.GetModuleTemplatesToSync(context.Background(), []v1beta2.ModuleReleaseMeta{
 		*newModuleReleaseMetaBuilder().
 			withName("regular-module").
 			withChannelVersion("regular", "1.0.0").
@@ -113,7 +108,7 @@ func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandato
 func Test_GetOldModuleTemplatesToSync_ReturnsError_ForErrorClient(t *testing.T) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(newErrorClient(), nil, "kyma-system")
 
-	err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), &[]v1beta2.ModuleTemplate{}, newKymaBuilder().build())
+	_, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), newKymaBuilder().build())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list ModuleTemplates")
@@ -123,8 +118,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNo
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().build()
 
-	mts := []v1beta2.ModuleTemplate{}
-	err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), &mts, kyma)
+	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mts, 1)
@@ -135,8 +129,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMa
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withBetaEnabled().build()
 
-	mts := []v1beta2.ModuleTemplate{}
-	err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), &mts, kyma)
+	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mts, 2)
@@ -148,8 +141,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMa
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withInternalEnabled().build()
 
-	mts := []v1beta2.ModuleTemplate{}
-	err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), &mts, kyma)
+	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mts, 2)
@@ -161,8 +153,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonManda
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withBetaEnabled().withInternalEnabled().build()
 
-	mts := []v1beta2.ModuleTemplate{}
-	err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), &mts, kyma)
+	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
 	assert.Len(t, mts, 4)
