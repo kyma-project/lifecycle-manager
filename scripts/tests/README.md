@@ -23,6 +23,7 @@ If the check detects outdated versions, it gives a warning and exits with succes
 The script creates two test clusters using `k3d`:
 - `kcp` for the control plane 
 - `skr` for the Kyma runtime
+
 If the clusters already exist, the script exits with success.
 If you get a notification, while running the script, saying that the Watcher CR is missing, re-run the script.
 The script is accompanied by the `Ensure Test Clusters` task in the VSCode tasks, and by the corresponding run configuration for GoLand.
