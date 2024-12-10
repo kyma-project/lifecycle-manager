@@ -59,3 +59,17 @@ func isNoSuchHostError(err error) bool {
 	}
 	return false
 }
+
+// NestedErrorMessage returns the error message of the wrapped error, if it exists. Otherwise, it returns an empty string.
+func NestedErrorMessage(err error) string {
+	res := ""
+
+	if err == nil {
+		return res
+	}
+	if uwErr := errors.Unwrap(err); uwErr != nil {
+		res = uwErr.Error()
+	}
+
+	return res
+}
