@@ -11,4 +11,7 @@ runs:
       shell: bash
       run: |
         kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v${{ inputs.cert_manager_version }}/cert-manager.yaml
-        cmctl check api --wait=2m
+        for deploy in cert-manager cert-manager-webhook cert-manager-cainjector; do
+          kubectl rollout status deploy -n cert-manager "$deploy" --timeout=2m || exit 1
+        done
+

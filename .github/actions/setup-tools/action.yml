@@ -31,7 +31,6 @@ runs:
     - uses: ./lifecycle-manager/.github/actions/install-modulectl
       with:
         modulectl_version: ${{ inputs.modulectl_version }}
-    - uses: ./lifecycle-manager/.github/actions/install-cmctl
     - uses: ./lifecycle-manager/.github/actions/install-k3d
       with:
         k3d_version: ${{ inputs.k3d_version }}

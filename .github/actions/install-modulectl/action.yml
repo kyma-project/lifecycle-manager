@@ -10,7 +10,8 @@ runs:
     - name: Install modulectl
       shell: bash
       run: |
+        mkdir -p ./modulectl/bin
         wget https://github.com/kyma-project/modulectl/releases/download/${{ inputs.modulectl_version }}/modulectl-linux -O modulectl-linux
         chmod +x modulectl-linux
-        mv modulectl-linux /usr/local/bin/modulectl
-        echo "PATH=/usr/local/bin/modulectl" >> $GITHUB_OUTPUT
+        mv modulectl-linux ./modulectl/bin/modulectl
+        echo "$(pwd)/modulectl/bin" >> $GITHUB_PATH
