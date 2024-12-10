@@ -676,12 +676,12 @@ func needUpdateForMandatoryModuleLabel(moduleTemplate v1beta2.ModuleTemplate) bo
 	return false
 }
 
-func setModuleStatusesToError(kyma *v1beta2.Kyma, optMessage string) {
+func setModuleStatusesToError(kyma *v1beta2.Kyma, message string) {
 	moduleStatuses := kyma.Status.Modules
 	for i := range moduleStatuses {
 		moduleStatuses[i].State = shared.StateError
-		if optMessage != "" {
-			moduleStatuses[i].Message = optMessage
+		if message != "" {
+			moduleStatuses[i].Message = message
 		}
 	}
 }

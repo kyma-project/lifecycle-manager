@@ -46,12 +46,8 @@ var _ = Describe("KCP Kyma Module status on SKR connection lost", Ordered, func(
 		})
 
 		It("When SKR Cluster is removed", func() {
-			cmd := exec.Command("sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
+			cmd := exec.Command("k3d", "cluster", "stop", "skr")
 			out, err := cmd.CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			GinkgoWriter.Printf(string(out))
-			cmd = exec.Command("k3d", "cluster", "rm", "skr")
-			out, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 		})
