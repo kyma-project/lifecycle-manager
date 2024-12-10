@@ -63,7 +63,8 @@ runs:
       if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
         matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
         matrix.e2e-test == 'modulereleasemeta-upgrade-under-deletion' ||
-        matrix.e2e-test == 'modulereleasemeta-sync'
+        matrix.e2e-test == 'modulereleasemeta-sync' ||
+        matrix.e2e-test == 'module-status-on-skr-connection-lost'
         }}
       shell: bash
       run: |
