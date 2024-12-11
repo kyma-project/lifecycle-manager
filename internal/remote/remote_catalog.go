@@ -178,7 +178,7 @@ func (c *RemoteCatalog) FilterModuleTemplatesToSync(
 	moduleTemplatesToSync := map[string]bool{}
 	for _, moduleReleaseMeta := range moduleReleaseMetas {
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
-			moduleTemplatesToSync[fmt.Sprintf("%s-%s", moduleReleaseMeta.Spec.ModuleName, channel.Version)] = true
+			moduleTemplatesToSync[formatModuleName(moduleReleaseMeta.Spec.ModuleName, channel.Version)] = true
 		}
 	}
 
@@ -192,7 +192,7 @@ func (c *RemoteCatalog) FilterModuleTemplatesToSync(
 			continue
 		}
 
-		if _, found := moduleTemplatesToSync[moduleTemplate.Name]; found {
+		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName, moduleTemplate.Spec.Version)]; found {
 			filteredModuleTemplates = append(filteredModuleTemplates, moduleTemplate)
 		}
 	}
@@ -223,4 +223,8 @@ func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
 	}
 
 	return moduleTemplates, nil
+}
+
+func formatModuleName(moduleName, version string) string {
+	return fmt.Sprintf("%s-%s", moduleName, version)
 }
