@@ -31,6 +31,14 @@ type ModuleReleaseMetaSpec struct {
 	// +listType=map
 	// +listMapKey=channel
 	Channels []ChannelVersionAssignment `json:"channels"`
+
+	// Beta indicates if the module is in beta state. Beta modules are only available for beta Kymas.
+	// +kubebuilder:default:=false
+	Beta bool `json:"beta,omitempty"`
+
+	// Internal indicates if the module is internal. Internal modules are only available for internal Kymas.
+	// +kubebuilder:default:=false
+	Internal bool `json:"internal,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -58,4 +66,12 @@ type ChannelVersionAssignment struct {
 //nolint:gochecknoinits // registers ModuleReleaseMeta CRD on startup
 func init() {
 	SchemeBuilder.Register(&ModuleReleaseMeta{}, &ModuleReleaseMetaList{})
+}
+
+func (m ModuleReleaseMeta) IsBeta() bool {
+	return m.Spec.Beta
+}
+
+func (m ModuleReleaseMeta) IsInternal() bool {
+	return m.Spec.Internal
 }

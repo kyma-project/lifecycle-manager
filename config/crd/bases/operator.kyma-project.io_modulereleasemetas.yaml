@@ -45,6 +45,11 @@ spec:
             description: ModuleReleaseMetaSpec defines the channel-version assignments
               for a module.
             properties:
+              beta:
+                default: false
+                description: Beta indicates if the module is in beta state. Beta modules
+                  are only available for beta Kymas.
+                type: boolean
               channels:
                 description: Channels is the list of module channels with their corresponding
                   versions.
@@ -70,6 +75,11 @@ spec:
                 x-kubernetes-list-map-keys:
                 - channel
                 x-kubernetes-list-type: map
+              internal:
+                default: false
+                description: Internal indicates if the module is internal. Internal
+                  modules are only available for internal Kymas.
+                type: boolean
               moduleName:
                 description: ModuleName is the name of the Module.
                 maxLength: 64
