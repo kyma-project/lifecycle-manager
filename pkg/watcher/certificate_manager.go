@@ -148,23 +148,6 @@ func (c *CertificateManager) removeSecret(ctx context.Context) error {
 	return nil
 }
 
-func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
-	secret := &apicorev1.Secret{}
-	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.config.IstioNamespace},
-		secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.config.IstioNamespace,
-			err)
-	}
-	certSecret := CertificateSecret{
-		CACrt:           string(secret.Data[caCertKey]),
-		TLSCrt:          string(secret.Data[tlsCertKey]),
-		TLSKey:          string(secret.Data[tlsPrivateKeyKey]),
-		ResourceVersion: secret.GetResourceVersion(),
-	}
-	return &certSecret, nil
-}
-
 func (c *CertificateManager) patchCertificate(ctx context.Context,
 	subjectAltName *SubjectAltName,
 ) (*certmanagerv1.Certificate, error) {
