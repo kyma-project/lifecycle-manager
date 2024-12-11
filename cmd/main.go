@@ -483,22 +483,12 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 }
 
 // TODO move setup code to controller pkg
-var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
 
 func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
-		if gwSecretLastModifiedAtValue, ok := secret.Annotations[shared.LastModifiedAtAnnotation]; ok {
-			if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
-				return gwSecretLastModifiedAt, nil
-			}
-		}
-		return time.Time{}, errCouldNotGetLastModifiedAt
-	}
-
 	clnt := client.NewGatewaySecretRotationClient(mgr.GetConfig())
-	handler := gatewaysecret.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
+	handler := gatewaysecret.NewGatewaySecretHandler(clnt, gatewaysecret.ParseLastModifiedFunc)
 
 	var getSecretFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
 		secret := &apicorev1.Secret{}
