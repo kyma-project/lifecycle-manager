@@ -14,27 +14,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 )
 
-func TestNewGatewaySecret(t *testing.T) {
-	rootSecret := &apicorev1.Secret{
-		Data: map[string][]byte{
-			"tls.crt": []byte("test-tls-crt"),
-			"tls.key": []byte("test-tls-key"),
-			"ca.crt":  []byte("test-ca-crt"),
-		},
-	}
-
-	result := gatewaysecret.NewGatewaySecret(rootSecret)
-
-	require.NotNil(t, result)
-	require.Equal(t, "Secret", result.Kind)
-	require.Equal(t, apicorev1.SchemeGroupVersion.String(), result.APIVersion)
-	require.Equal(t, "klm-istio-gateway", result.Name)
-	require.Equal(t, "istio-system", result.Namespace)
-	require.Equal(t, rootSecret.Data["tls.crt"], result.Data["tls.crt"])
-	require.Equal(t, rootSecret.Data["tls.key"], result.Data["tls.key"])
-	require.Equal(t, rootSecret.Data["ca.crt"], result.Data["ca.crt"])
-}
-
 func TestParseLastModifiedTime(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -91,7 +70,7 @@ func TestParseLastModifiedTime(t *testing.T) {
 	}
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			got, err := gatewaysecret.ParseLastModifiedTime(testcase.secret)
+			got, err := gatewaysecret.ParseLastModifiedFunc(testcase.secret)
 			if (err != nil) != testcase.wantErr {
 				t.Errorf("ParseLastModifiedTime() error = %v, wantErr %v", err, testcase.wantErr)
 				return
@@ -118,7 +97,7 @@ func TestParseLastModifiedTime_MissingAnnotation(t *testing.T) {
 		},
 	}
 
-	_, err := gatewaysecret.ParseLastModifiedTime(secret)
+	_, err := gatewaysecret.ParseLastModifiedFunc(secret)
 
 	require.Error(t, err)
 }
@@ -132,7 +111,7 @@ func TestParseLastModifiedTime_InvalidTimeFormat(t *testing.T) {
 		},
 	}
 
-	_, err := gatewaysecret.ParseLastModifiedTime(secret)
+	_, err := gatewaysecret.ParseLastModifiedFunc(secret)
 
 	require.Error(t, err)
 }

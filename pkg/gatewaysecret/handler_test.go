@@ -12,6 +12,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 )
 
+func TestNewGatewaySecretHandler(t *testing.T) {
+
+}
+
 func TestGatewaySecretRequiresUpdate(t *testing.T) {
 	type args struct {
 		gwSecret *apicorev1.Secret
@@ -135,4 +139,49 @@ func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
 	require.Equal(t, "value1", string(gwSecret.Data["tls.crt"]))
 	require.Equal(t, "value2", string(gwSecret.Data["tls.key"]))
 	require.Equal(t, "value3", string(gwSecret.Data["ca.crt"]))
+}
+
+type mockClient struct {
+	err   error
+	calls int
+}
+
+func (m *mockClient) Setup(_ *apicorev1.Secret) error {
+	if m.err != nil {
+		return m.err
+	}
+
+	m.calls++
+	return nil
+}
+
+func (m *mockClient) GetGatewaySecret() (*apicorev1.Secret, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	m.calls++
+	return &apicorev1.Secret{}, nil
+}
+
+func (m *mockClient) UpdateGatewaySecret(_ *apicorev1.Secret) error {
+	if m.err != nil {
+		return m.err
+	}
+
+	m.calls++
+	return nil
+}
+
+func (m *mockClient) GetWatcherServingCert() (*certmanagerv1.Certificate, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	m.calls++
+	return &certmanagerv1.Certificate{}, nil
+}
+
+func ()  {
+
 }

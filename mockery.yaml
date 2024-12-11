@@ -1,0 +1,5 @@
+with-expecter: true
+packages:
+  github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret:
+    interfaces:
+      Client:

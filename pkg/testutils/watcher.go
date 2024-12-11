@@ -168,7 +168,7 @@ func GatewaySecretCreationTimeIsUpdated(ctx context.Context, oldTime time.Time, 
 		return fmt.Errorf("failed to get gateway secret %w", err)
 	}
 
-	currentTime, err := gatewaysecret.ParseLastModifiedTime(gwSecret)
+	currentTime, err := gatewaysecret.ParseLastModifiedFunc(gwSecret)
 	if err != nil {
 		return fmt.Errorf("failed to get last modified time %w", err)
 	}

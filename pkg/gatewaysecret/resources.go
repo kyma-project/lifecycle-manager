@@ -12,6 +12,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
+// TODO Move this to consumer
+
 func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
 	secret := &apicorev1.Secret{}
 	if err := clnt.Get(ctx, client.ObjectKey{
