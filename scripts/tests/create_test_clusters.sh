@@ -1,11 +1,34 @@
 #!/bin/bash
 
+# Parse arguments
+SKIP_VERSION_CHECK=false
+if [ "$1" == "--skip-version-check" ]; then
+  SKIP_VERSION_CHECK=true
+  shift
+fi
+
+# Check for invalid or extra arguments
+if [ $# -ne 0 ]; then
+  echo "[$(basename $0)] Invalid argument(s): $@"
+  echo "Usage: $(basename $0) [--skip-version-check]"
+  exit 1
+fi
+
 # Change to the directory where the script is located
 cd "$(dirname "$0")"
 
+# Run version check unless skipped
+if [ "$SKIP_VERSION_CHECK" = false ]; then
+  ./version.sh
+  if [ $? -ne 0 ]; then
+    echo "[$(basename $0)] Versioning check failed. Exiting..."
+    exit 1
+  fi
+fi
+
 # create SKR cluster
 if k3d cluster list | grep -q "^skr\s"; then
-  echo "Reusing existing SKR cluster..."
+  echo "[$(basename $0)] Reusing existing SKR cluster..."
   else
   k3d cluster create skr \
         -p 10080:80@loadbalancer \
@@ -19,7 +42,7 @@ fi
 
 # create KCP cluster
 if k3d cluster list | grep -q "^kcp\s"; then
-  echo "Reusing existing KCP cluster..."
+  echo "[$(basename $0)] Reusing existing KCP cluster..."
   else
   k3d cluster create kcp \
         -p 9443:443@loadbalancer \
@@ -51,3 +74,6 @@ fi
 # export kubeconfigs
 k3d kubeconfig get skr > ~/.k3d/skr-local.yaml 
 k3d kubeconfig get kcp > ~/.k3d/kcp-local.yaml
+echo "[$(basename $0)] Kubeconfig for SKR and KCP exported successfully"
+
+echo "[$(basename $0)] Test clusters created successfully"
