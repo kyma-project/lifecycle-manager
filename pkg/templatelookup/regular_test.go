@@ -233,13 +233,13 @@ func Test_ValidateTemplateMode_ForNewModuleTemplatesWithModuleReleaseMeta(t *tes
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			mrm := builder.NewModuleReleaseMetaBuilder().
 				WithName("test-module").
 				WithModuleName("test-module").
-				WithBeta(tc.moduleBeta).
-				WithInternal(tc.moduleInternal).
+				WithBeta(testCase.moduleBeta).
+				WithInternal(testCase.moduleInternal).
 				Build()
 			mti := templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().
@@ -248,13 +248,13 @@ func Test_ValidateTemplateMode_ForNewModuleTemplatesWithModuleReleaseMeta(t *tes
 			}
 			kyma := builder.NewKymaBuilder().
 				WithName("test-kyma").
-				WithBeta(tc.kymaBeta).
-				WithInternal(tc.kymaInternal).
+				WithBeta(testCase.kymaBeta).
+				WithInternal(testCase.kymaInternal).
 				Build()
 
 			tl := templatelookup.NewTemplateLookup(mrmFakeClient(*mrm), provider.NewCachedDescriptorProvider())
 			got := tl.ValidateTemplateMode(context.Background(), mti, kyma)
-			if tc.expectInstallation {
+			if testCase.expectInstallation {
 				require.NoError(t, got.Err)
 			} else {
 				require.ErrorIs(t, got.Err, templatelookup.ErrTemplateNotAllowed)
@@ -263,13 +263,13 @@ func Test_ValidateTemplateMode_ForNewModuleTemplatesWithModuleReleaseMeta(t *tes
 	}
 }
 
-func mrmFakeClient(mrms ...v1beta2.ModuleReleaseMeta) client.Reader {
+func mrmFakeClient(mrms ...v1beta2.ModuleReleaseMeta) client.Client {
 	scheme := machineryruntime.NewScheme()
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
-	var objects []client.Object
-	for _, mrm := range mrms {
-		objects = append(objects, &mrm)
+	objects := make([]client.Object, len(mrms))
+	for i, mrm := range mrms {
+		objects[i] = &mrm
 	}
 
 	return fake.NewClientBuilder().WithScheme(scheme).WithObjects(objects...).Build()

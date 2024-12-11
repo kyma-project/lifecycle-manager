@@ -285,13 +285,13 @@ func Test_IsAllowedModuleReleaseMeta(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			mrm := newModuleReleaseMetaBuilder().withBeta(tc.moduleBeta).withInternal(tc.moduleInternal).build()
-			kyma := newKymaBuilder().withBeta(tc.kymaBeta).withInternal(tc.kymaInternal).build()
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			mrm := newModuleReleaseMetaBuilder().withBeta(testCase.moduleBeta).withInternal(testCase.moduleInternal).build()
+			kyma := newKymaBuilder().withBeta(testCase.kymaBeta).withInternal(testCase.kymaInternal).build()
 
 			result := remote.IsAllowedModuleReleaseMeta(*mrm, kyma)
-			assert.Equal(t, tc.expected, result)
+			assert.Equal(t, testCase.expected, result)
 		})
 	}
 }
@@ -469,6 +469,7 @@ func (b *moduleReleaseMetaBuilder) withBetaEnabled() *moduleReleaseMetaBuilder {
 	b.moduleReleaseMeta.Spec.Beta = true
 	return b
 }
+
 func (b *moduleReleaseMetaBuilder) withBeta(beta bool) *moduleReleaseMetaBuilder {
 	b.moduleReleaseMeta.Spec.Beta = beta
 	return b

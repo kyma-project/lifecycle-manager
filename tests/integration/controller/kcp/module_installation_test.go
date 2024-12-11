@@ -14,6 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	"github.com/mandelsoft/goutils/errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,7 +22,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-// version is the same as configured for the ModuleTemplate by using "WithOCM()"
+// version is the same as configured for the ModuleTemplate by using "WithOCM()".
 const moduleVersion = "1.1.1-e2e-test"
 
 var _ = Describe("Module installation", func() {
@@ -47,7 +48,7 @@ var _ = Describe("Module installation", func() {
 				Eventually(expectInstallation, Timeout, Interval).WithArguments(kymaName, moduleName).Should(Succeed())
 			} else {
 				// we use Consistently here as the installation may require multiple reconciliation runs to be installed
-				// otherwise, we may get a false positive after the first reconcilation where no module is installed yet, but in a consecutive run it will be
+				// otherwise, we may get a false positive after the first reconciliation where no module is installed yet, but in a consecutive run it will be
 				Consistently(expectNoInstallation, Timeout, Interval).WithArguments(kymaName, moduleName).Should(Succeed())
 			}
 		},
@@ -104,7 +105,7 @@ func configureSKRKyma(kymaName, moduleName string, skrClient *remote.SkrContext)
 }
 
 func configureKCPModuleTemplates(moduleName string) error {
-	mt := builder.NewModuleTemplateBuilder().
+	moduleTemplate := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithName(fmt.Sprintf("%s-%s", moduleName, moduleVersion)).
 		WithModuleName(moduleName).
@@ -114,14 +115,14 @@ func configureKCPModuleTemplates(moduleName string) error {
 
 	Eventually(kcpClient.Create, Timeout, Interval).
 		WithContext(ctx).
-		WithArguments(mt).
+		WithArguments(moduleTemplate).
 		Should(Succeed())
 
 	return nil
 }
 
 func configureKCPModuleReleaseMeta(moduleName string, beta, internal bool) error {
-	mrm := builder.NewModuleReleaseMetaBuilder().
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
 		WithBeta(beta).
@@ -130,7 +131,7 @@ func configureKCPModuleReleaseMeta(moduleName string, beta, internal bool) error
 		Build()
 
 	Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-		WithArguments(mrm).
+		WithArguments(moduleReleaseMeta).
 		Should(Succeed())
 
 	return nil
@@ -141,7 +142,7 @@ func expectInstallation(kymaName, moduleName string) error {
 	if manifest != nil {
 		return nil
 	} else {
-		return fmt.Errorf("expected manifest to be installed, but it was not")
+		return errors.New("expected manifest to be installed, but it was not")
 	}
 }
 
@@ -150,6 +151,6 @@ func expectNoInstallation(kymaName, moduleName string) error {
 	if manifest == nil {
 		return nil
 	} else {
-		return fmt.Errorf("expected manifest to not be installed, but it was")
+		return errors.New("expected manifest to not be installed, but it was")
 	}
 }

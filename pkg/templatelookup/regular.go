@@ -163,7 +163,8 @@ func validateTemplateModeWithoutModuleReleaseMeta(template ModuleTemplateInfo, k
 }
 
 func validateTemplateModeWithModuleReleaseMeta(template ModuleTemplateInfo, kyma *v1beta2.Kyma,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta) ModuleTemplateInfo {
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) ModuleTemplateInfo {
 	if !remote.IsAllowedModuleReleaseMeta(*moduleReleaseMeta, kyma) {
 		template.Err = fmt.Errorf("%w: module is beta or internal", ErrTemplateNotAllowed)
 	}
