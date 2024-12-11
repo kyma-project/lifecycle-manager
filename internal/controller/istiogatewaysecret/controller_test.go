@@ -3,12 +3,13 @@ package istiogatewaysecret_test
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"testing"
 
 	apicorev1 "k8s.io/api/core/v1"
 )

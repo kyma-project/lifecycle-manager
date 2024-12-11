@@ -133,6 +133,6 @@ func TestParseLastModifiedTime_InvalidTimeFormat(t *testing.T) {
 	}
 
 	_, err := gatewaysecret.ParseLastModifiedTime(secret)
-	
+
 	require.Error(t, err)
 }

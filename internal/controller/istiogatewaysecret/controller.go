@@ -3,6 +3,7 @@ package istiogatewaysecret
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/types"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -14,10 +15,12 @@ import (
 
 var ErrSecretNotFound = fmt.Errorf("root secret not found")
 
-type GetterFunc func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error)
-type Handler interface {
-	ManageGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error
-}
+type (
+	GetterFunc func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error)
+	Handler    interface {
+		ManageGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error
+	}
+)
 
 type Reconciler struct {
 	getRootSecret GetterFunc

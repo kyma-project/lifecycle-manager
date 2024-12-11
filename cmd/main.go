@@ -21,13 +21,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
+
+	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-co-op/gocron"
@@ -480,10 +482,23 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	}
 }
 
+// TODO move setup code to controller pkg
+var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
+
 func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	handler := gatewaysecret.NewGatewaySecretHandler(mgr.GetConfig(), setupLog)
+	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
+		if gwSecretLastModifiedAtValue, ok := secret.Annotations[shared.LastModifiedAtAnnotation]; ok {
+			if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+				return gwSecretLastModifiedAt, nil
+			}
+		}
+		return time.Time{}, errCouldNotGetLastModifiedAt
+	}
+
+	clnt := client.NewGatewaySecretRotationClient(mgr.GetConfig())
+	handler := gatewaysecret.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
 
 	var getSecretFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
 		secret := &apicorev1.Secret{}
