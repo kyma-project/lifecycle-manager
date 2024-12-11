@@ -144,21 +144,30 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 
 	moduleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
-		if moduleReleaseMeta.IsBeta() && !kyma.IsBeta() {
-			continue
+		if IsAllowedModuleReleaseMeta(moduleReleaseMeta, kyma) {
+			moduleReleaseMetas = append(moduleReleaseMetas, moduleReleaseMeta)
 		}
-		if moduleReleaseMeta.IsInternal() && !kyma.IsInternal() {
-			continue
-		}
-		moduleReleaseMetas = append(moduleReleaseMetas, moduleReleaseMeta)
 	}
 
 	return moduleReleaseMetas, nil
 }
 
+// IsAllowedModuleReleaseMeta determines whether the given ModuleReleaseMeta is allowed for the given Kyma.
+// If the ModuleReleaseMeta is Beta, it is allowed only if the Kyma is also Beta.
+// If the ModuleReleaseMeta is Internal, it is allowed only if the Kyma is also Internal.
+func IsAllowedModuleReleaseMeta(moduleReleaseMeta v1beta2.ModuleReleaseMeta, kyma *v1beta2.Kyma) bool {
+	if moduleReleaseMeta.IsBeta() && !kyma.IsBeta() {
+		return false
+	}
+	if moduleReleaseMeta.IsInternal() && !kyma.IsInternal() {
+		return false
+	}
+	return true
+}
+
 // GetModuleTemplatesToSync returns a list of ModuleTemplates that should be synced to the SKR.
-// A ModuleTemplate is synced if it is not mandatory and does not have sync disabled. In addition,
-// it must be referenced by a ModuleReleaseMeta that is synced.
+// A ModuleTemplate is synced if it is not mandatory and does not have sync disabled, and if
+// it is referenced by a ModuleReleaseMeta that is synced.
 func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	ctx context.Context,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
@@ -168,10 +177,13 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
-	return c.FilterModuleTemplatesToSync(moduleTemplateList.Items, moduleReleaseMetas), nil
+	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas), nil
 }
 
-func (c *RemoteCatalog) FilterModuleTemplatesToSync(
+// FilterAllowedModuleTemplates filters out ModuleTemplates that are not allowed.
+// A ModuleTemplate is allowed if it is not mandatory, does not have sync disabled, and if
+// it is referenced by a ModuleReleaseMeta that is synced.
+func FilterAllowedModuleTemplates(
 	moduleTemplates []v1beta2.ModuleTemplate,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
 ) []v1beta2.ModuleTemplate {

@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -58,7 +59,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		}
 
 		templateInfo := t.PopulateModuleTemplateInfo(ctx, module, kyma.Namespace, kyma.Spec.Channel)
-		templateInfo = ValidateTemplateMode(templateInfo, kyma)
+		templateInfo = t.ValidateTemplateMode(ctx, templateInfo, kyma)
 		if templateInfo.Err != nil {
 			templates[module.Name] = &templateInfo
 			continue
@@ -135,10 +136,21 @@ func (t *TemplateLookup) populateModuleTemplateInfoUsingModuleReleaseMeta(ctx co
 	return templateInfo
 }
 
-func ValidateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
+func (t *TemplateLookup) ValidateTemplateMode(ctx context.Context, template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
 	if template.Err != nil {
 		return template
 	}
+
+	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, t, template.Spec.ModuleName, template.Namespace)
+
+	if util.IsNotFound(err) {
+		return validateTemplateModeWithoutModuleReleaseMeta(template, kyma)
+	}
+
+	return validateTemplateModeWithModuleReleaseMeta(template, kyma, moduleReleaseMeta)
+}
+
+func validateTemplateModeWithoutModuleReleaseMeta(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
 	if template.IsInternal() && !kyma.IsInternal() {
 		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
 		return template
@@ -147,6 +159,15 @@ func ValidateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 		template.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
 		return template
 	}
+	return template
+}
+
+func validateTemplateModeWithModuleReleaseMeta(template ModuleTemplateInfo, kyma *v1beta2.Kyma,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta) ModuleTemplateInfo {
+	if !remote.IsAllowedModuleReleaseMeta(*moduleReleaseMeta, kyma) {
+		template.Err = fmt.Errorf("%w: module is beta or internal", ErrTemplateNotAllowed)
+	}
+
 	return template
 }
 
