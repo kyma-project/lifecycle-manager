@@ -21,12 +21,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
