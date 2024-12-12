@@ -121,7 +121,7 @@ func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			if got := templatelookup.ValidateTemplateMode(context.Background(), testCase.template, testCase.kyma, nil); !errors.Is(got.Err,
+			if got := templatelookup.ValidateTemplateMode(testCase.template, testCase.kyma, nil); !errors.Is(got.Err,
 				testCase.wantErr) {
 				t.Errorf("ValidateTemplateMode() = %v, want %v", got, testCase.wantErr)
 			}
@@ -247,7 +247,7 @@ func Test_ValidateTemplateMode_ForNewModuleTemplatesWithModuleReleaseMeta(t *tes
 				WithInternal(testCase.kymaInternal).
 				Build()
 
-			got := templatelookup.ValidateTemplateMode(context.Background(), mti, kyma, mrm)
+			got := templatelookup.ValidateTemplateMode(mti, kyma, mrm)
 			if testCase.expectInstallation {
 				require.NoError(t, got.Err)
 			} else {
