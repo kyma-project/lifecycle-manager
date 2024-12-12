@@ -9,8 +9,8 @@
       "command": "${cwd}/scripts/tests/create_test_clusters.sh",
       "dependsOn": ["Delete Test Clusters"],
       "args": [
-        "--k8s_version", "1.30.3",
-        "--cert_manager_version", "1.13.3"
+        "--k8s-version", "1.30.3",
+        "--cert-manager-version", "1.13.3"
         ]
     },
     {

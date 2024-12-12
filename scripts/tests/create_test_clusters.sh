@@ -12,17 +12,17 @@ while [[ $# -gt 0 ]]; do
       SKIP_VERSION_CHECK=true
       shift
       ;;
-    --k8s_version)
+    --k8s-version)
       K8S_VERSION="$2"
       shift 2
       ;;
-    --cert_manager_version)
+    --cert-manager-version)
       CERT_MANAGER_VERSION="$2"
       shift 2
       ;;
     *)
       echo "[$(basename $0)] Invalid argument: $1"
-      echo "Usage: $(basename $0) [--skip-version-check] --k8s_version <version> --cert_manager_version <version>"
+      echo "Usage: $(basename $0) [--skip-version-check] --k8s-version <version> --cert-manager-version <version>"
       exit 1
       ;;
   esac
@@ -31,7 +31,7 @@ done
 # Check for mandatory arguments
 if [[ -z "$K8S_VERSION" || -z "$CERT_MANAGER_VERSION" ]]; then
   echo "[$(basename $0)] Missing required arguments"
-  echo "Usage: $(basename $0) [--skip-version-check] --k8s_version <version> --cert_manager_version <version>"
+  echo "Usage: $(basename $0) --k8s-version <version> --cert_manager-version <version> [--skip-version-check]"
   exit 1
 fi
 
