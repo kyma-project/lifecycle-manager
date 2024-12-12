@@ -14,7 +14,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var (
@@ -58,8 +57,14 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 
-		templateInfo := t.PopulateModuleTemplateInfo(ctx, module, kyma.Namespace, kyma.Spec.Channel)
-		templateInfo = t.ValidateTemplateMode(ctx, templateInfo, kyma)
+		moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, t, module.Name, kyma.Namespace)
+		if client.IgnoreNotFound(err) != nil {
+			templates[module.Name] = &ModuleTemplateInfo{Err: err}
+			continue
+		}
+
+		templateInfo := t.PopulateModuleTemplateInfo(ctx, module, kyma.Namespace, kyma.Spec.Channel, moduleReleaseMeta)
+		templateInfo = t.ValidateTemplateMode(ctx, templateInfo, kyma, moduleReleaseMeta)
 		if templateInfo.Err != nil {
 			templates[module.Name] = &templateInfo
 			continue
@@ -87,15 +92,10 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 }
 
 func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
-	module AvailableModule, namespace, kymaChannel string,
+	module AvailableModule, namespace, kymaChannel string, moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) ModuleTemplateInfo {
-	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, t, module.Name, namespace)
-	if util.IsNotFound(err) {
+	if moduleReleaseMeta == nil {
 		return t.populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx, module, kymaChannel)
-	}
-
-	if err != nil {
-		return ModuleTemplateInfo{Err: err}
 	}
 
 	return t.populateModuleTemplateInfoUsingModuleReleaseMeta(ctx, module, moduleReleaseMeta, kymaChannel, namespace)
@@ -136,14 +136,16 @@ func (t *TemplateLookup) populateModuleTemplateInfoUsingModuleReleaseMeta(ctx co
 	return templateInfo
 }
 
-func (t *TemplateLookup) ValidateTemplateMode(ctx context.Context, template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
+func (t *TemplateLookup) ValidateTemplateMode(ctx context.Context,
+	template ModuleTemplateInfo,
+	kyma *v1beta2.Kyma,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) ModuleTemplateInfo {
 	if template.Err != nil {
 		return template
 	}
 
-	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, t, template.Spec.ModuleName, template.Namespace)
-
-	if util.IsNotFound(err) {
+	if moduleReleaseMeta == nil {
 		return validateTemplateModeWithoutModuleReleaseMeta(template, kyma)
 	}
 

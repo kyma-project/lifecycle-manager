@@ -177,7 +177,6 @@ issues:
         - gochecknoglobals # Does not apply to unit and integration tests
         - funlen # Table driven unit and integration tests exceed function length by design
         - maintidx # Table driven unit and integration tests exceed maintainability index by design
-        - ireturn
     - path: "pkg/testutils/"
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils

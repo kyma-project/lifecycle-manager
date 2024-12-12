@@ -10,16 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"ocm.software/ocm/api/ocm/compdesc"
 	ocmmetav1 "ocm.software/ocm/api/ocm/compdesc/meta/v1"
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -125,8 +121,8 @@ func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			tl := templatelookup.NewTemplateLookup(mrmFakeClient(), provider.NewCachedDescriptorProvider())
-			if got := tl.ValidateTemplateMode(context.Background(), testCase.template, testCase.kyma); !errors.Is(got.Err,
+			tl := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider())
+			if got := tl.ValidateTemplateMode(context.Background(), testCase.template, testCase.kyma, nil); !errors.Is(got.Err,
 				testCase.wantErr) {
 				t.Errorf("ValidateTemplateMode() = %v, want %v", got, testCase.wantErr)
 			}
@@ -252,8 +248,8 @@ func Test_ValidateTemplateMode_ForNewModuleTemplatesWithModuleReleaseMeta(t *tes
 				WithInternal(testCase.kymaInternal).
 				Build()
 
-			tl := templatelookup.NewTemplateLookup(mrmFakeClient(*mrm), provider.NewCachedDescriptorProvider())
-			got := tl.ValidateTemplateMode(context.Background(), mti, kyma)
+			tl := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider())
+			got := tl.ValidateTemplateMode(context.Background(), mti, kyma, mrm)
 			if testCase.expectInstallation {
 				require.NoError(t, got.Err)
 			} else {
@@ -261,18 +257,6 @@ func Test_ValidateTemplateMode_ForNewModuleTemplatesWithModuleReleaseMeta(t *tes
 			}
 		})
 	}
-}
-
-func mrmFakeClient(mrms ...v1beta2.ModuleReleaseMeta) client.Client {
-	scheme := machineryruntime.NewScheme()
-	machineryutilruntime.Must(api.AddToScheme(scheme))
-
-	objects := make([]client.Object, len(mrms))
-	for i, mrm := range mrms {
-		objects[i] = &mrm
-	}
-
-	return fake.NewClientBuilder().WithScheme(scheme).WithObjects(objects...).Build()
 }
 
 func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
