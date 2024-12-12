@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Create New Test Clusters" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="" />
+    <option name="SCRIPT_TEXT" value="$PROJECT_DIR$/scripts/tests/create_test_clusters.sh --k8s-version 1.30.3 --cert-manager-version 1.13.3" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
-    <option name="SCRIPT_PATH" value="$PROJECT_DIR$/scripts/tests/create_test_clusters.sh" />
+    <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
     <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
     <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
