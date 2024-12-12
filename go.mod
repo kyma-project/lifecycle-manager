@@ -38,7 +38,7 @@ require (
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.1
 	k8s.io/api v0.32.0
-	k8s.io/apiextensions-apiserver v0.31.3
+	k8s.io/apiextensions-apiserver v0.32.0
 	k8s.io/apimachinery v0.32.0
 	k8s.io/cli-runtime v0.32.0
 	k8s.io/client-go v0.32.0
@@ -338,7 +338,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.16.2 // indirect
-	k8s.io/component-base v0.31.4 // indirect
+	k8s.io/component-base v0.32.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	oras.land/oras-go v1.2.6 // indirect
