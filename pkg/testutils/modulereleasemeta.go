@@ -60,6 +60,36 @@ func GetModuleReleaseMeta(ctx context.Context, moduleName, namespace string,
 	return mrm, nil
 }
 
+func SetModuleReleaseMetaBeta(ctx context.Context, beta bool, moduleName, namespace string, clnt client.Client) error {
+	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
+	if err != nil {
+		return fmt.Errorf("failed to fetch modulereleasemeta, %w", err)
+	}
+
+	mrm.Spec.Beta = beta
+
+	if err := clnt.Update(ctx, mrm); err != nil {
+		return fmt.Errorf("failed to update modulereleasemeta, %w", err)
+	}
+
+	return nil
+}
+
+func SetModuleReleaseMetaInternal(ctx context.Context, internal bool, moduleName, namespace string, clnt client.Client) error {
+	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
+	if err != nil {
+		return fmt.Errorf("failed to fetch modulereleasemeta, %w", err)
+	}
+
+	mrm.Spec.Internal = internal
+
+	if err := clnt.Update(ctx, mrm); err != nil {
+		return fmt.Errorf("failed to update modulereleasemeta, %w", err)
+	}
+
+	return nil
+}
+
 func ModuleReleaseMetaExists(ctx context.Context, moduleName, namespace string, clnt client.Client) error {
 	if _, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt); err != nil {
 		if util.IsNotFound(err) {

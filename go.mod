@@ -24,7 +24,7 @@ require (
 	golang.org/x/time v0.8.0
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	ocm.software/ocm v0.18.0
-	sigs.k8s.io/controller-runtime v0.19.2
+	sigs.k8s.io/controller-runtime v0.19.3
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -37,11 +37,11 @@ require (
 	github.com/go-co-op/gocron v1.37.0
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.1
-	k8s.io/api v0.31.3
+	k8s.io/api v0.31.4
 	k8s.io/apiextensions-apiserver v0.31.3
-	k8s.io/apimachinery v0.31.3
+	k8s.io/apimachinery v0.31.4
 	k8s.io/cli-runtime v0.31.3
-	k8s.io/client-go v0.31.3
+	k8s.io/client-go v0.31.4
 	k8s.io/kubectl v0.31.3
 )
 

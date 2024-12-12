@@ -307,6 +307,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
 		ModuleMetrics:       moduleMetrics,
+		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory, flagVar.RemoteSyncNamespace),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
