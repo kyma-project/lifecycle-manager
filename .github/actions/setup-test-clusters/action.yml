@@ -13,7 +13,7 @@ runs:
     - name: create-test-clusters
       shell: bash
       run: |
-        ./lifecycle-manager/scripts/tests/create-test-clusters.sh --k8s-version ${{ inputs.k8s_version }} --cert-manager-version ${{ inputs.cert_manager_version }}
+        ./lifecycle-manager/scripts/tests/create_test_clusters.sh --k8s-version ${{ inputs.k8s_version }} --cert-manager-version ${{ inputs.cert_manager_version }}
 
     - uses: ./lifecycle-manager/.github/actions/export-kubeconfigs
 
