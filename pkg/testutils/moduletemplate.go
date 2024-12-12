@@ -25,8 +25,14 @@ func GetModuleTemplate(ctx context.Context,
 	availableModule := templatelookup.AvailableModule{
 		Module: module,
 	}
+
+	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, module.Name, namespace, clnt)
+	if client.IgnoreNotFound(err) != nil {
+		return nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
+	}
+
 	templateInfo := templateLookup.PopulateModuleTemplateInfo(ctx, availableModule, namespace,
-		defaultChannel, nil)
+		defaultChannel, moduleReleaseMeta)
 
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
