@@ -16,8 +16,8 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
-        cp ../lifecycle-manager/.github/scripts/release/deploy_moduletemplate.sh .
-        cp ../lifecycle-manager/.github/scripts/release/deploy_modulereleasemeta.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
       shell: bash
