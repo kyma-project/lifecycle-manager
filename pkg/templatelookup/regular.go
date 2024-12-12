@@ -64,7 +64,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		}
 
 		templateInfo := t.PopulateModuleTemplateInfo(ctx, module, kyma.Namespace, kyma.Spec.Channel, moduleReleaseMeta)
-		templateInfo = t.ValidateTemplateMode(ctx, templateInfo, kyma, moduleReleaseMeta)
+		templateInfo = ValidateTemplateMode(ctx, templateInfo, kyma, moduleReleaseMeta)
 		if templateInfo.Err != nil {
 			templates[module.Name] = &templateInfo
 			continue
@@ -136,7 +136,7 @@ func (t *TemplateLookup) populateModuleTemplateInfoUsingModuleReleaseMeta(ctx co
 	return templateInfo
 }
 
-func (t *TemplateLookup) ValidateTemplateMode(ctx context.Context,
+func ValidateTemplateMode(ctx context.Context,
 	template ModuleTemplateInfo,
 	kyma *v1beta2.Kyma,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
