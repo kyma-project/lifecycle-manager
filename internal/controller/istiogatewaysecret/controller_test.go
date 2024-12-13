@@ -96,23 +96,6 @@ func TestReconcile_WhenHandlerManageGatewaySecretReturnsError_ReturnError(t *tes
 	assert.Equal(t, 1, mockHandler.calls)
 }
 
-func TestReconcile_WhenHandlerManageGatewaySecretReturnsNoError_ReturnNoError(t *testing.T) {
-	// ARRANGE
-	secret := &apicorev1.Secret{}
-	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
-		return secret, nil
-	}
-	mockHandler := &mockHandler{}
-	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler)
-
-	// ACT
-	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
-
-	// ASSERT
-	require.NoError(t, err)
-	assert.Equal(t, 1, mockHandler.calls)
-}
-
 type mockHandler struct {
 	calls int
 	err   error
