@@ -28,7 +28,7 @@ const (
 var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
 
 func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options) error {
-	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig())
 	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
