@@ -12,6 +12,41 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
+func Test_FetchModuleStatusInfo_When_EmptySpecAndStatus(t *testing.T) {
+	tests := []struct {
+		name       string
+		KymaSpec   v1beta2.KymaSpec
+		KymaStatus v1beta2.KymaStatus
+		want       []moduleStatusInfo
+	}{
+		{
+			name:       "When KymaSpec and KymaStatus are both empty, the output should be empty",
+			KymaSpec:   v1beta2.KymaSpec{},
+			KymaStatus: v1beta2.KymaStatus{},
+			want:       []moduleStatusInfo{}, // Expect empty result
+		},
+	}
+	for ti := range tests {
+		testcase := tests[ti]
+		t.Run(testcase.name, func(t *testing.T) {
+			kyma := &v1beta2.Kyma{
+				Spec:   testcase.KymaSpec,
+				Status: testcase.KymaStatus,
+			}
+
+			got := templatelookup.FetchModuleStatusInfo(kyma)
+			if len(got) != len(testcase.want) {
+				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+			}
+			for gi := range got {
+				if !testcase.want[gi].Equals(got[gi]) {
+					t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+				}
+			}
+		})
+	}
+}
+
 func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 	tests := []struct {
 		name     string
