@@ -27,19 +27,20 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 	for _, moduleTemplate := range mandatoryModuleTemplateList.Items {
 		if moduleTemplate.DeletionTimestamp.IsZero() {
 			currentModuleTemplate := &moduleTemplate
-			if mandatoryModules[currentModuleTemplate.Name] != nil {
+			moduleName := GetModuleName(currentModuleTemplate)
+			if mandatoryModules[moduleName] != nil {
 				var err error
-				currentModuleTemplate, err = getDesiredModuleTemplateForMultipleVersions(currentModuleTemplate,
-					mandatoryModules[currentModuleTemplate.Name].ModuleTemplate)
+				currentModuleTemplate, err = GetDesiredModuleTemplateForMultipleVersions(currentModuleTemplate,
+					mandatoryModules[moduleName].ModuleTemplate)
 				if err != nil {
-					mandatoryModules[getModuleName(currentModuleTemplate)] = &ModuleTemplateInfo{
+					mandatoryModules[moduleName] = &ModuleTemplateInfo{
 						ModuleTemplate: nil,
 						Err:            err,
 					}
 					continue
 				}
 			}
-			mandatoryModules[getModuleName(currentModuleTemplate)] = &ModuleTemplateInfo{
+			mandatoryModules[moduleName] = &ModuleTemplateInfo{
 				ModuleTemplate: currentModuleTemplate,
 				Err:            nil,
 			}
@@ -49,7 +50,7 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 }
 
 // TODO: Create an issue to remove this function and only use the spec.ModuleName when mandatory modules use modulectl
-func getModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
+func GetModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
 	if moduleTemplate.Spec.ModuleName != "" {
 		return moduleTemplate.Spec.ModuleName
 	}
@@ -58,31 +59,32 @@ func getModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
 }
 
 // TODO: Create an issue to remove this function and only use the spec.Version when mandatory modules use modulectl
-func getModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Version, error) {
+func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Version, error) {
 	if moduleTemplate.Spec.Version != "" {
 		version, err := semver.NewVersion(moduleTemplate.Spec.Version)
 		if err != nil {
-			return &semver.Version{}, fmt.Errorf("could not parse version %s: %w", moduleTemplate.Spec.Version, err)
+			return nil, fmt.Errorf("could not parse version as a semver: %s: %w",
+				moduleTemplate.Spec.Version, err)
 		}
 		return version, nil
 	}
 
 	version, err := semver.NewVersion(moduleTemplate.Annotations[shared.ModuleVersionAnnotation])
 	if err != nil {
-		return &semver.Version{}, fmt.Errorf("could not parse version %s: %w",
+		return nil, fmt.Errorf("could not parse version as a semver %s: %w",
 			moduleTemplate.Annotations[shared.ModuleVersionAnnotation], err)
 	}
 	return version, nil
 }
 
-func getDesiredModuleTemplateForMultipleVersions(firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate,
+func GetDesiredModuleTemplateForMultipleVersions(firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate,
 	error) {
-	firstVersion, err := getModuleSemverVersion(firstModuleTemplate)
+	firstVersion, err := GetModuleSemverVersion(firstModuleTemplate)
 	if err != nil {
 		return nil, err
 	}
 
-	secondVersion, err := getModuleSemverVersion(secondModuleTemplate)
+	secondVersion, err := GetModuleSemverVersion(secondModuleTemplate)
 	if err != nil {
 		return nil, err
 	}
