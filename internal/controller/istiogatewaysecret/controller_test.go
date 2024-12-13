@@ -5,13 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	apicorev1 "k8s.io/api/core/v1"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 )
 
 func TestReconcile_WhenGetSecretFuncReturnsError_ReturnError(t *testing.T) {
@@ -52,7 +52,7 @@ func TestReconcile_WhenGetSecretFuncIsCalled_IsCalledWithRequestNamespacedName(t
 	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
 		assert.Equal(t, secretNamespace, name.Namespace)
 		assert.Equal(t, secretName, name.Name)
-		return nil, nil
+		return &apicorev1.Secret{}, nil
 	}
 	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, &mockHandler{})
 	request := ctrl.Request{NamespacedName: types.NamespacedName{Name: secretName, Namespace: secretNamespace}}

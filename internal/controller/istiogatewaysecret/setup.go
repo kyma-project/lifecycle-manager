@@ -1,9 +1,13 @@
 package istiogatewaysecret
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -11,16 +15,46 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
+	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client"
 )
 
 const (
-	controllerName = "istio-controller"
-
-	// TODO move to config
-	kcpRootSecretName = "klm-watcher" //nolint:gosec // gatewaySecretName is not a credential
+	controllerName    = "istio-controller"
+	kcpRootSecretName = "klm-watcher"
 )
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
+var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
+
+func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options) error {
+	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
+
+	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig())
+	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
+		if gwSecretLastModifiedAtValue, ok := secret.Annotations[shared.LastModifiedAtAnnotation]; ok {
+			if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+				return gwSecretLastModifiedAt, nil
+			}
+		}
+		return time.Time{}, errCouldNotGetLastModifiedAt
+	}
+	handler := gatewaysecret.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
+
+	var getSecretFunc GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+		secret := &apicorev1.Secret{}
+		err := mgr.GetClient().Get(ctx, name, secret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get root gateway secret %w", err)
+		}
+
+		return secret, nil
+	}
+
+	return NewReconciler(getSecretFunc, handler).setupWithManager(mgr, options)
+}
+
+func (r *Reconciler) setupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
 	secretPredicate := predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
 			return isRootSecret(e.Object)

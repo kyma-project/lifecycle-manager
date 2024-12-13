@@ -130,6 +130,8 @@ linters-settings:
         alias: testskrcontext
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
         alias: watcherctrl
+      - pkg: github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client
+        alias: gatewaysecretclient
   ireturn:
     allow:
       - anon
@@ -177,6 +179,7 @@ issues:
         - gochecknoglobals # Does not apply to unit and integration tests
         - funlen # Table driven unit and integration tests exceed function length by design
         - maintidx # Table driven unit and integration tests exceed maintainability index by design
+        - nilnil # Test mocks will use nilnil return values purposely
     - path: "pkg/testutils/"
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils

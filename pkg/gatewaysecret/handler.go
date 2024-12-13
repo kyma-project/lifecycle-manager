@@ -5,7 +5,6 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -14,7 +13,7 @@ import (
 )
 
 type Client interface {
-	GetWatcherServingCert(ctx context.Context) (*v1.Certificate, error)
+	GetWatcherServingCert(ctx context.Context) (*certmanagerv1.Certificate, error)
 	GetGatewaySecret(ctx context.Context) (*apicorev1.Secret, error)
 	CreateGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error
 	UpdateGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error

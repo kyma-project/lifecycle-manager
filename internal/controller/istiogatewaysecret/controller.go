@@ -2,18 +2,18 @@ package istiogatewaysecret
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
-var ErrSecretNotFound = fmt.Errorf("root secret not found")
+var ErrSecretNotFound = errors.New("root secret not found")
 
 type (
 	GetterFunc func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error)

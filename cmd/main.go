@@ -27,11 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client"
-
-	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
@@ -67,7 +62,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -144,9 +138,7 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
-func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
-	setupLog logr.Logger,
-) {
+func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme, setupLog logr.Logger) { //nolint: funlen // setupManager is a main function that sets up the manager
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.ClientQPS)
 	config.Burst = flagVar.ClientBurst
@@ -182,7 +174,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			os.Exit(bootstrapFailedExitCode)
 		}
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLog)
-		setupIstioReconciler(mgr, flagVar, options, setupLog)
+		err = istiogatewaysecret.SetupReconciler(mgr, flagVar, options)
+		if err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Istio")
+			os.Exit(bootstrapFailedExitCode)
+		}
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
@@ -480,30 +476,6 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
-		os.Exit(bootstrapFailedExitCode)
-	}
-}
-
-// TODO move setup code to controller pkg
-
-func setupIstioReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options, setupLog logr.Logger) {
-	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
-
-	clnt := client.NewGatewaySecretRotationClient(mgr.GetConfig())
-	handler := gatewaysecret.NewGatewaySecretHandler(clnt, gatewaysecret.ParseLastModifiedFunc)
-
-	var getSecretFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
-		secret := &apicorev1.Secret{}
-		err := mgr.GetClient().Get(ctx, name, secret)
-		if err != nil {
-			return nil, err
-		}
-
-		return secret, nil
-	}
-
-	if err := istiogatewaysecret.NewReconciler(getSecretFunc, handler).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Istio")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }

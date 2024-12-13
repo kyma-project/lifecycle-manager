@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
@@ -133,7 +133,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecr
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
 	cert := &certmanagerv1.Certificate{
 		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &v1.Time{
+			NotBefore: &apimetav1.Time{
 				Time: time.Now().Add(time.Hour),
 			},
 		},
@@ -171,7 +171,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 	mockClient := &ClientMock{}
 	originalTime := time.Now().Add(-time.Hour)
 	gwSecret := &apicorev1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Annotations: map[string]string{
 				shared.LastModifiedAtAnnotation: originalTime.Format(time.RFC3339),
 			},
@@ -180,7 +180,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(gwSecret, nil)
 	cert := &certmanagerv1.Certificate{
 		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &v1.Time{
+			NotBefore: &apimetav1.Time{
 				Time: time.Now().Add(time.Hour),
 			},
 		},
@@ -216,7 +216,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateAndUpdateFails_ReturnsError(t *te
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
 	cert := &certmanagerv1.Certificate{
 		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &v1.Time{
+			NotBefore: &apimetav1.Time{
 				Time: time.Now().Add(time.Hour),
 			},
 		},
@@ -245,7 +245,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateIsFalse_DoesNotUpdateGatewaySecre
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
 	cert := &certmanagerv1.Certificate{
 		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &v1.Time{
+			NotBefore: &apimetav1.Time{
 				Time: time.Now().Add(-time.Hour),
 			},
 		},
@@ -271,7 +271,7 @@ func TestManageGatewaySecret_WhenTimeParserFuncReturnsError_UpdatesGatewaySecret
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
 	cert := &certmanagerv1.Certificate{
 		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &v1.Time{
+			NotBefore: &apimetav1.Time{
 				Time: time.Now().Add(time.Hour),
 			},
 		},
