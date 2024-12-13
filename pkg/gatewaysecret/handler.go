@@ -55,10 +55,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	}
 
 	if h.requiresUpdate(gwSecret, caCert) {
-		gwSecret.Data[tlsCrt] = rootSecret.Data[tlsCrt]
-		gwSecret.Data[tlsKey] = rootSecret.Data[tlsKey]
-		gwSecret.Data[caCrt] = rootSecret.Data[caCrt]
-
+		copyDataFromRootSecret(gwSecret, rootSecret)
 		setLastModifiedToNow(gwSecret)
 
 		return h.client.UpdateGatewaySecret(ctx, gwSecret)
@@ -77,19 +74,17 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 			Name:      shared.GatewaySecretName,
 			Namespace: shared.IstioNamespace,
 		},
-		Data: map[string][]byte{
-			tlsCrt: rootSecret.Data[tlsCrt],
-			tlsKey: rootSecret.Data[tlsKey],
-			caCrt:  rootSecret.Data[caCrt],
-		},
 	}
 
+	copyDataFromRootSecret(newSecret, rootSecret)
 	setLastModifiedToNow(newSecret)
 
 	return h.client.CreateGatewaySecret(ctx, newSecret)
 }
 
 func (h *Handler) requiresUpdate(gwSecret *apicorev1.Secret, caCert *certmanagerv1.Certificate) bool {
+	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
+	// then we don't need to update the gateway secret
 	if lastModified, err := h.parseLastModifiedTime(gwSecret); err == nil {
 		if caCert.Status.NotBefore != nil && lastModified.After(caCert.Status.NotBefore.Time) {
 			return false
@@ -103,4 +98,13 @@ func setLastModifiedToNow(secret *apicorev1.Secret) {
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[shared.LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+}
+
+func copyDataFromRootSecret(secret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data[tlsCrt] = rootSecret.Data[tlsCrt]
+	secret.Data[tlsKey] = rootSecret.Data[tlsKey]
+	secret.Data[caCrt] = rootSecret.Data[caCrt]
 }

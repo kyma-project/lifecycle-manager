@@ -1,187 +1,296 @@
 package gatewaysecret_test
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 )
 
-func TestNewGatewaySecretHandler(t *testing.T) {
+func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	someError := errors.New("some-error")
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, someError)
 
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, nil)
+
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.Error(t, err)
+	require.ErrorIs(t, err, someError)
+	mockClient.AssertNumberOfCalls(t, "GetGatewaySecret", 1)
 }
 
-func TestGatewaySecretRequiresUpdate(t *testing.T) {
-	type args struct {
-		gwSecret *apicorev1.Secret
-		caCert   certmanagerv1.Certificate
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "gateway secret is newer than CA certificate",
-			args: args{
-				gwSecret: &apicorev1.Secret{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Annotations: map[string]string{
-							"lastModifiedAt": "2024-11-01T00:00:10Z",
-						},
-					},
-				},
-				caCert: certmanagerv1.Certificate{
-					Status: certmanagerv1.CertificateStatus{
-						NotBefore: &apimetav1.Time{
-							Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
-						},
-					},
-				},
-			},
-			want: false,
-		},
-		{
-			name: "gateway secret is older than CA certificate",
-			args: args{
-				gwSecret: &apicorev1.Secret{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Annotations: map[string]string{
-							"lastModifiedAt": "2024-11-01T00:00:00Z",
-						},
-					},
-				},
-				caCert: certmanagerv1.Certificate{
-					Status: certmanagerv1.CertificateStatus{
-						NotBefore: &apimetav1.Time{
-							Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
-						},
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			name: "gateway secret has parsing error for lastModifiedAt",
-			args: args{
-				gwSecret: &apicorev1.Secret{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Annotations: map[string]string{
-							"lastModifiedAt": "2024-11-01T00:00:00",
-						},
-					},
-				},
-				caCert: certmanagerv1.Certificate{
-					Status: certmanagerv1.CertificateStatus{
-						NotBefore: &apimetav1.Time{
-							Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
-						},
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			name: "gateway secret is missing lastModifiedAt",
-			args: args{
-				gwSecret: &apicorev1.Secret{
-					ObjectMeta: apimetav1.ObjectMeta{
-						Annotations: map[string]string{},
-					},
-				},
-				caCert: certmanagerv1.Certificate{
-					Status: certmanagerv1.CertificateStatus{
-						NotBefore: &apimetav1.Time{
-							Time: time.Date(2024, 11, 1, 0, 0, 5, 0, time.UTC),
-						},
-					},
-				},
-			},
-			want: true,
-		},
-	}
-	for _, testcase := range tests {
-		t.Run(testcase.name, func(t *testing.T) {
-			if got := gatewaysecret.RequiresUpdate(
-				testcase.args.gwSecret, &testcase.args.caCert); got != testcase.want {
-				t.Errorf("RequiresUpdate() = %v, want %v", got, testcase.want)
-			}
-		})
-	}
-}
-
-func TestCopyRootSecretDataIntoGatewaySecret(t *testing.T) {
-	t.Parallel()
-
-	gwSecret := &apicorev1.Secret{
-		Data: map[string][]byte{
-			"tls.crt": []byte(("old-value1")),
-			"tls.key": []byte(("old-value2")),
-			"ca.crt":  []byte(("old-value3")),
-		},
-	}
-
+func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGatewaySecretFromRootSecret(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, notFoundError())
+	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	rootSecret := &apicorev1.Secret{
 		Data: map[string][]byte{
-			"tls.crt": []byte(("value1")),
-			"tls.key": []byte(("value2")),
-			"ca.crt":  []byte(("value3")),
+			"tls.crt": []byte("value1"),
+			"tls.key": []byte("value2"),
+			"ca.crt":  []byte("value3"),
+		},
+	}
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, nil)
+
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+
+	// ASSERT
+	require.NoError(t, err)
+	mockClient.AssertNumberOfCalls(t, "GetGatewaySecret", 1)
+	mockClient.AssertNumberOfCalls(t, "CreateGatewaySecret", 1)
+
+	expectedNamespace := "istio-system"
+	expectedName := "klm-istio-gateway"
+	mockClient.AssertCalled(t, "CreateGatewaySecret", mock.Anything, mock.MatchedBy(
+		func(secret *apicorev1.Secret) bool {
+			return secret.ObjectMeta.Name == expectedName &&
+				secret.ObjectMeta.Namespace == expectedNamespace &&
+				string(secret.Data["tls.crt"]) == string(rootSecret.Data["tls.crt"]) &&
+				string(secret.Data["tls.key"]) == string(rootSecret.Data["tls.key"]) &&
+				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"])
+		}))
+}
+
+func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreationFailed_ReturnError(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, notFoundError())
+	expectedError := errors.New("some-error")
+	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
+
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, nil)
+
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.Error(t, err)
+	require.ErrorIs(t, err, expectedError)
+	mockClient.AssertNumberOfCalls(t, "GetGatewaySecret", 1)
+	mockClient.AssertNumberOfCalls(t, "CreateGatewaySecret", 1)
+}
+
+func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGatewaySecretWithLastModifiedAnnotation(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, notFoundError())
+	mockClient.On("CreateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
+
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, nil)
+
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.NoError(t, err)
+	mockClient.AssertNumberOfCalls(t, "GetGatewaySecret", 1)
+	mockClient.AssertNumberOfCalls(t, "CreateGatewaySecret", 1)
+	mockClient.AssertCalled(t, "CreateGatewaySecret", mock.Anything, mock.MatchedBy(
+		func(secret *apicorev1.Secret) bool {
+			return secret.Annotations[shared.LastModifiedAtAnnotation] != ""
+		}))
+}
+
+func TestManageGatewaySecret_WhenWatcherServingCertReturnsError_ReturnsError(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
+	expectedError := errors.New("some-error")
+	mockClient.On("GetWatcherServingCert", mock.Anything).Return(nil, expectedError)
+
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, nil)
+
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.Error(t, err)
+	require.ErrorIs(t, err, expectedError)
+	mockClient.AssertNumberOfCalls(t, "GetGatewaySecret", 1)
+	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCert", 1)
+}
+
+func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecretData(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
+	cert := &certmanagerv1.Certificate{
+		Status: certmanagerv1.CertificateStatus{
+			NotBefore: &v1.Time{
+				Time: time.Now().Add(time.Hour),
+			},
+		},
+	}
+	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
+	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
+		return time.Now(), nil
+	}
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, mockFunc)
+	rootSecret := &apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt": []byte("value1"),
+			"tls.key": []byte("value2"),
+			"ca.crt":  []byte("value3"),
 		},
 	}
 
-	gatewaysecret.CopySecretData(rootSecret, gwSecret)
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
 
-	require.Equal(t, "value1", string(gwSecret.Data["tls.crt"]))
-	require.Equal(t, "value2", string(gwSecret.Data["tls.key"]))
-	require.Equal(t, "value3", string(gwSecret.Data["ca.crt"]))
+	// ASSERT
+	require.NoError(t, err)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
+	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
+		func(secret *apicorev1.Secret) bool {
+			return string(secret.Data["tls.crt"]) == string(rootSecret.Data["tls.crt"]) &&
+				string(secret.Data["tls.key"]) == string(rootSecret.Data["tls.key"]) &&
+				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"])
+		}))
 }
 
-type mockClient struct {
-	err   error
-	calls int
-}
-
-func (m *mockClient) Setup(_ *apicorev1.Secret) error {
-	if m.err != nil {
-		return m.err
+func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedModifiedNowAnnotation(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	originalTime := time.Now().Add(-time.Hour)
+	gwSecret := &apicorev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Annotations: map[string]string{
+				shared.LastModifiedAtAnnotation: originalTime.Format(time.RFC3339),
+			},
+		},
 	}
-
-	m.calls++
-	return nil
-}
-
-func (m *mockClient) GetGatewaySecret() (*apicorev1.Secret, error) {
-	if m.err != nil {
-		return nil, m.err
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(gwSecret, nil)
+	cert := &certmanagerv1.Certificate{
+		Status: certmanagerv1.CertificateStatus{
+			NotBefore: &v1.Time{
+				Time: time.Now().Add(time.Hour),
+			},
+		},
 	}
-
-	m.calls++
-	return &apicorev1.Secret{}, nil
-}
-
-func (m *mockClient) UpdateGatewaySecret(_ *apicorev1.Secret) error {
-	if m.err != nil {
-		return m.err
+	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
+	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
+		return time.Now(), nil
 	}
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, mockFunc)
 
-	m.calls++
-	return nil
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.NoError(t, err)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
+	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
+		func(secret *apicorev1.Secret) bool {
+			lastModified, ok := secret.Annotations[shared.LastModifiedAtAnnotation]
+			if !ok {
+				return false
+			}
+			lastModifiedTime, _ := time.Parse(time.RFC3339, lastModified)
+
+			return lastModifiedTime.After(originalTime)
+		}))
 }
 
-func (m *mockClient) GetWatcherServingCert() (*certmanagerv1.Certificate, error) {
-	if m.err != nil {
-		return nil, m.err
+func TestManageGatewaySecret_WhenRequiresUpdateAndUpdateFails_ReturnsError(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
+	cert := &certmanagerv1.Certificate{
+		Status: certmanagerv1.CertificateStatus{
+			NotBefore: &v1.Time{
+				Time: time.Now().Add(time.Hour),
+			},
+		},
 	}
+	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	expectedError := errors.New("some-error")
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
+	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
+		return time.Now(), nil
+	}
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, mockFunc)
 
-	m.calls++
-	return &certmanagerv1.Certificate{}, nil
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.Error(t, err)
+	require.ErrorIs(t, err, expectedError)
+	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCert", 1)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 }
 
-func ()  {
+func TestManageGatewaySecret_WhenRequiresUpdateIsFalse_DoesNotUpdateGatewaySecret(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
+	cert := &certmanagerv1.Certificate{
+		Status: certmanagerv1.CertificateStatus{
+			NotBefore: &v1.Time{
+				Time: time.Now().Add(-time.Hour),
+			},
+		},
+	}
+	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
+	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
+		return time.Now(), nil
+	}
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, mockFunc)
 
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.NoError(t, err)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 0)
+}
+
+func TestManageGatewaySecret_WhenTimeParserFuncReturnsError_UpdatesGatewaySecret(t *testing.T) {
+	// ARRANGE
+	mockClient := &ClientMock{}
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
+	cert := &certmanagerv1.Certificate{
+		Status: certmanagerv1.CertificateStatus{
+			NotBefore: &v1.Time{
+				Time: time.Now().Add(time.Hour),
+			},
+		},
+	}
+	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
+	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
+		return time.Time{}, errors.New("some-error")
+	}
+	handler := gatewaysecret.NewGatewaySecretHandler(mockClient, mockFunc)
+
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+
+	// ASSERT
+	require.NoError(t, err)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
+}
+
+func notFoundError() error {
+	return apierrors.NewNotFound(apicorev1.Resource("secrets"), "not-found")
 }

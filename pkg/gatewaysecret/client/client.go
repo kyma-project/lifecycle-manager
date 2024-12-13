@@ -3,18 +3,17 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
 	certmanagerclientv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 
-	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apicorev1 "k8s.io/api/core/v1"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 const (
