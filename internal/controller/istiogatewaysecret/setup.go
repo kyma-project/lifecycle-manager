@@ -15,9 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
+	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
-	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client"
 )
 
 const (

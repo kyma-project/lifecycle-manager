@@ -132,7 +132,7 @@ linters-settings:
         alias: testskrcontext
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
         alias: watcherctrl
-      - pkg: github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret/client
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client
         alias: gatewaysecretclient
   ireturn:
     allow:
