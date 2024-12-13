@@ -5,19 +5,23 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"context"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestGetDesiredModuleTemplateForMultipleVersions_ReturnCorrectValue(t *testing.T) {
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("warden").
+		WithName("warden-1.0.0-dev").
 		WithVersion("1.0.0-dev").
 		WithLabel("module-diff", "first").
 		Build()
 
 	secondModuleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("warden").
+		WithName("warden-1.0.1-dev").
 		WithVersion("1.0.1-dev").
 		WithLabel("module-diff", "second").
 		Build()
@@ -29,13 +33,13 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnCorrectValue(t *testi
 
 func TestGetDesiredModuleTemplateForMultipleVersions_ReturnError_NotSemver(t *testing.T) {
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("warden").
+		WithName("warden-test").
 		WithVersion("test").
 		WithLabel("module-diff", "first").
 		Build()
 
 	secondModuleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("warden").
+		WithName("warden-1.0.1-dev").
 		WithVersion("1.0.1-dev").
 		WithLabel("module-diff", "second").
 		Build()
@@ -103,4 +107,106 @@ func TestGetModuleSemverVersion_ReturnError_NotSemver_VersionAnnotation(t *testi
 	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
 	require.ErrorContains(t, err, "could not parse version as a semver")
 	require.Nil(t, result)
+}
+
+func TestGetMandatory_OneVersion(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-1.0.0").
+		WithModuleName("warden").
+		WithMandatory(true).
+		WithLabel("operator.kyma-project.io/mandatory-module", "true").
+		WithVersion("1.0.0").
+		Build()
+
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("template-operator-1.0.1").
+		WithVersion("1.0.0").
+		Build()
+
+	thirdModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("mandatory-1.0.1").
+		WithLabelModuleName("mandatory").
+		WithMandatory(true).
+		WithLabel("operator.kyma-project.io/mandatory-module", "true").
+		WithVersion("1.0.1").
+		Build()
+
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(firstModuleTemplate, secondModuleTemplate, thirdModuleTemplate).
+		Build()
+
+	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+
+	require.Contains(t, result, "warden")
+	require.Contains(t, result, "mandatory")
+	require.Equal(t, result["warden"].ModuleTemplate.Name, firstModuleTemplate.Name)
+	require.Equal(t, result["warden"].ModuleTemplate.Spec.Version, firstModuleTemplate.Spec.Version)
+	require.Nil(t, result["warden"].Err)
+	require.Equal(t, result["mandatory"].ModuleTemplate.Name, thirdModuleTemplate.Name)
+	require.Equal(t, result["mandatory"].ModuleTemplate.Spec.Version, thirdModuleTemplate.Spec.Version)
+	require.Nil(t, result["mandatory"].Err)
+	require.NotContains(t, result, "template-operator")
+}
+
+func TestGetMandatory_MultipleVersions(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-1.0.0").
+		WithModuleName("warden").
+		WithMandatory(true).
+		WithLabel("operator.kyma-project.io/mandatory-module", "true").
+		WithVersion("1.0.0").
+		Build()
+
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("template-operator-1.0.1").
+		WithVersion("1.0.0").
+		Build()
+
+	thirdModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("mandatory-1.0.1").
+		WithLabelModuleName("mandatory").
+		WithMandatory(true).
+		WithLabel("operator.kyma-project.io/mandatory-module", "true").
+		WithVersion("1.0.1").
+		Build()
+
+	fourthModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-1.0.1").
+		WithModuleName("warden").
+		WithMandatory(true).
+		WithLabel("operator.kyma-project.io/mandatory-module", "true").
+		WithVersion("1.0.1").
+		Build()
+
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(firstModuleTemplate, secondModuleTemplate, thirdModuleTemplate, fourthModuleTemplate).
+		Build()
+
+	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+
+	require.Contains(t, result, "warden")
+	require.Contains(t, result, "mandatory")
+	require.Equal(t, result["warden"].ModuleTemplate.Name, fourthModuleTemplate.Name)
+	require.Equal(t, result["warden"].ModuleTemplate.Spec.Version, fourthModuleTemplate.Spec.Version)
+	require.Nil(t, result["warden"].Err)
+	require.Equal(t, result["mandatory"].ModuleTemplate.Name, thirdModuleTemplate.Name)
+	require.Equal(t, result["mandatory"].ModuleTemplate.Spec.Version, thirdModuleTemplate.Spec.Version)
+	require.Nil(t, result["mandatory"].Err)
+	require.NotContains(t, result, "template-operator")
 }
