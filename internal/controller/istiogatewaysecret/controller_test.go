@@ -49,13 +49,14 @@ func TestReconcile_WhenGetSecretFuncReturnsNoErrorAndSecretIsNil_ReturnError(t *
 func TestReconcile_WhenGetSecretFuncIsCalled_IsCalledWithRequestNamespacedName(t *testing.T) {
 	// ARRANGE
 	secretName, secretNamespace := "test-name", "test-namespace"
+	request := ctrl.Request{NamespacedName: types.NamespacedName{Name: secretName, Namespace: secretNamespace}}
+
 	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
-		assert.Equal(t, secretNamespace, name.Namespace)
-		assert.Equal(t, secretName, name.Name)
-		return &apicorev1.Secret{}, nil
+		assert.Equal(t, request.Namespace, name.Namespace)
+		assert.Equal(t, request.Name, name.Name)
+		return nil, nil
 	}
 	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, &mockHandler{})
-	request := ctrl.Request{NamespacedName: types.NamespacedName{Name: secretName, Namespace: secretNamespace}}
 
 	// ACT
 	// ASSERT
