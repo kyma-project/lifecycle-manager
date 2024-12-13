@@ -149,10 +149,10 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 	require.Contains(t, result, "mandatory")
 	require.Equal(t, result["warden"].ModuleTemplate.Name, firstModuleTemplate.Name)
 	require.Equal(t, result["warden"].ModuleTemplate.Spec.Version, firstModuleTemplate.Spec.Version)
-	require.Nil(t, result["warden"].Err)
+	require.NoError(t, result["warden"].Err)
 	require.Equal(t, result["mandatory"].ModuleTemplate.Name, thirdModuleTemplate.Name)
 	require.Equal(t, result["mandatory"].ModuleTemplate.Spec.Version, thirdModuleTemplate.Spec.Version)
-	require.Nil(t, result["mandatory"].Err)
+	require.NoError(t, result["mandatory"].Err)
 	require.NotContains(t, result, "template-operator")
 }
 
@@ -204,9 +204,44 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 	require.Contains(t, result, "mandatory")
 	require.Equal(t, result["warden"].ModuleTemplate.Name, fourthModuleTemplate.Name)
 	require.Equal(t, result["warden"].ModuleTemplate.Spec.Version, fourthModuleTemplate.Spec.Version)
-	require.Nil(t, result["warden"].Err)
+	require.NoError(t, result["warden"].Err)
 	require.Equal(t, result["mandatory"].ModuleTemplate.Name, thirdModuleTemplate.Name)
 	require.Equal(t, result["mandatory"].ModuleTemplate.Spec.Version, thirdModuleTemplate.Spec.Version)
-	require.Nil(t, result["mandatory"].Err)
+	require.NoError(t, result["mandatory"].Err)
 	require.NotContains(t, result, "template-operator")
+}
+
+func TestGetMandatory_WithErrorNotSemVer(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-test").
+		WithModuleName("warden").
+		WithMandatory(true).
+		WithLabel("operator.kyma-project.io/mandatory-module", "true").
+		WithVersion("test").
+		Build()
+
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-1.0.0").
+		WithModuleName("warden").
+		WithMandatory(true).
+		WithLabel("operator.kyma-project.io/mandatory-module", "true").
+		WithVersion("1.0.0").
+		Build()
+
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(firstModuleTemplate, secondModuleTemplate).
+		Build()
+
+	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+
+	require.Contains(t, result, "warden")
+	require.ErrorContains(t, result["warden"].Err, "could not parse version as a semver")
 }

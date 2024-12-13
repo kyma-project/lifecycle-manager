@@ -49,7 +49,6 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 	return mandatoryModules, nil
 }
 
-// TODO: Create an issue to remove this function and only use the spec.ModuleName when mandatory modules use modulectl
 func GetModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
 	if moduleTemplate.Spec.ModuleName != "" {
 		return moduleTemplate.Spec.ModuleName
@@ -58,7 +57,6 @@ func GetModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
 	return moduleTemplate.Labels[shared.ModuleName]
 }
 
-// TODO: Create an issue to remove this function and only use the spec.Version when mandatory modules use modulectl
 func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Version, error) {
 	if moduleTemplate.Spec.Version != "" {
 		version, err := semver.NewVersion(moduleTemplate.Spec.Version)
