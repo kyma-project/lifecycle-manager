@@ -95,8 +95,13 @@ else
   kubectl label nodes k3d-kcp-server-0 iam.gke.io/gke-metadata-server-enabled="true" pool-type=mgmt
 fi
 
+# check if .k3d directory exists
+if [ ! -d ~/.k3d ]; then
+  mkdir ~/.k3d
+fi
+
 # export kubeconfigs
-k3d kubeconfig get skr > ~/.k3d/skr-local.yaml 
+k3d kubeconfig get skr > ~/.k3d/skr-local.yaml
 k3d kubeconfig get kcp > ~/.k3d/kcp-local.yaml
 echo "[$(basename $0)] Kubeconfig for SKR and KCP exported successfully"
 
