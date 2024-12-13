@@ -54,6 +54,13 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						shared.OperatorGroup, "v1beta2", string(shared.ModuleTemplateKind), skrClient).
 					Should(Not(Succeed()))
 			})
+
+			By("And the mandatory module manifest is installed with the correct version", func() {
+				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
+					Should(Succeed())
+			})
 		})
 
 		It("When the mandatory Manifest is labelled to skip reconciliation", func() {

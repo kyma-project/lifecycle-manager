@@ -44,6 +44,7 @@ var (
 	errManifestOperationNotContainMessage             = errors.New("manifest last operation does  not contain expected message")
 	errManifestVersionIsIncorrect                     = errors.New("manifest version is incorrect")
 	errManifestConditionNotExists                     = errors.New("manifest condition does not exist")
+	errManifestNotFound                               = errors.New("manifest does not exist")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -288,6 +289,35 @@ func SetSkipLabelToMandatoryManifests(ctx context.Context, clnt client.Client, i
 		if err != nil {
 			return fmt.Errorf("failed to update manifest, %w", err)
 		}
+	}
+	return nil
+}
+
+func MandatoryModuleManifestExistWithCorrectVersion(ctx context.Context, clnt client.Client,
+	moduleName, expectedVersion string) error {
+	manifestList := v1beta2.ManifestList{}
+	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+	}); err != nil {
+		return fmt.Errorf("failed to list manifests: %w", err)
+	}
+
+	manifestFound := false
+	for _, manifest := range manifestList.Items {
+		manifestModuleName, err := manifest.GetModuleName()
+		if err != nil {
+			return fmt.Errorf("failed to get manifest module name, %w", err)
+		}
+		if manifestModuleName == moduleName {
+			manifestFound = true
+			if manifest.Spec.Version != expectedVersion {
+				return errManifestVersionIsIncorrect
+			}
+		}
+	}
+
+	if !manifestFound {
+		return errManifestNotFound
 	}
 	return nil
 }

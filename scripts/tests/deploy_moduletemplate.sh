@@ -7,6 +7,7 @@ set -o pipefail
 MODULE_NAME=$1
 RELEASE_VERSION=$2
 INCLUDE_DEFAULT_CR=${3:-true}
+MANDATORY=${4:-false}
 
 cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
@@ -23,6 +24,12 @@ EOF
 if [ "${INCLUDE_DEFAULT_CR}" == "true" ]; then
   cat <<EOF >> module-config-for-e2e.yaml
 defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml
+EOF
+fi
+
+if [ "${MANDATORY}" == "true" ]; then
+  cat <<EOF >> module-config-for-e2e.yaml
+mandatory: true
 EOF
 fi
 
