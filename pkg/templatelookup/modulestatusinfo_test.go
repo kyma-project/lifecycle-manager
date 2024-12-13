@@ -36,11 +36,11 @@ func Test_FetchModuleStatusInfo_When_EmptySpecAndStatus(t *testing.T) {
 
 			got := templatelookup.FetchModuleStatusInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
@@ -117,11 +117,11 @@ func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 
 			got := templatelookup.FetchModuleStatusInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
@@ -181,11 +181,11 @@ func Test_FetchModuleStatusInfo_When_ModuleInStatusOnly(t *testing.T) {
 
 			got := templatelookup.FetchModuleStatusInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
@@ -228,11 +228,11 @@ func Test_FetchModuleStatusInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 			}
 			got := templatelookup.FetchModuleStatusInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
