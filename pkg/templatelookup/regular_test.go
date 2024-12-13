@@ -82,7 +82,7 @@ func (f *FakeModuleTemplateReader) Get(_ context.Context, objKey client.ObjectKe
 	return nil
 }
 
-func TestValidateTemplateMode(t *testing.T) {
+func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 	tests := []struct {
 		name     string
 		template templatelookup.ModuleTemplateInfo
@@ -121,9 +121,177 @@ func TestValidateTemplateMode(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			if got := templatelookup.ValidateTemplateMode(testCase.template, testCase.kyma); !errors.Is(got.Err,
+			if got := templatelookup.ValidateTemplateMode(testCase.template, testCase.kyma, nil); !errors.Is(got.Err,
 				testCase.wantErr) {
 				t.Errorf("ValidateTemplateMode() = %v, want %v", got, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func Test_ValidateTemplateMode_ForNewModuleTemplatesWithModuleReleaseMeta(t *testing.T) {
+	testCases := []struct {
+		name               string
+		moduleBeta         bool
+		moduleInternal     bool
+		kymaBeta           bool
+		kymaInternal       bool
+		expectInstallation bool
+	}{
+		{
+			name:               "Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation: true",
+			moduleBeta:         false,
+			moduleInternal:     false,
+			kymaBeta:           false,
+			kymaInternal:       false,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			moduleBeta:         true,
+			moduleInternal:     false,
+			kymaBeta:           false,
+			kymaInternal:       false,
+			expectInstallation: false,
+		},
+		{
+			name:               "Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			moduleBeta:         false,
+			moduleInternal:     true,
+			kymaBeta:           false,
+			kymaInternal:       false,
+			expectInstallation: false,
+		},
+		{
+			name:               "Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
+			moduleBeta:         false,
+			moduleInternal:     false,
+			kymaBeta:           true,
+			kymaInternal:       false,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
+			moduleBeta:         false,
+			moduleInternal:     false,
+			kymaBeta:           false,
+			kymaInternal:       true,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			moduleBeta:         true,
+			moduleInternal:     true,
+			kymaBeta:           false,
+			kymaInternal:       false,
+			expectInstallation: false,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
+			moduleBeta:         true,
+			moduleInternal:     false,
+			kymaBeta:           true,
+			kymaInternal:       false,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
+			moduleBeta:         true,
+			moduleInternal:     false,
+			kymaBeta:           false,
+			kymaInternal:       true,
+			expectInstallation: false,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
+			moduleBeta:         true,
+			moduleInternal:     true,
+			kymaBeta:           true,
+			kymaInternal:       false,
+			expectInstallation: false,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
+			moduleBeta:         true,
+			moduleInternal:     true,
+			kymaBeta:           false,
+			kymaInternal:       true,
+			expectInstallation: false,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:         true,
+			moduleInternal:     true,
+			kymaBeta:           true,
+			kymaInternal:       true,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
+			moduleBeta:         false,
+			moduleInternal:     true,
+			kymaBeta:           true,
+			kymaInternal:       false,
+			expectInstallation: false,
+		},
+		{
+			name:               "Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
+			moduleBeta:         false,
+			moduleInternal:     true,
+			kymaBeta:           false,
+			kymaInternal:       true,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:         false,
+			moduleInternal:     false,
+			kymaBeta:           true,
+			kymaInternal:       true,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:         false,
+			moduleInternal:     true,
+			kymaBeta:           true,
+			kymaInternal:       true,
+			expectInstallation: true,
+		},
+		{
+			name:               "Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:         true,
+			moduleInternal:     false,
+			kymaBeta:           true,
+			kymaInternal:       true,
+			expectInstallation: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			mrm := builder.NewModuleReleaseMetaBuilder().
+				WithName("test-module").
+				WithModuleName("test-module").
+				WithBeta(testCase.moduleBeta).
+				WithInternal(testCase.moduleInternal).
+				Build()
+			mti := templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().
+					WithModuleName("test-module").
+					Build(),
+			}
+			kyma := builder.NewKymaBuilder().
+				WithName("test-kyma").
+				WithBeta(testCase.kymaBeta).
+				WithInternal(testCase.kymaInternal).
+				Build()
+
+			got := templatelookup.ValidateTemplateMode(mti, kyma, mrm)
+			if testCase.expectInstallation {
+				require.NoError(t, got.Err)
+			} else {
+				require.ErrorIs(t, got.Err, templatelookup.ErrTemplateNotAllowed)
 			}
 		})
 	}

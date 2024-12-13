@@ -25,6 +25,7 @@ func NewKymaBuilder() KymaBuilder {
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      random.Name(),
 				Namespace: apimetav1.NamespaceDefault,
+				Labels:    map[string]string{},
 			},
 			Spec:   v1beta2.KymaSpec{},
 			Status: v1beta2.KymaStatus{},
@@ -98,6 +99,26 @@ func (kb KymaBuilder) WithModuleStatus(moduleStatus v1beta2.ModuleStatus) KymaBu
 		kb.kyma.Status.Modules = []v1beta2.ModuleStatus{}
 	}
 	kb.kyma.Status.Modules = append(kb.kyma.Status.Modules, moduleStatus)
+	return kb
+}
+
+// WithBeta sets v1beta2.Kyma.Labels[shared.BetaLabel].
+func (kb KymaBuilder) WithBeta(beta bool) KymaBuilder {
+	if beta {
+		kb.kyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
+	} else {
+		kb.kyma.Labels[shared.BetaLabel] = shared.DisableLabelValue
+	}
+	return kb
+}
+
+// WithInternal sets v1beta2.Kyma.Labels[shared.InternalLabel].
+func (kb KymaBuilder) WithInternal(internal bool) KymaBuilder {
+	if internal {
+		kb.kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
+	} else {
+		kb.kyma.Labels[shared.InternalLabel] = shared.DisableLabelValue
+	}
 	return kb
 }
 
