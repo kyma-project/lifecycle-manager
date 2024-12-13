@@ -51,6 +51,21 @@ func (m ModuleReleaseMetaBuilder) WithModuleName(moduleName string) ModuleReleas
 	return m
 }
 
+func (m ModuleReleaseMetaBuilder) WithNamespace(namespace string) ModuleReleaseMetaBuilder {
+	m.moduleReleaseMeta.ObjectMeta.Namespace = namespace
+	return m
+}
+
+func (m ModuleReleaseMetaBuilder) WithBeta(beta bool) ModuleReleaseMetaBuilder {
+	m.moduleReleaseMeta.Spec.Beta = beta
+	return m
+}
+
+func (m ModuleReleaseMetaBuilder) WithInternal(internal bool) ModuleReleaseMetaBuilder {
+	m.moduleReleaseMeta.Spec.Internal = internal
+	return m
+}
+
 func (m ModuleReleaseMetaBuilder) Build() *v1beta2.ModuleReleaseMeta {
 	return m.moduleReleaseMeta
 }

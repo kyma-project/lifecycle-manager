@@ -16,8 +16,8 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
-        cp ../lifecycle-manager/.github/scripts/release/deploy_moduletemplate.sh .
-        cp ../lifecycle-manager/.github/scripts/release/deploy_modulereleasemeta.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
       shell: bash
@@ -64,7 +64,8 @@ runs:
         matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
         matrix.e2e-test == 'modulereleasemeta-upgrade-under-deletion' ||
         matrix.e2e-test == 'modulereleasemeta-sync' ||
-        matrix.e2e-test == 'module-status-on-skr-connection-lost'
+        matrix.e2e-test == 'module-status-on-skr-connection-lost' ||
+        matrix.e2e-test == 'modulereleasemeta-not-allowed-installation'
         }}
       shell: bash
       run: |
