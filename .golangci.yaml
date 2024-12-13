@@ -114,6 +114,8 @@ linters-settings:
         alias: machineryaml
       - pkg: k8s.io/client-go/kubernetes/scheme
         alias: k8sclientscheme
+      - pkg: k8s.io/client-go/kubernetes/typed/core/v1
+        alias: k8scorev1
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
       - pkg: sigs.k8s.io/controller-runtime/pkg/controller

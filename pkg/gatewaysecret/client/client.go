@@ -11,7 +11,7 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	k8scorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -25,7 +25,7 @@ var errInvalidGatewaySecret = errors.New("invalid gateway secret")
 
 type GatewaySecretRotationClient struct {
 	certificateInterface certmanagerclientv1.CertificateInterface
-	secretInterface      v1.SecretInterface
+	secretInterface      k8scorev1.SecretInterface
 }
 
 func NewGatewaySecretRotationClient(config *rest.Config) *GatewaySecretRotationClient {
