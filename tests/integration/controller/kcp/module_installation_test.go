@@ -2,6 +2,7 @@ package kcp_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -14,7 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/mandelsoft/goutils/errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
