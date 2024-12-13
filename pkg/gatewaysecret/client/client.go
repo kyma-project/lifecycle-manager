@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 
 	certmanagerclientv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,9 +18,7 @@ import (
 )
 
 const (
-	istioNamespace    = "istio-system"
-	gatewaySecretName = "klm-istio-gateway"
-	kcpCACertName     = "klm-watcher-serving"
+	kcpCACertName = "klm-watcher-serving"
 )
 
 type GatewaySecretRotationClient struct {
@@ -29,8 +28,8 @@ type GatewaySecretRotationClient struct {
 
 func NewGatewaySecretRotationClient(config *rest.Config) *GatewaySecretRotationClient {
 	return &GatewaySecretRotationClient{
-		certificateInterface: versioned.NewForConfigOrDie(config).CertmanagerV1().Certificates(istioNamespace),
-		secretInterface:      kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(istioNamespace),
+		certificateInterface: versioned.NewForConfigOrDie(config).CertmanagerV1().Certificates(shared.IstioNamespace),
+		secretInterface:      kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(shared.IstioNamespace),
 	}
 }
 
@@ -44,9 +43,9 @@ func (c *GatewaySecretRotationClient) GetWatcherServingCert(ctx context.Context)
 }
 
 func (c *GatewaySecretRotationClient) GetGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
-	secret, err := c.secretInterface.Get(ctx, gatewaySecretName, apimetav1.GetOptions{})
+	secret, err := c.secretInterface.Get(ctx, shared.GatewaySecretName, apimetav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get gateway secret %s: %w", gatewaySecretName, err)
+		return nil, fmt.Errorf("failed to get gateway secret %s: %w", shared.GatewaySecretName, err)
 	}
 
 	return secret, nil
@@ -77,12 +76,12 @@ func (c *GatewaySecretRotationClient) UpdateGatewaySecret(ctx context.Context, g
 }
 
 func ensureGatewaySecret(gatewaySecret *apicorev1.Secret) error {
-	if gatewaySecret.Name != gatewaySecretName {
-		return fmt.Errorf("invalid gateway secret name %s, expected %s", gatewaySecret.Name, gatewaySecretName)
+	if gatewaySecret.Name != shared.GatewaySecretName {
+		return fmt.Errorf("invalid gateway secret name %s, expected %s", gatewaySecret.Name, shared.GatewaySecretName)
 	}
 
-	if gatewaySecret.Namespace != istioNamespace {
-		return fmt.Errorf("invalid gateway secret namespace %s, expected %s", gatewaySecret.Namespace, istioNamespace)
+	if gatewaySecret.Namespace != shared.IstioNamespace {
+		return fmt.Errorf("invalid gateway secret namespace %s, expected %s", gatewaySecret.Namespace, shared.IstioNamespace)
 	}
 
 	return nil
