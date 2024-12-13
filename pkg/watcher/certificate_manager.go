@@ -16,7 +16,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -146,23 +145,6 @@ func (c *CertificateManager) removeSecret(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
-	secret := &apicorev1.Secret{}
-	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.config.IstioNamespace},
-		secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.config.IstioNamespace,
-			err)
-	}
-	certSecret := CertificateSecret{
-		CACrt:           string(secret.Data[caCertKey]),
-		TLSCrt:          string(secret.Data[tlsCertKey]),
-		TLSKey:          string(secret.Data[tlsPrivateKeyKey]),
-		ResourceVersion: secret.GetResourceVersion(),
-	}
-	return &certSecret, nil
 }
 
 func (c *CertificateManager) patchCertificate(ctx context.Context,
@@ -297,9 +279,11 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, gat
 }
 
 func SecretRequiresRotation(gatewaySecret *apicorev1.Secret, watcherSecret *apicorev1.Secret) bool {
-	if gwSecretLastModifiedAt, err := gatewaysecret.GetValidLastModifiedAt(gatewaySecret); err == nil {
-		if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
-			return false
+	if gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]; ok {
+		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+			if watcherSecret.CreationTimestamp.Time.After(gwSecretLastModifiedAt) {
+				return false
+			}
 		}
 	}
 
