@@ -18,6 +18,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -816,7 +817,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
-			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
+			for _, module := range templatelookup.FetchModuleStatusInfo(testCase.kyma) {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
 					WithModuleName(module.Name).
@@ -1010,7 +1011,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
-			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
+			for _, module := range templatelookup.FetchModuleStatusInfo(testCase.kyma) {
 				if testCase.mrmExist {
 					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).

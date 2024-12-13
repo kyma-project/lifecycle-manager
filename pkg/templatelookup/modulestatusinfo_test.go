@@ -8,14 +8,15 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
-func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
+func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 	tests := []struct {
 		name     string
 		KymaSpec v1beta2.KymaSpec
-		want     []availableModuleDescription
+		want     []moduleStatusInfo
 	}{
 		{
 			name: "When Channel \"none\" is used, then the module is invalid",
@@ -24,11 +25,12 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Channel: "none"},
 				},
 			},
-			want: []availableModuleDescription{
+			want: []moduleStatusInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "none"},
-					Enabled:                 true,
-					ValidationErrorContains: "Channel \"none\" is not allowed", ExpectedError: templatelookup.ErrInvalidModuleInSpec,
+					IsEnabled:               true,
+					ValidationErrorContains: "Channel \"none\" is not allowed",
+					ExpectedError:           templatelookup.ErrInvalidModuleInSpec,
 				},
 			},
 		},
@@ -39,11 +41,12 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Channel: "regular", Version: "v1.0"},
 				},
 			},
-			want: []availableModuleDescription{
+			want: []moduleStatusInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
-					Enabled:                 true,
-					ValidationErrorContains: "Version and channel are mutually exclusive options", ExpectedError: templatelookup.ErrInvalidModuleInSpec,
+					IsEnabled:               true,
+					ValidationErrorContains: "Version and channel are mutually exclusive options",
+					ExpectedError:           templatelookup.ErrInvalidModuleInSpec,
 				},
 			},
 		},
@@ -54,8 +57,8 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Channel: "regular"},
 				},
 			},
-			want: []availableModuleDescription{
-				{Module: v1beta2.Module{Name: "Module1", Channel: "regular"}, Enabled: true},
+			want: []moduleStatusInfo{
+				{Module: v1beta2.Module{Name: "Module1", Channel: "regular"}, IsEnabled: true},
 			},
 		},
 		{
@@ -65,8 +68,8 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Version: "v1.0"},
 				},
 			},
-			want: []availableModuleDescription{
-				{Module: v1beta2.Module{Name: "Module1", Version: "v1.0"}, Enabled: true},
+			want: []moduleStatusInfo{
+				{Module: v1beta2.Module{Name: "Module1", Version: "v1.0"}, IsEnabled: true},
 			},
 		},
 	}
@@ -77,7 +80,7 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 				Spec: testcase.KymaSpec,
 			}
 
-			got := templatelookup.FindAvailableModules(kyma)
+			got := templatelookup.FetchModuleStatusInfo(kyma)
 			if len(got) != len(testcase.want) {
 				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
 			}
@@ -90,11 +93,11 @@ func Test_GetAvailableModules_When_ModuleInSpecOnly(t *testing.T) {
 	}
 }
 
-func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
+func Test_FetchModuleStatusInfo_When_ModuleInStatusOnly(t *testing.T) {
 	tests := []struct {
 		name       string
 		KymaStatus v1beta2.KymaStatus
-		want       []availableModuleDescription
+		want       []moduleStatusInfo
 	}{
 		{
 			name: "When Template exists, then the module is valid",
@@ -108,8 +111,8 @@ func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
 					},
 				},
 			},
-			want: []availableModuleDescription{
-				{Module: v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: false},
+			want: []moduleStatusInfo{
+				{Module: v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, IsEnabled: false},
 			},
 		},
 		{
@@ -124,11 +127,12 @@ func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
 					},
 				},
 			},
-			want: []availableModuleDescription{
+			want: []moduleStatusInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
-					Enabled:                 false,
-					ValidationErrorContains: "ModuleTemplate reference is missing", ExpectedError: templatelookup.ErrInvalidModuleInStatus,
+					IsEnabled:               false,
+					ValidationErrorContains: "ModuleTemplate reference is missing",
+					ExpectedError:           templatelookup.ErrInvalidModuleInStatus,
 				},
 			},
 		},
@@ -140,7 +144,7 @@ func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
 				Status: testcase.KymaStatus,
 			}
 
-			got := templatelookup.FindAvailableModules(kyma)
+			got := templatelookup.FetchModuleStatusInfo(kyma)
 			if len(got) != len(testcase.want) {
 				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
 			}
@@ -153,12 +157,12 @@ func Test_GetAvailableModules_When_ModuleInStatusOnly(t *testing.T) {
 	}
 }
 
-func Test_GetAvailableModules_When_ModuleExistsInSpecAndStatus(t *testing.T) {
+func Test_FetchModuleStatusInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 	tests := []struct {
 		name       string
 		KymaSpec   v1beta2.KymaSpec
 		KymaStatus v1beta2.KymaStatus
-		want       []availableModuleDescription
+		want       []moduleStatusInfo
 	}{
 		{
 			name: "When Module have different version between Spec and Status, the output should be based on Spec",
@@ -175,8 +179,8 @@ func Test_GetAvailableModules_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 					},
 				},
 			},
-			want: []availableModuleDescription{
-				{Module: v1beta2.Module{Name: "Module1", Version: "v1.1"}, Enabled: true},
+			want: []moduleStatusInfo{
+				{Module: v1beta2.Module{Name: "Module1", Version: "v1.1"}, IsEnabled: true},
 			},
 		},
 	}
@@ -187,7 +191,7 @@ func Test_GetAvailableModules_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 				Spec:   testcase.KymaSpec,
 				Status: testcase.KymaStatus,
 			}
-			got := templatelookup.FindAvailableModules(kyma)
+			got := templatelookup.FetchModuleStatusInfo(kyma)
 			if len(got) != len(testcase.want) {
 				t.Errorf("GetAvailableModules() = %v, want %v", got, testcase.want)
 			}
@@ -200,14 +204,14 @@ func Test_GetAvailableModules_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 	}
 }
 
-type availableModuleDescription struct {
+type moduleStatusInfo struct {
 	Module                  v1beta2.Module
-	Enabled                 bool
+	IsEnabled               bool
 	ValidationErrorContains string
 	ExpectedError           error
 }
 
-func (amd availableModuleDescription) Equals(other templatelookup.AvailableModule) bool {
+func (amd moduleStatusInfo) Equals(other templatelookup.ModuleStatusInfo) bool {
 	if amd.Module.Name != other.Name {
 		return false
 	}
@@ -217,7 +221,7 @@ func (amd availableModuleDescription) Equals(other templatelookup.AvailableModul
 	if amd.Module.Version != other.Version {
 		return false
 	}
-	if amd.Enabled != other.Enabled {
+	if amd.IsEnabled != other.IsEnabled {
 		return false
 	}
 	if amd.ExpectedError != nil && other.ValidationError == nil {
