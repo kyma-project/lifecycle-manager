@@ -55,14 +55,19 @@ var _ = Describe("Module installation", func() {
 		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation: true", false, false, false, false, true),
 		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation:  false", true, false, false, false, false),
 		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false", false, true, false, false, false),
+		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true", false, false, true, false, true),
+		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  true", false, false, false, true, true),
+		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false", true, true, false, false, false),
 		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true", true, false, true, false, true),
-		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  true", false, true, false, true, true),
+		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  false", true, false, false, true, false),
 		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false", true, true, true, false, false),
 		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  false", true, true, false, true, false),
 		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true", true, true, true, true, true),
-		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true", false, false, true, false, true),
-		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  true", false, false, false, true, true),
-		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true", false, false, false, false, true))
+		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false", false, true, true, false, false),
+		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  true", false, true, false, true, true),
+		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true", false, false, true, true, true),
+		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true", false, true, true, true, true),
+		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true", true, false, true, true, true))
 })
 
 func configureKCPKyma(kymaName, moduleName string, beta, internal bool) error {
