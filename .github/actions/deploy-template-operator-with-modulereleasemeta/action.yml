@@ -20,7 +20,7 @@ runs:
         cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
-      if: ${{ matrix.e2e-test != 'mandatory-module' ||
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics'
         }}
       shell: bash
@@ -31,7 +31,7 @@ runs:
         kubectl apply -f template.yaml
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
-      if: ${{ matrix.e2e-test != 'mandatory-module' ||
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics'
         }}
       shell: bash
@@ -41,7 +41,7 @@ runs:
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
-      if: ${{ matrix.e2e-test != 'mandatory-module' ||
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics' 
         }}
       shell: bash
@@ -91,6 +91,7 @@ runs:
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true
         
+        make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true
     - name: Create and apply ModuleReleaseMeta Template Operator with newer version in fast channel and older version in regular channel
