@@ -294,7 +294,8 @@ func SetSkipLabelToMandatoryManifests(ctx context.Context, clnt client.Client, i
 }
 
 func MandatoryModuleManifestExistWithCorrectVersion(ctx context.Context, clnt client.Client,
-	moduleName, expectedVersion string) error {
+	moduleName, expectedVersion string,
+) error {
 	manifestList := v1beta2.ManifestList{}
 	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),

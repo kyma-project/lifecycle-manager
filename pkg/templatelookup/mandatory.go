@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -76,7 +76,8 @@ func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Ver
 }
 
 func GetDesiredModuleTemplateForMultipleVersions(firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate,
-	error) {
+	error,
+) {
 	firstVersion, err := GetModuleSemverVersion(firstModuleTemplate)
 	if err != nil {
 		return nil, err
