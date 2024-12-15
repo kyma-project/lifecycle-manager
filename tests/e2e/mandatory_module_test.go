@@ -3,15 +3,14 @@ package e2e_test
 import (
 	"os/exec"
 
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {

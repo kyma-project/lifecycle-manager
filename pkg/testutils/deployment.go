@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/onsi/ginkgo/v2"
 	apiappsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,7 +25,7 @@ func DeploymentIsReady(ctx context.Context, clnt client.Client, name, namespace 
 		}
 		return fmt.Errorf("could not get deployment: %w", err)
 	}
-
+	ginkgo.GinkgoWriter.Printf("deploy: %v\n", deploy.Status)
 	if deploy.Spec.Replicas != nil &&
 		*deploy.Spec.Replicas == deploy.Status.ReadyReplicas {
 		return nil
@@ -75,4 +76,5 @@ func GetDeployment(ctx context.Context, clnt client.Client,
 	}
 	return deploy, nil
 }
+
 func int32Ptr(i int32) *int32 { return &i }
