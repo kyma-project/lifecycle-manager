@@ -18,6 +18,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+	"github.com/onsi/ginkgo/v2"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -312,6 +313,7 @@ func MandatoryModuleManifestExistWithCorrectVersion(ctx context.Context, clnt cl
 		if manifestModuleName == moduleName {
 			manifestFound = true
 			if manifest.Spec.Version != expectedVersion {
+				ginkgo.GinkgoWriter.Printf("expected version: %s, but got: %s", expectedVersion, manifest.Spec.Version)
 				return errManifestVersionIsIncorrect
 			}
 		}
