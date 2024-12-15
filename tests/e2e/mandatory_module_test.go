@@ -58,7 +58,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			By("And the mandatory module manifest is installed with the correct version", func() {
 				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
 					WithContext(ctx).
-					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
+					WithArguments(kcpClient, "template-operator", "v1.1.0-smoke-test").
 					Should(Succeed())
 			})
 		})

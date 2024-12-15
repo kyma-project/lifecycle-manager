@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -110,7 +110,7 @@ func TestGetModuleSemverVersion_ReturnError_NotSemver_VersionAnnotation(t *testi
 }
 
 func TestGetMandatory_OneVersion(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
 
@@ -157,7 +157,7 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 }
 
 func TestGetMandatory_MultipleVersions(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
 
@@ -212,7 +212,7 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 }
 
 func TestGetMandatory_WithErrorNotSemVer(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
 
