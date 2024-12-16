@@ -17,7 +17,8 @@ import (
 
 func CreateModuleTemplate(ctx context.Context,
 	clnt client.Client,
-	moduleTemplate *v1beta2.ModuleTemplate) error {
+	moduleTemplate *v1beta2.ModuleTemplate,
+) error {
 	moduleTemplate.SetResourceVersion("") // must be reset to enable retries
 	if err := clnt.Create(ctx, moduleTemplate); client.IgnoreAlreadyExists(err) != nil {
 		return fmt.Errorf("creating ModuleTemplate failed: %w", err)
