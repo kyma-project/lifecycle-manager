@@ -165,7 +165,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 		})
 
 		It("When new version of ModuleTemplate is applied", func() {
-			cmd := exec.Command("kubectl", "-f",
+			cmd := exec.Command("kubectl", "apply", "-f",
 				"mandatory_template_v2.yaml")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())

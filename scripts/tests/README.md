@@ -28,6 +28,10 @@ If the clusters already exist, the script exits with success.
 If you get a notification, while running the script, saying that the Watcher CR is missing, re-run the script.
 The script is accompanied by the `Ensure Test Clusters` task in the VSCode tasks, and by the corresponding run configuration for GoLand.
 
+It requires the following parameters:
+- `--k8s-version`: The version of K8s to use. Must be a semantic version.
+- `--cert-manager-version`: The version of cert-manager to use. Must be a semantic version.
+
 This script internally depends on `version.sh` to check the versions of the required tools. If you want to skip the version check, use the `--skip-version-check` flag.
 
 ## Cleaning the Clusters: `clusters_cleanup.sh`
