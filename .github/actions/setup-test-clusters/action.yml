@@ -7,28 +7,16 @@ inputs:
   cert_manager_version:
     description: The version of cert-manager to depoy. For example, 1.13.3.
     required: true
-  additional_skr_args:
-    description: Additional arguments to pass to the k3d create command for the SKR cluster separated by semicolon (;).
-    required: false
 runs:
   using: composite
   steps:
-    - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
-      with:
-        cluster_name: skr
-        k8s_version: ${{ inputs.k8s_version }}
-        args: "-p 10080:80@loadbalancer;-p 10443:443@loadbalancer;--k3s-arg --tls-san=skr.cluster.local@server:*;${{ inputs.additional_skr_args }}"
-    - uses: ./lifecycle-manager/.github/actions/create-k3d-cluster
-      with:
-        cluster_name: kcp
-        k8s_version: ${{ inputs.k8s_version }}
-        args: "-p 9443:443@loadbalancer;-p 9080:80@loadbalancer;-p 9081:8080@loadbalancer;--registry-create k3d-kcp-registry.localhost:5111"
+    - name: create-test-clusters
+      shell: bash
+      run: |
+        ./lifecycle-manager/scripts/tests/create_test_clusters.sh --k8s-version ${{ inputs.k8s_version }} --cert-manager-version ${{ inputs.cert_manager_version }}
+
     - uses: ./lifecycle-manager/.github/actions/export-kubeconfigs
+
     - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
       with:
         context_name: k3d-kcp
-    - uses: ./lifecycle-manager/.github/actions/deploy-istio
-    - uses: ./lifecycle-manager/.github/actions/deploy-cert-manager
-      with:
-        cert_manager_version: ${{ inputs.cert_manager_version }}
-    - uses: ./lifecycle-manager/.github/actions/patch-skr-hostname-in-kcp

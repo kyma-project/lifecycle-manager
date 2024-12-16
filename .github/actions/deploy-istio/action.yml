@@ -1,9 +1,0 @@
-name: Deploy istio
-description: Deploys istio in the currently configured context.
-runs:
-  using: composite
-  steps:
-    - name: Deploy istio
-      shell: bash
-      run: |
-        istioctl install --set profile=demo -y
