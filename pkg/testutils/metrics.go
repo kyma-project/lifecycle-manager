@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/onsi/ginkgo/v2"
 )
 
 var ErrMetricNotFound = errors.New("metric was not found")
@@ -139,7 +140,10 @@ func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
 	}
 
 	re := regexp.MustCompile(metrics.MetricMandatoryTemplateCount + ` (\d+)`)
-	return parseCount(re, bodyString)
+	c, _ := parseCount(re, bodyString)
+	ginkgo.GinkgoWriter.Printf("Mandatory Module Template Count Metric: %d\n", c)
+
+	return c, nil
 }
 
 func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, state string) (int, error) {
