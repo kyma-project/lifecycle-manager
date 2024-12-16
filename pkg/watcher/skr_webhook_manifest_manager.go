@@ -19,7 +19,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -86,7 +85,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	}
 
 	var gatewaySecret *apicorev1.Secret
-	if gatewaySecret, err = gatewaysecret.GetGatewaySecret(ctx, m.kcpClient); err != nil {
+	if gatewaySecret, err = m.getGatewaySecret(ctx); err != nil {
 		return err
 	}
 
@@ -101,7 +100,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	m.updateCertNotRenewMetrics(certificate, kyma)
 
-	if err := certificateMgr.RemoveSecretAfterCARotated(ctx, gatewaySecret, kymaObjKey); err != nil {
+	if err = certificateMgr.RemoveSecretAfterCARotated(ctx, gatewaySecret, kymaObjKey); err != nil {
 		return fmt.Errorf("error verify CA cert rotation: %w", err)
 	}
 
@@ -257,4 +256,15 @@ func (m *SKRWebhookManifestManager) getBaseClientObjects() []client.Object {
 		baseClientObjects = append(baseClientObjects, resCopy)
 	}
 	return baseClientObjects
+}
+
+func (m *SKRWebhookManifestManager) getGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {
+	secret := &apicorev1.Secret{}
+	if err := m.kcpClient.Get(ctx, client.ObjectKey{
+		Name:      shared.GatewaySecretName,
+		Namespace: shared.IstioNamespace,
+	}, secret); err != nil {
+		return nil, fmt.Errorf("failed to get gateway secret %s: %w", shared.GatewaySecretName, err)
+	}
+	return secret, nil
 }

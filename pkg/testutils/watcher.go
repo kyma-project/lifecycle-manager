@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 var (
@@ -91,7 +91,7 @@ func IstioGatewaySecretIsSyncedToRootCA(ctx context.Context,
 		return fmt.Errorf("failed to fetch root CA secret: %w", err)
 	}
 
-	gatewaySecret, err := gatewaysecret.GetGatewaySecret(ctx, kcpClient)
+	gatewaySecret, err := GetGatewaySecret(ctx, kcpClient)
 	if err != nil {
 		return fmt.Errorf("failed to fetch istio gateway secret: %w", err)
 	}
@@ -163,18 +163,37 @@ func GetTLSSecret(ctx context.Context, namespacedSecretName types.NamespacedName
 }
 
 func GatewaySecretCreationTimeIsUpdated(ctx context.Context, oldTime time.Time, kcpClient client.Client) error {
-	gwSecret, err := gatewaysecret.GetGatewaySecret(ctx, kcpClient)
+	gwSecret, err := GetGatewaySecret(ctx, kcpClient)
 	if err != nil {
-		return fmt.Errorf("failed to get gateway secret %w", err)
+		return err
 	}
 
-	currentTime, err := gatewaysecret.GetValidLastModifiedAt(gwSecret)
+	currentTime, err := GetLastModifiedTimeFromAnnotation(gwSecret)
 	if err != nil {
 		return fmt.Errorf("failed to get last modified time %w", err)
 	}
-
 	if currentTime.After(oldTime) {
 		return nil
 	}
 	return errCreationTimeNotUpdated
+}
+
+func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
+	secret := &apicorev1.Secret{}
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Name:      shared.GatewaySecretName,
+		Namespace: shared.IstioNamespace,
+	}, secret); err != nil {
+		return nil, fmt.Errorf("failed to get gateway secret %s: %w", shared.GatewaySecretName, err)
+	}
+	return secret, nil
+}
+
+func GetLastModifiedTimeFromAnnotation(secret *apicorev1.Secret) (time.Time, error) {
+	if gwSecretLastModifiedAtValue, ok := secret.Annotations[shared.LastModifiedAtAnnotation]; ok {
+		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+			return gwSecretLastModifiedAt, nil
+		}
+	}
+	return time.Time{}, errors.New("getting lastModifiedAt time failed")
 }

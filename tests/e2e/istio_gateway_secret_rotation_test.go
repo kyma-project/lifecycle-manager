@@ -6,8 +6,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret"
-
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -32,9 +30,9 @@ var _ = Describe("Istio Gateway Secret Rotation", Ordered, func() {
 				Should(Succeed())
 
 			By("And LastModifiedAt timestamp is valid")
-			gwSecret, err := gatewaysecret.GetGatewaySecret(ctx, kcpClient)
+			gwSecret, err := GetGatewaySecret(ctx, kcpClient)
 			Expect(err).NotTo(HaveOccurred())
-			lastModifiedAtTime, err := gatewaysecret.GetValidLastModifiedAt(gwSecret)
+			lastModifiedAtTime, err := GetLastModifiedTimeFromAnnotation(gwSecret)
 			Expect(err).To(Succeed())
 
 			By("And LastModifiedAt timestamp is updated")
