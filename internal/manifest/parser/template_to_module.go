@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -45,7 +46,7 @@ func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates temp
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	for _, module := range templatelookup.FetchModuleStatusInfo(kyma) {
+	for _, module := range templatelookup.FetchModuleInfo(kyma) {
 		template := templates[module.Name]
 		modules = p.appendModuleWithInformation(module, kyma, template, modules)
 	}
@@ -67,7 +68,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			moduleName = template.Name
 		}
 
-		modules = p.appendModuleWithInformation(templatelookup.ModuleStatusInfo{
+		modules = p.appendModuleWithInformation(templatelookup.ModuleInfo{
 			Module: v1beta2.Module{
 				Name:                 moduleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
@@ -79,7 +80,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	return modules
 }
 
-func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleStatusInfo, kyma *v1beta2.Kyma,
+func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, kyma *v1beta2.Kyma,
 	template *templatelookup.ModuleTemplateInfo, modules common.Modules,
 ) common.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {

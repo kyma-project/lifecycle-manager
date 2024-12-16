@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -47,7 +48,7 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
 
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
-	for _, module := range FetchModuleStatusInfo(kyma) {
+	for _, module := range FetchModuleInfo(kyma) {
 		_, found := templates[module.Name]
 		if found {
 			continue
@@ -92,7 +93,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 }
 
 func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
-	module ModuleStatusInfo, namespace, kymaChannel string, moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+	module ModuleInfo, namespace, kymaChannel string, moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) ModuleTemplateInfo {
 	if moduleReleaseMeta == nil {
 		return t.populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx, module, kymaChannel)
@@ -102,7 +103,7 @@ func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
 }
 
 func (t *TemplateLookup) populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx context.Context,
-	module ModuleStatusInfo, kymaChannel string,
+	module ModuleInfo, kymaChannel string,
 ) ModuleTemplateInfo {
 	var templateInfo ModuleTemplateInfo
 	if module.IsInstalledByVersion() {
@@ -114,7 +115,7 @@ func (t *TemplateLookup) populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx 
 }
 
 func (t *TemplateLookup) populateModuleTemplateInfoUsingModuleReleaseMeta(ctx context.Context,
-	module ModuleStatusInfo,
+	module ModuleInfo,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta, kymaChannel, namespace string,
 ) ModuleTemplateInfo {
 	var templateInfo ModuleTemplateInfo
