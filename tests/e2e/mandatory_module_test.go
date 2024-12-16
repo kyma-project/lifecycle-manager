@@ -205,17 +205,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				WithArguments(kcpClient,
 					&v1beta2.ModuleTemplate{
 						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.0.0-smoke-test",
-							Namespace: ControlPlaneNamespace,
-						},
-					}).
-				Should(Succeed())
-
-			Eventually(DeleteCR).
-				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
-						ObjectMeta: apimetav1.ObjectMeta{
 							Name:      "template-operator-1.1.0-smoke-test",
 							Namespace: ControlPlaneNamespace,
 						},

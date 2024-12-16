@@ -116,7 +116,7 @@ jobs:
           NewerVersion: 2.4.2-e2e-test
           OlderVersion: 1.1.1-e2e-test
           OlderVersionForMandatoryModule: 1.0.0-smoke-test
-          NewerVersionForMandatoryModule: 1.1.0-smoke-test
+          NewerVersionForMandatoryModule: 2.4.1-smoke-test
           VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
           VersionForDeploymentInWarning: 1.0.0-warning-deployment
           VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment
