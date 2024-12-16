@@ -58,8 +58,8 @@ jobs:
           - ca-certificate-rotation
           - istio-gateway-secret-rotation
           - self-signed-certificate-rotation
-          - mandatory-module
-          - mandatory-module-metrics
+          - mandatory-module-without-version-naming
+          - mandatory-module-metrics-without-version-naming
           - misconfigured-kyma-secret
           - rbac-privileges
           - ocm-compatible-module-template
