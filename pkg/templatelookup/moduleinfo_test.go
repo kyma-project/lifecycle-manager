@@ -8,21 +8,22 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
-func Test_FetchModuleStatusInfo_When_EmptySpecAndStatus(t *testing.T) {
+func Test_FetchModuleInfo_When_EmptySpecAndStatus(t *testing.T) {
 	tests := []struct {
 		name       string
 		KymaSpec   v1beta2.KymaSpec
 		KymaStatus v1beta2.KymaStatus
-		want       []moduleStatusInfo
+		want       []moduleInfo
 	}{
 		{
 			name:       "When KymaSpec and KymaStatus are both empty, the output should be empty",
 			KymaSpec:   v1beta2.KymaSpec{},
 			KymaStatus: v1beta2.KymaStatus{},
-			want:       []moduleStatusInfo{}, // Expect empty result
+			want:       []moduleInfo{}, // Expect empty result
 		},
 	}
 	for ti := range tests {
@@ -33,24 +34,24 @@ func Test_FetchModuleStatusInfo_When_EmptySpecAndStatus(t *testing.T) {
 				Status: testcase.KymaStatus,
 			}
 
-			got := templatelookup.FetchModuleStatusInfo(kyma)
+			got := templatelookup.FetchModuleInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
+func Test_FetchModuleInfo_When_ModuleInSpecOnly(t *testing.T) {
 	tests := []struct {
 		name     string
 		KymaSpec v1beta2.KymaSpec
-		want     []moduleStatusInfo
+		want     []moduleInfo
 	}{
 		{
 			name: "When Channel \"none\" is used, then the module is invalid",
@@ -59,7 +60,7 @@ func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Channel: "none"},
 				},
 			},
-			want: []moduleStatusInfo{
+			want: []moduleInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "none"},
 					IsEnabled:               true,
@@ -75,7 +76,7 @@ func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Channel: "regular", Version: "v1.0"},
 				},
 			},
-			want: []moduleStatusInfo{
+			want: []moduleInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
 					IsEnabled:               true,
@@ -91,7 +92,7 @@ func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Channel: "regular"},
 				},
 			},
-			want: []moduleStatusInfo{
+			want: []moduleInfo{
 				{Module: v1beta2.Module{Name: "Module1", Channel: "regular"}, IsEnabled: true},
 			},
 		},
@@ -102,7 +103,7 @@ func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 					{Name: "Module1", Version: "v1.0"},
 				},
 			},
-			want: []moduleStatusInfo{
+			want: []moduleInfo{
 				{Module: v1beta2.Module{Name: "Module1", Version: "v1.0"}, IsEnabled: true},
 			},
 		},
@@ -114,24 +115,24 @@ func Test_FetchModuleStatusInfo_When_ModuleInSpecOnly(t *testing.T) {
 				Spec: testcase.KymaSpec,
 			}
 
-			got := templatelookup.FetchModuleStatusInfo(kyma)
+			got := templatelookup.FetchModuleInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_FetchModuleStatusInfo_When_ModuleInStatusOnly(t *testing.T) {
+func Test_FetchModuleInfo_When_ModuleInStatusOnly(t *testing.T) {
 	tests := []struct {
 		name       string
 		KymaStatus v1beta2.KymaStatus
-		want       []moduleStatusInfo
+		want       []moduleInfo
 	}{
 		{
 			name: "When Template exists, then the module is valid",
@@ -145,7 +146,7 @@ func Test_FetchModuleStatusInfo_When_ModuleInStatusOnly(t *testing.T) {
 					},
 				},
 			},
-			want: []moduleStatusInfo{
+			want: []moduleInfo{
 				{Module: v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, IsEnabled: false},
 			},
 		},
@@ -161,7 +162,7 @@ func Test_FetchModuleStatusInfo_When_ModuleInStatusOnly(t *testing.T) {
 					},
 				},
 			},
-			want: []moduleStatusInfo{
+			want: []moduleInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
 					IsEnabled:               false,
@@ -178,25 +179,25 @@ func Test_FetchModuleStatusInfo_When_ModuleInStatusOnly(t *testing.T) {
 				Status: testcase.KymaStatus,
 			}
 
-			got := templatelookup.FetchModuleStatusInfo(kyma)
+			got := templatelookup.FetchModuleInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_FetchModuleStatusInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
+func Test_FetchModuleInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 	tests := []struct {
 		name       string
 		KymaSpec   v1beta2.KymaSpec
 		KymaStatus v1beta2.KymaStatus
-		want       []moduleStatusInfo
+		want       []moduleInfo
 	}{
 		{
 			name: "When Module have different version between Spec and Status, the output should be based on Spec",
@@ -213,7 +214,7 @@ func Test_FetchModuleStatusInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 					},
 				},
 			},
-			want: []moduleStatusInfo{
+			want: []moduleInfo{
 				{Module: v1beta2.Module{Name: "Module1", Version: "v1.1"}, IsEnabled: true},
 			},
 		},
@@ -225,50 +226,50 @@ func Test_FetchModuleStatusInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 				Spec:   testcase.KymaSpec,
 				Status: testcase.KymaStatus,
 			}
-			got := templatelookup.FetchModuleStatusInfo(kyma)
+			got := templatelookup.FetchModuleInfo(kyma)
 			if len(got) != len(testcase.want) {
-				t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+				t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 			}
 			for gi := range got {
 				if !testcase.want[gi].Equals(got[gi]) {
-					t.Errorf("FetchModuleStatusInfo() = %v, want %v", got, testcase.want)
+					t.Errorf("FetchModuleInfo() = %v, want %v", got, testcase.want)
 				}
 			}
 		})
 	}
 }
 
-type moduleStatusInfo struct {
+type moduleInfo struct {
 	Module                  v1beta2.Module
 	IsEnabled               bool
 	ValidationErrorContains string
 	ExpectedError           error
 }
 
-func (amd moduleStatusInfo) Equals(other templatelookup.ModuleStatusInfo) bool {
-	if amd.Module.Name != other.Name {
+func (m moduleInfo) Equals(other templatelookup.ModuleInfo) bool {
+	if m.Module.Name != other.Name {
 		return false
 	}
-	if amd.Module.Channel != other.Channel {
+	if m.Module.Channel != other.Channel {
 		return false
 	}
-	if amd.Module.Version != other.Version {
+	if m.Module.Version != other.Version {
 		return false
 	}
-	if amd.IsEnabled != other.IsEnabled {
+	if m.IsEnabled != other.IsEnabled {
 		return false
 	}
-	if amd.ExpectedError != nil && other.ValidationError == nil {
+	if m.ExpectedError != nil && other.ValidationError == nil {
 		return false
 	}
-	if amd.ExpectedError == nil && other.ValidationError != nil {
+	if m.ExpectedError == nil && other.ValidationError != nil {
 		return false
 	}
-	if amd.ExpectedError != nil && other.ValidationError != nil {
-		if !errors.Is(other.ValidationError, amd.ExpectedError) {
+	if m.ExpectedError != nil && other.ValidationError != nil {
+		if !errors.Is(other.ValidationError, m.ExpectedError) {
 			return false
 		}
-		if !strings.Contains(other.ValidationError.Error(), amd.ValidationErrorContains) {
+		if !strings.Contains(other.ValidationError.Error(), m.ValidationErrorContains) {
 			return false
 		}
 	}
