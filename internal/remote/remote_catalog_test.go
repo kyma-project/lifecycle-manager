@@ -105,10 +105,8 @@ func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandato
 	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
 }
 
-func Test_FilterModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
-
-	mts := remoteCatalog.FilterModuleTemplatesToSync(moduleTemplates().Items, []v1beta2.ModuleReleaseMeta{
+func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
+	mts := remote.FilterAllowedModuleTemplates(moduleTemplates().Items, []v1beta2.ModuleReleaseMeta{
 		*newModuleReleaseMetaBuilder().
 			withName("regular-module").
 			withChannelVersion("regular", "1.0.0").
@@ -179,6 +177,163 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonManda
 	assert.Equal(t, "old-internal-beta-module-fast", mts[1].ObjectMeta.Name)
 	assert.Equal(t, "old-internal-module-fast", mts[2].ObjectMeta.Name)
 	assert.Equal(t, "old-module-regular", mts[3].ObjectMeta.Name)
+}
+
+func Test_IsAllowedModuleReleaseMeta_ReturnsTrue_ForNonBetaNonInternalMRMAndNonBetaNonInternalKyma(t *testing.T) {
+	mrm := newModuleReleaseMetaBuilder().build()
+	kyma := newKymaBuilder().build()
+
+	assert.True(t, remote.IsAllowedModuleReleaseMeta(*mrm, kyma))
+}
+
+func Test_IsAllowedModuleReleaseMeta(t *testing.T) {
+	testCases := []struct {
+		name           string
+		moduleBeta     bool
+		moduleInternal bool
+		kymaBeta       bool
+		kymaInternal   bool
+		expected       bool
+	}{
+		{
+			name:           "Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation: true",
+			moduleBeta:     false,
+			moduleInternal: false,
+			kymaBeta:       false,
+			kymaInternal:   false,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			moduleBeta:     true,
+			moduleInternal: false,
+			kymaBeta:       false,
+			kymaInternal:   false,
+			expected:       false,
+		},
+		{
+			name:           "Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			moduleBeta:     false,
+			moduleInternal: true,
+			kymaBeta:       false,
+			kymaInternal:   false,
+			expected:       false,
+		},
+		{
+			name:           "Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
+			moduleBeta:     false,
+			moduleInternal: false,
+			kymaBeta:       true,
+			kymaInternal:   false,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
+			moduleBeta:     false,
+			moduleInternal: false,
+			kymaBeta:       false,
+			kymaInternal:   true,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			moduleBeta:     true,
+			moduleInternal: true,
+			kymaBeta:       false,
+			kymaInternal:   false,
+			expected:       false,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
+			moduleBeta:     true,
+			moduleInternal: false,
+			kymaBeta:       true,
+			kymaInternal:   false,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
+			moduleBeta:     true,
+			moduleInternal: false,
+			kymaBeta:       false,
+			kymaInternal:   true,
+			expected:       false,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
+			moduleBeta:     true,
+			moduleInternal: true,
+			kymaBeta:       true,
+			kymaInternal:   false,
+			expected:       false,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
+			moduleBeta:     true,
+			moduleInternal: true,
+			kymaBeta:       false,
+			kymaInternal:   true,
+			expected:       false,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:     true,
+			moduleInternal: true,
+			kymaBeta:       true,
+			kymaInternal:   true,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
+			moduleBeta:     false,
+			moduleInternal: true,
+			kymaBeta:       true,
+			kymaInternal:   false,
+			expected:       false,
+		},
+		{
+			name:           "Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
+			moduleBeta:     false,
+			moduleInternal: true,
+			kymaBeta:       false,
+			kymaInternal:   true,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:     false,
+			moduleInternal: false,
+			kymaBeta:       true,
+			kymaInternal:   true,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:     false,
+			moduleInternal: true,
+			kymaBeta:       true,
+			kymaInternal:   true,
+			expected:       true,
+		},
+		{
+			name:           "Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			moduleBeta:     true,
+			moduleInternal: false,
+			kymaBeta:       true,
+			kymaInternal:   true,
+			expected:       true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			mrm := newModuleReleaseMetaBuilder().withBeta(testCase.moduleBeta).withInternal(testCase.moduleInternal).build()
+			kyma := newKymaBuilder().withBeta(testCase.kymaBeta).withInternal(testCase.kymaInternal).build()
+
+			result := remote.IsAllowedModuleReleaseMeta(*mrm, kyma)
+			assert.Equal(t, testCase.expected, result)
+		})
+	}
 }
 
 func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
@@ -355,8 +510,18 @@ func (b *moduleReleaseMetaBuilder) withBetaEnabled() *moduleReleaseMetaBuilder {
 	return b
 }
 
+func (b *moduleReleaseMetaBuilder) withBeta(beta bool) *moduleReleaseMetaBuilder {
+	b.moduleReleaseMeta.Spec.Beta = beta
+	return b
+}
+
 func (b *moduleReleaseMetaBuilder) withInternalEnabled() *moduleReleaseMetaBuilder {
 	b.moduleReleaseMeta.Spec.Internal = true
+	return b
+}
+
+func (b *moduleReleaseMetaBuilder) withInternal(internal bool) *moduleReleaseMetaBuilder {
+	b.moduleReleaseMeta.Spec.Internal = internal
 	return b
 }
 
@@ -442,8 +607,26 @@ func (b *kymaBuilder) withBetaEnabled() *kymaBuilder {
 	return b
 }
 
+func (b *kymaBuilder) withBeta(beta bool) *kymaBuilder {
+	if beta {
+		b.kyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
+	} else {
+		b.kyma.Labels[shared.BetaLabel] = shared.DisableLabelValue
+	}
+	return b
+}
+
 func (b *kymaBuilder) withInternalEnabled() *kymaBuilder {
 	b.kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
+	return b
+}
+
+func (b *kymaBuilder) withInternal(internal bool) *kymaBuilder {
+	if internal {
+		b.kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
+	} else {
+		b.kyma.Labels[shared.InternalLabel] = shared.DisableLabelValue
+	}
 	return b
 }
 

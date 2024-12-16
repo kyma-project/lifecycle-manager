@@ -7,7 +7,11 @@
       "label": "Create New Test Clusters",
       "type": "shell",
       "command": "${cwd}/scripts/tests/create_test_clusters.sh",
-      "dependsOn": ["Delete Test Clusters"]
+      "dependsOn": ["Delete Test Clusters"],
+      "args": [
+        "--k8s-version", "1.30.3",
+        "--cert-manager-version", "1.13.3"
+        ]
     },
     {
       "label": "Delete Test Clusters",
@@ -17,7 +21,11 @@
     {
       "label": "Ensure Test Clusters",
       "type": "shell",
-      "command": "${cwd}/scripts/tests/create_test_clusters.sh"
+      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+      "args": [
+        "--k8s-version", "1.30.3",
+        "--cert-manager-version", "1.13.3"
+        ]
     },
     // re-run if encountering error that the watcher CRD is missing
     {
@@ -95,7 +103,8 @@
         "mandatory-module-metrics",
         "misconfigured-kyma-secret",
         "ocm-compatible-module-template",
-        "modulereleasemeta-sync"
+        "modulereleasemeta-sync",
+        "modulereleasemeta-not-allowed-installation",
       ]
     },
     {
