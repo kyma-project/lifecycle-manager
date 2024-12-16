@@ -215,6 +215,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mandelsoft/filepath v0.0.0-20240223090642-3e2777258aa3 // indirect
+	github.com/mandelsoft/goutils v0.0.0-20241005173814-114fa825bbdc // indirect
 	github.com/mandelsoft/logging v0.0.0-20240618075559-fdca28a87b0a // indirect
 	github.com/mandelsoft/vfs v0.4.4 // indirect
 	github.com/marstr/guid v1.1.0 // indirect
