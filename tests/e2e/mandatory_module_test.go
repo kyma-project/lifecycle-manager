@@ -165,9 +165,8 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 		})
 
 		It("When new version of ModuleTemplate is applied", func() {
-			cmd := exec.Command("../../scripts/tests/deploy_moduletemplate.sh", "${{ env.ModuleName }}",
-				"${{ env.NewerVersionForMandatoryModule }}",
-				"true", "true")
+			cmd := exec.Command("kubectl", "-f",
+				"mandatory_template_v2.yaml")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -189,6 +188,13 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				Consistently(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+					Should(Succeed())
+			})
+
+			By("And the mandatory module manifest is installed with the correct version", func() {
+				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
 					Should(Succeed())
 			})
 		})

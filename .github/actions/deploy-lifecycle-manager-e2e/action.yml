@@ -109,7 +109,8 @@ runs:
         matrix.e2e-test == 'module-status-decoupling-with-deployment' ||
         matrix.e2e-test == 'purge-metrics' ||
         matrix.e2e-test == 'self-signed-certificate-rotation' ||
-        matrix.e2e-test == 'mandatory-module-metrics'}}  
+        matrix.e2e-test == 'mandatory-module-metrics' ||
+        matrix.e2e-test == 'mandatory-module-metrics-without-version-naming'}}
       shell: bash
       run: |
         kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system

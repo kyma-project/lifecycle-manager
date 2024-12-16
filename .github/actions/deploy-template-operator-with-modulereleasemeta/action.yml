@@ -80,7 +80,7 @@ runs:
       run: |
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
 
-    - name: Create Template Operator Module in two versions as Mandatory Module
+    - name: Create and apply Template Operator Module in two versions as Mandatory Module
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'mandatory-module' ||
         matrix.e2e-test == 'mandatory-module-metrics'
@@ -94,6 +94,15 @@ runs:
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true
+    - name: Create ModuleTemplate in a new version for Mandatory module
+      if: ${{ matrix.e2e-test == 'mandatory-module'}}
+      working-directory: template-operator
+      shell: bash
+      run: |
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} 2.4.1-smoke-test true true false
+        cp template.yaml ../lifecycle-manager/tests/e2e/mandatory_template_v2.yaml
     - name: Create and apply ModuleReleaseMeta Template Operator with newer version in fast channel and older version in regular channel
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
