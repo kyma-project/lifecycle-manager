@@ -1,3 +1,4 @@
+//nolint:dupl //this test will be deleted during this issue https://github.com/kyma-project/lifecycle-manager/issues/2060
 package e2e_test
 
 import (
@@ -19,7 +20,6 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
-		//nolint:dupl //this test will be deleted during this issue https://github.com/kyma-project/lifecycle-manager/issues/2060
 		It("Then mandatory module is installed on the SKR cluster", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
@@ -66,7 +66,6 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 				Should(Succeed())
 		})
 
-		//nolint:dupl //this test will be deleted during this issue https://github.com/kyma-project/lifecycle-manager/issues/2060
 		It("Then mandatory SKR module is removed", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
