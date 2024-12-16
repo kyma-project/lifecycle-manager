@@ -62,6 +62,8 @@ func (r *Reconciler) setupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			return isRootSecret(e.ObjectNew)
 		},
+		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
+		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
 
 	if err := ctrl.NewControllerManagedBy(mgr).
