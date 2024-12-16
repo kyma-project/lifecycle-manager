@@ -110,6 +110,10 @@ spec:
                   Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
                   its configuration in all runtime clusters.
                 type: boolean
+              requiresDowntime:
+                description: RequiresDowntime indicates whether the module requires
+                  downtime in support of maintenance windows during module upgrades.
+                type: boolean
               target:
                 description: |-
                   Target describes where the Module should later on be installed if parsed correctly. It is used as installation
