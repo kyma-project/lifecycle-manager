@@ -117,7 +117,7 @@ func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 	if err := r.List(ctx, manifests, &client.ListOptions{
 		Namespace:     template.Namespace,
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); err != nil {
+	}); client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
 
@@ -136,7 +136,9 @@ func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1
 	return nil
 }
 
-func filterManifestsByAnnotation(manifests []v1beta2.Manifest, annotationKey, annotationValue string) []v1beta2.Manifest {
+func filterManifestsByAnnotation(manifests []v1beta2.Manifest,
+	annotationKey, annotationValue string,
+) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
 		if manifest.Annotations[annotationKey] == annotationValue {
