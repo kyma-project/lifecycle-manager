@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -13,6 +14,17 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
+
+func CreateModuleTemplate(ctx context.Context,
+	clnt client.Client,
+	moduleTemplate *v1beta2.ModuleTemplate,
+) error {
+	moduleTemplate.SetResourceVersion("") // must be reset to enable retries
+	if err := clnt.Create(ctx, moduleTemplate); client.IgnoreAlreadyExists(err) != nil {
+		return fmt.Errorf("creating ModuleTemplate failed: %w", err)
+	}
+	return nil
+}
 
 func GetModuleTemplate(ctx context.Context,
 	clnt client.Client,
@@ -27,7 +39,7 @@ func GetModuleTemplate(ctx context.Context,
 	}
 
 	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, module.Name, namespace, clnt)
-	if client.IgnoreNotFound(err) != nil {
+	if !meta.IsNoMatchError(err) && client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
 	}
 
