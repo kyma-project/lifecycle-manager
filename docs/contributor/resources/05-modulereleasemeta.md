@@ -18,13 +18,13 @@ The **moduleName** defines the name of the module for which the channel assignme
 
 ### **.spec.beta**
 
-The **beta** flag defines if the module is a `beta` module. If marked as `beta` module, it is only synced to SKRs where the Kyma CR is marked with the label `"operator.kyma-project.io/beta": "true"`. This includes the ModuleTemplates related to this module.
+The **beta** flag defines if the module is a `beta` module. If marked as `beta`, it is only synced to SKRs where the Kyma CR is marked with the `"operator.kyma-project.io/beta": "true"` label. This includes the ModuleTemplates related to this module.
 
 The default value is `false`.
 
 ### **.spec.internal**
 
-The **internal** flag defines if the module is an `internal` module. If marked as `internal` module, it is only synced to SKRs where the Kyma CR is marked with the label `"operator.kyma-project.io/internal": "true"`. This includes the ModuleTemplates related to this module.
+The **internal** flag defines if the module is an `internal` module. If marked as `internal`, it is only synced to SKRs where the Kyma CR is marked with the `"operator.kyma-project.io/internal": "true"` label. This includes the ModuleTemplates related to this module.
 
 The default value is `false`.
 
