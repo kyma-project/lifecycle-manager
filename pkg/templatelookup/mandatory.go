@@ -23,6 +23,7 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 		return nil, fmt.Errorf("could not list mandatory ModuleTemplates: %w", err)
 	}
 
+	// maps module name to the module template of the highest version encountered
 	mandatoryModules := make(map[string]*ModuleTemplateInfo)
 	for _, moduleTemplate := range mandatoryModuleTemplateList.Items {
 		if moduleTemplate.DeletionTimestamp.IsZero() {
@@ -30,7 +31,7 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 			moduleName := GetModuleName(currentModuleTemplate)
 			if mandatoryModules[moduleName] != nil {
 				var err error
-				currentModuleTemplate, err = GetDesiredModuleTemplateForMultipleVersions(currentModuleTemplate,
+				currentModuleTemplate, err = GetModuleTemplateWithHigherVersion(currentModuleTemplate,
 					mandatoryModules[moduleName].ModuleTemplate)
 				if err != nil {
 					mandatoryModules[moduleName] = &ModuleTemplateInfo{
@@ -54,6 +55,8 @@ func GetModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
 		return moduleTemplate.Spec.ModuleName
 	}
 
+	// https://github.com/kyma-project/lifecycle-manager/issues/2135
+	// Remove this after warden ModuleTemplate is created using modulectl
 	return moduleTemplate.Labels[shared.ModuleName]
 }
 
@@ -67,6 +70,8 @@ func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Ver
 		return version, nil
 	}
 
+	// https://github.com/kyma-project/lifecycle-manager/issues/2135
+	// Remove this after warden ModuleTemplate is created using modulectl
 	version, err := semver.NewVersion(moduleTemplate.Annotations[shared.ModuleVersionAnnotation])
 	if err != nil {
 		return nil, fmt.Errorf("could not parse version as a semver %s: %w",
@@ -75,7 +80,7 @@ func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Ver
 	return version, nil
 }
 
-func GetDesiredModuleTemplateForMultipleVersions(firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate,
+func GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate,
 	error,
 ) {
 	firstVersion, err := GetModuleSemverVersion(firstModuleTemplate)

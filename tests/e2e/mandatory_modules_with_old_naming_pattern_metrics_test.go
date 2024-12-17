@@ -13,7 +13,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Mandatory Module Without Version In Naming Metrics", Ordered, func() {
+var _ = Describe("Mandatory Module With Old Naming Pattern Metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
