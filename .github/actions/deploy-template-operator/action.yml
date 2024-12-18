@@ -47,8 +47,8 @@ runs:
         kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_direct_version.yaml
     - name: Create Template Operator Module as Mandatory Module
       working-directory: lifecycle-manager
-      if: ${{ matrix.e2e-test == 'mandatory-module' ||
-        matrix.e2e-test == 'mandatory-module-metrics' 
+      if: ${{ matrix.e2e-test == 'mandatory-module-with-old-naming-pattern' ||
+        matrix.e2e-test == 'mandatory-module-metrics-with-old-naming-pattern' 
         }}
       shell: bash
       run: |
