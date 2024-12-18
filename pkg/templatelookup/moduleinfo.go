@@ -81,7 +81,6 @@ func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
 	return modules
 }
 
-// determineModuleValidity validates a module from Status.Modules and returns an error if invalid.
 func determineModuleValidity(moduleStatus v1beta2.ModuleStatus) error {
 	if moduleStatus.Template == nil {
 		return fmt.Errorf("%w for module %s: ModuleTemplate reference is missing", ErrInvalidModuleInStatus, moduleStatus.Name)

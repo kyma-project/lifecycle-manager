@@ -63,7 +63,7 @@ func Test_FetchModuleInfo_When_ModuleInSpecOnly(t *testing.T) {
 			want: []moduleInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "none"},
-					IsEnabled:               true,
+					Enabled:                 true,
 					ValidationErrorContains: "Channel \"none\" is not allowed",
 					ExpectedError:           templatelookup.ErrInvalidModuleInSpec,
 				},
@@ -79,7 +79,7 @@ func Test_FetchModuleInfo_When_ModuleInSpecOnly(t *testing.T) {
 			want: []moduleInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
-					IsEnabled:               true,
+					Enabled:                 true,
 					ValidationErrorContains: "Version and channel are mutually exclusive options",
 					ExpectedError:           templatelookup.ErrInvalidModuleInSpec,
 				},
@@ -93,7 +93,7 @@ func Test_FetchModuleInfo_When_ModuleInSpecOnly(t *testing.T) {
 				},
 			},
 			want: []moduleInfo{
-				{Module: v1beta2.Module{Name: "Module1", Channel: "regular"}, IsEnabled: true},
+				{Module: v1beta2.Module{Name: "Module1", Channel: "regular"}, Enabled: true},
 			},
 		},
 		{
@@ -104,7 +104,7 @@ func Test_FetchModuleInfo_When_ModuleInSpecOnly(t *testing.T) {
 				},
 			},
 			want: []moduleInfo{
-				{Module: v1beta2.Module{Name: "Module1", Version: "v1.0"}, IsEnabled: true},
+				{Module: v1beta2.Module{Name: "Module1", Version: "v1.0"}, Enabled: true},
 			},
 		},
 	}
@@ -147,7 +147,7 @@ func Test_FetchModuleInfo_When_ModuleInStatusOnly(t *testing.T) {
 				},
 			},
 			want: []moduleInfo{
-				{Module: v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, IsEnabled: false},
+				{Module: v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"}, Enabled: false},
 			},
 		},
 		{
@@ -165,7 +165,7 @@ func Test_FetchModuleInfo_When_ModuleInStatusOnly(t *testing.T) {
 			want: []moduleInfo{
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
-					IsEnabled:               false,
+					Enabled:                 false,
 					ValidationErrorContains: "ModuleTemplate reference is missing",
 					ExpectedError:           templatelookup.ErrInvalidModuleInStatus,
 				},
@@ -215,7 +215,7 @@ func Test_FetchModuleInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 				},
 			},
 			want: []moduleInfo{
-				{Module: v1beta2.Module{Name: "Module1", Version: "v1.1"}, IsEnabled: true},
+				{Module: v1beta2.Module{Name: "Module1", Version: "v1.1"}, Enabled: true},
 			},
 		},
 	}
@@ -241,7 +241,7 @@ func Test_FetchModuleInfo_When_ModuleExistsInSpecAndStatus(t *testing.T) {
 
 type moduleInfo struct {
 	Module                  v1beta2.Module
-	IsEnabled               bool
+	Enabled                 bool
 	ValidationErrorContains string
 	ExpectedError           error
 }
@@ -256,7 +256,7 @@ func (m moduleInfo) Equals(other templatelookup.ModuleInfo) bool {
 	if m.Module.Version != other.Version {
 		return false
 	}
-	if m.IsEnabled != other.Enabled {
+	if m.Enabled != other.Enabled {
 		return false
 	}
 	if m.ExpectedError != nil && other.ValidationError == nil {
