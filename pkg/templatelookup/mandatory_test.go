@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
@@ -25,8 +26,9 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnCorrectValue(t *testi
 		WithLabel("module-diff", "second").
 		WithAnnotation("operator.kyma-project.io/module-version", "1.0.1-dev").
 		Build()
+	moduleTemplateComparator := templatelookup.NewModuleTemplateComparator()
 
-	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
+	result, err := moduleTemplateComparator.Compare(firstModuleTemplate, secondModuleTemplate)
 	require.NoError(t, err)
 	require.Equal(t, secondModuleTemplate, result)
 }
@@ -43,8 +45,9 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnError_NotSemver(t *te
 		WithVersion("1.0.1-dev").
 		WithLabel("module-diff", "second").
 		Build()
+	moduleTemplateComparator := templatelookup.NewModuleTemplateComparator()
 
-	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
+	result, err := moduleTemplateComparator.Compare(firstModuleTemplate, secondModuleTemplate)
 	require.ErrorContains(t, err, "could not parse version as a semver")
 	require.Nil(t, result)
 }

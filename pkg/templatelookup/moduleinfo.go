@@ -34,56 +34,86 @@ func (a ModuleInfo) installedwithVersionInStatus() bool {
 	return !a.IsEnabled && shared.NoneChannel.Equals(a.Channel) && a.Version != ""
 }
 
-// FetchModuleStatusInfo returns a list of [...] objects containing information about modules referenced by the Kyma CR.
-// This includes modules that are enabled in `.spec.modules[]` and modules that are not enabled in `.spec.modules[]` but still contain an entry in `.status.modules[]`.
+// FetchModuleInfo returns a list of ModuleInfo objects containing information about modules referenced by the Kyma CR.
 func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
-	moduleMap := make(map[string]bool)
-	modules := make([]ModuleInfo, 0)
-	for _, module := range kyma.Spec.Modules {
-		moduleMap[module.Name] = true
-		if shared.NoneChannel.Equals(module.Channel) {
-			modules = append(modules, ModuleInfo{
-				Module:          module,
-				IsEnabled:       true,
-				ValidationError: fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec, module.Name),
-				IsUnmanaged:     !module.Managed,
-			})
-			continue
-		}
-		if module.Version != "" && module.Channel != "" {
-			modules = append(modules, ModuleInfo{
-				Module:          module,
-				IsEnabled:       true,
-				ValidationError: fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options", ErrInvalidModuleInSpec, module.Name),
-				IsUnmanaged:     !module.Managed,
-			})
-			continue
-		}
-		modules = append(modules, ModuleInfo{Module: module, IsEnabled: true, IsUnmanaged: !module.Managed})
-	}
+	moduleMap := buildModuleMap(kyma.Spec.Modules)
+	specModules := buildModuleInfosFromSpec(kyma.Spec.Modules)
+	statusModules := buildModuleInfosFromStatus(kyma.Status.Modules, moduleMap)
 
-	for _, moduleInStatus := range kyma.Status.Modules {
-		_, exist := moduleMap[moduleInStatus.Name]
-		if exist {
-			continue
-		}
-
-		modules = append(modules, ModuleInfo{
-			Module: v1beta2.Module{
-				Name:    moduleInStatus.Name,
-				Channel: moduleInStatus.Channel,
-				Version: moduleInStatus.Version,
-			},
-			IsEnabled:       false,
-			ValidationError: determineModuleValidity(moduleInStatus),
-		})
-	}
-	return modules
+	return append(specModules, statusModules...)
 }
 
+// buildModuleMap creates a map for quick lookup of modules from Spec.Modules by name.
+func buildModuleMap(modules []v1beta2.Module) map[string]struct{} {
+	moduleMap := make(map[string]struct{}, len(modules))
+	for _, module := range modules {
+		moduleMap[module.Name] = struct{}{}
+	}
+	return moduleMap
+}
+
+// buildModuleInfosFromSpec processes Spec.Modules and returns a slice of ModuleInfo.
+func buildModuleInfosFromSpec(modules []v1beta2.Module) []ModuleInfo {
+	moduleInfos := make([]ModuleInfo, 0, len(modules))
+	for _, module := range modules {
+		validationError := validateModuleSpec(module)
+		moduleInfos = append(moduleInfos, newEnabledModuleInfo(module, validationError))
+	}
+	return moduleInfos
+}
+
+// buildModuleInfosFromStatus processes Status.Modules and returns a slice of ModuleInfo.
+func buildModuleInfosFromStatus(
+	statusModules []v1beta2.ModuleStatus, moduleMap map[string]struct{},
+) []ModuleInfo {
+	moduleInfos := make([]ModuleInfo, 0, len(statusModules))
+	for _, moduleStatus := range statusModules {
+		if _, exists := moduleMap[moduleStatus.Name]; !exists {
+			validationError := determineModuleValidity(moduleStatus)
+			moduleInfos = append(moduleInfos, newDisabledModuleInfo(moduleStatus, validationError))
+		}
+	}
+	return moduleInfos
+}
+
+// validateModuleSpec validates a module from Spec.Modules and returns an error if invalid.
+func validateModuleSpec(module v1beta2.Module) error {
+	if shared.NoneChannel.Equals(module.Channel) {
+		return fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec, module.Name)
+	}
+	if module.Version != "" && module.Channel != "" {
+		return fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options", ErrInvalidModuleInSpec, module.Name)
+	}
+	return nil
+}
+
+// determineModuleValidity validates a module from Status.Modules and returns an error if invalid.
 func determineModuleValidity(moduleStatus v1beta2.ModuleStatus) error {
 	if moduleStatus.Template == nil {
 		return fmt.Errorf("%w for module %s: ModuleTemplate reference is missing", ErrInvalidModuleInStatus, moduleStatus.Name)
 	}
 	return nil
+}
+
+// newEnabledModuleInfo creates a ModuleInfo object for enabled modules.
+func newEnabledModuleInfo(module v1beta2.Module, validationError error) ModuleInfo {
+	return ModuleInfo{
+		Module:          module,
+		IsEnabled:       true,
+		ValidationError: validationError,
+		IsUnmanaged:     !module.Managed,
+	}
+}
+
+// newDisabledModuleInfo creates a ModuleInfo object for disabled modules.
+func newDisabledModuleInfo(moduleStatus v1beta2.ModuleStatus, validationError error) ModuleInfo {
+	return ModuleInfo{
+		Module: v1beta2.Module{
+			Name:    moduleStatus.Name,
+			Channel: moduleStatus.Channel,
+			Version: moduleStatus.Version,
+		},
+		IsEnabled:       false,
+		ValidationError: validationError,
+	}
 }
