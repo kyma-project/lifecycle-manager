@@ -7,6 +7,8 @@ set -o pipefail
 MODULE_NAME=$1
 RELEASE_VERSION=$2
 INCLUDE_DEFAULT_CR=${3:-true}
+MANDATORY=${4:-false}
+DEPLOY_MODULETEMPLATE=${5:-true}
 
 cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
@@ -26,16 +28,25 @@ defaultCR: https://localhost:8080/config/samples/default-sample-cr.yaml
 EOF
 fi
 
+if [ "${MANDATORY}" == "true" ]; then
+  cat <<EOF >> module-config-for-e2e.yaml
+mandatory: true
+EOF
+fi
+
 cat module-config-for-e2e.yaml
 modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
 sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
-kubectl apply -f template.yaml
 
 cat template.yaml
 echo "ModuleTemplate created successfully"
 
+if [ "${DEPLOY_MODULETEMPLATE}" == "true" ]; then
+kubectl apply -f template.yaml
+rm -f template.yaml
+fi
+
 rm -f module-config-for-e2e.yaml
 rm -f template-operator.yaml
-rm -f template.yaml
 rm -f default-sample-cr.yaml
 echo "Temporary files removed successfully"

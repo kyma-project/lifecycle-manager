@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
+var _ = Describe("Mandatory Module With Old Naming Pattern Installation and Deletion", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
@@ -52,13 +52,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments("template-operator-mandatory", RemoteNamespace,
 						shared.OperatorGroup, "v1beta2", string(shared.ModuleTemplateKind), skrClient).
 					Should(Not(Succeed()))
-			})
-
-			By("And the mandatory module manifest is installed with the correct version", func() {
-				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
-					WithContext(ctx).
-					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
-					Should(Succeed())
 			})
 		})
 
@@ -143,10 +136,10 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				}).
 				Should(Succeed())
 		})
-		It("Then Kyma is in a \"Warning\" State", func() {
+		It("Then Kyma is in a \"Error\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
 				Should(Succeed())
 		})
 
@@ -166,7 +159,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 
 		It("When new version of ModuleTemplate is applied", func() {
 			cmd := exec.Command("kubectl", "apply", "-f",
-				"mandatory_template_v2.yaml")
+				"./moduletemplate/mandatory_moduletemplate_template_operator_v2.yaml")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -190,33 +183,15 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 			})
-
-			By("And the mandatory module manifest is installed with the correct version", func() {
-				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
-					WithContext(ctx).
-					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
-					Should(Succeed())
-			})
 		})
 
-		It("When the mandatory ModuleTemplates are removed", func() {
+		It("When the mandatory ModuleTemplate is removed", func() {
 			Eventually(DeleteCR).
 				WithContext(ctx).
 				WithArguments(kcpClient,
 					&v1beta2.ModuleTemplate{
 						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.1.0-smoke-test",
-							Namespace: ControlPlaneNamespace,
-						},
-					}).
-				Should(Succeed())
-
-			Eventually(DeleteCR).
-				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
-						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-2.4.1-smoke-test",
+							Name:      "template-operator-mandatory",
 							Namespace: ControlPlaneNamespace,
 						},
 					}).

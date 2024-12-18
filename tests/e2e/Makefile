@@ -79,6 +79,9 @@ kyma-metrics:
 mandatory-module-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Metrics"
 
+mandatory-module-metrics-with-old-naming-pattern:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module With Old Naming Pattern Metrics"
+
 watcher-enqueue:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 
@@ -96,6 +99,9 @@ module-consistency:
 
 mandatory-module:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
+
+mandatory-module-with-old-naming-pattern:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module With Old Naming Pattern Installation and Deletion"
 
 non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
