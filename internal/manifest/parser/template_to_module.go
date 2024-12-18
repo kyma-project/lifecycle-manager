@@ -73,7 +73,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 				Name:                 moduleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
 			},
-			IsEnabled: true,
+			Enabled: true,
 		}, kyma, template, modules)
 	}
 
@@ -87,8 +87,8 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		modules = append(modules, &common.Module{
 			ModuleName:  module.Name,
 			Template:    template,
-			Enabled:     module.IsEnabled,
-			IsUnmanaged: module.IsUnmanaged,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -98,8 +98,8 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		modules = append(modules, &common.Module{
 			ModuleName:  module.Name,
 			Template:    template,
-			Enabled:     module.IsEnabled,
-			IsUnmanaged: module.IsUnmanaged,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -113,8 +113,8 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		modules = append(modules, &common.Module{
 			ModuleName:  module.Name,
 			Template:    template,
-			Enabled:     module.IsEnabled,
-			IsUnmanaged: module.IsUnmanaged,
+			Enabled:     module.Enabled,
+			IsUnmanaged: module.Unmanaged,
 		})
 		return modules
 	}
@@ -127,8 +127,8 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		FQDN:        fqdn,
 		Template:    template,
 		Manifest:    manifest,
-		Enabled:     module.IsEnabled,
-		IsUnmanaged: module.IsUnmanaged,
+		Enabled:     module.Enabled,
+		IsUnmanaged: module.Unmanaged,
 	})
 	return modules
 }

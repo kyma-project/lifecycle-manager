@@ -15,9 +15,9 @@ var (
 
 type ModuleInfo struct {
 	v1beta2.Module
-	IsEnabled       bool
+	Enabled         bool
 	ValidationError error
-	IsUnmanaged     bool
+	Unmanaged       bool
 }
 
 func (a ModuleInfo) IsInstalledByVersion() bool {
@@ -26,12 +26,12 @@ func (a ModuleInfo) IsInstalledByVersion() bool {
 
 // configuredWithVersionInSpec returns true if the Module is enabled in Spec using a specific version instead of a channel.
 func (a ModuleInfo) configuredWithVersionInSpec() bool {
-	return a.IsEnabled && a.Version != "" && a.Channel == ""
+	return a.Enabled && a.Version != "" && a.Channel == ""
 }
 
 // installedwithVersionInStatus returns true if the Module installed using a specific version (instead of a channel) is reported in Status.
 func (a ModuleInfo) installedwithVersionInStatus() bool {
-	return !a.IsEnabled && shared.NoneChannel.Equals(a.Channel) && a.Version != ""
+	return !a.Enabled && shared.NoneChannel.Equals(a.Channel) && a.Version != ""
 }
 
 // FetchModuleInfo returns a list of ModuleInfo objects containing information about modules referenced by the Kyma CR.
@@ -99,9 +99,9 @@ func determineModuleValidity(moduleStatus v1beta2.ModuleStatus) error {
 func newEnabledModuleInfo(module v1beta2.Module, validationError error) ModuleInfo {
 	return ModuleInfo{
 		Module:          module,
-		IsEnabled:       true,
+		Enabled:         true,
 		ValidationError: validationError,
-		IsUnmanaged:     !module.Managed,
+		Unmanaged:       !module.Managed,
 	}
 }
 
@@ -113,7 +113,7 @@ func newDisabledModuleInfo(moduleStatus v1beta2.ModuleStatus, validationError er
 			Channel: moduleStatus.Channel,
 			Version: moduleStatus.Version,
 		},
-		IsEnabled:       false,
+		Enabled:         false,
 		ValidationError: validationError,
 	}
 }

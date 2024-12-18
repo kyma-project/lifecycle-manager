@@ -256,7 +256,7 @@ func (m moduleInfo) Equals(other templatelookup.ModuleInfo) bool {
 	if m.Module.Version != other.Version {
 		return false
 	}
-	if m.IsEnabled != other.IsEnabled {
+	if m.IsEnabled != other.Enabled {
 		return false
 	}
 	if m.ExpectedError != nil && other.ValidationError == nil {

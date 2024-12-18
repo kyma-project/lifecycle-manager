@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
@@ -22,7 +23,7 @@ func TestInitConditions(t *testing.T) {
 	t.Parallel()
 	testcases := []testCase{
 		{
-			name:                  "Should Init Conditions properly with Watcher & Sync IsEnabled",
+			name:                  "Should Init Conditions properly with Watcher & Sync Enabled",
 			watcherEnabled:        true,
 			hasSyncLabel:          true,
 			syncLabelValueEnabled: true,
@@ -34,19 +35,19 @@ func TestInitConditions(t *testing.T) {
 			syncLabelValueEnabled: false,
 		},
 		{
-			name:                  "Should Init Conditions properly with Watcher IsEnabled & Sync Disabled",
+			name:                  "Should Init Conditions properly with Watcher Enabled & Sync Disabled",
 			watcherEnabled:        true,
 			hasSyncLabel:          true,
 			syncLabelValueEnabled: false,
 		},
 		{
-			name:                  "Should Init Conditions properly with Watcher Disabled & Sync IsEnabled",
+			name:                  "Should Init Conditions properly with Watcher Disabled & Sync Enabled",
 			watcherEnabled:        false,
 			hasSyncLabel:          true,
 			syncLabelValueEnabled: true,
 		},
 		{
-			name:           "Should Init Conditions properly with Watcher IsEnabled & missing sync label",
+			name:           "Should Init Conditions properly with Watcher Enabled & missing sync label",
 			watcherEnabled: true,
 			hasSyncLabel:   false,
 		},
