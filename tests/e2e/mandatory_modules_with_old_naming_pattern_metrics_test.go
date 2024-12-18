@@ -13,7 +13,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Mandatory Module Metrics", Ordered, func() {
+var _ = Describe("Mandatory Module With Old Naming Pattern Metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
@@ -59,7 +59,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 				WithArguments(kcpClient,
 					&v1beta2.ModuleTemplate{
 						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.1.0-smoke-test",
+							Name:      "template-operator-mandatory",
 							Namespace: "kcp-system",
 						},
 					}).
