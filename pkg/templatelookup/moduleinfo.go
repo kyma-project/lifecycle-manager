@@ -59,7 +59,7 @@ func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
 			})
 			continue
 		}
-		modules = append(modules, ModuleInfo{Module: module, IsEnabled: true, IsUnmanaged: !module.Managed})
+		modules = append(modules, ModuleInfo{Module: module, Enabled: true, Unmanaged: !module.Managed})
 	}
 
 	for _, moduleInStatus := range kyma.Status.Modules {
@@ -79,17 +79,6 @@ func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
 		})
 	}
 	return modules
-}
-
-// validateModuleSpec validates a module from Spec.Modules and returns an error if invalid.
-func validateModuleSpec(module v1beta2.Module) error {
-	if shared.NoneChannel.Equals(module.Channel) {
-		return fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec, module.Name)
-	}
-	if module.Version != "" && module.Channel != "" {
-		return fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options", ErrInvalidModuleInSpec, module.Name)
-	}
-	return nil
 }
 
 // determineModuleValidity validates a module from Status.Modules and returns an error if invalid.
