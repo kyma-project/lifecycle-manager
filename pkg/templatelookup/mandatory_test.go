@@ -26,9 +26,8 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnCorrectValue(t *testi
 		WithLabel("module-diff", "second").
 		WithAnnotation("operator.kyma-project.io/module-version", "1.0.1-dev").
 		Build()
-	moduleTemplateComparator := templatelookup.NewModuleTemplateComparator()
 
-	result, err := moduleTemplateComparator.Compare(firstModuleTemplate, secondModuleTemplate)
+	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
 	require.NoError(t, err)
 	require.Equal(t, secondModuleTemplate, result)
 }
@@ -45,9 +44,8 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnError_NotSemver(t *te
 		WithVersion("1.0.1-dev").
 		WithLabel("module-diff", "second").
 		Build()
-	moduleTemplateComparator := templatelookup.NewModuleTemplateComparator()
 
-	result, err := moduleTemplateComparator.Compare(firstModuleTemplate, secondModuleTemplate)
+	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
 	require.ErrorContains(t, err, "could not parse version as a semver")
 	require.Nil(t, result)
 }
