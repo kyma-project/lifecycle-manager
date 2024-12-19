@@ -85,6 +85,10 @@ type ModuleTemplateSpec struct {
 	Target Target `json:"target"`
 
 	CustomStateCheck []*v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
+
+	// RequiresDowntime indicates whether the module requires downtime in support of maintenance windows during module upgrades.
+	// +optional
+	RequiresDowntime bool `json:"requiresDowntime,omitempty"`
 }
 
 // +kubebuilder:object:root=true
