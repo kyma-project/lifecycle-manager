@@ -19,6 +19,10 @@ It can be used to only listen to ModuleTemplate CRs provided under the same cont
 
 ## Configuration
 
+### **.spec.skipMaintenanceWindows**
+
+Use the **skipMaintenanceWindows** parameter to indicate whether the module upgrades that require downtime should bypass the defined Maintenance Windows. If it is set to `true`, the module upgrade will happen as soon as a new module version is released in the Kyma Control Plane. 
+
 ### **.spec.channel** and **.spec.modules[].channel**
 
 The **.spec.channel** attribute is used in conjunction with the [release channels](https://github.com/kyma-project/community/tree/main/concepts/modularization#release-channels). The channel that is used for the Kyma CR will always be used as the default in case no other specific channel is used.

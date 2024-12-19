@@ -108,6 +108,11 @@ spec:
                   - name
                   type: object
                 type: array
+              skipMaintenanceWindows:
+                description: |-
+                  SkipMaintenanceWindows indicates whether module upgrades that require downtime
+                  should bypass the defined Maintenance Windows and be applied immediately.
+                type: boolean
               sync:
                 description: Active Synchronization Settings
                 properties:
@@ -553,6 +558,11 @@ spec:
                 x-kubernetes-list-map-keys:
                 - name
                 x-kubernetes-list-type: map
+              skipMaintenanceWindows:
+                description: |-
+                  SkipMaintenanceWindows indicates whether module upgrades that require downtime
+                  should bypass the defined Maintenance Windows and be applied immediately.
+                type: boolean
             required:
             - channel
             type: object

@@ -75,6 +75,10 @@ type KymaSpec struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
+	// SkipMaintenanceWindows indicates whether module upgrades that require downtime
+	// should bypass the defined Maintenance Windows and be applied immediately.
+	SkipMaintenanceWindows bool `json:"skipMaintenanceWindows,omitempty"`
+
 	// Modules specifies the list of modules to be installed
 	Modules []v1beta2.Module `json:"modules,omitempty"`
 
