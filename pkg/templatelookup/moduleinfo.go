@@ -34,7 +34,7 @@ func (a ModuleInfo) installedwithVersionInStatus() bool {
 	return !a.Enabled && shared.NoneChannel.Equals(a.Channel) && a.Version != ""
 }
 
-// FetchModuleStatusInfo returns a list of ModuleInfo objects containing information about modules referenced by the Kyma CR.
+// FetchModuleInfo returns a list of ModuleInfo objects containing information about modules referenced by the Kyma CR.
 // This includes modules that are enabled in `.spec.modules[]` and modules that are not enabled in `.spec.modules[]` but still contain an entry in `.status.modules[]`.
 func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
 	moduleMap := make(map[string]bool)
