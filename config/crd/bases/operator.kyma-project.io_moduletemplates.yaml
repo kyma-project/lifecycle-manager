@@ -311,6 +311,10 @@ spec:
                 maxLength: 64
                 pattern: ^([a-z]{3,}(-[a-z]{3,})*)?$
                 type: string
+              requiresDowntime:
+                description: RequiresDowntime indicates whether the module requires
+                  downtime in support of maintenance windows during module upgrades.
+                type: boolean
               resources:
                 description: Resources is a list of additional resources of the module
                   that can be fetched, e.g., the raw manifest.
