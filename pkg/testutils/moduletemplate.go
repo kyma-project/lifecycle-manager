@@ -34,7 +34,7 @@ func GetModuleTemplate(ctx context.Context,
 ) (*v1beta2.ModuleTemplate, error) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider)
-	availableModule := templatelookup.AvailableModule{
+	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}
 

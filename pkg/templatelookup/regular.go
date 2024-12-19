@@ -47,7 +47,7 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
 
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
-	for _, module := range FindAvailableModules(kyma) {
+	for _, module := range FetchModuleInfo(kyma) {
 		_, found := templates[module.Name]
 		if found {
 			continue
@@ -92,7 +92,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 }
 
 func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
-	module AvailableModule, namespace, kymaChannel string, moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+	module ModuleInfo, namespace, kymaChannel string, moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) ModuleTemplateInfo {
 	if moduleReleaseMeta == nil {
 		return t.populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx, module, kymaChannel)
@@ -102,7 +102,7 @@ func (t *TemplateLookup) PopulateModuleTemplateInfo(ctx context.Context,
 }
 
 func (t *TemplateLookup) populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx context.Context,
-	module AvailableModule, kymaChannel string,
+	module ModuleInfo, kymaChannel string,
 ) ModuleTemplateInfo {
 	var templateInfo ModuleTemplateInfo
 	if module.IsInstalledByVersion() {
@@ -114,7 +114,7 @@ func (t *TemplateLookup) populateModuleTemplateInfoWithoutModuleReleaseMeta(ctx 
 }
 
 func (t *TemplateLookup) populateModuleTemplateInfoUsingModuleReleaseMeta(ctx context.Context,
-	module AvailableModule,
+	module ModuleInfo,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta, kymaChannel, namespace string,
 ) ModuleTemplateInfo {
 	var templateInfo ModuleTemplateInfo

@@ -816,7 +816,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
-			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
+			for _, module := range templatelookup.FetchModuleInfo(testCase.kyma) {
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
 					WithModuleName(module.Name).
@@ -1010,7 +1010,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
-			for _, module := range templatelookup.FindAvailableModules(testCase.kyma) {
+			for _, module := range templatelookup.FetchModuleInfo(testCase.kyma) {
 				if testCase.mrmExist {
 					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
