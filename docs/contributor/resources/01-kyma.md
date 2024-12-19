@@ -21,7 +21,7 @@ It can be used to only listen to ModuleTemplate CRs provided under the same cont
 
 ### **.spec.skipMaintenanceWindows**
 
-The skipMaintenanceWindows is used to indicate whether the module upgrades that require downtime should bypass the defined Maintenance Windows. If it is set to true, the module upgrade will happen as soon as there is a new module version in the Kyma Control Plane. 
+Use the **skipMaintenanceWindows** parameter to indicate whether the module upgrades that require downtime should bypass the defined Maintenance Windows. If it is set to `true`, the module upgrade will happen as soon as a new module version is released in the Kyma Control Plane. 
 
 ### **.spec.channel** and **.spec.modules[].channel**
 
