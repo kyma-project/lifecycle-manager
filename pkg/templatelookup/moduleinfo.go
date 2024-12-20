@@ -13,35 +13,36 @@ var (
 	ErrInvalidModuleInStatus = errors.New("invalid module entry in Kyma status")
 )
 
-type AvailableModule struct {
+type ModuleInfo struct {
 	v1beta2.Module
 	Enabled         bool
 	ValidationError error
 	Unmanaged       bool
 }
 
-func (a AvailableModule) IsInstalledByVersion() bool {
+func (a ModuleInfo) IsInstalledByVersion() bool {
 	return a.configuredWithVersionInSpec() || a.installedwithVersionInStatus()
 }
 
 // configuredWithVersionInSpec returns true if the Module is enabled in Spec using a specific version instead of a channel.
-func (a AvailableModule) configuredWithVersionInSpec() bool {
+func (a ModuleInfo) configuredWithVersionInSpec() bool {
 	return a.Enabled && a.Version != "" && a.Channel == ""
 }
 
 // installedwithVersionInStatus returns true if the Module installed using a specific version (instead of a channel) is reported in Status.
-func (a AvailableModule) installedwithVersionInStatus() bool {
+func (a ModuleInfo) installedwithVersionInStatus() bool {
 	return !a.Enabled && shared.NoneChannel.Equals(a.Channel) && a.Version != ""
 }
 
-// FindAvailableModules returns a list of AvailableModule objects based on the Kyma CR Spec and Status.
-func FindAvailableModules(kyma *v1beta2.Kyma) []AvailableModule {
+// FetchModuleInfo returns a list of ModuleInfo objects containing information about modules referenced by the Kyma CR.
+// This includes modules that are enabled in `.spec.modules[]` and modules that are not enabled in `.spec.modules[]` but still contain an entry in `.status.modules[]`.
+func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
 	moduleMap := make(map[string]bool)
-	modules := make([]AvailableModule, 0)
+	modules := make([]ModuleInfo, 0)
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
 		if shared.NoneChannel.Equals(module.Channel) {
-			modules = append(modules, AvailableModule{
+			modules = append(modules, ModuleInfo{
 				Module:          module,
 				Enabled:         true,
 				ValidationError: fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec, module.Name),
@@ -50,7 +51,7 @@ func FindAvailableModules(kyma *v1beta2.Kyma) []AvailableModule {
 			continue
 		}
 		if module.Version != "" && module.Channel != "" {
-			modules = append(modules, AvailableModule{
+			modules = append(modules, ModuleInfo{
 				Module:          module,
 				Enabled:         true,
 				ValidationError: fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options", ErrInvalidModuleInSpec, module.Name),
@@ -58,7 +59,7 @@ func FindAvailableModules(kyma *v1beta2.Kyma) []AvailableModule {
 			})
 			continue
 		}
-		modules = append(modules, AvailableModule{Module: module, Enabled: true, Unmanaged: !module.Managed})
+		modules = append(modules, ModuleInfo{Module: module, Enabled: true, Unmanaged: !module.Managed})
 	}
 
 	for _, moduleInStatus := range kyma.Status.Modules {
@@ -67,7 +68,7 @@ func FindAvailableModules(kyma *v1beta2.Kyma) []AvailableModule {
 			continue
 		}
 
-		modules = append(modules, AvailableModule{
+		modules = append(modules, ModuleInfo{
 			Module: v1beta2.Module{
 				Name:    moduleInStatus.Name,
 				Channel: moduleInStatus.Channel,
