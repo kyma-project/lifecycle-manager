@@ -31,14 +31,12 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -275,14 +273,8 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 
 func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
 	return ctrlruntime.Options{
-		RateLimiter: workqueue.NewTypedMaxOfRateLimiter(
-			workqueue.NewTypedItemExponentialFailureRateLimiter[ctrl.Request](flagVar.FailureBaseDelay,
-				flagVar.FailureMaxDelay),
-			&workqueue.TypedBucketRateLimiter[ctrl.Request]{
-				Limiter: rate.NewLimiter(rate.Limit(flagVar.RateLimiterFrequency), flagVar.RateLimiterBurst),
-			},
-		),
-
+		RateLimiter: internal.RateLimiter(flagVar.FailureBaseDelay,
+			flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst),
 		CacheSyncTimeout: flagVar.CacheSyncTimeout,
 	}
 }
@@ -293,6 +285,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
+
 	if err := (&kyma.Reconciler{
 		Client:             mgr.GetClient(),
 		SkrContextFactory:  skrContextFactory,
@@ -388,8 +381,6 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger, event event.Event,
 ) {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
-	options.RateLimiter = internal.ManifestRateLimiter(flagVar.FailureBaseDelay,
-		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 

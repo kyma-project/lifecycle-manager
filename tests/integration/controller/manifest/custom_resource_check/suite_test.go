@@ -166,7 +166,7 @@ var _ = BeforeSuite(func() {
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		WithOptions(
 			ctrlruntime.Options{
-				RateLimiter: internal.ManifestRateLimiter(
+				RateLimiter: internal.RateLimiter(
 					1*time.Second, 5*time.Second,
 					30, 200,
 				),
