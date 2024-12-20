@@ -89,14 +89,18 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 	})
 
+	It("KCP ModuleTemplates should be created", func() {
+		Eventually(CreateModuleTemplate, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, TemplateForKCPEnabledModule).
+			Should(Succeed())
+		Eventually(CreateModuleTemplate, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, TemplateForSKREnabledModule).
+			Should(Succeed())
+	})
+
 	It("ModuleTemplates should be synchronized in both clusters", func() {
-		By("Module Template created")
-		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-			WithArguments(TemplateForKCPEnabledModule).
-			Should(Succeed())
-		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
-			WithArguments(TemplateForSKREnabledModule).
-			Should(Succeed())
 		By("ModuleTemplate exists in KCP cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, kcpClient, moduleInKCP, kyma.Spec.Channel, ControlPlaneNamespace).

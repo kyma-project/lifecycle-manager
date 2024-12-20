@@ -4,49 +4,40 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Create New Test Clusters",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+      "dependsOn": ["Delete Test Clusters"],
+      "args": [
+        "--k8s-version", "1.30.3",
+        "--cert-manager-version", "1.13.3"
+        ]
+    },
+    {
       "label": "Delete Test Clusters",
       "type": "shell",
-      "command": "k3d cluster rm kcp skr",
+      "command": "${cwd}/scripts/tests/clusters_cleanup.sh"
     },
     {
       "label": "Ensure Test Clusters",
       "type": "shell",
       "command": "${cwd}/scripts/tests/create_test_clusters.sh",
-    },
-    {
-      "label": "Create New Test Clusters",
-      "type": "shell",
-      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
-      "dependsOn": [
-        "Delete Test Clusters"
-      ]
+      "args": [
+        "--k8s-version", "1.30.3",
+        "--cert-manager-version", "1.13.3"
+        ]
     },
     // re-run if encountering error that the watcher CRD is missing
     {
       "label": "Deploy KLM from sources",
       "type": "shell",
-      "command": "TAG=\"$(date +%Y%m%d%H%M%S)\" && make docker-build IMG=${LOCAL_IMG}:${TAG}; make docker-push IMG=${LOCAL_IMG}:${TAG}; make local-deploy-with-watcher IMG=${CLUSTER_IMG}:${TAG}",
-      "options": {
-        "env": {
-          "LOCAL_IMG": "localhost:5111/lifecycle-manager",
-          "CLUSTER_IMG": "k3d-kcp-registry.localhost:5000/lifecycle-manager",
-          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml"
-
-        }
-      }
+      "command": "${cwd}/scripts/tests/deploy_klm_from_sources.sh"
     },
     // re-run if encountering error that the watcher CRD is missing
     {
       "label": "Deploy KLM from registry",
       "type": "shell",
-      "command": "make local-deploy-with-watcher IMG=${IMG_REGISTRY_HOST}/${input:klmImageRegistry}/${IMG_NAME}:${input:klmImageTag}",
-      "options": {
-        "env": {
-          "IMG_REGISTRY_HOST": "europe-docker.pkg.dev/kyma-project",
-          "IMG_NAME": "lifecycle-manager",
-          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
-        }
-      }
+      "command": "${cwd}/scripts/tests/deploy_klm_from_registry.sh --image-registry ${input:klmImageRegistry} --image-tag ${input:klmImageTag}"
     },
     {
       "label": "Deploy template-operator",
@@ -61,46 +52,25 @@
     {
       "label": "Deploy kyma",
       "type": "shell",
-      "command": "export SKR_HOST=${input:skrHost} && ${cwd}/scripts/tests/deploy_kyma.sh",
-      "options": {
-        "env": {
-          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
-        }
-      }
+      "command": "${cwd}/scripts/tests/deploy_kyma.sh ${input:skrHost}"
     },
     {
       "label": "Un-Deploy kyma",
       "type": "shell",
-      "command": "kubectl -n kcp-system delete kyma kyma-sample; kubectl -n kcp-system delete secret kyma-sample",
-      "options": {
-        "env": {
-          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
-        }
-      }
+      "command": "${cwd}/scripts/tests/undeploy_kyma.sh"
     },
     {
       "label": "E2E Tests",
       "type": "shell",
-      "command": "make -C ${cwd}/tests/e2e ${input:e2eTestTarget}",
+      "command": "${cwd}/scripts/tests/e2e.sh ${input:e2eTestTarget}",
       "group": {
         "kind": "test"
-      },
-      "options": {
-        "env": {
-          "KCP_KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
-          "SKR_KUBECONFIG": "${env:HOME}/.k3d/skr-local.yaml"
-        }
       }
     },
     {
       "label": "Install CRDs",
       "type": "shell",
-      "command": "make install",
-      "options": {
-        "env": {
-          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
-        }
-      }
+      "command": "${cwd}/scripts/tests/install_crds.sh"
     }
   ],
   "inputs": [
@@ -133,6 +103,8 @@
         "mandatory-module-metrics",
         "misconfigured-kyma-secret",
         "ocm-compatible-module-template",
+        "modulereleasemeta-sync",
+        "modulereleasemeta-not-allowed-installation",
       ]
     },
     {
@@ -152,15 +124,12 @@
       "id": "klmImageRegistry",
       "type": "pickString",
       "description": "Registry of KLM image",
-      "options": [
-        "dev",
-        "prod"
-      ]
+      "options": ["dev", "prod"]
     },
     {
       "id": "klmImageTag",
       "type": "promptString",
-      "description": "Tag of the KLM image, e.g. 'latest'",
+      "description": "Tag of the KLM image, e.g. 'latest'"
     },
     {
       "id": "skrHost",
@@ -172,6 +141,6 @@
         // use localhost when running KLM locally on the machine
         "localhost"
       ]
-    },
+    }
   ]
 }

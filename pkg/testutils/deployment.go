@@ -24,7 +24,6 @@ func DeploymentIsReady(ctx context.Context, clnt client.Client, name, namespace 
 		}
 		return fmt.Errorf("could not get deployment: %w", err)
 	}
-
 	if deploy.Spec.Replicas != nil &&
 		*deploy.Spec.Replicas == deploy.Status.ReadyReplicas {
 		return nil
@@ -75,4 +74,5 @@ func GetDeployment(ctx context.Context, clnt client.Client,
 	}
 	return deploy, nil
 }
+
 func int32Ptr(i int32) *int32 { return &i }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -14,6 +15,17 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+func CreateModuleTemplate(ctx context.Context,
+	clnt client.Client,
+	moduleTemplate *v1beta2.ModuleTemplate,
+) error {
+	moduleTemplate.SetResourceVersion("") // must be reset to enable retries
+	if err := clnt.Create(ctx, moduleTemplate); client.IgnoreAlreadyExists(err) != nil {
+		return fmt.Errorf("creating ModuleTemplate failed: %w", err)
+	}
+	return nil
+}
+
 func GetModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
@@ -22,11 +34,17 @@ func GetModuleTemplate(ctx context.Context,
 ) (*v1beta2.ModuleTemplate, error) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider)
-	availableModule := templatelookup.AvailableModule{
+	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}
+
+	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, module.Name, namespace, clnt)
+	if !meta.IsNoMatchError(err) && client.IgnoreNotFound(err) != nil {
+		return nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
+	}
+
 	templateInfo := templateLookup.PopulateModuleTemplateInfo(ctx, availableModule, namespace,
-		defaultChannel)
+		defaultChannel, moduleReleaseMeta)
 
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
@@ -45,6 +63,22 @@ func ModuleTemplateExists(ctx context.Context,
 		return ErrNotFound
 	}
 
+	return nil
+}
+
+func ModuleTemplateExistsByName(ctx context.Context,
+	clnt client.Client,
+	moduleName string,
+	namespace string,
+) error {
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      moduleName,
+	}, &v1beta2.ModuleTemplate{}); err != nil {
+		if util.IsNotFound(err) {
+			return ErrNotFound
+		}
+	}
 	return nil
 }
 

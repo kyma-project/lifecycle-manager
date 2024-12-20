@@ -54,14 +54,14 @@ linters-settings:
     no-unaliased: true
     no-extra-aliases: true
     alias:
-      - pkg: github.com/cert-manager/cert-manager/pkg/client/clientset/versioned
-        alias: certmanagerclientset
       - pkg: github.com/kyma-project/template-operator/api/v1alpha1
         alias: templatev1alpha1
       - pkg: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
         alias: certmanagerv1
       - pkg: github.com/cert-manager/cert-manager/pkg/apis/meta/v1
         alias: certmanagermetav1
+      - pkg: github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1
+        alias: certmanagerclientv1
       - pkg: github.com/google/go-containerregistry/pkg/v1
         alias: containerregistryv1
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics
@@ -114,6 +114,8 @@ linters-settings:
         alias: machineryaml
       - pkg: k8s.io/client-go/kubernetes/scheme
         alias: k8sclientscheme
+      - pkg: k8s.io/client-go/kubernetes/typed/core/v1
+        alias: k8scorev1
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
       - pkg: sigs.k8s.io/controller-runtime/pkg/controller
@@ -130,6 +132,8 @@ linters-settings:
         alias: testskrcontext
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
         alias: watcherctrl
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client
+        alias: gatewaysecretclient
   ireturn:
     allow:
       - anon
@@ -177,6 +181,7 @@ issues:
         - gochecknoglobals # Does not apply to unit and integration tests
         - funlen # Table driven unit and integration tests exceed function length by design
         - maintidx # Table driven unit and integration tests exceed maintainability index by design
+        - nilnil # Test mocks will use nilnil return values purposely
     - path: "pkg/testutils/"
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils

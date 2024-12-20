@@ -3,15 +3,14 @@ package e2e_test
 import (
 	"os/exec"
 
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
@@ -53,6 +52,13 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments("template-operator-mandatory", RemoteNamespace,
 						shared.OperatorGroup, "v1beta2", string(shared.ModuleTemplateKind), skrClient).
 					Should(Not(Succeed()))
+			})
+
+			By("And the mandatory module manifest is installed with the correct version", func() {
+				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
+					Should(Succeed())
 			})
 		})
 
@@ -137,10 +143,10 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				}).
 				Should(Succeed())
 		})
-		It("Then Kyma is in a \"Error\" State", func() {
+		It("Then Kyma is in a \"Warning\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
 				Should(Succeed())
 		})
 
@@ -160,7 +166,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 
 		It("When new version of ModuleTemplate is applied", func() {
 			cmd := exec.Command("kubectl", "apply", "-f",
-				"./moduletemplate/mandatory_moduletemplate_template_operator_v2.yaml")
+				"mandatory_template_v2.yaml")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -184,15 +190,33 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
 			})
+
+			By("And the mandatory module manifest is installed with the correct version", func() {
+				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+					Should(Succeed())
+			})
 		})
 
-		It("When the mandatory ModuleTemplate is removed", func() {
+		It("When the mandatory ModuleTemplates are removed", func() {
 			Eventually(DeleteCR).
 				WithContext(ctx).
 				WithArguments(kcpClient,
 					&v1beta2.ModuleTemplate{
 						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-mandatory",
+							Name:      "template-operator-1.1.0-smoke-test",
+							Namespace: ControlPlaneNamespace,
+						},
+					}).
+				Should(Succeed())
+
+			Eventually(DeleteCR).
+				WithContext(ctx).
+				WithArguments(kcpClient,
+					&v1beta2.ModuleTemplate{
+						ObjectMeta: apimetav1.ObjectMeta{
+							Name:      "template-operator-2.4.1-smoke-test",
 							Namespace: ControlPlaneNamespace,
 						},
 					}).

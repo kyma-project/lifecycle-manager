@@ -16,10 +16,13 @@ runs:
       working-directory: template-operator
       shell: bash
       run: |
-        cp ../lifecycle-manager/.github/scripts/release/deploy_moduletemplate.sh .
-        cp ../lifecycle-manager/.github/scripts/release/deploy_modulereleasemeta.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
+        matrix.e2e-test != 'mandatory-module-metrics'
+        }}
       shell: bash
       run: |
         modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
@@ -28,6 +31,9 @@ runs:
         kubectl apply -f template.yaml
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
       working-directory: template-operator
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
+        matrix.e2e-test != 'mandatory-module-metrics'
+        }}
       shell: bash
       run: |
         make build-manifests
@@ -35,6 +41,9 @@ runs:
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
+        matrix.e2e-test != 'mandatory-module-metrics' 
+        }}
       shell: bash
       run: |
         make build-manifests
@@ -64,19 +73,33 @@ runs:
         matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
         matrix.e2e-test == 'modulereleasemeta-upgrade-under-deletion' ||
         matrix.e2e-test == 'modulereleasemeta-sync' ||
-        matrix.e2e-test == 'module-status-on-skr-connection-lost'
+        matrix.e2e-test == 'module-status-on-skr-connection-lost' ||
+        matrix.e2e-test == 'modulereleasemeta-not-allowed-installation'
         }}
       shell: bash
       run: |
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
-    - name: Create Template Operator Module as Mandatory Module
-      working-directory: lifecycle-manager
+
+    - name: Create and apply Template Operator Module as Mandatory Module
+      working-directory: template-operator
       if: ${{ matrix.e2e-test == 'mandatory-module' ||
         matrix.e2e-test == 'mandatory-module-metrics'
         }}
       shell: bash
       run: |
-        kubectl apply -f tests/e2e/moduletemplate/mandatory_moduletemplate_template_operator_v1.yaml
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true
+
+    - name: Create ModuleTemplate in a new version for Mandatory module
+      if: ${{ matrix.e2e-test == 'mandatory-module'}}
+      working-directory: template-operator
+      shell: bash
+      run: |
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true false
+        cp template.yaml ../lifecycle-manager/tests/e2e/mandatory_template_v2.yaml
     - name: Create and apply ModuleReleaseMeta Template Operator with newer version in fast channel and older version in regular channel
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}

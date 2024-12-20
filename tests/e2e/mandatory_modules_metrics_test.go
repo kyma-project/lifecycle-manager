@@ -1,3 +1,4 @@
+//nolint:dupl //this test will be deleted during this issue https://github.com/kyma-project/lifecycle-manager/issues/2060
 package e2e_test
 
 import (
@@ -58,12 +59,13 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 				WithArguments(kcpClient,
 					&v1beta2.ModuleTemplate{
 						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-mandatory",
+							Name:      "template-operator-1.1.0-smoke-test",
 							Namespace: "kcp-system",
 						},
 					}).
 				Should(Succeed())
 		})
+
 		It("Then mandatory SKR module is removed", func() {
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).

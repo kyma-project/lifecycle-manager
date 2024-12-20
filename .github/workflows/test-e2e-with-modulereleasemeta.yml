@@ -65,6 +65,7 @@ jobs:
           - modulereleasemeta-sync
           - module-status-on-skr-connection-lost
           - modulereleasemeta-watch-trigger
+          - modulereleasemeta-not-allowed-installation
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -114,6 +115,8 @@ jobs:
           ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
           NewerVersion: 2.4.2-e2e-test
           OlderVersion: 1.1.1-e2e-test
+          OlderVersionForMandatoryModule: 1.1.0-smoke-test
+          NewerVersionForMandatoryModule: 2.4.1-smoke-test
           VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
           VersionForDeploymentInWarning: 1.0.0-warning-deployment
           VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment

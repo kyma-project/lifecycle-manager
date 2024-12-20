@@ -1,5 +1,27 @@
 #!/bin/bash
 
+print_help() {
+  echo "Usage: $0 [localhost | host.k3d.internal]"
+  echo "localhost: Use this option when running KLM locally on the machine"
+  echo "host.k3d.internal: Use this option when deploying KLM onto a cluster"
+}
+
+if [ "$#" -ne 1 ]; then
+  print_help
+  exit 1
+fi
+
+SKR_HOST=$1
+if [ "$SKR_HOST" != "localhost" ] && [ "$SKR_HOST" != "host.k3d.internal" ]; then
+  echo "Invalid option: $SKR_HOST"
+  print_help
+  exit 1
+fi
+
+# Exporting the path to the kubeconfig file
+export KUBECONFIG=$HOME/.k3d/kcp-local.yaml
+export SKR_HOST
+
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Secret
@@ -22,3 +44,10 @@ metadata:
 spec:
   channel: regular
 EOF
+
+if [ $? -ne 0 ]; then
+  echo "[$(basename "$0")] Kyma deployment failed"
+  exit 1
+fi
+
+echo "[$(basename "$0")] Kyma deployed successfully"
