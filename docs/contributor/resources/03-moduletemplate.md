@@ -163,8 +163,7 @@ The list is purely informational and does not introduce functional changes to th
 
 ### **.spec.requiresDowntime**
 
-The `requiresDowntime` field indicates whether the module requires downtime in support of maintenance windows during module upgrades. It is optional and defaults to `false`, which means
-that the module version upgrades don't require downtime unless otherwise stated.
+The `requiresDowntime` field indicates whether the module requires downtime to support maintenance windows during module upgrades. It is optional and defaults to `false`, meaning the module version upgrades don't require downtime.
 
 ## `operator.kyma-project.io` Labels
 
