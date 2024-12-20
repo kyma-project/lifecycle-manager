@@ -8,7 +8,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func ManifestRateLimiter(
+func RateLimiter(
 	failureBaseDelay time.Duration, failureMaxDelay time.Duration,
 	frequency int, burst int,
 ) workqueue.TypedRateLimiter[ctrl.Request] {
