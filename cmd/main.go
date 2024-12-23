@@ -138,7 +138,7 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
-func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme, setupLog logr.Logger) { //nolint: funlen // setupManager is a main function that sets up the manager
+func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme, setupLog logr.Logger) { // nolint: funlen // setupManager is a main function that sets up the manager
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.ClientQPS)
 	config.Burst = flagVar.ClientBurst
@@ -154,6 +154,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			LeaderElectionID:       "893110f7.kyma-project.io",
 			LeaseDuration:          &flagVar.LeaderElectionLeaseDuration,
 			RenewDeadline:          &flagVar.LeaderElectionRenewDeadline,
+			RetryPeriod:            &flagVar.LeaderElectionRetryPeriod,
 			Cache:                  cacheOptions,
 		},
 	)
