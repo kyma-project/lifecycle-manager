@@ -253,12 +253,12 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultLeaderElectionLeaseDuration",
 			constValue:    DefaultLeaderElectionLeaseDuration.String(),
-			expectedValue: (20 * time.Second).String(),
+			expectedValue: (180 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultLeaderElectionRenewDeadline",
 			constValue:    DefaultLeaderElectionRenewDeadline.String(),
-			expectedValue: (15 * time.Second).String(),
+			expectedValue: (120 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultLeaderElectionRetryPeriod",

@@ -61,8 +61,8 @@ const (
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
-	DefaultLeaderElectionLeaseDuration                                  = 20 * time.Second
-	DefaultLeaderElectionRenewDeadline                                  = 15 * time.Second
+	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
+	DefaultLeaderElectionRenewDeadline                                  = 120 * time.Second
 	DefaultLeaderElectionRetryPeriod                                    = 3 * time.Second
 )
 

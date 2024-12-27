@@ -37,6 +37,15 @@ patches:
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --listener-port-overwrite=9443
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --leader-election-lease-duration=20s
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --leader-election-renew-deadline=15s
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --leader-election-retry-period=3s
     - op: replace
       path: /spec/template/spec/containers/0/imagePullPolicy
       value: Always
