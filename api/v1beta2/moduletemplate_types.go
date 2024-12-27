@@ -119,6 +119,10 @@ type ModuleTemplateSpec struct {
 	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource.
 	// +optional
 	Manager *Manager `json:"manager,omitempty"`
+
+	// RequiresDowntime indicates whether the module requires downtime in support of maintenance windows during module upgrades.
+	// +optional
+	RequiresDowntime bool `json:"requiresDowntime,omitempty"`
 }
 
 // Manager defines the structure for the manager field in ModuleTemplateSpec.
