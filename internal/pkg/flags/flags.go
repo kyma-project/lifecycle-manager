@@ -115,7 +115,7 @@ func DefineFlagVar() *FlagVar {
 		"Configures the 'RenewDeadline' option of the controller-runtime library used to run the controller manager process.")
 	flag.DurationVar(&flagVar.LeaderElectionRetryPeriod, "leader-election-retry-period",
 		DefaultLeaderElectionRetryPeriod,
-		"configures the 'RetryPeriod' option of the controller-runtime library used to run the controller manager process.")
+		"Configures the 'RetryPeriod' option of the controller-runtime library used to run the controller manager process.")
 	flag.DurationVar(&flagVar.KymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		DefaultKymaRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
