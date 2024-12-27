@@ -63,6 +63,7 @@ const (
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
 	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
 	DefaultLeaderElectionRenewDeadline                                  = 120 * time.Second
+	DefaultLeaderElectionRetryPeriod                                    = 3 * time.Second
 )
 
 var (
@@ -112,6 +113,9 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.LeaderElectionRenewDeadline, "leader-election-renew-deadline",
 		DefaultLeaderElectionRenewDeadline,
 		"Configures the 'RenewDeadline' option of the controller-runtime library used to run the controller manager process.")
+	flag.DurationVar(&flagVar.LeaderElectionRetryPeriod, "leader-election-retry-period",
+		DefaultLeaderElectionRetryPeriod,
+		"Configures the 'RetryPeriod' option of the controller-runtime library used to run the controller manager process.")
 	flag.DurationVar(&flagVar.KymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		DefaultKymaRequeueSuccessInterval,
 		"determines the duration a Kyma in Ready state is enqueued for reconciliation.")
@@ -242,6 +246,7 @@ type FlagVar struct {
 	EnableLeaderElection                           bool
 	LeaderElectionLeaseDuration                    time.Duration
 	LeaderElectionRenewDeadline                    time.Duration
+	LeaderElectionRetryPeriod                      time.Duration
 	EnablePurgeFinalizer                           bool
 	EnableKcpWatcher                               bool
 	EnableWebhooks                                 bool
