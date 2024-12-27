@@ -27,6 +27,11 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
 				Should(Succeed())
 
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
+
 			By("And the Template Operator v1 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
@@ -60,6 +65,10 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(SetModuleReleaseMetaBeta).
 				WithContext(ctx).
 				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
 				Should(Succeed())
 
 			By("Then the ModuleReleaseMeta no longer exists on the SKR Cluster")
@@ -98,6 +107,10 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(SetModuleReleaseMetaInternal).
 				WithContext(ctx).
 				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
 				Should(Succeed())
 
 			By("Then the ModuleReleaseMeta no longer exists on the SKR Cluster")
@@ -157,6 +170,10 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).
 				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
 
 			By("Then the Template Operator v2 ModuleTemplate exists in the KCP Cluster")
 			Eventually(ModuleTemplateExists).
@@ -197,6 +214,10 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(DeleteModuleReleaseMeta).
 				WithContext(ctx).
 				WithArguments(module.Name, ControlPlaneNamespace, kcpClient).
+				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
 				Should(Succeed())
 
 			By("Then the ModuleReleaseMeta no longer exists on the KCP Cluster")

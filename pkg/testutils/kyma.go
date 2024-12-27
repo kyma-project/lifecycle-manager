@@ -15,6 +15,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
@@ -231,6 +232,15 @@ func UpdateKymaLabel(
 		return fmt.Errorf("update kyma: %w", err)
 	}
 	return nil
+}
+
+// ImmediatelyRequeueKyma adds a dummy label to the Kyma CR to trigger a requeue.
+func ImmediatelyRequeueKyma(
+	ctx context.Context,
+	clnt client.Client,
+	kymaName, kymaNamespace string,
+) error {
+	return UpdateKymaLabel(ctx, clnt, kymaName, kymaNamespace, "operator.kyma-project.io/dummy-label", random.Name())
 }
 
 func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*v1beta2.Kyma, error) {
