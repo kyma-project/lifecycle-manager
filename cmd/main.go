@@ -166,7 +166,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder)
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
-	options := controllerOptionsFromFlagVar(flagVar)
+	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
 			setupLog.Error(err, "failed to create skr webhook manager")
@@ -264,19 +264,14 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 	setupLog.V(log.DebugLevel).Info("scheduled job for cleaning up metrics")
 }
 
-func controllerOptionsFromFlagVar(flagVar *flags.FlagVar) ctrlruntime.Options {
-	return ctrlruntime.Options{
-		RateLimiter: internal.RateLimiter(flagVar.FailureBaseDelay,
-			flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst),
-		CacheSyncTimeout: flagVar.CacheSyncTimeout,
-	}
-}
-
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger,
 ) {
+	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
+		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
+	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
 	if err := (&kyma.Reconciler{
@@ -354,6 +349,10 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 	options ctrlruntime.Options,
 	setupLog logr.Logger,
 ) {
+	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
+		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
+	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
+
 	if err := (&purge.Reconciler{
 		Client:                mgr.GetClient(),
 		SkrContextFactory:     skrContextProvider,
@@ -374,6 +373,9 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger, event event.Event,
 ) {
+	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
+		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
+	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
@@ -400,6 +402,9 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, event event.Event, flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) {
+	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
+		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
+	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	if err := (&watcherctrl.Reconciler{
@@ -427,6 +432,9 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
 ) {
+	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
+		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
+	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
 	if err := (&mandatorymodule.InstallationReconciler{
@@ -454,6 +462,9 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	options ctrlruntime.Options,
 	setupLog logr.Logger,
 ) {
+	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
+		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
+	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
 	if err := (&mandatorymodule.DeletionReconciler{
