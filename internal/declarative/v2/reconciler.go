@@ -35,10 +35,6 @@ var (
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
 	errStateRequireUpdate = errors.New("manifest state requires update")
-
-	intendedRequeueErrors = map[error]struct{}{
-		skrresources.ErrWarningResourceSyncStateDiff: {},
-	}
 )
 
 const (
@@ -565,6 +561,10 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 }
 
 func isIntendedRequeueError(err error) bool {
+	intendedRequeueErrors := map[error]struct{}{
+		skrresources.ErrWarningResourceSyncStateDiff: {},
+	}
+
 	_, ok := intendedRequeueErrors[err]
 	return ok
 }
