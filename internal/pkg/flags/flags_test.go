@@ -260,6 +260,11 @@ func Test_ConstantFlags(t *testing.T) {
 			constValue:    DefaultLeaderElectionRenewDeadline.String(),
 			expectedValue: (120 * time.Second).String(),
 		},
+		{
+			constName:     "DefaultLeaderElectionRetryPeriod",
+			constValue:    DefaultLeaderElectionRetryPeriod.String(),
+			expectedValue: (3 * time.Second).String(),
+		},
 	}
 	for _, testcase := range tests {
 		testName := fmt.Sprintf("const %s has correct value", testcase.constName)

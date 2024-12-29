@@ -152,6 +152,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			LeaderElectionID:       "893110f7.kyma-project.io",
 			LeaseDuration:          &flagVar.LeaderElectionLeaseDuration,
 			RenewDeadline:          &flagVar.LeaderElectionRenewDeadline,
+			RetryPeriod:            &flagVar.LeaderElectionRetryPeriod,
 			Cache:                  cacheOptions,
 		},
 	)
