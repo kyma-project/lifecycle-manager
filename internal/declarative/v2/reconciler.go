@@ -551,22 +551,13 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
 	}
-	if originalErr != nil && !isIntendedRequeueError(originalErr) {
+	if originalErr != nil {
 		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 		return ctrl.Result{}, originalErr
 	}
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
 	requeueAfter := queue.DetermineRequeueInterval(manifest.GetStatus().State, r.RequeueIntervals)
 	return ctrl.Result{RequeueAfter: requeueAfter}, nil
-}
-
-func isIntendedRequeueError(err error) bool {
-	intendedRequeueErrors := map[error]struct{}{
-		skrresources.ErrWarningResourceSyncStateDiff: {},
-	}
-
-	_, ok := intendedRequeueErrors[err]
-	return ok
 }
 
 func (r *Reconciler) ssaSpec(ctx context.Context, manifest *v1beta2.Manifest,
