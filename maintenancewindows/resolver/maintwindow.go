@@ -3,6 +3,7 @@ package resolver
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -12,6 +13,15 @@ import (
 
 const (
 	timeOnlyFormat = "15:04:05Z07:00"
+	time24Hours    = 24 * time.Hour
+)
+
+var (
+	ErrPolicyNotExists    = errors.New("maintenance policy doesn't exist")
+	ErrUnknownOption      = errors.New("unknown option")
+	ErrNoWindowInPolicies = errors.New("matched policies did not provide a window")
+	ErrNoWindowFound      = errors.New("matches and defaults also failed to provide a window")
+	ErrJSONUnmarshal      = errors.New("error during unmarshal")
 )
 
 type ResolvedWindow struct {
@@ -28,7 +38,7 @@ type MaintenanceWindowPolicy struct {
 	Default MaintenanceWindow       `json:"default"`
 }
 
-// options
+// options.
 type resolveOptions struct {
 	time            time.Time
 	ongoing         bool
@@ -37,36 +47,36 @@ type resolveOptions struct {
 	fallbackDefault bool
 }
 
-// Specify the time to calculate with
+// Specify the time to calculate with.
 type TimeStamp time.Time
 
-// Take ongoing windows into account
+// Take ongoing windows into account.
 type OngoingWindow bool
 
-// If taking ongoing windows into account, minimum duration
+// If taking ongoing windows into account, minimum duration.
 type MinWindowSize time.Duration
 
-// Whether stop at first matched policy's windows
+// Whether stop at first matched policy's windows.
 type FirstMatchOnly bool
 
 // If matched policies had no available windows whether to fall back
-// to the default, or bail out with an error
+// to the default, or bail out with an error.
 type FallbackDefault bool
 
 /* GetMaintenancePolicy gets the maintenance window policy based on the policy name we specify
  * non-nil error returned if meeting one of below conditions:
- * - the speficied maintenance policy doesn't exist
- * - error during unmarshal the policy data
+ * - the speficied maintenance policy doesn't exist.
+ * - error during unmarshal the policy data.
  */
 func GetMaintenancePolicy(pool map[string]*[]byte, name string) (*MaintenanceWindowPolicy, error) {
 	if name == "" {
-		return nil, nil
+		return nil, nil //nolint: nilnil //changing that now would break the API
 	}
 
 	extName := name + ".json"
 	data, exist := pool[extName]
 	if !exist {
-		return nil, fmt.Errorf("maintenance policy %s doesn't exist", name)
+		return nil, fmt.Errorf("%w: %s", ErrPolicyNotExists, name)
 	}
 
 	policy, err := NewMaintenanceWindowPolicyFromJSON(*data)
@@ -90,13 +100,16 @@ func NewMaintenanceWindowPolicyFromJSON(raw []byte) (MaintenanceWindowPolicy, er
 	var ruleset MaintenanceWindowPolicy
 
 	err := json.Unmarshal(raw, &ruleset)
-	return ruleset, err
+	if err != nil {
+		return ruleset, fmt.Errorf("%w: %w", ErrJSONUnmarshal, err)
+	}
+	return ruleset, nil
 }
 
 /*
  * Finds the next applicatable maintenance window for a given runtime on the plan.
  *
- * The alogrithm can be parameterized using the following typed varargs:
+ * The algorithm can be parameterized using the following typed varargs:
  *  - TimeStamp: A time.Time, to specify the resolving's time instead of now
  *  - OngoingWindow: A boolean, if true then already started windows are returned
  *    if long enough. Defaults to false.
@@ -112,7 +125,7 @@ func NewMaintenanceWindowPolicyFromJSON(raw []byte) (MaintenanceWindowPolicy, er
  * Otherwise an error is returned and the ResolvedWindow pointer is expected to be
  * nil.
  */
-func (mwp *MaintenanceWindowPolicy) Resolve(rt *Runtime, opts ...interface{}) (*ResolvedWindow, error) {
+func (mwp *MaintenanceWindowPolicy) Resolve(runtime *Runtime, opts ...interface{}) (*ResolvedWindow, error) {
 	// first set up the internal logic parameters
 	// defaults here
 	options := resolveOptions{
@@ -125,19 +138,19 @@ func (mwp *MaintenanceWindowPolicy) Resolve(rt *Runtime, opts ...interface{}) (*
 
 	// overrides from typed varargs
 	for idx, opt := range opts {
-		switch opt.(type) {
+		switch val := opt.(type) {
 		case TimeStamp:
-			options.time = time.Time(opt.(TimeStamp))
+			options.time = time.Time(val)
 		case OngoingWindow:
-			options.ongoing = bool(opt.(OngoingWindow))
+			options.ongoing = bool(val)
 		case MinWindowSize:
-			options.minDuration = time.Duration(opt.(MinWindowSize))
+			options.minDuration = time.Duration(val)
 		case FirstMatchOnly:
-			options.firstMatchOnly = bool(opt.(FirstMatchOnly))
+			options.firstMatchOnly = bool(val)
 		case FallbackDefault:
-			options.fallbackDefault = bool(opt.(FallbackDefault))
+			options.fallbackDefault = bool(val)
 		default:
-			return nil, fmt.Errorf("Unknown option at %d: %s/%+v",
+			return nil, fmt.Errorf("%w at %d: %s/%+v", ErrUnknownOption,
 				idx, reflect.TypeOf(opt), opt)
 		}
 	}
@@ -145,12 +158,12 @@ func (mwp *MaintenanceWindowPolicy) Resolve(rt *Runtime, opts ...interface{}) (*
 	// first let's see whether any policies are having matching rules
 	matched := false
 	for _, policyrule := range mwp.Rules {
-		if matched = policyrule.Match.Match(rt); !matched {
+		if matched = policyrule.Match.Match(runtime); !matched {
 			continue
 		}
 		// this policy is matching
 
-		//we need to find the first window in the future
+		// we need to find the first window in the future
 		window := policyrule.Windows.LookupAvailable(&options)
 		if window != nil {
 			return window, nil
@@ -165,7 +178,7 @@ func (mwp *MaintenanceWindowPolicy) Resolve(rt *Runtime, opts ...interface{}) (*
 	// if we don't fall back to default if matches had no available
 	// windows then we error out
 	if matched && !options.fallbackDefault {
-		return nil, fmt.Errorf("Matched policies did not provide a window")
+		return nil, ErrNoWindowInPolicies
 	}
 
 	// we do the default ruleset, if there are no matches
@@ -173,7 +186,7 @@ func (mwp *MaintenanceWindowPolicy) Resolve(rt *Runtime, opts ...interface{}) (*
 		return rw, nil
 	}
 
-	return nil, fmt.Errorf("Matches and defaults also failed to provide a window")
+	return nil, ErrNoWindowFound
 }
 
 type MaintenancePolicyRule struct {
@@ -192,7 +205,7 @@ func (mws *MaintenanceWindows) LookupAvailable(opts *resolveOptions) *ResolvedWi
 }
 
 type MaintenancePolicyMatch struct {
-	GlobalAccountID Regexp `json:"globalAccountID,omitempty"`
+	GlobalAccountID Regexp `json:"globalAccountID,omitempty"` //nolint:tagliatelle //changing that now would break the API
 	Plan            Regexp `json:"plan,omitempty"`
 	Region          Regexp `json:"region,omitempty"`
 	PlatformRegion  Regexp `json:"platformRegion,omitempty"`
@@ -215,16 +228,17 @@ func (mpm MaintenancePolicyMatch) String() string {
 	return ret + ">"
 }
 
-func (mpr MaintenancePolicyMatch) Match(rt *Runtime) bool {
-
+func (mpm MaintenancePolicyMatch) Match(runtime *Runtime) bool {
 	// programmer is running with -fno-unroll-loops
-	for _, field := range []string{"GlobalAccountID", "Plan",
-		"Region", "PlatformRegion"} {
-		rexp := reflect.Indirect(reflect.ValueOf(mpr)).FieldByName(field).Interface().(Regexp)
+	for _, field := range []string{
+		"GlobalAccountID", "Plan",
+		"Region", "PlatformRegion",
+	} {
+		rexp := reflect.Indirect(reflect.ValueOf(mpm)).FieldByName(field).Interface().(Regexp) //nolint:forcetypeassert //we know it's a Regexp
 		if !rexp.IsValid() {
 			continue
 		}
-		value := reflect.Indirect(reflect.ValueOf(rt)).FieldByName(field).String()
+		value := reflect.Indirect(reflect.ValueOf(runtime)).FieldByName(field).String()
 		if len(value) > 0 && rexp.MatchString(value) {
 			return true
 		}
@@ -252,7 +266,10 @@ func (r *Regexp) UnmarshalJSON(data []byte) error {
 	}
 	var err error
 	r.Regexp, err = regexp.Compile(r.Str)
-	return err
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrJSONUnmarshal, err)
+	}
+	return nil
 }
 
 func (r Regexp) MatchString(s string) bool {
@@ -262,13 +279,14 @@ func (r Regexp) MatchString(s string) bool {
 func (r Regexp) IsValid() bool {
 	return r.Regexp != nil
 }
+
 func (r Regexp) String() string {
 	return r.Str
 }
 
 /*
 If days is empty, then begin and end are ISO8601 strings with
-exact times, otherwise if days is specified it's a time-only (with timezone)
+exact times, otherwise if days is specified it's a time-only (with timezone).
 */
 type MaintenanceWindow struct {
 	Days  []string   `json:"days"`
@@ -276,7 +294,7 @@ type MaintenanceWindow struct {
 	End   WindowTime `json:"end"`
 }
 
-// this has two main modes: whether we have days or not
+// this has two main modes: whether we have days or not.
 func (mw *MaintenanceWindow) NextWindow(opts *resolveOptions) *ResolvedWindow {
 	if len(mw.Days) == 0 {
 		// in this case begin and end are absolute units
@@ -295,7 +313,7 @@ func (mw *MaintenanceWindow) NextWindow(opts *resolveOptions) *ResolvedWindow {
 			0, mw.End.T().Location())
 
 		// next day diff
-		incr := 24 * time.Hour
+		incr := time24Hours
 
 		// if it goes through midnight
 		if end.Before(begin) || end.Equal(begin) {
@@ -305,7 +323,7 @@ func (mw *MaintenanceWindow) NextWindow(opts *resolveOptions) *ResolvedWindow {
 		// now get the next suitable
 		// days are weekdays, and there's a total of 7 of them, so iterating ahead
 		// of that would be getting the next cycle, so we stop at a week's lookahead
-		for i := 0; i < 8; i++ {
+		for range 8 {
 			day3 := begin.Weekday().String()[0:3]
 			// if this day is not available, then next
 			if !slices.Contains(mw.Days, day3) {
@@ -323,23 +341,23 @@ func (mw *MaintenanceWindow) NextWindow(opts *resolveOptions) *ResolvedWindow {
 	return nil
 }
 
-// type alias for (un)marshalling
+// type alias for (un)marshalling.
 type WindowTime time.Time
 
 func (wt *WindowTime) UnmarshalJSON(data []byte) error {
 	trimmed := string(bytes.Trim(data, `"`))
 
 	// try the fullformat first
-	t, err := time.Parse(time.RFC3339, trimmed)
+	tParsed, err := time.Parse(time.RFC3339, trimmed)
 	if err == nil {
-		*wt = WindowTime(t)
+		*wt = WindowTime(tParsed)
 		return nil
 	}
 
 	// now try the time-only format
-	t, err = time.Parse(timeOnlyFormat, trimmed)
+	tParsed, err = time.Parse(timeOnlyFormat, trimmed)
 	if err == nil {
-		*wt = WindowTime(t)
+		*wt = WindowTime(tParsed)
 		return nil
 	}
 
@@ -354,7 +372,7 @@ func (wt WindowTime) T() time.Time {
 	return time.Time(wt)
 }
 
-// utility functions
+// utility functions.
 func windowWithin(opts *resolveOptions, begin time.Time, end time.Time) *ResolvedWindow {
 	if !opts.ongoing {
 		// simple, just verify whether the begin is in the future

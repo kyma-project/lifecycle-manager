@@ -2,13 +2,14 @@ package resolver_test
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/kyma-project/lifecycle-manager/maintenancewindows/resolver"
 )
@@ -21,7 +22,8 @@ type testData struct {
 }
 
 func createRuntime(gaid string, plan string, region string,
-	platformregion string) resolver.Runtime {
+	platformregion string,
+) resolver.Runtime {
 	return resolver.Runtime{
 		GlobalAccountID: gaid,
 		Plan:            plan,
@@ -31,17 +33,17 @@ func createRuntime(gaid string, plan string, region string,
 }
 
 func resWin(begin string, end string) resolver.ResolvedWindow {
-	b, err := time.Parse(time.RFC3339, begin)
+	bTime, err := time.Parse(time.RFC3339, begin)
 	if err != nil {
 		panic(err.Error())
 	}
-	e, err := time.Parse(time.RFC3339, end)
+	eTime, err := time.Parse(time.RFC3339, end)
 	if err != nil {
 		panic(err.Error())
 	}
 	return resolver.ResolvedWindow{
-		Begin: b,
-		End:   e,
+		Begin: bTime,
+		End:   eTime,
 	}
 }
 
@@ -64,30 +66,21 @@ type testCase struct {
 func (tc testCase) Message() string {
 	opts := []string{}
 	for idx, opt := range tc.options {
-		switch opt.(type) {
+		switch val := opt.(type) {
 		case resolver.TimeStamp:
-			t := time.Time(opt.(resolver.TimeStamp))
+			t := time.Time(val)
 			opts = append(opts, fmt.Sprintf("At:%s(%s)", t.String(), t.Weekday()))
-			break
 		case resolver.OngoingWindow:
-			opts = append(opts, fmt.Sprintf("Ongoing:%v",
-				bool(opt.(resolver.OngoingWindow))))
-			break
+			opts = append(opts, fmt.Sprintf("Ongoing:%v", bool(val)))
 		case resolver.MinWindowSize:
-			opts = append(opts, fmt.Sprintf("MinDuration:%v",
-				time.Duration(opt.(resolver.MinWindowSize))))
-			break
+			opts = append(opts, fmt.Sprintf("MinDuration:%v", time.Duration(val)))
 		case resolver.FirstMatchOnly:
-			opts = append(opts, fmt.Sprintf("FirstMatchOnly:%v",
-				bool(opt.(resolver.FirstMatchOnly))))
-			break
+			opts = append(opts, fmt.Sprintf("FirstMatchOnly:%v", bool(val)))
 		case resolver.FallbackDefault:
-			opts = append(opts, fmt.Sprintf("FallbackDefault:%v",
-				bool(opt.(resolver.FallbackDefault))))
-			break
+			opts = append(opts, fmt.Sprintf("FallbackDefault:%v", bool(val)))
 			// forward something we can test interface error handling
 		case string:
-			opts = append(opts, opt.(string))
+			opts = append(opts, val)
 		default:
 			panic(fmt.Sprintf("Unknown option at %d: %s/%+v",
 				idx, reflect.TypeOf(opt), opt))
@@ -106,9 +99,8 @@ type MaintWindowSuite struct {
 }
 
 func (suite *MaintWindowSuite) SetupSuite() {
-
 	// load the testing ruleset
-	rawdata, err := ioutil.ReadFile(testfile)
+	rawdata, err := os.ReadFile(testfile)
 	suite.Require().NoErrorf(err, "Unable to read testdata from %s", testfile)
 	suite.Require().NotNil(rawdata)
 
@@ -117,60 +109,72 @@ func (suite *MaintWindowSuite) SetupSuite() {
 
 	// specify the testcases
 	suite.testCases = []testCase{
-		testCase{
+		{
 			name:     "freetrials next",
 			runtime:  createRuntime("", "trial", "", ""),
 			options:  []interface{}{at("2024-10-03T05:05:00Z")},
 			errors:   false,
 			expected: resWin("2024-10-04T01:00:00Z", "2024-10-05T01:00:00Z"),
 		},
-		testCase{
+		{
 			name:    "ongoing",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{at("2024-10-10T22:05:00Z"),
-				resolver.OngoingWindow(true)},
+			options: []interface{}{
+				at("2024-10-10T22:05:00Z"),
+				resolver.OngoingWindow(true),
+			},
 			errors:   false,
 			expected: resWin("2024-10-10T20:00:00Z", "2024-10-11T00:00:00Z"),
 		},
-		testCase{
+		{
 			name:    "ongoing+minsize",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{at("2024-10-10T22:05:00Z"),
+			options: []interface{}{
+				at("2024-10-10T22:05:00Z"),
 				resolver.OngoingWindow(true),
-				resolver.MinWindowSize(5 * time.Hour)},
+				resolver.MinWindowSize(5 * time.Hour),
+			},
 			errors:   false,
 			expected: resWin("2024-12-08T20:00:00Z", "2024-12-09T00:00:00Z"),
 		},
-		testCase{
+		{
 			name:    "not just first match",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{at("2024-12-10T22:05:00Z"),
-				resolver.FirstMatchOnly(false)},
+			options: []interface{}{
+				at("2024-12-10T22:05:00Z"),
+				resolver.FirstMatchOnly(false),
+			},
 			errors:   false,
 			expected: resWin("2024-12-18T20:00:00Z", "2024-12-19T00:00:00Z"),
 		},
-		testCase{
+		{
 			name:    "first match fail -> default",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{at("2024-12-10T22:05:00Z"),
-				resolver.FirstMatchOnly(true)},
+			options: []interface{}{
+				at("2024-12-10T22:05:00Z"),
+				resolver.FirstMatchOnly(true),
+			},
 			errors:   false,
 			expected: resWin("2024-12-14T00:00:00Z", "2024-12-15T00:00:00Z"),
 		},
-		testCase{
+		{
 			name:    "first match fail -> nodefault",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{at("2024-12-10T22:05:00Z"),
-				resolver.FirstMatchOnly(true), resolver.FallbackDefault(false)},
+			options: []interface{}{
+				at("2024-12-10T22:05:00Z"),
+				resolver.FirstMatchOnly(true), resolver.FallbackDefault(false),
+			},
 			errors:   true,
 			expected: resWin("2024-12-14T00:00:00Z", "2024-12-15T00:00:00Z"),
 		},
-		testCase{
+		{
 			name:    "wrong arg",
 			runtime: createRuntime("", "", "uksouth-vikings", ""),
-			options: []interface{}{at("2024-12-10T22:05:00Z"),
+			options: []interface{}{
+				at("2024-12-10T22:05:00Z"),
 				resolver.FirstMatchOnly(true), resolver.FallbackDefault(false),
-				"lol"},
+				"lol",
+			},
 			errors:   true,
 			expected: resWin("2042-12-14T00:00:00Z", "2024-12-15T00:00:00Z"),
 		},
@@ -179,15 +183,15 @@ func (suite *MaintWindowSuite) SetupSuite() {
 
 func (suite *MaintWindowSuite) Test_Match_Plans() {
 	testdata := []testData{
-		testData{
+		{
 			runtime:  createRuntime("", "free", "", ""),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("", "trial", "", ""),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("", "azure_lite", "", ""),
 			expected: false,
 		},
@@ -201,15 +205,15 @@ func (suite *MaintWindowSuite) Test_Match_Plans() {
 
 func (suite *MaintWindowSuite) Test_Match_Plan() {
 	testdata := []testData{
-		testData{
+		{
 			runtime:  createRuntime("", "free", "", ""),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("", "trial", "", ""),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("", "azure_lite", "", ""),
 			expected: false,
 		},
@@ -223,15 +227,15 @@ func (suite *MaintWindowSuite) Test_Match_Plan() {
 
 func (suite *MaintWindowSuite) Test_Match_Region() {
 	testdata := []testData{
-		testData{
+		{
 			runtime:  createRuntime("", "", "eu-balkan-1", ""),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("", "", "uksouth-teaparty", ""),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("", "", "us-cottoneyejoe", ""),
 			expected: false,
 		},
@@ -245,11 +249,11 @@ func (suite *MaintWindowSuite) Test_Match_Region() {
 
 func (suite *MaintWindowSuite) Test_Match_GAID() {
 	testdata := []testData{
-		testData{
+		{
 			runtime:  createRuntime("sup-er-ga-case", "", "", ""),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("not-matching", "", "", ""),
 			expected: false,
 		},
@@ -263,11 +267,11 @@ func (suite *MaintWindowSuite) Test_Match_GAID() {
 
 func (suite *MaintWindowSuite) Test_Match_PlatformRegion() {
 	testdata := []testData{
-		testData{
+		{
 			runtime:  createRuntime("", "", "uksouth-teaparty", "super-mario-bros"),
 			expected: true,
 		},
-		testData{
+		{
 			runtime:  createRuntime("", "", "us-cottoneyejoe", "luigi"),
 			expected: false,
 		},
@@ -275,7 +279,7 @@ func (suite *MaintWindowSuite) Test_Match_PlatformRegion() {
 
 	matcher := suite.plan.Rules[2].Match
 	for _, subject := range testdata {
-		suite.Require().True(matcher.Match(&subject.runtime) == subject.expected)
+		suite.Require().Equal(subject.expected, matcher.Match(&subject.runtime))
 	}
 }
 
@@ -286,17 +290,17 @@ func (suite *MaintWindowSuite) Test_Match_TestCases() {
 		at time.Time
 		expected resolver.ResolvedWindow
 	*/
-	for _, tc := range suite.testCases {
-		result, err := suite.plan.Resolve(&tc.runtime, tc.options...)
-		if tc.errors {
-			suite.Require().Errorf(err, "test:\n%s\nresult:\n%v\n", tc.Message(), result)
-			suite.Require().Nil(result, tc.Message())
+	for _, tcase := range suite.testCases {
+		result, err := suite.plan.Resolve(&tcase.runtime, tcase.options...)
+		if tcase.errors {
+			suite.Require().Errorf(err, "test:\n%s\nresult:\n%v\n", tcase.Message(), result)
+			suite.Require().Nil(result, tcase.Message())
 		} else {
-			suite.Require().NoError(err, tc.Message())
-			suite.Require().NotNil(result, tc.Message())
+			suite.Require().NoError(err, tcase.Message())
+			suite.Require().NotNil(result, tcase.Message())
 		}
 		if result != nil && err == nil {
-			suite.Require().Equal(tc.expected.String(), result.String(), tc.Message())
+			suite.Require().Equal(tcase.expected.String(), result.String(), tcase.Message())
 		}
 	}
 }

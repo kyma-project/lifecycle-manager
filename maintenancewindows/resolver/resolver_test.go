@@ -1,20 +1,21 @@
-package resolver
+package resolver_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/maintenancewindows/resolver"
 )
 
 func TestGetMaintenancePolicyPool(t *testing.T) {
-	err := os.Setenv(policyPathENV, "./testdata")
-	assert.NoError(t, err)
+	t.Setenv(resolver.PolicyPathENV, "./testdata")
 
-	pool, err := GetMaintenancePolicyPool()
-	assert.NoError(t, err)
+	pool, err := resolver.GetMaintenancePolicyPool()
+	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(pool))
+	assert.Len(t, pool, 2)
 	assert.Contains(t, pool, "ruleset-1.json")
 	assert.Contains(t, pool, "ruleset-2.json")
 
