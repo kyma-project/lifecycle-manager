@@ -174,4 +174,5 @@ fmt: ## Run go fmt against code.
 lint: ## Run golangci-lint against code.
 	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
 	$(LOCALBIN)/golangci-lint run --verbose -c .golangci.yaml
-	cd api && $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml
+	pushd api; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
+	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
