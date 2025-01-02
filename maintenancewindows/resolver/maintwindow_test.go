@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/maintenancewindows/resolver"
+	"github.com/kyma-project/lifecycle-manager/maintenancewindows/resolver"
 )
 
 const testfile = "testdata/ruleset-1.json"
