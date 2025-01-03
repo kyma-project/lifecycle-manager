@@ -55,6 +55,13 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 						shared.ManagedByLabelValue).
 					Should(Succeed())
 			}
+			By("And remote namespace is labelled with istio and warden labels")
+			Eventually(EnsureNamespaceHasCorrectLabels).
+				WithContext(ctx).
+				WithArguments(skrClient, RemoteNamespace, map[string]string{
+					"istio-injection": "enabled",
+					"namespaces.warden.kyma-project.io/validate": "enabled",
+				}).Should(Succeed())
 		})
 
 		It("When Kyma Module is enabled in SKR Kyma CR", func() {
