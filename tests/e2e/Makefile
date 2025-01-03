@@ -168,3 +168,6 @@ module-status-on-skr-connection-lost:
   
 modulereleasemeta-not-allowed-installation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Not Allowed Installation"
+
+labelling:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"

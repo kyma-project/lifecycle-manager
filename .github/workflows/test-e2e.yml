@@ -63,6 +63,7 @@ jobs:
           - misconfigured-kyma-secret
           - rbac-privileges
           - ocm-compatible-module-template
+          - labelling
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

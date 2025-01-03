@@ -66,6 +66,7 @@ jobs:
           - module-status-on-skr-connection-lost
           - modulereleasemeta-watch-trigger
           - modulereleasemeta-not-allowed-installation
+          - labelling
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
