@@ -2,8 +2,8 @@ package e2e_test
 
 import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -16,12 +16,12 @@ import (
 )
 
 var managedSkrResources = map[types.NamespacedName]schema.GroupVersionKind{
-	{Name: "kyma-sample", Namespace: RemoteNamespace}:     v1beta2.GroupVersion.WithKind("Kyma"),
-	{Name: "skr-webhook", Namespace: RemoteNamespace}:     appsv1.SchemeGroupVersion.WithKind("Deployment"),
+	{Name: "default", Namespace: RemoteNamespace}:         v1beta2.GroupVersion.WithKind("Kyma"),
+	{Name: "skr-webhook", Namespace: RemoteNamespace}:     apiappsv1.SchemeGroupVersion.WithKind("Deployment"),
 	{Name: "skr-webhook", Namespace: RemoteNamespace}:     admissionregistrationv1.SchemeGroupVersion.WithKind("ValidatingWebhookConfiguration"),
-	{Name: "skr-webhook-tls", Namespace: RemoteNamespace}: corev1.SchemeGroupVersion.WithKind("Secret"),
-	{Name: "skr-webhook-sa", Namespace: RemoteNamespace}:  corev1.SchemeGroupVersion.WithKind("ServiceAccount"),
-	{Name: RemoteNamespace, Namespace: ""}:                corev1.SchemeGroupVersion.WithKind("Namespace"),
+	{Name: "skr-webhook-tls", Namespace: RemoteNamespace}: apicorev1.SchemeGroupVersion.WithKind("Secret"),
+	{Name: "skr-webhook-sa", Namespace: RemoteNamespace}:  apicorev1.SchemeGroupVersion.WithKind("ServiceAccount"),
+	{Name: RemoteNamespace, Namespace: ""}:                apicorev1.SchemeGroupVersion.WithKind("Namespace"),
 }
 
 var _ = Describe("Labelling SKR resources", Ordered, func() {
@@ -38,10 +38,11 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(
 					skrClient,
-					kyma.GetNamespacedName(),
-					kyma.GroupVersionKind(),
+					types.NamespacedName{Name: "default", Namespace: RemoteNamespace},
+					v1beta2.GroupVersion.WithKind("Kyma"),
 					shared.WatchedByLabel,
-					shared.WatchedByLabelValue)
+					shared.WatchedByLabelValue).
+				Should(Succeed())
 			By("And managed SKR resources are labelled with managed-by label")
 			for name, gvk := range managedSkrResources {
 				Eventually(HasExpectedLabel).
@@ -51,7 +52,8 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 						name,
 						gvk,
 						shared.ManagedBy,
-						shared.ManagedByLabelValue)
+						shared.ManagedByLabelValue).
+					Should(Succeed())
 			}
 		})
 
