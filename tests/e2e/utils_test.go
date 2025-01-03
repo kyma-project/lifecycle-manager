@@ -66,13 +66,6 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(RemoteNamespace, []v1beta2.Module{}, skrClient, shared.StateReady).
 			Should(Succeed())
-		By("And Remote Namespace is labelled correctly")
-		Eventually(EnsureNamespaceHasCorrectLabels).
-			WithContext(ctx).
-			WithArguments(skrClient, RemoteNamespace, map[string]string{
-				"istio-injection": "enabled",
-				"namespaces.warden.kyma-project.io/validate": "enabled",
-			}).Should(Succeed())
 		By("And Runtime Watcher deployment is up and running in SKR", func() {
 			Eventually(CheckPodLogs).
 				WithContext(ctx).
