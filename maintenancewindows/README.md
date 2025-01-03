@@ -1,4 +1,4 @@
-# Maitenance Windows library for Kyma
+# Maitenance Windows Library for Kyma
 
 ## Overview
 
