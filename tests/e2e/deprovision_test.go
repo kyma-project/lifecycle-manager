@@ -100,7 +100,8 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 			Eventually(UpdateKymaLabel).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
-					shared.EnableLabelValue)
+					shared.EnableLabelValue).
+				Should(Succeed())
 
 			By("And Kubeconfig Secret is deleted")
 			Eventually(DeleteKymaSecret).
@@ -113,7 +114,8 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 			Eventually(UpdateKymaLabel).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
-					shared.DisableLabelValue)
+					shared.DisableLabelValue).
+				Should(Succeed())
 		})
 
 		It("Then Manifest CR is deleted", func() {
