@@ -62,7 +62,8 @@ runs:
         matrix.e2e-test == 'misconfigured-kyma-secret' ||
         matrix.e2e-test == 'unmanage-module' ||
         matrix.e2e-test == 'modulereleasemeta-watch-trigger' ||
-        matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate'
+        matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' ||
+        matrix.e2e-test == 'labelling'
         }}
       shell: bash
       run: |
