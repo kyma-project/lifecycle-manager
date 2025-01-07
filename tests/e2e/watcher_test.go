@@ -140,7 +140,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			By("And KCP Kyma CR is deleted")
 			Eventually(DeleteKyma).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
+				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationForeground).
 				Should(Succeed())
 
 			By("And Kubeconfig Secret is deleted")
