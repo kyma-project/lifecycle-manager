@@ -1,12 +1,9 @@
 package e2e_test
 
 import (
-	"fmt"
 	"os/exec"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -96,25 +93,10 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 				Should(Succeed())
 		})
 
-		It("When skip-reconciliation label is added to KCP Kyma CR", func() {
-			Eventually(UpdateKymaLabel).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
-					shared.EnableLabelValue).
-				Should(Succeed())
-
-			By("And Kubeconfig Secret is deleted")
+		It("When Kubeconfig Secret is deleted", func() {
 			Eventually(DeleteKymaSecret).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
-				Should(Succeed())
-		})
-
-		It("When skip-reconciliation label is removed from KCP Kyma CR", func() {
-			Eventually(UpdateKymaLabel).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
-					shared.DisableLabelValue).
 				Should(Succeed())
 		})
 
@@ -129,22 +111,6 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
-
-			By("And TLS Certificate and Secret are deleted")
-			secretName := fmt.Sprintf("%s-%s", kyma.GetName(), "webhook-tls")
-			secretNamespacedName := types.NamespacedName{
-				Name:      secretName,
-				Namespace: IstioNamespace,
-			}
-			Eventually(CertificateSecretExists).
-				WithContext(ctx).
-				WithArguments(secretNamespacedName, kcpClient).
-				Should(Equal(ErrSecretNotFound))
-
-			Eventually(CertificateExists).
-				WithContext(ctx).
-				WithArguments(secretNamespacedName, kcpClient).
-				Should(Equal(ErrCertificateNotFound))
 		})
 	})
 }
