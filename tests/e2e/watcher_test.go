@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/exec"
 	"time"
 
 	apiappsv1 "k8s.io/api/apps/v1"
@@ -19,7 +20,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"os/exec"
 )
 
 const (
@@ -178,7 +178,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithArguments(secretNamespacedName, kcpClient).
 				Should(Equal(ErrCertificateNotFound))
 		})
-
 	})
 })
 

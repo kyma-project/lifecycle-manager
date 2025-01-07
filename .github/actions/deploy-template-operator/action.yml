@@ -18,7 +18,8 @@ runs:
         matrix.e2e-test == 'module-consistency' ||
         matrix.e2e-test == 'skip-manifest-reconciliation' ||
         matrix.e2e-test == 'misconfigured-kyma-secret' ||
-        matrix.e2e-test == 'unmanage-module'
+        matrix.e2e-test == 'unmanage-module' ||
+        matrix.e2e-test == 'labelling'
         }}
       shell: bash
       run: |
