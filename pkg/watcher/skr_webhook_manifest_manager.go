@@ -146,11 +146,11 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
-	certificate := NewCertificateManager(m.kcpClient, kyma.Name,
-		m.certificateConfig)
-	if err = certificate.Remove(ctx); err != nil {
+
+	if err = m.RemoveKCPCertificate(ctx, kyma); err != nil {
 		return err
 	}
+
 	skrClientObjects := m.getBaseClientObjects()
 	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, []v1beta2.Watcher{},
 		m.config.RemoteSyncNamespace)
@@ -169,6 +169,16 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	}
 	logger.V(log.DebugLevel).Info("successfully removed webhook resources",
 		"kyma", kymaObjKey.String())
+	return nil
+}
+
+func (m *SKRWebhookManifestManager) RemoveKCPCertificate(ctx context.Context, kyma *v1beta2.Kyma) error {
+	certificate := NewCertificateManager(m.kcpClient, kyma.Name,
+		m.certificateConfig)
+	if err := certificate.Remove(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 

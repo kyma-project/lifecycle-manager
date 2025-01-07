@@ -99,6 +99,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
+			if err = r.handleOrphanedResourcesDeletion(ctx, kyma); err != nil {
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{Requeue: false}, nil
 		}
 		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
@@ -619,6 +622,14 @@ func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
 				return fmt.Errorf("failed to update ModuleTemplate, %w", err)
 			}
 		}
+	}
+
+	return nil
+}
+
+func (r *Reconciler) handleOrphanedResourcesDeletion(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if err := r.SKRWebhookManager.RemoveKCPCertificate(ctx, kyma); err != nil {
+		return err
 	}
 
 	return nil
