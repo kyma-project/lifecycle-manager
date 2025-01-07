@@ -147,7 +147,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	if err = m.RemoveKCPCertificate(ctx, kyma); err != nil {
+	if err = m.RemoveKCPCertificate(ctx, kyma.Name); err != nil {
 		return err
 	}
 
@@ -172,8 +172,8 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	return nil
 }
 
-func (m *SKRWebhookManifestManager) RemoveKCPCertificate(ctx context.Context, kyma *v1beta2.Kyma) error {
-	certificate := NewCertificateManager(m.kcpClient, kyma.Name,
+func (m *SKRWebhookManifestManager) RemoveKCPCertificate(ctx context.Context, kymaName string) error {
+	certificate := NewCertificateManager(m.kcpClient, kymaName,
 		m.certificateConfig)
 	if err := certificate.Remove(ctx); err != nil {
 		return err

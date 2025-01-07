@@ -35,7 +35,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		kyma.GetNamespace(), kyma.GetName())
 
 	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
 	secretName := types.NamespacedName{
 		Name:      watcher.SkrTLSName,
 		Namespace: RemoteNamespace,
