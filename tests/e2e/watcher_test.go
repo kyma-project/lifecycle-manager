@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/exec"
 	"time"
 
 	apiappsv1 "k8s.io/api/apps/v1"
@@ -34,7 +35,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		kyma.GetNamespace(), kyma.GetName())
 
 	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
 	secretName := types.NamespacedName{
 		Name:      watcher.SkrTLSName,
 		Namespace: RemoteNamespace,
@@ -117,6 +117,65 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithArguments(ControlPlaneNamespace, KLMPodPrefix, KLMPodContainer, incomingRequestMsg, kcpRESTConfig,
 					kcpClient, patchingTimestamp).
 				Should(Succeed())
+		})
+
+		It("When SKR Cluster is removed", func() {
+			cmd := exec.Command("sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
+			out, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+			cmd = exec.Command("k3d", "cluster", "rm", "skr")
+			out, err = cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+
+			By("And skip-reconciliation label is added to KCP Kyma CR")
+			Eventually(UpdateKymaLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
+					shared.EnableLabelValue).
+				Should(Succeed())
+
+			By("And KCP Kyma CR is deleted")
+			Eventually(DeleteKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
+				Should(Succeed())
+
+			By("And Kubeconfig Secret is deleted")
+			Eventually(DeleteKymaSecret).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+				Should(Succeed())
+
+			By("And skip-reconciliation label is removed from KCP Kyma CR")
+			Eventually(UpdateKymaLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.SkipReconcileLabel,
+					shared.DisableLabelValue).
+				Should(Succeed())
+		})
+
+		It("Then KCP Kyma CR is deleted", func() {
+			Eventually(KymaDeleted).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+				Should(Succeed())
+
+			By("And KCP TLS Certificate and Secret are deleted")
+			secretNamespacedName := types.NamespacedName{
+				Name:      watcher.ResolveTLSCertName(kyma.Name),
+				Namespace: IstioNamespace,
+			}
+			Eventually(CertificateSecretExists).
+				WithContext(ctx).
+				WithArguments(secretNamespacedName, kcpClient).
+				Should(Equal(ErrSecretNotFound))
+
+			Eventually(CertificateExists).
+				WithContext(ctx).
+				WithArguments(secretNamespacedName, kcpClient).
+				Should(Equal(ErrCertificateNotFound))
 		})
 	})
 })

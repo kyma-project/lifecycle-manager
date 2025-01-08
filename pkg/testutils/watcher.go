@@ -14,9 +14,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var (
+	ErrSecretNotFound         = errors.New("secret does not exist")
+	ErrCertificateNotFound    = errors.New("certificate does not exist")
 	errOldCreationTime        = errors.New("certificate has an old creation timestamp")
 	errNotSyncedSecret        = errors.New("secrets are not synced")
 	errTLSSecretNotRotated    = errors.New("tls secret did not rotated")
@@ -26,8 +29,24 @@ var (
 func CertificateSecretExists(ctx context.Context, secretName types.NamespacedName, k8sClient client.Client) error {
 	certificateSecret := &apicorev1.Secret{}
 	err := k8sClient.Get(ctx, secretName, certificateSecret)
+	if util.IsNotFound(err) {
+		return ErrSecretNotFound
+	}
 	if err != nil {
 		return fmt.Errorf("failed to get certificate secret %w", err)
+	}
+
+	return nil
+}
+
+func CertificateExists(ctx context.Context, certificateName types.NamespacedName, k8sClient client.Client) error {
+	certificate := &certmanagerv1.Certificate{}
+	err := k8sClient.Get(ctx, certificateName, certificate)
+	if util.IsNotFound(err) {
+		return ErrCertificateNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get certificate %w", err)
 	}
 
 	return nil

@@ -3,15 +3,15 @@ package e2e_test
 import (
 	"os/exec"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
