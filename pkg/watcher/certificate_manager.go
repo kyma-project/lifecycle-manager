@@ -101,7 +101,7 @@ func (c *CertificateManager) CreateSelfSignedCert(ctx context.Context, kyma *v1b
 
 // Remove removes the certificate including its certificate secret.
 func (c *CertificateManager) Remove(ctx context.Context) error {
-	err := c.RemoveCertificate(ctx)
+	err := c.removeCertificate(ctx)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	return c.removeSecret(ctx)
 }
 
-func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
+func (c *CertificateManager) removeCertificate(ctx context.Context) error {
 	certificate := &certmanagerv1.Certificate{}
 	err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
