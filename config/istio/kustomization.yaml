@@ -11,10 +11,5 @@ generatorOptions:
   disableNameSuffixHash: true
 
 patches:
-  - target:
-      version: v1
-      kind: Namespace
-    path: patches/istio_namespace_labels.yaml
-  - target:
-      kind: Deployment
-    path: patches/exclude_webhook_port.yaml
+  - path: patches/istio_deployment_labels.yaml
+  - path: patches/exclude_webhook_port.yaml
