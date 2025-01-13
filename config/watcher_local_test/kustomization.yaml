@@ -11,6 +11,7 @@ resources:
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
 components:
   - ../istio
+  - ../maintenance_windows
 
 
 generatorOptions:
