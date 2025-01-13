@@ -34,6 +34,8 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
+        k8s_version=$(yq e '.k8s' versions.yaml)
+
         echo "istio_version=$(yq e '.istio' versions.yaml)" >> $GITHUB_OUTPUT
         echo "k3d_version=$(yq e '.k3d' versions.yaml)" >> $GITHUB_OUTPUT
         echo "modulectl_version=$(yq e '.modulectl' versions.yaml)" >> $GITHUB_OUTPUT
@@ -42,11 +44,12 @@ runs:
         if [[ -n "${{ github.event.pull_request.number }}" ]]; then
           echo "klm_version_tag=PR-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           echo "klm_image_repo=dev" >> $GITHUB_OUTPUT
-          echo "k8s_version=$(yq e '.k8s' versions.yaml)" >> $GITHUB_OUTPUT
+          echo "k8s_version=${k8s_version}" >> $GITHUB_OUTPUT
         else
           # Manually executed workflow should use the latest image of main branch
           echo "klm_version_tag=latest" >> $GITHUB_OUTPUT
           echo "klm_image_repo=prod" >> $GITHUB_OUTPUT
+          echo "k8s_version=${{ github.event.inputs.k8s_version || k8s_version }}" >> $GITHUB_OUTPUT
         fi
     - name: Expose environment variables
       shell: bash
