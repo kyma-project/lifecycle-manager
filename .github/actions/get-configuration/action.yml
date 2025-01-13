@@ -25,24 +25,29 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Install yq
+      uses: ./lifecycle-manager/.github/actions/install-yq
+      with:
+        yq_version: 4.45.1
     - name: Define variables
       id: define-variables
+      working-directory: lifecycle-manager
       shell: bash
       run: |
-        echo "istio_version=1.20.3" >> $GITHUB_OUTPUT
-        echo "k3d_version=5.7.4" >> $GITHUB_OUTPUT
-        echo "modulectl_version=1.1.3" >> $GITHUB_OUTPUT
-        echo "cert_manager_version=1.15.0" >> $GITHUB_OUTPUT
+        echo "istio_version=$(yq e '.istio' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "k3d_version=$(yq e '.k3d' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "modulectl_version=$(yq e '.modulectl' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "cert_manager_version=$(yq e '.certManager' versions.yaml)" >> $GITHUB_OUTPUT
         
         if [[ -n "${{ github.event.pull_request.number }}" ]]; then
           echo "klm_version_tag=PR-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           echo "klm_image_repo=dev" >> $GITHUB_OUTPUT
-          echo "k8s_version=1.30.3" >> $GITHUB_OUTPUT
+          echo "k8s_version=$(yq e '.k8s' versions.yaml)" >> $GITHUB_OUTPUT
         else
           # Manually executed workflow should use the latest image of main branch
           echo "klm_version_tag=latest" >> $GITHUB_OUTPUT
           echo "klm_image_repo=prod" >> $GITHUB_OUTPUT
-          echo "k8s_version=${{ github.event.inputs.k8s_version || '1.30.3' }}" >> $GITHUB_OUTPUT
+          echo "k8s_version=${{ github.event.inputs.k8s_version || $(yq e '.k8s' versions.yaml) }}" >> $GITHUB_OUTPUT
         fi
     - name: Expose environment variables
       shell: bash
