@@ -2,10 +2,9 @@ module github.com/kyma-project/lifecycle-manager
 
 go 1.23.4
 
-replace (
-	github.com/kyma-project/lifecycle-manager/api => ./api
-	github.com/kyma-project/lifecycle-manager/maintenancewindows => ./maintenancewindows
-)
+replace github.com/kyma-project/lifecycle-manager/api => ./api
+
+replace github.com/kyma-project/lifecycle-manager/maintenancewindows => ./maintenancewindows
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
