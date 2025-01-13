@@ -28,20 +28,20 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6.1.0
         with:
-          version: ${{ steps.configuration.outputs.golangci_lint_version }}
+          version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager
 
       - name: golangci-lint for api module
         uses: golangci/golangci-lint-action@v6.1.0
         with:
-          version: ${{ steps.configuration.outputs.golangci_lint_version }}
+          version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager/api
 
       - name: golangci-lint for maintenancewindows module
         uses: golangci/golangci-lint-action@v6.1.0
         with:
-          version: ${{ steps.configuration.outputs.golangci_lint_version }}
+          version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager/maintenancewindows
