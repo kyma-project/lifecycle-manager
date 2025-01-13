@@ -9,31 +9,31 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened, ready_for_review]
 jobs:
-  wait-for-image-build:
-    name: Wait for image build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set Image
-        run: |
-          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
-            echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
-          else
-            # Manually executed workflow should use the latest image of main branch
-            echo "IMAGE=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest" >> $GITHUB_ENV
-          fi
-      - name: Wait for the Docker image
-        timeout-minutes: 20
-        env:
-          ITERATIONS: 40
-          SLEEP_SECONDS: 30
-        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
+  # wait-for-image-build:
+  #   name: Wait for image build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Set Image
+  #       run: |
+  #         if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+  #           echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+  #         else
+  #           # Manually executed workflow should use the latest image of main branch
+  #           echo "IMAGE=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest" >> $GITHUB_ENV
+  #         fi
+  #     - name: Wait for the Docker image
+  #       timeout-minutes: 20
+  #       env:
+  #         ITERATIONS: 40
+  #         SLEEP_SECONDS: 30
+  #       run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
     name: E2E With ModuleReleaseMeta
-    needs: wait-for-image-build
+    # needs: wait-for-image-build
     strategy:
       fail-fast: false
       matrix:
