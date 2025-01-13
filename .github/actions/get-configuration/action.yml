@@ -29,7 +29,8 @@ runs:
   using: composite
   steps:
     - name: Install yq
-      uses: ./lifecycle-manager/.github/actions/install-yq
+      uses: ./.github/actions/install-yq
+      working-directory: lifecycle-manager
       with:
         yq_version: 4.45.1
     - name: Define variables
