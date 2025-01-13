@@ -9,6 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
 var _ = Describe("Purge Metrics", Ordered, func() {

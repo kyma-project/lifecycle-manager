@@ -1,4 +1,4 @@
-package testutils
+package commontestutils
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	apiappsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -20,7 +21,7 @@ func DeploymentIsReady(ctx context.Context, clnt client.Client, name, namespace 
 	deploy, err := GetDeployment(ctx, clnt, name, namespace)
 	if err != nil {
 		if util.IsNotFound(err) {
-			return ErrNotFound
+			return testutils.ErrNotFound
 		}
 		return fmt.Errorf("could not get deployment: %w", err)
 	}

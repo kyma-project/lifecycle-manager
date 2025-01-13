@@ -16,6 +16,7 @@ import (
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
 type ResourceKind string
