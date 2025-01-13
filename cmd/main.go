@@ -137,7 +137,7 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
-// nolint: funlen // setupManager is a main function that sets up the manager
+//nolint: funlen // setupManager is a main function that sets up the manager
 func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
 	setupLog logr.Logger,
 ) {
