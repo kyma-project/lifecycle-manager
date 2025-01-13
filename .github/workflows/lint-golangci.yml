@@ -18,7 +18,7 @@ jobs:
           cache: false
 
       - name: Get configuration
-        uses: .github/actions/get-configuration
+        uses: ./github/actions/get-configuration
         id: configuration
 
       - name: golangci-lint
