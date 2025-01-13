@@ -5,11 +5,11 @@
 SEM_VER_REGEX="^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
 
 # Set default values for variables
-KUBECTL_VERSION_DEFAULT="1.31.3"
-GO_VERSION_DEFAULT="1.23.3"
-K3D_VERSION_DEFAULT="5.6.0"
-DOCKER_VERSION_DEFAULT="27.3.1"
-ISTIOCTL_VERSION_DEFAULT="1.24.1"
+KUBECTL_VERSION_DEFAULT=$(yq e '.kubectl' versions.yaml)
+GO_VERSION_DEFAULT=$(yq e '.go' versions.yaml)
+K3D_VERSION_DEFAULT=$(yq e '.k3d' versions.yaml)
+DOCKER_VERSION_DEFAULT=$(yq e '.docker' versions.yaml)
+ISTIOCTL_VERSION_DEFAULT=$(yq e '.istio' versions.yaml)
 
 versioning_error=false
 # Check if required tools are installed
