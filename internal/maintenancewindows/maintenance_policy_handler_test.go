@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 )
 
 func TestMaintenancePolicyFileExists_FileNotExists(t *testing.T) {
