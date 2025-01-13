@@ -56,6 +56,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -68,7 +69,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "ocm.software/ocm/api/ocm"
 	//nolint:gci // kubebuilder's scaffold imports must be appended here.
-	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 )
 
 const (
@@ -137,8 +137,10 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
+// nolint: funlen // setupManager is a main function that sets up the manager
 func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
-	setupLog logr.Logger) { //nolint: funlen // setupManager is a main function that sets up the manager
+	setupLog logr.Logger,
+) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.ClientQPS)
 	config.Burst = flagVar.ClientBurst
@@ -188,7 +190,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	moduleMetrics := metrics.NewModuleMetrics()
 
-	// TODO: The maintenance windows policy should be passed to the manifest reconciler to be resolved: https://github.com/kyma-project/lifecycle-manager/issues/2101
+	// The maintenance windows policy should be passed to the manifest reconciler to be resolved: https://github.com/kyma-project/lifecycle-manager/issues/2101
 	_, err = maintenancewindows.InitializeMaintenanceWindowsPolicy(setupLog)
 	if err != nil {
 		setupLog.Error(err, "unable to set maintenance windows policy")

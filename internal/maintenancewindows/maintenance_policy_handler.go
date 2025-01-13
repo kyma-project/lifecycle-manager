@@ -22,7 +22,7 @@ func InitializeMaintenanceWindowsPolicy(log logr.Logger) (*resolver.MaintenanceW
 	policyFilePath := fmt.Sprintf("%s/%s.json", policiesDirectory, policyName)
 	if !maintenancePolicyFileExists(policyFilePath) {
 		log.Info("maintenance windows policy file does not exist")
-		return nil, nil
+		return nil, nil //nolint:nilnil //use nil to indicate an empty Maintenance Window Policy
 	}
 
 	maintenancePolicyPool, err := resolver.GetMaintenancePolicyPool()
