@@ -7,7 +7,7 @@ IMG := $(IMG_NAME):$(DOCKER_TAG)
 BUILD_VERSION := from_makefile
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.30.3
+ENVTEST_K8S_VERSION = $(shell yq e '.k8s' ./versions.yaml)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -147,9 +147,9 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.3.0
-CONTROLLER_TOOLS_VERSION ?= v0.14.0
-GOLANG_CI_LINT_VERSION ?= v1.60.3
+KUSTOMIZE_VERSION ?= v$(shell yq e '.kustomize' ./versions.yaml)
+CONTROLLER_TOOLS_VERSION ?= v$(shell yq e '.controllerTools' ./versions.yaml)
+GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.

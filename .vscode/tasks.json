@@ -9,8 +9,8 @@
       "command": "${cwd}/scripts/tests/create_test_clusters.sh",
       "dependsOn": ["Delete Test Clusters"],
       "args": [
-        "--k8s-version", "1.30.3",
-        "--cert-manager-version", "1.13.3"
+        "--k8s-version", "${input:k8sVersion}",
+        "--cert-manager-version", "${input:certManagerVersion}"
         ]
     },
     {
@@ -23,8 +23,8 @@
       "type": "shell",
       "command": "${cwd}/scripts/tests/create_test_clusters.sh",
       "args": [
-        "--k8s-version", "1.30.3",
-        "--cert-manager-version", "1.13.3"
+        "--k8s-version", "${input:k8sVersion}",
+        "--cert-manager-version", "${input:certManagerVersion}"
         ]
     },
     // re-run if encountering error that the watcher CRD is missing
@@ -74,6 +74,26 @@
     }
   ],
   "inputs": [
+    {
+      "id": "k8sVersion",
+      "type": "command",
+      "command": "shellCommand.execute",
+      "args": {
+        "command": "yq e '.k8s' ./versions.yaml",
+        "cwd": "${workspaceFolder}",
+        "useSingleResult": true
+      }
+    },
+    {
+      "id": "certManagerVersion",
+      "type": "command",
+      "command": "shellCommand.execute",
+      "args": {
+        "command": "yq e '.certManager' ./versions.yaml",
+        "cwd": "${workspaceFolder}",
+        "useSingleResult": true
+      }
+    },
     {
       // not all of the options work OOTB, see deploy-lifecycle-manager-e2e action.yaml for specific patches
       "id": "e2eTestTarget",
