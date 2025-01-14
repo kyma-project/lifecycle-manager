@@ -25,7 +25,9 @@ var _ = Describe("Reading Maintenance Window Policy", Ordered, func() {
 		})
 
 		It("When maintenance windows are applied", func() {
-			cmd := exec.Command("kubectl", "apply", "-k", "../../config/maintenance_windows")
+			cmd := exec.Command("(", "cd", "../../config/watcher_local_test", "&&", "kustomize", "edit", "add",
+				"component",
+				"../maintenance_windows", ")")
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
