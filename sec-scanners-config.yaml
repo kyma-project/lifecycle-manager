@@ -4,6 +4,7 @@ checkmarxOne:
   checkmarx_preset: golang
 protecode:
   - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:1.2.7
+  - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
 whitesource:
   language: golang-mod
   exclude:
