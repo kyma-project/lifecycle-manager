@@ -1,7 +1,7 @@
 # Local Test Setup in the Control Plane Mode Using k3d
 
 > ### Supported Versions
-> see [versions.yaml](../../versions.yaml) for the tooling versions expected in the project.
+> For more information on the tooling versions expected in the project, see [`versions.yaml`](../../versions.yaml).
 
 ## Context
 

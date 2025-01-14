@@ -11,7 +11,7 @@ If the check detects outdated versions, it gives a warning and exits with succes
 
 ### Current Versions
 
-Are defined in [`versions.yaml`](../../versions.yaml).
+The current tooling versions are defined in [`versions.yaml`](../../versions.yaml).
 
 ## Create Test Clusters: `create_test_cluster.sh`
 The script creates two test clusters using `k3d`:
