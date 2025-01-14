@@ -171,3 +171,6 @@ modulereleasemeta-not-allowed-installation:
 
 labelling:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"
+
+maintenance-windows-reading:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Reading Maintenance Window Policy"
