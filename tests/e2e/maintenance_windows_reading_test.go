@@ -1,13 +1,14 @@
 package e2e_test
 
 import (
+	"os/exec"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"os/exec"
 )
 
 var _ = Describe("Reading Maintenance Window Policy", Ordered, func() {
