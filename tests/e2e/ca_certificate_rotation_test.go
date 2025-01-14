@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
 var _ = Describe("CA Certificate Rotation", Ordered, func() {

@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
 var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {

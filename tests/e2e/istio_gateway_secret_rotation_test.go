@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

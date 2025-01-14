@@ -128,7 +128,7 @@ linters-settings:
         alias: metricsserver
       - pkg: github.com/prometheus/client_model/go
         alias: prometheusclient
-      - pkg: github.com/kyma-project/lifecycle-manager/pkg/testutils/skrcontextimpl
+      - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
         alias: testskrcontext
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
         alias: watcherctrl
@@ -186,6 +186,14 @@ issues:
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils
         - err113 # Dynamic error creation in unit and integration test utils is ok
+    - path: "tests/e2e/commontestutils/"
+      linters:
+        - wrapcheck # Errors do not need to be wrapped in e2e test utils
+        - err113 # Dynamic error creation in e2e test utils is ok
+    - path: "tests/integration/commontestutils/"
+      linters:
+        - wrapcheck # Errors do not need to be wrapped in integration test utils
+        - err113 # Dynamic error creation in integration test utils is ok
     - path: tests/e2e/
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - path: tests/integration/
