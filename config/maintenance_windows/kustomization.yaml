@@ -11,12 +11,3 @@ generatorOptions:
 
 patches:
   - path: patches/volume_mount.yaml
-
-transformers:
-- |-
-  apiVersion: builtin
-  kind: NamespaceTransformer
-  metadata:
-    name: add-maintwindows-cm-to-kcp-system
-    namespace: kcp-system
-  unsetOnly: true
