@@ -10,14 +10,8 @@ If the check detects outdated versions, it gives a warning and exits with succes
 * `2` - Invalid version found, for example, incorrect Semantic Versioning
 
 ### Current Versions
-| CLI Tool  | Version |
-| --------- | ------- |
-| `kubectl` | v1.31.3 |
-| `go`      | v1.23.3 |
-| `k3d`     | v5.6.0  |
-| `docker`  | v27.3.1 |
-| `istioctl`| v1.24.1 |
 
+The current tooling versions are defined in [`versions.yaml`](../../versions.yaml).
 
 ## Create Test Clusters: `create_test_cluster.sh`
 The script creates two test clusters using `k3d`:

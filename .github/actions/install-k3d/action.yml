@@ -15,4 +15,3 @@ runs:
         chmod +x k3d-linux 
         mv k3d-linux ./k3d/bin/k3d
         echo "$(pwd)/k3d/bin" >> $GITHUB_PATH
-        

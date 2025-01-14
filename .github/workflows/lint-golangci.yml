@@ -11,25 +11,37 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          path: lifecycle-manager
+
       - uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: './lifecycle-manager/go.mod'
           cache: false
+
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
+        id: configuration
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6.1.0
         with:
-          version: v1.60.3
+          version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
+          working-directory: ./lifecycle-manager
+
       - name: golangci-lint for api module
         uses: golangci/golangci-lint-action@v6.1.0
         with:
-          version: v1.60.3
+          version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
-          working-directory: ./api
+          working-directory: ./lifecycle-manager/api
+
       - name: golangci-lint for maintenancewindows module
         uses: golangci/golangci-lint-action@v6.1.0
         with:
-          version: v1.60.3
+          version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
-          working-directory: ./maintenancewindows
+          working-directory: ./lifecycle-manager/maintenancewindows

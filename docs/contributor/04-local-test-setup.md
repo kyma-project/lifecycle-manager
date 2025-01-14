@@ -1,16 +1,7 @@
 # Local Test Setup in the Control Plane Mode Using k3d
 
 > ### Supported Versions
-> * Golang: `v1.22.5`
-> * k3d: `v5.6.0`
-> * k3s: `v1.27.4-k3s1 (default)`
-> * kubectl:
->  * Client Version: `v1.30.2`
->  * Server Version: `v1.27.4+k3s1`
-> * docker:
->  * Client Version: `v26.1.4`
->  * Server: `Docker Desktop v4.31.0`
->  * Engine Version: `v26.1.4`
+> For more information on the tooling versions expected in the project, see [`versions.yaml`](../../versions.yaml).
 
 ## Context
 

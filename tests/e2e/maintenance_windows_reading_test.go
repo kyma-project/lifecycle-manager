@@ -16,19 +16,28 @@ var _ = Describe("Reading Maintenance Window Policy", Ordered, func() {
 
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given KCP Cluster With No Maintenance Window File", func() {
+	Context("Given KCP Cluster With No Maintenance Windows", func() {
 		It("Then maintenance-config ConfigMap does not exist", func() {
 			Eventually(MaintenanceWindowConfigMapExists).
 				WithContext(ctx).
 				WithArguments(kcpClient).
 				Should(Equal(ErrConfigMapNotExist))
+
+			By("And Maintenance Window Policy file doesnot exist")
 		})
 
 		It("When maintenance windows are applied", func() {
-			cmd := exec.Command("(", "cd", "../../config/watcher_local_test", "&&", "kustomize", "edit", "add",
-				"component",
-				"../maintenance_windows", ")")
+			cmd := exec.Command("sed", "-i",
+				"'/resources:/a \\  - ../maintenance_windows'",
+				"../../config/watcher_local_test/kustomization.yaml")
 			out, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+
+			cmd = exec.Command("kubectl", "apply",
+				"-k",
+				"../../config/watcher_local_test")
+			out, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 		})
