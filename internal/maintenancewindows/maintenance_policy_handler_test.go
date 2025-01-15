@@ -24,11 +24,25 @@ func TestMaintenancePolicyFileExists_FileExists(t *testing.T) {
 	require.True(t, got)
 }
 
-func TestInitializeMaintenanceWindowsPolicy_FileNotExist(t *testing.T) {
+func TestInitializeMaintenanceWindowsPolicy_FileNotExist_NoError(t *testing.T) {
 	got, err := maintenancewindows.InitializeMaintenanceWindowsPolicy(logr.Logger{}, "testdata", "policy-1")
 
 	require.Nil(t, got)
 	require.NoError(t, err)
+}
+
+func TestInitializeMaintenanceWindowsPolicy_DirectoryNotExist_NoError(t *testing.T) {
+	got, err := maintenancewindows.InitializeMaintenanceWindowsPolicy(logr.Logger{}, "files", "policy")
+
+	require.Nil(t, got)
+	require.NoError(t, err)
+}
+
+func TestInitializeMaintenanceWindowsPolicy_InvalidPolicy(t *testing.T) {
+	got, err := maintenancewindows.InitializeMaintenanceWindowsPolicy(logr.Logger{}, "testdata", "invalid-policy")
+
+	require.Nil(t, got)
+	require.ErrorContains(t, err, "failed to get maintenance window policy")
 }
 
 func TestInitializeMaintenanceWindowsPolicy_WhenFileExists_CorrectPolicyIsRead(t *testing.T) {
