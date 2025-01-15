@@ -4,12 +4,15 @@
 # Using a simplified version of semantic versioning regex pattern, which is bash compatible
 SEM_VER_REGEX="^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
 
+# Change to root directory of the project
+cd "$(git rev-parse --show-toplevel)"
+
 # Set default values for variables
-KUBECTL_VERSION_DEFAULT=$(yq e '.kubectl' versions.yaml)
-GO_VERSION_DEFAULT=$(yq e '.go' versions.yaml)
-K3D_VERSION_DEFAULT=$(yq e '.k3d' versions.yaml)
-DOCKER_VERSION_DEFAULT=$(yq e '.docker' versions.yaml)
-ISTIOCTL_VERSION_DEFAULT=$(yq e '.istio' versions.yaml)
+KUBECTL_VERSION_DEFAULT=$(yq e '.kubectl' ./versions.yaml)
+GO_VERSION_DEFAULT=$(yq e '.go' ./versions.yaml)
+K3D_VERSION_DEFAULT=$(yq e '.k3d' ./versions.yaml)
+DOCKER_VERSION_DEFAULT=$(yq e '.docker' ./versions.yaml)
+ISTIOCTL_VERSION_DEFAULT=$(yq e '.istio' ./versions.yaml)
 
 versioning_error=false
 # Check if required tools are installed
