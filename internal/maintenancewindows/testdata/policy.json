@@ -1,0 +1,45 @@
+{
+  "rules": [
+    {
+      "match": {
+        "plan": "trial|free"
+      },
+      "windows": [
+        {
+          "days": [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun"
+          ],
+          "begin": "01:00:00+00:00",
+          "end": "01:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "europe|eu-|uksouth"
+      },
+      "windows": [
+        {
+          "days": [
+            "Sat"
+          ],
+          "begin": "21:00:00+00:00",
+          "end": "00:00:00+00:00"
+        }
+      ]
+    }
+  ],
+  "default": {
+    "days": [
+      "Sat"
+    ],
+    "begin": "21:00:00+00:00",
+    "end": "23:00:00+00:00"
+  }
+}

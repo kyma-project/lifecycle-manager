@@ -9,6 +9,7 @@ COPY go.sum go.sum
 # Copy the go source
 COPY cmd cmd/
 COPY api api/
+COPY maintenancewindows maintenancewindows/
 COPY internal internal/
 COPY pkg pkg/
 COPY skr-webhook skr-webhook/

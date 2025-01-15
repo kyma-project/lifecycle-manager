@@ -1,0 +1,87 @@
+{
+  "rules": [
+    {
+      "match": {
+        "plan": "trial|free"
+      },
+      "windows": [
+        {
+          "days": [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun"
+          ],
+          "begin": "01:00:00+00:00",
+          "end": "01:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "europe|eu-|uksouth"
+      },
+      "windows": [
+        {
+          "days": [
+            "Sat"
+          ],
+          "begin": "21:00:00+00:00",
+          "end": "00:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "asia|japan|australia|ap-"
+      },
+      "windows": [
+        {
+          "days": [
+            "Sat"
+          ],
+          "begin": "14:00:00+00:00",
+          "end": "17:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "central│us|eastus|westus|brazilsouth|northamerica|southamerica|us-|ca-|sa-|na-"
+      },
+      "windows": [
+        {
+          "days": [
+            "Sun"
+          ],
+          "begin": "14:00:00+00:00",
+          "end": "17:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "me"
+      },
+      "windows": [
+        {
+          "days": [
+            "Fri"
+          ],
+          "begin": "17:00:00+00:00",
+          "end": "21:00:00+00:00"
+        }
+      ]
+    }
+  ],
+  "default": {
+    "days": [
+      "Sat"
+    ],
+    "begin": "21:00:00+00:00",
+    "end": "23:00:00+00:00"
+  }
+}

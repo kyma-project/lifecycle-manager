@@ -56,6 +56,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -74,6 +75,9 @@ const (
 	metricCleanupTimeout    = 5 * time.Minute
 	bootstrapFailedExitCode = 1
 	runtimeProblemExitCode  = 2
+
+	maintenanceWindowPolicyName        = "policy"
+	maintenanceWindowPoliciesDirectory = "/etc/maintenance-policy"
 )
 
 var (
@@ -136,7 +140,10 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
-func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme, setupLog logr.Logger) { //nolint: funlen // setupManager is a main function that sets up the manager
+//nolint:funlen // setupManager is a main function that sets up the manager
+func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
+	setupLog logr.Logger,
+) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.ClientQPS)
 	config.Burst = flagVar.ClientBurst
@@ -185,9 +192,15 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	moduleMetrics := metrics.NewModuleMetrics()
+
+	// The maintenance windows policy should be passed to the reconciler to be resolved: https://github.com/kyma-project/lifecycle-manager/issues/2101
+	_, err = maintenancewindows.InitializeMaintenanceWindowsPolicy(setupLog, maintenanceWindowPoliciesDirectory,
+		maintenanceWindowPolicyName)
+	if err != nil {
+		setupLog.Error(err, "unable to set maintenance windows policy")
+	}
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, moduleMetrics,
-		setupLog)
+		kymaMetrics, moduleMetrics, setupLog)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, moduleMetrics, setupLog,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
@@ -292,7 +305,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
 		ModuleMetrics:       moduleMetrics,
-		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory, flagVar.RemoteSyncNamespace),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
+			flagVar.RemoteSyncNamespace),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
