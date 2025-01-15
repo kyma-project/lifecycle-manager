@@ -47,6 +47,7 @@ func TestInitializeMaintenanceWindowsPolicy_InvalidPolicy(t *testing.T) {
 
 func TestInitializeMaintenanceWindowsPolicy_WhenFileExists_CorrectPolicyIsRead(t *testing.T) {
 	got, err := maintenancewindows.InitializeMaintenanceWindowsPolicy(logr.Logger{}, "testdata", "policy")
+	require.NoError(t, err)
 
 	ruleOneBeginTime, err := parseTime("01:00:00+00:00")
 	require.NoError(t, err)

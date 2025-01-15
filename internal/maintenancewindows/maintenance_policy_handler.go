@@ -10,7 +10,8 @@ import (
 )
 
 func InitializeMaintenanceWindowsPolicy(log logr.Logger,
-	policiesDirectory, policyName string) (*resolver.MaintenanceWindowPolicy, error) {
+	policiesDirectory, policyName string,
+) (*resolver.MaintenanceWindowPolicy, error) {
 	if err := os.Setenv(resolver.PolicyPathENV, policiesDirectory); err != nil {
 		return nil, fmt.Errorf("failed to set the policy path env variable, %w", err)
 	}
