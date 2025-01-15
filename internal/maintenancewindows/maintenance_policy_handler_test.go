@@ -1,15 +1,15 @@
 package maintenancewindows_test
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 
-	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/kyma-project/lifecycle-manager/maintenancewindows/resolver"
-	"time"
 )
 
 func TestMaintenancePolicyFileExists_FileNotExists(t *testing.T) {
@@ -98,7 +98,7 @@ func TestInitializeMaintenanceWindowsPolicy_WhenFileExists_CorrectPolicyIsRead(t
 	}
 
 	require.NoError(t, err)
-	require.Equal(t, got, expectedPolicy)
+	require.Equal(t, expectedPolicy, got)
 }
 
 func parseTime(value string) (time.Time, error) {
