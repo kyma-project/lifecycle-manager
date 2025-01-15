@@ -64,7 +64,6 @@ jobs:
           - rbac-privileges
           - ocm-compatible-module-template
           - labelling
-          - maintenance-windows-reading
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

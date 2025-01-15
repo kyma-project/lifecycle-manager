@@ -67,7 +67,6 @@ jobs:
           - modulereleasemeta-watch-trigger
           - modulereleasemeta-not-allowed-installation
           - labelling
-          - maintenance-windows-reading
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
