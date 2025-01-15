@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
 var _ = Describe("Manage Module Metrics", Ordered, func() {
