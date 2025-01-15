@@ -75,6 +75,9 @@ const (
 	metricCleanupTimeout    = 5 * time.Minute
 	bootstrapFailedExitCode = 1
 	runtimeProblemExitCode  = 2
+
+	maintenanceWindowPolicyName        = "policy"
+	maintenanceWindowPoliciesDirectory = "/etc/maintenance-policy"
 )
 
 var (
@@ -190,8 +193,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	moduleMetrics := metrics.NewModuleMetrics()
 
-	// The maintenance windows policy should be passed to the manifest reconciler to be resolved: https://github.com/kyma-project/lifecycle-manager/issues/2101
-	_, err = maintenancewindows.InitializeMaintenanceWindowsPolicy(setupLog)
+	// The maintenance windows policy should be passed to the reconciler to be resolved: https://github.com/kyma-project/lifecycle-manager/issues/2101
+	_, err = maintenancewindows.InitializeMaintenanceWindowsPolicy(setupLog, maintenanceWindowPoliciesDirectory,
+		maintenanceWindowPolicyName)
 	if err != nil {
 		setupLog.Error(err, "unable to set maintenance windows policy")
 	}
