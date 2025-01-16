@@ -71,7 +71,6 @@ type Reconciler struct {
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
-	ModuleMetrics       *metrics.ModuleMetrics
 	RemoteCatalog       *remote.RemoteCatalog
 }
 
@@ -446,7 +445,6 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 
 func (r *Reconciler) cleanupMetrics(kymaName string) {
 	r.Metrics.CleanupMetrics(kymaName)
-	r.ModuleMetrics.CleanupMetrics(kymaName)
 }
 
 func (r *Reconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -514,7 +512,7 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
-	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics, r.ModuleMetrics)
+	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)
