@@ -171,3 +171,6 @@ modulereleasemeta-not-allowed-installation:
 
 labelling:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"
+
+modulereleasemeta-maintenance-window-with-module-downtime:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Window With ModuleReleaseMeta and Module Downtime"

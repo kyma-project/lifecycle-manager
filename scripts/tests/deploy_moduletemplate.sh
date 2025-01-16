@@ -9,6 +9,7 @@ RELEASE_VERSION=$2
 INCLUDE_DEFAULT_CR=${3:-true}
 MANDATORY=${4:-false}
 DEPLOY_MODULETEMPLATE=${5:-true}
+REQUIRES_DOWNTIME=${6:-false}
 
 cat <<EOF > module-config-for-e2e.yaml
 name: kyma-project.io/module/${MODULE_NAME}
@@ -17,6 +18,7 @@ security: sec-scanners-config.yaml
 manifest: https://localhost:8080/template-operator.yaml
 repository: https://github.com/kyma-project/template-operator
 documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
+requiresDowntime: ${REQUIRES_DOWNTIME}
 icons:
 - name: module-icon
   link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png
