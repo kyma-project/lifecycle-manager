@@ -187,6 +187,7 @@ func ManifestExists(
 	moduleName string,
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+
 	return CRExists(manifest, err)
 }
 

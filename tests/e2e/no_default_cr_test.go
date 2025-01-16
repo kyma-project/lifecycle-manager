@@ -14,6 +14,7 @@ import (
 var _ = Describe("Module Without Default CR", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	var manifestInCluster *v1beta2.Manifest
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -59,6 +60,10 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		})
 
 		It("When Kyma Module is disabled", func() {
+			var err error
+			manifestInCluster, err = GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
+				module.Name)
+			Expect(err).Should(Succeed())
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
@@ -66,9 +71,9 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		})
 
 		It("Then Manifest CR no longer exists", func() {
-			Eventually(ManifestExists).
+			Eventually(ManifestExistsByMetadata).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				WithArguments(kcpClient, manifestInCluster.Namespace, manifestInCluster.Name).
 				Should(Equal(ErrNotFound))
 
 			By("And KCP Kyma CR is in \"Ready\" State")
