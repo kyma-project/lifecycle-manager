@@ -57,5 +57,25 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
+
+		It("When Kyma Module is disabled", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name).
+				Should(Succeed())
+		})
+
+		It("Then Manifest CR no longer exists", func() {
+			Eventually(ManifestExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Equal(ErrNotFound))
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
 	})
 })
