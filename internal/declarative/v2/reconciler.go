@@ -317,8 +317,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	moduleCRState, err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest)
-	if err != nil {
+	if err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -327,9 +326,6 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 		return err
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if moduleCRState == shared.StateWarning {
-			status.ConfirmModuleCRCondition(manifest)
-		}
 		if status.RequireManifestStateUpdateAfterSyncResource(manifest, shared.StateDeleting) {
 			return errStateRequireUpdate
 		}

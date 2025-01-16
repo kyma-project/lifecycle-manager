@@ -105,9 +105,9 @@ func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool
 
 // SyncModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
-func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) (shared.State, error) {
+func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) error {
 	if manifest.Spec.Resource == nil {
-		return "", nil
+		return nil
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
@@ -117,14 +117,12 @@ func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) (
 
 	if err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil && util.IsNotFound(err) {
 		if !manifest.GetDeletionTimestamp().IsZero() {
-			return "", nil
+			return nil
 		}
 		if err := c.Create(ctx, resource,
 			client.FieldOwner(finalizer.CustomResourceManagerFinalizer)); err != nil && !apierrors.IsAlreadyExists(err) {
-			return "", fmt.Errorf("failed to create resource: %w", err)
+			return fmt.Errorf("failed to create resource: %w", err)
 		}
 	}
-
-	stateFromCR, _, err := unstructured.NestedString(resource.Object, "status", "state")
-	return shared.State(stateFromCR), err
+	return nil
 }
