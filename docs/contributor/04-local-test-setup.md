@@ -20,7 +20,6 @@ This setup is deployed with the following security features enabled:
 
 The following tooling is required in the versions defined in [`versions.yaml`](../../versions.yaml):
 
-- cmctl (cert-manager)
 - docker
 - go
 - golangci-lint
