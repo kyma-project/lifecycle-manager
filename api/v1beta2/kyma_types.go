@@ -152,6 +152,15 @@ type KymaStatus struct {
 	shared.LastOperation `json:"lastOperation,omitempty"`
 }
 
+func (status *KymaStatus) GetModuleStatus(moduleName string) *ModuleStatus {
+	for _, moduleStatus := range status.Modules {
+		if moduleStatus.Name == moduleName {
+			return &moduleStatus
+		}
+	}
+	return nil
+}
+
 type ModuleStatus struct {
 	// Name defines the name of the Module in the Spec that the status is used for.
 	// It can be any kind of Reference format supported by Module.Name.
@@ -429,4 +438,21 @@ func (kyma *Kyma) GetNamespacedName() types.NamespacedName {
 		Namespace: kyma.GetNamespace(),
 		Name:      kyma.GetName(),
 	}
+}
+
+func (kyma *Kyma) GetGlobalAccount() string {
+	return kyma.Labels[shared.GlobalAccountIDLabel]
+}
+
+func (kyma *Kyma) GetRegion() string {
+	return kyma.Labels[shared.RegionLabel]
+}
+
+func (kyma *Kyma) GetPlatformRegion() string {
+	return kyma.Labels[shared.PlatformRegionLabel]
+}
+
+// to be confirmed https://github.com/kyma-project/kyma/issues/18611#issuecomment-2441158676
+func (kyma *Kyma) GetPlan() string {
+	return kyma.Labels[shared.PlanLabel]
 }
