@@ -137,6 +137,9 @@ runs:
         }
         EOF
         
+        echo "Maintenance window policy:"
+        cat ./maintenance_windows/policy.json
+        
         cd watcher_local_test
         kustomize edit add component ../maintenance_windows
     - name: Deploy LM local testing kustomize
