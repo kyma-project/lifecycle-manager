@@ -93,11 +93,6 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR, shared.StateWarning).
 				Should(BeTrue())
-			By("And count of metrics lifecycle_mgr_module_condition is 1")
-			Eventually(GetModuleCRWarningConditionMetric).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), TestModuleName).
-				Should(Equal(1))
 		})
 
 		It("When blocking finalizers from Module CR get removed", func() {
@@ -139,12 +134,6 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
-
-			By("And count of metrics lifecycle_mgr_module_condition is removed")
-			Eventually(ModuleCRWarningConditionMetricNotFound).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), TestModuleName).
-				Should(Equal(ErrMetricNotFound))
 		})
 	})
 

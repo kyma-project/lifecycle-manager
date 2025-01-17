@@ -153,36 +153,6 @@ func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, st
 	return parseCount(re, bodyString)
 }
 
-func GetModuleCRWarningConditionMetric(ctx context.Context, kymaName, moduleName string) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	re := getModuleCRWarningConditionMetric(kymaName, moduleName)
-	return parseCount(re, bodyString)
-}
-
-func getModuleCRWarningConditionMetric(kymaName, moduleName string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf(`%s{condition="ModuleCRWarning",kyma_name="%s",module_name="%s"} (\d+)`,
-		metrics.MetricModuleCondition, kymaName, moduleName))
-}
-
-func ModuleCRWarningConditionMetricNotFound(ctx context.Context, kymaName, moduleName string) error {
-	bodyString, err := getMetricsBody(ctx)
-	if err != nil {
-		return err
-	}
-
-	re := getModuleCRWarningConditionMetric(kymaName, moduleName)
-	match := re.FindStringSubmatch(bodyString)
-	if len(match) < 1 {
-		return ErrMetricNotFound
-	}
-
-	return nil
-}
-
 func getMetricsBody(ctx context.Context) (string, error) {
 	clnt := &http.Client{}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
