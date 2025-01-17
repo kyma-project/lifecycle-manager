@@ -122,6 +122,12 @@ func (kb KymaBuilder) WithInternal(internal bool) KymaBuilder {
 	return kb
 }
 
+// WithSkipMaintenanceWindows sets v1beta2.Kyma.Spec.SkipMaintenanceWindows.
+func (kb KymaBuilder) WithSkipMaintenanceWindows(skip bool) KymaBuilder {
+	kb.kyma.Spec.SkipMaintenanceWindows = skip
+	return kb
+}
+
 // Build returns the built v1beta2.Kyma.
 func (kb KymaBuilder) Build() *v1beta2.Kyma {
 	return kb.kyma

@@ -141,6 +141,11 @@ func (m ModuleTemplateBuilder) WithOCMPrivateRepo() ModuleTemplateBuilder {
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithRequiresDowntime(value bool) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.RequiresDowntime = value
+	return m
+}
+
 func (m ModuleTemplateBuilder) Build() *v1beta2.ModuleTemplate {
 	return m.moduleTemplate
 }
