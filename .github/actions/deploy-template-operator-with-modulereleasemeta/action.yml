@@ -42,22 +42,22 @@ runs:
     - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
-        matrix.e2e-test != 'mandatory-module-metrics' &&
-        matrix.e2e-test != 'modulereleasemeta-maintenance-window-with-module-downtime'
+        matrix.e2e-test != 'mandatory-module-metrics'
         }}
       shell: bash
       run: |
+        INCLUDE_DEFAULT_CR=true
+        MANDATORY=false
+        DEPLOY_MODULETEMPLATE=true
+        if [ "${{ matrix.e2e-test }}" == "modulereleasemeta-maintenance-window-with-module-downtime" ]; then
+          REQUIRE_DOWNTIME=true
+        else
+          REQUIRE_DOWNTIME=false
+        fi
+        
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }}
-    - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion with downtime
-      working-directory: template-operator
-      if: ${{ matrix.e2e-test == 'modulereleasemeta-maintenance-window-with-module-downtime' }}
-      shell: bash
-      run: |
-        make build-manifests
-        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
-        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} true false true true
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME″
     - name: Create and apply ModuleReleaseMeta from the latest release
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
