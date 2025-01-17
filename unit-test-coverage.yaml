@@ -1,4 +1,5 @@
 packages:
+  api/v1beta2: 5
   internal/controller/istiogatewaysecret: 31
   internal/crd: 92.1
   internal/descriptor/cache: 92.3
