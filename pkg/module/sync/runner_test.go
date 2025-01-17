@@ -42,14 +42,6 @@ func (m *KymaMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) 
 	m.callCount++
 }
 
-type ModuleMockMetrics struct {
-	callCount int
-}
-
-func (m *ModuleMockMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
-	m.callCount++
-}
-
 func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -90,15 +82,12 @@ func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, []string{ModuleShouldKeep}, []string{testCase.ModuleInStatus})
 			kymaMetrics := &KymaMockMetrics{}
-			moduleMetrics := &ModuleMockMetrics{}
 			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule,
-				kymaMetrics.RemoveModuleStateMetrics, moduleMetrics.RemoveModuleStateMetrics)
+				kymaMetrics.RemoveModuleStateMetrics)
 			if testCase.expectModuleMetricsGetCalled {
 				assert.Equal(t, 1, kymaMetrics.callCount)
-				assert.Equal(t, 1, moduleMetrics.callCount)
 			} else {
 				assert.Equal(t, 0, kymaMetrics.callCount)
-				assert.Equal(t, 0, moduleMetrics.callCount)
 			}
 		})
 	}
@@ -162,11 +151,10 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			kymaMetrics := &KymaMockMetrics{}
-			moduleMetrics := &ModuleMockMetrics{}
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, testCase.ModulesInKymaSpec, testCase.ModulesInKymaStatus)
 			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule,
-				kymaMetrics.RemoveModuleStateMetrics, moduleMetrics.RemoveModuleStateMetrics)
+				kymaMetrics.RemoveModuleStateMetrics)
 			var modulesInFinalModuleStatus []string
 			for _, moduleStatus := range kyma.Status.Modules {
 				modulesInFinalModuleStatus = append(modulesInFinalModuleStatus, moduleStatus.Name)

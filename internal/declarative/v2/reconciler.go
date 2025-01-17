@@ -43,8 +43,8 @@ const (
 )
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestAPIClient ManifestAPIClient, specResolver SpecResolver, options ...Option,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
+	specResolver SpecResolver, options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
