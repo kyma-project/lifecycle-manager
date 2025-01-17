@@ -68,13 +68,13 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 				Should(Succeed())
 
 			By("And old Module Operator Deployment still exists")
-			Eventually(DeploymentIsReady).
+			Consistently(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
 			By("And new Module Operator Deployment is not deployed")
-			Eventually(DeploymentIsReady).
+			Consistently(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
