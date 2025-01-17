@@ -11,6 +11,8 @@ resources:
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
 components:
   - ../istio
+# [Maintenance Windows] To enable the maintenance windows policy, uncomment the component below
+# - ../maintenance_windows
 
 
 generatorOptions:
