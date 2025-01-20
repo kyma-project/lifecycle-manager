@@ -63,7 +63,7 @@ func MaintenancePolicyFileExists(policyFilePath string) bool {
 }
 
 // IsRequired determines if a maintenance window is required to update the given module.
-func (mw MaintenanceWindow) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool {
+func (_ MaintenanceWindow) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool {
 	if !moduleTemplate.Spec.RequiresDowntime {
 		return false
 	}
