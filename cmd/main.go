@@ -193,7 +193,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 
-	// The maintenance windows policy should be passed to the reconciler to be resolved: https://github.com/kyma-project/lifecycle-manager/issues/2101
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(setupLog,
 		maintenanceWindowPoliciesDirectory,
 		maintenanceWindowPolicyName)
