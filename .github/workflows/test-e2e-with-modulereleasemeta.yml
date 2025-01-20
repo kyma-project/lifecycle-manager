@@ -67,6 +67,7 @@ jobs:
           - modulereleasemeta-watch-trigger
           - modulereleasemeta-not-allowed-installation
           - labelling
+          - modulereleasemeta-maintenance-window-with-module-downtime
 
     runs-on: ubuntu-latest
     timeout-minutes: 20

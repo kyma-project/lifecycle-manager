@@ -13,7 +13,8 @@ packages:
   internal/manifest/labelsremoval: 93
   internal/manifest/img: 65.5
   internal/manifest/manifestclient: 5.0
-  internal/manifest/modulecr: 51.1
+  internal/manifest/modulecr: 50.0
+  internal/maintenancewindows: 87.5
   internal/istio: 63.3
   internal/pkg/resources: 91.7
   internal/remote: 20.2
