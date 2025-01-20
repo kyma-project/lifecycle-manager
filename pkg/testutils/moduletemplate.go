@@ -33,7 +33,8 @@ func GetModuleTemplate(ctx context.Context,
 	namespace string,
 ) (*v1beta2.ModuleTemplate, error) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider)
+	// replace maintenancePolicyHandlerStub with proper implementation for tests
+	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider, maintenanceWindowStub{})
 	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}
@@ -169,4 +170,14 @@ func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client
 	}
 
 	return ocmDesc.Version, nil
+}
+
+type maintenanceWindowStub struct{}
+
+func (m maintenanceWindowStub) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool {
+	return false
+}
+
+func (m maintenanceWindowStub) IsActive(kyma *v1beta2.Kyma) (bool, error) {
+	return false, nil
 }

@@ -25,22 +25,33 @@ var (
 	ErrTemplateUpdateNotAllowed  = errors.New("module template update not allowed")
 )
 
-type ModuleTemplateInfo struct {
-	*v1beta2.ModuleTemplate
-	Err            error
-	DesiredChannel string
+type MaintenanceWindow interface {
+	IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool
+	IsActive(kyma *v1beta2.Kyma) (bool, error)
 }
 
-func NewTemplateLookup(reader client.Reader, descriptorProvider *provider.CachedDescriptorProvider) *TemplateLookup {
+type ModuleTemplateInfo struct {
+	*v1beta2.ModuleTemplate
+	Err                             error
+	WaitingForNextMaintenanceWindow bool
+	DesiredChannel                  string
+}
+
+func NewTemplateLookup(reader client.Reader,
+	descriptorProvider *provider.CachedDescriptorProvider,
+	maintenanceWindow MaintenanceWindow,
+) *TemplateLookup {
 	return &TemplateLookup{
 		Reader:             reader,
 		descriptorProvider: descriptorProvider,
+		maintenanceWindow:  maintenanceWindow,
 	}
 }
 
 type TemplateLookup struct {
 	client.Reader
 	descriptorProvider *provider.CachedDescriptorProvider
+	maintenanceWindow  MaintenanceWindow
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo

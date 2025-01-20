@@ -72,6 +72,7 @@ type Reconciler struct {
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
 	RemoteCatalog       *remote.RemoteCatalog
+	TemplateLookup      *templatelookup.TemplateLookup
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
@@ -504,7 +505,7 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 }
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
-	templates := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider).GetRegularTemplates(ctx, kyma)
+	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
 	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
