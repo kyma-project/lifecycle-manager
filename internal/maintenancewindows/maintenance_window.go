@@ -63,7 +63,7 @@ func MaintenancePolicyFileExists(policyFilePath string) bool {
 }
 
 // IsRequired determines if a maintenance window is required to update the given module.
-func (h MaintenanceWindow) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool {
+func (mw MaintenanceWindow) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool {
 	if !moduleTemplate.Spec.RequiresDowntime {
 		return false
 	}
@@ -84,8 +84,8 @@ func (h MaintenanceWindow) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, ky
 }
 
 // IsActive determines if a maintenance window is currently active.
-func (h MaintenanceWindow) IsActive(kyma *v1beta2.Kyma) (bool, error) {
-	if h.MaintenanceWindowPolicy == nil {
+func (mw MaintenanceWindow) IsActive(kyma *v1beta2.Kyma) (bool, error) {
+	if mw.MaintenanceWindowPolicy == nil {
 		return false, ErrNoMaintenanceWindowPolicyConfigured
 	}
 
@@ -96,7 +96,7 @@ func (h MaintenanceWindow) IsActive(kyma *v1beta2.Kyma) (bool, error) {
 		Plan:            kyma.GetPlan(),
 	}
 
-	resolvedWindow, err := h.MaintenanceWindowPolicy.Resolve(runtime)
+	resolvedWindow, err := mw.MaintenanceWindowPolicy.Resolve(runtime)
 	if err != nil {
 		return false, err
 	}
