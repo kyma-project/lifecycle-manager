@@ -4,9 +4,12 @@ go 1.23.4
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/stretchr/testify v1.10.0
 	k8s.io/apimachinery v0.32.1
 	sigs.k8s.io/controller-runtime v0.19.4
 )
+
+require github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
