@@ -192,7 +192,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	moduleMetrics := metrics.NewModuleMetrics()
 
 	// The maintenance windows policy should be passed to the reconciler to be resolved: https://github.com/kyma-project/lifecycle-manager/issues/2101
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(setupLog,
@@ -202,8 +201,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupLog.Error(err, "unable to set maintenance windows policy")
 	}
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, moduleMetrics, setupLog, maintenanceWindow)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, moduleMetrics, setupLog,
+		kymaMetrics, setupLog, maintenanceWindow)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, setupLog)
@@ -282,7 +281,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger, maintenanceWindow templatelookup.MaintenanceWindow,
+	setupLog logr.Logger, maintenanceWindow templatelookup.MaintenanceWindow,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -306,7 +305,6 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
-		ModuleMetrics:       moduleMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider, maintenanceWindow),
@@ -388,7 +386,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 
 func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	moduleMetrics *metrics.ModuleMetrics, setupLog logr.Logger, event event.Event,
+	setupLog logr.Logger, event event.Event,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -408,7 +406,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 		}, manifest.SetupOptions{
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, moduleMetrics,
+		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
 		manifestClient,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")

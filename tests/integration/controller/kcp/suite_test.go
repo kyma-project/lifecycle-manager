@@ -155,7 +155,6 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		ModuleMetrics:       metrics.NewModuleMetrics(),
 		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
 		TemplateLookup:      templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, maintenanceWindowHandler),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},

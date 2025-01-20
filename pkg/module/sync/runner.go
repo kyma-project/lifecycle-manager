@@ -244,11 +244,10 @@ func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 }
 
 func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
-	kymaMetrics *metrics.KymaMetrics, moduleMetrics *metrics.ModuleMetrics,
+	kymaMetrics *metrics.KymaMetrics,
 ) {
 	updateModuleStatusFromExistingModules(kyma, modules)
-	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, kymaMetrics.RemoveModuleStateMetrics,
-		moduleMetrics.RemoveModuleCRWarningCondition)
+	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, kymaMetrics.RemoveModuleStateMetrics)
 }
 
 func updateModuleStatusFromExistingModules(
@@ -363,7 +362,7 @@ func stateFromManifest(obj client.Object) shared.State {
 }
 
 func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, moduleFunc GetModuleFunc,
-	kymaMetricsRemoveMetrics, moduleMetricsRemoveMetrics RemoveMetricsFunc,
+	kymaMetricsRemoveMetrics RemoveMetricsFunc,
 ) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
@@ -371,7 +370,6 @@ func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma,
 		moduleStatus := moduleStatusesToBeDeletedFromKymaStatus[idx]
 		if moduleStatus.Manifest == nil {
 			kymaMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
-			moduleMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
@@ -379,7 +377,6 @@ func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma,
 		err := moduleFunc(ctx, manifestCR)
 		if util.IsNotFound(err) {
 			kymaMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
-			moduleMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
 			moduleStatus.State = stateFromManifest(manifestCR)

@@ -148,7 +148,6 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		ModuleMetrics:       metrics.NewModuleMetrics(),
 		TemplateLookup:      templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, maintenanceWindowHandler),
 	}).SetupWithManager(mgr, ctrlruntime.Options{
 		RateLimiter: internal.RateLimiter(

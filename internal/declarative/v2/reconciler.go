@@ -43,13 +43,12 @@ const (
 )
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, moduleMetrics *metrics.ModuleMetrics,
-	manifestAPIClient ManifestAPIClient, specResolver SpecResolver, options ...Option,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
+	specResolver SpecResolver, options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
 	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
-	reconciler.ModuleMetrics = moduleMetrics
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
 	reconciler.manifestClient = manifestAPIClient
@@ -76,7 +75,6 @@ type Reconciler struct {
 	*Options
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
-	ModuleMetrics              *metrics.ModuleMetrics
 	specResolver               SpecResolver
 	manifestClient             ManifestAPIClient
 	managedLabelRemovalService ManagedLabelRemoval
@@ -319,8 +317,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	moduleCRState, err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest)
-	if err != nil {
+	if err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -329,12 +326,6 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 		return err
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if moduleCRState == shared.StateWarning {
-			if err := r.RecordModuleCRWarningCondition(manifest); err != nil {
-				return err
-			}
-			status.ConfirmModuleCRCondition(manifest)
-		}
 		if status.RequireManifestStateUpdateAfterSyncResource(manifest, shared.StateDeleting) {
 			return errStateRequireUpdate
 		}
@@ -349,32 +340,6 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 	if status.RequireManifestStateUpdateAfterSyncResource(manifest, managerState) {
 		return errStateRequireUpdate
 	}
-	return nil
-}
-
-func (r *Reconciler) RecordModuleCRWarningCondition(manifest *v1beta2.Manifest) error {
-	kymaName, err := manifest.GetKymaName()
-	if err != nil {
-		return fmt.Errorf("failed to get kyma name: %w", err)
-	}
-	moduleName, err := manifest.GetModuleName()
-	if err != nil {
-		return fmt.Errorf("failed to get module name: %w", err)
-	}
-	r.ModuleMetrics.SetModuleCRWarningCondition(kymaName, moduleName)
-	return nil
-}
-
-func (r *Reconciler) RemoveModuleCRWarningCondition(manifest *v1beta2.Manifest) error {
-	kymaName, err := manifest.GetKymaName()
-	if err != nil {
-		return fmt.Errorf("failed to get kyma name: %w", err)
-	}
-	moduleName, err := manifest.GetModuleName()
-	if err != nil {
-		return fmt.Errorf("failed to get module name: %w", err)
-	}
-	r.ModuleMetrics.RemoveModuleCRWarningCondition(kymaName, moduleName)
 	return nil
 }
 
