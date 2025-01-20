@@ -137,7 +137,7 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
-	maintenanceWindowHandler, _ := maintenancewindows.InitializeMaintenanceWindow(logr, "/not-required", "/not-required")
+	maintenanceWindow, _ := maintenancewindows.InitializeMaintenanceWindow(logr, "/not-required", "/not-required")
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		Event:               testEventRec,
@@ -148,7 +148,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		TemplateLookup:      templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, maintenanceWindowHandler),
+		TemplateLookup:      templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, maintenanceWindow),
 	}).SetupWithManager(mgr, ctrlruntime.Options{
 		RateLimiter: internal.RateLimiter(
 			1*time.Second, 5*time.Second,
