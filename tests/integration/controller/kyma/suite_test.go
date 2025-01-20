@@ -137,7 +137,7 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
-	maintenanceWindowHandler, _ := maintenancewindows.InitializeMaintenanceWindow(logr, "policy", "/etc/maintenance-policy")
+	maintenanceWindowHandler, _ := maintenancewindows.InitializeMaintenanceWindow(logr, "/not-required", "/not-required")
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		Event:               testEventRec,

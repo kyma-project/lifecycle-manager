@@ -143,7 +143,7 @@ var _ = BeforeSuite(func() {
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	descriptorProvider = provider.NewCachedDescriptorProvider()
 	crdCache = crd.NewCache(nil)
-	maintenanceWindowHandler, _ := maintenancewindows.InitializeMaintenanceWindow(logr, "policy", "/etc/maintenance-policy")
+	maintenanceWindowHandler, _ := maintenancewindows.InitializeMaintenanceWindow(logr, "/not-required", "not-required")
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
