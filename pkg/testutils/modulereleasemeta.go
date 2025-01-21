@@ -12,7 +12,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
+var (
+	ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
+	ErrBetaValueNotCorrect       = errors.New("beta value not correct")
+	ErrInternalValueNotCorrect   = errors.New("internal value not correct")
+)
 
 func UpdateChannelVersionInModuleReleaseMeta(ctx context.Context, clnt client.Client,
 	moduleName, namespace, channel, version string,
@@ -75,7 +79,8 @@ func SetModuleReleaseMetaBeta(ctx context.Context, beta bool, moduleName, namesp
 	return nil
 }
 
-func SetModuleReleaseMetaInternal(ctx context.Context, internal bool, moduleName, namespace string, clnt client.Client) error {
+func SetModuleReleaseMetaInternal(ctx context.Context, internal bool, moduleName, namespace string,
+	clnt client.Client) error {
 	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
 	if err != nil {
 		return fmt.Errorf("failed to fetch modulereleasemeta, %w", err)
@@ -145,5 +150,33 @@ func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client clien
 	if err := client.Update(ctx, meta); err != nil {
 		return err
 	}
+	return nil
+}
+
+func ModuleReleaseMetaBetaValueIsCorrect(ctx context.Context, client client.Client, namespace, name string,
+	expectedValue bool) error {
+	meta := &v1beta2.ModuleReleaseMeta{}
+	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
+		return err
+	}
+
+	if meta.Spec.Beta != expectedValue {
+		return ErrBetaValueNotCorrect
+	}
+
+	return nil
+}
+
+func ModuleReleaseMetaInternalValueIsCorrect(ctx context.Context, client client.Client, namespace, name string,
+	expectedValue bool) error {
+	meta := &v1beta2.ModuleReleaseMeta{}
+	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
+		return err
+	}
+
+	if meta.Spec.Beta != expectedValue {
+		return ErrInternalValueNotCorrect
+	}
+
 	return nil
 }
