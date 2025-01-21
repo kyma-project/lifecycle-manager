@@ -1,0 +1,52 @@
+package moduletemplateinfolookup
+
+import (
+	"context"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+type ByModuleReleaseMetaStrategy struct {
+	client client.Reader
+}
+
+func NewByModuleReleaseMetaStrategy(client client.Reader) ByModuleReleaseMetaStrategy {
+	return ByModuleReleaseMetaStrategy{client: client}
+}
+
+func (ByModuleReleaseMetaStrategy) IsResponsible(moduleInfo *templatelookup.ModuleInfo,
+	_ *v1beta2.Kyma,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) bool {
+	return moduleReleaseMeta != nil
+}
+
+func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
+	moduleInfo *templatelookup.ModuleInfo,
+	kyma *v1beta2.Kyma,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) templatelookup.ModuleTemplateInfo {
+	moduleTemplateInfo := templatelookup.ModuleTemplateInfo{}
+
+	moduleTemplateInfo.DesiredChannel = getDesiredChannel(moduleInfo.Channel, kyma.Spec.Channel)
+	desiredModuleVersion, err := templatelookup.GetChannelVersionForModule(moduleReleaseMeta, moduleTemplateInfo.DesiredChannel)
+	if err != nil {
+		moduleTemplateInfo.Err = err
+		return moduleTemplateInfo
+	}
+
+	template, err := getTemplateByVersion(ctx,
+		s.client,
+		moduleInfo.Name,
+		desiredModuleVersion,
+		kyma.Namespace)
+	if err != nil {
+		moduleTemplateInfo.Err = err
+		return moduleTemplateInfo
+	}
+
+	moduleTemplateInfo.ModuleTemplate = template
+	return moduleTemplateInfo
+}

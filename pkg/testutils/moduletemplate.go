@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -29,23 +30,23 @@ func CreateModuleTemplate(ctx context.Context,
 func GetModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
-	defaultChannel string,
-	namespace string,
+	kyma *v1beta2.Kyma,
 ) (*v1beta2.ModuleTemplate, error) {
-	descriptorProvider := provider.NewCachedDescriptorProvider()
-	// replace maintenancePolicyHandlerStub with proper implementation for tests
-	templateLookup := templatelookup.NewTemplateLookup(clnt, descriptorProvider, maintenanceWindowStub{})
+	moduleTemplateInfoLookupStrategy := moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+		moduletemplateinfolookup.NewByVersionStrategy(clnt),
+		moduletemplateinfolookup.NewByChannelStrategy(clnt),
+		moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(clnt),
+	})
 	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}
 
-	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, module.Name, namespace, clnt)
+	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, module.Name, kyma.Namespace, clnt)
 	if !meta.IsNoMatchError(err) && client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
 	}
 
-	templateInfo := templateLookup.PopulateModuleTemplateInfo(ctx, availableModule, namespace,
-		defaultChannel, moduleReleaseMeta)
+	templateInfo := moduleTemplateInfoLookupStrategy.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
 
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
@@ -56,11 +57,10 @@ func GetModuleTemplate(ctx context.Context,
 func ModuleTemplateExists(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
-	defaultChannel string,
-	namespace string,
+	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, defaultChannel, namespace)
-	if moduleTemplate == nil || errors.Is(err, templatelookup.ErrNoTemplatesInListResult) {
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	if moduleTemplate == nil || errors.Is(err, moduletemplateinfolookup.ErrNoTemplatesInListResult) {
 		return ErrNotFound
 	}
 
@@ -85,7 +85,7 @@ func ModuleTemplateExistsByName(ctx context.Context,
 
 func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
 	for _, module := range kyma.Spec.Modules {
-		if err := ModuleTemplateExists(ctx, clnt, module, kyma.Spec.Channel, kyma.Namespace); err != nil {
+		if err := ModuleTemplateExists(ctx, clnt, module, kyma); err != nil {
 			return err
 		}
 	}
@@ -97,11 +97,10 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	key,
-	newValue,
-	kymaChannel string,
-	namespace string,
+	newValue string,
+	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
 	if err != nil {
 		return err
 	}
@@ -141,9 +140,11 @@ func MandatoryModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Cl
 }
 
 func DeleteModuleTemplate(ctx context.Context,
-	clnt client.Client, module v1beta2.Module, kymaChannel string, namespace string,
+	clnt client.Client,
+	module v1beta2.Module,
+	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
 	if util.IsNotFound(err) {
 		return nil
 	}
@@ -155,10 +156,12 @@ func DeleteModuleTemplate(ctx context.Context,
 	return nil
 }
 
-func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client, module v1beta2.Module,
-	channel string, namespace string,
+func ReadModuleVersionFromModuleTemplate(ctx context.Context,
+	clnt client.Client,
+	module v1beta2.Module,
+	kyma *v1beta2.Kyma,
 ) (string, error) {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, channel, namespace)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
 	}
@@ -170,14 +173,4 @@ func ReadModuleVersionFromModuleTemplate(ctx context.Context, clnt client.Client
 	}
 
 	return ocmDesc.Version, nil
-}
-
-type maintenanceWindowStub struct{}
-
-func (m maintenanceWindowStub) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool {
-	return false
-}
-
-func (m maintenanceWindowStub) IsActive(kyma *v1beta2.Kyma) (bool, error) {
-	return false, nil
 }

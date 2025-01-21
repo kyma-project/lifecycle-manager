@@ -103,11 +103,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	It("ModuleTemplates should be synchronized in both clusters", func() {
 		By("ModuleTemplate exists in KCP cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, kcpClient, moduleInKCP, kyma.Spec.Channel, ControlPlaneNamespace).
+			WithArguments(ctx, kcpClient, moduleInKCP, kyma).
 			Should(Succeed())
 		By("ModuleTemplate exists in SKR cluster")
-		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, skrClient, moduleInKCP,
-			kyma.Spec.Channel, RemoteNamespace).Should(Succeed())
+		Eventually(ModuleTemplateExists, Timeout, Interval).
+			WithArguments(ctx, skrClient, moduleInKCP, kyma).Should(Succeed())
 
 		By("No module synced to remote Kyma")
 		Eventually(NotContainsModuleInSpec, Timeout, Interval).
@@ -117,7 +117,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Module Catalog created")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, skrClient, moduleInSKR, kyma.Spec.Channel, RemoteNamespace).
+			WithArguments(ctx, skrClient, moduleInSKR, kyma).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(skrClient, skrKyma.GetName(), flags.DefaultRemoteSyncNamespace).
@@ -181,13 +181,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(UpdateModuleTemplateSpec, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(skrClient, moduleInSKR, InitSpecKey, "valueUpdated", kyma.Spec.Channel, RemoteNamespace).
+			WithArguments(skrClient, moduleInSKR, InitSpecKey, "valueUpdated", kyma).
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, 2*Timeout, Interval).
-			WithArguments(skrClient,
-				moduleInSKR, kyma.Spec.Channel, RemoteNamespace).
+			WithArguments(skrClient, moduleInSKR, kyma).
 			Should(Succeed())
 	})
 
