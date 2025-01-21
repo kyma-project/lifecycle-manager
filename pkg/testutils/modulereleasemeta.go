@@ -80,7 +80,8 @@ func SetModuleReleaseMetaBeta(ctx context.Context, beta bool, moduleName, namesp
 }
 
 func SetModuleReleaseMetaInternal(ctx context.Context, internal bool, moduleName, namespace string,
-	clnt client.Client) error {
+	clnt client.Client,
+) error {
 	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
 	if err != nil {
 		return fmt.Errorf("failed to fetch modulereleasemeta, %w", err)
@@ -154,7 +155,8 @@ func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client clien
 }
 
 func ModuleReleaseMetaBetaValueIsCorrect(ctx context.Context, client client.Client, namespace, name string,
-	expectedValue bool) error {
+	expectedValue bool,
+) error {
 	meta := &v1beta2.ModuleReleaseMeta{}
 	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
 		return err
@@ -168,7 +170,8 @@ func ModuleReleaseMetaBetaValueIsCorrect(ctx context.Context, client client.Clie
 }
 
 func ModuleReleaseMetaInternalValueIsCorrect(ctx context.Context, client client.Client, namespace, name string,
-	expectedValue bool) error {
+	expectedValue bool,
+) error {
 	meta := &v1beta2.ModuleReleaseMeta{}
 	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
 		return err

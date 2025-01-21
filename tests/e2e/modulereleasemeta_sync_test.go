@@ -68,7 +68,8 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 
 			Eventually(ModuleReleaseMetaInternalValueIsCorrect).
 				WithContext(ctx).
-				WithArguments(skrClient, RemoteNamespace, module.Name, false)
+				WithArguments(skrClient, RemoteNamespace, module.Name, false).
+				Should(Succeed())
 		})
 
 		It("When Beta value is set to true on the SKR Cluster", func() {
