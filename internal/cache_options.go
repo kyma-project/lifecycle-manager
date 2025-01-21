@@ -47,14 +47,12 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 			},
 			&v1beta2.Kyma{}: {
 				Namespaces: map[string]cache.Config{
-					c.remoteNamespace: {},
-					c.kcpNamespace:    {},
+					c.kcpNamespace: {},
 				},
 			},
 			&v1beta2.ModuleTemplate{}: {
 				Namespaces: map[string]cache.Config{
-					c.remoteNamespace: {},
-					c.kcpNamespace:    {},
+					c.kcpNamespace: {},
 				},
 			},
 			&v1beta2.ModuleReleaseMeta{}: {
