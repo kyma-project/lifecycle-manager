@@ -1,8 +1,5 @@
 # Local Test Setup in the Control Plane Mode Using k3d
 
-> ### Supported Versions
-> For more information on the tooling versions expected in the project, see [`versions.yaml`](../../versions.yaml).
-
 ## Context
 
 This tutorial shows how to configure a fully working e2e test setup including the following components:
@@ -34,7 +31,7 @@ The following tooling is required in the versions defined in [`versions.yaml`](.
 
 Execute the following scripts from the project root.
 
-## Create Test Clusters
+### 1. Create Test Clusters
 
 Create local test clusters for SKR and KCP.
 
@@ -44,7 +41,7 @@ CERT_MANAGER_VERSION=$(yq e '.certManager' ./versions.yaml)
 ./scripts/tests/create_test_clusters.sh --k8s-version $K8S_VERSION --cert-manager-version $CERT_MANAGER_VERSION
 ```
 
-## Install the CRDs
+### 2. Install the CRDs
 
 Install the CRDs to the KCP cluster.
 
@@ -52,7 +49,9 @@ Install the CRDs to the KCP cluster.
 ./scripts/tests/install_crds.sh
 ```
 
-## Deploy lifecycle-manager
+### 3. Deploy lifecycle-manager
+
+#### 3.1 Deploy lifecycle-manager from a Registry
 
 Deploy a built image from the registry, e.g. the `latest` image from the `prod` registry.
 
@@ -62,38 +61,40 @@ TAG=latest
 ./scripts/tests/deploy_klm_from_registry.sh --image-registry $REGISTRY --image-tag $TAG
 ```
 
-OR build a new image from the local sources, push it to the local KCP registry and deploy it.
+#### 3.2 Deploy lifecycle-manager from Local Sources
+
+Build a new image from the local sources, push it to the local KCP registry and deploy it.
 
 ```sh
 ./scripts/tests/deploy_klm_from_sources.sh
 ```
 
-## Deploy a Kyma CR
+### 4. Deploy a Kyma CR
 
 ```sh
 SKR_HOST=host.k3d.internal
 ./scripts/tests/deploy_kyma.sh $SKR_HOST
 ```
 
-## Verify if the Kyma becomes Ready
+### 5. Verify If The Kyma Becomes Ready
 
-Verify Kyma is Ready in KCP (takes roughly 1-2 minutes).
+#### 5.1 Verify If Kyma Is Ready in KCP (Takes Roughly 1–2 Minutes)
 
 ```sh
 kubectl config use-context k3d-kcp
 kubectl get kyma/kyma-sample -n kcp-system
 ```
 
-Verify Kyma is Ready in SKR (takes roughly 1-2 minutes).
+#### 5.1 Verify If Kyma Is Ready in SKR (Takes Roughly 1-2 Minutes)
 
 ```sh
 kubectl config use-context k3d-skr
 kubectl get kyma/default -n kyma-system
 ```
 
-## [OPTIONAL] Deploy template-operator module
+### 6. [OPTIONAL] Deploy template-operator Module
 
-Build it locally and deploy it.
+Build the template-operator module from the local sources, push it to the local KCP registry and deploy it.
 
 ```sh
 cd <template-operator-repository>
@@ -110,30 +111,30 @@ cd <lifecycle-manager-repository>
 ./scripts/tests/deploy_modulereleasemeta.sh template-operator regular:$MT_VERSION
 ```
 
-## [OPTIONAL] Add the template-operator module to the Kyma CR and verify if it becomes Ready
+### 7. [OPTIONAL] Add the template-operator Module to the Kyma CR and Verify If It Becomes Ready
 
-Add the module.
+#### 7.1 Add the Module to the Kyma CR Spec
 
 ```sh
 kubectl config use-context k3d-skr
 kubectl get kyma/default -n kyma-system -o yaml | yq e '.spec.modules[0]={"name": "template-operator"}' | kubectl apply -f -
 ```
 
-Verify if the module becomes ready (takes roughly 1-2 minutes).
+#### 7.2 Verify If the Module Becomes Ready (Takes Roughly 1–2 Minutes)
 
 ```sh
 kubectl config use-context k3d-skr
 kubectl get kyma/default -n kyma-system -o wide
 ```
 
-To remove the module again.
+#### 7.3 Remove the Module from the Kyma CR Spec
 
 ```sh
 kubectl config use-context k3d-skr
 kubectl get kyma/default -n kyma-system -o yaml | yq e 'del(.spec.modules[0])' | kubectl apply -f -
 ```
 
-## [OPTIONAL] Verify conditions
+### 8. [OPTIONAL] Verify Conditions
 
 Check the conditions of the Kyma.
 
@@ -146,9 +147,9 @@ kubectl config use-context k3d-kcp
 kubectl get kyma/kyma-sample -n kcp-system -o yaml | yq e '.status.conditions'
 ```
 
-## [OPTIONAL] Verify if watcher events reach KCP
+### 9. [OPTIONAL] Verify If Watcher Events Reach KCP
 
-Flick the channel to trigger an event.
+#### 9.1 Flick the Channel to Trigger an Event
 
 ```sh
 kubectl config use-context k3d-skr
@@ -156,14 +157,14 @@ kubectl get kyma/default -n kyma-system -o yaml | yq e '.spec.channel="regular"'
 kubectl get kyma/default -n kyma-system -o yaml | yq e '.spec.channel="fast"' | kubectl apply -f -
 ```
 
- Verify if lifecyle-manger received the event on KCP.
+#### 9.2 Verify if lifecyle-manger Received the Event on KCP
 
 ```sh
 kubectl config use-context k3d-kcp
 kubectl logs deploy/klm-controller-manager -n kcp-system | grep "event received from SKR"
 ```
 
-## [OPTIONAL] Delete the local test clusters
+#### 10. [OPTIONAL] Delete the Local Test Clusters
 
 Remove the local SKR and KCP test clusters.
 
