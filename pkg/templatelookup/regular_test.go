@@ -332,7 +332,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(tt.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider())
+			lookup := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider(), maintenanceWindowStub{})
 			kyma := &v1beta2.Kyma{
 				Spec:   test.KymaSpec,
 				Status: test.KymaStatus,
@@ -466,7 +466,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 		t.Run(testCase.name, func(t *testing.T) {
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(testCase.availableModuleTemplate,
 				testCase.availableModuleReleaseMeta),
-				provider.NewCachedDescriptorProvider())
+				provider.NewCachedDescriptorProvider(),
+				maintenanceWindowStub{})
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
@@ -539,7 +540,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 		t.Run(testCase.name, func(t *testing.T) {
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates,
 				availableModuleReleaseMetas),
-				provider.NewCachedDescriptorProvider())
+				provider.NewCachedDescriptorProvider(),
+				maintenanceWindowStub{})
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
 			for key, module := range got {
@@ -631,7 +633,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 		t.Run(testCase.name, func(t *testing.T) {
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates,
 				availableModuleReleaseMetas),
-				provider.NewCachedDescriptorProvider())
+				provider.NewCachedDescriptorProvider(),
+				maintenanceWindowStub{})
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
 			for key, module := range got {
@@ -723,7 +726,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 		t.Run(testCase.name, func(t *testing.T) {
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(availableModuleTemplates,
 				availableModuleReleaseMetas),
-				provider.NewCachedDescriptorProvider())
+				provider.NewCachedDescriptorProvider(),
+				maintenanceWindowStub{})
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Len(t, got, 1)
 			for key, module := range got {
@@ -836,7 +840,8 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 			}
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
 				moduleReleaseMetas),
-				provider.NewCachedDescriptorProvider())
+				provider.NewCachedDescriptorProvider(),
+				maintenanceWindowStub{})
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
@@ -898,7 +903,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
 				v1beta2.ModuleReleaseMetaList{}),
-				provider.NewCachedDescriptorProvider())
+				provider.NewCachedDescriptorProvider(),
+				maintenanceWindowStub{})
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
@@ -1035,7 +1041,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			}
 			lookup := templatelookup.NewTemplateLookup(NewFakeModuleTemplateReader(*givenTemplateList,
 				moduleReleaseMetas),
-				provider.NewCachedDescriptorProvider())
+				provider.NewCachedDescriptorProvider(),
+				maintenanceWindowStub{})
 			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
@@ -1191,4 +1198,14 @@ func (mtlb *ModuleTemplateListBuilder) Build() v1beta2.ModuleTemplateList {
 
 func moduleToInstallByVersion(moduleName, moduleVersion string) v1beta2.Module {
 	return testutils.NewTestModuleWithChannelVersion(moduleName, "", moduleVersion)
+}
+
+type maintenanceWindowStub struct{}
+
+func (m maintenanceWindowStub) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool {
+	return false
+}
+
+func (m maintenanceWindowStub) IsActive(kyma *v1beta2.Kyma) (bool, error) {
+	return false, nil
 }

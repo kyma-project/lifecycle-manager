@@ -3,13 +3,10 @@ package e2e_test
 import (
 	"context"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -96,18 +93,6 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR, shared.StateWarning).
 				Should(BeTrue())
-			By("And Manifest contains Module CR is in Warning state")
-			Eventually(ConditionExists).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-					string(status.ConditionTypeModuleCR), string(status.ConditionReasonModuleCRWarning),
-					apimetav1.ConditionTrue).
-				Should(Succeed())
-			By("And count of metrics lifecycle_mgr_module_condition is 1")
-			Eventually(GetModuleCRWarningConditionMetric).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), TestModuleName).
-				Should(Equal(1))
 		})
 
 		It("When blocking finalizers from Module CR get removed", func() {
@@ -149,12 +134,6 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
-
-			By("And count of metrics lifecycle_mgr_module_condition is removed")
-			Eventually(ModuleCRWarningConditionMetricNotFound).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), TestModuleName).
-				Should(Equal(ErrMetricNotFound))
 		})
 	})
 

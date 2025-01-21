@@ -41,11 +41,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
@@ -80,7 +82,8 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
-	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+	logr := log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter))
+	logf.SetLogger(logr)
 
 	By("bootstrapping test environment")
 
@@ -134,6 +137,7 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
+	maintenanceWindow, _ := maintenancewindows.InitializeMaintenanceWindow(logr, "/not-required", "/not-required")
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		Event:               testEventRec,
@@ -144,7 +148,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		ModuleMetrics:       metrics.NewModuleMetrics(),
+		TemplateLookup:      templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, maintenanceWindow),
 	}).SetupWithManager(mgr, ctrlruntime.Options{
 		RateLimiter: internal.RateLimiter(
 			1*time.Second, 5*time.Second,

@@ -71,8 +71,8 @@ type Reconciler struct {
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
-	ModuleMetrics       *metrics.ModuleMetrics
 	RemoteCatalog       *remote.RemoteCatalog
+	TemplateLookup      *templatelookup.TemplateLookup
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
@@ -446,7 +446,6 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 
 func (r *Reconciler) cleanupMetrics(kymaName string) {
 	r.Metrics.CleanupMetrics(kymaName)
-	r.ModuleMetrics.CleanupMetrics(kymaName)
 }
 
 func (r *Reconciler) cleanupManifestCRs(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -506,7 +505,7 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 }
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
-	templates := templatelookup.NewTemplateLookup(client.Reader(r), r.DescriptorProvider).GetRegularTemplates(ctx, kyma)
+	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
 	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
@@ -514,7 +513,7 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
-	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics, r.ModuleMetrics)
+	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)

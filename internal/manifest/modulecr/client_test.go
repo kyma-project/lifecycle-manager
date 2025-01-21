@@ -100,7 +100,7 @@ func TestClient_SyncModuleCR(t *testing.T) {
 	manifest.Spec.Resource = &moduleCR
 
 	// When syncing the module CR
-	_, err = skrClient.SyncModuleCR(ctx, manifest)
+	err = skrClient.SyncModuleCR(ctx, manifest)
 	require.NoError(t, err)
 
 	// Then the resource CR should be created
@@ -118,7 +118,7 @@ func TestClient_SyncModuleCR(t *testing.T) {
 	require.NoError(t, err)
 
 	// And syncing again, it should recreate the resource
-	_, err = skrClient.SyncModuleCR(ctx, manifest)
+	err = skrClient.SyncModuleCR(ctx, manifest)
 	require.NoError(t, err)
 
 	err = skrClient.Get(ctx, client.ObjectKey{Name: moduleName, Namespace: shared.DefaultRemoteNamespace}, resource)

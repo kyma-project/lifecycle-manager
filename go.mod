@@ -9,7 +9,7 @@ replace (
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
-	github.com/cert-manager/cert-manager v1.16.2
+	github.com/cert-manager/cert-manager v1.16.3
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
@@ -28,7 +28,7 @@ require (
 	golang.org/x/time v0.9.0
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
 	ocm.software/ocm v0.19.0
-	sigs.k8s.io/controller-runtime v0.19.4
+	sigs.k8s.io/controller-runtime v0.20.0
 	sigs.k8s.io/yaml v1.4.0
 )
 
