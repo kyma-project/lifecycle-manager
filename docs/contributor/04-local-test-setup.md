@@ -136,7 +136,7 @@ kubectl get kyma/default -n kyma-system -o yaml | yq e 'del(.spec.modules[0])' |
 
 ### 8. [OPTIONAL] Verify Conditions
 
-Check the conditions of the Kyma.
+Check the conditions of the Kyma CR in the KCP cluster.
 
 - `SKRWebhook` to determine if the webhook has been installed to the SKR
 - `ModuleCatalog` to determine if the ModuleTemplate CRs and ModuleReleaseMeta CRs haven been synced to the SKR cluster
