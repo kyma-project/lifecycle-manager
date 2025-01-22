@@ -272,7 +272,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		It("When ModuleTemplate is removed from KCP Cluster", func() {
 			Eventually(DeleteModuleTemplate).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, kyma.Spec.Channel, ControlPlaneNamespace).
+				WithArguments(kcpClient, module, kyma).
 				Should(Succeed())
 		})
 
