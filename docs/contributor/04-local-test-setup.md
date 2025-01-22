@@ -43,7 +43,7 @@ Create local test clusters for SKR and KCP.
 
 ### 2. Install the Custom Resource Definitions
 
-Install the [Lifecycle Manager CRDs](./resources/README.md) to the KCP cluster.
+Install the [Lifecycle Manager CRDs](./resources/README.md) in the KCP cluster.
 
 ```sh
   ./scripts/tests/install_crds.sh
