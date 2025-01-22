@@ -51,17 +51,15 @@ type LookupStrategyStub struct {
 }
 
 func (s *LookupStrategyStub) Lookup(ctx context.Context,
-	moduleInfo *templatelookup.ModuleInfo,
-	kyma *v1beta2.Kyma,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+	_ *templatelookup.ModuleInfo,
+	_ *v1beta2.Kyma,
+	_ *v1beta2.ModuleReleaseMeta,
 ) templatelookup.ModuleTemplateInfo {
 	s.called = true
 	return templatelookup.ModuleTemplateInfo{}
 }
 
-func (s *LookupStrategyStub) IsResponsible(moduleInfo *templatelookup.ModuleInfo,
-	kyma *v1beta2.Kyma,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+func (s *LookupStrategyStub) IsResponsible(_ *templatelookup.ModuleInfo, _ *v1beta2.ModuleReleaseMeta,
 ) bool {
 	return s.responsible
 }

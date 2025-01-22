@@ -13,33 +13,30 @@ import (
 
 func Test_ByChannelStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithChannel("regular").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(nil)
 
-	responsible := byChannelStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byChannelStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.True(t, responsible)
 }
 
 func Test_ByChannelStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithChannel("regular").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(nil)
 
-	responsible := byChannelStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byChannelStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.False(t, responsible)
 }
 
 func Test_ByChannelStrategy_IsResponsible_ReturnsFalse_WhenInstalledByVersion(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithVersion("1.0.0").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(nil)
 
-	responsible := byChannelStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byChannelStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.False(t, responsible)
 }

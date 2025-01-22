@@ -17,7 +17,6 @@ type ModuleTemplateInfoLookupStrategy interface {
 		moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 	) templatelookup.ModuleTemplateInfo
 	IsResponsible(moduleInfo *templatelookup.ModuleInfo,
-		kyma *v1beta2.Kyma,
 		moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 	) bool
 }
@@ -36,7 +35,7 @@ func (s AggregatedModuleTemplateInfoLookupStrategy) Lookup(ctx context.Context,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) templatelookup.ModuleTemplateInfo {
 	for _, strategy := range s.strategies {
-		if strategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta) {
+		if strategy.IsResponsible(moduleInfo, moduleReleaseMeta) {
 			return strategy.Lookup(ctx, moduleInfo, kyma, moduleReleaseMeta)
 		}
 	}

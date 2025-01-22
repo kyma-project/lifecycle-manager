@@ -14,33 +14,30 @@ import (
 
 func Test_ByVersionStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithVersion("1.0.0").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(nil)
 
-	responsible := byVersionStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byVersionStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.True(t, responsible)
 }
 
 func Test_ByVersionStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithVersion("1.0.0").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().Build()
 	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(nil)
 
-	responsible := byVersionStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byVersionStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.False(t, responsible)
 }
 
 func Test_ByVersionStrategy_IsResponsible_ReturnsFalse_WhenNotInstalledByVersion(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithVersion("").WithChannel("regular").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(nil)
 
-	responsible := byVersionStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byVersionStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.False(t, responsible)
 }

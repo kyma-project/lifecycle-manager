@@ -18,22 +18,20 @@ import (
 
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithChannel("regular").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil)
 
-	responsible := byMRMStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byMRMStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.True(t, responsible)
 }
 
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithVersion("regular").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil)
 
-	responsible := byMRMStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
+	responsible := byMRMStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
 	assert.False(t, responsible)
 }
@@ -80,46 +78,3 @@ func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {
 
 	return fake.NewClientBuilder().WithScheme(scheme).WithLists(mts).Build()
 }
-
-// func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {
-// 	scheme := machineryruntime.NewScheme()
-// 	machineryutilruntime.Must(api.AddToScheme(scheme))
-
-// 	return fake.NewClientBuilder().WithScheme(scheme).WithLists(mts).Build()
-// }
-
-// type moduleInfoBuilder struct {
-// 	moduleInfo *templatelookup.ModuleInfo
-// }
-
-// func newModuleInfoBuilder() moduleInfoBuilder {
-// 	return moduleInfoBuilder{
-// 		moduleInfo: &templatelookup.ModuleInfo{
-// 			Module: v1beta2.Module{},
-// 		},
-// 	}
-// }
-
-// func (b moduleInfoBuilder) WithName(name string) moduleInfoBuilder {
-// 	b.moduleInfo.Module.Name = name
-// 	return b
-// }
-
-// func (b moduleInfoBuilder) WithVersion(version string) moduleInfoBuilder {
-// 	b.moduleInfo.Module.Version = version
-// 	return b
-// }
-
-// func (b moduleInfoBuilder) WithChannel(channel string) moduleInfoBuilder {
-// 	b.moduleInfo.Module.Channel = channel
-// 	return b
-// }
-
-// func (b moduleInfoBuilder) Enabled() moduleInfoBuilder {
-// 	b.moduleInfo.Enabled = true
-// 	return b
-// }
-
-// func (b moduleInfoBuilder) Build() *templatelookup.ModuleInfo {
-// 	return b.moduleInfo
-// }

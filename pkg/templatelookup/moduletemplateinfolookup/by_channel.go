@@ -23,10 +23,7 @@ func NewByChannelStrategy(client client.Reader) ByChannelStrategy {
 	return ByChannelStrategy{client: client}
 }
 
-func (ByChannelStrategy) IsResponsible(moduleInfo *templatelookup.ModuleInfo,
-	_ *v1beta2.Kyma,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
-) bool {
+func (ByChannelStrategy) IsResponsible(moduleInfo *templatelookup.ModuleInfo, moduleReleaseMeta *v1beta2.ModuleReleaseMeta) bool {
 	if moduleReleaseMeta != nil {
 		return false
 	}
