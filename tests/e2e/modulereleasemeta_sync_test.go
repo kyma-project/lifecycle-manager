@@ -14,12 +14,21 @@ import (
 
 var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	var skrKyma *v1beta2.Kyma
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	v1Version := "1.1.1-e2e-test"
 	v2Version := "2.4.2-e2e-test"
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given SKR Cluster with  ModuleTemplate", func() {
+	Context("Given SKR Cluster", func() {
+		It("When Kyma can be fetched from SKR Cluster", func() {
+			var err error
+			skrKyma, err = GetKyma(ctx, skrClient, shared.DefaultRemoteKymaName, RemoteNamespace)
+			if err != nil {
+				Fail("Failed to get SKR Kyma")
+			}
+		})
+
 		It("When Template Operator v1 ModuleTemplate is applied in the KCP Cluster with ModuleReleaseMeta", func() {
 			By("Then the Template Operator v1 ModuleTemplate exists in the KCP Cluster")
 			Eventually(ModuleTemplateExists).
@@ -35,7 +44,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("And the Template Operator v1 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient, module, skrKyma).
 				Should(Succeed())
 
 			By("And the ModuleReleaseMeta exists on the KCP Cluster with the correct channel-version")
@@ -80,7 +89,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient, module, skrKyma).
 				Should(Equal(ErrNotFound))
 		})
 
@@ -99,7 +108,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("And the Template Operator v1 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient, module, skrKyma).
 				Should(Succeed())
 		})
 
@@ -122,7 +131,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient, module, skrKyma).
 				Should(Equal(ErrNotFound))
 		})
 
@@ -141,14 +150,14 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("And the Template Operator v1 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient, module, skrKyma).
 				Should(Succeed())
 		})
 
 		It("When Template Operator v1 ModuleTemplate is removed from the KCP Cluster", func() {
 			Eventually(DeleteModuleTemplate).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				WithArguments(kcpClient, module, kyma).
 				Should(Succeed())
 
 			By("Then Template Operator v1 ModuleTemplate no longer exists on the KCP Cluster")
@@ -160,7 +169,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("Then Template Operator v1 ModuleTemplate no longer exists on the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient, module, skrKyma).
 				Should(Equal(ErrNotFound))
 		})
 
@@ -168,7 +177,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("And ModuleReleaseMeta is updated with the correct channel-version")
 			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).
+				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v2Version).
 				Should(Succeed())
 			Eventually(ImmediatelyRequeueKyma).
 				WithContext(ctx).
@@ -184,7 +193,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			By("And the Template Operator v2 ModuleTemplate exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient, module, skrKyma).
 				Should(Succeed())
 
 			By("And the ModuleReleaseMeta exists on the KCP Cluster with the correct channel-version")
@@ -195,7 +204,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
-				WithArguments(module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion, kcpClient).
+				WithArguments(module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v2Version, kcpClient).
 				Should(Succeed())
 
 			By("And the ModuleReleaseMeta exists on the SKR Cluster with the correct channel-version")
@@ -206,7 +215,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
-				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, NewerVersion, skrClient).
+				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v2Version, skrClient).
 				Should(Succeed())
 		})
 

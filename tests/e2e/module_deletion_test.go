@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
@@ -279,7 +280,11 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		It("Then ModuleTemplate is no longer in SKR Cluster", func() {
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma).
+				WithArguments(skrClient,
+					module,
+					builder.NewKymaBuilder().
+						WithName(defaultRemoteKymaName).
+						WithNamespace(shared.DefaultRemoteNamespace)).
 				Should(Equal(ErrNotFound))
 		})
 	})

@@ -107,7 +107,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 		By("ModuleTemplate exists in SKR cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, skrClient, moduleInKCP, kyma).Should(Succeed())
+			WithArguments(ctx, skrClient, moduleInKCP, skrKyma).Should(Succeed())
 
 		By("No module synced to remote Kyma")
 		Eventually(NotContainsModuleInSpec, Timeout, Interval).
@@ -117,7 +117,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Module Catalog created")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, skrClient, moduleInSKR, kyma).
+			WithArguments(ctx, skrClient, moduleInSKR, skrKyma).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(skrClient, skrKyma.GetName(), flags.DefaultRemoteSyncNamespace).
@@ -181,12 +181,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(UpdateModuleTemplateSpec, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(skrClient, moduleInSKR, InitSpecKey, "valueUpdated", kyma).
+			WithArguments(skrClient, moduleInSKR, InitSpecKey, "valueUpdated", skrKyma).
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, 2*Timeout, Interval).
-			WithArguments(skrClient, moduleInSKR, kyma).
+			WithArguments(skrClient, moduleInSKR, skrKyma).
 			Should(Succeed())
 	})
 
