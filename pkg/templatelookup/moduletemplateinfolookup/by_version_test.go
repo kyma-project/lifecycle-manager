@@ -1,6 +1,7 @@
 package moduletemplateinfolookup_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,7 @@ func Test_ByVersionStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 func Test_ByVersionStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithVersion("1.0.0").Enabled().Build()
 	var kyma *v1beta2.Kyma = nil
-	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = builder.NewModuleReleaseMetaBuilder().Build()
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().Build()
 	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(nil)
 
 	responsible := byVersionStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
@@ -62,7 +63,7 @@ func Test_ByVersion_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 		},
 	))
 
-	moduleTemplateInfo := byVersionStrategy.Lookup(nil, moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)

@@ -503,13 +503,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 
 	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 
-	tests := []struct {
-		name            string
-		kyma            *v1beta2.Kyma
-		wantVersion     string
-		wantChannel     string
-		wantErrContains string
-	}{
+	tests := getRegularTemplatesTestCases{
 		{
 			name: "When upgrade version, then result contains no error",
 			kyma: builder.NewKymaBuilder().
@@ -545,29 +539,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			reader := NewFakeModuleTemplateReader(availableModuleTemplates, availableModuleReleaseMetas)
-			lookup := templatelookup.NewTemplateLookup(reader,
-				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
-			assert.Len(t, got, 1)
-			for key, module := range got {
-				assert.Equal(t, key, moduleToInstall.Name)
-				if testCase.wantErrContains != "" {
-					assert.Contains(t, module.Err.Error(), testCase.wantErrContains)
-				} else {
-					assert.Equal(t, testCase.wantChannel, module.DesiredChannel)
-					assert.Equal(t, testCase.wantVersion, module.ModuleTemplate.Spec.Version)
-				}
-			}
-		})
-	}
+	executeGetRegularTemplatesTestCases(t, tests, availableModuleTemplates, availableModuleReleaseMetas, moduleToInstall)
 }
 
 func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *testing.T) {
@@ -583,13 +555,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 
 	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 
-	tests := []struct {
-		name            string
-		kyma            *v1beta2.Kyma
-		wantVersion     string
-		wantChannel     string
-		wantErrContains string
-	}{
+	tests := getRegularTemplatesTestCases{
 		{
 			name: "When staying with the same version, then result contains no error",
 			kyma: builder.NewKymaBuilder().
@@ -642,30 +608,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			reader := NewFakeModuleTemplateReader(availableModuleTemplates,
-				availableModuleReleaseMetas)
-			lookup := templatelookup.NewTemplateLookup(reader,
-				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
-			assert.Len(t, got, 1)
-			for key, module := range got {
-				assert.Equal(t, key, moduleToInstall.Name)
-				if testCase.wantErrContains != "" {
-					assert.Contains(t, module.Err.Error(), testCase.wantErrContains)
-				} else {
-					assert.Equal(t, testCase.wantChannel, module.DesiredChannel)
-					assert.Equal(t, testCase.wantVersion, module.ModuleTemplate.Spec.Version)
-				}
-			}
-		})
-	}
+	executeGetRegularTemplatesTestCases(t, tests, availableModuleTemplates, availableModuleReleaseMetas, moduleToInstall)
 }
 
 func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *testing.T) {
@@ -681,13 +624,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 
 	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
 
-	tests := []struct {
-		name            string
-		kyma            *v1beta2.Kyma
-		wantVersion     string
-		wantChannel     string
-		wantErrContains string
-	}{
+	tests := getRegularTemplatesTestCases{
 		{
 			name: "When staying with the same version, then result contains no error",
 			kyma: builder.NewKymaBuilder().
@@ -740,30 +677,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			reader := NewFakeModuleTemplateReader(availableModuleTemplates,
-				availableModuleReleaseMetas)
-			lookup := templatelookup.NewTemplateLookup(reader,
-				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
-			assert.Len(t, got, 1)
-			for key, module := range got {
-				assert.Equal(t, key, moduleToInstall.Name)
-				if testCase.wantErrContains != "" {
-					assert.Contains(t, module.Err.Error(), testCase.wantErrContains)
-				} else {
-					assert.Equal(t, testCase.wantChannel, module.DesiredChannel)
-					assert.Equal(t, testCase.wantVersion, module.ModuleTemplate.Spec.Version)
-				}
-			}
-		})
-	}
+	executeGetRegularTemplatesTestCases(t, tests, availableModuleTemplates, availableModuleReleaseMetas, moduleToInstall)
 }
 
 func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalidDescriptor(t *testing.T) {
@@ -1179,6 +1093,46 @@ func TestTemplateNameMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := moduletemplateinfolookup.TemplateNameMatch(&tt.template, targetName); got != tt.want {
 				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+type getRegularTemplatesTestCases []struct {
+	name            string
+	kyma            *v1beta2.Kyma
+	wantVersion     string
+	wantChannel     string
+	wantErrContains string
+}
+
+func executeGetRegularTemplatesTestCases(t *testing.T,
+	testCases getRegularTemplatesTestCases,
+	availableModuleTemplates v1beta2.ModuleTemplateList,
+	availableModuleReleaseMetas v1beta2.ModuleReleaseMetaList,
+	moduleToInstall v1beta2.Module,
+) {
+	t.Helper()
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			reader := NewFakeModuleTemplateReader(availableModuleTemplates, availableModuleReleaseMetas)
+			lookup := templatelookup.NewTemplateLookup(reader,
+				provider.NewCachedDescriptorProvider(),
+				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+					moduletemplateinfolookup.NewByVersionStrategy(reader),
+					moduletemplateinfolookup.NewByChannelStrategy(reader),
+					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
+				}))
+			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			assert.Len(t, got, 1)
+			for key, module := range got {
+				assert.Equal(t, key, moduleToInstall.Name)
+				if testCase.wantErrContains != "" {
+					assert.Contains(t, module.Err.Error(), testCase.wantErrContains)
+				} else {
+					assert.Equal(t, testCase.wantChannel, module.DesiredChannel)
+					assert.Equal(t, testCase.wantVersion, module.ModuleTemplate.Spec.Version)
+				}
 			}
 		})
 	}

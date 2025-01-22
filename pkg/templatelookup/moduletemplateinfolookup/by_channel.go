@@ -5,16 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var (
-	ErrNotDefaultChannelAllowed = errors.New("specifying no default channel is not allowed")
-)
+var ErrNotDefaultChannelAllowed = errors.New("specifying no default channel is not allowed")
 
 type ByChannelStrategy struct {
 	client client.Reader
@@ -69,11 +68,11 @@ func (s ByChannelStrategy) Lookup(ctx context.Context,
 	return info
 }
 
-func (p ByChannelStrategy) filterTemplatesByChannel(ctx context.Context, name, desiredChannel string) (
+func (s ByChannelStrategy) filterTemplatesByChannel(ctx context.Context, name, desiredChannel string) (
 	*v1beta2.ModuleTemplate, error,
 ) {
 	templateList := &v1beta2.ModuleTemplateList{}
-	err := p.client.List(ctx, templateList)
+	err := s.client.List(ctx, templateList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}

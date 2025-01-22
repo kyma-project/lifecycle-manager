@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ByVersionStrategy struct {
@@ -51,11 +52,11 @@ func (s ByVersionStrategy) Lookup(ctx context.Context,
 	return info
 }
 
-func (p ByVersionStrategy) filterTemplatesByVersion(ctx context.Context, name, version string) (
+func (s ByVersionStrategy) filterTemplatesByVersion(ctx context.Context, name, version string) (
 	*v1beta2.ModuleTemplate, error,
 ) {
 	templateList := &v1beta2.ModuleTemplateList{}
-	err := p.client.List(ctx, templateList)
+	err := s.client.List(ctx, templateList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}

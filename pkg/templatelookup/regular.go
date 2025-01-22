@@ -37,7 +37,6 @@ type ModuleTemplateInfoLookupStrategy interface {
 func NewTemplateLookup(reader client.Reader,
 	descriptorProvider *provider.CachedDescriptorProvider,
 	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy,
-
 ) *TemplateLookup {
 	return &TemplateLookup{
 		Reader:                           reader,

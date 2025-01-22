@@ -1,6 +1,7 @@
 package moduletemplateinfolookup_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,7 @@ import (
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithChannel("regular").Enabled().Build()
 	var kyma *v1beta2.Kyma = nil
-	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = builder.NewModuleReleaseMetaBuilder().Build()
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil)
 
 	responsible := byMRMStrategy.IsResponsible(moduleInfo, kyma, moduleReleaseMeta)
@@ -39,8 +40,8 @@ func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleRelea
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
-	var kyma *v1beta2.Kyma = builder.NewKymaBuilder().Build()
-	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = builder.NewModuleReleaseMetaBuilder().
+	kyma := builder.NewKymaBuilder().Build()
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithName("test-module").
 		WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
@@ -64,7 +65,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 		},
 	))
 
-	moduleTemplateInfo := byMRMStrategy.Lookup(nil, moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byMRMStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
