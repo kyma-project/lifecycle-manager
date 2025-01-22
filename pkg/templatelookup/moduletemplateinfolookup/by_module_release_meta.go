@@ -9,6 +9,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
+// ByModuleReleaseMetaStrategy looks up the module template via the module release meta.
+// It only supports channel-based installation.
 type ByModuleReleaseMetaStrategy struct {
 	client client.Reader
 }

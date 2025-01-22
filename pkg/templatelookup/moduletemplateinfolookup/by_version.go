@@ -11,6 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
+// ByVersionStrategy looks up the module template for a given version-based installation.
 type ByVersionStrategy struct {
 	client client.Reader
 }

@@ -11,16 +11,20 @@ import (
 var ErrNoResponsibleStrategy = errors.New("failed to find responsible module template lookup strategy")
 
 type ModuleTemplateInfoLookupStrategy interface {
+	// IsResponsible checks if the strategy is responsible for the given module installation.
+	IsResponsible(moduleInfo *templatelookup.ModuleInfo,
+		moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+	) bool
+	// Lookup looks up the required module template.
 	Lookup(ctx context.Context,
 		moduleInfo *templatelookup.ModuleInfo,
 		kyma *v1beta2.Kyma,
 		moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 	) templatelookup.ModuleTemplateInfo
-	IsResponsible(moduleInfo *templatelookup.ModuleInfo,
-		moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
-	) bool
 }
 
+// AggregatedModuleTemplateInfoLookupStrategy is a strategy that aggregates multiple ModuleTemplateInfoLookupStrategies.
+// It iterates over the strategies and uses the first one that is responsible for the given module info.
 type AggregatedModuleTemplateInfoLookupStrategy struct {
 	strategies []ModuleTemplateInfoLookupStrategy
 }

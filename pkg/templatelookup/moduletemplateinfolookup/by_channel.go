@@ -15,6 +15,7 @@ import (
 
 var ErrNotDefaultChannelAllowed = errors.New("specifying no default channel is not allowed")
 
+// ByChannelStrategy looks up the module template for a given channel-based installation.
 type ByChannelStrategy struct {
 	client client.Reader
 }
