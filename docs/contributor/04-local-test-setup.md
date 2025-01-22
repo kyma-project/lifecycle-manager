@@ -92,7 +92,7 @@ You can deploy Lifecycle Manager either from the registry or local sources. Choo
   kubectl get kyma/default -n kyma-system
 ```
 
-### 6. [OPTIONAL] Deploy template-operator Module
+### 6. [OPTIONAL] Deploy the template-operator Module
 
 Build the template-operator module from the local sources, push it to the local KCP registry, and deploy it.
 
