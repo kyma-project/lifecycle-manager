@@ -284,7 +284,8 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 					module,
 					builder.NewKymaBuilder().
 						WithName(defaultRemoteKymaName).
-						WithNamespace(shared.DefaultRemoteNamespace)).
+						WithNamespace(shared.DefaultRemoteNamespace).
+						Build()).
 				Should(Equal(ErrNotFound))
 		})
 	})
