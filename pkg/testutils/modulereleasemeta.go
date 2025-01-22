@@ -162,7 +162,7 @@ func ModuleReleaseMetaBetaValueIsCorrect(ctx context.Context, client client.Clie
 		return err
 	}
 
-	if meta.Spec.Beta != expectedValue {
+	if meta.IsBeta() != expectedValue {
 		return ErrBetaValueNotCorrect
 	}
 
@@ -177,7 +177,7 @@ func ModuleReleaseMetaInternalValueIsCorrect(ctx context.Context, client client.
 		return err
 	}
 
-	if meta.Spec.Beta != expectedValue {
+	if meta.IsInternal() != expectedValue {
 		return ErrInternalValueNotCorrect
 	}
 

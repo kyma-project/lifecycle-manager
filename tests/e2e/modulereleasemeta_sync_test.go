@@ -79,7 +79,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then Beta value is reverted back to its value on the KCP Cluster", func() {
+		It("Then Beta value is reverted back to its value from the KCP Cluster", func() {
 			Eventually(ModuleReleaseMetaBetaValueIsCorrect).
 				WithContext(ctx).
 				WithArguments(skrClient, RemoteNamespace, module.Name, false).
@@ -93,7 +93,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then Internal value is reverted back to its value on the KCP Cluster", func() {
+		It("Then Internal value is reverted back to its value from the KCP Cluster", func() {
 			Eventually(ModuleReleaseMetaInternalValueIsCorrect).
 				WithContext(ctx).
 				WithArguments(skrClient, RemoteNamespace, module.Name, false).
