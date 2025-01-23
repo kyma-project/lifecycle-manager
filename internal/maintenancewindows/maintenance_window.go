@@ -73,14 +73,13 @@ func (MaintenanceWindow) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma
 	}
 
 	// module not installed yet => no need for maintenance window
-	moduleStatus := kyma.Status.GetModuleStatus(moduleTemplate.Spec.ModuleName)
+	moduleStatus := kyma.Status.GetModuleStatus(moduleTemplate.GetModuleName())
 	if moduleStatus == nil {
 		return false
 	}
 
 	// module already installed in this version => no need for maintenance window
-	installedVersion := moduleStatus.Version
-	return installedVersion != moduleTemplate.Spec.Version
+	return moduleStatus.Version != moduleTemplate.GetVersion()
 }
 
 // IsActive determines if a maintenance window is currently active.
