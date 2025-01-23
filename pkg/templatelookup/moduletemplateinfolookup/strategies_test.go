@@ -12,28 +12,28 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
-func Test_AggregatedModuleTemplateInfoLookupStrategy_Lookup_CallsResponsibleStrategy(t *testing.T) {
+func Test_ModuleTemplateInfoLookupStrategies_Lookup_CallsResponsibleStrategy(t *testing.T) {
 	nonResponsibleStrategy := newLookupStrategyStub(false)
 	responsibleStrategy := newLookupStrategyStub(true)
-	aggregatedStrategy := moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 		&nonResponsibleStrategy,
 		&responsibleStrategy,
 	})
 
-	moduleTemplateInfo := aggregatedStrategy.Lookup(context.Background(), nil, nil, nil)
+	moduleTemplateInfo := strategies.Lookup(context.Background(), nil, nil, nil)
 
 	assert.True(t, responsibleStrategy.called)
 	assert.False(t, nonResponsibleStrategy.called)
 	require.NoError(t, moduleTemplateInfo.Err)
 }
 
-func Test_AggregatedModuleTemplateInfoLookupStrategy_Lookup_ReturnsFailureWhenNoStrategyResponsible(t *testing.T) {
+func Test_ModuleTemplateInfoLookupStrategies_Lookup_ReturnsFailureWhenNoStrategyResponsible(t *testing.T) {
 	nonResponsibleStrategy := newLookupStrategyStub(false)
-	aggregatedStrategy := moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 		&nonResponsibleStrategy,
 	})
 
-	moduleTemplateInfo := aggregatedStrategy.Lookup(context.Background(), nil, nil, nil)
+	moduleTemplateInfo := strategies.Lookup(context.Background(), nil, nil, nil)
 
 	assert.False(t, nonResponsibleStrategy.called)
 	require.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoResponsibleStrategy)

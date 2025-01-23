@@ -288,7 +288,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	moduleTemplateInfoLookupStrategy := moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 		moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
 		moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
 		moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient()),
@@ -313,7 +313,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Metrics:             kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider, moduleTemplateInfoLookupStrategy),
+		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider, moduleTemplateInfoLookupStrategies),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,

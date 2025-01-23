@@ -147,7 +147,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
 			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
 			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),

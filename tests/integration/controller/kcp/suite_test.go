@@ -155,7 +155,7 @@ var _ = BeforeSuite(func() {
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
 			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
 			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),

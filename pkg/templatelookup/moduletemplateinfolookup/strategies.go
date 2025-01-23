@@ -23,17 +23,17 @@ type ModuleTemplateInfoLookupStrategy interface {
 	) templatelookup.ModuleTemplateInfo
 }
 
-// AggregatedModuleTemplateInfoLookupStrategy is a strategy that aggregates multiple ModuleTemplateInfoLookupStrategies.
+// ModuleTemplateInfoLookupStrategies is a strategy that aggregates multiple ModuleTemplateInfoLookupStrategies.
 // It iterates over the strategies and uses the first one that is responsible for the given module info.
-type AggregatedModuleTemplateInfoLookupStrategy struct {
+type ModuleTemplateInfoLookupStrategies struct {
 	strategies []ModuleTemplateInfoLookupStrategy
 }
 
-func NewAggregatedModuleTemplateInfoLookupStrategy(strategies []ModuleTemplateInfoLookupStrategy) AggregatedModuleTemplateInfoLookupStrategy {
-	return AggregatedModuleTemplateInfoLookupStrategy{strategies: strategies}
+func NewModuleTemplateInfoLookupStrategies(strategies []ModuleTemplateInfoLookupStrategy) ModuleTemplateInfoLookupStrategies {
+	return ModuleTemplateInfoLookupStrategies{strategies: strategies}
 }
 
-func (s AggregatedModuleTemplateInfoLookupStrategy) Lookup(ctx context.Context,
+func (s ModuleTemplateInfoLookupStrategies) Lookup(ctx context.Context,
 	moduleInfo *templatelookup.ModuleInfo,
 	kyma *v1beta2.Kyma,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,

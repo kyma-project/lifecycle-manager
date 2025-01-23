@@ -333,7 +333,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(tt.name, func(t *testing.T) {
-			lookup := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider(), moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+			lookup := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider(), moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 				moduletemplateinfolookup.NewByVersionStrategy(nil),
 				moduletemplateinfolookup.NewByChannelStrategy(nil),
 				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil),
@@ -472,7 +472,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 			reader := NewFakeModuleTemplateReader(testCase.availableModuleTemplate, testCase.availableModuleReleaseMeta)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 					moduletemplateinfolookup.NewByVersionStrategy(reader),
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
@@ -779,7 +779,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 				moduleReleaseMetas)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 					moduletemplateinfolookup.NewByVersionStrategy(reader),
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
@@ -847,7 +847,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 				v1beta2.ModuleReleaseMetaList{})
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 					moduletemplateinfolookup.NewByVersionStrategy(reader),
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
@@ -990,7 +990,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				moduleReleaseMetas)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 					moduletemplateinfolookup.NewByVersionStrategy(reader),
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
@@ -1118,7 +1118,7 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 			reader := NewFakeModuleTemplateReader(availableModuleTemplates, availableModuleReleaseMetas)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewAggregatedModuleTemplateInfoLookupStrategy([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 					moduletemplateinfolookup.NewByVersionStrategy(reader),
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
