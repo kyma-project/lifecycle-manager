@@ -39,7 +39,15 @@ This metric is a gauge vector that indicates the errors produced by purge.
 #### lifecycle_mgr_self_signed_cert_not_renew
 This metric is a gauge vector that indicates that the self-signed Certificate of a Kyma CR is not renewed yet.
 
-The above metrics are visualized using Grafana and grouped into four dashboards:
+Some prometheus rules are in place to alert if some metrics are not in the expected state:
+
+1. The lifecycle_mgr_self_signed_cert_not_renew metric has the value of 1 for 30 minutes, indicating that the Kyma self-signed certificate renewal buffer time has been exceeded by 30 minutes.
+ 
+### 2. kyma-performance-rules
+- 
+### 3. manifest-performance-rules
+
+The above-mentioned metrics are visualized using Grafana and grouped into four dashboards:
 
 ### 1. Lifecycle Manager Overview
 
