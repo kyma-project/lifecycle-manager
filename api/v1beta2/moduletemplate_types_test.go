@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_GetSemanticVersion(t *testing.T) {
@@ -106,6 +106,7 @@ func Test_GetSemanticVersion(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func Test_GetVersion(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -158,6 +159,8 @@ func Test_GetVersion(t *testing.T) {
 		})
 	}
 }
+
+//nolint:dupl
 func Test_GetModuleName(t *testing.T) {
 	tests := []struct {
 		name         string
