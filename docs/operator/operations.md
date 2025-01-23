@@ -39,21 +39,30 @@ This metric is a gauge vector that indicates the errors produced by purge.
 #### lifecycle_mgr_self_signed_cert_not_renew
 This metric is a gauge vector that indicates that the self-signed Certificate of a Kyma CR is not renewed yet.
 
-Some prometheus rules are in place to alert if some metrics are not in the expected state:
-
-1. The lifecycle_mgr_self_signed_cert_not_renew metric has the value of 1 for 30 minutes, indicating that the Kyma self-signed certificate renewal buffer time has been exceeded by 30 minutes.
- 
-### 2. kyma-performance-rules
-- 
-### 3. manifest-performance-rules
-
+## Dashboards
 The above-mentioned metrics are visualized using Grafana and grouped into four dashboards:
 
 ### 1. Lifecycle Manager Overview
 
 ### 2. Lifecycle Manager Kyma Status
 
+#### Enabled Modules
+This panel shows the statistics of the enabled modules on the SKR Clusters. It shows the total number of each module.
 
+#### Kyma Manifest in Error State
+This panel shows the manifests that are in Error state with information about the kyma name, module name and shoot name.
+
+#### Kyma State Total
+This panel is a graph showing the number of Kyma CRs in each state over the time.
+
+#### Module State Total
+This panel is a graph showing the number of modules enabled on Kyma CRs in each state over the time.
+
+#### Mandatory Module State Total
+This panel is a graph showing the number of mandatory modules enabled on Kyma CRs in each state over the time.
+
+#### Mandatory Modules Count
+This panel indicates the number of mandatory modules installed on the SKR clusters.
 
 ### 3. Lifecycle Manager Watcher Components
 
@@ -113,3 +122,8 @@ This panel is a table mapping the Warden images installed on SKR Clusters with t
 #### Unready Warden Deployments
 This panel shows the total number of unready Warden deployments on the SKR Clusters.
 
+
+Some prometheus rules are in place to alert if some metrics are not in the expected state:
+
+1. The lifecycle_mgr_self_signed_cert_not_renew metric has the value of 1 for 30 minutes, indicating that the Kyma self-signed certificate renewal buffer time has been exceeded by 30 minutes.
+ 
