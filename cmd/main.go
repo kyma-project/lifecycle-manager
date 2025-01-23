@@ -117,7 +117,7 @@ func main() {
 	}
 
 	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged, flagVar.IstioNamespace,
-		flagVar.IstioGatewayNamespace, flagVar.RemoteSyncNamespace)
+		flagVar.IstioGatewayNamespace)
 	setupManager(flagVar, cacheOptions, scheme, setupLog)
 }
 
