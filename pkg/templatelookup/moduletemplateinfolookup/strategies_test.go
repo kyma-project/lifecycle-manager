@@ -27,6 +27,24 @@ func Test_ModuleTemplateInfoLookupStrategies_Lookup_CallsResponsibleStrategy(t *
 	require.NoError(t, moduleTemplateInfo.Err)
 }
 
+func Test_ModuleTemplateInfoLookupStrategies_Lookup_CallsFirstResponsibleStrategy(t *testing.T) {
+	nonResponsibleStrategy := newLookupStrategyStub(false)
+	responsibleStrategy := newLookupStrategyStub(true)
+	responsibleStrategy2 := newLookupStrategyStub(true)
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+		&nonResponsibleStrategy,
+		&responsibleStrategy,
+		&responsibleStrategy2,
+	})
+
+	moduleTemplateInfo := strategies.Lookup(context.Background(), nil, nil, nil)
+
+	assert.True(t, responsibleStrategy.called)
+	assert.False(t, responsibleStrategy2.called)
+	assert.False(t, nonResponsibleStrategy.called)
+	require.NoError(t, moduleTemplateInfo.Err)
+}
+
 func Test_ModuleTemplateInfoLookupStrategies_Lookup_ReturnsFailureWhenNoStrategyResponsible(t *testing.T) {
 	nonResponsibleStrategy := newLookupStrategyStub(false)
 	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
@@ -36,6 +54,14 @@ func Test_ModuleTemplateInfoLookupStrategies_Lookup_ReturnsFailureWhenNoStrategy
 	moduleTemplateInfo := strategies.Lookup(context.Background(), nil, nil, nil)
 
 	assert.False(t, nonResponsibleStrategy.called)
+	require.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoResponsibleStrategy)
+}
+
+func Test_ModuleTemplateInfoLookupStrategies_Lookup_ReturnsFailureWhenNoStrategies(t *testing.T) {
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{})
+
+	moduleTemplateInfo := strategies.Lookup(context.Background(), nil, nil, nil)
+
 	require.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoResponsibleStrategy)
 }
 
