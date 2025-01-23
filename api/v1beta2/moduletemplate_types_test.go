@@ -106,7 +106,7 @@ func Test_GetSemanticVersion(t *testing.T) {
 	}
 }
 
-//nolint:dupl
+//nolint:dupl  // similar but not duplicate
 func Test_GetVersion(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -160,7 +160,7 @@ func Test_GetVersion(t *testing.T) {
 	}
 }
 
-//nolint:dupl
+//nolint:dupl  // similar but not duplicate
 func Test_GetModuleName(t *testing.T) {
 	tests := []struct {
 		name         string
