@@ -223,39 +223,27 @@ func (m *ModuleTemplate) IsInternal() bool {
 	return false
 }
 
-var ErrInvalidVersion = errors.New("can't find valid semantic version")
-
-// getVersionLegacy() returns the version of the ModuleTemplate from the annotation on the object.
-// Remove once shared.ModuleVersionAnnotation is removed.
-func (m *ModuleTemplate) getVersionLegacy() (string, error) {
-	if m.Annotations != nil {
-		moduleVersion, found := m.Annotations[shared.ModuleVersionAnnotation]
-		if found {
-			return moduleVersion, nil
-		}
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
+// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
+func (m *ModuleTemplate) GetVersion() string {
+	version := m.Spec.Version
+	if version == "" {
+		version = m.Annotations[shared.ModuleVersionAnnotation]
 	}
-	return "", ErrInvalidVersion
+	return version
 }
 
-// GetVersion returns the declared version of the ModuleTemplate from it's Spec.
-func (m *ModuleTemplate) GetVersion() (*semver.Version, error) {
-	var versionValue string
-	var err error
+var ErrInvalidVersion = errors.New("can't find valid semantic version")
 
-	if m.Spec.Version == "" {
-		versionValue, err = m.getVersionLegacy()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		versionValue = m.Spec.Version
-	}
+// GetSemanticVersion returns the declared version of the ModuleTemplate as semantic version.
+func (m *ModuleTemplate) GetSemanticVersion() (*semver.Version, error) {
+	version := m.GetVersion()
 
-	version, err := semver.NewVersion(versionValue)
+	semanticVersion, err := semver.NewVersion(version)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidVersion, err.Error())
 	}
-	return version, nil
+	return semanticVersion, nil
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
@@ -278,4 +266,14 @@ func (m *ModuleTemplate) HasSyncDisabled() bool {
 		return strings.ToLower(isSync) == shared.DisableLabelValue
 	}
 	return false
+}
+
+// https://github.com/kyma-project/lifecycle-manager/issues/2096
+// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
+func (m *ModuleTemplate) GetModuleName() string {
+	moduleName := m.Spec.ModuleName
+	if moduleName == "" {
+		moduleName = m.Labels[shared.ModuleName]
+	}
+	return moduleName
 }
