@@ -122,7 +122,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: randomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace, RemoteNamespace),
+			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
