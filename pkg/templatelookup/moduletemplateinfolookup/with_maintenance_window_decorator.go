@@ -38,7 +38,8 @@ func (p WithMaintenanceWindowDecorator) IsResponsible(moduleInfo *templatelookup
 func (p WithMaintenanceWindowDecorator) Lookup(ctx context.Context,
 	moduleInfo *templatelookup.ModuleInfo,
 	kyma *v1beta2.Kyma,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta) templatelookup.ModuleTemplateInfo {
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) templatelookup.ModuleTemplateInfo {
 	moduleTemplateInfo := p.decorated.Lookup(ctx,
 		moduleInfo,
 		kyma,
