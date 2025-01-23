@@ -20,7 +20,7 @@ var _ = Describe("ModuleReleaseMeta Not Allowed Installation", Ordered, func() {
 			By("The the ModuleTemplate exists in the KCP Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				WithArguments(kcpClient, module, kyma).
 				Should(Succeed())
 
 			By("And the ModuleReleaseMeta exists on the KCP Cluster")

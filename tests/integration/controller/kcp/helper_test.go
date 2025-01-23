@@ -111,10 +111,9 @@ func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma,
 func expectModuleTemplateSpecGetReset(
 	clnt client.Client,
 	module v1beta2.Module,
-	kymaChannel string,
-	namespace string,
+	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel, namespace)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
 	if err != nil {
 		return err
 	}

@@ -79,7 +79,7 @@ var _ = Describe("Module with ModuleReleaseMeta Upgrade By New Version", Ordered
 
 			By("And Kyma Module Version in Kyma Status is updated")
 			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(ctx, kcpClient, module,
-				kyma.Spec.Channel, ControlPlaneNamespace)
+				kyma)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(ModuleVersionInKymaStatusIsCorrect).
