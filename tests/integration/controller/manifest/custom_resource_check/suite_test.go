@@ -114,7 +114,7 @@ var _ = BeforeSuite(func() {
 	if !found {
 		metricsBindAddress = ":0"
 	}
-	cacheOpts := internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace, RemoteNamespace)
+	cacheOpts := internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace)
 	syncPeriod := 2 * time.Second
 	cacheOpts.SyncPeriod = &syncPeriod
 
