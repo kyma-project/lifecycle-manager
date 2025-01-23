@@ -285,6 +285,17 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Message: module.Template.Err.Error(),
 		}
 	}
+	if errors.Is(module.Template.Err, moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow) {
+		newModuleStatus := existStatus.DeepCopy()
+		newModuleStatus.Message = module.Template.Err.Error()
+		return *newModuleStatus
+	}
+	if errors.Is(module.Template.Err, moduletemplateinfolookup.ErrFailedToDetermineIfMaintenanceWindowIsActive) {
+		newModuleStatus := existStatus.DeepCopy()
+		newModuleStatus.Message = module.Template.Err.Error()
+		newModuleStatus.State = shared.StateError
+		return *newModuleStatus
+	}
 	if module.Template.Err != nil {
 		return v1beta2.ModuleStatus{
 			Name:    module.ModuleName,

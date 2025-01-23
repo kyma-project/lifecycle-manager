@@ -281,7 +281,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, _ *maintenancewindows.MaintenanceWindow,
+	setupLog logr.Logger, maintenanceWindow *maintenancewindows.MaintenanceWindow,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -289,9 +289,12 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
-		moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
-		moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient()),
+		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+			moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient())),
+		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+			moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient())),
+		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
 	})
 
 	if err := (&kyma.Reconciler{

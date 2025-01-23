@@ -21,9 +21,8 @@ var (
 
 type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
-	Err                             error
-	WaitingForNextMaintenanceWindow bool
-	DesiredChannel                  string
+	Err            error
+	DesiredChannel string
 }
 
 type ModuleTemplateInfoLookupStrategy interface {
