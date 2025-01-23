@@ -6,37 +6,19 @@ Lifecycle Manager metrics are exposed over port 8080 through the metrics endpoin
 
 The following metrics are exposed:
 
-### General metrics:
-#### lifecycle_mgr_requeue_reason_total
-This metric is a counter vector that indicates the requeue reason of a reconciler.
+| Metric Name                              | Metric Type    | Description                                                                                  |
+|------------------------------------------|----------------|----------------------------------------------------------------------------------------------|
+| `lifecycle_mgr_requeue_reason_total`     | Counter Vector | Indicates the requeue reason of a reconciler.                                                |
+| `lifecycle_mgr_kyma_state`               | Gauge Vector   | Indicates the state of a Kyma CR.                                                            |
+| `lifecycle_mgr_module_state`             | Gauge Vector   | Indicates the state of a module enabled on a Kyma CR.                                        |
+| `lifecycle_mgr_mandatory_modules`        | Gauge          | Indicates the number of mandatory ModuleTemplates.                                           |
+| `lifecycle_mgr_mandatory_module_state`   | Gauge Vector   | Indicates the state of a mandatory module enabled on a Kyma CR.                              |
+| `reconcile_duration_seconds`             | Gauge Vector   | Indicates the duration of a manifest reconciliation in seconds.                              |
+| `lifecycle_mgr_purgectrl_time`           | Gauge          | Indicates the average duration of purge reconciliation.                                      |
+| `lifecycle_mgr_purgectrl_requests_total` | Counter        | Indicates the total number of purges.                                                        |
+| `lifecycle_mgr_purgectrl_error`          | Gauge Vector   | Indicates the errors produced by purge.                                                      |
+| `lifecycle_mgr_self_signed_cert_not_renew` | Gauge Vector  | Indicates that the self-signed Certificate of a Kyma CR is not renewed yet.                 |
 
-### Kyma related metrics:
-#### lifecycle_mgr_kyma_state
-This metric is a gauge vector that indicates the state of a Kyma CR.
-#### lifecycle_mgr_module_state
-This metric is a gauge vector that indicates the state of a module enabled on a Kyma CR.
-
-### Mandatory Modules related metrics:
-#### lifecycle_mgr_mandatory_modules
-This metric is a gauge that indicates the number of mandatory ModuleTemplates.
-#### lifecycle_mgr_mandatory_module_state
-This metric is a gauge vector that indicates the state of a mandatory module enabled on a Kyma CR.
-
-### Manifest related metrics:
-#### reconcile_duration_seconds
-This metric is a gauge vector that indicates the duration of a manifest reconciliation in seconds.
-
-### Purge related metrics:
-#### lifecycle_mgr_purgectrl_time
-This metric is a gauge that indices the average duration of purge reconciliation.
-#### lifecycle_mgr_purgectrl_requests_total
-This metric is a counter that indicates the total number of purges.
-#### lifecycle_mgr_purgectrl_error
-This metric is a gauge vector that indicates the errors produced by purge.
-
-### Watcher related metrics:
-#### lifecycle_mgr_self_signed_cert_not_renew
-This metric is a gauge vector that indicates that the self-signed Certificate of a Kyma CR is not renewed yet.
 
 ## Dashboards
 The above-mentioned metrics are visualized using Grafana and grouped into four dashboards:
