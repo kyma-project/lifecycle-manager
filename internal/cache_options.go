@@ -19,10 +19,9 @@ type DefaultCacheOptions struct {
 }
 
 type KcpCacheOptions struct {
-	CacheOptions    cache.Options
-	istioNamespace  string
-	kcpNamespace    string
-	remoteNamespace string
+	CacheOptions   cache.Options
+	istioNamespace string
+	kcpNamespace   string
 }
 
 func (c *DefaultCacheOptions) GetCacheOptions() cache.Options {
@@ -86,12 +85,11 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 	}
 }
 
-func GetCacheOptions(isKymaManaged bool, istioNamespace, kcpNamespace, remoteNamespace string) cache.Options {
+func GetCacheOptions(isKymaManaged bool, istioNamespace, kcpNamespace string) cache.Options {
 	if isKymaManaged {
 		options := &KcpCacheOptions{
-			istioNamespace:  istioNamespace,
-			kcpNamespace:    kcpNamespace,
-			remoteNamespace: remoteNamespace,
+			istioNamespace: istioNamespace,
+			kcpNamespace:   kcpNamespace,
 		}
 		return options.GetCacheOptions()
 	}
