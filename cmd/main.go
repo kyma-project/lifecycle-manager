@@ -196,7 +196,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(setupLog,
 		maintenanceWindowPoliciesDirectory,
-		maintenanceWindowPolicyName)
+		maintenanceWindowPolicyName,
+		// align the configuration values before rollout
+		// https://github.com/kyma-project/lifecycle-manager/issues/2165
+		true,
+		20*time.Minute)
 	if err != nil {
 		setupLog.Error(err, "unable to set maintenance windows policy")
 	}
