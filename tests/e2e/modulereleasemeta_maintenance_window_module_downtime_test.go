@@ -89,7 +89,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		It("When a Maintenance Window is active", func() {
 			Eventually(UpdateKymaLabel).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.Name, kyma.Namespace, "operator.kyma-project.io/region", "asia").
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, shared.RegionLabel, "asia").
 				Should(Succeed())
 		})
 
