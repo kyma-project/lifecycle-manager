@@ -98,8 +98,7 @@ runs:
         kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
         popd
     - name: Create and use maintenance window policy
-      if: ${{matrix.e2e-test == 'modulereleasemeta-maintenance-window-with-module-downtime' ||
-             matrix.e2e-test == 'maintenance-window-with-module-downtime'}}
+      if: ${{matrix.e2e-test == 'modulereleasemeta-maintenance-window-with-module-downtime'}}
       working-directory: lifecycle-manager/config
       shell: bash
       run: |

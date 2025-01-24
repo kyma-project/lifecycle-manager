@@ -36,10 +36,6 @@ runs:
         }}
       shell: bash
       run: |
-        if [ "${{ matrix.e2e-test }}" == "maintenance-window-with-module-downtime" ]; then
-          yq e '.spec.requiresDowntime = true' -i tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
-        fi
-
         kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v2_fast.yaml
         kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_v1_regular.yaml
     - name: Create Template Operator Module for installation by version

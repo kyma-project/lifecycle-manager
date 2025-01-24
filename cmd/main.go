@@ -294,10 +294,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
-			moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient())),
-		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
-			moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient())),
+		moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
+		moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
 		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
 			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
 	})
