@@ -176,13 +176,13 @@ func enableModule(module v1beta2.Module,
 		WithArguments(skrClient, moduleDeplyomentName, TestModuleResourceNamespace).
 		Should(Succeed())
 
-	By("And KCP Kyma CR is in \"Ready\" State")
+	By("And SKR Kyma CR is in \"Ready\" State")
 	Eventually(KymaIsInState).
 		WithContext(ctx).
-		WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+		WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
 		Should(Succeed())
 
-	By("And SKR Kyma CR is in \"Ready\" State")
+	By("And KCP Kyma CR is in \"Ready\" State")
 	Eventually(KymaIsInState).
 		WithContext(ctx).
 		WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
