@@ -198,6 +198,7 @@ func flickKymaToFastChannel(moduleCR *unstructured.Unstructured,
 	kyma *v1beta2.Kyma,
 	channel string,
 ) {
+	kyma.Spec.Channel = channel // required for other checks
 	Eventually(UpdateKymaModuleChannel).
 		WithContext(ctx).
 		WithArguments(skrClient, shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, channel).
