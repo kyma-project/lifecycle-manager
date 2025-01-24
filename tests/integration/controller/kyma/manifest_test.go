@@ -127,7 +127,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel, ControlPlaneNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -197,7 +197,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	})
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma.Spec.Channel, ControlPlaneNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -266,8 +266,8 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		{
 			newVersionAndLayerDigest := updateModuleTemplateVersion
 			updatedVersionAndLayerDigest := validateModuleTemplateVersionUpdated
-			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module, kyma.Spec.Channel))
-			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module, kyma.Spec.Channel))
+			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module, kyma))
+			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module, kyma))
 
 			updateModuleTemplateVersionAndLayerDigest := updateModuleTemplateWith(newVersionAndLayerDigest)
 			validateVersionAndLayerDigestAreUpdated := validateModuleTemplateWith(updatedVersionAndLayerDigest)
@@ -333,11 +333,10 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 		It("returns the expected operator", func() {
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, moduleReferencedWithLabel, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				WithArguments(kcpClient, moduleReferencedWithLabel, kyma).
 				Should(Succeed())
 
-			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, v1beta2.DefaultChannel,
-				ControlPlaneNamespace)
+			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, kyma)
 			Expect(err).ToNot(HaveOccurred())
 			foundModuleName := moduleTemplate.Labels[shared.ModuleName]
 			Expect(foundModuleName).To(Equal(moduleReferencedWithLabel.Name))
@@ -348,8 +347,7 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 		It("cannot find the operator", func() {
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, moduleReferencedWithNamespacedName, v1beta2.DefaultChannel,
-					ControlPlaneNamespace).
+				WithArguments(kcpClient, moduleReferencedWithNamespacedName, kyma).
 				Should(Equal(ErrNotFound))
 		})
 	})
@@ -358,7 +356,7 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 		It("cannot find the operator", func() {
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(kcpClient, moduleReferencedWithFQDN, v1beta2.DefaultChannel, ControlPlaneNamespace).
+				WithArguments(kcpClient, moduleReferencedWithFQDN, kyma).
 				Should(Equal(ErrNotFound))
 		})
 	})
@@ -506,9 +504,9 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 }
 
 // getKCPModuleTemplate is a generic ModuleTemplate validation function.
-func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
+func validateKCPModuleTemplate(module v1beta2.Module, kyma *v1beta2.Kyma) func(moduleTemplateFn) error {
 	return func(validateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel, ControlPlaneNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
 		if err != nil {
 			return err
 		}
@@ -523,9 +521,9 @@ func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(m
 }
 
 // updateKCPModuleTemplate is a generic ModuleTemplate update function.
-func updateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
+func updateKCPModuleTemplate(module v1beta2.Module, kyma *v1beta2.Kyma) func(moduleTemplateFn) error {
 	return func(updateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kymaChannel, ControlPlaneNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
 		if err != nil {
 			return err
 		}

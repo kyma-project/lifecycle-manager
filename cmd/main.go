@@ -65,6 +65,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -280,12 +281,18 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow templatelookup.MaintenanceWindow,
+	setupLog logr.Logger, _ *maintenancewindows.MaintenanceWindow,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
+
+	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+		moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
+		moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
+		moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient()),
+	})
 
 	if err := (&kyma.Reconciler{
 		Client:             mgr.GetClient(),
@@ -306,7 +313,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Metrics:             kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider, maintenanceWindow),
+		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider, moduleTemplateInfoLookupStrategies),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
