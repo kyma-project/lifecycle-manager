@@ -102,9 +102,9 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma is deleted", func() {
-			Eventually(DeleteKyma, apimetav1.DeletePropagationBackground).
+			Eventually(DeleteKyma).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma).
+				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
 				Should(Succeed())
 
 			By("Then Kyma is removed from SKR")
