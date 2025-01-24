@@ -174,3 +174,6 @@ labelling:
 
 modulereleasemeta-maintenance-window-with-module-downtime:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Window With ModuleReleaseMeta and Module Downtime"
+
+maintenance-window-with-module-downtime:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Window With ModuleReleaseMeta and Module Downtime"

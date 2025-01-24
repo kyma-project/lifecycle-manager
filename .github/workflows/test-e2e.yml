@@ -64,6 +64,7 @@ jobs:
           - rbac-privileges
           - ocm-compatible-module-template
           - labelling
+          - maintenance-window-with-module-downtime
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
