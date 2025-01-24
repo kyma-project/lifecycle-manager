@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	kyma.Labels["operator.kyma-project.io/region"] = "europe"
+	kyma.Labels[shared.RegionLabel] = "europe"
 	kyma.Spec.SkipMaintenanceWindows = false
 	/*
 		Maintenance Windows are defined as such:
