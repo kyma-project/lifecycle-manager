@@ -80,6 +80,7 @@ const (
 
 	maintenanceWindowPolicyName        = "policy"
 	maintenanceWindowPoliciesDirectory = "/etc/maintenance-policy"
+	minMaintenanceWindowSize           = 20 * time.Minute
 )
 
 var (
@@ -200,7 +201,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		// align the configuration values before rollout
 		// https://github.com/kyma-project/lifecycle-manager/issues/2165
 		true,
-		20*time.Minute)
+		minMaintenanceWindowSize)
 	if err != nil {
 		setupLog.Error(err, "unable to set maintenance windows policy")
 	}
