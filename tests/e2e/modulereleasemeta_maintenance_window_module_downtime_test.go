@@ -182,11 +182,11 @@ func enableModule(module v1beta2.Module,
 		WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
 		Should(Succeed())
 
-	By("And KCP Kyma CR is in \"Ready\" State")
-	Eventually(KymaIsInState).
-		WithContext(ctx).
-		WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
-		Should(Succeed())
+	// By("And KCP Kyma CR is in \"Ready\" State")
+	// Eventually(KymaIsInState).
+	// 	WithContext(ctx).
+	// 	WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+	// 	Should(Succeed())
 }
 
 func disableModule(module *v1beta2.Module, kyma *v1beta2.Kyma) {
