@@ -30,7 +30,7 @@ jobs:
         env:
           ITERATIONS: 40
           SLEEP_SECONDS: 30
-        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
+        run: ./.github/scripts/release/wait_for_image.sh europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:PR-2206 ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
     name: E2E With ModuleReleaseMeta
     needs: wait-for-image-build
@@ -67,7 +67,7 @@ jobs:
           - modulereleasemeta-watch-trigger
           - modulereleasemeta-not-allowed-installation
           - labelling
-          - modulereleasemeta-maintenance-window-with-module-downtime
+          - maintenance-window-with-module-downtime
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
