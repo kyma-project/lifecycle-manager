@@ -182,7 +182,7 @@ func disableModule(module *v1beta2.Module, kyma *v1beta2.Kyma) {
 		Should(Succeed())
 
 	By("Then Module Operator Deployment is removed")
-	Eventually(GetDeployment).
+	Eventually(DeploymentIsReady).
 		WithContext(ctx).
 		WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 		Should(Equal(ErrNotFound))
@@ -210,13 +210,13 @@ func flickKymaToFastChannel(moduleCR *unstructured.Unstructured,
 		Should(Succeed())
 
 	By("And old Module Operator Deployment still exists")
-	Consistently(DeploymentIsReady).
+	Eventually(DeploymentIsReady).
 		WithContext(ctx).
 		WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 		Should(Succeed())
 
 	By("And new Module Operator Deployment is not deployed")
-	Consistently(DeploymentIsReady).
+	Eventually(DeploymentIsReady).
 		WithContext(ctx).
 		WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 		Should(Equal(ErrNotFound))

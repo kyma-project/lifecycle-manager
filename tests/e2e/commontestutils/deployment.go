@@ -71,9 +71,6 @@ func GetDeployment(ctx context.Context, clnt client.Client,
 ) (*apiappsv1.Deployment, error) {
 	deploy := &apiappsv1.Deployment{}
 	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, deploy); err != nil {
-		if util.IsNotFound(err) {
-			return nil, testutils.ErrNotFound
-		}
 		return nil, fmt.Errorf("could not get deployment: %w", err)
 	}
 	return deploy, nil
