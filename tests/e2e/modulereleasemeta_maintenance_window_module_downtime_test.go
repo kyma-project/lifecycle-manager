@@ -44,7 +44,8 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma channel is changed leading to an update requiring downtime", func() {
-			flickKymaToFastChannel(moduleCR, kyma, fastChannel)
+			flickModuleToFastChannel(moduleCR, kyma, fastChannel)
+			module.Channel = fastChannel
 		})
 
 		It("When Maintenance Window becomes active", func() {
@@ -110,7 +111,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 			Eventually(KymaExists).
 				WithContext(ctx).
 				WithArguments(skrClient, shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace).
-				Should(Succeed())
+				Should(Equal(ErrNotFound))
 		})
 
 		It("When Kyma is reinstalled with skipMaintenanceWindows=true and maintenance window NOT active", func() {
@@ -133,7 +134,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma channel is changed leading to an update requiring downtime", func() {
-			flickKymaToFastChannel(moduleCR, kyma, fastChannel)
+			flickModuleToFastChannel(moduleCR, kyma, fastChannel)
 		})
 	})
 })
@@ -194,11 +195,10 @@ func disableModule(module *v1beta2.Module, kyma *v1beta2.Kyma) {
 		Should(Succeed())
 }
 
-func flickKymaToFastChannel(moduleCR *unstructured.Unstructured,
+func flickModuleToFastChannel(moduleCR *unstructured.Unstructured,
 	kyma *v1beta2.Kyma,
 	channel string,
 ) {
-	kyma.Spec.Channel = channel // required for other checks
 	Eventually(UpdateKymaModuleChannel).
 		WithContext(ctx).
 		WithArguments(skrClient, shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, channel).
