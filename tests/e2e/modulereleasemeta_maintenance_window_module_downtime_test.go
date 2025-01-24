@@ -32,7 +32,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 
 	Context("Given SKR Cluster with Kyma CR NOT skipping maintenance windows and NO active maintenance window", func() {
 		It("When Kyma Module requiring downtime is enabled without existing installation", func() {
-			enableModule(&module, moduleCR, kyma, fastChannel, ModuleDeploymentNameInNewerVersion)
+			enableModule(module, moduleCR, kyma, fastChannel, ModuleDeploymentNameInNewerVersion)
 		})
 
 		It("When Kyma Module requiring downtime is disabled again", func() {
@@ -40,7 +40,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma Module NOT requiring downtime is enabled", func() {
-			enableModule(&module, moduleCR, kyma, shared.DefaultRemoteKymaName, ModuleDeploymentNameInOlderVersion)
+			enableModule(module, moduleCR, kyma, shared.DefaultRemoteKymaName, ModuleDeploymentNameInOlderVersion)
 		})
 
 		It("When Kyma channel is changed leading to an update requiring downtime", func() {
@@ -129,7 +129,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma Module NOT requiring downtime is enabled", func() {
-			enableModule(&module, moduleCR, kyma, shared.DefaultRemoteKymaName, ModuleDeploymentNameInOlderVersion)
+			enableModule(module, moduleCR, kyma, shared.DefaultRemoteKymaName, ModuleDeploymentNameInOlderVersion)
 		})
 
 		It("When Kyma channel is changed leading to an update requiring downtime", func() {
@@ -138,7 +138,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 	})
 })
 
-func enableModule(module *v1beta2.Module,
+func enableModule(module v1beta2.Module,
 	moduleCR *unstructured.Unstructured,
 	kyma *v1beta2.Kyma,
 	moduleChannel,
