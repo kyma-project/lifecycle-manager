@@ -40,7 +40,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma Module NOT requiring downtime is enabled", func() {
-			enableModule(module, moduleCR, kyma, shared.DefaultRemoteKymaName, ModuleDeploymentNameInOlderVersion)
+			enableModule(module, moduleCR, kyma, v1beta2.DefaultChannel, ModuleDeploymentNameInOlderVersion)
 		})
 
 		It("When Kyma channel is changed leading to an update requiring downtime", func() {
