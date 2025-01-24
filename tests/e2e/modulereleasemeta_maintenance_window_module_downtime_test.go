@@ -118,15 +118,27 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 			kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 			kyma.Labels[shared.RegionLabel] = "europe"
 			kyma.Spec.SkipMaintenanceWindows = true
+			By("When a KCP Kyma CR is created on the KCP cluster")
+			Eventually(CreateKymaSecret).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+				Should(Succeed())
+
 			Eventually(kcpClient.Create).
 				WithContext(ctx).
 				WithArguments(kyma).
 				Should(Succeed())
 
-			By("And SKR Kyma CR is in \"Ready\" State")
+			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+
+			By("And SKR Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
 		})
 
