@@ -9,7 +9,7 @@ import (
 type DescriptorKey string
 
 func GenerateDescriptorKey(template *v1beta2.ModuleTemplate) DescriptorKey {
-	version, err := template.GetVersion()
+	version, err := template.GetSemanticVersion()
 	if err == nil {
 		return DescriptorKey(fmt.Sprintf("%s:%s:%d:%s", template.Name, template.Spec.Channel, template.Generation,
 			version))
