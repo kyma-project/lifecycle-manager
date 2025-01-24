@@ -115,6 +115,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma is reinstalled with skipMaintenanceWindows=true and maintenance window NOT active", func() {
+			kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 			kyma.Labels[shared.RegionLabel] = "europe"
 			kyma.Spec.SkipMaintenanceWindows = true
 			Eventually(kcpClient.Create).
