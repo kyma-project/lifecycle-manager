@@ -44,7 +44,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma channel is changed leading to an update requiring downtime", func() {
-			updateKymaChannel(moduleCR, kyma, fastChannel)
+			flickKymaToFastChannel(moduleCR, kyma, fastChannel)
 		})
 
 		It("When Maintenance Window becomes active", func() {
@@ -133,7 +133,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 		})
 
 		It("When Kyma channel is changed leading to an update requiring downtime", func() {
-			updateKymaChannel(moduleCR, kyma, fastChannel)
+			flickKymaToFastChannel(moduleCR, kyma, fastChannel)
 		})
 	})
 })
@@ -142,7 +142,8 @@ func enableModule(module *v1beta2.Module,
 	moduleCR *unstructured.Unstructured,
 	kyma *v1beta2.Kyma,
 	moduleChannel,
-	moduleDeplyomentName string) {
+	moduleDeplyomentName string,
+) {
 	module.Channel = moduleChannel
 	Eventually(EnableModule).
 		WithContext(ctx).
@@ -193,9 +194,10 @@ func disableModule(module *v1beta2.Module, kyma *v1beta2.Kyma) {
 		Should(Succeed())
 }
 
-func updateKymaChannel(moduleCR *unstructured.Unstructured,
+func flickKymaToFastChannel(moduleCR *unstructured.Unstructured,
 	kyma *v1beta2.Kyma,
-	channel string) {
+	channel string,
+) {
 	Eventually(UpdateKymaModuleChannel).
 		WithContext(ctx).
 		WithArguments(skrClient, shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, channel).
