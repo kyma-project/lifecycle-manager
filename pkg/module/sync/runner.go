@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -275,7 +276,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		newModuleStatus.Message = module.Template.Err.Error()
 		return *newModuleStatus
 	}
-	if errors.Is(module.Template.Err, templatelookup.ErrNoTemplatesInListResult) {
+	if errors.Is(module.Template.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult) {
 		return v1beta2.ModuleStatus{
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
