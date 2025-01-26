@@ -172,11 +172,11 @@ modulereleasemeta-not-allowed-installation:
 labelling:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"
 
-maintenance-window:
+maintenance-windows:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows"
 
-maintenance-window-initial-installation:
+maintenance-windows-initial-installation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - Initial Module Installation"
 
-maintenance-window-skip:
+maintenance-windows-skip:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - Skip Maintenance Window"
