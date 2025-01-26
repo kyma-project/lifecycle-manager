@@ -98,9 +98,9 @@ runs:
         kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
         popd
     - name: Create and use maintenance window policy
-      if: ${{matrix.e2e-test == 'maintenance-window' ||
-             matrix.e2e-test == 'maintenance-window-initial-installation' ||
-             matrix.e2e-test == 'maintenance-window-skip'}}
+      if: ${{matrix.e2e-test == 'maintenance-windows' ||
+             matrix.e2e-test == 'maintenance-windows-initial-installation' ||
+             matrix.e2e-test == 'maintenance-windows-skip'}}
       working-directory: lifecycle-manager/config
       shell: bash
       run: |
