@@ -16,7 +16,7 @@ Maintenance Windows are defined as such:
 	region europe: tomorrow
 */
 
-var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, func() {
+var _ = Describe("Foobar", Ordered, func() {
 	const fastChannel = "fast"
 
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
