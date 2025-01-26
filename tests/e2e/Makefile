@@ -173,10 +173,10 @@ labelling:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"
 
 maintenance-windows:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - Wait for Maintenance Window"
 
 maintenance-windows-initial-installation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - Initial Module Installation"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
 
 maintenance-windows-skip:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - Skip Maintenance Window"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
