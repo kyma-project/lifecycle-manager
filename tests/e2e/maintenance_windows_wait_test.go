@@ -18,9 +18,11 @@ Maintenance Windows are defined as such:
 
 var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, func() {
 	const fastChannel = "fast"
+	const europe = "europe"
+	const asia = "asia"
 
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	kyma.Labels[shared.RegionLabel] = "europe"
+	kyma.Labels[shared.RegionLabel] = europe
 	kyma.Spec.SkipMaintenanceWindows = false
 
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
@@ -103,7 +105,7 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 		It("When Maintenance Window becomes active", func() {
 			Eventually(UpdateKymaLabel).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.Name, kyma.Namespace, shared.RegionLabel, "asia").
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, shared.RegionLabel, asia).
 				Should(Succeed())
 
 			By("Then Module CR exists")

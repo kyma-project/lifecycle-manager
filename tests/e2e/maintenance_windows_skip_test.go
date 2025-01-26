@@ -18,9 +18,10 @@ Maintenance Windows are defined as such:
 
 var _ = Describe("Maintenance Windows - No Wait for Maintenance Widnow on Skip", Ordered, func() {
 	const fastChannel = "fast"
+	const europe = "europe"
 
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	kyma.Labels[shared.RegionLabel] = "europe"
+	kyma.Labels[shared.RegionLabel] = europe
 	kyma.Spec.SkipMaintenanceWindows = true
 
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
