@@ -173,7 +173,7 @@ labelling:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"
 
 maintenance-windows:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Foobar"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - Wait for Maintenance Window"
 
 maintenance-windows-initial-installation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
