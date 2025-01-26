@@ -31,7 +31,7 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Window on Initia
 
 	Context("Given SKR Cluster; Kyma CR .spec.skipMaintenanceWindows=false; NO active maintenance window", func() {
 		It("When module in fast channel is enabled (requiresDowntime=true)", func() {
-			module.Channel = v1beta2.DefaultChannel
+			module.Channel = fastChannel
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
