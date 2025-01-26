@@ -16,7 +16,7 @@ Maintenance Windows are defined as such:
 	region europe: tomorrow
 */
 
-var _ = Describe("Maintenance Windows - Initial Module Installation", Ordered, func() {
+var _ = Describe("Maintenance Windows - No Wait for Maintenance Window on Initial Installation", Ordered, func() {
 	const fastChannel = "fast"
 
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
