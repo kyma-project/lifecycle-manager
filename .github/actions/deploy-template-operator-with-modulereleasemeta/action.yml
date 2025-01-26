@@ -49,7 +49,9 @@ runs:
         INCLUDE_DEFAULT_CR=true
         MANDATORY=false
         DEPLOY_MODULETEMPLATE=true
-        if [ "${{ matrix.e2e-test }}" == "modulereleasemeta-maintenance-window-with-module-downtime" ]; then
+        if [ "${{ matrix.e2e-test }}" = "modulereleasemeta-maintenance-window-with-module-downtime" ] ||
+           [ "${{ matrix.e2e-test }}" = "maintenance-window-initial-installation" ] ||
+           [ "${{ matrix.e2e-test }}" = "maintenance-window-skip" ]; then
           REQUIRE_DOWNTIME=true
         else
           REQUIRE_DOWNTIME=false
