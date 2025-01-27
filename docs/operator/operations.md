@@ -24,52 +24,52 @@ The following metrics are exposed:
 The above-mentioned metrics are visualized using Grafana and grouped into four dashboards:
 
 #### 1. Lifecycle Manager Overview
-This dashboard gives an overview of the Lifecycle Manager. It includes the following:
+This dashboard gives an overview of Lifecycle Manager. It includes the following:
 
 | Panel Name                                | Description                                                                                                                                          |
 |-------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Lifecycle Manager Kube API Request Rate   | Shows the rate of requests to the Kubernetes API server.                                                                                             |
-| Lifecycle Manager Memory                  | Shows the memory usage of the Lifecycle Manager.                                                                                                     |
-| Lifecycle Manager CPU Usage               | Shows the CPU usage of the Lifecycle Manager.                                                                                                        |
+| Lifecycle Manager Memory                  | Shows the memory usage of Lifecycle Manager.                                                                                                     |
+| Lifecycle Manager CPU Usage               | Shows the CPU usage of Lifecycle Manager.                                                                                                        |
 | Lifecycle Manager Controller Runtime Reconcile Success | Time series showing the success rate of all the reconcilers.                                                                                         |
 | Operator Controller Runtime Reconcile Errors | Time series showing the errors produced by all the reconcilers.                                                                                      |
 | Kyma Requeue Reason                       | Shows the requeue reasons of all the reconcilers controlling the different CRs.                                                                      |
-| Reconcile Duration                        | Shows the duration of the Kyma and manifest reconciliations.                                                                                         |
-| Max Workers                               | Shows the maximum number of workers used by the Kyma and Manifest reconcilers.                                                                       |
-| Active Workers                            | Shows the number of active workers used by the Kyma and Manifest reconcilers.                                                                        |
-| Workqueue Longest Running Processor Seconds | Indicates how many seconds the longest running processor for workqueue has been running.                                                             |
+| Reconcile Duration                        | Shows the duration of the Kyma and Manifest CRs reconciliations.                                                                                         |
+| Max Workers                               | Shows the maximum number of workers that Kyma and Manifest CRs reconcilers use.                                                                       |
+| Active Workers                            | Shows the number of active workers that Kyma and Manifest CRs reconcilers use.                                                                        |
+| Workqueue Longest Running Processor Seconds | Indicates how long the longest running processor for workqueue was running in seconds.                                                             |
 | Workqueue Unfinished Work Seconds         | Indicates how many seconds of work has been done that is in progress and hasn’t been observed by work_duration. Large values indicate stuck threads. |
 | Work Queue Processing Latency             | Indicates how long in seconds an item stays in workqueue before being requested.                                                                     |
 | Work Queue Processing Duration            | Indicates how long in seconds processing an item from workqueue takes.                                                                               |
 | Work Queue Depth                          | Indicates the number of actions waiting in the queue to be performed.                                                                                |
 | Work Queue Add Rate                       | Indicates the rate of adding actions to the queue.                                                                                                   |
-| Self-signed Certificate Not Renew         | Indicates the self-signed Certificate of related Kyma is not renewed yet.                                                                            |
+| Self-signed Certificate Not Renew         | Indicates the self-signed Certificate of the related Kyma CR has not been renewed yet.                                                                            |
 | Purge Duration Seconds                    | Shows the duration of the purge reconciliation.                                                                                                      |
 | Purge Count                               | Shows the total number of purges.                                                                                                                    |
 | Purge Errors                              | Shows the errors produced by the purge.                                                                                                              |
 
 
-### 2. Lifecycle Manager Kyma Status
+#### 2. Kyma CRs Status
 This dashboard gives an overview of the Kyma CRs and modules states. It includes the following:
 
 | Panel Name                    | Description                                                                                     |
 |-------------------------------|-------------------------------------------------------------------------------------------------|
-| Enabled Modules               | Shows the statistics of the enabled modules on the SKR Clusters, including the total number of each module. |
-| Kyma Manifest in Error State  | Shows the manifests in Error state with information about the Kyma name, module name, and shoot name. |
-| Kyma State Total              | Graph showing the number of Kyma CRs in each state over time.                                  |
-| Module State Total            | Graph showing the number of modules enabled on Kyma CRs in each state over time.               |
-| Mandatory Module State Total  | Graph showing the number of mandatory modules enabled on Kyma CRs in each state over time.     |
-| Mandatory Modules Count       | Indicates the number of mandatory modules installed on the SKR clusters.                       |
+| Enabled Modules               | Shows the number of all modules enabled in the SKR Clusters, including the total number for every module. |
+| Kyma Manifest in Error State  | Shows the Manifest CRs in the `Error` state with the information about the relevant Kyma CR name, module name, and shoot name. |
+| Kyma State Total              | A graph showing the number of Kyma CRs in each state over time.                                  |
+| Module State Total            | A graph showing the number of modules added to Kyma CRs in each state over time.               |
+| Mandatory Module State Total  | A graph showing the number of mandatory modules added to Kyma CRs in each state over time.     |
+| Mandatory Modules Count       | Indicates the number of mandatory modules installed in the SKR clusters.                       |
 
 
-### 3. Lifecycle Manager Watcher Components
-This dashboard gives an overview of the Watcher Components. It includes the following:
+#### 3. Runtime Watcher Components
+This dashboard gives an overview of the Runtime Watcher components. It includes the following:
 
 | Panel Name                      | Description                                                                                                   |
 |---------------------------------|---------------------------------------------------------------------------------------------------------------|
-| Usage                           | Shows the statistics of Watcher deployments installed on the SKR Cluster, including the total number of SKRs, the percentage of SKRs with Watcher deployment, and the total number of Watcher deployments. |
-| Images on Shoots                | A table mapping the Watcher images installed on SKR Clusters with their numbers.                              |
-| Unready SKR Watcher Deployments | Shows the total number of unready Watcher deployments on the SKR Clusters.                                    |
+| Usage                           | Shows the statistics of Runtime Watcher deployments installed in the SKR cluster, including the total number of SKRs, the percentage of SKRs with a Runtime Watcher deployment, and the total number of Runtime Watcher deployments. |
+| Images on Shoots                | A table mapping Runtime Watcher images installed in SKR clusters with their numbers.                              |
+| Unready SKR Watcher Deployments | Shows the total number of unready Runtime Watcher deployments in the SKR clusters.                                    |
 | Requests per Minute             | A time series showing the rate of requests per minute to the Listener.                                        |
 | Request Duration                | A graph showing the duration of requests to the Listener.                                                     |
 | Pending Requests                | Shows the total number of pending requests to the Listener.                                                   |
@@ -82,9 +82,9 @@ This dashboard gives an overview of the Watcher Components. It includes the foll
 | Requests Ratio                  | Shows the ratio of AdmissionRequests to the total KCP requests.                                               |
 
 
-### 4. Lifecycle Manager Mandatory Modules
+#### 4. Mandatory Modules
 
-This dashboard gives an overview of all the mandatory modules installed on the SKR Clusters. It includes the following metrics:
+This dashboard gives an overview of all the mandatory modules installed in the SKR clusters. It includes the following metrics:
 
 | Panel Name                   | Description                                                                                                   |
 |------------------------------|---------------------------------------------------------------------------------------------------------------|
