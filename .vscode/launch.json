@@ -84,7 +84,10 @@
         "ModuleReleaseMeta Sync",
         "KCP Kyma Module status on SKR connection lost",
         "ModuleReleaseMeta Not Allowed Installation",
-        "Labelling SKR resources"
+        "Labelling SKR resources",
+        "Maintenance Windows - Wait for Maintenance Window",
+        "Maintenance Windows - No Wait for Maintenance Window on Initial Installation",
+        "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
       ]
     },
   ]
