@@ -13,7 +13,7 @@ The following metrics are exposed:
 | `lifecycle_mgr_module_state`             | Gauge Vector   | Indicates the state of a module added to a Kyma CR.                                        |
 | `lifecycle_mgr_mandatory_modules`        | Gauge          | Indicates the number of mandatory ModuleTemplate CRs.                                           |
 | `lifecycle_mgr_mandatory_module_state`   | Gauge Vector   | Indicates the state of a mandatory module added to a Kyma CR.                              |
-| `reconcile_duration_seconds`             | Gauge Vector   | Indicates the duration of a manifest reconciliation in seconds.                              |
+| `reconcile_duration_seconds`             | Gauge Vector   | Indicates the duration of a Manifest CR reconciliation in seconds.                              |
 | `lifecycle_mgr_purgectrl_time`           | Gauge          | Indicates the average duration of purge reconciliation.                                      |
 | `lifecycle_mgr_purgectrl_requests_total` | Counter        | Indicates the total number of purges.                                                        |
 | `lifecycle_mgr_purgectrl_error`          | Gauge Vector   | Indicates the errors produced by the purge.                                                      |
