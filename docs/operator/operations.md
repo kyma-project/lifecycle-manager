@@ -2,7 +2,7 @@
 
 ## Metrics
 
-Lifecycle Manager metrics are exposed over port 8080 through the metrics endpoint "/metrics".
+Lifecycle Manager metrics are exposed over port `8080` through the metrics endpoint `/metrics`.
 
 The following metrics are exposed:
 
@@ -10,20 +10,20 @@ The following metrics are exposed:
 |------------------------------------------|----------------|----------------------------------------------------------------------------------------------|
 | `lifecycle_mgr_requeue_reason_total`     | Counter Vector | Indicates the requeue reason of a reconciler.                                                |
 | `lifecycle_mgr_kyma_state`               | Gauge Vector   | Indicates the state of a Kyma CR.                                                            |
-| `lifecycle_mgr_module_state`             | Gauge Vector   | Indicates the state of a module enabled on a Kyma CR.                                        |
-| `lifecycle_mgr_mandatory_modules`        | Gauge          | Indicates the number of mandatory ModuleTemplates.                                           |
-| `lifecycle_mgr_mandatory_module_state`   | Gauge Vector   | Indicates the state of a mandatory module enabled on a Kyma CR.                              |
+| `lifecycle_mgr_module_state`             | Gauge Vector   | Indicates the state of a module added to a Kyma CR.                                        |
+| `lifecycle_mgr_mandatory_modules`        | Gauge          | Indicates the number of mandatory ModuleTemplate CRs.                                           |
+| `lifecycle_mgr_mandatory_module_state`   | Gauge Vector   | Indicates the state of a mandatory module added to a Kyma CR.                              |
 | `reconcile_duration_seconds`             | Gauge Vector   | Indicates the duration of a manifest reconciliation in seconds.                              |
 | `lifecycle_mgr_purgectrl_time`           | Gauge          | Indicates the average duration of purge reconciliation.                                      |
 | `lifecycle_mgr_purgectrl_requests_total` | Counter        | Indicates the total number of purges.                                                        |
-| `lifecycle_mgr_purgectrl_error`          | Gauge Vector   | Indicates the errors produced by purge.                                                      |
+| `lifecycle_mgr_purgectrl_error`          | Gauge Vector   | Indicates the errors produced by the purge.                                                      |
 | `lifecycle_mgr_self_signed_cert_not_renew` | Gauge Vector  | Indicates that the self-signed Certificate of a Kyma CR is not renewed yet.                 |
 
 
-## Dashboards
+### Dashboards
 The above-mentioned metrics are visualized using Grafana and grouped into four dashboards:
 
-### 1. Lifecycle Manager Overview
+#### 1. Lifecycle Manager Overview
 This dashboard gives an overview of the Lifecycle Manager. It includes the following:
 
 | Panel Name                                | Description                                                                                                                                          |
@@ -88,9 +88,9 @@ This dashboard gives an overview of all the mandatory modules installed on the S
 
 | Panel Name                   | Description                                                                                                   |
 |------------------------------|---------------------------------------------------------------------------------------------------------------|
-| Warden Usage                 | Shows the statistics of Warden module installation on the SKR Clusters, including the total number of SKRs, the percentage of SKRs with Warden deployment, and the total number of Warden deployments. |
-| Warden Images on Shoots      | A table mapping the Warden images installed on SKR Clusters with their numbers.                              |
-| Unready Warden Deployments   | Shows the total number of unready Warden deployments on the SKR Clusters.                                    |
+| Warden Usage                 | Shows the statistics of the Warden module installation in the SKR clusters, including the total number of SKRs, the percentage of SKRs with a Warden deployment, and the total number of Warden deployments. |
+| Warden Images on Shoots      | A table mapping the Warden images installed in SKR clusters with their numbers.                              |
+| Unready Warden Deployments   | Shows the total number of unready Warden deployments in the SKR clusters.                                    |
 
 
 
