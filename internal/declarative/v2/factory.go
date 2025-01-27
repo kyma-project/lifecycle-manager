@@ -68,7 +68,7 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 		return nil, err
 	}
 
-	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache, SingletonClients are cached anyways.
+	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache. SingletonClients are cached anyways.
 	info.Config.Proxy = http.ProxyFromEnvironment
 
 	httpClient, err := rest.HTTPClientFor(info.Config)
