@@ -96,5 +96,5 @@ This dashboard gives an overview of all the mandatory modules installed in the S
 
 The following Prometheus rules are in place to alert if some metrics are not in the expected state:
 
-1. The lifecycle_mgr_self_signed_cert_not_renew metric has the value of 1 for 30 minutes, indicating that the Kyma self-signed certificate renewal buffer time has been exceeded by 30 minutes.
+* The `lifecycle_mgr_self_signed_cert_not_renew` metric has the value of `1` for 30 minutes, indicating that the Kyma self-signed certificate renewal buffer time has been exceeded by 30 minutes.
  
