@@ -80,6 +80,7 @@ const (
 
 	maintenanceWindowPolicyName        = "policy"
 	maintenanceWindowPoliciesDirectory = "/etc/maintenance-policy"
+	minMaintenanceWindowSize           = 20 * time.Minute
 )
 
 var (
@@ -196,7 +197,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(setupLog,
 		maintenanceWindowPoliciesDirectory,
-		maintenanceWindowPolicyName)
+		maintenanceWindowPolicyName,
+		// align the configuration values before rollout
+		// https://github.com/kyma-project/lifecycle-manager/issues/2165
+		true,
+		minMaintenanceWindowSize)
 	if err != nil {
 		setupLog.Error(err, "unable to set maintenance windows policy")
 	}
@@ -281,7 +286,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, _ *maintenancewindows.MaintenanceWindow,
+	setupLog logr.Logger, maintenanceWindow *maintenancewindows.MaintenanceWindow,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -291,7 +296,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 		moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
 		moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
-		moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient()),
+		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
 	})
 
 	if err := (&kyma.Reconciler{

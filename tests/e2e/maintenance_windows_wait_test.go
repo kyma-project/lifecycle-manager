@@ -10,15 +10,20 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
-var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime", Ordered, func() {
+/*
+Maintenance Windows are defined as such:
+	region asia: current time - current time + 2 hours
+	region europe: tomorrow
+*/
+
+var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, func() {
+	const fastChannel = "fast"
+	const europe = "europe"
+	const asia = "asia"
+
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
-	kyma.Labels["operator.kyma-project.io/region"] = "europe"
+	kyma.Labels[shared.RegionLabel] = europe
 	kyma.Spec.SkipMaintenanceWindows = false
-	/*
-		Maintenance Windows are defined as such:
-			region asia: current time - current time + 2 hours
-			region europe: tomorrow
-	*/
 
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
@@ -26,26 +31,32 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given SKR Cluster", func() {
-		It("When Kyma Module is enabled on SKR Kyma CR and Maintenance Window is opt in", func() {
+	Context("Given SKR Cluster; Kyma CR .spec.skipMaintenanceWindows=false; NO active maintenance window", func() {
+		It("When module in regular channel is enabled (requiresDowntime=false)", func() {
+			module.Channel = v1beta2.DefaultChannel
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
 				Should(Succeed())
-		})
 
-		It("Then Module CR is deployed", func() {
+			By("Then Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 
-			By("And Module Operator Deployment is deployed")
+			By("And correct Module Operator Deployment is deployed")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
+			By("And SKR Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				Should(Succeed())
+
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
@@ -53,31 +64,36 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 				Should(Succeed())
 		})
 
-		It("When new version requiring downtime is selected in ModuleReleaseMeta,"+
-			" but no Maintenance Window is active", func() {
-			Eventually(UpdateChannelVersionInModuleReleaseMeta).
+		It("When module channel is changed to fast (requiresDowntime=true)", func() {
+			module.Channel = fastChannel
+			Eventually(UpdateKymaModuleChannel).
 				WithContext(ctx).
-				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, NewerVersion).
+				WithArguments(skrClient, shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, module.Channel).
 				Should(Succeed())
-		})
 
-		It("Then Module CR exists", func() {
+			By("Then Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 
-			By("And old Module Operator Deployment still exists")
-			Consistently(DeploymentIsReady).
+			By("And Module Operator Deployment from regular channel is deployed")
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Succeed())
 
-			By("And new Module Operator Deployment is not deployed")
-			Consistently(DeploymentIsReady).
+			By("And Module Operator Deployment from fast channel is NOT deployed")
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
+
+			By("And SKR Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
@@ -86,29 +102,34 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 				Should(Succeed())
 		})
 
-		It("When a Maintenance Window is active", func() {
+		It("When Maintenance Window becomes active", func() {
 			Eventually(UpdateKymaLabel).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.Name, kyma.Namespace, "operator.kyma-project.io/region", "asia").
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, shared.RegionLabel, asia).
 				Should(Succeed())
-		})
 
-		It("Then Module CR exists", func() {
+			By("Then Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(skrClient, moduleCR).
 				Should(Succeed())
 
-			By("And old Module Operator Deployment no longer exists")
+			By("And Module Operator Deployment from regular channel is NOT deployed")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInOlderVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
-			By("And new Module Operator Deployment is deployed")
+			By("And Module Operator Deployment from fast channel is deployed")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				Should(Succeed())
+
+			By("And SKR Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -117,7 +138,7 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 
-			By("And Kyma Module Version in Kyma Status is updated")
+			By("And Kyma .status.modules[].version shows correct version")
 			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(ctx, kcpClient, module,
 				kyma)
 			Expect(err).ToNot(HaveOccurred())
@@ -128,11 +149,36 @@ var _ = Describe("Maintenance Window With ModuleReleaseMeta and Module Downtime"
 					newModuleTemplateVersion).
 				Should(Succeed())
 
-			By("And Manifest Version is updated")
+			By("And Manifest shows correct version")
 			Eventually(ManifestVersionIsCorrect).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
 					newModuleTemplateVersion).
+				Should(Succeed())
+		})
+
+		It("When module is disabled again", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, module.Name).
+				Should(Succeed())
+
+			By("Then Module Operator Deployment from fast channel is removed")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
+				Should(Equal(ErrNotFound))
+
+			By("And SKR Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				Should(Succeed())
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
