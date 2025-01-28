@@ -20,7 +20,7 @@ The following metrics are exposed:
 | `lifecycle_mgr_self_signed_cert_not_renew` | Gauge Vector  | `kyma_name`                                                     | Indicates that the self-signed Certificate of a Kyma CR is not renewed yet. This metric is just to verify that the renewal of the certificate is working as expected since we rely on the cert-manager mechanism for the certificate rotation.                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 
-Metrics are partitioned by labels:
+The metrics are grouped by the following labels:
 - `requeue_reason`: This indicates the reason for the requeue of the Lifecycle Manager [reconcilers](../contributor/02-controllers.md#controllers). The reasons include if there is a specific error, or the reason for the synchronization between the KCP and SKR clusters.
 - `requeue_type`: This indicates whether the requeue is expected or not. The possible values here are `intended` and `unexpected`.
 - `kyma_name`: The Kyma CR name.
