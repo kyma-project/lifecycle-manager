@@ -29,7 +29,7 @@ The metrics are grouped by the following labels:
 - `instance_id`: The instance id.
 - `module_name`: The module name.
 - `err_reason`: The error reason for the purge reconciler. The possible values are `PurgeFinalizerRemovalError` and `CleanupError`.
-- `manifest_name`: The name of manifest CR.
+- `manifest_name`: The name of the Manifest CR.
 
 ### Dashboards
 The above-mentioned metrics are visualized using Grafana and grouped into four dashboards:
