@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -63,6 +64,9 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 
 	restConfig.QPS = k.kcpClient.Config().QPS
 	restConfig.Burst = k.kcpClient.Config().Burst
+
+	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache. skrClients are cached anyways.
+	restConfig.Proxy = http.ProxyFromEnvironment
 
 	clnt, err := client.New(restConfig, client.Options{Scheme: k.kcpClient.Scheme()})
 	if err != nil {
