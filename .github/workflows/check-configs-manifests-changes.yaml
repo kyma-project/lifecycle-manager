@@ -79,11 +79,15 @@ jobs:
               labels: ["configs-changed"]
             });
 
-      - name: Fail if Manifests Are Outdated and Add PR Comment
+      - name: Fail if Manifests Are Outdated
         if: env.outdated_manifests == 'true'
         run: |
           echo "❌ Manifests are outdated! Run 'make manifests' and commit changes."
           exit 1
+
+      - name: Add PR Comment if Manifests Are Outdated
+        if: env.outdated_manifests == 'true'
+        uses: actions/github-script@v7
         with:
           script: |
             github.rest.issues.createComment({
