@@ -1,0 +1,66 @@
+name: "Check for Configs Changes"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-config-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Ensure we can compare with the base branch
+
+      - name: Get list of changed files
+        id: changed-files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const configFiles = files.filter(file => file.filename.startsWith('config/'));
+
+            core.setOutput('configFiles', configFiles.map(file => file.filename).join(','));
+
+      - name: Evaluate Changes
+        run: |
+          echo "Changed config files:"
+          echo "${{ steps.changed-files.outputs.configFiles }}" | tr ',' '\n'
+          
+          if [ "${{ steps.changed-files.outputs.configFiles }}" != "" ]; then
+            echo "⚠️ Config directory changes detected! Please review."
+            echo "config_changed=true" >> $GITHUB_ENV
+          else
+            echo "✅ No changes in config directory."
+            echo "config_changed=false" >> $GITHUB_ENV
+          fi
+
+      - name: Add PR Comment if Config Changes Detected
+        if: env.config_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: "⚠️ **Config directory changes detected!** Please review the changes before merging."
+            });
+
+      - name: Add Label to PR if Config Changes Detected
+        if: env.config_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ["config-change"]
+            });
