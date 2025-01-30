@@ -86,7 +86,7 @@ jobs:
           exit 1
 
       - name: Add PR Comment if Manifests Are Outdated
-        if: env.outdated_manifests == 'true'
+        if: failure() && env.outdated_manifests == 'true'
         uses: actions/github-script@v7
         with:
           script: |
