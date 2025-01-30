@@ -1,7 +1,8 @@
 name: Validate Config and Manifests
 
 on:
-  pull_request_target:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   check-config-changes:
