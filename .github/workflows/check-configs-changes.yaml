@@ -1,7 +1,7 @@
 name: Validate Config and Manifests
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -58,6 +58,8 @@ jobs:
       - name: Add Warning if Config Files Changed
         if: env.config_changed == 'true'
         uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             github.rest.issues.createComment({
@@ -70,6 +72,8 @@ jobs:
       - name: Add PR Label for Config Changes
         if: env.config_changed == 'true'
         uses: actions/github-script@v7
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             github.rest.issues.addLabels({
@@ -87,6 +91,8 @@ jobs:
 
       - name: Add PR Comment if Manifests Are Outdated
         if: env.outdated_manifests == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: actions/github-script@v7
         with:
           script: |
