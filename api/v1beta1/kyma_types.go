@@ -85,8 +85,6 @@ type KymaSpec struct {
 	// Active Synchronization Settings
 	// +optional
 	Sync Sync `json:"sync,omitempty"`
-
-	pipelineEnabled bool `json:"pipelineEnabled,omitempty"`
 }
 
 // +kubebuilder:object:root=true
