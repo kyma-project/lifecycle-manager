@@ -1,11 +1,11 @@
-name: Validate Config and Manifests
+name: "Check Config and Manifests changes"
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  check-config-changes:
+  check-configs-manifests-changes:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
