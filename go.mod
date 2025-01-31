@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.23.4
+go 1.23.5
 
 replace (
 	github.com/kyma-project/lifecycle-manager/api => ./api
@@ -27,8 +27,8 @@ require (
 	golang.org/x/sync v0.10.0
 	golang.org/x/time v0.9.0
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	ocm.software/ocm v0.19.0
-	sigs.k8s.io/controller-runtime v0.20.0
+	ocm.software/ocm v0.19.1
+	sigs.k8s.io/controller-runtime v0.20.1
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -46,7 +46,7 @@ require (
 	k8s.io/apimachinery v0.32.1
 	k8s.io/cli-runtime v0.32.1
 	k8s.io/client-go v0.32.1
-	k8s.io/kubectl v0.32.0
+	k8s.io/kubectl v0.32.1
 )
 
 require (

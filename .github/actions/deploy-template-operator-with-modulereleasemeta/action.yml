@@ -49,7 +49,9 @@ runs:
         INCLUDE_DEFAULT_CR=true
         MANDATORY=false
         DEPLOY_MODULETEMPLATE=true
-        if [ "${{ matrix.e2e-test }}" == "modulereleasemeta-maintenance-window-with-module-downtime" ]; then
+        if [[ "${{ matrix.e2e-test }}" == "maintenance-windows" ]] ||
+           [[ "${{ matrix.e2e-test }}" == "maintenance-windows-initial-installation" ]] ||
+           [[ "${{ matrix.e2e-test }}" == "maintenance-windows-skip" ]]; then
           REQUIRE_DOWNTIME=true
         else
           REQUIRE_DOWNTIME=false
@@ -85,7 +87,9 @@ runs:
         matrix.e2e-test == 'modulereleasemeta-sync' ||
         matrix.e2e-test == 'module-status-on-skr-connection-lost' ||
         matrix.e2e-test == 'modulereleasemeta-not-allowed-installation' ||
-        matrix.e2e-test == 'modulereleasemeta-maintenance-window-with-module-downtime'
+        matrix.e2e-test == 'maintenance-windows' ||
+        matrix.e2e-test == 'maintenance-windows-initial-installation' ||
+        matrix.e2e-test == 'maintenance-windows-skip'
         }}
       shell: bash
       run: |
