@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 	"errors"
-	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -52,7 +51,7 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 		})
 
 		It("When SKR metrics service is exposed", func() {
-			Expect(PatchServiceToTypeLoadBalancer(os.Getenv(skrConfigEnvVar),
+			Expect(PatchServiceToTypeLoadBalancer(ctx, skrClient,
 				"skr-webhook-metrics", "kyma-system")).
 				To(Succeed())
 		})
