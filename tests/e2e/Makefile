@@ -180,3 +180,6 @@ maintenance-windows-initial-installation:
 
 maintenance-windows-skip:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
+
+watcher-zero-downtime:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Watcher Zero Downtime"

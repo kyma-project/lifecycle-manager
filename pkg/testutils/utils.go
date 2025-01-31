@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -179,4 +180,11 @@ func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstruc
 		resources = append(resources, obj)
 	}
 	return resources, nil
+}
+
+func PatchServiceToTypeLoadBalancer(kubeconfigPath string, serviceName, namespace string) error {
+	kubeCtl := exec.Command("kubectl", "patch", "service", serviceName, "-n", namespace,
+		"-p", `{"spec": {"type": "LoadBalancer"}}`)
+	kubeCtl.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
+	return kubeCtl.Run()
 }
