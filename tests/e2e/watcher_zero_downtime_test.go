@@ -79,11 +79,10 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 		return err
 	}
 	if kyma.Spec.Channel == v1beta2.DefaultChannel {
-		UpdateKymaModuleChannel(ctx, skrClient, kymaName, kymaNamespace, FastChannel)
+		err = UpdateKymaModuleChannel(ctx, skrClient, kymaName, kymaNamespace, FastChannel)
 	} else {
-		UpdateKymaModuleChannel(ctx, skrClient, kymaName, kymaNamespace, v1beta2.DefaultChannel)
+		err = UpdateKymaModuleChannel(ctx, skrClient, kymaName, kymaNamespace, v1beta2.DefaultChannel)
 	}
-	err = skrClient.Update(ctx, kyma)
 	if err != nil {
 		return err
 	}
