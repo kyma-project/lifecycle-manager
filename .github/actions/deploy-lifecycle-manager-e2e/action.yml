@@ -82,7 +82,8 @@ runs:
         popd
     - name: Patch CA certificate renewBefore
       if: ${{matrix.e2e-test == 'ca-certificate-rotation' ||
-        matrix.e2e-test == 'istio-gateway-secret-rotation'}}
+        matrix.e2e-test == 'istio-gateway-secret-rotation' ||
+        matrix.e2e-test == 'watcher-zero-downtime'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |

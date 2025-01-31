@@ -70,6 +70,7 @@ jobs:
           - maintenance-windows
           - maintenance-windows-initial-installation
           - maintenance-windows-skip
+          - watcher-zero-downtime
 
     runs-on: ubuntu-latest
     timeout-minutes: 20

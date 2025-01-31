@@ -89,7 +89,8 @@ runs:
         matrix.e2e-test == 'modulereleasemeta-not-allowed-installation' ||
         matrix.e2e-test == 'maintenance-windows' ||
         matrix.e2e-test == 'maintenance-windows-initial-installation' ||
-        matrix.e2e-test == 'maintenance-windows-skip'
+        matrix.e2e-test == 'maintenance-windows-skip' ||
+        matrix.e2e-test == 'watcher-zero-downtime'
         }}
       shell: bash
       run: |

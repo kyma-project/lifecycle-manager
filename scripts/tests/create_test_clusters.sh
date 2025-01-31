@@ -54,6 +54,7 @@ else
   k3d cluster create skr \
         -p 10080:80@loadbalancer \
         -p 10443:443@loadbalancer \
+        -p 2112:2112@loadbalancer \
         --k3s-arg --tls-san="skr.cluster.local@server:*" \
         --image rancher/k3s:v${K8S_VERSION}-k3s1 \
         --k3s-arg --disable="traefik@server:*" \
