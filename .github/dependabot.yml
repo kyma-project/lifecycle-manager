@@ -11,7 +11,9 @@ updates:
     commit-message:
       prefix: "chore(dependabot)"
   - package-ecosystem: "gomod"
-    directory: "/"
+    directories:
+      - "/"
+      - "/api"
     labels:
       - "go"
       - "area/dependency"
@@ -19,15 +21,17 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "chore(dependabot)"
-  - package-ecosystem: "gomod"
-    directory: "/api"
-    labels:
-      - "go"
-      - "area/dependency"
-    schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "chore(dependabot)"
+    groups:
+      k8s-dependencies:
+        patterns:
+          - "k8s.io/*"
+      istio-dependencies:
+        patterns:
+          - "istio.io/*"
+      ginkgo-gomega:
+        patterns:
+          - "github.com/onsi/ginkgo/v2"
+          - "github.com/onsi/gomega"
   - package-ecosystem: "docker"
     directory: "/"
     labels:
