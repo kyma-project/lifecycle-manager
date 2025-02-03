@@ -139,8 +139,8 @@ module-install-by-version:
 ca-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
 
-istio-gateway-secret-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Istio Gateway Secret Rotation"
+legacy-istio-gateway-secret-rotation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation"
 
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"

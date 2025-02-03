@@ -9,6 +9,9 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/strategy"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/strategy/cabundle"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/strategy/legacy"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -24,19 +27,26 @@ type TimeParserFunc func(secret *apicorev1.Secret) (time.Time, error)
 type Handler struct {
 	client                Client
 	parseLastModifiedTime TimeParserFunc
+	rotationStrategy      strategy.SecretRotationStrategy
 }
 
-func NewGatewaySecretHandler(client Client, timeParserFunc TimeParserFunc) *Handler {
+func NewGatewaySecretHandler(client Client, timeParserFunc TimeParserFunc,
+	useLegacySecretRotationStrategy bool) *Handler {
+	var rotationStrategy strategy.SecretRotationStrategy
+	if useLegacySecretRotationStrategy {
+		rotationStrategy = legacy.Strategy{}
+	} else {
+		rotationStrategy = cabundle.Strategy{}
+	}
+
 	return &Handler{
 		client:                client,
 		parseLastModifiedTime: timeParserFunc,
+		rotationStrategy:      rotationStrategy,
 	}
 }
 
 const (
-	tlsCrt     = "tls.crt"
-	tlsKey     = "tls.key"
-	caCrt      = "ca.crt"
 	secretKind = "Secret"
 )
 
@@ -54,7 +64,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	}
 
 	if h.requiresUpdate(gwSecret, caCert) {
-		copyDataFromRootSecret(gwSecret, rootSecret)
+		h.rotationStrategy.RotateGatewaySecret(rootSecret, gwSecret)
 		setLastModifiedToNow(gwSecret)
 
 		return h.client.UpdateGatewaySecret(ctx, gwSecret)
@@ -75,7 +85,7 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 		},
 	}
 
-	copyDataFromRootSecret(newSecret, rootSecret)
+	h.rotationStrategy.RotateGatewaySecret(rootSecret, newSecret)
 	setLastModifiedToNow(newSecret)
 
 	return h.client.CreateGatewaySecret(ctx, newSecret)
@@ -97,13 +107,4 @@ func setLastModifiedToNow(secret *apicorev1.Secret) {
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[shared.LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
-}
-
-func copyDataFromRootSecret(secret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
-	if secret.Data == nil {
-		secret.Data = make(map[string][]byte)
-	}
-	secret.Data[tlsCrt] = rootSecret.Data[tlsCrt]
-	secret.Data[tlsKey] = rootSecret.Data[tlsKey]
-	secret.Data[caCrt] = rootSecret.Data[caCrt]
 }

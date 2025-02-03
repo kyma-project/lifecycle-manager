@@ -39,7 +39,8 @@ func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlrunti
 		}
 		return time.Time{}, errCouldNotGetLastModifiedAt
 	}
-	handler := gatewaysecret.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
+	handler := gatewaysecret.NewGatewaySecretHandler(clnt, parseLastModifiedFunc,
+		flagVar.UseLegacyStrategyForIstioGatewaySecret)
 
 	var getSecretFunc GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
 		secret := &apicorev1.Secret{}

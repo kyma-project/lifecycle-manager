@@ -217,6 +217,8 @@ func DefineFlagVar() *FlagVar {
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.IntVar(&flagVar.SelfSignedCertKeySize, "self-signed-cert-key-size", DefaultSelfSignedCertKeySize,
 		"The key size for the self-signed certificate")
+	flag.BoolVar(&flagVar.UseLegacyStrategyForIstioGatewaySecret, "legacy-strategy-for-istio-gateway-secret",
+		false, "Use the legacy strategy (with downtime) for the Istio Gateway Secret")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"Specify the API versions to be dropped from the storage version. The input format should be a "+
@@ -295,6 +297,7 @@ type FlagVar struct {
 	SelfSignedCertRenewBefore              time.Duration
 	SelfSignedCertRenewBuffer              time.Duration
 	SelfSignedCertKeySize                  int
+	UseLegacyStrategyForIstioGatewaySecret bool
 	DropCrdStoredVersionMap                string
 	WatcherImageTag                        string
 	WatcherImageName                       string
