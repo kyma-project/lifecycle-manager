@@ -108,7 +108,7 @@ runs:
         "- op: add
           path: /spec/template/spec/containers/0/args/-
           value: --legacy-istio-gateway-secret-rotation=true" >> legacy-secret-rotation.yaml
-        legacy-secret-rotation.yaml
+        cat legacy-secret-rotation.yaml
         kustomize edit add patch --path legacy-secret-rotation.yaml --kind Deployment
         popd
     - name: Create and use maintenance window policy
