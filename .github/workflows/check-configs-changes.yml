@@ -28,7 +28,7 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             });
-            const configFiles = files.filter(file => file.filename.startsWith('config/') || file.filename.startsWith('e2e/'));
+            const configFiles = files.filter(file => file.filename.startsWith('config/'));
             core.setOutput('configFiles', configFiles.map(file => file.filename).join(','));
 
       - name: Evaluate Config Changes
