@@ -1,4 +1,4 @@
-name: "Check Config and Manifests Changes"
+name: "Check Config Changes"
 
 on:
   pull_request:
