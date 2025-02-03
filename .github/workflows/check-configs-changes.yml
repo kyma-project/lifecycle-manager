@@ -28,10 +28,15 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             });
-            const configFiles = files.filter(file => file.filename.startsWith('config/') || file.filename.startsWith('e2e/'));
+            const configFiles = files.filter(file =>
+                  file.filename.startsWith('config/') ||
+                  file.filename.startsWith('e2e/') ||
+                  file.filename.startsWith('scripts/tests/'));
+            
             core.setOutput('configFiles', configFiles.map(file => file.filename).join(','));
 
       - name: Evaluate Config Changes
+        id: eval-changes
         run: |
           echo "Changed config files:"
           echo "${{ steps.changed-files.outputs.configFiles }}" | tr ',' '\n'
