@@ -1,0 +1,117 @@
+name: "Check if Manifests are Up-to-Date"
+
+env:
+  PR_CACHE_KEY: pr-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+  MAIN_CACHE_KEY: main-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  create-pr-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Run 'make manifests'
+        run: |
+          make dry-run-control-plane
+          mkdir -p ./cache/pr
+          mv ./dry-run/manifests.yaml ./cache/pr/manifests.yaml
+
+      - name: Save PR manifests in cache
+        uses: actions/cache/save@v4
+        with:
+          path: ./cache/pr/
+          key: ${{ env.PR_CACHE_KEY }}
+
+  create-main-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Run 'make manifests' on main
+        run: |
+          make dry-run-control-plane
+          mkdir -p ./cache/main
+          mv ./dry-run/manifests.yaml ./cache/main/manifests.yaml
+
+      - name: Save 'main' manifests in cache
+        uses: actions/cache/save@v4
+        with:
+          path: ./cache/main/
+          key: ${{ env.MAIN_CACHE_KEY }}
+
+  diff-manifests:
+    needs:
+      - create-pr-manifests
+      - create-main-manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore PR manifests cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ./cache/pr/
+          key: ${{ env.PR_CACHE_KEY }}
+
+      - name: Restore 'main' manifests cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ./cache/main/
+          key: ${{ env.MAIN_CACHE_KEY }}
+
+      - name: Compare Manifests
+        run: |
+          set +e
+          DIFF_OUTPUT=$(diff ./cache/pr/manifests.yaml ./cache/main/manifests.yaml)
+          EXIT_CODE=$?
+          if [[ $EXIT_CODE != 0 ]]; then
+            echo "❌ **Detected diff in manifests!** Run 'make manifests' and commit changes."
+            echo "$DIFF_OUTPUT"
+            echo "outdated_manifests=true" >> $GITHUB_ENV
+            exit $EXIT_CODE
+          fi
+          set -e
+          echo "✅ No diff in manifests, all good."
+          echo "outdated_manifests=false" >> $GITHUB_ENV
+
+      - name: Add PR Comment if Manifests Are Outdated
+        if: env.outdated_manifests == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: "❌ **Detected diff in manifests!** Run 'make manifests' and commit changes."
+            });
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ["outdated-manifests"]
+            });
+
+      - name: Remove 'outdated-manifests' Label if Fixed
+        if: env.outdated_manifests == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: "outdated-manifests"
+            });
+
+      - name: Fail if Manifests Are Outdated
+        if: env.outdated_manifests == 'true'
+        run: |
+          echo "❌ Manifests are outdated! Run 'make manifests' and commit changes."
+          exit 1
