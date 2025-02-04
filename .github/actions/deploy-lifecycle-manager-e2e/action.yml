@@ -105,7 +105,7 @@ runs:
       run: |
         pushd config/watcher_local_test
         echo \
-        "- op: add″
+        "- op: add
           path: /spec/template/spec/containers/0/args/-
           value: --legacy-strategy-for-istio-gateway-secret=true" >> legacy-secret-rotation.yaml
         cat legacy-secret-rotation.yaml
