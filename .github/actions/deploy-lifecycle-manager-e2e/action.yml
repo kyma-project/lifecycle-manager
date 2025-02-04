@@ -59,7 +59,8 @@ runs:
         kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
         popd
     - name: Patch requeue intervals
-      if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger'}}
+      if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger' ||
+        matrix.e2e-test == 'watcher-zero-downtime'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |

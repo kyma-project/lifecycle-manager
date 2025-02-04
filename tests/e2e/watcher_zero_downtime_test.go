@@ -54,14 +54,10 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 			Expect(PatchServiceToTypeLoadBalancer(ctx, skrClient,
 				"skr-webhook-metrics", "kyma-system")).
 				To(Succeed())
+			time.Sleep(1 * time.Second)
 		})
 
 		It("Then no downtime errors can be observed", func() {
-			// Eventually because exposed metrics are not immediately available
-			Eventually(triggerWatcherAndCheckDowntime).
-				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace).
-				Should(Succeed())
 			Consistently(triggerWatcherAndCheckDowntime).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace).
@@ -85,6 +81,7 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 	if err != nil {
 		return err
 	}
+	time.Sleep(1 * time.Second)
 
 	// Checking if failed KCP error metrics is not increasing
 	count, err := GetWatcherFailedKcpTotalMetric(ctx)
