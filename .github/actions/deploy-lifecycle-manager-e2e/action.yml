@@ -100,7 +100,8 @@ runs:
         kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
         popd
     - name: Use legacy istio gateway secret rotation strategy
-      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation'}}
+      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
+        matrix.e2e-test == 'ca-certificate-rotation'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |
