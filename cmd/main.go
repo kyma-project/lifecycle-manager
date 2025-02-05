@@ -144,11 +144,11 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 }
 
 func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
-	setupLog logr.Logger,
+	logger logr.Logger,
 ) {
 	mgr, err := configManager(flagVar, cacheOptions, scheme)
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		logger.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
 	}
 	kcpRestConfig := mgr.GetConfig()
@@ -160,13 +160,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
-			setupLog.Error(err, "failed to create skr webhook manager")
+			logger.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
-		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLog)
+		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
 		err = istiogatewaysecret.SetupReconciler(mgr, flagVar, options)
 		if err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Istio")
+			logger.Error(err, "unable to create controller", "controller", "Istio")
 			os.Exit(bootstrapFailedExitCode)
 		}
 	}
@@ -175,8 +175,38 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
+	maintenanceWindow := initMaintenanceWindow(logger)
+
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
+		kymaMetrics, logger, maintenanceWindow)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, logger,
+		eventRecorder)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger)
+	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, logger)
+	if flagVar.EnablePurgeFinalizer {
+		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
+	}
+
+	if flagVar.EnableWebhooks {
+		// enable conversion webhook for CRDs here
+
+		logger.Info("currently no configured webhooks")
+	}
+
+	addHealthChecks(mgr, logger)
+
+	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, logger)
+	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, logger)
+
+	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		logger.Error(err, "problem running manager")
+		os.Exit(runtimeProblemExitCode)
+	}
+}
+
+func initMaintenanceWindow(logger logr.Logger) *maintenancewindows.MaintenanceWindow {
 	maintenanceWindowsMetrics := metrics.NewMaintenanceWindowMetrics()
-	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(setupLog,
+	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(logger,
 		maintenanceWindowPoliciesDirectory,
 		maintenanceWindowPolicyName,
 		// align the configuration values before rollout
@@ -185,37 +215,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		minMaintenanceWindowSize)
 	if err != nil {
 		maintenanceWindowsMetrics.RecordConfigReadSuccess(false)
-		setupLog.Error(err, "unable to set maintenance windows policy")
+		logger.Error(err, "unable to set maintenance windows policy")
 	}
 	maintenanceWindowsMetrics.RecordConfigReadSuccess(true)
-
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, setupLog, maintenanceWindow)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog,
-		eventRecorder)
-	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, setupLog)
-	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, setupLog)
-	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLog)
-	}
-
-	if flagVar.EnableWebhooks {
-		// enable conversion webhook for CRDs here
-
-		setupLog.Info("currently no configured webhooks")
-	}
-
-	addHealthChecks(mgr, setupLog)
-
-	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLog)
-	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLog)
-
-	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(runtimeProblemExitCode)
-	}
+	return maintenanceWindow
 }
 
+//nolint:ireturn // the implementation is not a part of the public API
 func configManager(flagVar *flags.FlagVar, cacheOptions cache.Options,
 	scheme *machineryruntime.Scheme,
 ) (manager.Manager, error) {
@@ -239,7 +245,10 @@ func configManager(flagVar *flags.FlagVar, cacheOptions cache.Options,
 			Cache:                  cacheOptions,
 		},
 	)
-	return mgr, err
+	if err != nil {
+		return nil, fmt.Errorf("unable to create manager: %w", err)
+	}
+	return mgr, nil
 }
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {
