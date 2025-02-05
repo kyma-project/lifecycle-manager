@@ -1,4 +1,4 @@
-package labelsremoval
+package labelsremoval_test
 
 import (
 	"context"
@@ -16,31 +16,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
-
-func Test_needsUpdateAfterLabelRemoval_WhenLabelsAreEmpty(t *testing.T) {
-	emptyLabels := map[string]string{}
-	res := &unstructured.Unstructured{}
-	res.SetLabels(emptyLabels)
-	actual := removeManagedLabel(res)
-
-	require.False(t, actual)
-	require.Equal(t, emptyLabels, res.GetLabels())
-}
-
-func Test_needsUpdateAfterLabelRemoval_WhenManagedByLabel(t *testing.T) {
-	labels := map[string]string{
-		shared.ManagedBy: shared.ManagedByLabelValue,
-	}
-	expectedLabels := map[string]string{}
-	res := &unstructured.Unstructured{}
-	res.SetLabels(labels)
-	actual := removeManagedLabel(res)
-
-	require.True(t, actual)
-	require.Equal(t, expectedLabels, res.GetLabels())
-}
 
 func Test_RemoveManagedByLabel_WhenManifestResourcesHaveLabels(t *testing.T) {
 	gvk := schema.GroupVersionKind{
@@ -107,7 +85,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesHaveLabels(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
 	manifestClient := manifestClientStub{}
 
-	service := NewManagedByLabelRemovalService(&manifestClient)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 	require.NoError(t, err)
@@ -156,7 +134,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourceCannotBeFetched(t *testing.T)
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 	manifestClient := manifestClientStub{}
 
-	svc := NewManagedByLabelRemovalService(&manifestClient)
+	svc := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = svc.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 	require.ErrorContains(t, err, "failed to get resource")
@@ -187,7 +165,7 @@ func Test_RemoveManagedByLabel_WhenDefaultCRHasLabels(t *testing.T) {
 	manifest := builder.NewManifestBuilder().WithResource(defaultCR).Build()
 	manifestClient := manifestClientStub{}
 
-	service := NewManagedByLabelRemovalService(&manifestClient)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 
@@ -223,7 +201,7 @@ func Test_RemoveManagedByLabel_WhenDefaultCRCannotBeFetched(t *testing.T) {
 	manifest := builder.NewManifestBuilder().WithResource(defaultCR).Build()
 	manifestClient := manifestClientStub{}
 
-	service := NewManagedByLabelRemovalService(&manifestClient)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 
@@ -274,7 +252,7 @@ func Test_RemoveManagedByLabel_WhenObjCannotBeUpdated(t *testing.T) {
 	manifest := builder.NewManifestBuilder().WithStatus(status).Build()
 	manifestClient := manifestClientStub{}
 
-	service := NewManagedByLabelRemovalService(&manifestClient)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = service.RemoveManagedByLabel(context.TODO(), manifest, errorClientStub{fakeClient: fakeClient})
 
@@ -292,7 +270,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesAreNilAndNoDefaultCR(t *test
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 	manifestClient := manifestClientStub{}
 
-	service := NewManagedByLabelRemovalService(&manifestClient)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 
@@ -343,7 +321,7 @@ func Test_RemoveManagedByLabel_WhenFinalizerIsRemoved(t *testing.T) {
 
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(manifest).WithObjects(objs...).Build()
 	manifestClient := manifestClientStub{}
-	svc := NewManagedByLabelRemovalService(&manifestClient)
+	svc := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
 	err = svc.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 
