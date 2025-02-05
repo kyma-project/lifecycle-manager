@@ -143,29 +143,10 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
-//nolint:funlen // setupManager is a main function that sets up the manager
 func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
 	setupLog logr.Logger,
 ) {
-	config := ctrl.GetConfigOrDie()
-	config.QPS = float32(flagVar.ClientQPS)
-	config.Burst = flagVar.ClientBurst
-
-	mgr, err := ctrl.NewManager(
-		config, ctrl.Options{
-			Scheme: scheme,
-			Metrics: metricsserver.Options{
-				BindAddress: flagVar.MetricsAddr,
-			},
-			HealthProbeBindAddress: flagVar.ProbeAddr,
-			LeaderElection:         flagVar.EnableLeaderElection,
-			LeaderElectionID:       "893110f7.kyma-project.io",
-			LeaseDuration:          &flagVar.LeaderElectionLeaseDuration,
-			RenewDeadline:          &flagVar.LeaderElectionRenewDeadline,
-			RetryPeriod:            &flagVar.LeaderElectionRetryPeriod,
-			Cache:                  cacheOptions,
-		},
-	)
+	mgr, err := configManager(flagVar, cacheOptions, scheme)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
@@ -194,7 +175,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-
+	maintenanceWindowsMetrics := metrics.NewMaintenanceWindowMetrics()
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(setupLog,
 		maintenanceWindowPoliciesDirectory,
 		maintenanceWindowPolicyName,
@@ -203,8 +184,11 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		true,
 		minMaintenanceWindowSize)
 	if err != nil {
+		maintenanceWindowsMetrics.RecordConfigReadSuccess(false)
 		setupLog.Error(err, "unable to set maintenance windows policy")
 	}
+	maintenanceWindowsMetrics.RecordConfigReadSuccess(true)
+
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, setupLog, maintenanceWindow)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, setupLog,
@@ -230,6 +214,31 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		setupLog.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
+}
+
+func configManager(flagVar *flags.FlagVar, cacheOptions cache.Options,
+	scheme *machineryruntime.Scheme) (manager.Manager, error) {
+	config := ctrl.GetConfigOrDie()
+
+	config.QPS = float32(flagVar.ClientQPS)
+	config.Burst = flagVar.ClientBurst
+
+	mgr, err := ctrl.NewManager(
+		config, ctrl.Options{
+			Scheme: scheme,
+			Metrics: metricsserver.Options{
+				BindAddress: flagVar.MetricsAddr,
+			},
+			HealthProbeBindAddress: flagVar.ProbeAddr,
+			LeaderElection:         flagVar.EnableLeaderElection,
+			LeaderElectionID:       "893110f7.kyma-project.io",
+			LeaseDuration:          &flagVar.LeaderElectionLeaseDuration,
+			RenewDeadline:          &flagVar.LeaderElectionRenewDeadline,
+			RetryPeriod:            &flagVar.LeaderElectionRetryPeriod,
+			Cache:                  cacheOptions,
+		},
+	)
+	return mgr, err
 }
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {
@@ -319,7 +328,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Metrics:             kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider, moduleTemplateInfoLookupStrategies),
+		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider,
+			moduleTemplateInfoLookupStrategies),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
