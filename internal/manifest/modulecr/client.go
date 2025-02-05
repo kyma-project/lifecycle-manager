@@ -2,6 +2,7 @@ package modulecr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,6 +18,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+var ErrNoResourceDefined = errors.New("no resource defined in the manifest")
+
 type Client struct {
 	client.Client
 }
@@ -31,7 +34,7 @@ func (c *Client) GetCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstru
 	error,
 ) {
 	if manifest.Spec.Resource == nil {
-		return nil, nil
+		return nil, ErrNoResourceDefined
 	}
 
 	resourceCR := &unstructured.Unstructured{}

@@ -223,7 +223,6 @@ func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient
 	manifest *v1beta2.Manifest,
 ) (ctrl.Result, error) {
 	err := r.managedLabelRemovalService.RemoveManagedByLabel(ctx, manifest, skrClient)
-
 	if err != nil {
 		return ctrl.Result{}, err
 	}
