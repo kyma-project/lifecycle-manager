@@ -30,6 +30,10 @@ func NewClient(client client.Client) *Client {
 func (c *Client) GetCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
 	error,
 ) {
+	if manifest.Spec.Resource == nil {
+		return nil, nil
+	}
+
 	resourceCR := &unstructured.Unstructured{}
 	name := manifest.Spec.Resource.GetName()
 	namespace := manifest.Spec.Resource.GetNamespace()

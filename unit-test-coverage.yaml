@@ -10,7 +10,7 @@ packages:
   internal/manifest/filemutex: 100
   internal/manifest/finalizer: 17.5
   internal/manifest/skrresources: 20.2
-  internal/manifest/labelsremoval: 93
+  internal/manifest/labelsremoval: 100
   internal/manifest/img: 65.5
   internal/manifest/manifestclient: 5.0
   internal/manifest/modulecr: 50.0
