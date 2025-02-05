@@ -217,7 +217,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 }
 
 func configManager(flagVar *flags.FlagVar, cacheOptions cache.Options,
-	scheme *machineryruntime.Scheme) (manager.Manager, error) {
+	scheme *machineryruntime.Scheme,
+) (manager.Manager, error) {
 	config := ctrl.GetConfigOrDie()
 
 	config.QPS = float32(flagVar.ClientQPS)
