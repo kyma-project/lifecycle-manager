@@ -151,13 +151,6 @@ runs:
         klm_image_repo: ${{ inputs.klm_image_repo }}
     - name: Expose Metrics Endpoint
       working-directory: lifecycle-manager
-      if: ${{ matrix.e2e-test == 'kyma-metrics' ||
-        matrix.e2e-test == 'module-status-decoupling-with-statefulset' ||
-        matrix.e2e-test == 'module-status-decoupling-with-deployment' ||
-        matrix.e2e-test == 'purge-metrics' ||
-        matrix.e2e-test == 'self-signed-certificate-rotation' ||
-        matrix.e2e-test == 'mandatory-module-metrics' ||
-        matrix.e2e-test == 'mandatory-module-metrics-with-old-naming-pattern'}}
       shell: bash
       run: |
         kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
