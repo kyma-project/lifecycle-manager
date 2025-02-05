@@ -2,6 +2,7 @@ package labelsremoval
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -11,37 +12,43 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
 )
-
-const LabelRemovalFinalizer = "label-removal-finalizer"
 
 type ManifestAPIClient interface {
 	UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error
 }
 
-type ManagedLabelRemovalService struct {
+type ManagedByLabelRemovalService struct {
 	manifestClient ManifestAPIClient
 }
 
-func NewManagedLabelRemovalService(manifestClient ManifestAPIClient) *ManagedLabelRemovalService {
-	return &ManagedLabelRemovalService{
+func NewManagedByLabelRemovalService(manifestClient ManifestAPIClient) *ManagedByLabelRemovalService {
+	return &ManagedByLabelRemovalService{
 		manifestClient: manifestClient,
 	}
 }
 
-func (l *ManagedLabelRemovalService) RemoveManagedLabel(ctx context.Context,
-	manifest *v1beta2.Manifest, skrClient client.Client, defaultCR *unstructured.Unstructured,
+func (l *ManagedByLabelRemovalService) RemoveManagedByLabel(ctx context.Context,
+	manifest *v1beta2.Manifest,
+	skrClient client.Client,
 ) error {
-	if err := HandleLabelsRemovalFromResources(ctx, manifest, skrClient, defaultCR); err != nil {
-		return err
+	resourcesError := removeFromSyncedResources(ctx, manifest, skrClient)
+	defaultCRError := removeFromDefaultCR(ctx, manifest, skrClient)
+
+	if resourcesError != nil || defaultCRError != nil {
+		return fmt.Errorf("failed to remove %s label from one or more resources: %w",
+			shared.ManagedBy,
+			errors.Join(resourcesError, defaultCRError))
 	}
 
-	controllerutil.RemoveFinalizer(manifest, LabelRemovalFinalizer)
+	controllerutil.RemoveFinalizer(manifest, finalizer.LabelRemovalFinalizer)
 	return l.manifestClient.UpdateManifest(ctx, manifest)
 }
 
-func HandleLabelsRemovalFromResources(ctx context.Context, manifestCR *v1beta2.Manifest,
-	skrClient client.Client, defaultCR *unstructured.Unstructured,
+func removeFromSyncedResources(ctx context.Context, manifestCR *v1beta2.Manifest,
+	skrClient client.Client,
 ) error {
 	for _, res := range manifestCR.Status.Synced {
 		objectKey := client.ObjectKey{
@@ -54,19 +61,33 @@ func HandleLabelsRemovalFromResources(ctx context.Context, manifestCR *v1beta2.M
 			return fmt.Errorf("failed to get resource, %w", err)
 		}
 
-		if IsManagedLabelRemoved(obj) {
-			if err := skrClient.Update(ctx, obj); err != nil {
-				return fmt.Errorf("failed to update object: %w", err)
-			}
+		if err := removeFromObject(ctx, obj, skrClient); err != nil {
+			return err
 		}
 	}
 
-	if defaultCR == nil {
+	return nil
+}
+
+func removeFromDefaultCR(ctx context.Context,
+	manifest *v1beta2.Manifest,
+	skrClient client.Client,
+) error {
+	if manifest.Spec.Resource == nil {
 		return nil
 	}
 
-	if IsManagedLabelRemoved(defaultCR) {
-		if err := skrClient.Update(ctx, defaultCR); err != nil {
+	defaultCR, err := modulecr.NewClient(skrClient).GetCR(ctx, manifest)
+	if err != nil {
+		return fmt.Errorf("failed to get default CR, %w", err)
+	}
+
+	return removeFromObject(ctx, defaultCR, skrClient)
+}
+
+func removeFromObject(ctx context.Context, obj *unstructured.Unstructured, skrClient client.Client) error {
+	if removeManagedLabel(obj) {
+		if err := skrClient.Update(ctx, obj); err != nil {
 			return fmt.Errorf("failed to update object: %w", err)
 		}
 	}
@@ -87,7 +108,7 @@ func constructResource(resource shared.Resource) *unstructured.Unstructured {
 	return obj
 }
 
-func IsManagedLabelRemoved(resource *unstructured.Unstructured) bool {
+func removeManagedLabel(resource *unstructured.Unstructured) bool {
 	labels := resource.GetLabels()
 	_, managedByLabelExists := labels[shared.ManagedBy]
 	if managedByLabelExists {
