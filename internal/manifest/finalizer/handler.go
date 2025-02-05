@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -19,11 +18,12 @@ var ErrRequeueRequired = errors.New("requeue required")
 const (
 	DefaultFinalizer               = "declarative.kyma-project.io/finalizer"
 	CustomResourceManagerFinalizer = "resource.kyma-project.io/finalizer"
+	LabelRemovalFinalizer          = "label-removal-finalizer"
 )
 
 // RemoveRequiredFinalizers removes preconfigured finalizers, but not include CustomResourceManagerFinalizer.
 func RemoveRequiredFinalizers(manifest *v1beta2.Manifest) bool {
-	finalizersToRemove := []string{DefaultFinalizer, labelsremoval.LabelRemovalFinalizer}
+	finalizersToRemove := []string{DefaultFinalizer, LabelRemovalFinalizer}
 
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
@@ -46,7 +46,7 @@ func RemoveAllFinalizers(manifest *v1beta2.Manifest) bool {
 
 func FinalizersUpdateRequired(manifest *v1beta2.Manifest) bool {
 	defaultFinalizerAdded := controllerutil.AddFinalizer(manifest, DefaultFinalizer)
-	labelRemovalFinalizerAdded := controllerutil.AddFinalizer(manifest, labelsremoval.LabelRemovalFinalizer)
+	labelRemovalFinalizerAdded := controllerutil.AddFinalizer(manifest, LabelRemovalFinalizer)
 	return defaultFinalizerAdded || labelRemovalFinalizerAdded
 }
 
