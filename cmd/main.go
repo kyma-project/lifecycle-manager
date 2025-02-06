@@ -216,8 +216,9 @@ func initMaintenanceWindow(logger logr.Logger) *maintenancewindows.MaintenanceWi
 	if err != nil {
 		maintenanceWindowsMetrics.RecordConfigReadSuccess(false)
 		logger.Error(err, "unable to set maintenance windows policy")
+	} else {
+		maintenanceWindowsMetrics.RecordConfigReadSuccess(true)
 	}
-	maintenanceWindowsMetrics.RecordConfigReadSuccess(true)
 	return maintenanceWindow
 }
 

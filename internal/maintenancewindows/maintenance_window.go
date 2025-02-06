@@ -12,7 +12,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/maintenancewindows/resolver"
 )
 
-var ErrNoMaintenanceWindowPolicyConfigured = errors.New("no maintenance window policy configured")
+var (
+	ErrNoMaintenanceWindowPolicyConfigured = errors.New("no maintenance window policy configured")
+	ErrPolicyFileNotFound                  = errors.New("maintenance window policy file not found")
+)
 
 type MaintenanceWindowPolicy interface {
 	Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow, error)
@@ -41,7 +44,7 @@ func InitializeMaintenanceWindow(log logr.Logger,
 		log.Info("maintenance windows policy file does not exist")
 		return &MaintenanceWindow{
 			MaintenanceWindowPolicy: nil,
-		}, nil
+		}, fmt.Errorf("maintenance windows policy file does not exist, %w", ErrPolicyFileNotFound)
 	}
 
 	maintenancePolicyPool, err := resolver.GetMaintenancePolicyPool()
