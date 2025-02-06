@@ -204,7 +204,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 }
 
-func initMaintenanceWindow(logger logr.Logger) *maintenancewindows.MaintenanceWindow {
+func initMaintenanceWindow(logger logr.Logger) maintenancewindows.MaintenanceWindow {
 	maintenanceWindowsMetrics := metrics.NewMaintenanceWindowMetrics()
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(logger,
 		maintenanceWindowPoliciesDirectory,
@@ -306,7 +306,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow *maintenancewindows.MaintenanceWindow,
+	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
