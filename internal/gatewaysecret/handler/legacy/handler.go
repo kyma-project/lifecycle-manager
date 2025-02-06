@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -10,6 +9,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	gatewaysecrethandler "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 

@@ -2,7 +2,6 @@ package cabundle
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -10,6 +9,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	gatewaysecrethandler "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -25,7 +25,8 @@ type Handler struct {
 }
 
 func NewGatewaySecretHandler(client gatewaysecrethandler.Client, timeParserFunc gatewaysecrethandler.TimeParserFunc,
-	switchCertBeforeExpirationTime time.Duration) *Handler {
+	switchCertBeforeExpirationTime time.Duration,
+) *Handler {
 	return &Handler{
 		client:                         client,
 		parseLastModifiedTime:          timeParserFunc,
@@ -50,7 +51,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 		bundleCACrt(gwSecret, rootSecret)
 		setLastModifiedToNow(gwSecret)
 	}
-	if h.requiresCertSwitching(err, gwSecret) {
+	if h.requiresCertSwitching(gwSecret) {
 		switchCertificate(gwSecret, rootSecret)
 		setCurrentCAExpiration(gwSecret, caCert)
 	}
@@ -58,7 +59,8 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 }
 
 func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSecret *apicorev1.Secret,
-	caCert *certmanagerv1.Certificate) error {
+	caCert *certmanagerv1.Certificate,
+) error {
 	newSecret := &apicorev1.Secret{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       gatewaysecrethandler.SecretKind,
@@ -93,7 +95,7 @@ func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, caCert *certmanag
 	return true
 }
 
-func (h *Handler) requiresCertSwitching(err error, gwSecret *apicorev1.Secret) bool {
+func (h *Handler) requiresCertSwitching(gwSecret *apicorev1.Secret) bool {
 	// If the current CA is about to expire, then we need to switch the certificate and private key
 	caExpirationTime, err := h.parseLastModifiedTime(gwSecret, currentCAExpirationAnnotation)
 	return err != nil || time.Now().After(caExpirationTime.Add(-h.switchCertBeforeExpirationTime))
@@ -116,6 +118,7 @@ func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Cert
 }
 
 func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
+	//nolint:gocritic // we need to append the new CA cert to the existing CA cert
 	gatewaySecret.Data[gatewaysecrethandler.CACrt] = append(rootSecret.Data[gatewaysecrethandler.CACrt],
 		gatewaySecret.Data[caBundleTempCertKey]...)
 	gatewaySecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecrethandler.CACrt]

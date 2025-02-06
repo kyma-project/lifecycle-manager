@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/cabundle"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/legacy"
 	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -19,7 +16,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
+	gatewaysecrethandler "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/cabundle"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/legacy"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
 const (
@@ -34,13 +35,14 @@ func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlrunti
 
 	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig())
 	var parseLastModifiedFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string) (time.Time, error) {
+		annotation string,
+	) (time.Time, error) {
 		if strValue, ok := secret.Annotations[annotation]; ok {
 			if time, err := time.Parse(time.RFC3339, strValue); err == nil {
 				return time, nil
 			}
 		}
-		return time.Time{}, fmt.Errorf("%s: %s", errCouldNotGetTimeFromAnnotation.Error(), annotation)
+		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
 	}
 
 	var handler gatewaysecrethandler.Handler
@@ -61,7 +63,10 @@ func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlrunti
 		return secret, nil
 	}
 
-	return NewReconciler(getSecretFunc, handler).setupWithManager(mgr, options)
+	return NewReconciler(getSecretFunc, handler, queue.RequeueIntervals{
+		Success: flagVar.IstioGatewaySecretRequeueSuccessInterval,
+		Error:   flagVar.IstioGatewaySecretRequeueErrInterval,
+	}).setupWithManager(mgr, options)
 }
 
 func (r *Reconciler) setupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {

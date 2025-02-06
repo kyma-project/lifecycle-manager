@@ -3,9 +3,6 @@ package legacy_test
 import (
 	"context"
 	"errors"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/legacy"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/testutils"
 	"testing"
 	"time"
 
@@ -17,6 +14,9 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	gatewaysecrethandler "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/legacy"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/testutils"
 )
 
 func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *testing.T) {
@@ -143,7 +143,8 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecr
 	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string) (time.Time, error) {
+		annotation string,
+	) (time.Time, error) {
 		return time.Now(), nil
 	}
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
@@ -191,7 +192,8 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string) (time.Time, error) {
+		annotation string,
+	) (time.Time, error) {
 		return time.Now(), nil
 	}
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
@@ -229,7 +231,8 @@ func TestManageGatewaySecret_WhenRequiresUpdateAndUpdateFails_ReturnsError(t *te
 	expectedError := errors.New("some-error")
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
 	var mockFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string) (time.Time, error) {
+		annotation string,
+	) (time.Time, error) {
 		return time.Now(), nil
 	}
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
@@ -258,7 +261,8 @@ func TestManageGatewaySecret_WhenRequiresUpdateIsFalse_DoesNotUpdateGatewaySecre
 	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string) (time.Time, error) {
+		annotation string,
+	) (time.Time, error) {
 		return time.Now(), nil
 	}
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
@@ -285,7 +289,8 @@ func TestManageGatewaySecret_WhenTimeParserFuncReturnsError_UpdatesGatewaySecret
 	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
-		annotation string) (time.Time, error) {
+		annotation string,
+	) (time.Time, error) {
 		return time.Time{}, errors.New("some-error")
 	}
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)

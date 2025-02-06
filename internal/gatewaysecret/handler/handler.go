@@ -2,9 +2,10 @@ package gatewaysecrethandler
 
 import (
 	"context"
+	"time"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
-	"time"
 )
 
 const (

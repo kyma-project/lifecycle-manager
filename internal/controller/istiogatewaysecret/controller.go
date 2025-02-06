@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -12,6 +11,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
 var ErrSecretNotFound = errors.New("root secret not found")
@@ -26,12 +26,14 @@ type (
 type Reconciler struct {
 	getRootSecret GetterFunc
 	handler       Handler
+	intervals     queue.RequeueIntervals
 }
 
-func NewReconciler(getSecretFunc GetterFunc, handler Handler) *Reconciler {
+func NewReconciler(getSecretFunc GetterFunc, handler Handler, intervals queue.RequeueIntervals) *Reconciler {
 	return &Reconciler{
 		getRootSecret: getSecretFunc,
 		handler:       handler,
+		intervals:     intervals,
 	}
 }
 
@@ -43,13 +45,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get istio gateway root secret: %w", err)
 	}
 	if rootSecret == nil {
-		return ctrl.Result{}, ErrSecretNotFound
+		return ctrl.Result{Requeue: true, RequeueAfter: r.intervals.Error}, ErrSecretNotFound
 	}
 
 	err = r.handler.ManageGatewaySecret(ctx, rootSecret)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to manage gateway secret: %w", err)
+		return ctrl.Result{Requeue: true, RequeueAfter: r.intervals.Error},
+			fmt.Errorf("failed to manage gateway secret: %w", err)
 	}
 
-	return ctrl.Result{true, 5 * time.Second}, nil
+	return ctrl.Result{Requeue: true, RequeueAfter: r.intervals.Success}, nil
 }

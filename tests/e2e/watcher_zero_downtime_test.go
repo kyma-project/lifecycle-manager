@@ -41,7 +41,8 @@ var _ = Describe("Watcher Zero Downtime", Ordered, func() {
 })
 
 func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client,
-	kymaName, kymaNamespace string) error {
+	kymaName, kymaNamespace string,
+) error {
 	// Triggering watcher request
 	kyma, err := GetKyma(ctx, skrClient, kymaName, kymaNamespace)
 	if err != nil {

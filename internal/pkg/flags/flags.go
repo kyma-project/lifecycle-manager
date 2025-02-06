@@ -49,6 +49,8 @@ const (
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
 	DefaultSelfSignedCertKeySize                                        = 4096
 	DefaultIstioGatewayCertSwitchBeforeExpirationTime                   = 24 * time.Hour
+	DefaultIstioGatewaySecretRequeueSuccessInterval                     = 5 * time.Minute
+	DefaultIstioGatewaySecretRequeueErrInterval                         = 2 * time.Second
 	DefaultRemoteSyncNamespace                                          = shared.DefaultRemoteNamespace
 	DefaultMetricsAddress                                               = ":8080"
 	DefaultProbeAddress                                                 = ":8081"
@@ -221,6 +223,12 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
 		"istio-gateway-cert-switch-before-expiration-time", DefaultIstioGatewayCertSwitchBeforeExpirationTime,
 		"Time before the expiration of the current CA certificate when the Gateway certificate should be switched")
+	flag.DurationVar(&flagVar.IstioGatewaySecretRequeueSuccessInterval,
+		"istio-gateway-secret-requeue-success-interval", DefaultIstioGatewaySecretRequeueSuccessInterval,
+		"determines the duration after which the istio gateway secret is enqueued after successful reconciliation.")
+	flag.DurationVar(&flagVar.IstioGatewaySecretRequeueErrInterval,
+		"istio-gateway-secret-requeue-error-interval", DefaultIstioGatewaySecretRequeueErrInterval,
+		"determines the duration after which the istio gateway secret is enqueued after unsuccessful reconciliation.")
 	flag.BoolVar(&flagVar.UseLegacyStrategyForIstioGatewaySecret, "legacy-strategy-for-istio-gateway-secret",
 		false, "Use the legacy strategy (with downtime) for the Istio Gateway Secret")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
@@ -313,6 +321,8 @@ type FlagVar struct {
 	ManifestRequeueJitterProbability           float64
 	ManifestRequeueJitterPercentage            float64
 	IstioGatewayCertSwitchBeforeExpirationTime time.Duration
+	IstioGatewaySecretRequeueSuccessInterval   time.Duration
+	IstioGatewaySecretRequeueErrInterval       time.Duration
 }
 
 func (f FlagVar) Validate() error {
