@@ -48,6 +48,7 @@ const (
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
 	DefaultSelfSignedCertKeySize                                        = 4096
+	DefaultIstioGatewayCertSwitchBeforeExpirationTime                   = 24 * time.Hour
 	DefaultRemoteSyncNamespace                                          = shared.DefaultRemoteNamespace
 	DefaultMetricsAddress                                               = ":8080"
 	DefaultProbeAddress                                                 = ":8081"
@@ -217,6 +218,9 @@ func DefineFlagVar() *FlagVar {
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.IntVar(&flagVar.SelfSignedCertKeySize, "self-signed-cert-key-size", DefaultSelfSignedCertKeySize,
 		"The key size for the self-signed certificate")
+	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
+		"istio-gateway-cert-switch-before-expiration-time", DefaultIstioGatewayCertSwitchBeforeExpirationTime,
+		"Time before the expiration of the current CA certificate when the Gateway certificate should be switched")
 	flag.BoolVar(&flagVar.UseLegacyStrategyForIstioGatewaySecret, "legacy-strategy-for-istio-gateway-secret",
 		false, "Use the legacy strategy (with downtime) for the Istio Gateway Secret")
 	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
@@ -279,35 +283,36 @@ type FlagVar struct {
 	// ListenerPortOverwrite is used to enable the user to overwrite the port
 	// used to expose the KCP cluster for the watcher. By default, it will be
 	// fetched from the specified gateway.
-	ListenerPortOverwrite                  string
-	Pprof                                  bool
-	PprofAddr                              string
-	PprofServerTimeout                     time.Duration
-	FailureBaseDelay, FailureMaxDelay      time.Duration
-	RateLimiterBurst, RateLimiterFrequency int
-	CacheSyncTimeout                       time.Duration
-	LogLevel                               int
-	InKCPMode                              bool
-	PurgeFinalizerTimeout                  time.Duration
-	SkipPurgingFor                         string
-	RemoteSyncNamespace                    string
-	CaCertName                             string
-	IsKymaManaged                          bool
-	SelfSignedCertDuration                 time.Duration
-	SelfSignedCertRenewBefore              time.Duration
-	SelfSignedCertRenewBuffer              time.Duration
-	SelfSignedCertKeySize                  int
-	UseLegacyStrategyForIstioGatewaySecret bool
-	DropCrdStoredVersionMap                string
-	WatcherImageTag                        string
-	WatcherImageName                       string
-	WatcherImageRegistry                   string
-	WatcherResourceLimitsMemory            string
-	WatcherResourceLimitsCPU               string
-	WatcherResourcesPath                   string
-	MetricsCleanupIntervalInMinutes        int
-	ManifestRequeueJitterProbability       float64
-	ManifestRequeueJitterPercentage        float64
+	ListenerPortOverwrite                      string
+	Pprof                                      bool
+	PprofAddr                                  string
+	PprofServerTimeout                         time.Duration
+	FailureBaseDelay, FailureMaxDelay          time.Duration
+	RateLimiterBurst, RateLimiterFrequency     int
+	CacheSyncTimeout                           time.Duration
+	LogLevel                                   int
+	InKCPMode                                  bool
+	PurgeFinalizerTimeout                      time.Duration
+	SkipPurgingFor                             string
+	RemoteSyncNamespace                        string
+	CaCertName                                 string
+	IsKymaManaged                              bool
+	SelfSignedCertDuration                     time.Duration
+	SelfSignedCertRenewBefore                  time.Duration
+	SelfSignedCertRenewBuffer                  time.Duration
+	SelfSignedCertKeySize                      int
+	UseLegacyStrategyForIstioGatewaySecret     bool
+	DropCrdStoredVersionMap                    string
+	WatcherImageTag                            string
+	WatcherImageName                           string
+	WatcherImageRegistry                       string
+	WatcherResourceLimitsMemory                string
+	WatcherResourceLimitsCPU                   string
+	WatcherResourcesPath                       string
+	MetricsCleanupIntervalInMinutes            int
+	ManifestRequeueJitterProbability           float64
+	ManifestRequeueJitterPercentage            float64
+	IstioGatewayCertSwitchBeforeExpirationTime time.Duration
 }
 
 func (f FlagVar) Validate() error {

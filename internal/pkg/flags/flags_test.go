@@ -196,6 +196,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "4096",
 		},
 		{
+			constName:     "DefaultIstioGatewayCertSwitchBeforeExpirationTime",
+			constValue:    DefaultIstioGatewayCertSwitchBeforeExpirationTime.String(),
+			expectedValue: (24 * time.Hour).String(),
+		},
+		{
 			constName:     "DefaultMetricsAddress",
 			constValue:    DefaultMetricsAddress,
 			expectedValue: ":8080",

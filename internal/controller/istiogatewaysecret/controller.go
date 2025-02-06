@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -50,5 +51,5 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to manage gateway secret: %w", err)
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{true, 5 * time.Second}, nil
 }

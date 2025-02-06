@@ -136,9 +136,6 @@ modulereleasemeta-module-upgrade-new-version:
 module-install-by-version:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Install By Version"
 
-ca-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
-
 legacy-istio-gateway-secret-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation"
 

@@ -54,7 +54,6 @@ jobs:
           - modulereleasemeta-module-upgrade-new-version
           - unmanage-module
           - skip-manifest-reconciliation
-          - ca-certificate-rotation
           - legacy-istio-gateway-secret-rotation
           - self-signed-certificate-rotation
           - mandatory-module

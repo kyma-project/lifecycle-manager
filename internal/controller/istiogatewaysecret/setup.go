@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/cabundle"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/legacy"
 	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -15,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 )
@@ -25,22 +27,29 @@ const (
 	kcpRootSecretName = "klm-watcher"
 )
 
-var errCouldNotGetLastModifiedAt = errors.New("getting lastModifiedAt time failed")
+var errCouldNotGetTimeFromAnnotation = errors.New("getting time from annotation failed")
 
 func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options) error {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig())
-	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret) (time.Time, error) {
-		if gwSecretLastModifiedAtValue, ok := secret.Annotations[shared.LastModifiedAtAnnotation]; ok {
-			if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
-				return gwSecretLastModifiedAt, nil
+	var parseLastModifiedFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
+		annotation string) (time.Time, error) {
+		if strValue, ok := secret.Annotations[annotation]; ok {
+			if time, err := time.Parse(time.RFC3339, strValue); err == nil {
+				return time, nil
 			}
 		}
-		return time.Time{}, errCouldNotGetLastModifiedAt
+		return time.Time{}, fmt.Errorf("%s: %s", errCouldNotGetTimeFromAnnotation.Error(), annotation)
 	}
-	handler := gatewaysecret.NewGatewaySecretHandler(clnt, parseLastModifiedFunc,
-		flagVar.UseLegacyStrategyForIstioGatewaySecret)
+
+	var handler gatewaysecrethandler.Handler
+	if flagVar.UseLegacyStrategyForIstioGatewaySecret {
+		handler = legacy.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
+	} else {
+		handler = cabundle.NewGatewaySecretHandler(clnt, parseLastModifiedFunc,
+			flagVar.IstioGatewayCertSwitchBeforeExpirationTime)
+	}
 
 	var getSecretFunc GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
 		secret := &apicorev1.Secret{}

@@ -1,7 +1,8 @@
-package gatewaysecret
+package legacy
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -9,46 +10,20 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/strategy"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/strategy/cabundle"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/strategy/legacy"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type Client interface {
-	GetWatcherServingCert(ctx context.Context) (*certmanagerv1.Certificate, error)
-	GetGatewaySecret(ctx context.Context) (*apicorev1.Secret, error)
-	CreateGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error
-	UpdateGatewaySecret(ctx context.Context, secret *apicorev1.Secret) error
-}
-
-type TimeParserFunc func(secret *apicorev1.Secret) (time.Time, error)
-
 type Handler struct {
-	client                Client
-	parseLastModifiedTime TimeParserFunc
-	rotationStrategy      strategy.SecretRotationStrategy
+	client                gatewaysecrethandler.Client
+	parseLastModifiedTime gatewaysecrethandler.TimeParserFunc
 }
 
-func NewGatewaySecretHandler(client Client, timeParserFunc TimeParserFunc,
-	useLegacySecretRotationStrategy bool) *Handler {
-	var rotationStrategy strategy.SecretRotationStrategy
-	if useLegacySecretRotationStrategy {
-		rotationStrategy = legacy.Strategy{}
-	} else {
-		rotationStrategy = cabundle.Strategy{}
-	}
-
+func NewGatewaySecretHandler(client gatewaysecrethandler.Client, timeParserFunc gatewaysecrethandler.TimeParserFunc) *Handler {
 	return &Handler{
 		client:                client,
 		parseLastModifiedTime: timeParserFunc,
-		rotationStrategy:      rotationStrategy,
 	}
 }
-
-const (
-	secretKind = "Secret"
-)
 
 func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	gwSecret, err := h.client.GetGatewaySecret(ctx)
@@ -64,7 +39,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	}
 
 	if h.requiresUpdate(gwSecret, caCert) {
-		h.rotationStrategy.RotateGatewaySecret(rootSecret, gwSecret)
+		copyDataFromRootSecret(gwSecret, rootSecret)
 		setLastModifiedToNow(gwSecret)
 
 		return h.client.UpdateGatewaySecret(ctx, gwSecret)
@@ -76,7 +51,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	newSecret := &apicorev1.Secret{
 		TypeMeta: apimetav1.TypeMeta{
-			Kind:       secretKind,
+			Kind:       gatewaysecrethandler.SecretKind,
 			APIVersion: apicorev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -85,7 +60,7 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 		},
 	}
 
-	h.rotationStrategy.RotateGatewaySecret(rootSecret, newSecret)
+	copyDataFromRootSecret(newSecret, rootSecret)
 	setLastModifiedToNow(newSecret)
 
 	return h.client.CreateGatewaySecret(ctx, newSecret)
@@ -94,7 +69,7 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 func (h *Handler) requiresUpdate(gwSecret *apicorev1.Secret, caCert *certmanagerv1.Certificate) bool {
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
-	if lastModified, err := h.parseLastModifiedTime(gwSecret); err == nil {
+	if lastModified, err := h.parseLastModifiedTime(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
 		if caCert.Status.NotBefore != nil && lastModified.After(caCert.Status.NotBefore.Time) {
 			return false
 		}
@@ -107,4 +82,13 @@ func setLastModifiedToNow(secret *apicorev1.Secret) {
 		secret.Annotations = make(map[string]string)
 	}
 	secret.Annotations[shared.LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
+}
+
+func copyDataFromRootSecret(secret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data[gatewaysecrethandler.TLSCrt] = rootSecret.Data[gatewaysecrethandler.TLSCrt]
+	secret.Data[gatewaysecrethandler.TLSKey] = rootSecret.Data[gatewaysecrethandler.TLSKey]
+	secret.Data[gatewaysecrethandler.CACrt] = rootSecret.Data[gatewaysecrethandler.CACrt]
 }

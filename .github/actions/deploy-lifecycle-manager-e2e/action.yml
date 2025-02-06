@@ -59,8 +59,7 @@ runs:
         kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
         popd
     - name: Patch requeue intervals
-      if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger' ||
-        matrix.e2e-test == 'watcher-zero-downtime'}}
+      if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |
@@ -81,9 +80,24 @@ runs:
         cat requeue-interval-patch.yaml
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
         popd
+    - name: Patch KLM deployment for watcher zero downtime
+      if: ${{matrix.e2e-test == 'watcher-zero-downtime'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd config/watcher_local_test
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/args/16
+          value: --kyma-requeue-success-interval=10s
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --istio-gateway-cert-switch-before-expiration-time=58m40s" >> requeue-interval-patch.yaml
+        cat requeue-interval-patch.yaml
+        kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
+        popd″
     - name: Patch CA certificate renewBefore
-      if: ${{matrix.e2e-test == 'ca-certificate-rotation' ||
-        matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
+      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
         matrix.e2e-test == 'watcher-zero-downtime'}}
       working-directory: lifecycle-manager
       shell: bash
@@ -100,8 +114,7 @@ runs:
         kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
         popd
     - name: Use legacy istio gateway secret rotation strategy
-      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
-        matrix.e2e-test == 'ca-certificate-rotation'}}
+      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |
