@@ -4,7 +4,7 @@ packages:
   internal/descriptor/cache: 92.3
   internal/descriptor/provider: 66.7
   internal/event: 100
-  internal/gatewaysecret: 100
+  internal/gatewaysecrethandler: 100
   internal/manifest: 15.8
   internal/manifest/statecheck: 71
   internal/manifest/filemutex: 100
