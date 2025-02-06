@@ -98,7 +98,7 @@ runs:
           value: --istio-gateway-secret-requeue-success-interval=5s" >> requeue-interval-patch.yaml
         cat requeue-interval-patch.yaml
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
-        popd″
+        popd
     - name: Patch CA certificate renewBefore
       if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
         matrix.e2e-test == 'watcher-zero-downtime'}}
