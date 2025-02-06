@@ -15,10 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
-	gatewaysecrethandler "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/cabundle"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler/legacy"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/legacy"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
@@ -34,7 +34,7 @@ func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlrunti
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig())
-	var parseLastModifiedFunc gatewaysecrethandler.TimeParserFunc = func(secret *apicorev1.Secret,
+	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
 		annotation string,
 	) (time.Time, error) {
 		if strValue, ok := secret.Annotations[annotation]; ok {
@@ -45,7 +45,7 @@ func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlrunti
 		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
 	}
 
-	var handler gatewaysecrethandler.Handler
+	var handler gatewaysecret.Handler
 	if flagVar.UseLegacyStrategyForIstioGatewaySecret {
 		handler = legacy.NewGatewaySecretHandler(clnt, parseLastModifiedFunc)
 	} else {

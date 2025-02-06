@@ -1,4 +1,4 @@
-package gatewaysecrethandler
+package gatewaysecret
 
 import (
 	"context"

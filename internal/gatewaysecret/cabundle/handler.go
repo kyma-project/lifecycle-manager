@@ -9,7 +9,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	gatewaysecrethandler "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -19,12 +19,12 @@ const (
 )
 
 type Handler struct {
-	client                         gatewaysecrethandler.Client
-	parseLastModifiedTime          gatewaysecrethandler.TimeParserFunc
+	client                         gatewaysecret.Client
+	parseLastModifiedTime          gatewaysecret.TimeParserFunc
 	switchCertBeforeExpirationTime time.Duration
 }
 
-func NewGatewaySecretHandler(client gatewaysecrethandler.Client, timeParserFunc gatewaysecrethandler.TimeParserFunc,
+func NewGatewaySecretHandler(client gatewaysecret.Client, timeParserFunc gatewaysecret.TimeParserFunc,
 	switchCertBeforeExpirationTime time.Duration,
 ) *Handler {
 	return &Handler{
@@ -63,7 +63,7 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 ) error {
 	newSecret := &apicorev1.Secret{
 		TypeMeta: apimetav1.TypeMeta{
-			Kind:       gatewaysecrethandler.SecretKind,
+			Kind:       gatewaysecret.SecretKind,
 			APIVersion: apicorev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -73,11 +73,11 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 	}
 
 	newSecret.Data = make(map[string][]byte)
-	newSecret.Data[gatewaysecrethandler.TLSCrt] = rootSecret.Data[gatewaysecrethandler.TLSCrt]
-	newSecret.Data[gatewaysecrethandler.TLSKey] = rootSecret.Data[gatewaysecrethandler.TLSKey]
-	newSecret.Data[gatewaysecrethandler.CACrt] = rootSecret.Data[gatewaysecrethandler.CACrt]
+	newSecret.Data[gatewaysecret.TLSCrt] = rootSecret.Data[gatewaysecret.TLSCrt]
+	newSecret.Data[gatewaysecret.TLSKey] = rootSecret.Data[gatewaysecret.TLSKey]
+	newSecret.Data[gatewaysecret.CACrt] = rootSecret.Data[gatewaysecret.CACrt]
 
-	newSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecrethandler.CACrt]
+	newSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
 	setLastModifiedToNow(newSecret)
 	setCurrentCAExpiration(newSecret, caCert)
 
@@ -119,12 +119,12 @@ func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Cert
 
 func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
 	//nolint:gocritic // we need to append the new CA cert to the existing CA cert
-	gatewaySecret.Data[gatewaysecrethandler.CACrt] = append(rootSecret.Data[gatewaysecrethandler.CACrt],
+	gatewaySecret.Data[gatewaysecret.CACrt] = append(rootSecret.Data[gatewaysecret.CACrt],
 		gatewaySecret.Data[caBundleTempCertKey]...)
-	gatewaySecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecrethandler.CACrt]
+	gatewaySecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
 }
 
 func switchCertificate(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
-	gatewaySecret.Data[gatewaysecrethandler.TLSCrt] = rootSecret.Data[gatewaysecrethandler.TLSCrt]
-	gatewaySecret.Data[gatewaysecrethandler.TLSKey] = rootSecret.Data[gatewaysecrethandler.TLSKey]
+	gatewaySecret.Data[gatewaysecret.TLSCrt] = rootSecret.Data[gatewaysecret.TLSCrt]
+	gatewaySecret.Data[gatewaysecret.TLSKey] = rootSecret.Data[gatewaysecret.TLSKey]
 }

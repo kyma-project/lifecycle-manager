@@ -9,16 +9,16 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	gatewaysecrethandler "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type Handler struct {
-	client                gatewaysecrethandler.Client
-	parseLastModifiedTime gatewaysecrethandler.TimeParserFunc
+	client                gatewaysecret.Client
+	parseLastModifiedTime gatewaysecret.TimeParserFunc
 }
 
-func NewGatewaySecretHandler(client gatewaysecrethandler.Client, timeParserFunc gatewaysecrethandler.TimeParserFunc) *Handler {
+func NewGatewaySecretHandler(client gatewaysecret.Client, timeParserFunc gatewaysecret.TimeParserFunc) *Handler {
 	return &Handler{
 		client:                client,
 		parseLastModifiedTime: timeParserFunc,
@@ -51,7 +51,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
 	newSecret := &apicorev1.Secret{
 		TypeMeta: apimetav1.TypeMeta{
-			Kind:       gatewaysecrethandler.SecretKind,
+			Kind:       gatewaysecret.SecretKind,
 			APIVersion: apicorev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -88,7 +88,7 @@ func copyDataFromRootSecret(secret *apicorev1.Secret, rootSecret *apicorev1.Secr
 	if secret.Data == nil {
 		secret.Data = make(map[string][]byte)
 	}
-	secret.Data[gatewaysecrethandler.TLSCrt] = rootSecret.Data[gatewaysecrethandler.TLSCrt]
-	secret.Data[gatewaysecrethandler.TLSKey] = rootSecret.Data[gatewaysecrethandler.TLSKey]
-	secret.Data[gatewaysecrethandler.CACrt] = rootSecret.Data[gatewaysecrethandler.CACrt]
+	secret.Data[gatewaysecret.TLSCrt] = rootSecret.Data[gatewaysecret.TLSCrt]
+	secret.Data[gatewaysecret.TLSKey] = rootSecret.Data[gatewaysecret.TLSKey]
+	secret.Data[gatewaysecret.CACrt] = rootSecret.Data[gatewaysecret.CACrt]
 }
