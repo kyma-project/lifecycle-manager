@@ -208,7 +208,6 @@ func initMaintenanceWindow(minWindowSize time.Duration, logger logr.Logger) main
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(logger,
 		maintenanceWindowPoliciesDirectory,
 		maintenanceWindowPolicyName,
-		true,
 		minWindowSize)
 	if err != nil {
 		maintenanceWindowsMetrics.RecordConfigReadSuccess(false)
