@@ -25,14 +25,12 @@ type MaintenanceWindow struct {
 	// make this private once we refactor the API
 	// https://github.com/kyma-project/lifecycle-manager/issues/2190
 	MaintenanceWindowPolicy MaintenanceWindowPolicy
-	ongoing                 resolver.OngoingWindow
 	minDuration             resolver.MinWindowSize
 }
 
 func InitializeMaintenanceWindow(log logr.Logger,
 	policiesDirectory,
 	policyName string,
-	ongoingWindow bool,
 	minWindowSize time.Duration,
 ) (MaintenanceWindow, error) {
 	if err := os.Setenv(resolver.PolicyPathENV, policiesDirectory); err != nil {
@@ -65,7 +63,6 @@ func InitializeMaintenanceWindow(log logr.Logger,
 
 	return MaintenanceWindow{
 		MaintenanceWindowPolicy: maintenancePolicy,
-		ongoing:                 resolver.OngoingWindow(ongoingWindow),
 		minDuration:             resolver.MinWindowSize(minWindowSize),
 	}, nil
 }
@@ -112,7 +109,7 @@ func (mw MaintenanceWindow) IsActive(kyma *v1beta2.Kyma) (bool, error) {
 	}
 
 	resolvedWindow, err := mw.MaintenanceWindowPolicy.Resolve(runtime,
-		mw.ongoing,
+		resolver.OngoingWindow(true),
 		mw.minDuration)
 	if err != nil {
 		return false, err
