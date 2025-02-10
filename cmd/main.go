@@ -80,7 +80,6 @@ const (
 
 	maintenanceWindowPolicyName        = "policy"
 	maintenanceWindowPoliciesDirectory = "/etc/maintenance-policy"
-	minMaintenanceWindowSize           = 20 * time.Minute
 )
 
 var (
@@ -175,7 +174,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	descriptorProvider := provider.NewCachedDescriptorProvider()
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	maintenanceWindow := initMaintenanceWindow(logger)
+	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow)
@@ -204,15 +203,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 }
 
-func initMaintenanceWindow(logger logr.Logger) maintenancewindows.MaintenanceWindow {
+func initMaintenanceWindow(minWindowSize time.Duration, logger logr.Logger) maintenancewindows.MaintenanceWindow {
 	maintenanceWindowsMetrics := metrics.NewMaintenanceWindowMetrics()
 	maintenanceWindow, err := maintenancewindows.InitializeMaintenanceWindow(logger,
 		maintenanceWindowPoliciesDirectory,
 		maintenanceWindowPolicyName,
-		// align the configuration values before rollout
-		// https://github.com/kyma-project/lifecycle-manager/issues/2165
-		true,
-		minMaintenanceWindowSize)
+		minWindowSize)
 	if err != nil {
 		maintenanceWindowsMetrics.RecordConfigReadSuccess(false)
 		logger.Error(err, "unable to set maintenance windows policy")

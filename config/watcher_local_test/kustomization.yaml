@@ -10,9 +10,8 @@ resources:
 # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
 components:
-  - ../istio
-# [Maintenance Windows] To enable the maintenance windows policy, uncomment the component below
-# - ../maintenance_windows
+- ../istio
+- ../maintenance_windows
 
 
 generatorOptions:
