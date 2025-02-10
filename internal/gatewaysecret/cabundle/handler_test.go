@@ -3,18 +3,20 @@ package cabundle_test
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
-	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/testutils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
-	"time"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/cabundle"
+	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/testutils"
 )
 
 func TestManageGatewaySecret_WhenGetWatcherServingCertReturnsError_ReturnsError(t *testing.T) {

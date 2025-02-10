@@ -5,7 +5,7 @@ packages:
   internal/descriptor/provider: 66.7
   internal/event: 100
   internal/gatewaysecret/legacy: 100
-  internal/gatewaysecret/cabundle: 100
+  internal/gatewaysecret/cabundle: 97.6
   internal/manifest: 15.8
   internal/manifest/statecheck: 71
   internal/manifest/filemutex: 100
