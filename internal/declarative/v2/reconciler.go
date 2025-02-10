@@ -7,7 +7,6 @@ import (
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,14 +51,15 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 	reconciler.RequeueIntervals = requeueIntervals
 	reconciler.specResolver = specResolver
 	reconciler.manifestClient = manifestAPIClient
-	reconciler.managedLabelRemovalService = labelsremoval.NewManagedLabelRemovalService(manifestAPIClient)
+	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
 
-type ManagedLabelRemoval interface {
-	RemoveManagedLabel(ctx context.Context,
-		manifest *v1beta2.Manifest, skrClient client.Client, defaultCR *unstructured.Unstructured,
+type ManagedByLabelRemoval interface {
+	RemoveManagedByLabel(ctx context.Context,
+		manifest *v1beta2.Manifest,
+		skrClient client.Client,
 	) error
 }
 
@@ -77,7 +77,7 @@ type Reconciler struct {
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
 	specResolver               SpecResolver
 	manifestClient             ManifestAPIClient
-	managedLabelRemovalService ManagedLabelRemoval
+	managedLabelRemovalService ManagedByLabelRemoval
 }
 
 //nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
@@ -123,7 +123,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestUnmanagedUpdate, nil)
 		}
 
-		if controllerutil.ContainsFinalizer(manifest, labelsremoval.LabelRemovalFinalizer) {
+		if controllerutil.ContainsFinalizer(manifest, finalizer.LabelRemovalFinalizer) {
 			return r.handleLabelsRemovalFinalizer(ctx, skrClient, manifest)
 		}
 
@@ -222,13 +222,8 @@ func recordMandatoryModuleState(manifest *v1beta2.Manifest, r *Reconciler) {
 func (r *Reconciler) handleLabelsRemovalFinalizer(ctx context.Context, skrClient client.Client,
 	manifest *v1beta2.Manifest,
 ) (ctrl.Result, error) {
-	defaultCR, err := modulecr.NewClient(skrClient).GetCR(ctx, manifest)
+	err := r.managedLabelRemovalService.RemoveManagedByLabel(ctx, manifest, skrClient)
 	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	if err := r.managedLabelRemovalService.RemoveManagedLabel(ctx, manifest, skrClient,
-		defaultCR); err != nil {
 		return ctrl.Result{}, err
 	}
 

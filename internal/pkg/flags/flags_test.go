@@ -251,6 +251,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1",
 		},
 		{
+			constName:     "DefaultMinMaintenanceWindowSize",
+			constValue:    DefaultMinMaintenanceWindowSize.String(),
+			expectedValue: (20 * time.Minute).String(),
+		},
+		{
 			constName:     "DefaultLeaderElectionLeaseDuration",
 			constValue:    DefaultLeaderElectionLeaseDuration.String(),
 			expectedValue: (180 * time.Second).String(),
