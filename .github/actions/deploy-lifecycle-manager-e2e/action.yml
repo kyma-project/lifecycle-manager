@@ -89,7 +89,7 @@ runs:
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/args/16
-          value: --kyma-requeue-success-interval=10s
+          value: --kyma-requeue-success-interval=5s
         - op: add
           path: /spec/template/spec/containers/0/args/-
           value: --istio-gateway-cert-switch-before-expiration-time=58m20s
