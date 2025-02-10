@@ -21,7 +21,7 @@ const (
 var ErrMetricNotFound = errors.New("metric was not found")
 
 func GetMaintenanceWindowGauge(ctx context.Context) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
