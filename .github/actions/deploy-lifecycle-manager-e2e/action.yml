@@ -95,7 +95,7 @@ runs:
           value: --istio-gateway-cert-switch-before-expiration-time=58m40s
         - op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --istio-gateway-secret-requeue-success-interval=5s" >> requeue-interval-patch.yaml
+          value: --istio-gateway-secret-requeue-success-interval=1s" >> requeue-interval-patch.yaml
         cat requeue-interval-patch.yaml
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
         popd
