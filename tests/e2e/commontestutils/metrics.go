@@ -20,6 +20,16 @@ const (
 
 var ErrMetricNotFound = errors.New("metric was not found")
 
+func GetMaintenanceWindowGauge(ctx context.Context) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(metrics.MetricMaintenanceWindowConfigReadSuccess + ` (\d+)`)
+	return parseCount(re, bodyString)
+}
+
 func GetKymaStateMetricCount(ctx context.Context, kymaName string, state shared.State) (int, error) {
 	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {

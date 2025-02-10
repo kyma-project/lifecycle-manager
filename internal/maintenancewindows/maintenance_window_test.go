@@ -30,36 +30,33 @@ func TestMaintenancePolicyFileExists_FileExists(t *testing.T) {
 	require.True(t, got)
 }
 
-func TestInitializeMaintenanceWindowsPolicy_FileNotExist_NoError(t *testing.T) {
+func TestInitializeMaintenanceWindowsPolicy_FileNotExist(t *testing.T) {
 	got, err := maintenancewindows.InitializeMaintenanceWindow(logr.Logger{},
 		"testdata",
 		"policy-1",
-		true,
 		20*time.Minute)
 
 	require.Nil(t, got.MaintenanceWindowPolicy)
-	require.NoError(t, err)
+	require.ErrorContains(t, err, maintenancewindows.ErrPolicyFileNotFound.Error())
 }
 
-func TestInitializeMaintenanceWindowsPolicy_DirectoryNotExist_NoError(t *testing.T) {
+func TestInitializeMaintenanceWindowsPolicy_DirectoryNotExist(t *testing.T) {
 	got, err := maintenancewindows.InitializeMaintenanceWindow(logr.Logger{},
 		"files",
 		"policy",
-		true,
 		20*time.Minute)
 
 	require.Nil(t, got.MaintenanceWindowPolicy)
-	require.NoError(t, err)
+	require.ErrorContains(t, err, maintenancewindows.ErrPolicyFileNotFound.Error())
 }
 
 func TestInitializeMaintenanceWindowsPolicy_InvalidPolicy(t *testing.T) {
 	got, err := maintenancewindows.InitializeMaintenanceWindow(logr.Logger{},
 		"testdata",
 		"invalid-policy",
-		true,
 		20*time.Minute)
 
-	require.Nil(t, got)
+	require.Nil(t, got.MaintenanceWindowPolicy)
 	require.ErrorContains(t, err, "failed to get maintenance window policy")
 }
 
@@ -67,7 +64,6 @@ func TestInitializeMaintenanceWindowsPolicy_WhenFileExists_CorrectPolicyIsRead(t
 	got, err := maintenancewindows.InitializeMaintenanceWindow(logr.Logger{},
 		"testdata",
 		"policy",
-		true,
 		20*time.Minute)
 	require.NoError(t, err)
 
@@ -321,7 +317,9 @@ func Test_IsActive_Returns_False_And_Error_WhenNoPolicyConfigured(t *testing.T) 
 
 type maintenanceWindowInactiveStub struct{}
 
-func (s maintenanceWindowInactiveStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow, error) {
+func (s maintenanceWindowInactiveStub) Resolve(runtime *resolver.Runtime,
+	opts ...interface{},
+) (*resolver.ResolvedWindow, error) {
 	return &resolver.ResolvedWindow{
 		Begin: time.Now().Add(1 * time.Hour),
 		End:   time.Now().Add(2 * time.Hour),
@@ -330,7 +328,9 @@ func (s maintenanceWindowInactiveStub) Resolve(runtime *resolver.Runtime, opts .
 
 type maintenanceWindowActiveStub struct{}
 
-func (s maintenanceWindowActiveStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow, error) {
+func (s maintenanceWindowActiveStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow,
+	error,
+) {
 	return &resolver.ResolvedWindow{
 		Begin: time.Now().Add(-1 * time.Hour),
 		End:   time.Now().Add(1 * time.Hour),
@@ -339,7 +339,9 @@ func (s maintenanceWindowActiveStub) Resolve(runtime *resolver.Runtime, opts ...
 
 type maintenanceWindowErrorStub struct{}
 
-func (s maintenanceWindowErrorStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow, error) {
+func (s maintenanceWindowErrorStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow,
+	error,
+) {
 	return &resolver.ResolvedWindow{}, errors.New("test error")
 }
 
@@ -347,7 +349,9 @@ type maintenanceWindowRuntimeArgStub struct {
 	receivedRuntime *resolver.Runtime
 }
 
-func (s maintenanceWindowRuntimeArgStub) Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow, error) {
+func (s maintenanceWindowRuntimeArgStub) Resolve(runtime *resolver.Runtime,
+	opts ...interface{},
+) (*resolver.ResolvedWindow, error) {
 	*s.receivedRuntime = *runtime
 
 	return &resolver.ResolvedWindow{}, nil

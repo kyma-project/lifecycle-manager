@@ -12,7 +12,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/maintenancewindows/resolver"
 )
 
-var ErrNoMaintenanceWindowPolicyConfigured = errors.New("no maintenance window policy configured")
+var (
+	ErrNoMaintenanceWindowPolicyConfigured = errors.New("no maintenance window policy configured")
+	ErrPolicyFileNotFound                  = errors.New("maintenance window policy file not found")
+)
 
 type MaintenanceWindowPolicy interface {
 	Resolve(runtime *resolver.Runtime, opts ...interface{}) (*resolver.ResolvedWindow, error)
@@ -22,41 +25,44 @@ type MaintenanceWindow struct {
 	// make this private once we refactor the API
 	// https://github.com/kyma-project/lifecycle-manager/issues/2190
 	MaintenanceWindowPolicy MaintenanceWindowPolicy
-	ongoing                 resolver.OngoingWindow
 	minDuration             resolver.MinWindowSize
 }
 
 func InitializeMaintenanceWindow(log logr.Logger,
 	policiesDirectory,
 	policyName string,
-	ongoingWindow bool,
 	minWindowSize time.Duration,
-) (*MaintenanceWindow, error) {
+) (MaintenanceWindow, error) {
 	if err := os.Setenv(resolver.PolicyPathENV, policiesDirectory); err != nil {
-		return nil, fmt.Errorf("failed to set the policy path env variable, %w", err)
+		return MaintenanceWindow{
+			MaintenanceWindowPolicy: nil,
+		}, fmt.Errorf("failed to set the policy path env variable, %w", err)
 	}
 
 	policyFilePath := fmt.Sprintf("%s/%s.json", policiesDirectory, policyName)
 	if !MaintenancePolicyFileExists(policyFilePath) {
-		log.Info("maintenance windows policy file does not exist")
-		return &MaintenanceWindow{
+		log.Error(ErrPolicyFileNotFound, "maintenance windows policy file does not exist")
+		return MaintenanceWindow{
 			MaintenanceWindowPolicy: nil,
-		}, nil
+		}, fmt.Errorf("maintenance windows policy file does not exist, %w", ErrPolicyFileNotFound)
 	}
 
 	maintenancePolicyPool, err := resolver.GetMaintenancePolicyPool()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get maintenance policy pool, %w", err)
+		return MaintenanceWindow{
+			MaintenanceWindowPolicy: nil,
+		}, fmt.Errorf("failed to get maintenance policy pool, %w", err)
 	}
 
 	maintenancePolicy, err := resolver.GetMaintenancePolicy(maintenancePolicyPool, policyName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get maintenance window policy, %w", err)
+		return MaintenanceWindow{
+			MaintenanceWindowPolicy: nil,
+		}, fmt.Errorf("failed to get maintenance window policy, %w", err)
 	}
 
-	return &MaintenanceWindow{
+	return MaintenanceWindow{
 		MaintenanceWindowPolicy: maintenancePolicy,
-		ongoing:                 resolver.OngoingWindow(ongoingWindow),
 		minDuration:             resolver.MinWindowSize(minWindowSize),
 	}, nil
 }
@@ -103,7 +109,7 @@ func (mw MaintenanceWindow) IsActive(kyma *v1beta2.Kyma) (bool, error) {
 	}
 
 	resolvedWindow, err := mw.MaintenanceWindowPolicy.Resolve(runtime,
-		mw.ongoing,
+		resolver.OngoingWindow(true),
 		mw.minDuration)
 	if err != nil {
 		return false, err

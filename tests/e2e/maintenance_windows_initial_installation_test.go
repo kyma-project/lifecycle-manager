@@ -29,6 +29,15 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Window on Initia
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
+	Context("Given KCP Cluster", func() {
+		It("When KLM is initialized", func() {
+			By("Then maintenance window metrics are initialized")
+			Eventually(GetMaintenanceWindowGauge).
+				WithContext(ctx).
+				Should(Equal(1))
+		})
+	})
+
 	Context("Given SKR Cluster; Kyma CR .spec.skipMaintenanceWindows=false; NO active maintenance window", func() {
 		It("When module in fast channel is enabled (requiresDowntime=true)", func() {
 			module.Channel = FastChannel
@@ -52,7 +61,8 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Window on Initia
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient,
+					shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -77,7 +87,8 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Window on Initia
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient,
+					shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")

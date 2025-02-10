@@ -64,6 +64,7 @@ const (
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
 	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
+	DefaultMinMaintenanceWindowSize                                     = 20 * time.Minute
 	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
 	DefaultLeaderElectionRenewDeadline                                  = 120 * time.Second
 	DefaultLeaderElectionRetryPeriod                                    = 3 * time.Second
@@ -251,6 +252,9 @@ func DefineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.MetricsCleanupIntervalInMinutes, "metrics-cleanup-interval",
 		DefaultMetricsCleanupIntervalInMinutes,
 		"The interval at which the cleanup of non-existing kyma CRs metrics runs.")
+	flag.DurationVar(&flagVar.MinMaintenanceWindowSize, "min-maintenance-window-size",
+		DefaultMinMaintenanceWindowSize,
+		"The minimum duration of maintenance window required for reconciling modules with downtime.")
 	return flagVar
 }
 
@@ -323,6 +327,7 @@ type FlagVar struct {
 	IstioGatewayCertSwitchBeforeExpirationTime time.Duration
 	IstioGatewaySecretRequeueSuccessInterval   time.Duration
 	IstioGatewaySecretRequeueErrInterval       time.Duration
+	MinMaintenanceWindowSize                   time.Duration
 }
 
 func (f FlagVar) Validate() error {
