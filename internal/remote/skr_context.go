@@ -93,6 +93,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
 	patchOpts := &client.PatchOptions{Force: &force, FieldManager: "kyma-sync-context"}
+	//FieldManager here: "kyma-sync-context"
 	if err := s.Client.Patch(ctx, namespace, patch, patchOpts); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}

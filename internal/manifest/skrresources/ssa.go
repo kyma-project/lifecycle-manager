@@ -26,18 +26,27 @@ type SSA interface {
 	Run(ctx context.Context, resourceInfo []*resource.Info) error
 }
 
-type ConcurrentDefaultSSA struct {
-	clnt      client.Client
-	owner     client.FieldOwner
-	versioner machineryruntime.GroupVersioner
-	converter machineryruntime.ObjectConvertor
+type ManagedFieldsDataCollector interface {
+	// Collect collects managed fields data from the single object
+	Collect(ctx context.Context, obj client.Object)
+	// Emit emits collected data to some backing store
+	Emit(ctx context.Context)
 }
 
-func ConcurrentSSA(clnt client.Client, owner client.FieldOwner) *ConcurrentDefaultSSA {
+type ConcurrentDefaultSSA struct {
+	clnt                       client.Client
+	owner                      client.FieldOwner
+	versioner                  machineryruntime.GroupVersioner
+	converter                  machineryruntime.ObjectConvertor
+	managedFieldsDataCollector ManagedFieldsDataCollector
+}
+
+func ConcurrentSSA(clnt client.Client, owner client.FieldOwner, managedFieldsDataCollector ManagedFieldsDataCollector) *ConcurrentDefaultSSA {
 	return &ConcurrentDefaultSSA{
 		clnt: clnt, owner: owner,
-		versioner: schema.GroupVersions(clnt.Scheme().PrioritizedVersionsAllGroups()),
-		converter: clnt.Scheme(),
+		versioner:                  schema.GroupVersions(clnt.Scheme().PrioritizedVersionsAllGroups()),
+		converter:                  clnt.Scheme(),
+		managedFieldsDataCollector: managedFieldsDataCollector,
 	}
 }
 
@@ -70,6 +79,9 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
+	if c.managedFieldsDataCollector != nil {
+		c.managedFieldsDataCollector.Emit(ctx)
+	}
 	return nil
 }
 
@@ -116,7 +128,22 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 		)
 	}
 	obj.SetManagedFields(nil)
+	//FieldManager here: "declarative.kyma-project.io/applier"
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
+	if c.managedFieldsDataCollector != nil {
+		c.managedFieldsDataCollector.Collect(ctx, obj)
+	}
+	/*
+		mf := obj.GetManagedFields()
+		mfSer, err := json.MarshalIndent(mf, "->", "  ")
+		fmt.Println("---------------------------------------->")
+		fmt.Println("NAME: ", obj.GetName())
+		fmt.Println("NAMESPACE: ", obj.GetNamespace())
+		fmt.Println("KIND: ", obj.GetObjectKind().GroupVersionKind().String())
+		fmt.Println(string(mfSer))
+		fmt.Println("<----------------------------------------")
+	*/
+
 	if err != nil {
 		return fmt.Errorf(
 			"patch for %s failed: %w", info.ObjectName(), c.suppressUnauthorized(err),

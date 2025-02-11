@@ -54,7 +54,7 @@ func TestConcurrentSSA(t *testing.T) {
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
-				ssa := skrresources.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner)
+				ssa := skrresources.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner, nil)
 				if err := ssa.Run(context.Background(), testCase.apply); err != nil {
 					require.ErrorIs(t, err, testCase.err)
 				}
