@@ -174,6 +174,7 @@ func (r *Runner) getManifest(ctx context.Context, name, namespace string) (*v1be
 }
 
 func (r *Runner) patchManifest(ctx context.Context, owner string, newManifest *v1beta2.Manifest) error {
+	//FieldManager here: dynamically set from the labels on the Kyma CR.
 	if err := r.Patch(ctx, newManifest,
 		client.Apply,
 		client.FieldOwner(owner),
