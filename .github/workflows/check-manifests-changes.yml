@@ -1,4 +1,4 @@
-name: "Check if Manifests Outputs Differ"
+name: "Check if Manifests Changes"
 
 env:
   PR_CACHE_KEY: pr-manifests-${{ github.run_id }}-${{ github.run_attempt }}
@@ -74,10 +74,11 @@ jobs:
             echo "❌ Detected differences in manifest outputs!"
             echo "$DIFF_OUTPUT"
             echo "manifests_diff_detected=true" >> $GITHUB_OUTPUT
-            exit $EXIT_CODE
+          else
+            echo "✅ No differences in manifest outputs detected."
+            echo "manifests_diff_detected=false" >> $GITHUB_OUTPUT
           fi
-          echo "✅ No differences in manifest outputs detected."
-          echo "manifests_diff_detected=false" >> $GITHUB_OUTPUT
+          exit 0
 
       - name: Add PR Comment if Manifest Differences Detected
         if: steps.compare-manifests.outputs.manifests_diff_detected == 'true'
