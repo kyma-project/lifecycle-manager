@@ -26,19 +26,38 @@ type SSA interface {
 	Run(ctx context.Context, resourceInfo []*resource.Info) error
 }
 
+type ManagedFieldsCollector interface {
+	// Collect collects managed fields data from the single object
+	Collect(ctx context.Context, obj client.Object)
+	// Emit emits collected data to some backing store
+	Emit(ctx context.Context) error
+}
+
 type ConcurrentDefaultSSA struct {
 	clnt      client.Client
 	owner     client.FieldOwner
 	versioner machineryruntime.GroupVersioner
 	converter machineryruntime.ObjectConvertor
+	collector ManagedFieldsCollector
 }
 
-func ConcurrentSSA(clnt client.Client, owner client.FieldOwner) *ConcurrentDefaultSSA {
+func ConcurrentSSA(clnt client.Client, owner client.FieldOwner, managedFieldsCollector ManagedFieldsCollector) *ConcurrentDefaultSSA {
 	return &ConcurrentDefaultSSA{
-		clnt: clnt, owner: owner,
+		clnt:      clnt,
+		owner:     owner,
 		versioner: schema.GroupVersions(clnt.Scheme().PrioritizedVersionsAllGroups()),
 		converter: clnt.Scheme(),
+		collector: managedFieldsCollector,
 	}
+}
+
+//nolint:ireturn // interface return is required here
+func (c *ConcurrentDefaultSSA) managedFieldsCollector() ManagedFieldsCollector {
+	if c.collector != nil {
+		return c.collector
+	}
+
+	return nopCollector{}
 }
 
 func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.Info) error {
@@ -70,6 +89,9 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
+	if err := c.managedFieldsCollector().Emit(ctx); err != nil {
+		logger.V(internal.DebugLogLevel).Error(err, "error emitting data of unknown field managers")
+	}
 	return nil
 }
 
@@ -123,6 +145,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 		)
 	}
 
+	c.managedFieldsCollector().Collect(ctx, obj)
 	return nil
 }
 
