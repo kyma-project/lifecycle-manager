@@ -23,8 +23,14 @@ jobs:
               pull_number: context.payload.pull_request.number,
             });
             // Define the pipeline-related paths to watch
-            const pathsToCheck = [".github/actions", ".github/workflows", "tests/scripts", "versions.yaml"];
-            // Filter files that either match exactly "versions.yaml" or are inside one of the directories
+            const pathsToCheck = [
+              ".github/actions",
+              ".github/workflows",
+              ".github/scripts",
+              "scripts/tests",
+              "versions.yaml",
+            ];
+            
             const pipelineFiles = files.filter(file => 
               pathsToCheck.some(path => file.filename === path || file.filename.startsWith(path + '/'))
             );
