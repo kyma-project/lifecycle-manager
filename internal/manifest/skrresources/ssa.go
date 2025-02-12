@@ -26,28 +26,37 @@ type SSA interface {
 	Run(ctx context.Context, resourceInfo []*resource.Info) error
 }
 
-type ManagedFieldsDataCollector interface {
+type ManagedFieldsCollector interface {
 	// Collect collects managed fields data from the single object
 	Collect(ctx context.Context, obj client.Object)
 	// Emit emits collected data to some backing store
-	Emit(ctx context.Context)
+	Emit(ctx context.Context) error
 }
 
 type ConcurrentDefaultSSA struct {
-	clnt                       client.Client
-	owner                      client.FieldOwner
-	versioner                  machineryruntime.GroupVersioner
-	converter                  machineryruntime.ObjectConvertor
-	managedFieldsDataCollector ManagedFieldsDataCollector
+	clnt      client.Client
+	owner     client.FieldOwner
+	versioner machineryruntime.GroupVersioner
+	converter machineryruntime.ObjectConvertor
+	collector ManagedFieldsCollector
 }
 
-func ConcurrentSSA(clnt client.Client, owner client.FieldOwner, managedFieldsDataCollector ManagedFieldsDataCollector) *ConcurrentDefaultSSA {
+func ConcurrentSSA(clnt client.Client, owner client.FieldOwner, managedFieldsCollector ManagedFieldsCollector) *ConcurrentDefaultSSA {
 	return &ConcurrentDefaultSSA{
-		clnt: clnt, owner: owner,
-		versioner:                  schema.GroupVersions(clnt.Scheme().PrioritizedVersionsAllGroups()),
-		converter:                  clnt.Scheme(),
-		managedFieldsDataCollector: managedFieldsDataCollector,
+		clnt:      clnt,
+		owner:     owner,
+		versioner: schema.GroupVersions(clnt.Scheme().PrioritizedVersionsAllGroups()),
+		converter: clnt.Scheme(),
+		collector: managedFieldsCollector,
 	}
+}
+
+func (c *ConcurrentDefaultSSA) managedFieldsCollector() ManagedFieldsCollector {
+	if c.collector != nil {
+		return c.collector
+	}
+
+	return nopCollector{}
 }
 
 func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.Info) error {
@@ -79,9 +88,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
-	if c.managedFieldsDataCollector != nil {
-		c.managedFieldsDataCollector.Emit(ctx)
-	}
+	c.managedFieldsCollector().Emit(ctx)
 	return nil
 }
 
@@ -130,26 +137,13 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	obj.SetManagedFields(nil)
 	//FieldManager here: "declarative.kyma-project.io/applier"
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
-	if c.managedFieldsDataCollector != nil {
-		c.managedFieldsDataCollector.Collect(ctx, obj)
-	}
-	/*
-		mf := obj.GetManagedFields()
-		mfSer, err := json.MarshalIndent(mf, "->", "  ")
-		fmt.Println("---------------------------------------->")
-		fmt.Println("NAME: ", obj.GetName())
-		fmt.Println("NAMESPACE: ", obj.GetNamespace())
-		fmt.Println("KIND: ", obj.GetObjectKind().GroupVersionKind().String())
-		fmt.Println(string(mfSer))
-		fmt.Println("<----------------------------------------")
-	*/
-
 	if err != nil {
 		return fmt.Errorf(
 			"patch for %s failed: %w", info.ObjectName(), c.suppressUnauthorized(err),
 		)
 	}
 
+	c.managedFieldsCollector().Collect(ctx, obj)
 	return nil
 }
 
