@@ -98,7 +98,9 @@ runs:
         kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
         popd
     - name: Create and use maintenance window policy
-      if: ${{matrix.e2e-test == 'maintenance-window-with-module-downtime'}}
+      if: ${{matrix.e2e-test == 'maintenance-windows' ||
+             matrix.e2e-test == 'maintenance-windows-initial-installation' ||
+             matrix.e2e-test == 'maintenance-windows-skip'}}
       working-directory: lifecycle-manager/config
       shell: bash
       run: |
@@ -139,9 +141,6 @@ runs:
         
         echo "Maintenance window policy:"
         cat ./maintenance_windows/policy.json
-        
-        cd watcher_local_test
-        kustomize edit add component ../maintenance_windows
     - name: Deploy LM local testing kustomize
       uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
       with:
@@ -149,13 +148,6 @@ runs:
         klm_image_repo: ${{ inputs.klm_image_repo }}
     - name: Expose Metrics Endpoint
       working-directory: lifecycle-manager
-      if: ${{ matrix.e2e-test == 'kyma-metrics' ||
-        matrix.e2e-test == 'module-status-decoupling-with-statefulset' ||
-        matrix.e2e-test == 'module-status-decoupling-with-deployment' ||
-        matrix.e2e-test == 'purge-metrics' ||
-        matrix.e2e-test == 'self-signed-certificate-rotation' ||
-        matrix.e2e-test == 'mandatory-module-metrics' ||
-        matrix.e2e-test == 'mandatory-module-metrics-with-old-naming-pattern'}}
       shell: bash
       run: |
         kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system

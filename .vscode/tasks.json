@@ -125,7 +125,10 @@
         "ocm-compatible-module-template",
         "modulereleasemeta-sync",
         "modulereleasemeta-not-allowed-installation",
-        "labelling"
+        "labelling",
+        "maintenance-windows",
+        "maintenance-windows-initial-installation",
+        "maintenance-windows-skip"
       ]
     },
     {

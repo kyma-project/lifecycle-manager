@@ -10,13 +10,14 @@ packages:
   internal/manifest/filemutex: 100
   internal/manifest/finalizer: 17.5
   internal/manifest/skrresources: 20.2
-  internal/manifest/labelsremoval: 93
+  internal/manifest/labelsremoval: 100
   internal/manifest/img: 65.5
   internal/manifest/manifestclient: 5.0
-  internal/manifest/modulecr: 50.0
+  internal/manifest/modulecr: 47.0
   internal/maintenancewindows: 87.5
   internal/istio: 63.3
   internal/pkg/resources: 91.7
   internal/remote: 20.2
   internal/util/collections: 86
-  pkg/templatelookup: 83.3
+  pkg/templatelookup: 88
+  pkg/templatelookup/moduletemplateinfolookup: 72

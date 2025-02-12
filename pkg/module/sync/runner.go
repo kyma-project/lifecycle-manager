@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -269,30 +270,10 @@ func updateModuleStatusFromExistingModules(
 }
 
 func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
-	if errors.Is(module.Template.Err, templatelookup.ErrTemplateUpdateNotAllowed) {
-		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.State = shared.StateWarning
-		newModuleStatus.Message = module.Template.Err.Error()
-		return *newModuleStatus
-	}
-	if errors.Is(module.Template.Err, templatelookup.ErrNoTemplatesInListResult) {
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateWarning,
-			Message: module.Template.Err.Error(),
-		}
-	}
 	if module.Template.Err != nil {
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateError,
-			Message: module.Template.Err.Error(),
-		}
+		return generateModuleStatusFromError(module, existStatus)
 	}
+
 	manifestObject := module.Manifest
 	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
@@ -347,6 +328,41 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 	}
 
 	return moduleStatus
+}
+
+func generateModuleStatusFromError(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
+	switch {
+	case errors.Is(module.Template.Err, templatelookup.ErrTemplateUpdateNotAllowed):
+		newModuleStatus := existStatus.DeepCopy()
+		newModuleStatus.State = shared.StateWarning
+		newModuleStatus.Message = module.Template.Err.Error()
+		return *newModuleStatus
+	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult):
+		return v1beta2.ModuleStatus{
+			Name:    module.ModuleName,
+			Channel: module.Template.DesiredChannel,
+			FQDN:    module.FQDN,
+			State:   shared.StateWarning,
+			Message: module.Template.Err.Error(),
+		}
+	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow):
+		newModuleStatus := existStatus.DeepCopy()
+		newModuleStatus.Message = module.Template.Err.Error()
+		return *newModuleStatus
+	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrFailedToDetermineIfMaintenanceWindowIsActive):
+		newModuleStatus := existStatus.DeepCopy()
+		newModuleStatus.Message = module.Template.Err.Error()
+		newModuleStatus.State = shared.StateError
+		return *newModuleStatus
+	default:
+		return v1beta2.ModuleStatus{
+			Name:    module.ModuleName,
+			Channel: module.Template.DesiredChannel,
+			FQDN:    module.FQDN,
+			State:   shared.StateError,
+			Message: module.Template.Err.Error(),
+		}
+	}
 }
 
 func stateFromManifest(obj client.Object) shared.State {
