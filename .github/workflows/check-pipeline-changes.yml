@@ -7,11 +7,6 @@ jobs:
   check-pipeline-changes:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
       - name: Get list of changed files
         id: changed-files
         uses: actions/github-script@v7
@@ -24,8 +19,8 @@ jobs:
             });
             // Define the pipeline-related paths to watch
             const pathsToCheck = [
-              ".github/actions",
-              ".github/workflows",
+              ".github/workflows/test-e2e.yml",
+              ".github/workflows/test-e2e-with-modulereleasemeta.yml",
               ".github/scripts",
               "scripts/tests",
               "versions.yaml",
@@ -49,7 +44,7 @@ jobs:
             echo "pipeline_changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Add Warning if Pipeline Changes Detected
+      - name: Add PR Comment & Label if Pipeline Changes Detected
         if: steps.eval-changes.outputs.pipeline_changed == 'true'
         uses: actions/github-script@v7
         with:
@@ -60,15 +55,32 @@ jobs:
               issue_number: context.payload.pull_request.number,
               body: "⚠️ **Pipeline-related file changes detected!** Please review if related updates (e.g. manifest generation or workflow adjustments) are required."
             });
-
-      - name: Add PR Label for Pipeline Changes
-        if: steps.eval-changes.outputs.pipeline_changed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
             github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number, 
               labels: ["pipeline-changed"]
             });
+
+      - name: Remove 'pipeline-changed' Label if No Changes Detected
+        if: steps.eval-changes.outputs.pipeline_changed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = 'pipeline-changed';
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            if (labels.some(label => label.name === labelName)) {
+              console.log(`Label "${labelName}" found, removing it.`);
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                name: labelName,
+              });
+            } else {
+              console.log(`Label "${labelName}" not found, skipping removal.`);
+            }

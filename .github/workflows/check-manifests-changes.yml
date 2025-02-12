@@ -1,4 +1,4 @@
-name: "Check if Manifests Changes"
+name: "Check If Manifests Change"
 
 env:
   PR_CACHE_KEY: pr-manifests-${{ github.run_id }}-${{ github.run_attempt }}
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
 
-      - name: Run 'make manifests' on PR branch
+      - name: Create manifests on PR branch
         run: |
           make dry-run-control-plane
           mkdir -p ./cache/pr
@@ -34,7 +34,7 @@ jobs:
         with:
           ref: main
 
-      - name: Run 'make manifests' on main branch
+      - name: Create manifests on main branch
         run: |
           make dry-run-control-plane
           mkdir -p ./cache/main
@@ -89,7 +89,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: "❌ **Manifest output differences detected!** Please verify if these changes are intended or if further action is required."
+              body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please make sure to check if changes are needed in related repositories like management-plane-charts, runtime-watchter, etc.."
             });
             github.rest.issues.addLabels({
               owner: context.repo.owner,
@@ -121,8 +121,3 @@ jobs:
               console.log(`Label "${labelName}" not found, skipping removal.`);
             }
 
-      - name: Fail if Manifest Differences Detected
-        if: steps.compare-manifests.outputs.manifests_diff_detected == 'true'
-        run: |
-          echo "❌ Manifest output differences detected! Please verify if these changes are intended."
-          exit 1
