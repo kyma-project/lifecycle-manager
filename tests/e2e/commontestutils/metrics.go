@@ -136,7 +136,7 @@ func GetSelfSignedCertNotRenewMetricsGauge(ctx context.Context, kymaName string)
 		return 0, err
 	}
 
-	re := regexp.MustCompile(fmt.Sprintf(`%s{%s="%s"} (\d+)`, metrics.SelfSignedCertNotRenewMetrics,
+	re := regexp.MustCompile(fmt.Sprintf(`%s{%s="%s"} (\d+)`, metrics.MetricSelfSignedCertNotRenew,
 		metrics.KymaNameLabel,
 		kymaName))
 	return parseCount(re, bodyString)
