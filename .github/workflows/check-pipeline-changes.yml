@@ -24,7 +24,7 @@ jobs:
               ".github/workflows/test-e2e-with-modulereleasemeta.yml",
               ".github/scripts",
               "scripts/tests",
-              "versions.yaml",
+              "versions.yaml"
             ];
             
             const pipelineFiles = files.filter(file => 
