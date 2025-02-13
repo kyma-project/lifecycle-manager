@@ -192,7 +192,7 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 		},
 	}
 
-	//FieldManager here: "lifecycle-manager"
+	// FieldManager here: "lifecycle-manager"
 	err = c.kcpClient.Patch(ctx, &cert, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 	if err != nil {
 		return nil, fmt.Errorf("failed to patch certificate: %w", err)

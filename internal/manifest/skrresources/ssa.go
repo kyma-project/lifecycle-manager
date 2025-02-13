@@ -51,6 +51,7 @@ func ConcurrentSSA(clnt client.Client, owner client.FieldOwner, managedFieldsCol
 	}
 }
 
+//nolint:ireturn // interface return is required here
 func (c *ConcurrentDefaultSSA) managedFieldsCollector() ManagedFieldsCollector {
 	if c.collector != nil {
 		return c.collector
@@ -88,7 +89,9 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
-	c.managedFieldsCollector().Emit(ctx)
+	if err := c.managedFieldsCollector().Emit(ctx); err != nil {
+		logger.V(internal.DebugLogLevel).Error(err, "error emitting unknown managed fields data")
+	}
 	return nil
 }
 
@@ -135,7 +138,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 		)
 	}
 	obj.SetManagedFields(nil)
-	//FieldManager here: "declarative.kyma-project.io/applier"
+	// FieldManager here: "declarative.kyma-project.io/applier"
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(

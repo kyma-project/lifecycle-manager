@@ -194,7 +194,7 @@ func (r *Reconciler) updateWatcherState(ctx context.Context, watcher *v1beta2.Wa
 
 func (r *Reconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
 	watcher.ManagedFields = nil
-	//FieldManager here: "lifecycle-manager"
+	// FieldManager here: "lifecycle-manager"
 	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
 		status.SubResourceOpts(client.ForceOwnership))
 	if err != nil {
