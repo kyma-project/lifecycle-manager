@@ -148,17 +148,15 @@ func splitBySemicolons(value string) []string {
 }
 
 func newEmitCache() *ttlcache.Cache[string, bool] {
-	var cacheTTL int
-	configured := os.Getenv(frequencyCacheTTLEnvVar)
-	if configured == "" {
-		cacheTTL = frequencyCacheTTLDefault
-	} else {
+	var cacheTTL int = frequencyCacheTTLDefault
+
+	if configured := os.Getenv(frequencyCacheTTLEnvVar); configured != "" {
 		rxp := regexp.MustCompile(frequencyCacheTTLRegexp)
 		if rxp.MatchString(configured) {
-			cacheTTL, _ = strconv.Atoi(configured)
-		} else {
-			cacheTTL = frequencyCacheTTLDefault
-		}
+			if parsed, err := strconv.Atoi(configured); err != nil {
+				cacheTTL = parsed
+			}
+		} 
 	}
 
 	if cacheTTL < 1 {
