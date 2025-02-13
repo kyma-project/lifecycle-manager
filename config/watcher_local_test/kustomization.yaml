@@ -7,7 +7,6 @@ kind: Kustomization
 generatorOptions:
   disableNameSuffixHash: true
 resources:
-  - # The control-plane config does not include namespaces creation, therefore we need to include their creation here
   - namespaces.yaml
   - ../control-plane
 components:
