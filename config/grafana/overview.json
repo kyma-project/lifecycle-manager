@@ -1994,7 +1994,7 @@
     },
     {
       "datasource": null,
-      "description": "This indicates if the KLM was successful in reading the maintenance policy file from the mounted config map.",
+      "description": "Indicates whether the KLM successfully read the maintenance policy file from the mounted ConfigMap.",
       "fieldConfig": {
         "defaults": {
           "color": {
