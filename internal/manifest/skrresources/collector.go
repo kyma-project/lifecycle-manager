@@ -84,6 +84,8 @@ func (c *LogCollector) Collect(ctx context.Context, remoteObj client.Object) {
 func (c *LogCollector) Emit(ctx context.Context) error {
 	if len(c.entries) > 0 {
 		if emitCache.Has(c.key) {
+			logger := logf.FromContext(ctx, "owner", c.owner)
+			logger.V(internal.TraceLogLevel).Info("Unknown managers detection skipped (frequency)")
 			return nil
 		}
 		emitCache.Set(c.key, true, ttlcache.DefaultTTL)
@@ -153,10 +155,10 @@ func newEmitCache() *ttlcache.Cache[string, bool] {
 	if configured := os.Getenv(frequencyCacheTTLEnvVar); configured != "" {
 		rxp := regexp.MustCompile(frequencyCacheTTLRegexp)
 		if rxp.MatchString(configured) {
-			if parsed, err := strconv.Atoi(configured); err != nil {
+			if parsed, err := strconv.Atoi(configured); err == nil {
 				cacheTTL = parsed
 			}
-		} 
+		}
 	}
 
 	if cacheTTL < 1 {
