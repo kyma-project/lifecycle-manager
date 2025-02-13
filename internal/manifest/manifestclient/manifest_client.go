@@ -38,7 +38,7 @@ func (m *ManifestClient) PatchStatusIfDiffExist(ctx context.Context, manifest *v
 ) error {
 	if HasStatusDiff(manifest.GetStatus(), previousStatus) {
 		resetNonPatchableField(manifest)
-		//FieldManager here: "declarative.kyma-project.io/applier"
+		// FieldManager here: "declarative.kyma-project.io/applier"
 		if err := m.Status().Patch(ctx, manifest, client.Apply, client.ForceOwnership, DefaultFieldOwner); err != nil {
 			m.Warning(manifest, "PatchStatus", err)
 			return fmt.Errorf("failed to patch status: %w", err)
@@ -50,7 +50,7 @@ func (m *ManifestClient) PatchStatusIfDiffExist(ctx context.Context, manifest *v
 
 func (m *ManifestClient) SsaSpec(ctx context.Context, obj client.Object) error {
 	resetNonPatchableField(obj)
-	//FieldManager here: "declarative.kyma-project.io/applier"
+	// FieldManager here: "declarative.kyma-project.io/applier"
 	if err := m.Patch(ctx, obj, client.Apply, client.ForceOwnership, DefaultFieldOwner); err != nil {
 		m.Warning(obj, "PatchObject", err)
 		return fmt.Errorf("failed to patch object: %w", err)

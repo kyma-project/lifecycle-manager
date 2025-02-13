@@ -121,7 +121,7 @@ func (p *ProxyClient) Patch(
 	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	//FieldManager here: determined by the users of this method, if any. Here it's just the Client interface implementation.
+	// FieldManager here: determined by the users of this method, if any. Here it's just the Client interface implementation.
 	err := p.baseClient.Patch(ctx, obj, patch, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to patch object for [%v]: %w", obj, err)
