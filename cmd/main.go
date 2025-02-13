@@ -142,10 +142,7 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
-func setupManager(
-	flagVar *flags.FlagVar,
-	cacheOptions cache.Options,
-	scheme *machineryruntime.Scheme,
+func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
 	logger logr.Logger,
 ) {
 	mgr, err := configManager(flagVar, cacheOptions, scheme)
