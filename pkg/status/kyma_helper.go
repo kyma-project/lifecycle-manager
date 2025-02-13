@@ -58,6 +58,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	if k.isManagedKyma {
 		fieldOwner = shared.OperatorName
 	}
+	// FieldManager here: "lifecycle-manager" / "unmanaged-kyma"
 	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
 		client.FieldOwner(fieldOwner)); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)

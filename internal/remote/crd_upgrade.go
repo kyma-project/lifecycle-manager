@@ -91,6 +91,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 
+	// FieldManager here: "lifecycle-manager"
 	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,
