@@ -136,11 +136,8 @@ modulereleasemeta-module-upgrade-new-version:
 module-install-by-version:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Install By Version"
 
-ca-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
-
-istio-gateway-secret-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Istio Gateway Secret Rotation"
+legacy-istio-gateway-secret-rotation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation"
 
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
@@ -180,3 +177,6 @@ maintenance-windows-initial-installation:
 
 maintenance-windows-skip:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
+
+watcher-zero-downtime:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Watcher Zero Downtime"
