@@ -1,13 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
+generatorOptions:
+  disableNameSuffixHash: true
 resources:
 - manager.yaml
 - metrics_service.yaml
-
-generatorOptions:
-  disableNameSuffixHash: true
-
 images:
 - name: controller
   newName: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager

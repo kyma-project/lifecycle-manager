@@ -1,10 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
-# Value of this field is prepended to the names of all resources
 namePrefix: klm-
-
-# Labels to add to all resources and selectors.
 commonLabels:
   app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   app.kubernetes.io/instance: kcp-lifecycle-manager-main
@@ -12,29 +8,16 @@ commonLabels:
   app.kubernetes.io/created-by: kustomize
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
-
-
 patches:
 - path: manager_webhook_patch.yaml
-
 resources:
 - ../manager
 - ../certmanager
 - namespace_create.yaml
-
 components:
-  - ../crd
-  - ../rbac/cluster_bindings
-  # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
-  #- ../istio
-  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-  # crd/kustomization.yaml
-  - ../webhook
-  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-  #- ../prometheus
-  # [GRAFANA] To generate configmap for provision grafana dashboard
-  #- ../grafana
-
+- ../crd
+- ../rbac
+- ../webhook
 transformers:
 - |-
   apiVersion: builtin

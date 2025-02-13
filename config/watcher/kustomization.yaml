@@ -1,15 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
-
-resources:
-- operator_v1beta2_watcher.yaml
-- gateway.yaml
-- certificate_setup.yaml
 generatorOptions:
   disableNameSuffixHash: true
-
+resources:
+  - certificate_setup.yaml
+  - gateway.yaml
+  - kyma_watcher.yaml
 patches:
-  - patch: |-
+  - target:
+      kind: Deployment
+    patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-kcp-watcher
@@ -25,5 +25,3 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-domain-name-pinning=true
-    target:
-      kind: Deployment
