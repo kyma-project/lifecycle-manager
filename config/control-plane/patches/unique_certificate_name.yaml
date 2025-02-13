@@ -3,4 +3,4 @@ kind: Certificate
 metadata:
   name: controller-manager-webhook-serving  # this name should match the one appeared in kustomizeconfig.yaml
 spec:
-  secretName: klm-controller-manager-webhook # this secret will not be prefixed, since it's not managed by kustomize
+  secretName: klm-controller-manager-webhook # secretName will not be prefixed, since it's not managed by kustomize
