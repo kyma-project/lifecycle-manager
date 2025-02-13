@@ -1,7 +1,7 @@
 name: "Check Pipeline Changes"
 
 on:
-  pull_request:
+  pull_request_target:
 
 jobs:
   check-pipeline-changes:
@@ -19,6 +19,8 @@ jobs:
             });
             // Define the pipeline-related paths to watch
             const pathsToCheck = [
+              ".github/check-pipeline-changes.yml", 
+              ".github/check-manifests-changes.yml", 
               ".github/actions",
               ".github/workflows/test-e2e.yml",
               ".github/workflows/test-e2e-with-modulereleasemeta.yml",
