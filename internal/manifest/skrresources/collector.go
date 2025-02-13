@@ -34,22 +34,14 @@ const (
 	frequencyCacheTTLDefault = 60 * 5 // 5 minutes
 	frequencyCacheTTLEnvVar  = "KLM_EXPERIMENTAL_FREQUENCY_CACHE_TTL"
 	frequencyCacheTTLRegexp  = `^[0-9]{1,4}$`
+
+	managedFieldsAnalysisLabelEnvVar = "KLM_EXPERIMENTAL_MANAGED_FIELDS_ANALYSIS_LABEL"
 )
 
 var (
 	allowedManagers = getAllowedManagers() //nolint:gochecknoglobals // list of managers is a global configuration
 	emitCache       = newEmitCache()       //nolint:gochecknoglobals // singleton cache is used to prevent emitting the same log multiple times in a short period
 )
-
-// Implements ManagedFieldsCollector interface, does nothing.
-type nopCollector struct{}
-
-func (c nopCollector) Collect(ctx context.Context, obj client.Object) {
-}
-
-func (c nopCollector) Emit(ctx context.Context) error {
-	return nil
-}
 
 type LogCollectorEntry struct {
 	ObjectName      string                         `json:"objectName"`
@@ -176,4 +168,18 @@ func newEmitCache() *ttlcache.Cache[string, bool] {
 	cache := ttlcache.New[string, bool](ttlcache.WithTTL[string, bool](time.Duration(cacheTTL) * time.Second))
 	go cache.Start()
 	return cache
+}
+
+// Implements ManagedFieldsCollector interface, does nothing.
+type nopCollector struct{}
+
+func (c nopCollector) Collect(ctx context.Context, obj client.Object) {
+}
+
+func (c nopCollector) Emit(ctx context.Context) error {
+	return nil
+}
+
+func getManagedFieldsAnalysisLabel() string {
+	return os.Getenv(managedFieldsAnalysisLabelEnvVar)
 }
