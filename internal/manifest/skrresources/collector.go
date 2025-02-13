@@ -145,29 +145,33 @@ func getAllowedManagers() []string {
 	}
 }
 
-func splitBySemicolons(value string) []string {
-	return strings.Split(value, ";")
-}
-
-func newEmitCache() *ttlcache.Cache[string, bool] {
-	var cacheTTL int = frequencyCacheTTLDefault
+func getCacheTTL() int {
+	var res int = frequencyCacheTTLDefault
 
 	if configured := os.Getenv(frequencyCacheTTLEnvVar); configured != "" {
 		rxp := regexp.MustCompile(frequencyCacheTTLRegexp)
 		if rxp.MatchString(configured) {
 			if parsed, err := strconv.Atoi(configured); err == nil {
-				cacheTTL = parsed
+				res = parsed
 			}
 		}
 	}
 
-	if cacheTTL < 1 {
-		cacheTTL = 1
+	if res < 1 {
+		res = 1
 	}
 
-	cache := ttlcache.New[string, bool](ttlcache.WithTTL[string, bool](time.Duration(cacheTTL) * time.Second))
+	return res
+}
+
+func newEmitCache() *ttlcache.Cache[string, bool] {
+	cache := ttlcache.New[string, bool](ttlcache.WithTTL[string, bool](time.Duration(getCacheTTL()) * time.Second))
 	go cache.Start()
 	return cache
+}
+
+func splitBySemicolons(value string) []string {
+	return strings.Split(value, ";")
 }
 
 // Implements ManagedFieldsCollector interface, does nothing.
