@@ -164,7 +164,7 @@ func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, remoteKyma *v
 		return nil
 	}
 
-	s.syncWatcherLabelsAnnotations(kcpKyma, remoteKyma)
+	syncWatcherLabelsAnnotations(kcpKyma, remoteKyma)
 	if err := s.Client.Update(ctx, remoteKyma); err != nil {
 		err = fmt.Errorf("failed to synchronise runtime kyma: %w", err)
 		s.event.Warning(kcpKyma, remoteUpdateFailure, err)
@@ -204,19 +204,19 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 
 // syncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
 // a working e2e-flow for the runtime-watcher.
-func (s *SkrContext) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
-	if remoteKyma.Labels == nil {
-		remoteKyma.Labels = make(map[string]string)
+func syncWatcherLabelsAnnotations(kcpKyma, skrKyma *v1beta2.Kyma) {
+	if skrKyma.Labels == nil {
+		skrKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels[shared.WatchedByLabel] = shared.WatchedByLabelValue
-	remoteKyma.Labels[shared.ManagedBy] = shared.ManagedByLabelValue
+	skrKyma.Labels[shared.WatchedByLabel] = shared.WatchedByLabelValue
+	skrKyma.Labels[shared.ManagedBy] = shared.ManagedByLabelValue
 
-	if remoteKyma.Annotations == nil {
-		remoteKyma.Annotations = make(map[string]string)
+	if skrKyma.Annotations == nil {
+		skrKyma.Annotations = make(map[string]string)
 	}
-	remoteKyma.Annotations[shared.OwnedByAnnotation] = fmt.Sprintf(shared.OwnedByFormat,
-		controlPlaneKyma.GetNamespace(), controlPlaneKyma.GetName())
+	skrKyma.Annotations[shared.OwnedByAnnotation] = fmt.Sprintf(shared.OwnedByFormat,
+		kcpKyma.GetNamespace(), kcpKyma.GetName())
 }
 
 // syncStatus copies the Kyma status and transofrms it from KCP perspective to SKR perspective.

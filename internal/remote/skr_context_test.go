@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -167,4 +168,18 @@ func Test_syncStatus_RemovesManifestReference(t *testing.T) {
 
 	assert.NotNil(t, kcpStatus.Modules[0].Manifest)
 	assert.NotNil(t, kcpStatus.Modules[1].Manifest)
+}
+
+func Test_syncWatcherLabelsAnnotations_AddsLabelsAndAnnotations(t *testing.T) {
+	name := "test-name"
+	namespace := "test-namespace"
+
+	remoteKyma := builder.NewKymaBuilder().Build()
+	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
+
+	syncWatcherLabelsAnnotations(kcpKyma, remoteKyma)
+
+	assert.Equal(t, shared.WatchedByLabelValue, remoteKyma.Labels[shared.WatchedByLabel])
+	assert.Equal(t, shared.ManagedByLabelValue, remoteKyma.Labels[shared.ManagedBy])
+	assert.Equal(t, fmt.Sprintf(shared.OwnedByFormat, namespace, name), remoteKyma.Annotations[shared.OwnedByAnnotation])
 }
