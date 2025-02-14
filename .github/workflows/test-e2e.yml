@@ -19,6 +19,7 @@ jobs:
           fetch-depth: 0
       - name: Set Image
         run: |
+          echo "test"
           if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
             echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
           else
