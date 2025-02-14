@@ -171,7 +171,7 @@ func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, remoteKyma *v
 		return err
 	}
 
-	remoteKyma.Status = kcpKyma.Status
+	syncStatus(&kcpKyma.Status, &remoteKyma.Status)
 	if err := s.Client.Status().Update(ctx, remoteKyma); err != nil {
 		err = fmt.Errorf("failed to update runtime kyma status: %w", err)
 		s.event.Warning(kcpKyma, statusUpdateFailure, err)
@@ -217,4 +217,31 @@ func (s *SkrContext) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *
 	}
 	remoteKyma.Annotations[shared.OwnedByAnnotation] = fmt.Sprintf(shared.OwnedByFormat,
 		controlPlaneKyma.GetNamespace(), controlPlaneKyma.GetName())
+}
+
+// syncStatus copies the Kyma status and transofrms it from KCP perspective to SKR perspective.
+// E.g., it removes manifest references or changes namespaces.
+func syncStatus(kcpStatus, skrStatus *v1beta2.KymaStatus) {
+	*skrStatus = *kcpStatus.DeepCopy()
+
+	useRemoteNamespaceForModuleTemplates(skrStatus)
+	removeManifestReference(skrStatus)
+}
+
+func useRemoteNamespaceForModuleTemplates(status *v1beta2.KymaStatus) {
+	for i := range status.Modules {
+		if status.Modules[i].Template == nil {
+			continue
+		}
+		status.Modules[i].Template.Namespace = shared.DefaultRemoteNamespace
+	}
+}
+
+func removeManifestReference(status *v1beta2.KymaStatus) {
+	for i := range status.Modules {
+		if status.Modules[i].Manifest == nil {
+			continue
+		}
+		status.Modules[i].Manifest = nil
+	}
 }

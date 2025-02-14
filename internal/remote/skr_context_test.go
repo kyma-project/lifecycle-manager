@@ -1,4 +1,4 @@
-package remote_test
+package remote
 
 import (
 	"testing"
@@ -6,16 +6,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 func TestReplaceWithVirtualKyma(t *testing.T) {
 	t.Parallel()
 	type testKyma struct {
-		channel string
-		modules []string
+		channel     string
+		moduleNames []string
 	}
 	tests := []struct {
 		name         string
@@ -24,64 +24,147 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 		expectedKyma testKyma
 	}{
 		{
-			"module in kcp Kyma gets replaced with remote Kyma",
+			"modules in kcp Kyma get replaced with modules in remote Kyma",
 			testKyma{
-				channel: "regular",
-				modules: []string{"module1"},
+				channel:     "regular",
+				moduleNames: []string{"module1", "module3"},
 			},
 			testKyma{
-				channel: "regular",
-				modules: []string{"module2"},
+				channel:     "regular",
+				moduleNames: []string{"module2"},
 			},
 			testKyma{
-				channel: "regular",
-				modules: []string{"module1"},
+				channel:     "regular",
+				moduleNames: []string{"module1", "module3"},
 			},
 		},
 		{
-			"channel updated in remoteKyma be the final channel",
+			"channel in kcp Kym gets replaced with channel in remote Kyma",
 			testKyma{
 				channel: "regular",
-				modules: []string{"module1"},
 			},
 			testKyma{
 				channel: "fast",
-				modules: []string{"module1"},
 			},
 			testKyma{
 				channel: "regular",
-				modules: []string{"module1"},
 			},
 		},
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			kcpKyma := createKyma(testCase.kcpKyma.channel, testCase.kcpKyma.modules)
-			remoteKyma := createKyma(testCase.remoteKyma.channel, testCase.remoteKyma.modules)
-			remote.ReplaceSpec(kcpKyma, remoteKyma)
+			kcpKyma := createKyma(testCase.kcpKyma.channel, testCase.kcpKyma.moduleNames)
+			remoteKyma := createKyma(testCase.remoteKyma.channel, testCase.remoteKyma.moduleNames)
+			ReplaceSpec(kcpKyma, remoteKyma)
 			assert.Equal(t, testCase.expectedKyma.channel, kcpKyma.Spec.Channel)
 			var virtualModules []string
 			for _, module := range kcpKyma.Spec.Modules {
 				virtualModules = append(virtualModules, module.Name)
 			}
 
-			require.ElementsMatch(t, testCase.expectedKyma.modules, virtualModules)
+			require.ElementsMatch(t, testCase.expectedKyma.moduleNames, virtualModules)
 		})
 	}
 }
 
-func createKyma(channel string, modules []string) *v1beta2.Kyma {
-	kcpKyma := testutils.NewTestKyma("test-kyma")
+func createKyma(channel string, moduleNames []string) *v1beta2.Kyma {
+	kyma := builder.NewKymaBuilder().
+		WithChannel(channel).
+		Build()
 
-	kcpKyma.Spec.Channel = channel
-	for _, module := range modules {
-		kcpKyma.Spec.Modules = append(
-			kcpKyma.Spec.Modules, v1beta2.Module{
-				Name:    module,
-				Channel: v1beta2.DefaultChannel,
-				Managed: true,
-			})
+	modules := []v1beta2.Module{}
+	for _, moduleName := range moduleNames {
+		modules = append(modules, v1beta2.Module{
+			Name:    moduleName,
+			Channel: v1beta2.DefaultChannel,
+			Managed: true,
+		})
 	}
-	return kcpKyma
+
+	kyma.Spec.Modules = modules
+
+	return kyma
+}
+
+func Test_syncStatus_AssignsRemoteNamespace(t *testing.T) {
+	skrStatus := &v1beta2.KymaStatus{}
+	kcpStatus := &v1beta2.KymaStatus{
+		Modules: []v1beta2.ModuleStatus{
+			{
+				Name: "module-1",
+				Template: &v1beta2.TrackingObject{
+					PartialMeta: v1beta2.PartialMeta{
+						Namespace: "kcp-system",
+					},
+				},
+			},
+			{
+				Name: "module-2",
+				Template: &v1beta2.TrackingObject{
+					PartialMeta: v1beta2.PartialMeta{
+						Namespace: "kcp-system",
+					},
+				},
+			},
+			{
+				Name: "module-3",
+			},
+		},
+	}
+
+	syncStatus(kcpStatus, skrStatus)
+
+	for _, module := range skrStatus.Modules {
+		if module.Template == nil {
+			continue
+		}
+		assert.Equal(t, shared.DefaultRemoteNamespace, module.Template.Namespace)
+	}
+
+	for _, module := range kcpStatus.Modules {
+		if module.Template == nil {
+			continue
+		}
+		assert.Equal(t, "kcp-system", module.Template.Namespace)
+	}
+}
+
+func Test_syncStatus_RemovesManifestReference(t *testing.T) {
+	skrStatus := &v1beta2.KymaStatus{}
+	kcpStatus := &v1beta2.KymaStatus{
+		Modules: []v1beta2.ModuleStatus{
+			{
+				Name: "module-1",
+				Manifest: &v1beta2.TrackingObject{
+					PartialMeta: v1beta2.PartialMeta{
+						Namespace: "kcp-system",
+					},
+				},
+			},
+			{
+				Name: "module-2",
+				Manifest: &v1beta2.TrackingObject{
+					PartialMeta: v1beta2.PartialMeta{
+						Namespace: "kcp-system",
+					},
+				},
+			},
+			{
+				Name: "module-3",
+			},
+		},
+	}
+
+	syncStatus(kcpStatus, skrStatus)
+
+	for _, module := range skrStatus.Modules {
+		if module.Manifest == nil {
+			continue
+		}
+		assert.Nil(t, module.Manifest)
+	}
+
+	assert.NotNil(t, kcpStatus.Modules[0].Manifest)
+	assert.NotNil(t, kcpStatus.Modules[1].Manifest)
 }
