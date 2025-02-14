@@ -274,9 +274,15 @@ func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Ky
 	if err != nil {
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
-	if err := skrContext.SynchronizeKyma(ctx, kcpKyma, remoteKyma); err != nil {
-		return fmt.Errorf("sync run failure: %w", err)
+
+	if err := skrContext.SynchronizeKymaMetadata(ctx, kcpKyma, remoteKyma); err != nil {
+		return fmt.Errorf("failed to sync SKR Kyma CR: %w", err)
 	}
+
+	if err := skrContext.SynchronizeKymaStatus(ctx, kcpKyma, remoteKyma); err != nil {
+		return fmt.Errorf("failed to sync SKR Kyma CR: %w", err)
+	}
+
 	return nil
 }
 
