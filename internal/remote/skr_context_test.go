@@ -107,6 +107,29 @@ func Test_SynchronizeKyma_Syncs(t *testing.T) {
 	assert.False(t, event.called)
 }
 
+func Test_SynchronizeKyma_SkipsSyncIfLabelsAndAnnotationsUnchanged(t *testing.T) {
+	name := "test-name"
+	namespace := "test-namespace"
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
+		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
+		WithAnnotation(shared.OwnedByAnnotation, fmt.Sprintf(shared.OwnedByFormat, namespace, name)).
+		Build()
+	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
+
+	event := &eventStub{}
+	statusClient := &statusClient{}
+	client := &clientStub{status: statusClient}
+	skrContext := NewSkrContext(client, event)
+
+	err := skrContext.SynchronizeKyma(context.Background(), kcpKyma, skrKyma)
+
+	require.NoError(t, err)
+	assert.False(t, client.called)
+	assert.True(t, statusClient.called)
+	assert.False(t, event.called)
+}
+
 func Test_SynchronizeKyma_ErrorsWhenFailedToSync(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
@@ -231,14 +254,95 @@ func Test_syncWatcherLabelsAnnotations_AddsLabelsAndAnnotations(t *testing.T) {
 	name := "test-name"
 	namespace := "test-namespace"
 
-	remoteKyma := builder.NewKymaBuilder().Build()
+	skrKyma := builder.NewKymaBuilder().Build()
 	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
 
-	syncWatcherLabelsAnnotations(kcpKyma, remoteKyma)
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
 
-	assert.Equal(t, shared.WatchedByLabelValue, remoteKyma.Labels[shared.WatchedByLabel])
-	assert.Equal(t, shared.ManagedByLabelValue, remoteKyma.Labels[shared.ManagedBy])
-	assert.Equal(t, fmt.Sprintf(shared.OwnedByFormat, namespace, name), remoteKyma.Annotations[shared.OwnedByAnnotation])
+	assert.True(t, changed)
+	assertLabelsAndAnnotations(t, skrKyma, name, namespace)
+}
+
+func Test_syncWatcherLabelsAnnotations_AddsLabels(t *testing.T) {
+	name := "test-name"
+	namespace := "test-namespace"
+
+	skrKyma := builder.NewKymaBuilder().
+		WithAnnotation(shared.OwnedByAnnotation, fmt.Sprintf(shared.OwnedByFormat, namespace, name)).
+		Build()
+	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
+
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+
+	assert.True(t, changed)
+	assertLabelsAndAnnotations(t, skrKyma, name, namespace)
+}
+
+func Test_syncWatcherLabelsAnnotations_AddsAnnotations(t *testing.T) {
+	name := "test-name"
+	namespace := "test-namespace"
+
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
+		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
+		Build()
+	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
+
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+
+	assert.True(t, changed)
+	assertLabelsAndAnnotations(t, skrKyma, name, namespace)
+}
+
+func Test_syncWatcherLabelsAnnotations_ChangesAnnotations(t *testing.T) {
+	name := "test-name"
+	namespace := "test-namespace"
+
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
+		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
+		WithAnnotation(shared.OwnedByAnnotation, "foo").
+		Build()
+	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
+
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+
+	assert.True(t, changed)
+	assertLabelsAndAnnotations(t, skrKyma, name, namespace)
+}
+
+func Test_syncWatcherLabelsAnnotations_ChangesLabels(t *testing.T) {
+	name := "test-name"
+	namespace := "test-namespace"
+
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.WatchedByLabel, "foo").
+		WithLabel(shared.ManagedBy, "bar").
+		WithAnnotation(shared.OwnedByAnnotation, fmt.Sprintf(shared.OwnedByFormat, namespace, name)).
+		Build()
+	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
+
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+
+	assert.True(t, changed)
+	assertLabelsAndAnnotations(t, skrKyma, name, namespace)
+}
+
+func Test_syncWatcherLabelsAnnotations_ReturnsFalseIfLabelsAndAnnotationsUnchanged(t *testing.T) {
+	name := "test-name"
+	namespace := "test-namespace"
+
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
+		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
+		WithAnnotation(shared.OwnedByAnnotation, fmt.Sprintf(shared.OwnedByFormat, namespace, name)).
+		Build()
+	kcpKyma := builder.NewKymaBuilder().WithName(name).WithNamespace(namespace).Build()
+
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+
+	assert.False(t, changed)
+	assertLabelsAndAnnotations(t, skrKyma, name, namespace)
 }
 
 // test helpers
@@ -260,6 +364,16 @@ func createKyma(channel string, moduleNames []string) *v1beta2.Kyma {
 	kyma.Spec.Modules = modules
 
 	return kyma
+}
+
+func assertLabelsAndAnnotations(t *testing.T, skrKyma *v1beta2.Kyma, kcpKymaName, kcpKymaNamespace string) {
+	t.Helper()
+
+	assert.Equal(t, shared.WatchedByLabelValue, skrKyma.Labels[shared.WatchedByLabel])
+	assert.Equal(t, shared.ManagedByLabelValue, skrKyma.Labels[shared.ManagedBy])
+	assert.Equal(t,
+		fmt.Sprintf(shared.OwnedByFormat, kcpKymaNamespace, kcpKymaName),
+		skrKyma.Annotations[shared.OwnedByAnnotation])
 }
 
 // test stubs

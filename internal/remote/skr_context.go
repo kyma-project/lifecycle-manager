@@ -166,11 +166,13 @@ func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, skrKyma *v1be
 		return nil
 	}
 
-	syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
-	if err := s.Client.Update(ctx, skrKyma); err != nil {
-		err = fmt.Errorf("failed to synchronise Kyma to SKR: %w", err)
-		s.event.Warning(kcpKyma, syncFailure, err)
-		return err
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+	if changed {
+		if err := s.Client.Update(ctx, skrKyma); err != nil {
+			err = fmt.Errorf("failed to synchronise Kyma to SKR: %w", err)
+			s.event.Warning(kcpKyma, syncFailure, err)
+			return err
+		}
 	}
 
 	syncStatus(&kcpKyma.Status, &skrKyma.Status)
@@ -205,21 +207,38 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 	return skrKyma, nil
 }
 
-// syncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
-// a working e2e-flow for the runtime-watcher.
-func syncWatcherLabelsAnnotations(kcpKyma, skrKyma *v1beta2.Kyma) {
-	if skrKyma.Labels == nil {
-		skrKyma.Labels = make(map[string]string)
+// syncWatcherLabelsAnnotations adds required labels and annotations to the skrKyma.
+// It returns true if any of the labels or annotations were changed.
+func syncWatcherLabelsAnnotations(kcpKyma, skrKyma *v1beta2.Kyma) bool {
+	labels, changeLabels := addEntriesToMap(skrKyma.Labels, map[string]string{
+		shared.WatchedByLabel: shared.WatchedByLabelValue,
+		shared.ManagedBy:      shared.ManagedByLabelValue,
+	})
+	skrKyma.Labels = labels
+
+	annotations, changeAnnotations := addEntriesToMap(skrKyma.Annotations, map[string]string{
+		shared.OwnedByAnnotation: fmt.Sprintf(shared.OwnedByFormat,
+			kcpKyma.GetNamespace(), kcpKyma.GetName()),
+	})
+	skrKyma.Annotations = annotations
+
+	return changeLabels || changeAnnotations
+}
+
+func addEntriesToMap(map1, map2 map[string]string) (map[string]string, bool) {
+	changed := false
+	if map1 == nil {
+		map1 = make(map[string]string)
 	}
 
-	skrKyma.Labels[shared.WatchedByLabel] = shared.WatchedByLabelValue
-	skrKyma.Labels[shared.ManagedBy] = shared.ManagedByLabelValue
-
-	if skrKyma.Annotations == nil {
-		skrKyma.Annotations = make(map[string]string)
+	for k, v := range map2 {
+		if map1[k] != v {
+			map1[k] = v
+			changed = true
+		}
 	}
-	skrKyma.Annotations[shared.OwnedByAnnotation] = fmt.Sprintf(shared.OwnedByFormat,
-		kcpKyma.GetNamespace(), kcpKyma.GetName())
+
+	return map1, changed
 }
 
 // syncStatus copies the Kyma status and transofrms it from KCP perspective to SKR perspective.
