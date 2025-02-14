@@ -138,7 +138,6 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 		)
 	}
 	obj.SetManagedFields(nil)
-	// FieldManager here: "declarative.kyma-project.io/applier"
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(
