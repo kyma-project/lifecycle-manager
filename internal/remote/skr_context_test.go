@@ -18,8 +18,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-const kymaName = "test-name"
-const kymaNamespace = "test-namespace"
+const (
+	kymaName      = "test-name"
+	kymaNamespace = "test-namespace"
+)
 
 func TestReplaceWithVirtualKyma(t *testing.T) {
 	t.Parallel()
@@ -78,7 +80,7 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 	}
 }
 
-func Test_SynchronizeKymaMetadata_SkipsIfSKRKymaIsDeleting(t *testing.T) {
+func Test_SynchronizeKyma_SkipsIfSKRKymaIsDeleting(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().WithDeletionTimestamp().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
 
@@ -86,14 +88,14 @@ func Test_SynchronizeKymaMetadata_SkipsIfSKRKymaIsDeleting(t *testing.T) {
 	client := &clientStub{}
 	skrContext := NewSkrContext(client, event)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKyma(context.Background(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
 	assert.False(t, client.called)
 	assert.False(t, event.called)
 }
 
-func Test_SynchronizeKymaMetadata_Syncs(t *testing.T) {
+func Test_SynchronizeKyma_Syncs(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
 
@@ -102,14 +104,14 @@ func Test_SynchronizeKymaMetadata_Syncs(t *testing.T) {
 	client := &clientStub{status: statusClient}
 	skrContext := NewSkrContext(client, event)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKyma(context.Background(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
 	assert.True(t, client.called)
 	assert.False(t, event.called)
 }
 
-func Test_SynchronizeKymaMetadata_SkipsSyncIfLabelsAndAnnotationsUnchanged(t *testing.T) {
+func Test_SynchronizeKyma_SkipsSyncIfLabelsAndAnnotationsUnchanged(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().
 		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
 		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
@@ -122,14 +124,14 @@ func Test_SynchronizeKymaMetadata_SkipsSyncIfLabelsAndAnnotationsUnchanged(t *te
 	client := &clientStub{status: statusClient}
 	skrContext := NewSkrContext(client, event)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKyma(context.Background(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
 	assert.False(t, client.called)
 	assert.False(t, event.called)
 }
 
-func Test_SynchronizeKymaMetadata_ErrorsWhenFailedToSync(t *testing.T) {
+func Test_SynchronizeKyma_ErrorsWhenFailedToSync(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
 
@@ -139,10 +141,10 @@ func Test_SynchronizeKymaMetadata_ErrorsWhenFailedToSync(t *testing.T) {
 	client := &clientStub{err: expectedError, status: statusClient}
 	skrContext := NewSkrContext(client, event)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKyma(context.Background(), kcpKyma, skrKyma)
 
 	require.ErrorIs(t, err, expectedError)
-	assert.Contains(t, err.Error(), "failed to synchronise Kyma metadata to SKR")
+	assert.Contains(t, err.Error(), "failed to synchronise Kyma to SKR")
 	assert.True(t, client.called)
 	assert.True(t, event.called)
 }

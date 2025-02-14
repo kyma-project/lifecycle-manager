@@ -11,7 +11,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -162,8 +161,9 @@ func (s *SkrContext) CreateOrFetchKyma(
 	return remoteKyma, nil
 }
 
-// SynchronizeKymaMetadata synchronizes the required labels and annotations to the SKR Kyma CR.
-func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
+// SynchronizeKyma synchronizes the the SKR Kyma CR.
+// It sets the required labels and annotations.
+func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
 	if !skrKyma.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
@@ -173,15 +173,8 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 		return nil
 	}
 
-	obj := &unstructured.Unstructured{}
-	obj.SetName(skrKyma.GetName())
-	obj.SetNamespace(skrKyma.GetNamespace())
-	obj.SetGroupVersionKind(skrKyma.GroupVersionKind())
-	obj.SetLabels(skrKyma.GetLabels())
-	obj.SetAnnotations(skrKyma.GetAnnotations())
-
-	if err := s.Client.Patch(ctx, obj, client.Apply, &client.PatchOptions{FieldManager: fieldManager}); err != nil {
-		err = fmt.Errorf("failed to synchronise Kyma metadata to SKR: %w", err)
+	if err := s.Client.Update(ctx, skrKyma); err != nil {
+		err = fmt.Errorf("failed to synchronise Kyma to SKR: %w", err)
 		s.event.Warning(kcpKyma, syncFailure, err)
 		return err
 	}
