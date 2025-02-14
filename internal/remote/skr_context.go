@@ -24,10 +24,10 @@ import (
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
 const (
-	crdInstallation     event.Reason = "CRDInstallation"
-	remoteInstallation  event.Reason = "RemoteInstallation"
-	remoteUpdateFailure event.Reason = "RemoteSynchronization"
-	statusUpdateFailure event.Reason = "UpdateRuntimeStatus"
+	crdInstallation    event.Reason = "CRDInstallation"
+	remoteInstallation event.Reason = "RemoteInstallation"
+	syncFailure        event.Reason = "Synchronization"
+	statusSyncFailure  event.Reason = "StatusSynchronization"
 )
 
 type SkrContext struct {
@@ -159,24 +159,27 @@ func (s *SkrContext) CreateOrFetchKyma(
 	return remoteKyma, nil
 }
 
-func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, remoteKyma *v1beta2.Kyma) error {
-	if !remoteKyma.GetDeletionTimestamp().IsZero() {
+// SynchronizeKyma synchronizes the Kyma CR from KCP to SKR.
+// This includes setting the correct labels and annotations, and synchronizing the status.
+func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
+	if !skrKyma.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
 
-	syncWatcherLabelsAnnotations(kcpKyma, remoteKyma)
-	if err := s.Client.Update(ctx, remoteKyma); err != nil {
-		err = fmt.Errorf("failed to synchronise runtime kyma: %w", err)
-		s.event.Warning(kcpKyma, remoteUpdateFailure, err)
+	syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+	if err := s.Client.Update(ctx, skrKyma); err != nil {
+		err = fmt.Errorf("failed to synchronise Kyma to SKR: %w", err)
+		s.event.Warning(kcpKyma, syncFailure, err)
 		return err
 	}
 
-	syncStatus(&kcpKyma.Status, &remoteKyma.Status)
-	if err := s.Client.Status().Update(ctx, remoteKyma); err != nil {
-		err = fmt.Errorf("failed to update runtime kyma status: %w", err)
-		s.event.Warning(kcpKyma, statusUpdateFailure, err)
+	syncStatus(&kcpKyma.Status, &skrKyma.Status)
+	if err := s.Client.Status().Update(ctx, skrKyma); err != nil {
+		err = fmt.Errorf("failed to synchronise Kyma status to SKR: %w", err)
+		s.event.Warning(kcpKyma, statusSyncFailure, err)
 		return err
 	}
+
 	return nil
 }
 
