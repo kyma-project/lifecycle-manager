@@ -161,7 +161,7 @@ func (s *SkrContext) CreateOrFetchKyma(
 	return remoteKyma, nil
 }
 
-// SynchronizeKyma synchronizes the the SKR Kyma CR.
+// SynchronizeKyma synchronizes the SKR Kyma CR.
 // It sets the required labels and annotations.
 func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
 	if !skrKyma.GetDeletionTimestamp().IsZero() {

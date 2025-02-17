@@ -406,7 +406,7 @@ type clientStub struct {
 	called bool
 }
 
-func (c *clientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (c *clientStub) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 	c.called = true
 	return c.err
 }
