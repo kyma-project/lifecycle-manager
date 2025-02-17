@@ -11,6 +11,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -23,13 +24,15 @@ import (
 
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
+var forceOwnership = true
+
 const (
 	fieldManager = "kyma-sync-context"
 
-	crdInstallation    event.Reason = "CRDInstallation"
-	remoteInstallation event.Reason = "RemoteInstallation"
-	syncFailure        event.Reason = "Synchronization"
-	statusSyncFailure  event.Reason = "StatusSynchronization"
+	crdInstallation     event.Reason = "CRDInstallation"
+	remoteInstallation  event.Reason = "RemoteInstallation"
+	metadataSyncFailure event.Reason = "MetadataSynchronization"
+	statusSyncFailure   event.Reason = "StatusSynchronization"
 )
 
 type SkrContext struct {
@@ -161,9 +164,9 @@ func (s *SkrContext) CreateOrFetchKyma(
 	return remoteKyma, nil
 }
 
-// SynchronizeKyma synchronizes the SKR Kyma CR.
+// SynchronizeKymaMetadata synchronizes the metadata to the SKR Kyma CR .
 // It sets the required labels and annotations.
-func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
+func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
 	if !skrKyma.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
@@ -173,9 +176,19 @@ func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, skrKyma *v1be
 		return nil
 	}
 
-	if err := s.Client.Update(ctx, skrKyma); err != nil {
-		err = fmt.Errorf("failed to synchronise Kyma to SKR: %w", err)
-		s.event.Warning(kcpKyma, syncFailure, err)
+	metadataToSync := &unstructured.Unstructured{}
+	metadataToSync.SetName(skrKyma.GetName())
+	metadataToSync.SetNamespace(skrKyma.GetNamespace())
+	metadataToSync.SetGroupVersionKind(kcpKyma.GroupVersionKind()) // use KCP GVK as SKR GVK may not be available
+	metadataToSync.SetLabels(skrKyma.GetLabels())
+	metadataToSync.SetAnnotations(skrKyma.GetAnnotations())
+
+	if err := s.Client.Patch(ctx,
+		metadataToSync,
+		client.Apply,
+		&client.PatchOptions{FieldManager: fieldManager, Force: &forceOwnership}); err != nil {
+		err = fmt.Errorf("failed to synchronise Kyma metadata to SKR: %w", err)
+		s.event.Warning(kcpKyma, metadataSyncFailure, err)
 		return err
 	}
 
