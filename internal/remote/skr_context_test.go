@@ -270,14 +270,12 @@ func Test_syncStatus_RemovesManifestReference(t *testing.T) {
 	syncStatus(kcpStatus, skrStatus)
 
 	for _, module := range skrStatus.Modules {
-		if module.Manifest == nil {
-			continue
-		}
 		assert.Nil(t, module.Manifest)
 	}
 
 	assert.NotNil(t, kcpStatus.Modules[0].Manifest)
 	assert.NotNil(t, kcpStatus.Modules[1].Manifest)
+	assert.Nil(t, kcpStatus.Modules[2].Manifest)
 }
 
 func Test_syncWatcherLabelsAnnotations_AddsLabelsAndAnnotations(t *testing.T) {

@@ -24,8 +24,6 @@ import (
 
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
-var forceOwnership = true
-
 const (
 	fieldManager = "kyma-sync-context"
 
@@ -183,11 +181,11 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 	metadataToSync.SetLabels(skrKyma.GetLabels())
 	metadataToSync.SetAnnotations(skrKyma.GetAnnotations())
 
+	forceOwnership := true
 	err := s.Client.Patch(ctx,
 		metadataToSync,
 		client.Apply,
 		&client.PatchOptions{FieldManager: fieldManager, Force: &forceOwnership})
-
 	if err != nil {
 		err = fmt.Errorf("failed to synchronise Kyma metadata to SKR: %w", err)
 		s.event.Warning(kcpKyma, metadataSyncFailure, err)
