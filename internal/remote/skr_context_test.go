@@ -1,4 +1,4 @@
-package remote
+package remote //nolint:testpackage // testing package internals
 
 import (
 	"testing"
