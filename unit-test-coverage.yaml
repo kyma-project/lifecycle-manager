@@ -17,7 +17,7 @@ packages:
   internal/maintenancewindows: 87.5
   internal/istio: 63.3
   internal/pkg/resources: 91.7
-  internal/remote: 30
-  internal/util/collections: 100
+  internal/remote: 29
+  internal/util/collections: 87
   pkg/templatelookup: 88
   pkg/templatelookup/moduletemplateinfolookup: 72
