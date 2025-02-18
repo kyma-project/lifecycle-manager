@@ -90,7 +90,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	if err := c.managedFieldsCollector().Emit(ctx); err != nil {
-		logger.V(internal.DebugLogLevel).Error(err, "error emitting unknown managed fields data")
+		logger.V(internal.DebugLogLevel).Error(err, "error emitting data of unknown field managers")
 	}
 	return nil
 }
