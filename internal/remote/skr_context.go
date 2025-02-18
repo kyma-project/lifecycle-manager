@@ -237,19 +237,19 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 // syncWatcherLabelsAnnotations adds required labels and annotations to the skrKyma.
 // It returns true if any of the labels or annotations were changed.
 func syncWatcherLabelsAnnotations(kcpKyma, skrKyma *v1beta2.Kyma) bool {
-	labels, changeLabels := collections.MergeMaps(skrKyma.Labels, map[string]string{
+	labels, labelsChanged := collections.MergeMaps(skrKyma.Labels, map[string]string{
 		shared.WatchedByLabel: shared.WatchedByLabelValue,
 		shared.ManagedBy:      shared.ManagedByLabelValue,
 	})
 	skrKyma.Labels = labels
 
-	annotations, changeAnnotations := collections.MergeMaps(skrKyma.Annotations, map[string]string{
+	annotations, annotationsChanged := collections.MergeMaps(skrKyma.Annotations, map[string]string{
 		shared.OwnedByAnnotation: fmt.Sprintf(shared.OwnedByFormat,
 			kcpKyma.GetNamespace(), kcpKyma.GetName()),
 	})
 	skrKyma.Annotations = annotations
 
-	return changeLabels || changeAnnotations
+	return labelsChanged || annotationsChanged
 }
 
 // syncStatus copies the Kyma status and transofrms it from KCP perspective to SKR perspective.
