@@ -19,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -236,35 +237,19 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 // syncWatcherLabelsAnnotations adds required labels and annotations to the skrKyma.
 // It returns true if any of the labels or annotations were changed.
 func syncWatcherLabelsAnnotations(kcpKyma, skrKyma *v1beta2.Kyma) bool {
-	labels, changeLabels := addEntriesToMap(skrKyma.Labels, map[string]string{
+	labels, changeLabels := collections.MergeMaps(skrKyma.Labels, map[string]string{
 		shared.WatchedByLabel: shared.WatchedByLabelValue,
 		shared.ManagedBy:      shared.ManagedByLabelValue,
 	})
 	skrKyma.Labels = labels
 
-	annotations, changeAnnotations := addEntriesToMap(skrKyma.Annotations, map[string]string{
+	annotations, changeAnnotations := collections.MergeMaps(skrKyma.Annotations, map[string]string{
 		shared.OwnedByAnnotation: fmt.Sprintf(shared.OwnedByFormat,
 			kcpKyma.GetNamespace(), kcpKyma.GetName()),
 	})
 	skrKyma.Annotations = annotations
 
 	return changeLabels || changeAnnotations
-}
-
-func addEntriesToMap(map1, map2 map[string]string) (map[string]string, bool) {
-	changed := false
-	if map1 == nil {
-		map1 = make(map[string]string)
-	}
-
-	for k, v := range map2 {
-		if map1[k] != v {
-			map1[k] = v
-			changed = true
-		}
-	}
-
-	return map1, changed
 }
 
 // syncStatus copies the Kyma status and transofrms it from KCP perspective to SKR perspective.
