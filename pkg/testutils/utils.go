@@ -180,3 +180,17 @@ func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstruc
 	}
 	return resources, nil
 }
+
+func PatchServiceToTypeLoadBalancer(ctx context.Context, clnt client.Client, serviceName, namespace string) error {
+	service := &apicorev1.Service{}
+	if err := clnt.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, service); err != nil {
+		return err
+	}
+
+	service.Spec.Type = apicorev1.ServiceTypeLoadBalancer
+	if err := clnt.Update(ctx, service); err != nil {
+		return err
+	}
+
+	return nil
+}
