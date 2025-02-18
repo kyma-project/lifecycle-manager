@@ -11,6 +11,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -18,16 +19,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 
 const (
+	fieldManager = "kyma-sync-context"
+
 	crdInstallation     event.Reason = "CRDInstallation"
 	remoteInstallation  event.Reason = "RemoteInstallation"
-	remoteUpdateFailure event.Reason = "RemoteSynchronization"
-	statusUpdateFailure event.Reason = "UpdateRuntimeStatus"
+	metadataSyncFailure event.Reason = "MetadataSynchronization"
+	statusSyncFailure   event.Reason = "StatusSynchronization"
 )
 
 type SkrContext struct {
@@ -92,7 +96,7 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
-	patchOpts := &client.PatchOptions{Force: &force, FieldManager: "kyma-sync-context"}
+	patchOpts := &client.PatchOptions{Force: &force, FieldManager: fieldManager}
 	if err := s.Client.Patch(ctx, namespace, patch, patchOpts); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
@@ -159,24 +163,52 @@ func (s *SkrContext) CreateOrFetchKyma(
 	return remoteKyma, nil
 }
 
-func (s *SkrContext) SynchronizeKyma(ctx context.Context, kcpKyma, remoteKyma *v1beta2.Kyma) error {
-	if !remoteKyma.GetDeletionTimestamp().IsZero() {
+// SynchronizeKymaMetadata synchronizes the metadata to the SKR Kyma CR .
+// It sets the required labels and annotations.
+func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
+	if !skrKyma.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
 
-	s.syncWatcherLabelsAnnotations(kcpKyma, remoteKyma)
-	if err := s.Client.Update(ctx, remoteKyma); err != nil {
-		err = fmt.Errorf("failed to synchronise runtime kyma: %w", err)
-		s.event.Warning(kcpKyma, remoteUpdateFailure, err)
+	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+	if !changed {
+		return nil
+	}
+
+	metadataToSync := &unstructured.Unstructured{}
+	metadataToSync.SetName(skrKyma.GetName())
+	metadataToSync.SetNamespace(skrKyma.GetNamespace())
+	metadataToSync.SetGroupVersionKind(kcpKyma.GroupVersionKind()) // use KCP GVK as SKR GVK may not be available
+	metadataToSync.SetLabels(skrKyma.GetLabels())
+	metadataToSync.SetAnnotations(skrKyma.GetAnnotations())
+
+	forceOwnership := true
+	err := s.Client.Patch(ctx,
+		metadataToSync,
+		client.Apply,
+		&client.PatchOptions{FieldManager: fieldManager, Force: &forceOwnership})
+	if err != nil {
+		err = fmt.Errorf("failed to synchronise Kyma metadata to SKR: %w", err)
+		s.event.Warning(kcpKyma, metadataSyncFailure, err)
 		return err
 	}
 
-	syncStatus(&kcpKyma.Status, &remoteKyma.Status)
-	if err := s.Client.Status().Update(ctx, remoteKyma); err != nil {
-		err = fmt.Errorf("failed to update runtime kyma status: %w", err)
-		s.event.Warning(kcpKyma, statusUpdateFailure, err)
+	return nil
+}
+
+// SynchronizeKymaStatus synchronizes the status to the SKR Kyma CR.
+func (s *SkrContext) SynchronizeKymaStatus(ctx context.Context, kcpKyma, skrKyma *v1beta2.Kyma) error {
+	if !skrKyma.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
+
+	syncStatus(&kcpKyma.Status, &skrKyma.Status)
+	if err := s.Client.Status().Update(ctx, skrKyma); err != nil {
+		err = fmt.Errorf("failed to synchronise Kyma status to SKR: %w", err)
+		s.event.Warning(kcpKyma, statusSyncFailure, err)
 		return err
 	}
+
 	return nil
 }
 
@@ -202,21 +234,22 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 	return skrKyma, nil
 }
 
-// syncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
-// a working e2e-flow for the runtime-watcher.
-func (s *SkrContext) syncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
-	if remoteKyma.Labels == nil {
-		remoteKyma.Labels = make(map[string]string)
-	}
+// syncWatcherLabelsAnnotations adds required labels and annotations to the skrKyma.
+// It returns true if any of the labels or annotations were changed.
+func syncWatcherLabelsAnnotations(kcpKyma, skrKyma *v1beta2.Kyma) bool {
+	labels, labelsChanged := collections.MergeMaps(skrKyma.Labels, map[string]string{
+		shared.WatchedByLabel: shared.WatchedByLabelValue,
+		shared.ManagedBy:      shared.ManagedByLabelValue,
+	})
+	skrKyma.Labels = labels
 
-	remoteKyma.Labels[shared.WatchedByLabel] = shared.WatchedByLabelValue
-	remoteKyma.Labels[shared.ManagedBy] = shared.ManagedByLabelValue
+	annotations, annotationsChanged := collections.MergeMaps(skrKyma.Annotations, map[string]string{
+		shared.OwnedByAnnotation: fmt.Sprintf(shared.OwnedByFormat,
+			kcpKyma.GetNamespace(), kcpKyma.GetName()),
+	})
+	skrKyma.Annotations = annotations
 
-	if remoteKyma.Annotations == nil {
-		remoteKyma.Annotations = make(map[string]string)
-	}
-	remoteKyma.Annotations[shared.OwnedByAnnotation] = fmt.Sprintf(shared.OwnedByFormat,
-		controlPlaneKyma.GetNamespace(), controlPlaneKyma.GetName())
+	return labelsChanged || annotationsChanged
 }
 
 // syncStatus copies the Kyma status and transofrms it from KCP perspective to SKR perspective.
