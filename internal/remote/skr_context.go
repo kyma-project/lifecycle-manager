@@ -293,3 +293,30 @@ func removeManifestReference(status *v1beta2.KymaStatus) {
 		status.Modules[i].Manifest = nil
 	}
 }
+
+// syncStatus copies the Kyma status and transofrms it from KCP perspective to SKR perspective.
+// E.g., it removes manifest references or changes namespaces.
+func syncStatus(kcpStatus, skrStatus *v1beta2.KymaStatus) {
+	*skrStatus = *kcpStatus.DeepCopy()
+
+	useRemoteNamespaceForModuleTemplates(skrStatus)
+	removeManifestReference(skrStatus)
+}
+
+func useRemoteNamespaceForModuleTemplates(status *v1beta2.KymaStatus) {
+	for i := range status.Modules {
+		if status.Modules[i].Template == nil {
+			continue
+		}
+		status.Modules[i].Template.Namespace = shared.DefaultRemoteNamespace
+	}
+}
+
+func removeManifestReference(status *v1beta2.KymaStatus) {
+	for i := range status.Modules {
+		if status.Modules[i].Manifest == nil {
+			continue
+		}
+		status.Modules[i].Manifest = nil
+	}
+}
