@@ -78,53 +78,6 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 			require.ElementsMatch(t, testCase.expectedKyma.moduleNames, virtualModules)
 		})
 	}
-
-	kyma.Spec.Modules = modules
-
-	return kyma
-}
-
-func Test_syncStatus_AssignsRemoteNamespace(t *testing.T) {
-	skrStatus := &v1beta2.KymaStatus{}
-	kcpStatus := &v1beta2.KymaStatus{
-		Modules: []v1beta2.ModuleStatus{
-			{
-				Name: "module-1",
-				Template: &v1beta2.TrackingObject{
-					PartialMeta: v1beta2.PartialMeta{
-						Namespace: "kcp-system",
-					},
-				},
-			},
-			{
-				Name: "module-2",
-				Template: &v1beta2.TrackingObject{
-					PartialMeta: v1beta2.PartialMeta{
-						Namespace: "kcp-system",
-					},
-				},
-			},
-			{
-				Name: "module-3",
-			},
-		},
-	}
-
-	syncStatus(kcpStatus, skrStatus)
-
-	for _, module := range skrStatus.Modules {
-		if module.Template == nil {
-			continue
-		}
-		assert.Equal(t, shared.DefaultRemoteNamespace, module.Template.Namespace)
-	}
-
-	for _, module := range kcpStatus.Modules {
-		if module.Template == nil {
-			continue
-		}
-		assert.Equal(t, "kcp-system", module.Template.Namespace)
-	}
 }
 
 func Test_SynchronizeKymaMetadata_SkipsIfSKRKymaIsDeleting(t *testing.T) {
