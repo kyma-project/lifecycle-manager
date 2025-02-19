@@ -105,7 +105,8 @@ func (h *Handler) requiresCertSwitching(gwSecret *apicorev1.Secret) bool {
 }
 
 func (h *Handler) bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret,
-	caCert *certmanagerv1.Certificate) {
+	caCert *certmanagerv1.Certificate,
+) {
 	if gwSecret.Annotations[CurrentCAExpirationAnnotation] == "" {
 		setCurrentCAExpiration(gwSecret, caCert)
 	}
