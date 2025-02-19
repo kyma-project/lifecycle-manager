@@ -48,7 +48,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	}
 
 	// this is for the case when we switch existing secret from legacy to new rotation mechanism
-	h.bootstrapLegacyGatewaySecret(gwSecret, rootSecret, caCert)
+	bootstrapLegacyGatewaySecret(gwSecret, rootSecret, caCert)
 
 	if h.requiresBundling(gwSecret, caCert) {
 		bundleCACrt(gwSecret, rootSecret)
@@ -104,13 +104,13 @@ func (h *Handler) requiresCertSwitching(gwSecret *apicorev1.Secret) bool {
 	return err != nil || time.Now().After(caExpirationTime.Add(-h.switchCertBeforeExpirationTime))
 }
 
-func (h *Handler) bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret,
+func bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret,
 	caCert *certmanagerv1.Certificate,
 ) {
 	if gwSecret.Annotations[CurrentCAExpirationAnnotation] == "" {
 		setCurrentCAExpiration(gwSecret, caCert)
 	}
-	if gwSecret.Data[caBundleTempCertKey] == nil {
+	if _, ok := gwSecret.Data[caBundleTempCertKey]; !ok {
 		gwSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
 	}
 }
