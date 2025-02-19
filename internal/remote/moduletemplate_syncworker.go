@@ -114,7 +114,7 @@ func prepareModuleTemplateForSSA(moduleTemplate *v1beta2.ModuleTemplate, namespa
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
-	moduleTemplate.SetLabels(collections.MergeMaps(moduleTemplate.GetLabels(), map[string]string{
+	moduleTemplate.SetLabels(collections.MergeMapsSilent(moduleTemplate.GetLabels(), map[string]string{
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 
