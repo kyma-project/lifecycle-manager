@@ -129,6 +129,57 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 	mockClient.AssertNumberOfCalls(t, "CreateGatewaySecret", 1)
 }
 
+func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *testing.T) {
+	// ARRANGE
+	mockClient := &testutils.ClientMock{}
+	mockClient.On("GetWatcherServingCert", mock.Anything).Return(&certmanagerv1.Certificate{
+		Status: certmanagerv1.CertificateStatus{
+			NotBefore: &apimetav1.Time{
+				Time: time.Now().Add(-time.Hour),
+			},
+			NotAfter: &apimetav1.Time{
+				Time: time.Now().Add(2 * time.Hour),
+			},
+		},
+	}, nil)
+	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt": []byte("value1"),
+			"tls.key": []byte("value2"),
+			"ca.crt":  []byte("value3"),
+		},
+	}, nil)
+	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
+	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
+		annotation string,
+	) (time.Time, error) {
+		if annotation == shared.LastModifiedAtAnnotation {
+			return time.Now(), nil // bundling required
+		} // bundling not required
+		return time.Now().Add(2 * time.Hour), nil // cert switching not required
+	}
+	handler := cabundle.NewGatewaySecretHandler(mockClient, mockFunc, 1*time.Hour)
+	rootSecret := &apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt": []byte("value1"),
+			"tls.key": []byte("value2"),
+			"ca.crt":  []byte("value3"),
+		},
+	}
+
+	// ACT
+	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+
+	// ASSERT
+	require.NoError(t, err)
+	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
+	mockClient.AssertCalled(t, "UpdateGatewaySecret", mock.Anything, mock.MatchedBy(
+		func(secret *apicorev1.Secret) bool {
+			return secret.Annotations[cabundle.CurrentCAExpirationAnnotation] != "" &&
+				string(secret.Data["temp.ca.crt"]) == "value3"
+		}))
+}
+
 func TestManageGatewaySecret_WhenRequiresBundling_BundlesGatewaySecretWithRootSecretCA(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}

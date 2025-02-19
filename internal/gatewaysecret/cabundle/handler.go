@@ -15,7 +15,7 @@ import (
 
 const (
 	caBundleTempCertKey           = "temp.ca.crt"
-	currentCAExpirationAnnotation = "currentCAExpiration"
+	CurrentCAExpirationAnnotation = "currentCAExpiration"
 )
 
 type Handler struct {
@@ -46,6 +46,9 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	} else if err != nil {
 		return err
 	}
+
+	// this is for the case when we switch existing secret from legacy to new rotation mechanism
+	h.bootstrapLegacyGatewaySecret(gwSecret, rootSecret, caCert)
 
 	if h.requiresBundling(gwSecret, caCert) {
 		bundleCACrt(gwSecret, rootSecret)
@@ -97,8 +100,18 @@ func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, caCert *certmanag
 
 func (h *Handler) requiresCertSwitching(gwSecret *apicorev1.Secret) bool {
 	// If the current CA is about to expire, then we need to switch the certificate and private key
-	caExpirationTime, err := h.parseLastModifiedTime(gwSecret, currentCAExpirationAnnotation)
+	caExpirationTime, err := h.parseLastModifiedTime(gwSecret, CurrentCAExpirationAnnotation)
 	return err != nil || time.Now().After(caExpirationTime.Add(-h.switchCertBeforeExpirationTime))
+}
+
+func (h *Handler) bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret,
+	caCert *certmanagerv1.Certificate) {
+	if gwSecret.Annotations[CurrentCAExpirationAnnotation] == "" {
+		setCurrentCAExpiration(gwSecret, caCert)
+	}
+	if gwSecret.Data[caBundleTempCertKey] == nil {
+		gwSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
+	}
 }
 
 func setLastModifiedToNow(secret *apicorev1.Secret) {
@@ -113,7 +126,7 @@ func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Cert
 		secret.Annotations = make(map[string]string)
 	}
 	if caCert.Status.NotAfter != nil {
-		secret.Annotations[currentCAExpirationAnnotation] = caCert.Status.NotAfter.Time.Format(time.RFC3339)
+		secret.Annotations[CurrentCAExpirationAnnotation] = caCert.Status.NotAfter.Time.Format(time.RFC3339)
 	}
 }
 
