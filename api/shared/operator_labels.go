@@ -47,8 +47,7 @@ const (
 	GlobalAccountIDLabel = KymaGroup + Separator + "global-account-id"
 	RegionLabel          = KymaGroup + Separator + "region"
 	PlatformRegionLabel  = KymaGroup + Separator + "platform-region"
-	// to be confirmed https://github.com/kyma-project/kyma/issues/18611#issuecomment-2441158676
-	PlanLabel = KymaGroup + Separator + "broker-plan-name"
+	PlanLabel            = KymaGroup + Separator + "broker-plan-name"
 
 	EnableLabelValue  = "true"
 	DisableLabelValue = "false"
