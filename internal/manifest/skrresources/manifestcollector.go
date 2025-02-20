@@ -16,9 +16,15 @@ type ManifestLogCollector struct {
 }
 
 func NewManifestLogCollector(manifest *v1beta2.Manifest, owner client.FieldOwner) *ManifestLogCollector {
+	key := ""
+	enabled := false
+	if manifest != nil {
+		key = string(manifest.GetUID())
+		enabled = isManifestCollectionEnabled(manifest)
+	}
 	return &ManifestLogCollector{
-		collector: NewLogCollector(string(manifest.GetUID()), manifestclient.DefaultFieldOwner),
-		enabled:   isManifestCollectionEnabled(manifest),
+		collector: NewLogCollector(key, manifestclient.DefaultFieldOwner),
+		enabled:   enabled,
 	}
 }
 
