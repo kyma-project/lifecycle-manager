@@ -44,17 +44,18 @@ func (c *ManifestLogCollector) Emit(ctx context.Context) error {
 }
 
 // isCollectionEnabled checks if managed fields detection is enabled for the given manifest.
-// The detection is enabled by default, but can be controlled by setting a specific label on the manifest CR.
+// The detection is disabled by default, but can be enabled by setting a specific label on the manifest CR.
 func isManifestCollectionEnabled(obj *v1beta2.Manifest) bool {
 	if obj == nil {
 		return false
 	}
 
-	detectionLabelName := getManagedFieldsAnalysisLabel()
-	if detectionLabelName == "" {
-		return true
+	configuredLabelName := getManagedFieldsAnalysisLabel()
+
+	if configuredLabelName == "" {
+		return false
 	}
 
-	_, found := obj.GetLabels()[detectionLabelName]
+	_, found := obj.GetLabels()[configuredLabelName]
 	return found
 }
