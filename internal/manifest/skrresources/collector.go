@@ -51,9 +51,9 @@ type LogCollectorEntry struct {
 	ManagedFields   []apimetav1.ManagedFieldsEntry `json:"managedFields"`
 }
 
-// Implements ManagedFieldsCollector interface, emits the collected data to the log stream.
+// Implements skrresources.ManagedFieldsCollector interface, emits the collected data to the log stream.
 // The collector is thread-safe.
-// The collector is frequency-limited to prevent emitting entries for the same objectKey multiple times in a short period.
+// The collector is frequency-limited to prevent emitting entries for the same objectKey multiple times in a short time.
 type LogCollector struct {
 	objectKey        string
 	frequencyLimiter *ttlcache.Cache[string, bool]
@@ -178,23 +178,13 @@ func getFrequencyLimiterTTL() int {
 }
 
 func newFrequencyLimiter() *ttlcache.Cache[string, bool] {
-	cache := ttlcache.New[string, bool](ttlcache.WithTTL[string, bool](time.Duration(getFrequencyLimiterTTL()) * time.Second))
+	cache := ttlcache.New(ttlcache.WithTTL[string, bool](time.Duration(getFrequencyLimiterTTL()) * time.Second))
 	go cache.Start()
 	return cache
 }
 
 func splitBySemicolons(value string) []string {
 	return strings.Split(value, ";")
-}
-
-// Implements ManagedFieldsCollector interface, does nothing.
-type nopCollector struct{}
-
-func (c nopCollector) Collect(ctx context.Context, obj client.Object) {
-}
-
-func (c nopCollector) Emit(ctx context.Context) error {
-	return nil
 }
 
 func getManagedFieldsAnalysisLabel() string {

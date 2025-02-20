@@ -19,10 +19,7 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	var managedFieldsCollector ManagedFieldsCollector
-	if managedFieldsAnalysisEnabledFor(manifest) {
-		managedFieldsCollector = NewLogCollector(string(manifest.GetUID()), manifestclient.DefaultFieldOwner)
-	}
+	managedFieldsCollector := NewManifestLogCollector(manifest, manifestclient.DefaultFieldOwner)
 
 	if err := ConcurrentSSA(skrClient, manifestclient.DefaultFieldOwner, managedFieldsCollector).Run(ctx, target); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
@@ -63,16 +60,4 @@ func HasDiff(oldResources []shared.Resource, newResources []shared.Resource) boo
 		}
 	}
 	return false
-}
-
-// managedFieldsAnalysisEnabledFor checks if managed fields detection is enabled for the given manifest.
-// The detection is enabled by default, but can be controlled by setting a specific label on the manifest CR.
-func managedFieldsAnalysisEnabledFor(obj *v1beta2.Manifest) bool {
-	detectionLabelName := getManagedFieldsAnalysisLabel()
-	if detectionLabelName == "" {
-		return true
-	}
-
-	_, found := obj.GetLabels()[detectionLabelName]
-	return found
 }

@@ -51,15 +51,6 @@ func ConcurrentSSA(clnt client.Client, owner client.FieldOwner, managedFieldsCol
 	}
 }
 
-//nolint:ireturn // interface return is required here
-func (c *ConcurrentDefaultSSA) managedFieldsCollector() ManagedFieldsCollector {
-	if c.collector != nil {
-		return c.collector
-	}
-
-	return nopCollector{}
-}
-
 func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.Info) error {
 	ssaStart := time.Now()
 	logger := logf.FromContext(ctx, "owner", c.owner)
@@ -89,7 +80,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
-	if err := c.managedFieldsCollector().Emit(ctx); err != nil {
+	if err := c.collector.Emit(ctx); err != nil {
 		logger.V(internal.DebugLogLevel).Error(err, "error emitting data of unknown field managers")
 	}
 	return nil
@@ -145,7 +136,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 		)
 	}
 
-	c.managedFieldsCollector().Collect(ctx, obj)
+	c.collector.Collect(ctx, obj)
 	return nil
 }
 
