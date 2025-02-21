@@ -67,3 +67,105 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.ModuleTemplate.Spec.Version)
 	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
 }
+
+func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplatesFound(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(&v1beta2.ModuleTemplateList{
+		Items: []v1beta2.ModuleTemplate{},
+	}))
+
+	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.NotNil(t, moduleTemplateInfo.Err)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"no templates were found: for module test-module in channel regular")
+}
+
+func Test_ByChannelStrategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-regular").
+		WithModuleName("test-module").
+		WithVersion("").
+		WithChannel("regular").
+		Build()
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-regular-2").
+		WithModuleName("test-module").
+		WithVersion("").
+		WithChannel("regular").
+		Build()
+	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*firstModuleTemplate,
+				*secondModuleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"no unique template could be identified: more than one module template found for module: test-module, candidates: [test-module-regular test-module-regular-2]")
+}
+
+func Test_ByChannelStrategy_Lookup_WhenModuleTemplateHasNoChannel(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-regular").
+		WithModuleName("test-module").
+		WithVersion("").
+		Build()
+	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"no templates were found: for module test-module in channel regular")
+}
+
+func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-regular").
+		WithModuleName("test-module").
+		WithChannel("regular").
+		WithMandatory(true).
+		WithVersion("").
+		Build()
+	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"template marked as mandatory: for module test-module in channel regular")
+}
