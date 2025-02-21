@@ -2,6 +2,7 @@ package cabundle
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -13,6 +14,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+var ErrCACertificateNotReady = errors.New("watcher-serving ca certificate is not ready")
+
 const (
 	caBundleTempCertKey           = "temp.ca.crt"
 	CurrentCAExpirationAnnotation = "currentCAExpiration"
@@ -20,7 +23,7 @@ const (
 
 type Handler struct {
 	client                         gatewaysecret.Client
-	parseLastModifiedTime          gatewaysecret.TimeParserFunc
+	parseTimeFromAnnotationFunc    gatewaysecret.TimeParserFunc
 	switchCertBeforeExpirationTime time.Duration
 }
 
@@ -29,7 +32,7 @@ func NewGatewaySecretHandler(client gatewaysecret.Client, timeParserFunc gateway
 ) *Handler {
 	return &Handler{
 		client:                         client,
-		parseLastModifiedTime:          timeParserFunc,
+		parseTimeFromAnnotationFunc:    timeParserFunc,
 		switchCertBeforeExpirationTime: switchCertBeforeExpirationTime,
 	}
 }
@@ -38,6 +41,9 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	caCert, err := h.client.GetWatcherServingCert(ctx)
 	if err != nil {
 		return err
+	}
+	if caCert.Status.NotBefore == nil || caCert.Status.NotAfter == nil {
+		return ErrCACertificateNotReady
 	}
 
 	gwSecret, err := h.client.GetGatewaySecret(ctx)
@@ -90,7 +96,7 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, caCert *certmanagerv1.Certificate) bool {
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
-	if lastModified, err := h.parseLastModifiedTime(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
+	if lastModified, err := h.parseTimeFromAnnotationFunc(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
 		if caCert.Status.NotBefore != nil && lastModified.After(caCert.Status.NotBefore.Time) {
 			return false
 		}
@@ -100,7 +106,7 @@ func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, caCert *certmanag
 
 func (h *Handler) requiresCertSwitching(gwSecret *apicorev1.Secret) bool {
 	// If the current CA is about to expire, then we need to switch the certificate and private key
-	caExpirationTime, err := h.parseLastModifiedTime(gwSecret, CurrentCAExpirationAnnotation)
+	caExpirationTime, err := h.parseTimeFromAnnotationFunc(gwSecret, CurrentCAExpirationAnnotation)
 	return err != nil || time.Now().After(caExpirationTime.Add(-h.switchCertBeforeExpirationTime))
 }
 
@@ -132,9 +138,10 @@ func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Cert
 }
 
 func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
-	//nolint:gocritic // we need to append the new CA cert to the existing CA cert
-	gatewaySecret.Data[gatewaysecret.CACrt] = append(rootSecret.Data[gatewaysecret.CACrt],
+	gatewaySecret.Data[gatewaysecret.CACrt] = append([]byte{}, rootSecret.Data[gatewaysecret.CACrt]...)
+	gatewaySecret.Data[gatewaysecret.CACrt] = append(gatewaySecret.Data[gatewaysecret.CACrt],
 		gatewaySecret.Data[caBundleTempCertKey]...)
+
 	gatewaySecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
 }
 
