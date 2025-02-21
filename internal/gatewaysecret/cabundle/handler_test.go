@@ -168,6 +168,7 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 		}))
 }
 
+//nolint:dupl // the tests may contain similar code but they test different scenarios
 func TestManageGatewaySecret_WhenRequiresBundling_BundlesGatewaySecretWithRootSecretCA(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
@@ -240,6 +241,7 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 }
 
+//nolint:dupl // the tests may contain similar code but they test different scenarios
 func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWithRootSecret(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}

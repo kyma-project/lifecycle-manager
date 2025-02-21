@@ -3,6 +3,7 @@ package cabundle
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -138,7 +139,7 @@ func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Cert
 }
 
 func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
-	gatewaySecret.Data[gatewaysecret.CACrt] = append([]byte{}, rootSecret.Data[gatewaysecret.CACrt]...)
+	gatewaySecret.Data[gatewaysecret.CACrt] = slices.Clone(rootSecret.Data[gatewaysecret.CACrt])
 	gatewaySecret.Data[gatewaysecret.CACrt] = append(gatewaySecret.Data[gatewaysecret.CACrt],
 		gatewaySecret.Data[caBundleTempCertKey]...)
 
