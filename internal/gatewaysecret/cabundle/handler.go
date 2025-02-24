@@ -98,7 +98,7 @@ func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, caCert *certmanag
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
 	if lastModified, err := h.parseTimeFromAnnotationFunc(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
-		if caCert.Status.NotBefore != nil && lastModified.After(caCert.Status.NotBefore.Time) {
+		if lastModified.After(caCert.Status.NotBefore.Time) {
 			return false
 		}
 	}
@@ -133,9 +133,7 @@ func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Cert
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
-	if caCert.Status.NotAfter != nil {
-		secret.Annotations[CurrentCAExpirationAnnotation] = caCert.Status.NotAfter.Time.Format(time.RFC3339)
-	}
+	secret.Annotations[CurrentCAExpirationAnnotation] = caCert.Status.NotAfter.Time.Format(time.RFC3339)
 }
 
 func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
