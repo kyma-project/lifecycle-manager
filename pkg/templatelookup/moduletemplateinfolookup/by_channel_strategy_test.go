@@ -80,7 +80,6 @@ func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplatesFound(t *testing.T) {
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.NotNil(t, moduleTemplateInfo.Err)
 	assert.ErrorContains(t, moduleTemplateInfo.Err,
 		"no templates were found: for module test-module in channel regular")
 }
