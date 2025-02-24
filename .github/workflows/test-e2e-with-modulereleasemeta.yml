@@ -54,8 +54,7 @@ jobs:
           - modulereleasemeta-module-upgrade-new-version
           - unmanage-module
           - skip-manifest-reconciliation
-          - ca-certificate-rotation
-          - istio-gateway-secret-rotation
+          - legacy-istio-gateway-secret-rotation
           - self-signed-certificate-rotation
           - mandatory-module
           - mandatory-module-metrics
@@ -70,6 +69,7 @@ jobs:
           - maintenance-windows
           - maintenance-windows-initial-installation
           - maintenance-windows-skip
+          - watcher-zero-downtime
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
