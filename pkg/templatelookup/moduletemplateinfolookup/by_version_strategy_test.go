@@ -69,6 +69,87 @@ func Test_ByVersion_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
 }
 
+func Test_ByVersion_Strategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithVersion("1.0.0").Enabled().Build()
+	var kyma *v1beta2.Kyma = nil
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-1.0.0").
+		WithModuleName("test-module").
+		WithVersion("1.0.0").
+		WithChannel("none").
+		Build()
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-1.0.0-duplicate").
+		WithModuleName("test-module").
+		WithVersion("1.0.0").
+		WithChannel("none").
+		Build()
+
+	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*firstModuleTemplate,
+				*secondModuleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"no unique template could be identified: more than one module template found for module: test-module, candidates: [test-module-1.0.0 test-module-1.0.0-duplicate]")
+}
+
+func Test_ByVersion_Strategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithVersion("1.0.0").Enabled().Build()
+	var kyma *v1beta2.Kyma = nil
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+
+	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{},
+		},
+	))
+
+	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"no templates were found: for module test-module in version 1.0.0")
+}
+
+func Test_ByVersion_Strategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithVersion("1.0.0").Enabled().Build()
+	var kyma *v1beta2.Kyma = nil
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-1.0.0").
+		WithModuleName("test-module").
+		WithVersion("1.0.0").
+		WithChannel("none").
+		WithMandatory(true).
+		Build()
+
+	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"template marked as mandatory: for module test-module in version 1.0.0")
+}
+
 type moduleInfoBuilder struct {
 	moduleInfo *templatelookup.ModuleInfo
 }
