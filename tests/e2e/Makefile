@@ -23,8 +23,9 @@ $(LOCALBIN):
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
-SHELL = /usr/bin/env bash -o pipefail
-.SHELLFLAGS = -ec
+.ONESHELL:
+SHELL = /bin/bash
+.SHELLFLAGS = -o pipefail -ec
 
 # Ginkgo binary metadata.
 GINKGO ?= $(LOCALBIN)/ginkgo
@@ -65,112 +66,50 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 			sed -r 's/(By|Context|Describe|It) (Given|When|Then|And|Describe)/\2/' ; \
     done
 
+## Utility
+
+LIFECYCLE_MANAGER_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../../)
+TEMPLATE_OPERATOR_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/../kyma-template-operator/)
+SCRIPTS_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/scripts/tests/)
+
+define setup-clusters
+	@$(SCRIPTS_DIR)/create_test_clusters.sh --k8s-version 1.30.3 --cert-manager-version 1.13.3
+	@$(SCRIPTS_DIR)/setup_cluster_context.sh
+endef
+
+define setup-klm
+	@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry prod --image-tag latest
+	@$(SCRIPTS_DIR)/patch_kcp_metrics_endpoint.sh
+endef
+
+define setup-kubeconfig-var
+	if [ -z "${GITHUB_ACTIONS}" ]; then
+		export KCP_KUBECONFIG=$(shell k3d kubeconfig write kcp)
+		export SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)
+	else
+		# write to github_env var
+		echo "KCP_KUBECONFIG=$(shell k3d kubeconfig write kcp)" >> $GITHUB_ENV
+		echo "SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)" >> $GITHUB_ENV
+	fi
+endef
+
 ##@ E2E Tests
+mandatory-module-setup:
+	$(setup-clusters)
+	# Do test-specific kustomize patch here
+	$(setup-klm)
 
-kyma-deprovision-with-foreground-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
-
-kyma-deprovision-with-background-propagation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal"
-
-kyma-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manage Module Metrics"
-
-mandatory-module-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Metrics"
-
-mandatory-module-metrics-with-old-naming-pattern:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module With Old Naming Pattern Metrics"
-
-watcher-enqueue:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
-
-module-status-decoupling-with-statefulset:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Status Decoupling With StatefulSet"
-
-module-status-decoupling-with-deployment:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Status Decoupling With Deployment"
-
-module-without-default-cr:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
-
-module-consistency:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Keep Consistent After Deploy"
+	# Do test-specific module metadata creation here
+	$(SCRIPTS_DIR)/setup_https_server.sh $(TEMPLATE_OPERATOR_DIR)
+	pushd $(TEMPLATE_OPERATOR_DIR)
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 1.1.0-smoke-test template-operator-v1-controller-manager true true
+	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 2.4.1-smoke-test template-operator-v2-controller-manager true true false
+	cp ./template.yaml $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml
+	popd
 
 mandatory-module:
+	$(setup-kubeconfig-var)
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
 
-mandatory-module-with-old-naming-pattern:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module With Old Naming Pattern Installation and Deletion"
-
-non-blocking-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
-
-skip-manifest-reconciliation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Manifest Skip Reconciliation Label"
-
-upgrade-under-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
-
-modulereleasemeta-upgrade-under-deletion:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
-
-unmanage-module:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Unmanaging Kyma Module"
-
-purge-controller:
-	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
-
-purge-metrics:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
-
-module-upgrade-channel-switch:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
-
-module-upgrade-new-version:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By New Version"
-
-modulereleasemeta-module-upgrade-new-version:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module with ModuleReleaseMeta Upgrade By New Version"
-
-module-install-by-version:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Install By Version"
-
-ca-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
-
-istio-gateway-secret-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Istio Gateway Secret Rotation"
-
-self-signed-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
-
-misconfigured-kyma-secret:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Misconfigured Kyma Secret"
-
-rbac-privileges:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "RBAC Privileges"
-
-ocm-compatible-module-template:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "OCM Format Module Template"
-
-modulereleasemeta-with-obsolete-moduletemplate:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta With Obsolete ModuleTemplate"
-
-modulereleasemeta-watch-trigger:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Watch Trigger"
-  
-modulereleasemeta-sync:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Sync"
-
-module-status-on-skr-connection-lost:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma Module status on SKR connection lost"
-  
-modulereleasemeta-not-allowed-installation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Not Allowed Installation"
-
-labelling:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"
-
-modulereleasemeta-maintenance-window-with-module-downtime:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Window With ModuleReleaseMeta and Module Downtime"
+teardown:
+	# TODO

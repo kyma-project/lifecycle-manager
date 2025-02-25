@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Exit with 0 if port 8080 is already in use
+if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null; then
+  echo "Port 8080 is already in use"
+  exit 0
+fi
+
 # Variables
 DIRECTORY_TO_SERVE=$1
 
@@ -53,10 +59,14 @@ for cert in $HOME/.local/share/ca-certificates/*.crt; do
 done
 
 # Set the environment variable so that SSL/TLS libraries use the custom CA store
-echo SSL_CERT_DIR=$HOME/.local/share/ca-certificates >> $GITHUB_ENV
-echo CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt >> $GITHUB_ENV
+export SSL_CERT_DIR=$HOME/.local/share/ca-certificates
+export CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt
+
+# Add the certificate to the macOS system keychain
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $CERT_FILE
+fi
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
-go run scripts/tests/https_server.go -dir "$DIRECTORY_TO_SERVE" -certfile "$CERT_FILE" -keyfile "$KEY_FILE" -port "$PORT" &
-
+go run "$(dirname "$0")/https_server.go" -dir "$DIRECTORY_TO_SERVE" -certfile "$CERT_FILE" -keyfile "$KEY_FILE" -port "$PORT" &
