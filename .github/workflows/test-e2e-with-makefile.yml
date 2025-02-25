@@ -71,4 +71,6 @@ jobs:
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         run: |
+          echo "IMAGE_REPO=${{ steps.configuration.outputs.klm_image_repo }}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ steps.configuration.outputs.klm_version_tag }}" >> $GITHUB_ENV
           make -C tests/e2e ${{ matrix.e2e-test }}-setup ${{ matrix.e2e-test }}

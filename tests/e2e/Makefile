@@ -69,7 +69,7 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 ## Utility
 
 LIFECYCLE_MANAGER_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../../)
-TEMPLATE_OPERATOR_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/../kyma-template-operator/)
+TEMPLATE_OPERATOR_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/../template-operator/)
 SCRIPTS_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/scripts/tests/)
 
 define setup-clusters
@@ -78,7 +78,7 @@ define setup-clusters
 endef
 
 define setup-klm
-	@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry prod --image-tag latest
+	@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $(IMAGE_REPO) --image-tag $(IMAGE_TAG)
 	@$(SCRIPTS_DIR)/patch_kcp_metrics_endpoint.sh
 endef
 
@@ -113,4 +113,3 @@ mandatory-module:
 
 teardown:
 	# TODO
-  
