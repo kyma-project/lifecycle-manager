@@ -11,12 +11,12 @@ import (
 
 var _ = Describe("RBAC Privileges", func() {
 	Context("Given KCP Cluster with KLM Service Account", func() {
-		It("Then KLM Service Account has the correct ClusterRoleBindings", func() {
+		It("Then KLM Service Account has the correct number of ClusterRoleBindings", func() {
 			klmClusterRoleBindings, err := ListKlmClusterRoleBindings(kcpClient, ctx, "klm-controller-manager")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(klmClusterRoleBindings.Items).To(HaveLen(1))
 
-			By("And CRD ClusterRoleBinding has the correct PolicyRules")
+			By("And CRD ClusterRole has the correct PolicyRules")
 			crdRoleRules := []apirbacv1.PolicyRule{
 				{
 					APIGroups: []string{"apiextensions.k8s.io"},
@@ -29,15 +29,17 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"update"},
 				},
 			}
-			Expect(GetClusterRoleBindingPolicyRules(ctx, kcpClient, "klm-controller-manager-crds",
+			Expect(GetClusterRolePolicyRules(ctx, kcpClient, "klm-controller-manager-crds",
 				klmClusterRoleBindings)).To(Equal(crdRoleRules))
 
-			By("And KLM Service Account has the correct RoleBindings in kcp-system namespace")
+			By("And KLM Service Account has the correct number of RoleBindings in kcp-system namespace")
+			expectedNumberOfRoleBindings := 3
 			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(3))
+			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(expectedNumberOfRoleBindings))
 
+			By("And leader-election Role has the correct PolicyRules")
 			leaderElectionRoleRules := []apirbacv1.PolicyRule{
 				{
 					APIGroups: []string{""},
@@ -55,10 +57,13 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"create", "patch"},
 				},
 			}
-			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager-leader-election",
+			Expect(GetRoleBindingRolePolicyRules(ctx,
+				kcpClient,
+				"klm-controller-manager-leader-election",
 				"kcp-system",
 				kcpSystemKlmRoleBindings)).To(Equal(leaderElectionRoleRules))
 
+			By("And controller-manager Role has the correct PolicyRules")
 			klmManagerRoleRules := []apirbacv1.PolicyRule{
 				{
 					APIGroups: []string{""},
@@ -171,13 +176,22 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"get", "patch", "update"},
 				},
 			}
-			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, kcpClient, "klm-controller-manager",
-				kcpSystemKlmRoleBindings)).Error()
-			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager",
+			_, err = GetClusterRole(ctx, kcpClient, "klm-controller-manager")
+			Expect(err).To(HaveOccurred())
+			
+			Expect(GetRoleBindingRolePolicyRules(ctx,
+				kcpClient,
+				"klm-controller-manager",
 				"kcp-system",
 				kcpSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
 
-			By("And KLM Service Account has the correct RoleBindings in istio-system namespace")
+			By("And KLM Service Account has the correct number of RoleBindings in istio-system namespace")
+			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
+				"istio-system")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(istioSystemKlmRoleBindings.Items).To(HaveLen(1))
+
+			By("And certmanager Role has the correct PolicyRules")
 			istioNamespaceRoleRules := []apirbacv1.PolicyRule{
 				{
 					APIGroups: []string{""},
@@ -195,14 +209,12 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"list", "watch"},
 				},
 			}
-			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
-				"istio-system")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(istioSystemKlmRoleBindings.Items).To(HaveLen(1))
-
-			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager-watcher-certmanager",
+			Expect(GetRoleBindingRolePolicyRules(ctx,
+				kcpClient,
+				"klm-controller-manager-certmanager",
 				"istio-system",
-				istioSystemKlmRoleBindings)).To(Equal(istioNamespaceRoleRules))
+				istioSystemKlmRoleBindings)).
+				To(Equal(istioNamespaceRoleRules))
 		})
 	})
 })
