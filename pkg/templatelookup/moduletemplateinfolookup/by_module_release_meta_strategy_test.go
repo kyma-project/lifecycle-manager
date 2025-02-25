@@ -72,6 +72,69 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
 }
 
+func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleReturnsError(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+		WithModuleName("test-module").
+		WithName("test-module").
+		WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
+			{
+				Channel: "regular",
+				Version: "1.0.0",
+			},
+		}).
+		Build()
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module").
+		WithModuleName("test-module").
+		WithVersion("1.0.0").
+		WithChannel("none").
+		Build()
+	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byMRMStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"failed to get module template: moduletemplates.operator.kyma-project.io \"test-module-1.0.0\" not found")
+}
+
+func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsError(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+		WithModuleName("test-module").
+		WithName("test-module").
+		Build()
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-1.0.0").
+		WithModuleName("test-module").
+		WithVersion("1.0.0").
+		WithChannel("none").
+		Build()
+	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byMRMStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err, "no channels found for module: test-module")
+}
+
 func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {
 	scheme := machineryruntime.NewScheme()
 	machineryutilruntime.Must(api.AddToScheme(scheme))
