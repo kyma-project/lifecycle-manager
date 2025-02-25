@@ -33,7 +33,7 @@ var _ = Describe("RBAC Privileges", func() {
 				klmClusterRoleBindings)).To(Equal(crdRoleRules))
 
 			By("And KLM Service Account has the correct number of RoleBindings in kcp-system namespace")
-			expectedNumberOfRoleBindings := 3
+			expectedNumberOfRoleBindings := 2
 			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
@@ -178,7 +178,7 @@ var _ = Describe("RBAC Privileges", func() {
 			}
 			_, err = GetClusterRole(ctx, kcpClient, "klm-controller-manager")
 			Expect(err).To(HaveOccurred())
-			
+
 			Expect(GetRoleBindingRolePolicyRules(ctx,
 				kcpClient,
 				"klm-controller-manager",
