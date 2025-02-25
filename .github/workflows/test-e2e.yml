@@ -6,8 +6,9 @@ on:
       k8s_version:
         description: "With Kubernetes version (format: X.Y.Z)"
         required: false
-  pull_request:
-    types: [ opened, edited, synchronize, reopened, ready_for_review ]
+  push:
+    branches:
+      - non-existent-branch # disabling workflow to test other makefile e2e test workflow
 jobs:
   wait-for-image-build:
     name: Wait for image build
