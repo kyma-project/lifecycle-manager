@@ -86,16 +86,6 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"get", "list", "watch"},
 				},
 				{
-					APIGroups: []string{"apiextensions.k8s.io"},
-					Resources: []string{"customresourcedefinitions"},
-					Verbs:     []string{"get", "list", "watch"},
-				},
-				{
-					APIGroups: []string{"apiextensions.k8s.io"},
-					Resources: []string{"customresourcedefinitions/status"},
-					Verbs:     []string{"update"},
-				},
-				{
 					APIGroups: []string{"cert-manager.io"},
 					Resources: []string{"certificates"},
 					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
