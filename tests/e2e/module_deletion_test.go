@@ -97,7 +97,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		})
 
 		It("When Kyma Module is re-enabled in different Module Distribution Channel", func() {
-			module.Channel = "fast"
+			module.Channel = FastChannel
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
