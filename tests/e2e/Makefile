@@ -105,26 +105,26 @@ endef
 
 ##@ E2E Tests
 mandatory-module-setup:
-	$(setup-clusters)
+	@$(setup-clusters)
 
-	echo "::group::Test-specific kustomize patch"
-	echo "::endgroup::"
-	$(setup-klm)
+	@echo "::group::Test-specific kustomize patch"
+	@echo "::endgroup::"
+	@$(setup-klm)
 
-	echo "::group::Test-specific module metadata setup"
-	$(SCRIPTS_DIR)/setup_https_server.sh $(TEMPLATE_OPERATOR_DIR)
-	pushd $(TEMPLATE_OPERATOR_DIR)
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 1.1.0-smoke-test template-operator-v1-controller-manager true true
-	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 2.4.1-smoke-test template-operator-v2-controller-manager true true false
-	cp ./template.yaml $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml
-	popd
-	echo "::endgroup::"
+	@echo "::group::Test-specific module metadata setup"
+	@pushd $(TEMPLATE_OPERATOR_DIR)
+	@$(SCRIPTS_DIR)/setup_https_server.sh .
+	@$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 1.1.0-smoke-test template-operator-v1-controller-manager true true
+	@$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 2.4.1-smoke-test template-operator-v2-controller-manager true true false
+	@cp ./template.yaml $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml
+	@popd
+	@echo "::endgroup::"
 
 mandatory-module:
-	$(setup-kubeconfig-var)
-	echo "::group::E2E Test"
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
-	echo "::endgroup::"
+	@$(setup-kubeconfig-var)
+	@echo "::group::E2E Test"
+	@go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
+	@echo "::endgroup::"
 
 teardown:
 	# TODO
