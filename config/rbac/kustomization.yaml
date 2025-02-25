@@ -8,5 +8,5 @@ resources:
   - crd_cluster_role.yaml
   - crd_cluster_role_binding.yaml
   - manager_role_binding.yaml
-  - watcher_certmanager_role.yaml
-  - watcher_certmanager_role_binding.yaml
+  - certmanager_role.yaml
+  - certmanager_role_binding.yaml
