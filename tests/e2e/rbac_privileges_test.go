@@ -16,6 +16,7 @@ var _ = Describe("RBAC Privileges", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(klmClusterRoleBindings.Items).To(HaveLen(1))
 
+			By("And CRD ClusterRoleBinding has the correct PolicyRules")
 			crdRoleRules := []apirbacv1.PolicyRule{
 				{
 					APIGroups: []string{"apiextensions.k8s.io"},
@@ -35,7 +36,7 @@ var _ = Describe("RBAC Privileges", func() {
 			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(2))
+			Expect(kcpSystemKlmRoleBindings.Items).To(HaveLen(3))
 
 			leaderElectionRoleRules := []apirbacv1.PolicyRule{
 				{
@@ -171,6 +172,9 @@ var _ = Describe("RBAC Privileges", func() {
 				},
 			}
 			Expect(GetRoleBindingwithClusterRolePolicyRules(ctx, kcpClient, "klm-controller-manager",
+				kcpSystemKlmRoleBindings)).Error()
+			Expect(GetRoleBindingRolePolicyRules(ctx, kcpClient, "klm-controller-manager",
+				"kcp-system",
 				kcpSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
 
 			By("And KLM Service Account has the correct RoleBindings in istio-system namespace")
