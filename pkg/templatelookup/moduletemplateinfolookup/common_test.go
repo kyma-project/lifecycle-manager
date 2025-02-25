@@ -1,10 +1,12 @@
 package moduletemplateinfolookup_test
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_TemplateNameMatch_WhenModuleNameFieldIsMatching(t *testing.T) {
