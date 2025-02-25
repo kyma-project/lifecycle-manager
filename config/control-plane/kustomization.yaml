@@ -20,6 +20,10 @@ components:
   - ../webhook
   - ../grafana
 patches:
+  - path: patches/deployment_resources.yaml
+  - path: patches/unique_deployment_webhook_patch.yaml
+  - # Override certificate name to ensure a unique CM Cert when run with other kubebuilder operators
+  - path: patches/unique_certificate_name.yaml
   - target:
       kind: Deployment
     patch: |-
@@ -61,12 +65,6 @@ patches:
       - op: add
         path: /metadata/labels/grafana_dashboard
         value: "1"
-  - path: patches/deployment_resources.yaml
-  - path: patches/unique_deployment_webhook_patch.yaml
-    # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other
-    # kubebuilder operators.
-  - path: patches/unique_certificate_name.yaml
-
 # Note: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
 transformers:
   - |-
