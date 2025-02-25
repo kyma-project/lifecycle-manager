@@ -2,6 +2,7 @@ package builder
 
 import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -88,6 +89,11 @@ func (mb ManifestBuilder) WithStatus(status shared.Status) ManifestBuilder {
 // WithFinalizers sets v1beta2.Manifest.Finalizers.
 func (mb ManifestBuilder) WithFinalizers(finalizers []string) ManifestBuilder {
 	mb.manifest.Finalizers = finalizers
+	return mb
+}
+
+func (mb ManifestBuilder) WithResource(resource *unstructured.Unstructured) ManifestBuilder {
+	mb.manifest.Spec.Resource = resource
 	return mb
 }
 

@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
@@ -96,7 +97,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		})
 
 		It("When Kyma Module is re-enabled in different Module Distribution Channel", func() {
-			module.Channel = "fast"
+			module.Channel = FastChannel
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
@@ -272,14 +273,19 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		It("When ModuleTemplate is removed from KCP Cluster", func() {
 			Eventually(DeleteModuleTemplate).
 				WithContext(ctx).
-				WithArguments(kcpClient, module, kyma.Spec.Channel, ControlPlaneNamespace).
+				WithArguments(kcpClient, module, kyma).
 				Should(Succeed())
 		})
 
 		It("Then ModuleTemplate is no longer in SKR Cluster", func() {
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
-				WithArguments(skrClient, module, kyma.Spec.Channel, RemoteNamespace).
+				WithArguments(skrClient,
+					module,
+					builder.NewKymaBuilder().
+						WithName(defaultRemoteKymaName).
+						WithNamespace(shared.DefaultRemoteNamespace).
+						Build()).
 				Should(Equal(ErrNotFound))
 		})
 	})

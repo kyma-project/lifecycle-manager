@@ -2,8 +2,10 @@ package labelsremoval_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,34 +17,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-func Test_needsUpdateAfterLabelRemoval_WhenLabelsAreEmpty(t *testing.T) {
-	emptyLabels := map[string]string{}
-	res := &unstructured.Unstructured{}
-	res.SetLabels(emptyLabels)
-	actual := labelsremoval.IsManagedLabelRemoved(res)
-
-	require.False(t, actual)
-	require.Equal(t, emptyLabels, res.GetLabels())
-}
-
-func Test_needsUpdateAfterLabelRemoval_WhenManagedByLabel(t *testing.T) {
-	labels := map[string]string{
-		shared.ManagedBy: shared.ManagedByLabelValue,
-	}
-	expectedLabels := map[string]string{}
-	res := &unstructured.Unstructured{}
-	res.SetLabels(labels)
-	actual := labelsremoval.IsManagedLabelRemoved(res)
-
-	require.True(t, actual)
-	require.Equal(t, expectedLabels, res.GetLabels())
-}
-
-func Test_handleLabelsRemovalFromResources_WhenManifestResourcesHaveLabels(t *testing.T) {
+func Test_RemoveManagedByLabel_WhenManifestResourcesHaveLabels(t *testing.T) {
 	gvk := schema.GroupVersionKind{
 		Group:   "test-group",
 		Version: "v1",
@@ -105,8 +83,11 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesHaveLabels(t *te
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
+	manifestClient := manifestClientStub{}
 
-	err = labelsremoval.HandleLabelsRemovalFromResources(context.TODO(), manifest, fakeClient, nil)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
+
+	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 	require.NoError(t, err)
 
 	firstObj, secondObj := &unstructured.Unstructured{}, &unstructured.Unstructured{}
@@ -121,29 +102,20 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesHaveLabels(t *te
 		secondObj)
 	require.NoError(t, err)
 	require.Empty(t, secondObj.GetLabels())
+
+	assert.True(t, manifestClient.called)
 }
 
-func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAreNilAndNoDefaultCR(t *testing.T) {
-	manifest := builder.NewManifestBuilder().Build()
-
+func Test_RemoveManagedByLabel_WhenManifestResourceCannotBeFetched(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
 
-	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
-
-	err = labelsremoval.HandleLabelsRemovalFromResources(context.TODO(), manifest, fakeClient, nil)
-
-	require.NoError(t, err)
-}
-
-func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAndDefaultCRHaveLabels(t *testing.T) {
 	gvk := schema.GroupVersionKind{
 		Group:   "test-group",
 		Version: "v1",
 		Kind:    "TestKind",
 	}
-
 	status := shared.Status{
 		Synced: []shared.Resource{
 			{
@@ -158,6 +130,104 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAndDefaultCRHave
 		},
 	}
 	manifest := builder.NewManifestBuilder().WithStatus(status).Build()
+
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	manifestClient := manifestClientStub{}
+
+	svc := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
+
+	err = svc.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+	require.ErrorContains(t, err, "failed to get resource")
+	assert.False(t, manifestClient.called)
+}
+
+func Test_RemoveManagedByLabel_WhenDefaultCRHasLabels(t *testing.T) {
+	gvk := schema.GroupVersionKind{
+		Group:   "test-group",
+		Version: "v1",
+		Kind:    "TestKind",
+	}
+
+	defaultCR := &unstructured.Unstructured{}
+	defaultCR.SetName("default-cr")
+	defaultCR.SetNamespace("default-ns")
+	defaultCR.SetGroupVersionKind(gvk)
+	defaultCR.SetLabels(map[string]string{
+		"operator.kyma-project.io/managed-by": "kyma",
+	})
+	objs := []client.Object{defaultCR}
+
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
+	manifest := builder.NewManifestBuilder().WithResource(defaultCR).Build()
+	manifestClient := manifestClientStub{}
+
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
+
+	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+
+	require.NoError(t, err)
+
+	err = fakeClient.Get(context.TODO(),
+		client.ObjectKey{Name: "default-cr", Namespace: "default-ns"},
+		defaultCR)
+	require.NoError(t, err)
+	assert.Empty(t, defaultCR.GetLabels())
+}
+
+func Test_RemoveManagedByLabel_WhenDefaultCRCannotBeFetched(t *testing.T) {
+	gvk := schema.GroupVersionKind{
+		Group:   "test-group",
+		Version: "v1",
+		Kind:    "TestKind",
+	}
+
+	defaultCR := &unstructured.Unstructured{}
+	defaultCR.SetName("default-cr")
+	defaultCR.SetNamespace("default-ns")
+	defaultCR.SetGroupVersionKind(gvk)
+	defaultCR.SetLabels(map[string]string{
+		"operator.kyma-project.io/managed-by": "kyma",
+	})
+
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	manifest := builder.NewManifestBuilder().WithResource(defaultCR).Build()
+	manifestClient := manifestClientStub{}
+
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
+
+	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+
+	require.ErrorContains(t, err, "failed to get default CR")
+	assert.False(t, manifestClient.called)
+}
+
+func Test_RemoveManagedByLabel_WhenObjCannotBeUpdated(t *testing.T) {
+	gvk := schema.GroupVersionKind{
+		Group:   "test-group",
+		Version: "v1",
+		Kind:    "TestKind",
+	}
+	status := shared.Status{
+		Synced: []shared.Resource{
+			{
+				Name:      "test-resource-1",
+				Namespace: "test-1",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+				},
+			},
+		},
+	}
 
 	objs := []client.Object{
 		&unstructured.Unstructured{
@@ -174,73 +244,41 @@ func Test_handleLabelsRemovalFromResources_WhenManifestResourcesAndDefaultCRHave
 		"operator.kyma-project.io/managed-by": "kyma",
 	})
 
-	defaultCR := &unstructured.Unstructured{}
-	defaultCR.SetName("default-cr")
-	defaultCR.SetNamespace("default-ns")
-	defaultCR.SetGroupVersionKind(gvk)
-	defaultCR.SetLabels(map[string]string{
-		"operator.kyma-project.io/managed-by": "kyma",
-	})
-
-	objs = append(objs, defaultCR)
-
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
-
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
 
-	err = labelsremoval.HandleLabelsRemovalFromResources(context.TODO(), manifest, fakeClient,
-		defaultCR)
+	manifest := builder.NewManifestBuilder().WithStatus(status).Build()
+	manifestClient := manifestClientStub{}
 
-	require.NoError(t, err)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	firstObj := &unstructured.Unstructured{}
-	firstObj.SetGroupVersionKind(gvk)
-	err = fakeClient.Get(context.TODO(), client.ObjectKey{Name: "test-resource-1", Namespace: "test-1"},
-		firstObj)
-	require.NoError(t, err)
-	require.Empty(t, firstObj.GetLabels())
+	err = service.RemoveManagedByLabel(context.TODO(), manifest, errorClientStub{fakeClient: fakeClient})
 
-	require.NoError(t, err)
-	require.Empty(t, defaultCR.GetLabels())
+	require.ErrorContains(t, err, "failed to update object")
+	require.ErrorContains(t, err, "test error")
 }
 
-func Test_RemoveManagedLabel_WhenErrorIsReturned(t *testing.T) {
+func Test_RemoveManagedByLabel_WhenManifestResourcesAreNilAndNoDefaultCR(t *testing.T) {
+	manifest := builder.NewManifestBuilder().Build()
+
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
 
-	gvk := schema.GroupVersionKind{
-		Group:   "test-group",
-		Version: "v1",
-		Kind:    "TestKind",
-	}
-	status := shared.Status{
-		Synced: []shared.Resource{
-			{
-				Name:      "test-resource-1",
-				Namespace: "test-1",
-				GroupVersionKind: apimetav1.GroupVersionKind{
-					Group:   gvk.Group,
-					Version: gvk.Version,
-					Kind:    gvk.Kind,
-				},
-			},
-		},
-	}
-	manifest := builder.NewManifestBuilder().WithStatus(status).Build()
-
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	manifestClient := manifestClientStub{}
 
-	manifestClnt := manifestclient.NewManifestClient(nil, fakeClient)
-	svc := labelsremoval.NewManagedLabelRemovalService(manifestClnt)
+	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = svc.RemoveManagedLabel(context.TODO(), manifest, fakeClient, nil)
-	require.ErrorContains(t, err, "failed to get resource")
+	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+
+	require.NoError(t, err)
+	assert.True(t, manifestClient.called)
 }
 
-func Test_RemoveManagedLabel_WhenFinalizerIsRemoved(t *testing.T) {
+func Test_RemoveManagedByLabel_WhenFinalizerIsRemoved(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
 	require.NoError(t, err)
@@ -282,15 +320,37 @@ func Test_RemoveManagedLabel_WhenFinalizerIsRemoved(t *testing.T) {
 	})
 
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(manifest).WithObjects(objs...).Build()
+	manifestClient := manifestClientStub{}
+	svc := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	manifestClnt := manifestclient.NewManifestClient(nil, fakeClient)
-	svc := labelsremoval.NewManagedLabelRemovalService(manifestClnt)
+	err = svc.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
 
-	err = svc.RemoveManagedLabel(context.TODO(), manifest, fakeClient, nil)
 	require.NoError(t, err)
+	assert.Empty(t, manifest.GetFinalizers())
+	assert.True(t, manifestClient.called)
+}
 
-	err = fakeClient.Get(context.TODO(), client.ObjectKey{Name: manifest.GetName(), Namespace: manifest.GetNamespace()},
-		manifest)
-	require.NoError(t, err)
-	require.Empty(t, manifest.GetFinalizers())
+// stubs
+
+type manifestClientStub struct {
+	called bool
+	err    error
+}
+
+func (m *manifestClientStub) UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
+	m.called = true
+	return m.err
+}
+
+type errorClientStub struct {
+	client.Client
+	fakeClient client.Client
+}
+
+func (e errorClientStub) Update(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
+	return errors.New("test error")
+}
+
+func (e errorClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	return e.fakeClient.Get(ctx, key, obj, opts...)
 }

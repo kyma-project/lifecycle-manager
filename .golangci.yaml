@@ -134,6 +134,8 @@ linters-settings:
         alias: watcherctrl
       - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client
         alias: gatewaysecretclient
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler
+        alias: gatewaysecrethandler
   ireturn:
     allow:
       - anon

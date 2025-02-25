@@ -2,6 +2,7 @@ package modulecr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,6 +18,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+var ErrNoResourceDefined = errors.New("no resource defined in the manifest")
+
 type Client struct {
 	client.Client
 }
@@ -30,6 +33,10 @@ func NewClient(client client.Client) *Client {
 func (c *Client) GetCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
 	error,
 ) {
+	if manifest.Spec.Resource == nil {
+		return nil, ErrNoResourceDefined
+	}
+
 	resourceCR := &unstructured.Unstructured{}
 	name := manifest.Spec.Resource.GetName()
 	namespace := manifest.Spec.Resource.GetNamespace()
@@ -111,7 +118,7 @@ func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) e
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+	resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 

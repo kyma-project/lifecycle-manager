@@ -180,7 +180,9 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When Module is enabled again", func() {
+		It("When Module is enabled again with CustomResourcePolicy:Ignore", func() {
+			module.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
+
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
@@ -196,6 +198,46 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient).
 					Should(Succeed())
 			})
+
+			By("And KCP Kyma CR is in \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("When Module is unmanaged", func() {
+			Eventually(SetModuleManaged).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module.Name, false).
+				Should(Succeed())
+
+			By("And Manifest CR is removed")
+			Eventually(NoManifestExist).
+				WithContext(ctx).
+				WithArguments(kcpClient).
+				Should(Succeed())
+
+			By("And Module Operator Deployment is not removed on SKR cluster")
+			Consistently(CheckIfExists).
+				WithContext(ctx).
+				WithArguments(ModuleResourceName, TestModuleResourceNamespace,
+					"apps", "v1", "Deployment", skrClient).
+				Should(Succeed())
+
+			By("And all manifest resources no longer have managed-by labels")
+			for _, resource := range manifestResources {
+				objectKey := client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}
+				gvk := schema.GroupVersionKind{
+					Group:   resource.Group,
+					Version: resource.Version,
+					Kind:    resource.Kind,
+				}
+				Eventually(HasExpectedLabel).
+					WithContext(ctx).
+					WithArguments(skrClient, objectKey, gvk,
+						shared.ManagedBy, shared.ManagedByLabelValue).Should(Equal(ErrLabelNotFound))
+			}
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
