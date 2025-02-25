@@ -73,16 +73,25 @@ TEMPLATE_OPERATOR_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/../template-operato
 SCRIPTS_DIR := $(realpath $(LIFECYCLE_MANAGER_DIR)/scripts/tests/)
 
 define setup-clusters
+	echo "::group::Setting up test clusters"
 	@$(SCRIPTS_DIR)/create_test_clusters.sh --k8s-version 1.30.3 --cert-manager-version 1.13.3
+	echo "::endgroup::"
+	echo "::group::Setting up cluster context"
 	@$(SCRIPTS_DIR)/setup_cluster_context.sh
+	echo "::endgroup::"
 endef
 
 define setup-klm
+	echo "::group::Setting up KLM"
 	@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $(IMAGE_REPO) --image-tag $(IMAGE_TAG)
+	echo "::endgroup::"
+	echo "::group::Patching KCP Metrics Endpoint"
 	@$(SCRIPTS_DIR)/patch_kcp_metrics_endpoint.sh
+	echo "::endgroup::"
 endef
 
 define setup-kubeconfig-var
+	echo "::group::Setting kubeconfig variables"
 	if [ -z "${GITHUB_ACTIONS}" ]; then
 		export KCP_KUBECONFIG=$(shell k3d kubeconfig write kcp)
 		export SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)
@@ -91,25 +100,31 @@ define setup-kubeconfig-var
 		echo "KCP_KUBECONFIG=$(shell k3d kubeconfig write kcp)" >> $GITHUB_ENV
 		echo "SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)" >> $GITHUB_ENV
 	fi
+	echo "::endgroup::"
 endef
 
 ##@ E2E Tests
 mandatory-module-setup:
 	$(setup-clusters)
-	# Do test-specific kustomize patch here
+
+	echo "::group::Test-specific kustomize patch"
+	echo "::endgroup::"
 	$(setup-klm)
 
-	# Do test-specific module metadata creation here
+	echo "::group::Test-specific module metadata setup"
 	$(SCRIPTS_DIR)/setup_https_server.sh $(TEMPLATE_OPERATOR_DIR)
 	pushd $(TEMPLATE_OPERATOR_DIR)
 	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 1.1.0-smoke-test template-operator-v1-controller-manager true true
 	$(SCRIPTS_DIR)/deploy_moduletemplate_e2e.sh template-operator 2.4.1-smoke-test template-operator-v2-controller-manager true true false
 	cp ./template.yaml $(LIFECYCLE_MANAGER_DIR)/tests/e2e/mandatory_template_v2.yaml
 	popd
+	echo "::endgroup::"
 
 mandatory-module:
 	$(setup-kubeconfig-var)
+	echo "::group::E2E Test"
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
+	echo "::endgroup::"
 
 teardown:
 	# TODO
