@@ -37,7 +37,7 @@ EOF
 fi
 
 cat module-config-for-e2e.yaml
-modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure --overwrite
+modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
 # add a condition to check if ostype is unix
 if [[ "$OSTYPE" == "darwin"* ]]; then
   sed -i '' 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
