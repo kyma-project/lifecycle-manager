@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	MetricMaintenanceWindowConfigReadSuccess = "maintenance_window_config_read_success"
+	MetricMaintenanceWindowConfigReadSuccess = "lifecycle_mgr_maintenance_window_config_read_success"
 )
 
 type MaintenanceWindowMetrics struct {
