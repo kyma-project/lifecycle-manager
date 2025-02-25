@@ -1,4 +1,4 @@
-name: TestSuite E2E
+name: TestSuite E2E with Makefile
 
 on:
   workflow_dispatch:
@@ -6,9 +6,8 @@ on:
       k8s_version:
         description: "With Kubernetes version (format: X.Y.Z)"
         required: false
-  push:
-    branches:
-      - non-existent-branch # disabling workflow to test other makefile e2e test workflow
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 jobs:
   wait-for-image-build:
     name: Wait for image build
@@ -33,37 +32,14 @@ jobs:
           SLEEP_SECONDS: 30
         run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
-    name: E2E
+    name: E2E With Makefile
     needs: wait-for-image-build
     strategy:
       fail-fast: false
       matrix:
         e2e-test:
-          - watcher-enqueue
-          - kyma-deprovision-with-foreground-propagation
-          - kyma-deprovision-with-background-propagation
-          - module-status-decoupling-with-statefulset
-          - module-status-decoupling-with-deployment
-          - kyma-metrics
-          - module-without-default-cr
-          - module-consistency
-          - non-blocking-deletion
-          - upgrade-under-deletion
-          - purge-controller
-          - purge-metrics
-          - module-upgrade-channel-switch
-          - module-upgrade-new-version
-          - unmanage-module
-          - module-install-by-version
-          - skip-manifest-reconciliation
-          - legacy-istio-gateway-secret-rotation
-          - self-signed-certificate-rotation
-          - mandatory-module-with-old-naming-pattern
-          - mandatory-module-metrics-with-old-naming-pattern
-          - misconfigured-kyma-secret
-          - rbac-privileges
-          - ocm-compatible-module-template
-          - labelling
+          - mandatory-module
+
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -92,22 +68,10 @@ jobs:
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
 
-      - name: Setup test clusters
-        uses: ./lifecycle-manager/.github/actions/setup-test-clusters
-        with:
-          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
-          cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
-
-      - name: Deploy lifecycle-manager
-        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
-        with:
-          klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
-          klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
-
-      - name: Deploy template-operator
-        uses: ./lifecycle-manager/.github/actions/deploy-template-operator
-
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         run: |
-          make -C tests/e2e ${{ matrix.e2e-test }}
+          make -C tests/e2e ${{ matrix.e2e-test }}-setup ${{ matrix.e2e-test }}
+        env:
+          IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
+          IMAGE_TAG: ${{ steps.configuration.outputs.klm_version_tag }}
