@@ -21,4 +21,4 @@ packages:
   internal/remote: 29
   internal/util/collections: 87
   pkg/templatelookup: 88
-  pkg/templatelookup/moduletemplateinfolookup: 100
+  pkg/templatelookup/moduletemplateinfolookup: 94.4
