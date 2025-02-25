@@ -59,16 +59,11 @@ for cert in $HOME/.local/share/ca-certificates/*.crt; do
 done
 
 # Set the environment variable so that SSL/TLS libraries use the custom CA store
-if [ -z "${GITHUB_ACTIONS}" ]; then
-  export SSL_CERT_DIR=$HOME/.local/share/ca-certificates
-  export CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $CERT_FILE
 else
   echo SSL_CERT_DIR=$HOME/.local/share/ca-certificates >> $GITHUB_ENV
   echo CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt >> $GITHUB_ENV
-fi
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $CERT_FILE
 fi
 
 # Start Python HTTPS server
