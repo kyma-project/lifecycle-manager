@@ -58,15 +58,15 @@ for cert in $HOME/.local/share/ca-certificates/*.crt; do
     ln -s "$cert" $HOME/.local/share/ca-certificates/$(openssl x509 -hash -noout -in "$cert").0
 done
 
+# Start Python HTTPS server
+echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
+go run "$(dirname "$0")/https_server.go" -dir "$DIRECTORY_TO_SERVE" -certfile "$CERT_FILE" -keyfile "$KEY_FILE" -port "$PORT" &
+
 # Set the environment variable so that SSL/TLS libraries use the custom CA store
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "SUDO NEEDED TO ADD CERTIFICATE TO TRUSTED ROOT"
     sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $CERT_FILE
 else
     export SSL_CERT_DIR="$HOME/.local/share/ca-certificates"
-    export CURL_CA_BUNDLE="$HOME/.local/share/ca-certificates/server.crt"
+    export CURL_CA_BUNDLE="$SSL_CERT_DIR/server.crt"
 fi
-
-# Start Python HTTPS server
-echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
-go run "$(dirname "$0")/https_server.go" -dir "$DIRECTORY_TO_SERVE" -certfile "$CERT_FILE" -keyfile "$KEY_FILE" -port "$PORT" &
