@@ -53,7 +53,6 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 		WithName("test-module-1.0.0").
 		WithModuleName("test-module").
 		WithVersion("1.0.0").
-		WithChannel("none").
 		Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
 		&v1beta2.ModuleTemplateList{
@@ -89,7 +88,6 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleRetu
 		WithName("test-module").
 		WithModuleName("test-module").
 		WithVersion("1.0.0").
-		WithChannel("none").
 		Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
 		&v1beta2.ModuleTemplateList{
@@ -118,7 +116,6 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsErr
 		WithName("test-module-1.0.0").
 		WithModuleName("test-module").
 		WithVersion("1.0.0").
-		WithChannel("none").
 		Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
 		&v1beta2.ModuleTemplateList{

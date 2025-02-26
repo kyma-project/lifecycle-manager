@@ -20,10 +20,7 @@ func Test_TemplateNameMatch_WhenModuleNameFieldIsMatching(t *testing.T) {
 
 func Test_TemplateNameMatch_WhenModuleNameFieldIsNotMatching(t *testing.T) {
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
 		WithModuleName("test-module").
-		WithVersion("").
-		WithChannel("regular").
 		Build()
 
 	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "module")
@@ -32,10 +29,7 @@ func Test_TemplateNameMatch_WhenModuleNameFieldIsNotMatching(t *testing.T) {
 
 func Test_TemplateNameMatch_WhenNoModuleNameFieldButMatchingLabel(t *testing.T) {
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
 		WithLabelModuleName("test-module").
-		WithVersion("").
-		WithChannel("regular").
 		Build()
 
 	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "test-module")
@@ -44,9 +38,6 @@ func Test_TemplateNameMatch_WhenNoModuleNameFieldButMatchingLabel(t *testing.T) 
 
 func Test_TemplateNameMatch_WhenNoModuleNameFieldAndNoMatchingLabel(t *testing.T) {
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
-		WithVersion("").
-		WithChannel("regular").
 		Build()
 
 	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "test-module")

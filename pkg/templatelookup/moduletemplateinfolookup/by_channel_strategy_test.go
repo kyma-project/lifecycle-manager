@@ -46,9 +46,7 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 	kyma := builder.NewKymaBuilder().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
 		WithModuleName("test-module").
-		WithVersion("").
 		WithChannel("regular").
 		Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
@@ -73,9 +71,7 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingGlobalChannel(
 	kyma := builder.NewKymaBuilder().WithChannel("fast").Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-fast").
 		WithModuleName("test-module").
-		WithVersion("").
 		WithChannel("fast").
 		Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
@@ -100,9 +96,7 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingDefaultChannel
 	kyma := builder.NewKymaBuilder().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
 		WithModuleName("test-module").
-		WithVersion("").
 		WithChannel("regular").
 		Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
@@ -160,13 +154,11 @@ func Test_ByChannelStrategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("test-module-regular").
 		WithModuleName("test-module").
-		WithVersion("").
 		WithChannel("regular").
 		Build()
 	secondModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("test-module-regular-2").
 		WithModuleName("test-module").
-		WithVersion("").
 		WithChannel("regular").
 		Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
@@ -191,9 +183,7 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateHasNoChannel(t *testing.T) 
 	kyma := builder.NewKymaBuilder().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
 		WithModuleName("test-module").
-		WithVersion("").
 		Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
 		&v1beta2.ModuleTemplateList{
@@ -216,11 +206,9 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
 	kyma := builder.NewKymaBuilder().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
 		WithModuleName("test-module").
 		WithChannel("regular").
 		WithMandatory(true).
-		WithVersion("").
 		Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
 		&v1beta2.ModuleTemplateList{
