@@ -87,7 +87,7 @@ define setup-klm
 	@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $(IMAGE_REPO) --image-tag $(IMAGE_TAG)
 	echo "::endgroup::"
 
-	echo "::group::Patching KCP Metrics Endpoint"
+	echo "::group::Patching KCP metrics endpoint"
 	@$(SCRIPTS_DIR)/patch_kcp_metrics_endpoint.sh
 	echo "::endgroup::"
 endef
