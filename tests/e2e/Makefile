@@ -76,6 +76,7 @@ define setup-clusters
 	echo "::group::Setting up test clusters"
 	@$(SCRIPTS_DIR)/create_test_clusters.sh --k8s-version 1.30.3 --cert-manager-version 1.13.3
 	echo "::endgroup::"
+
 	echo "::group::Setting up cluster context"
 	@$(SCRIPTS_DIR)/setup_cluster_context.sh
 	echo "::endgroup::"
@@ -85,6 +86,7 @@ define setup-klm
 	echo "::group::Setting up KLM"
 	@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $(IMAGE_REPO) --image-tag $(IMAGE_TAG)
 	echo "::endgroup::"
+
 	echo "::group::Patching KCP Metrics Endpoint"
 	@$(SCRIPTS_DIR)/patch_kcp_metrics_endpoint.sh
 	echo "::endgroup::"
@@ -106,7 +108,6 @@ endef
 ##@ E2E Tests
 mandatory-module-setup:
 	@$(setup-clusters)
-
 	@echo "::group::Test-specific kustomize patch"
 	@echo "::endgroup::"
 	@$(setup-klm)
@@ -122,7 +123,7 @@ mandatory-module-setup:
 
 mandatory-module:
 	@$(setup-kubeconfig-var)
-	@echo "::group::E2E Test"
+	@echo "::group::E2E test"
 	@go test -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
 	@echo "::endgroup::"
 
