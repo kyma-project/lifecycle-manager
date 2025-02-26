@@ -16,6 +16,10 @@ if [ ! -f deploy_moduletemplate.sh ]; then
   cp "$SCRIPT_DIR"/deploy_moduletemplate.sh .
 fi
 
+# Workaround for the issue with the missing CA certificates
+export SSL_CERT_DIR="$HOME/.local/share/ca-certificates"
+export CURL_CA_BUNDLE="$SSL_CERT_DIR/server.crt"
+
 make build-manifests
 yq eval "(. | select(.kind == \"Deployment\") | .metadata.name) = \"$MODULE_DEPLOYMENT_NAME\"" -i ./template-operator.yaml
 ./deploy_moduletemplate.sh "$MODULE_NAME" "$MODULE_VERSION" "$INCLUDE_DEFAULT_CR" "$MANDATORY" "$DEPLOY_MODULETEMPLATE" "$REQUIRES_DOWNTIME"
