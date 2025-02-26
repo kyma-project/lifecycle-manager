@@ -63,8 +63,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "SUDO NEEDED TO ADD CERTIFICATE TO TRUSTED ROOT"
     sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $CERT_FILE
 else
-    export SSL_CERT_DIR=$HOME/.local/share/ca-certificates
-    export CURL_CA_BUNDLE=$HOME/.local/share/ca-certificates/server.crt
+    export SSL_CERT_DIR="$HOME/.local/share/ca-certificates"
+    export CURL_CA_BUNDLE="$HOME/.local/share/ca-certificates/server.crt"
 fi
 
 # Start Python HTTPS server

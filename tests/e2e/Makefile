@@ -94,14 +94,8 @@ endef
 
 define setup-kubeconfig-var
 	echo "::group::Setting kubeconfig variables"
-	if [ -z "${GITHUB_ACTIONS}" ]; then
-		export KCP_KUBECONFIG=$(shell k3d kubeconfig write kcp)
-		export SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)
-	else
-		# write to github_env var
-		echo "KCP_KUBECONFIG=$(shell k3d kubeconfig write kcp)" >> $GITHUB_ENV
-		echo "SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)" >> $GITHUB_ENV
-	fi
+	export KCP_KUBECONFIG=$(shell k3d kubeconfig write kcp)
+	export SKR_KUBECONFIG=$(shell k3d kubeconfig write skr)
 	echo "::endgroup::"
 endef
 
