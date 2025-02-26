@@ -2,16 +2,16 @@ package moduletemplateinfolookup_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"errors"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func Test_ByVersionStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
