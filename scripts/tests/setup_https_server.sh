@@ -63,16 +63,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $CERT_FILE
 else
     echo SSL_CERT_DIR=$HOME/.local/share/ca-certificates >> $GITHUB_ENV
-    echo CURL_CA_BUNDLE=$SSL_CERT_DIR/server.crt >> $GITHUB_ENV
+    echo CURL_CA_BUNDLE=$HOME/.local/share/ca-certificates/server.crt >> $GITHUB_ENV
 fi
-
-echo "----------------"
-echo "SSL_CERT_DIR=$SSL_CERT_DIR"
-echo "CURL_CA_BUNDLE=$CURL_CA_BUNDLE"
-echo "GITHUB_ENV=$GITHUB_ENV"
-cat $GITHUB_ENV
-echo "----------------"
-
 
 # Start Python HTTPS server
 echo "Serving $DIRECTORY_TO_SERVE on https://localhost:$PORT"
