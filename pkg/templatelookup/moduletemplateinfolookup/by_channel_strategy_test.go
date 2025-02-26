@@ -68,6 +68,60 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
 }
 
+func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingGlobalChannel(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").Enabled().Build()
+	kyma := builder.NewKymaBuilder().WithChannel("fast").Build()
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-fast").
+		WithModuleName("test-module").
+		WithVersion("").
+		WithChannel("fast").
+		Build()
+	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
+	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.ModuleTemplate.Spec.ModuleName)
+	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.ModuleTemplate.Spec.Version)
+	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
+}
+
+func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingDefaultChannel(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-regular").
+		WithModuleName("test-module").
+		WithVersion("").
+		WithChannel("regular").
+		Build()
+	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
+	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.ModuleTemplate.Spec.ModuleName)
+	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.ModuleTemplate.Spec.Version)
+	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
+}
+
 func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
