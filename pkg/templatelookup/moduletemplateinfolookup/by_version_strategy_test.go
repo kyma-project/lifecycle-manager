@@ -6,10 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"errors"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func Test_ByVersionStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
@@ -103,6 +105,21 @@ func Test_ByVersion_Strategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testin
 		"no unique template could be identified: more than one module template found for module: test-module, candidates: [test-module-1.0.0 test-module-1.0.0-duplicate]")
 }
 
+func Test_ByVersion_Strategy_Lookup_WhenFailedToListModuleTemplates(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithVersion("1.0.0").Enabled().Build()
+	var kyma *v1beta2.Kyma = nil
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+
+	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(&failedClientStub{})
+
+	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"failed to list module templates on lookup")
+}
+
 func Test_ByVersion_Strategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithVersion("1.0.0").Enabled().Build()
 	var kyma *v1beta2.Kyma = nil
@@ -184,4 +201,12 @@ func (b moduleInfoBuilder) Enabled() moduleInfoBuilder {
 
 func (b moduleInfoBuilder) Build() *templatelookup.ModuleInfo {
 	return b.moduleInfo
+}
+
+type failedClientStub struct {
+	client.Client
+}
+
+func (c *failedClientStub) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	return errors.New("failed to list module templates")
 }

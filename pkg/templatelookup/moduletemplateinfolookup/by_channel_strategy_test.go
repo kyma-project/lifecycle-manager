@@ -138,6 +138,21 @@ func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 		"no templates were found: for module test-module in channel regular")
 }
 
+func Test_ByChannelStrateg_Lookup_WhenFailedToListModuleTemplates(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
+
+	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(&failedClientStub{})
+
+	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorContains(t, moduleTemplateInfo.Err,
+		"failed to list module templates on lookup")
+}
+
 func Test_ByChannelStrategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
