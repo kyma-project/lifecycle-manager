@@ -37,6 +37,8 @@ EOF
 fi
 
 cat module-config-for-e2e.yaml
+export SSL_CERT_DIR="$HOME/.local/share/ca-certificates"
+export CURL_CA_BUNDLE="$HOME/.local/share/ca-certificates/server.crt"
 modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
 # add a condition to check if ostype is unix
 if [[ "$OSTYPE" == "darwin"* ]]; then
