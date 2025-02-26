@@ -11,10 +11,7 @@ import (
 
 func Test_TemplateNameMatch_WhenModuleNameFieldIsMatching(t *testing.T) {
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-regular").
 		WithModuleName("test-module").
-		WithVersion("").
-		WithChannel("regular").
 		Build()
 
 	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "test-module")

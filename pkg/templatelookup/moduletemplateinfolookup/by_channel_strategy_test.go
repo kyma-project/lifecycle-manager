@@ -68,7 +68,7 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
 }
 
-func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplatesFound(t *testing.T) {
+func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
