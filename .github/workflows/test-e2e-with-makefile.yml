@@ -71,6 +71,8 @@ jobs:
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         run: |
+          # print version of make
+          make --version
           make -C tests/e2e ${{ matrix.e2e-test }}-setup ${{ matrix.e2e-test }}
         env:
           IMAGE_REPO: ${{ steps.configuration.outputs.klm_image_repo }}
