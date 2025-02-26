@@ -84,7 +84,11 @@ endef
 
 define setup-klm
 	echo "::group::Setting up KLM"
-	@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $(IMAGE_REPO) --image-tag $(IMAGE_TAG)
+	@if [ -z $$GITHUB_ACTIONS ]; then
+		@$(SCRIPTS_DIR)/deploy_klm_from_sources.sh
+	else
+		@$(SCRIPTS_DIR)/deploy_klm_from_registry.sh --image-registry $(IMAGE_REPO) --image-tag $(IMAGE_TAG)
+	fi
 	echo "::endgroup::"
 
 	echo "::group::Patching KCP metrics endpoint"
