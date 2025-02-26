@@ -114,7 +114,7 @@ func prepareModuleReleaseMetaForSSA(moduleReleaseMeta *v1beta2.ModuleReleaseMeta
 	moduleReleaseMeta.SetResourceVersion("")
 	moduleReleaseMeta.SetUID("")
 	moduleReleaseMeta.SetManagedFields([]apimetav1.ManagedFieldsEntry{})
-	moduleReleaseMeta.SetLabels(collections.MergeMaps(moduleReleaseMeta.GetLabels(), map[string]string{
+	moduleReleaseMeta.SetLabels(collections.MergeMapsSilent(moduleReleaseMeta.GetLabels(), map[string]string{
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 

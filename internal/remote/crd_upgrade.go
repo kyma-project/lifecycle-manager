@@ -87,7 +87,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.Cust
 	crdToApply.Spec.Conversion.Strategy = apiextensionsv1.NoneConverter
 	crdToApply.Spec.Conversion.Webhook = nil
 
-	crdToApply.SetLabels(collections.MergeMaps(crdToApply.GetLabels(), map[string]string{
+	crdToApply.SetLabels(collections.MergeMapsSilent(crdToApply.GetLabels(), map[string]string{
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 

@@ -118,7 +118,7 @@ func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) e
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+	resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 

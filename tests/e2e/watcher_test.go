@@ -83,7 +83,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		timeNow := &apimetav1.Time{Time: time.Now()}
 		It("When spec of SKR Kyma CR is changed", func() {
 			GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
-			switchedChannel := "fast"
+			switchedChannel := FastChannel
 			Eventually(changeRemoteKymaChannel).
 				WithContext(ctx).
 				WithArguments(RemoteNamespace, switchedChannel, skrClient).

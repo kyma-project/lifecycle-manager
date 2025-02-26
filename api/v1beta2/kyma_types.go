@@ -452,7 +452,6 @@ func (kyma *Kyma) GetPlatformRegion() string {
 	return kyma.Labels[shared.PlatformRegionLabel]
 }
 
-// to be confirmed https://github.com/kyma-project/kyma/issues/18611#issuecomment-2441158676
 func (kyma *Kyma) GetPlan() string {
 	return kyma.Labels[shared.PlanLabel]
 }
