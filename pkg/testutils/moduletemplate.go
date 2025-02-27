@@ -117,7 +117,6 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 
 func MandatoryModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Client, moduleName, key, value string,
 ) error {
-
 	mandatoryModuleTemplates, err := service.NewMandatoryModuleService(clnt).GetMandatory(ctx)
 	if err != nil {
 		return err
