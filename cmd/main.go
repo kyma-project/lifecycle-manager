@@ -482,7 +482,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	parser := parser.NewParser(mgr.GetClient(), descriptorProvider, flagVar.InKCPMode, flagVar.RemoteSyncNamespace)
+	newParser := parser.NewParser(mgr.GetClient(), descriptorProvider, flagVar.InKCPMode, flagVar.RemoteSyncNamespace)
 
 	if err := mandatorymodule.NewInstallationReconciler(
 		mgr.GetClient(), queue.RequeueIntervals{
@@ -490,7 +490,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
-		}, parser, metrics).SetupWithManager(mgr, options); err != nil {
+		}, newParser, metrics).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
