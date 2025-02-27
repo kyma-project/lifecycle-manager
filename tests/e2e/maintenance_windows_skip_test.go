@@ -17,7 +17,6 @@ Maintenance Windows are defined as such:
 */
 
 var _ = Describe("Maintenance Windows - No Wait for Maintenance Widnow on Skip", Ordered, func() {
-	const fastChannel = "fast"
 	const europe = "europe"
 
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
@@ -64,7 +63,7 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Widnow on Skip",
 		})
 
 		It("When module channel is changed to fast (requiresDowntime=true)", func() {
-			module.Channel = fastChannel
+			module.Channel = FastChannel
 			Eventually(UpdateKymaModuleChannel).
 				WithContext(ctx).
 				WithArguments(skrClient, shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, module.Channel).

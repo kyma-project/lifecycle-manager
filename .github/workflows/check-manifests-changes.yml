@@ -1,0 +1,123 @@
+name: "Check If Manifests Change"
+
+env:
+  PR_CACHE_KEY: pr-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+  MAIN_CACHE_KEY: main-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+
+on:
+  pull_request_target:
+
+jobs:
+  create-pr-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Create manifests on PR branch
+        run: |
+          make dry-run-control-plane
+          mkdir -p ./cache/pr
+          mv ./dry-run/manifests.yaml ./cache/pr/manifests.yaml
+
+      - name: Save PR manifests in cache
+        uses: actions/cache@v3
+        with:
+          path: ./cache/pr/
+          key: ${{ env.PR_CACHE_KEY }}
+
+  create-main-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Create manifests on main branch
+        run: |
+          make dry-run-control-plane
+          mkdir -p ./cache/main
+          mv ./dry-run/manifests.yaml ./cache/main/manifests.yaml
+
+      - name: Save main manifests in cache
+        uses: actions/cache@v3
+        with:
+          path: ./cache/main/
+          key: ${{ env.MAIN_CACHE_KEY }}
+
+  diff-manifests:
+    needs:
+      - create-pr-manifests
+      - create-main-manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore PR manifests from cache
+        uses: actions/cache@v3
+        with:
+          path: ./cache/pr/
+          key: ${{ env.PR_CACHE_KEY }}
+
+      - name: Restore main manifests from cache
+        uses: actions/cache@v3
+        with:
+          path: ./cache/main/
+          key: ${{ env.MAIN_CACHE_KEY }}
+
+      - name: Compare Manifests
+        id: compare-manifests
+        run: |
+          set +e
+          DIFF_OUTPUT=$(diff ./cache/pr/manifests.yaml ./cache/main/manifests.yaml)
+          EXIT_CODE=$?
+          if [[ $EXIT_CODE != 0 ]]; then
+            echo "❌ Detected differences in manifest outputs!"
+            echo "$DIFF_OUTPUT"
+            echo "manifests_diff_detected=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No differences in manifest outputs detected."
+            echo "manifests_diff_detected=false" >> $GITHUB_OUTPUT
+          fi
+          exit 0
+
+      - name: Add PR Comment if Manifest Differences Detected
+        if: steps.compare-manifests.outputs.manifests_diff_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please make sure to check if changes are needed in related repositories like management-plane-charts, runtime-watchter, etc.."
+            });
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ["manifests-diff"]
+            });
+
+      - name: Remove 'manifests-diff' Label if No Differences
+        if: steps.compare-manifests.outputs.manifests_diff_detected == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = 'manifests-diff';
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            if (labels.some(label => label.name === labelName)) {
+              console.log(`Label "${labelName}" found, removing it.`);
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                name: labelName,
+              });
+            } else {
+              console.log(`Label "${labelName}" not found, skipping removal.`);
+            }
+

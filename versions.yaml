@@ -1,8 +1,8 @@
 # defines the versions of the tools used in the project
-certManager: "1.15.0"
+certManager: "1.17.1"
 controllerTools: "0.14.0"
-docker: "27.4.0"
-go: "1.23.5"
+docker: "27.5.1"
+go: "1.23.6"
 golangciLint: "1.60.3"
 istio: "1.24.1"
 k3d: "5.7.4"
