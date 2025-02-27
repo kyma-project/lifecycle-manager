@@ -15,7 +15,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
-var _ = Describe("Manage Module Metrics", Ordered, func() {
+var _ = Describe("Manage Module metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
@@ -56,7 +56,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(Equal(1))
 		})
 
-		It("Then Related Manifest Requeue Metrics Get Increased", func() {
+		It("Then Related Manifest Requeue metrics Get Increased", func() {
 			Eventually(IsManifestRequeueReasonCountIncreased).
 				WithContext(ctx).
 				WithArguments(string(metrics.ManifestAddFinalizer), string(queue.IntendedRequeue)).
@@ -102,7 +102,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(Equal(0))
 		})
 
-		It("Then Related Manifest Requeue Metrics Get Increased", func() {
+		It("Then Related Manifest Requeue metrics Get Increased", func() {
 			Eventually(IsManifestRequeueReasonCountIncreased).
 				WithContext(ctx).
 				WithArguments(string(metrics.ManifestPreDeleteEnqueueRequired), string(queue.IntendedRequeue)).
@@ -130,7 +130,7 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				WithArguments(string(metrics.KymaDeletion), string(queue.IntendedRequeue)).
 				Should(Equal(1))
 
-			By("And Kyma Metrics are removed")
+			By("And Kyma metrics are removed")
 			for _, state := range shared.AllStates() {
 				Eventually(AssertKymaStateMetricNotFound).
 					WithContext(ctx).

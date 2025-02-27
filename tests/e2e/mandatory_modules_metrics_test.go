@@ -14,7 +14,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
-var _ = Describe("Mandatory Module Metrics", Ordered, func() {
+var _ = Describe("Mandatory Module metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)

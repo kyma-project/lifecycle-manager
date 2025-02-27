@@ -12,7 +12,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
-var _ = Describe("Purge Metrics", Ordered, func() {
+var _ = Describe("Purge metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(RemoteNamespace)
@@ -45,7 +45,7 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 				Should(BeTrue())
 		})
 
-		It("Then Purge Metrics are updated", func() {
+		It("Then Purge metrics are updated", func() {
 			time.Sleep(5 * time.Second)
 			Eventually(PurgeMetricsAreAsExpected).
 				WithContext(ctx).

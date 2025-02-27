@@ -58,6 +58,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -319,7 +320,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Metrics:             kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider, moduleTemplateInfoLookupStrategies),
+		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider,
+			moduleTemplateInfoLookupStrategies),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
@@ -464,19 +466,15 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	if err := (&mandatorymodule.InstallationReconciler{
-		Client: mgr.GetClient(),
-		RequeueIntervals: queue.RequeueIntervals{
+	parser := parser.NewParser(mgr.GetClient(), descriptorProvider, flagVar.InKCPMode, flagVar.RemoteSyncNamespace)
+
+	if err := mandatorymodule.NewInstallationReconciler(
+		mgr.GetClient(), queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		InKCPMode:           flagVar.InKCPMode,
-		DescriptorProvider:  descriptorProvider,
-		Metrics:             metrics,
-	}).SetupWithManager(mgr, options); err != nil {
+		}, parser, metrics).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -494,17 +492,15 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
-	if err := (&mandatorymodule.DeletionReconciler{
-		Client:             mgr.GetClient(),
-		Event:              event,
-		DescriptorProvider: descriptorProvider,
-		RequeueIntervals: queue.RequeueIntervals{
+	if err := mandatorymodule.NewDeletionReconciler(
+		mgr.GetClient(),
+		event, descriptorProvider,
+		queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-	}).SetupWithManager(mgr, options); err != nil {
+		}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}

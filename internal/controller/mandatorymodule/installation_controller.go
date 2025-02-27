@@ -8,7 +8,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/service"
+	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -17,14 +20,28 @@ import (
 type InstallationReconciler struct {
 	client.Client
 	queue.RequeueIntervals
-	KymaService *service.KymaService
+	kymaService            *service.KymaService
+	mandatoryModuleService *mandatorymodule.MandatoryModuleInstallationService
+}
+
+func NewInstallationReconciler(client client.Client,
+	requeueIntervals queue.RequeueIntervals,
+	parser *parser.Parser,
+	metrics *metrics.MandatoryModulesMetrics,
+) *InstallationReconciler {
+	return &InstallationReconciler{
+		Client:                 client,
+		RequeueIntervals:       requeueIntervals,
+		kymaService:            service.NewKymaService(client),
+		mandatoryModuleService: mandatorymodule.NewMandatoryModuleInstallationService(client, metrics, parser),
+	}
 }
 
 func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Reconciliation started")
 
-	kyma, err := r.KymaService.GetKyma(ctx, req.NamespacedName)
+	kyma, err := r.kymaService.GetKyma(ctx, req.NamespacedName)
 	if err != nil {
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
@@ -39,10 +56,9 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
-	result, err := r.KymaService.ReconcileMandatoryModules(ctx, kyma)
-	if err != nil {
+	if err := r.mandatoryModuleService.ReconcileMandatoryModules(ctx, kyma); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile mandatory modules: %w", err)
 	}
 
-	return result, nil
+	return ctrl.Result{}, nil
 }

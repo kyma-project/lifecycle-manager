@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/repository"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
@@ -139,8 +140,8 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 		WithScheme(scheme).
 		WithObjects(firstModuleTemplate, secondModuleTemplate, thirdModuleTemplate).
 		Build()
-
-	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+	moduleTemplateRepository := repository.NewModuleTemplateRepository(fakeClient)
+	result, err := moduleTemplateRepository.GetMandatory(context.TODO())
 
 	require.NoError(t, err)
 	require.Len(t, result, 2)
@@ -195,7 +196,8 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 		WithObjects(firstModuleTemplate, secondModuleTemplate, thirdModuleTemplate, fourthModuleTemplate).
 		Build()
 
-	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+	moduleTemplateRepository := repository.NewModuleTemplateRepository(fakeClient)
+	result, err := moduleTemplateRepository.GetMandatory(context.TODO())
 
 	require.NoError(t, err)
 	require.Len(t, result, 2)
@@ -237,7 +239,8 @@ func TestGetMandatory_WithErrorNotSemVer(t *testing.T) {
 		WithObjects(firstModuleTemplate, secondModuleTemplate).
 		Build()
 
-	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+	moduleTemplateRepository := repository.NewModuleTemplateRepository(fakeClient)
+	result, err := moduleTemplateRepository.GetMandatory(context.TODO())
 
 	require.NoError(t, err)
 	require.Len(t, result, 1)

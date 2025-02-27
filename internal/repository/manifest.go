@@ -6,10 +6,12 @@ import (
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 type ManifestRepository struct {
@@ -17,8 +19,18 @@ type ManifestRepository struct {
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
-func (r *ManifestRepository) GetCorrespondingManifests(ctx context.Context,
-	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest, error) {
+func NewManifestRepository(client client.Client,
+	descriptorProvider *provider.CachedDescriptorProvider,
+) *ManifestRepository {
+	return &ManifestRepository{
+		Client:             client,
+		DescriptorProvider: descriptorProvider,
+	}
+}
+
+func (r *ManifestRepository) GetMandatoryManifests(ctx context.Context,
+	template *v1beta2.ModuleTemplate,
+) ([]v1beta2.Manifest, error) {
 	manifests := &v1beta2.ManifestList{}
 	descriptor, err := r.DescriptorProvider.GetDescriptor(template)
 	if err != nil {
@@ -34,8 +46,19 @@ func (r *ManifestRepository) GetCorrespondingManifests(ctx context.Context,
 	return filterManifestsByAnnotation(manifests.Items, shared.FQDN, descriptor.GetName()), nil
 }
 
+func (r *ManifestRepository) RemoveManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
+	for _, manifest := range manifests {
+		if err := r.Client.Delete(ctx, &manifest); err != nil {
+			return fmt.Errorf("not able to delete manifest %s/%s: %w", manifest.Namespace, manifest.Name, err)
+		}
+	}
+	logf.FromContext(ctx).V(log.DebugLevel).Info("Marked all Manifests for deletion")
+	return nil
+}
+
 func filterManifestsByAnnotation(manifests []v1beta2.Manifest,
-	annotationKey, annotationValue string) []v1beta2.Manifest {
+	annotationKey, annotationValue string,
+) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
 		if manifest.Annotations[annotationKey] == annotationValue {
