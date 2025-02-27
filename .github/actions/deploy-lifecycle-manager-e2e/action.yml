@@ -109,7 +109,7 @@ runs:
         echo \
         "- op: replace
           path: /spec/renewBefore
-          value: 59m 
+          value: 59m
         - op: replace
           path: /spec/duration
           value: 1h">> certificate_renewal.yaml
@@ -131,8 +131,8 @@ runs:
         popd
     - name: Create and use maintenance window policy
       if: ${{matrix.e2e-test == 'maintenance-windows' ||
-             matrix.e2e-test == 'maintenance-windows-initial-installation' ||
-             matrix.e2e-test == 'maintenance-windows-skip'}}
+        matrix.e2e-test == 'maintenance-windows-initial-installation' ||
+        matrix.e2e-test == 'maintenance-windows-skip'}}
       working-directory: lifecycle-manager/config
       shell: bash
       run: |

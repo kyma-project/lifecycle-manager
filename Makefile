@@ -176,3 +176,7 @@ lint: ## Run golangci-lint against code.
 	$(LOCALBIN)/golangci-lint run --verbose -c .golangci.yaml
 	pushd api; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
 	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
+
+.PHONY: lint-yaml
+lint-yaml: ## Run yamllint against repository. Assumes yamllint is installed. Install via 'brew install yamllint' or 'pip install yamllint'.
+	yamllint -c .yamllint.yml --no-warnings  .
