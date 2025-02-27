@@ -131,8 +131,7 @@ runs:
       run: |
         # Create and apply ModuleReleaseMeta with version when deployment is in warning state
         make build-manifests
-        yq eval '(. | select(.kind == "Deployment") \
-         | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
 
@@ -148,8 +147,7 @@ runs:
       run: |
         # Create and apply ModuleReleaseMeta with version when statefulset is in warning state
         make build-statefulset-manifests
-        yq eval '(. | select(.kind == "StatefulSet") \
-         | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
 
