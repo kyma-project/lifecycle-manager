@@ -11,4 +11,19 @@ export TAG=$(date +%Y%m%d%H%M%S)
 
 make docker-build IMG=${LOCAL_IMG}:${TAG}
 make docker-push IMG=${LOCAL_IMG}:${TAG}
-make local-deploy-with-watcher IMG=${CLUSTER_IMG}:${TAG}
+
+maxRetry=5
+for retry in $(seq 1 $maxRetry)
+do
+  if make local-deploy-with-watcher IMG=${CLUSTER_IMG}:${TAG}; then
+    kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=90s
+    echo "KLM deployed successfully"
+    exit 0
+  elif [[ $retry -lt $maxRetry ]]; then
+    echo "Deploy encountered some error, will retry after 20 seconds"
+    sleep 20
+  else
+    echo "KLM deployment failed"
+    exit 1
+  fi
+done
