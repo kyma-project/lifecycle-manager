@@ -9,7 +9,7 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 patches:
-  - path: manager_webhook_patch.yaml
+  - path: patches/deployment_webhook.yaml
 resources:
   - ../manager
   - ../certmanager

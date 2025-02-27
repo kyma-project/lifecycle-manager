@@ -10,12 +10,8 @@ rules:
     resources:
       - configmaps
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - ""
@@ -88,8 +84,6 @@ rules:
     resources:
       - kymas
     verbs:
-      - create
-      - delete
       - get
       - list
       - patch
@@ -165,8 +159,6 @@ rules:
     resources:
       - watchers
     verbs:
-      - create
-      - delete
       - get
       - list
       - patch
