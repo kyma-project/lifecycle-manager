@@ -1,5 +1,7 @@
 extends: default
 ignore: |
+  ./lifecycle-manager/config/crd/bases/
+  ./lifecycle-manager/config/samples/tests/crds/
   config/crd/bases/
   config/samples/tests/crds/
 rules:
