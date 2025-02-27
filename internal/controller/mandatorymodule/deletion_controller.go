@@ -30,6 +30,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	"github.com/kyma-project/lifecycle-manager/internal/service"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -44,15 +45,15 @@ type DeletionReconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
-	DescriptorProvider *provider.CachedDescriptorProvider
+	moduleTemplateService *service.ModuleTemplateService
 }
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
 
-	template := &v1beta2.ModuleTemplate{}
-	if err := r.Get(ctx, req.NamespacedName, template); err != nil {
+	template, err := r.moduleTemplateService.GetModuleTemplate(ctx, req.NamespacedName)
+	if err != nil {
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("ModuleTemplate %s not found, probably already deleted",
 				req.NamespacedName))
