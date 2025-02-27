@@ -17,7 +17,7 @@ func NewKymaRepository(client client.Client) *KymaRepository {
 	return &KymaRepository{Client: client}
 }
 
-func (r *KymaRepository) GetKyma(ctx context.Context, namespacedName client.ObjectKey) (*v1beta2.Kyma, error) {
+func (r *KymaRepository) Get(ctx context.Context, namespacedName client.ObjectKey) (*v1beta2.Kyma, error) {
 	kyma := &v1beta2.Kyma{}
 	if err := r.Client.Get(ctx, namespacedName, kyma); err != nil {
 		return nil, fmt.Errorf("failed to get Kyma: %w", err)

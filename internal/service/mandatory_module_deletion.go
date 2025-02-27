@@ -12,21 +12,23 @@ import (
 )
 
 type MandatoryModuleDeletionService struct {
-	ManifestRepository *repository.ManifestRepository
+	manifestRepository *repository.ManifestRepository
+	manifestService    *ManifestService
 }
 
 func NewMandatoryModuleDeletionService(client client.Client,
 	descriptorProvider *provider.CachedDescriptorProvider,
 ) *MandatoryModuleDeletionService {
 	return &MandatoryModuleDeletionService{
-		ManifestRepository: repository.NewManifestRepository(client, descriptorProvider),
+		manifestRepository: repository.NewManifestRepository(client),
+		manifestService:    NewManifestService(client, descriptorProvider),
 	}
 }
 
 func (s *MandatoryModuleDeletionService) DeleteMandatoryModules(ctx context.Context,
 	template *v1beta2.ModuleTemplate,
 ) (bool, error) {
-	manifests, err := s.ManifestRepository.GetMandatoryManifests(ctx, template)
+	manifests, err := s.manifestService.GetMandatoryManifests(ctx, template)
 	if err != nil {
 		return false, fmt.Errorf("failed to get MandatoryModuleManifests: %w", err)
 	}
@@ -35,7 +37,7 @@ func (s *MandatoryModuleDeletionService) DeleteMandatoryModules(ctx context.Cont
 		return true, nil
 	}
 
-	if err := s.ManifestRepository.RemoveManifests(ctx, manifests); err != nil {
+	if err := s.manifestRepository.RemoveManifests(ctx, manifests); err != nil {
 		return false, fmt.Errorf("failed to remove MandatoryModule Manifest: %w", err)
 	}
 

@@ -40,10 +40,10 @@ func (m *ModuleTemplateRepository) Update(ctx context.Context,
 func (m *ModuleTemplateRepository) ListByLabel(ctx context.Context,
 	labelSelector k8slabels.Selector,
 ) (*v1beta2.ModuleTemplateList, error) {
-	mandatoryModuleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := m.Client.List(ctx, mandatoryModuleTemplateList,
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	if err := m.Client.List(ctx, moduleTemplateList,
 		&client.ListOptions{LabelSelector: labelSelector}); err != nil {
 		return nil, fmt.Errorf("could not list ModuleTemplates: %w", err)
 	}
-	return mandatoryModuleTemplateList, nil
+	return moduleTemplateList, nil
 }

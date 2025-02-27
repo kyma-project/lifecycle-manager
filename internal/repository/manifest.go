@@ -8,47 +8,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 type ManifestRepository struct {
-	Client             client.Client
-	DescriptorProvider *provider.CachedDescriptorProvider
+	Client client.Client
 }
 
 func NewManifestRepository(client client.Client,
-	descriptorProvider *provider.CachedDescriptorProvider,
 ) *ManifestRepository {
 	return &ManifestRepository{
-		Client:             client,
-		DescriptorProvider: descriptorProvider,
+		Client: client,
 	}
 }
 
-func (r *ManifestRepository) GetMandatoryManifests(ctx context.Context,
-	template *v1beta2.ModuleTemplate,
-) ([]v1beta2.Manifest, error) {
-	manifests := &v1beta2.ManifestList{}
-	descriptor, err := r.DescriptorProvider.GetDescriptor(template)
-	if err != nil {
-		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
-	}
-	if err := r.Client.List(ctx, manifests, &client.ListOptions{
-		Namespace:     template.Namespace,
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
-	}
-
-	return filterManifestsByAnnotation(manifests.Items, shared.FQDN, descriptor.GetName()), nil
-}
-
-func (r *ManifestRepository) RemoveManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
+func (m *ManifestRepository) RemoveManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for _, manifest := range manifests {
-		if err := r.Client.Delete(ctx, &manifest); err != nil {
+		if err := m.Client.Delete(ctx, &manifest); err != nil {
 			return fmt.Errorf("not able to delete manifest %s/%s: %w", manifest.Namespace, manifest.Name, err)
 		}
 	}
@@ -56,14 +33,13 @@ func (r *ManifestRepository) RemoveManifests(ctx context.Context, manifests []v1
 	return nil
 }
 
-func filterManifestsByAnnotation(manifests []v1beta2.Manifest,
-	annotationKey, annotationValue string,
-) []v1beta2.Manifest {
-	filteredManifests := make([]v1beta2.Manifest, 0)
-	for _, manifest := range manifests {
-		if manifest.Annotations[annotationKey] == annotationValue {
-			filteredManifests = append(filteredManifests, manifest)
-		}
+func (m *ManifestRepository) ListByLabel(ctx context.Context,
+	labelSelector k8slabels.Selector,
+) (*v1beta2.ManifestList, error) {
+	manifestList := &v1beta2.ManifestList{}
+	if err := m.Client.List(ctx, manifestList,
+		&client.ListOptions{LabelSelector: labelSelector}); err != nil {
+		return nil, fmt.Errorf("could not list ManifestList: %w", err)
 	}
-	return filteredManifests
+	return manifestList, nil
 }

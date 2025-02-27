@@ -10,15 +10,15 @@ import (
 )
 
 type KymaService struct {
-	KymaRepository *repository.KymaRepository
+	kymaRepository *repository.KymaRepository
 }
 
 func NewKymaService(client client.Client) *KymaService {
 	return &KymaService{
-		KymaRepository: repository.NewKymaRepository(client),
+		kymaRepository: repository.NewKymaRepository(client),
 	}
 }
 
 func (s *KymaService) GetKyma(ctx context.Context, namespacedName client.ObjectKey) (*v1beta2.Kyma, error) {
-	return s.KymaRepository.GetKyma(ctx, namespacedName)
+	return s.kymaRepository.Get(ctx, namespacedName)
 }
