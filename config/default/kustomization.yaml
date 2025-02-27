@@ -13,7 +13,7 @@ patches:
 resources:
   - ../manager
   - ../certmanager
-  - namespace_create.yaml
+  - namespace.yaml
 components:
   - ../crd
   - ../rbac

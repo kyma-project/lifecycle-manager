@@ -7,7 +7,7 @@ kind: Kustomization
 generatorOptions:
   disableNameSuffixHash: true
 resources:
-  - namespaces.yaml
+  - namespace.yaml
   - ../control-plane
 components:
   - ../istio

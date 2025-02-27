@@ -3,7 +3,7 @@ kind: Component
 generatorOptions:
   disableNameSuffixHash: true
 resources:
-  - certificate_setup.yaml
+  - certificate.yaml
   - gateway.yaml
   - kyma_watcher.yaml
 patches:
