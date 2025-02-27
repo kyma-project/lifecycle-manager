@@ -1,4 +1,4 @@
-package mandatorymodule
+package service
 
 import (
 	"context"

@@ -11,7 +11,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/service"
-	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -21,7 +20,7 @@ type InstallationReconciler struct {
 	client.Client
 	queue.RequeueIntervals
 	kymaService            *service.KymaService
-	mandatoryModuleService *mandatorymodule.MandatoryModuleInstallationService
+	mandatoryModuleService *service.MandatoryModuleInstallationService
 }
 
 func NewInstallationReconciler(client client.Client,
@@ -33,7 +32,7 @@ func NewInstallationReconciler(client client.Client,
 		Client:                 client,
 		RequeueIntervals:       requeueIntervals,
 		kymaService:            service.NewKymaService(client),
-		mandatoryModuleService: mandatorymodule.NewMandatoryModuleInstallationService(client, metrics, parser),
+		mandatoryModuleService: service.NewMandatoryModuleInstallationService(client, metrics, parser),
 	}
 }
 

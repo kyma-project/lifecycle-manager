@@ -28,7 +28,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service"
-	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -43,7 +42,7 @@ type DeletionReconciler struct {
 	event.Event
 	queue.RequeueIntervals
 	moduleTemplateService          *service.ModuleTemplateService
-	mandatoryModuleDeletionService *mandatorymodule.MandatoryModuleDeletionService
+	mandatoryModuleDeletionService *service.MandatoryModuleDeletionService
 }
 
 func NewDeletionReconciler(client client.Client, event event.Event,
@@ -54,7 +53,7 @@ func NewDeletionReconciler(client client.Client, event event.Event,
 		Event:                          event,
 		RequeueIntervals:               requeueIntervals,
 		moduleTemplateService:          service.NewModuleTemplateService(client),
-		mandatoryModuleDeletionService: mandatorymodule.NewMandatoryModuleDeletionService(client, descriptorProvider),
+		mandatoryModuleDeletionService: service.NewMandatoryModuleDeletionService(client, descriptorProvider),
 	}
 }
 
@@ -91,6 +90,10 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	noManifestLeft, err := r.mandatoryModuleDeletionService.DeleteMandatoryModules(ctx, template)
+	if err != nil {
+		r.Event.Warning(template, deletingManifestError, err)
+		return ctrl.Result{}, fmt.Errorf("failed to delete MandatoryModuleManifests: %w", err)
+	}
 	if noManifestLeft {
 		updateRequired, err := r.moduleTemplateService.RemoveFinalizer(ctx, template, shared.MandatoryModuleFinalizer)
 		if err != nil {
