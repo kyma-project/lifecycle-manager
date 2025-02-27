@@ -6,32 +6,32 @@ metadata:
   name: controller-manager-certmanager
   namespace: istio-system
 rules:
-- apiGroups:
-    - ""
-  resources:
-    - secrets
-  verbs:
-    - list
-    - watch
-    - get
-    - create
-    - delete
-    - update
-- apiGroups:
-    - cert-manager.io
-  resources:
-    - certificates
-  verbs:
-    - patch
-    - list
-    - watch
-    - get
-    - create
-    - delete
-- apiGroups:
-    - cert-manager.io
-  resources:
-    - issuers
-  verbs:
-    - list
-    - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - list
+      - watch
+      - get
+      - create
+      - delete
+      - update
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - certificates
+    verbs:
+      - patch
+      - list
+      - watch
+      - get
+      - create
+      - delete
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - issuers
+    verbs:
+      - list
+      - watch

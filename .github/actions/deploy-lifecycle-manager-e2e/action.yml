@@ -140,7 +140,7 @@ runs:
         time_plus_2_hours=$(date -u -d "2 hours" +"%Y-%m-%dT%H:%M:%SZ")
         time_plus_1_day=$(date -u -d "1 day" +"%Y-%m-%dT%H:%M:%SZ")
         time_plus_1_day_plus_2_hours=$(date -u -d "1 day 2 hours" +"%Y-%m-%dT%H:%M:%SZ")
-        
+
         cat <<EOF > ./maintenance_windows/policy.json
         {
           "rules": [
@@ -170,7 +170,7 @@ runs:
           "default": {}
         }
         EOF
-        
+
         echo "Maintenance window policy:"
         cat ./maintenance_windows/policy.json
     - name: Deploy LM local testing kustomize

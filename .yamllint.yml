@@ -4,7 +4,7 @@ ignore: |
   config/samples/tests/crds/
 rules:
   line-length:
-    max: 190
+    max: 225
   indentation:
     spaces: 2
   braces:

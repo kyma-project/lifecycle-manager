@@ -1,8 +1,6 @@
 name: "Check Pipeline Changes"
-
 on:
   pull_request_target:
-
 jobs:
   check-pipeline-changes:
     runs-on: ubuntu-latest
@@ -26,12 +24,10 @@ jobs:
               "scripts/tests",
               "versions.yaml"
             ];
-            
-            const pipelineFiles = files.filter(file => 
+            const pipelineFiles = files.filter(file =>
               pathsToCheck.some(path => file.filename === path || file.filename.startsWith(path + '/'))
             );
             core.setOutput('pipelineFiles', pipelineFiles.map(file => file.filename).join(','));
-
       - name: Evaluate Pipeline Changes
         id: eval-changes
         run: |
@@ -44,7 +40,6 @@ jobs:
             echo "✅ No pipeline-related changes detected."
             echo "pipeline_changed=false" >> $GITHUB_OUTPUT
           fi
-
       - name: Add PR Comment & Label if Pipeline Changes Detected
         if: steps.eval-changes.outputs.pipeline_changed == 'true'
         uses: actions/github-script@v7
@@ -59,10 +54,9 @@ jobs:
             github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number, 
+              issue_number: context.payload.pull_request.number,
               labels: ["pipeline-changed"]
             });
-
       - name: Remove 'pipeline-changed' Label if No Changes Detected
         if: steps.eval-changes.outputs.pipeline_changed == 'false'
         uses: actions/github-script@v7

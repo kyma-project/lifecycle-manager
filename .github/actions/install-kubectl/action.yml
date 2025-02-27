@@ -1,7 +1,7 @@
 name: Install kubectl
 description: |
-  Downloads kubectl and installs it locally. Follows the instructions for Debian-based distributions, 
-  see: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management.
+  Downloads kubectl and installs it locally. Follows the instructions for Debian-based distributions,
+   see: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management.
 inputs:
   k8s_version:
     description: The version of Kubernetes to install. For example, 1.28.7.
