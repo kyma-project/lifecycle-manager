@@ -28,6 +28,10 @@ var (
 	ErrModuleMessageInStatusIsIncorrect = errors.New("status.modules.message is incorrect")
 )
 
+const (
+	FastChannel = "fast"
+)
+
 func NewTestKyma(name string) *v1beta2.Kyma {
 	return NewKymaWithSyncLabel(name, ControlPlaneNamespace, v1beta2.DefaultChannel)
 }

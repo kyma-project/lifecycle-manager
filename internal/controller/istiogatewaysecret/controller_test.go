@@ -12,6 +12,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
 func TestReconcile_WhenGetSecretFuncReturnsError_ReturnError(t *testing.T) {
@@ -20,7 +21,7 @@ func TestReconcile_WhenGetSecretFuncReturnsError_ReturnError(t *testing.T) {
 		return nil, errors.New("some-error")
 	}
 	mockHandler := &mockHandler{}
-	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler)
+	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
 	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
@@ -36,7 +37,7 @@ func TestReconcile_WhenGetSecretFuncReturnsNoErrorAndSecretIsNil_ReturnError(t *
 		return nil, nil
 	}
 	mockHandler := &mockHandler{}
-	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler)
+	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
 	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
@@ -56,7 +57,7 @@ func TestReconcile_WhenGetSecretFuncIsCalled_IsCalledWithRequestNamespacedName(t
 		assert.Equal(t, request.Name, name.Name)
 		return nil, nil
 	}
-	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, &mockHandler{})
+	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, &mockHandler{}, queue.RequeueIntervals{})
 
 	// ACT
 	// ASSERT
@@ -70,7 +71,7 @@ func TestReconcile_WhenGetSecretFuncReturnsSecret_HandlerManageGatewaySecretIsCa
 		return secret, nil
 	}
 	mockHandler := &mockHandler{}
-	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler)
+	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
 	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
@@ -87,7 +88,7 @@ func TestReconcile_WhenHandlerManageGatewaySecretReturnsError_ReturnError(t *tes
 		return secret, nil
 	}
 	mockHandler := &mockHandler{err: errors.New("some-error")}
-	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler)
+	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
 	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
