@@ -1,6 +1,8 @@
 name: Lint Markdown Links
 run-name: ${{github.event.pull_request.title}}
 
+permissions: { }
+
 on:
   pull_request:
   schedule:

@@ -1,9 +1,13 @@
 name: "Check API Version Compatibility"
+
+permissions: { }
+
 on:
   pull_request:
     branches:
       - main
       - feat/**
+
 jobs:
   check-api-version-diff:
     name: Diff API Versions

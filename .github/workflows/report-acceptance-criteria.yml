@@ -1,6 +1,8 @@
 name: Report Acceptance Criteria
 run-name: Generate AC coverage report
 
+permissions: { }
+
 # The report generation is performed ad hoc via manual invocation.
 on: workflow_dispatch
 

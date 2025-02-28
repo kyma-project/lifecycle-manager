@@ -1,10 +1,14 @@
 name: Lint yaml
+
+permissions: { }
+
 on:
   pull_request:
     branches:
       - main
       - feat/**
   workflow_dispatch:
+
 jobs:
   yamllint:
     runs-on: ubuntu-latest
