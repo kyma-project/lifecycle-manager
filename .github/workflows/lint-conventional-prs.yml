@@ -1,6 +1,8 @@
 name: Lint PR Title
 run-name: ${{github.event.pull_request.title}}
 
+permissions: { }
+
 on:
   pull_request_target:
     types:
