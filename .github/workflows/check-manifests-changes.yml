@@ -2,10 +2,10 @@ name: "Check If Manifests Change"
 
 permissions:
   pull-requests: write
-  
+
 on:
-  pull_request_target: {}
-    
+  pull_request_target: { }
+
 env:
   PR_CACHE_KEY: pr-manifests-${{ github.run_id }}-${{ github.run_attempt }}
   MAIN_CACHE_KEY: main-manifests-${{ github.run_id }}-${{ github.run_attempt }}
