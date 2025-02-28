@@ -201,7 +201,7 @@ issues:
     - path: tests/integration/
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - linters:
-      - importas
+        - importas
       text: has alias "" which is not part of config # Ignore false positives that emerged due to https://github.com/julz/importas/issues/15.
     - linters:
         - lll

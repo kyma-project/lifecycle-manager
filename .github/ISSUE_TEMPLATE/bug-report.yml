@@ -1,14 +1,15 @@
 name: Bug Report
 description: Report a bug in the project
 title: "Bug Title"
-labels: ["kind/bug"]
+labels: [ "kind/bug" ]
 body:
   - type: markdown
     attributes:
       value: |
         ### Thank you for your report. Before you submit the issue, please:
         1. Search open and closed issues for duplicates.
-        2. Check the [Discussions](https://github.com/kyma-project/lifecycle-manager/discussions) and the [FAQ](https://github.com/kyma-project/lifecycle-manager/wiki/FAQ) sections of the Lifecycle Manager repository.
+        2. Check the [Discussions](https://github.com/kyma-project/lifecycle-manager/discussions).
+        3. Check the [FAQ](https://github.com/kyma-project/lifecycle-manager/wiki/FAQ) sections of the Lifecycle Manager repository.
   - type: textarea
     id: description
     attributes:

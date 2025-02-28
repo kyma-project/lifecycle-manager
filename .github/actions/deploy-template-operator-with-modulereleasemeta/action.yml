@@ -59,7 +59,7 @@ runs:
         else
           REQUIRE_DOWNTIME=false
         fi
-        
+
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
@@ -134,7 +134,7 @@ runs:
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
-        
+
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
@@ -150,7 +150,7 @@ runs:
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
         ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
-        
+
         # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
         make build-statefulset-manifests
         yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
@@ -171,10 +171,10 @@ runs:
       run: |
         # Export the existing ModuleTemplate
         kubectl get moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system -oyaml > template.yaml
-        
+
         # Delete the ModuleTemplate in cluster with name <modulename>-<version>
         kubectl delete moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system
-        
+
         # Create ModuleTemplate with name <modulename>-<channel>
         sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml

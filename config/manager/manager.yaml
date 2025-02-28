@@ -19,36 +19,36 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - command:
-        - /manager
-        args:
-        - --leader-elect
-        image: controller:latest
-        ports:
-          - containerPort: 8082
-            name: listener
-          - containerPort: 8080
-            name: metrics
-        name: manager
-        securityContext:
-          allowPrivilegeEscalation: false
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8081
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 8081
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        resources:
-          limits:
-            memory: 1024Mi
-          requests:
-            cpu:  10m
-            memory: 64Mi
+        - command:
+            - /manager
+          args:
+            - --leader-elect
+          image: controller:latest
+          ports:
+            - containerPort: 8082
+              name: listener
+            - containerPort: 8080
+              name: metrics
+          name: manager
+          securityContext:
+            allowPrivilegeEscalation: false
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: 1024Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
