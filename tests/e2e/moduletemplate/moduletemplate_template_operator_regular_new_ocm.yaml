@@ -20,7 +20,7 @@ spec:
       resourceFilePath: "./module-data/yaml"
   descriptor:
     component:
-      componentReferences: []
+      componentReferences: [ ]
       creationTime: "2024-07-09T12:22:30Z"
       name: kyma-project.io/module/template-operator
       provider: kyma-project.io
@@ -77,7 +77,7 @@ spec:
           relation: local
           type: plainText
           version: 1.0.0
-      sources: []
+      sources: [ ]
       version: 1.0.0-new-ocm-format
     meta:
       schemaVersion: v2

@@ -1,11 +1,9 @@
 name: "Check API Version Compatibility"
-
 on:
   pull_request:
     branches:
       - main
       - feat/**
-
 jobs:
   check-api-version-diff:
     name: Diff API Versions
@@ -13,17 +11,14 @@ jobs:
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v4
-
       - name: Install Dependencies
         run: |
           sudo snap install dyff
-
       - name: Compare CRD Versions
         run: |
           set -e
           CONFIG_FILE=api-version-compatibility-config.yaml
           CRD_PATH=./config/crd/bases
-          
           for file in $CRD_PATH/*.yaml; do
             filename=$(basename $file | sed 's/.yaml//')
             versions=$(yq e '.spec.versions[].name' "$file" | sort -r)
@@ -31,20 +26,16 @@ jobs:
             for ((i=0; i<${#versions[@]}-1; i++)); do
               v1=${versions[i+1]}
               v2=${versions[i]}
-          
               exclusions_v1=$(yq e ".\"$(basename $file)\".exclusions.$v1[]" $CONFIG_FILE)
               exclusions_v2=$(yq e ".\"$(basename $file)\".exclusions.$v2[]" $CONFIG_FILE)
-          
               yq e ".spec.versions.[] | select(.name == \"$v1\") | .schema.openAPIV3Schema.properties" "$file" > "${filename}_${v1}.yaml"
               for exclusion in $exclusions_v1; do
                 yq e "del($exclusion)" -i "${filename}_${v1}.yaml"
               done
-          
               yq e ".spec.versions.[] | select(.name == \"$v2\") | .schema.openAPIV3Schema.properties" "$file" > "${filename}_${v2}.yaml"
               for exclusion in $exclusions_v2; do
                 yq e "del($exclusion)" -i "${filename}_${v2}.yaml"
               done
-          
               if ! dyff between "${filename}_${v1}.yaml" "${filename}_${v2}.yaml" --exclude-regexp ".*description" --set-exit-code; then
                 echo "Difference found between versions $v1 and $v2 in $file"
                 echo "To add an exclusion, update $CONFIG_FILE with the necessary exclusions."

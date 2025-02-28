@@ -19,7 +19,7 @@ spec:
       resourceFilePath: "./module-data/yaml"
   descriptor:
     component:
-      componentReferences: []
+      componentReferences: [ ]
       name: kyma-project.io/module/template-operator
       provider: internal
       repositoryContexts:

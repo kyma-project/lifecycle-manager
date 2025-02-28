@@ -1,5 +1,4 @@
 name: "Create release"
-
 env:
   IMAGE_REPO: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
   CODE_REPOSITORY: kyma-project/lifecycle-manager
@@ -14,7 +13,6 @@ on:
         description: "Changelog since"
         default: ""
         required: false
-
 jobs:
   validate-release:
     name: Validate release
