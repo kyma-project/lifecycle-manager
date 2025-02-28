@@ -1,7 +1,7 @@
 name: Report Package Dependencies Metrics
 run-name: Generate package dependencies report
 
-permissions: {}
+permissions: read-all
 
 on:
   pull_request_target:
