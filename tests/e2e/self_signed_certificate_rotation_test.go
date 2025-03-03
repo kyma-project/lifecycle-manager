@@ -37,7 +37,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				WithArguments(kcpClient, "cert-manager", "cert-manager").
 				Should(Succeed())
 		})
-		It(fmt.Sprintf("Then %s metric increased to 1", metrics.SelfSignedCertNotRenewMetrics), func() {
+		It(fmt.Sprintf("Then %s metric increased to 1", metrics.MetricSelfSignedCertNotRenew), func() {
 			Eventually(GetSelfSignedCertNotRenewMetricsGauge).
 				WithContext(ctx).
 				WithTimeout(5 * time.Minute).
@@ -50,7 +50,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				WithArguments(kcpClient, "cert-manager", "cert-manager").
 				Should(Succeed())
 		})
-		It(fmt.Sprintf("Then %s metric deleted", metrics.SelfSignedCertNotRenewMetrics), func() {
+		It(fmt.Sprintf("Then %s metric deleted", metrics.MetricSelfSignedCertNotRenew), func() {
 			Eventually(GetSelfSignedCertNotRenewMetricsGauge).
 				WithContext(ctx).
 				WithTimeout(5 * time.Minute).
