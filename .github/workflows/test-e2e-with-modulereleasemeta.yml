@@ -1,4 +1,7 @@
 name: TestSuite E2E with ModuleReleaseMeta
+
+permissions: { }
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,6 +10,7 @@ on:
         required: false
   pull_request:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
+
 jobs:
   wait-for-image-build:
     name: Wait for image build
