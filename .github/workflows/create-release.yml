@@ -1,6 +1,7 @@
 name: "Create release"
 
-permissions: { }
+permissions:
+  contents: write
 
 on:
   workflow_dispatch:
