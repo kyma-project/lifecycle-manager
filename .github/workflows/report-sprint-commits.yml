@@ -1,6 +1,8 @@
 name: Report Sprint Test Suites
 run-name: A report for sprint commits
 
+permissions: { }
+
 # The report generation is performed ad hoc via manual invocation.
 on: workflow_dispatch
 

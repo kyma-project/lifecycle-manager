@@ -55,28 +55,12 @@ func ListKlmRoleBindings(clnt client.Client, ctx context.Context,
 	return klmRoleBindings, nil
 }
 
-func GetClusterRoleBindingPolicyRules(ctx context.Context, clnt client.Client, roleName string,
+func GetClusterRolePolicyRules(ctx context.Context, clnt client.Client, roleName string,
 	clusterRoleBindings apirbacv1.ClusterRoleBindingList,
 ) ([]apirbacv1.PolicyRule, error) {
 	var policyRules []apirbacv1.PolicyRule
 	for _, crb := range clusterRoleBindings.Items {
 		if crb.RoleRef.Name == roleName {
-			var err error
-			policyRules, err = getClusterRolePolicyRules(ctx, clnt, roleName)
-			if err != nil {
-				return nil, errFailedToFetchClusterRole
-			}
-		}
-	}
-	return policyRules, nil
-}
-
-func GetRoleBindingwithClusterRolePolicyRules(ctx context.Context, clnt client.Client, roleName string,
-	roleBindings apirbacv1.RoleBindingList,
-) ([]apirbacv1.PolicyRule, error) {
-	var policyRules []apirbacv1.PolicyRule
-	for _, rb := range roleBindings.Items {
-		if rb.RoleRef.Name == roleName {
 			var err error
 			policyRules, err = getClusterRolePolicyRules(ctx, clnt, roleName)
 			if err != nil {
@@ -102,6 +86,15 @@ func GetRoleBindingRolePolicyRules(ctx context.Context, clnt client.Client, role
 		}
 	}
 	return policyRules, nil
+}
+
+func GetClusterRole(ctx context.Context, clnt client.Client, roleName string) (apirbacv1.ClusterRole, error) {
+	clusterRole := apirbacv1.ClusterRole{}
+	err := clnt.Get(ctx, client.ObjectKey{Name: roleName}, &clusterRole)
+	if err != nil {
+		return clusterRole, errFailedToFetchClusterRole
+	}
+	return clusterRole, nil
 }
 
 func getClusterRolePolicyRules(ctx context.Context, clnt client.Client, roleName string) ([]apirbacv1.PolicyRule,

@@ -1,5 +1,5 @@
 rules:
-- match:
-    plan: "trial"
-- match:
-    plan: "free"
+  - match:
+      plan: "trial"
+  - match:
+      plan: "free"

@@ -11,8 +11,6 @@ runs:
       shell: bash
       run: |
         mkdir -p ./yq/bin
-
         wget https://github.com/mikefarah/yq/releases/${{ inputs.yq_version }}/download/yq_linux_amd64 -o ./yq/bin/yq &&\
         chmod +x ./yq/bin/yq
-        
         echo "$(pwd)/yq/bin" >> $GITHUB_PATH

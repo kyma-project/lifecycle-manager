@@ -214,7 +214,7 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 	resources := make([]client.Object, 0)
 	for _, baseRes := range m.baseResources {
 		resource := baseRes.DeepCopy()
-		resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			shared.ManagedBy: shared.ManagedByLabelValue,
 		}))
 		configuredResource, err := configureUnstructuredObject(cfg, resource)

@@ -1,5 +1,7 @@
 name: Verify Unit Test Coverage
 
+permissions: { }
+
 on:
   pull_request:
     branches:

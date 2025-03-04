@@ -29,6 +29,8 @@ func TestConcurrentSSA(t *testing.T) {
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
 	_ = fakeClientBuilder.Create(context.Background(), pod)
 
+	inactiveCollector := skrresources.NewManifestLogCollector(nil, client.FieldOwner("test"))
+
 	type args struct {
 		clnt  client.Client
 		owner client.FieldOwner
@@ -54,7 +56,7 @@ func TestConcurrentSSA(t *testing.T) {
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
-				ssa := skrresources.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner)
+				ssa := skrresources.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner, inactiveCollector)
 				if err := ssa.Run(context.Background(), testCase.apply); err != nil {
 					require.ErrorIs(t, err, testCase.err)
 				}

@@ -1,90 +1,79 @@
-# The main purpose of this dedicated kustomization is to have different configuration for testing the watcher locally.
-# Unlike the default setup, it enables the ability to configure additional components
-# that we do not want in the default configuration (e.g. vendor-specific gateway implementation)
+# Configuration for testing the watcher locally.
+# Enables the ability to configure additional components,
+# that we do not want in the default configuration (e.g. vendor-specific gateway implementation),
 # but are necessary for testing the watcher on locally provisioned clusters using k3d.
-resources:
-- ../control-plane
-# In control-plane we expect a kcp-system and kyma-system namespace to be already present, thus for testing we need to create it
-- patches/namespace_create.yaml
-
-# [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-# [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
-components:
-- ../istio
-- ../maintenance_windows
-
-
-generatorOptions:
-  disableNameSuffixHash: true
-
-# Patches enable the local testing mode for the KLM
-# and sets the namespace for the watcher resources to `kcp-system`.
-# When deployed on KCP it will be set by the default kustomize.
-patches:
-- path: patches/adjust_resources_for_local_setup.yaml
-- patch: |-
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --kyma-requeue-success-interval=20s
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --manifest-requeue-success-interval=5s
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --log-level=9
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --additional-dns-names=localhost,127.0.0.1,host.k3d.internal
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --listener-port-overwrite=9443
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --leader-election-lease-duration=20s
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --leader-election-renew-deadline=15s
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --leader-election-retry-period=3s
-    - op: replace
-      path: /spec/template/spec/containers/0/imagePullPolicy
-      value: Always
-  target:
-    kind: Deployment
-- patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: kcp-system
-  target:
-    group: security.istio.io
-    version: v1beta1
-    kind: AuthorizationPolicy
-    name: controller-manager
-- patch: |-
-    - op: replace
-      path: /spec/servers/0/hosts/0
-      value: "host.k3d.internal"
-  target:
-    group: networking.istio.io
-    version: v1beta1
-    kind: Gateway
-    name: watcher
-- patch: |-
-    - op: replace
-      path: /spec/dnsNames/0
-      value: "localhost"
-    - op: add
-      path: /spec/dnsNames/1
-      value: "host.k3d.internal"
-    - op: add
-      path: /spec/dnsNames/2
-      value: "skr.cluster.local"
-  target:
-    group: cert-manager.io
-    version: v1
-    kind: Certificate
-    name: watcher-serving
-
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+generatorOptions:
+  disableNameSuffixHash: true
+resources:
+  - namespace.yaml
+  - ../control-plane
+components:
+  - ../istio
+  - ../maintenance_windows
+patches:
+  - path: patches/deployment_resources.yaml
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-success-interval=20s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --manifest-requeue-success-interval=5s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --log-level=9
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --additional-dns-names=localhost,127.0.0.1,host.k3d.internal
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --listener-port-overwrite=9443
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-lease-duration=20s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-renew-deadline=15s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-retry-period=3s
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target:
+      group: security.istio.io
+      version: v1beta1
+      kind: AuthorizationPolicy
+      name: controller-manager
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: kcp-system
+  - target:
+      group: networking.istio.io
+      version: v1beta1
+      kind: Gateway
+      name: watcher
+    patch: |-
+      - op: replace
+        path: /spec/servers/0/hosts/0
+        value: "host.k3d.internal"
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: watcher-serving
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: "localhost"
+      - op: add
+        path: /spec/dnsNames/1
+        value: "host.k3d.internal"
+      - op: add
+        path: /spec/dnsNames/2
+        value: "skr.cluster.local"

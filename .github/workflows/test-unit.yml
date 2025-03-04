@@ -1,10 +1,13 @@
 name: TestSuite integration and unit tests
 
+permissions: { }
+
 on:
   pull_request:
     branches:
       - main
       - feat/**
+
 jobs:
   envtest-and-unittest:
     name: "Run 'make test'"

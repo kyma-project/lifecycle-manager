@@ -1,4 +1,4 @@
-# Use this Gateway for setup with watcher enabled if there is no istio gateway configured
+# Use this Gateway for setup with enabled watcher if there is no istio gateway configured
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:

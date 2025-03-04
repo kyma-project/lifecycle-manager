@@ -31,7 +31,7 @@ func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.
 
 func KymaComponentTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
-		resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			"app.kubernetes.io/component": obj.GetName(),
 			"app.kubernetes.io/part-of":   "Kyma",
 		}))
@@ -41,11 +41,11 @@ func KymaComponentTransform(_ context.Context, obj Object, resources []*unstruct
 
 func ManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
-		resource.SetLabels(collections.MergeMaps(resource.GetLabels(), map[string]string{
+		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			shared.ManagedBy: shared.ManagedByLabelValue,
 		}))
 
-		resource.SetAnnotations(collections.MergeMaps(resource.GetAnnotations(), map[string]string{
+		resource.SetAnnotations(collections.MergeMapsSilent(resource.GetAnnotations(), map[string]string{
 			shared.OwnedByAnnotation: fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName()),
 		}))
 	}

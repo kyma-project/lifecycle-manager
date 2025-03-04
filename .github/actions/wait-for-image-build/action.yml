@@ -4,7 +4,7 @@ inputs:
   token:
     description: The GitHub token to use for making API requests.
     required: true
-  statusName: 
+  statusName:
     description: The name of the GitHub status check to wait for. For example, `build` or `deploy`.
     required: true
   timeoutSeconds:

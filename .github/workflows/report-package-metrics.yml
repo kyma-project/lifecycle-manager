@@ -1,8 +1,10 @@
 name: Report Package Dependencies Metrics
 run-name: Generate package dependencies report
 
+permissions: { }
+
 on:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - reopened

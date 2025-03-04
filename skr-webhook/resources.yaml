@@ -9,9 +9,9 @@ kind: ClusterRole
 metadata:
   name: kyma-reader
 rules:
-  - apiGroups: ["operator.kyma-project.io"]
-    resources: ["kymas"]
-    verbs: ["get", "watch", "list"]
+  - apiGroups: [ "operator.kyma-project.io" ]
+    resources: [ "kymas" ]
+    verbs: [ "get", "watch", "list" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

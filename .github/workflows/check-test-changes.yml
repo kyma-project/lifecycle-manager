@@ -1,5 +1,7 @@
 name: Check for Test Changes
 
+permissions: { }
+
 on:
   pull_request:
     types: [ opened, synchronize, reopened ]

@@ -16,7 +16,7 @@ spec:
       resourceFilePath: "./module-data/yaml"
   descriptor:
     component:
-      componentReferences: []
+      componentReferences: [ ]
       labels:
         - name: oci-registry-cred
           value:

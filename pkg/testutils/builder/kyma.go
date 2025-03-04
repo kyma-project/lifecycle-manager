@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -125,6 +126,12 @@ func (kb KymaBuilder) WithInternal(internal bool) KymaBuilder {
 // WithSkipMaintenanceWindows sets v1beta2.Kyma.Spec.SkipMaintenanceWindows.
 func (kb KymaBuilder) WithSkipMaintenanceWindows(skip bool) KymaBuilder {
 	kb.kyma.Spec.SkipMaintenanceWindows = skip
+	return kb
+}
+
+// WithDeletionTimestamp sets v1beta2.Kyma.ObjectMeta.DeletionTimestamp.
+func (kb KymaBuilder) WithDeletionTimestamp() KymaBuilder {
+	kb.kyma.ObjectMeta.DeletionTimestamp = &apimetav1.Time{Time: time.Now()}
 	return kb
 }
 

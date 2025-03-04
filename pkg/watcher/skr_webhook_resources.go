@@ -194,7 +194,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	}
 	deployment.Spec.Template.Spec.Containers[0] = serverContainer
 
-	deployment.SetLabels(collections.MergeMaps(deployment.GetLabels(), map[string]string{
+	deployment.SetLabels(collections.MergeMapsSilent(deployment.GetLabels(), map[string]string{
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 

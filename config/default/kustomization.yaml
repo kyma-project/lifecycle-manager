@@ -1,10 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
-# Value of this field is prepended to the names of all resources
 namePrefix: klm-
-
-# Labels to add to all resources and selectors.
 commonLabels:
   app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   app.kubernetes.io/instance: kcp-lifecycle-manager-main
@@ -12,56 +8,43 @@ commonLabels:
   app.kubernetes.io/created-by: kustomize
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
-
-
 patches:
-- path: manager_webhook_patch.yaml
-
+  - path: patches/deployment_webhook.yaml
 resources:
-- ../manager
-- ../certmanager
-- namespace_create.yaml
-
+  - ../manager
+  - ../certmanager
+  - namespace.yaml
 components:
   - ../crd
-  - ../rbac/cluster_bindings
-  # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
-  #- ../istio
-  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-  # crd/kustomization.yaml
+  - ../rbac
   - ../webhook
-  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-  #- ../prometheus
-  # [GRAFANA] To generate configmap for provision grafana dashboard
-  #- ../grafana
-
 transformers:
-- |-
-  apiVersion: builtin
-  kind: NamespaceTransformer
-  metadata:
-    name: adds-resources-to-kcp-system
-    namespace: kcp-system
-  unsetOnly: true
-  setRoleBindingSubjects: allServiceAccounts
-- |-
-  apiVersion: builtin
-  kind: AnnotationsTransformer
-  metadata:
-    name: add-ca-inject-annotation
-  annotations:
-    cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
-  fieldSpecs:
-  - kind: CustomResourceDefinition
-    path: metadata/annotations
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-cert-dns-names
-  patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
-  target:
-    kind: Certificate
-    name: klm-controller-manager-webhook-serving
-    version: v1
-    group: cert-manager.io
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: adds-resources-to-kcp-system
+      namespace: kcp-system
+    unsetOnly: true
+    setRoleBindingSubjects: allServiceAccounts
+  - |-
+    apiVersion: builtin
+    kind: AnnotationsTransformer
+    metadata:
+      name: add-ca-inject-annotation
+    annotations:
+      cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
+    fieldSpecs:
+    - kind: CustomResourceDefinition
+      path: metadata/annotations
+  - |-
+    apiVersion: builtin
+    kind: PatchTransformer
+    metadata:
+      name: fix-cert-dns-names
+    patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
+    target:
+      kind: Certificate
+      name: klm-controller-manager-webhook-serving
+      version: v1
+      group: cert-manager.io

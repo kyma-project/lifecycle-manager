@@ -77,7 +77,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -215,7 +215,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -315,7 +315,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -596,7 +596,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -699,7 +699,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -813,7 +813,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "targets": [
         {
           "datasource": {
@@ -1167,7 +1167,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1277,7 +1277,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1387,7 +1387,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1500,7 +1500,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1622,7 +1622,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1730,7 +1730,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1826,7 +1826,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1920,7 +1920,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.29",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1977,6 +1977,100 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 110
+      },
+      "id": 84,
+      "panels": [],
+      "title": "Maintenance Windows",
+      "type": "row"
+    },
+    {
+      "datasource": null,
+      "description": "Indicates whether the KLM successfully read the maintenance policy file from the mounted ConfigMap.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "from": "",
+              "id": 1,
+              "text": "Failed",
+              "to": "",
+              "type": 1,
+              "value": "0"
+            },
+            {
+              "from": "",
+              "id": 2,
+              "text": "Success",
+              "to": "",
+              "type": 1,
+              "value": "1"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 111
+      },
+      "id": 86,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.35",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "maintenance_window_config_read_success",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Maintenance Window Configuration Read Status",
+      "type": "stat"
     }
   ],
   "refresh": "",

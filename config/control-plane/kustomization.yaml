@@ -1,42 +1,31 @@
-# WARNING: This is a Kustomization that CANNOT run standalone
-# It is meant to be used in conjunction with a control-plane deployment only and has prerequisites that
-# need to be explicitly created externally in a centrally managed place (e.g. the kcp-system).
-# In fact, in order to avoid conflicts, it even explicitly patches out certain configuration elements.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
-namePrefix: klm- #kyma-lifecycle-manager
-
-# Labels to add to all resources and selectors.
+namePrefix: klm-
 commonLabels:
   app.kubernetes.io/instance: kcp-lifecycle-manager
   app.kubernetes.io/name: lifecycle-manager
   app.kubernetes.io/created-by: argo-cd
   app.kubernetes.io/part-of: kcp
   app.kubernetes.io/managed-by: kustomize
-
 images:
-- name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
-
+  - name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
 resources:
   - ../manager
-  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
   - ../certmanager
-
 components:
   - ../crd
-  - ../rbac/namespace_bindings
-  # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
+  - ../rbac
   - ../istio
-  # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
   - ../watcher
-  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix
   - ../webhook
-  # [GRAFANA] To enable grafana, uncomment all sections with 'GRAFANA'.
   - ../grafana
-
 patches:
-  - patch: |-
+  - path: patches/deployment_resources.yaml
+  - path: patches/unique_deployment_webhook_patch.yaml
+  - path: patches/unique_certificate_name.yaml # Override certificate name to ensure a unique CM Cert when run with other kubebuilder operators
+  - target:
+      kind: Deployment
+    patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --in-kcp-mode
@@ -45,10 +34,10 @@ patches:
         value: --rate-limiter-burst=2000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --rate-limiter-frequency=1000      
+        value: --rate-limiter-frequency=1000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --k8s-client-qps=1000      
+        value: --k8s-client-qps=1000
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --k8s-client-burst=2000
@@ -64,64 +53,56 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
-    target:
-      kind: Deployment
-  - patch: |-
-      - op: add
-        path: /metadata/labels
-        value: {}
-      - op: add
-        path: /metadata/labels/grafana_dashboard
-        value: "1"
-    target:
+  - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
       version: v1
-  - path: patches/unique_manager_webhook_patch.yaml
-  - path: patches/adjust_resources_in_deployment.yaml
-    # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other
-    # kubebuilder operators.
-  - path: patches/unique_certificate_name.yaml
-
+    patch: |-
+      - op: add
+        path: /metadata/labels
+        value: { }
+      - op: add
+        path: /metadata/labels/grafana_dashboard
+        value: "1"
 # Note: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
 transformers:
-- |-
-  apiVersion: builtin
-  kind: PrefixSuffixTransformer
-  metadata:
-    name: add-klm-prefix-to-resources
-  prefix: klm-
-  fieldSpecs:
-  - path: subjects/name
-    kind: RoleBinding
-  - path: subjects/name
-    kind: ClusterRoleBinding
-- |-
-  apiVersion: builtin
-  kind: NamespaceTransformer
-  metadata:
-    name: add-resources-to-kcp-system
-    namespace: kcp-system
-  unsetOnly: true
-  setRoleBindingSubjects: allServiceAccounts
-- |-
-  apiVersion: builtin
-  kind: AnnotationsTransformer
-  metadata:
-    name: add-ca-inject-annotation
-  annotations:
-    cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
-  fieldSpecs:
-  - kind: CustomResourceDefinition
-    path: metadata/annotations
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-cert-dns-names
-  patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
-  target:
-    kind: Certificate
-    name: klm-controller-manager-webhook-serving
-    version: v1
-    group: cert-manager.io
+  - |-
+    apiVersion: builtin
+    kind: PrefixSuffixTransformer
+    metadata:
+      name: add-klm-prefix-to-resources
+    prefix: klm-
+    fieldSpecs:
+    - path: subjects/name
+      kind: RoleBinding
+    - path: subjects/name
+      kind: ClusterRoleBinding
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: add-resources-to-kcp-system
+      namespace: kcp-system
+    unsetOnly: true
+    setRoleBindingSubjects: allServiceAccounts
+  - |-
+    apiVersion: builtin
+    kind: AnnotationsTransformer
+    metadata:
+      name: add-ca-inject-annotation
+    annotations:
+      cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
+    fieldSpecs:
+    - kind: CustomResourceDefinition
+      path: metadata/annotations
+  - |-
+    apiVersion: builtin
+    kind: PatchTransformer
+    metadata:
+      name: fix-cert-dns-names
+    patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
+    target:
+      kind: Certificate
+      name: klm-controller-manager-webhook-serving
+      version: v1
+      group: cert-manager.io

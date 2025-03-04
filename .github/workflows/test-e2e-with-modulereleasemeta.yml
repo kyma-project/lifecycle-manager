@@ -1,5 +1,7 @@
 name: TestSuite E2E with ModuleReleaseMeta
 
+permissions: { }
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,7 +9,8 @@ on:
         description: "With Kubernetes version (format: X.Y.Z)"
         required: false
   pull_request:
-    types: [opened, edited, synchronize, reopened, ready_for_review]
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
+
 jobs:
   wait-for-image-build:
     name: Wait for image build
@@ -54,8 +57,7 @@ jobs:
           - modulereleasemeta-module-upgrade-new-version
           - unmanage-module
           - skip-manifest-reconciliation
-          - ca-certificate-rotation
-          - istio-gateway-secret-rotation
+          - legacy-istio-gateway-secret-rotation
           - self-signed-certificate-rotation
           - mandatory-module
           - mandatory-module-metrics
@@ -70,6 +72,7 @@ jobs:
           - maintenance-windows
           - maintenance-windows-initial-installation
           - maintenance-windows-skip
+          - watcher-zero-downtime
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -78,17 +81,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: lifecycle-manager
-
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:
           repository: kyma-project/template-operator
           path: template-operator
-
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
-
       - name: Setup tools
         uses: ./lifecycle-manager/.github/actions/setup-tools
         with:
@@ -98,19 +98,16 @@ jobs:
           modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
-
       - name: Setup test clusters
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
-
       - name: Deploy lifecycle-manager
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
-
       - name: Deploy template-operator
         uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
         env:

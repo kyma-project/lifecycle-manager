@@ -13,7 +13,7 @@ inputs:
   modulectl_version:
     description: The version of modulectl to install. For example, 1.0.0.
     required: true
-  go-version-file: 
+  go-version-file:
     description: The path to the Go version file.
     required: true
   cache-dependency-path:
