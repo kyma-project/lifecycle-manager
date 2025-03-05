@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	SelfSignedCertNotRenewMetrics = "lifecycle_mgr_self_signed_cert_not_renew"
+	MetricSelfSignedCertNotRenew = "lifecycle_mgr_self_signed_cert_not_renew"
 )
 
 type WatcherMetrics struct {
@@ -17,7 +17,7 @@ type WatcherMetrics struct {
 func NewWatcherMetrics() *WatcherMetrics {
 	watcherMetrics := &WatcherMetrics{
 		certNotRenewGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: SelfSignedCertNotRenewMetrics,
+			Name: MetricSelfSignedCertNotRenew,
 			Help: "Indicates the self-signed Certificate of related Kyma is not renewed yet",
 		}, []string{KymaNameLabel}),
 	}
