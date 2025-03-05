@@ -1,5 +1,7 @@
 name: TestSuite E2E
 
+permissions: { }
+
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +10,7 @@ on:
         required: false
   pull_request:
     types: [ opened, edited, synchronize, reopened, ready_for_review ]
+
 jobs:
   wait-for-image-build:
     name: Wait for image build
@@ -55,8 +58,7 @@ jobs:
           - unmanage-module
           - module-install-by-version
           - skip-manifest-reconciliation
-          - ca-certificate-rotation
-          - istio-gateway-secret-rotation
+          - legacy-istio-gateway-secret-rotation
           - self-signed-certificate-rotation
           - mandatory-module-with-old-naming-pattern
           - mandatory-module-metrics-with-old-naming-pattern

@@ -1,5 +1,7 @@
 name: Install kubectl
-description: Downloads kubectl and installs it locally. Follows the instructions for Debian-based distributions at https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management.
+description: |
+  Downloads kubectl and installs it locally. Follows the instructions for Debian-based distributions,
+   see: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management.
 inputs:
   k8s_version:
     description: The version of Kubernetes to install. For example, 1.28.7.
@@ -20,11 +22,13 @@ runs:
     - name: Download the public signing key for the Kubernetes package repositories
       shell: bash
       run: |
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v${{ steps.parse_k8s_minor_version.outputs.k8s_minor_version }}/deb/Release.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v${{ steps.parse_k8s_minor_version.outputs.k8s_minor_version }}/deb/Release.key \
+         | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     - name: Add the appropriate Kubernetes apt repository
       shell: bash
       run: |
-        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${{ steps.parse_k8s_minor_version.outputs.k8s_minor_version }}/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${{ steps.parse_k8s_minor_version.outputs.k8s_minor_version }}/deb/ /' \
+         | sudo tee /etc/apt/sources.list.d/kubernetes.list
     - name: Install kubectl
       shell: bash
       run: |

@@ -13,10 +13,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
+const (
+	kcpMetricsPort = 9081
+	skrMetricsPort = 2112
+)
+
 var ErrMetricNotFound = errors.New("metric was not found")
 
 func GetMaintenanceWindowGauge(ctx context.Context) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -26,7 +31,7 @@ func GetMaintenanceWindowGauge(ctx context.Context) (int, error) {
 }
 
 func GetKymaStateMetricCount(ctx context.Context, kymaName string, state shared.State) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -42,7 +47,7 @@ func getKymaStateMetricRegex(kymaName string, state shared.State) *regexp.Regexp
 }
 
 func AssertKymaStateMetricNotFound(ctx context.Context, kymaName string, state shared.State) error {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return err
 	}
@@ -59,7 +64,7 @@ func AssertKymaStateMetricNotFound(ctx context.Context, kymaName string, state s
 func GetRequeueReasonCount(ctx context.Context,
 	requeueReason, requeueType string,
 ) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +78,7 @@ func GetRequeueReasonCount(ctx context.Context,
 func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, requeueType string) (bool,
 	error,
 ) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -86,7 +91,7 @@ func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, r
 }
 
 func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName string, state shared.State) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -103,7 +108,7 @@ func PurgeMetricsAreAsExpected(ctx context.Context,
 ) bool {
 	correctCount := false
 	correctTime := false
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return false
 	}
@@ -131,7 +136,7 @@ func PurgeMetricsAreAsExpected(ctx context.Context,
 }
 
 func GetSelfSignedCertNotRenewMetricsGauge(ctx context.Context, kymaName string) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -143,7 +148,7 @@ func GetSelfSignedCertNotRenewMetricsGauge(ctx context.Context, kymaName string)
 }
 
 func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -153,7 +158,7 @@ func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
 }
 
 func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, state string) (int, error) {
-	bodyString, err := getMetricsBody(ctx)
+	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -163,9 +168,27 @@ func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, st
 	return parseCount(re, bodyString)
 }
 
-func getMetricsBody(ctx context.Context) (string, error) {
+func GetWatcherFailedKcpTotalMetric(ctx context.Context) (int, error) {
+	metricsBody, err := getSKRMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+	regex := regexp.MustCompile(`watcher_failed_kcp_total{error_reason="failed-request"} (\d+)`)
+	return parseCount(regex, metricsBody)
+}
+
+func getKCPMetricsBody(ctx context.Context) (string, error) {
+	return getMetricsBody(ctx, kcpMetricsPort)
+}
+
+func getSKRMetricsBody(ctx context.Context) (string, error) {
+	return getMetricsBody(ctx, skrMetricsPort)
+}
+
+func getMetricsBody(ctx context.Context, port int) (string, error) {
 	clnt := &http.Client{}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
+	url := fmt.Sprintf("http://localhost:%d/metrics", port)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("request to metrics endpoint :%w", err)
 	}

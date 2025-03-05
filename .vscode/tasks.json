@@ -117,7 +117,6 @@
         "module-upgrade-new-version",
         "unmanage-module",
         "skip-manifest-reconciliation",
-        "ca-certificate-rotation",
         "self-signed-certificate-rotation",
         "mandatory-module",
         "mandatory-module-metrics",
