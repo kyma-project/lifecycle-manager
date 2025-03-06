@@ -106,7 +106,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please check if changes are needed in related repositories like management-plane-charts, runtime-watchter, etc."
+              body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please make sure to check if changes are needed in related repositories like management-plane-charts, runtime-watchter, etc.."
             });
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
