@@ -113,3 +113,10 @@ jobs:
         working-directory: lifecycle-manager
         run: |
           make -C tests/e2e ${{ matrix.e2e-test }}
+
+      - name: Post debug
+        if: always()
+        run: |
+          k3d cluster list
+          kubectl get deploy -n kcp-system -o yaml
+          kubectl describe deploy -n kcp-system
