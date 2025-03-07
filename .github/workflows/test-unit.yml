@@ -13,7 +13,7 @@ jobs:
     name: "Run 'make test'"
     runs-on: ubuntu-latest
     env:
-      GOSUMDB: off
+      GOSUMDB: sum.golang.org
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v4
