@@ -118,12 +118,8 @@ var _ = BeforeSuite(func() {
 	}
 
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	reconciler = &mandatorymodule.DeletionReconciler{
-		Client:             mgr.GetClient(),
-		Event:              event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)),
-		DescriptorProvider: descriptorProvider,
-		RequeueIntervals:   intervals,
-	}
+	reconciler = mandatorymodule.NewDeletionReconciler(mgr.GetClient(),
+		event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)), descriptorProvider, intervals)
 
 	err = reconciler.SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
