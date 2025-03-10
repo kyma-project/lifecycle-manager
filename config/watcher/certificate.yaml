@@ -6,7 +6,7 @@ kind: ClusterIssuer
 metadata:
   name: watcher-selfsigned
 spec:
-  selfSigned: {}
+  selfSigned: { }
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate

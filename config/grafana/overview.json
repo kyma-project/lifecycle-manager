@@ -2060,7 +2060,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "maintenance_window_config_read_success",
+          "expr": "lifecycle_mgr_maintenance_window_config_read_success",
           "format": "time_series",
           "interval": "",
           "legendFormat": "{{pod}}",

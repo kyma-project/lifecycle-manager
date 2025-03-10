@@ -1,7 +1,10 @@
 name: "Check Pipeline Changes"
 
+permissions:
+  pull-requests: write
+
 on:
-  pull_request_target:
+  pull_request_target: { }
 
 jobs:
   check-pipeline-changes:
@@ -26,8 +29,7 @@ jobs:
               "scripts/tests",
               "versions.yaml"
             ];
-            
-            const pipelineFiles = files.filter(file => 
+            const pipelineFiles = files.filter(file =>
               pathsToCheck.some(path => file.filename === path || file.filename.startsWith(path + '/'))
             );
             core.setOutput('pipelineFiles', pipelineFiles.map(file => file.filename).join(','));
@@ -45,21 +47,35 @@ jobs:
             echo "pipeline_changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Add PR Comment & Label if Pipeline Changes Detected
-        if: steps.eval-changes.outputs.pipeline_changed == 'true'
+      - name: Check if 'pipeline-changed' Label Exists
+        id: check-pipeline-label
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
+            const labelName = 'pipeline-changed';
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            return labels.some(label => label.name === labelName);
+          result-encoding: string
+
+      - name: Add PR Comment & Label if Pipeline Changes Detected
+        if: steps.eval-changes.outputs.pipeline_changed == 'true' && steps.check-pipeline-label.outputs.result != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
               body: "⚠️ **Pipeline-related file changes detected!** Please review if related updates (e.g. manifest generation or workflow adjustments) are required."
             });
-            github.rest.issues.addLabels({
+            await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number, 
+              issue_number: context.payload.pull_request.number,
               labels: ["pipeline-changed"]
             });
 

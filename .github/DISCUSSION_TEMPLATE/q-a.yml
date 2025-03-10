@@ -1,10 +1,10 @@
 title: "[Question] "
-labels: ["question"]
+labels: [ "question" ]
 body:
   - type: markdown
     attributes:
       value: |
-        Hello! Thanks for reaching out to us with your question! 
+        Hello! Thanks for reaching out to us with your question!
         Before you submit the question, please check other discussions and the FAQ page. Perhaps your question was already answered!
   - type: textarea
     id: question

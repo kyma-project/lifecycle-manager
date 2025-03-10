@@ -34,10 +34,10 @@ patches:
         value: --rate-limiter-burst=2000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --rate-limiter-frequency=1000      
+        value: --rate-limiter-frequency=1000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --k8s-client-qps=1000      
+        value: --k8s-client-qps=1000
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --k8s-client-burst=2000
@@ -60,7 +60,7 @@ patches:
     patch: |-
       - op: add
         path: /metadata/labels
-        value: {}
+        value: { }
       - op: add
         path: /metadata/labels/grafana_dashboard
         value: "1"

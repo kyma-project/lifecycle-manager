@@ -40,8 +40,8 @@ func Test_ConstantMetricNames(t *testing.T) {
 			expectedValue: "lifecycle_mgr_purgectrl_error",
 		},
 		{
-			constName:     "SelfSignedCertNotRenewMetrics",
-			constValue:    SelfSignedCertNotRenewMetrics,
+			constName:     "MetricSelfSignedCertNotRenew",
+			constValue:    MetricSelfSignedCertNotRenew,
 			expectedValue: "lifecycle_mgr_self_signed_cert_not_renew",
 		},
 		{

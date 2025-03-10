@@ -6,7 +6,7 @@ kind: Issuer
 metadata:
   name: controller-manager-selfsigned
 spec:
-  selfSigned: {}
+  selfSigned: { }
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -15,8 +15,8 @@ metadata:
 spec:
   # $(SERVICE_NAME) and $(SERVICE_NAMESPACE) will be substituted by kustomize
   dnsNames:
-  - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc
-  - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc.cluster.local
+    - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc
+    - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc.cluster.local
   issuerRef:
     kind: Issuer
     name: controller-manager-selfsigned
