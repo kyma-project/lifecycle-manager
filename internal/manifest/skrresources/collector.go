@@ -21,7 +21,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 )
 
@@ -97,7 +96,7 @@ func (c *LogCollector) Collect(ctx context.Context, remoteObj client.Object) {
 func (c *LogCollector) Emit(ctx context.Context) error {
 	if c.frequencyLimiter.Has(c.objectKey) {
 		logger := logf.FromContext(ctx, "owner", c.owner)
-		logger.V(internal.TraceLogLevel).Info("Unknown managers detection skipped (frequency)")
+		logger.Info("Unknown managers detection skipped (frequency)")
 		return nil
 	}
 
@@ -117,7 +116,7 @@ func (c *LogCollector) Emit(ctx context.Context) error {
 		}
 
 		logger := logf.FromContext(ctx, "owner", c.owner)
-		logger.V(internal.TraceLogLevel).Info("Unknown managers detected", "base64gzip", logData)
+		logger.Info("Unknown managers detected", "base64gzip", logData)
 	}
 	return nil
 }
