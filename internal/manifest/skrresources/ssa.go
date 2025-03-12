@@ -63,7 +63,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	}
 
 	var errs []error
-	for range len(resources) {
+	for range resources {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
 		}
@@ -87,20 +87,19 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 }
 
 func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
-	errCnt := len(errs)
-
-	if errCnt == 0 {
+	errorCount := len(errs)
+	if errorCount == 0 {
 		return false
 	}
 
 	unauthorizedFound := 0
-	for i := range len(errs) {
+	for i := range errs {
 		if errors.Is(errs[i], ErrClientUnauthorized) {
 			unauthorizedFound++
 		}
 	}
 
-	return unauthorizedFound == errCnt
+	return unauthorizedFound == errorCount
 }
 
 func (c *ConcurrentDefaultSSA) serverSideApply(

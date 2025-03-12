@@ -96,7 +96,7 @@ func TestRequestVerifier_verifySAN(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := verifier.VerifySAN(test.args.certificate, test.args.kymaDomain)
-			require.Empty(t, err)
+			require.NoError(t, err)
 			require.Equal(t, test.want, got)
 		})
 	}

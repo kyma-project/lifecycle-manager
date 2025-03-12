@@ -284,7 +284,7 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta
 
 func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
 	spec *Spec,
-) ([]*resource.Info, []*resource.Info, error) {
+) (ResourceList, ResourceList, error) {
 	manifestStatus := manifest.GetStatus()
 
 	var err error
@@ -308,7 +308,7 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 }
 
 func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
-	target []*resource.Info,
+	target ResourceList,
 ) error {
 	manifestStatus := manifest.GetStatus()
 
@@ -338,7 +338,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 	return nil
 }
 
-func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
+func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target ResourceList) (shared.State,
 	error,
 ) {
 	managerReadyCheck := r.CustomStateCheck
@@ -354,7 +354,7 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 
 func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client.Client,
 	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
-) ([]*resource.Info, error) {
+) (ResourceList, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		deleted, err := modulecr.NewClient(skrClient).CheckCRDeletion(ctx, manifest)
 		if err != nil {
@@ -385,9 +385,9 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 }
 
 func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
-	current, target []*resource.Info, spec *Spec,
+	current, target ResourceList, spec *Spec,
 ) error {
-	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
+	diff, err := pruneResource(*current.Difference(&target), "Namespace", namespaceNotBeRemoved)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithErr(err))
 		return err
@@ -396,9 +396,6 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1bet
 		return nil
 	}
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, manifest, spec) {
-		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
-		// and we should prevent diff resources to be deleted.
-		// Meanwhile, evict cache to hope newly created resources back to normal.
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer

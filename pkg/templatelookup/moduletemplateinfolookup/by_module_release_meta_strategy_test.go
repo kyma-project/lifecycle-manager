@@ -1,7 +1,6 @@
 package moduletemplateinfolookup_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,7 +61,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 		},
 	))
 
-	moduleTemplateInfo := byMRMStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
@@ -97,7 +96,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleRetu
 		},
 	))
 
-	moduleTemplateInfo := byMRMStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -125,7 +124,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsErr
 		},
 	))
 
-	moduleTemplateInfo := byMRMStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
