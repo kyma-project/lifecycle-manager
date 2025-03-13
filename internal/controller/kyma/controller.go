@@ -67,7 +67,6 @@ type Reconciler struct {
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	SyncRemoteCrds      remote.SyncCrdsUseCase
 	SKRWebhookManager   *watcher.SKRWebhookManifestManager
-	InKCPMode           bool
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
@@ -572,7 +571,7 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
-	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)
@@ -653,10 +652,6 @@ func (r *Reconciler) WatcherEnabled() bool {
 =======
 	return r.SKRWebhookManager != nil
 >>>>>>> 857cf8fb (remove SyncKymaEnabled)
-}
-
-func (r *Reconciler) IsInKcp() bool {
-	return r.InKCPMode
 }
 
 func (r *Reconciler) IsKymaManaged() bool {

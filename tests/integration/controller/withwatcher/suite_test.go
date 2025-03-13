@@ -212,9 +212,9 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

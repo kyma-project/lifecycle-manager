@@ -145,7 +145,6 @@ var _ = BeforeSuite(func() {
 		SkrContextFactory:   testSkrContextFactory,
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
 		RequeueIntervals:    intervals,
-		InKCPMode:           true,
 		IsManagedKyma:       true,
 		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,

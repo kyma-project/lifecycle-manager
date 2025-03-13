@@ -46,20 +46,6 @@ var (
 	ErrInvalidManifest         = errors.New("invalid ManifestResource")
 )
 
-var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
-	kyma := NewTestKyma("kyma")
-
-	module := NewTestModule("test-module", v1beta2.DefaultChannel)
-	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	It("expect Manifest.Spec.Remote=false", func() {
-		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
-			Should(BeTrue())
-	})
-})
-
 var _ = Describe("Update Manifest CR", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
@@ -175,11 +161,6 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("update Manifest", func() {
-		// await for the manifest to be created
-		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
-			Should(BeTrue())
-
 		manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		Expect(err).ToNot(HaveOccurred())
 
