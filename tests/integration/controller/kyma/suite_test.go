@@ -144,14 +144,16 @@ var _ = BeforeSuite(func() {
 		SkrContextFactory:   testSkrContextFactory,
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RequeueIntervals:    intervals,
-		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-		})),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+				moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+			})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{
 		RateLimiter: internal.RateLimiter(
 			1*time.Second, 5*time.Second,
