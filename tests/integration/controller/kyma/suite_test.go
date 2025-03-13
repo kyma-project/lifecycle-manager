@@ -146,6 +146,8 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),

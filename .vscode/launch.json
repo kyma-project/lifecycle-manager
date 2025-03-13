@@ -11,7 +11,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${cwd}/cmd/main.go",
-      "args": ["--in-kcp-mode"],
+      "args": [],
       "env": {
         "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
         "ENABLE_WEBHOOKS": "false"

@@ -147,6 +147,8 @@ var _ = BeforeSuite(func() {
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
