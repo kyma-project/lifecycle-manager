@@ -97,7 +97,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 	}
 
-	status.InitConditions(kyma, r.IsInKcp(), r.WatcherEnabled())
+	status.InitConditions(kyma, r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("skipping reconciliation for Kyma: " + kyma.Name)
