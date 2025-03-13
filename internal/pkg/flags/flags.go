@@ -199,8 +199,6 @@ func DefineFlagVar() *FlagVar {
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
-	flag.BoolVar(&flagVar.InKCPMode, "in-kcp-mode", false,
-		"Indicates lifecycle manager is deployed in control-plane mode (multiple clusters mode)")
 	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enabling purge finalizer")
 	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", DefaultPurgeFinalizerTimeout,
@@ -303,7 +301,6 @@ type FlagVar struct {
 	RateLimiterBurst, RateLimiterFrequency     int
 	CacheSyncTimeout                           time.Duration
 	LogLevel                                   int
-	InKCPMode                                  bool
 	PurgeFinalizerTimeout                      time.Duration
 	SkipPurgingFor                             string
 	RemoteSyncNamespace                        string

@@ -41,7 +41,6 @@ type InstallationReconciler struct {
 	queue.RequeueIntervals
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	RemoteSyncNamespace string
-	InKCPMode           bool
 	Metrics             *metrics.MandatoryModulesMetrics
 }
 
@@ -86,7 +85,7 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 func (r *InstallationReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (common.Modules, error) {
-	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.InKCPMode, r.RemoteSyncNamespace)
+	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace)
 	return parser.GenerateMandatoryModulesFromTemplates(ctx, kyma, templates), nil
 }
 

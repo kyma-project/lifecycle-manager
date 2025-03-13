@@ -22,19 +22,16 @@ import (
 type Parser struct {
 	client.Client
 	descriptorProvider  *provider.CachedDescriptorProvider
-	inKCPMode           bool
 	remoteSyncNamespace string
 }
 
 func NewParser(clnt client.Client,
 	descriptorProvider *provider.CachedDescriptorProvider,
-	inKCPMode bool,
 	remoteSyncNamespace string,
 ) *Parser {
 	return &Parser{
 		Client:              clnt,
 		descriptorProvider:  descriptorProvider,
-		inKCPMode:           inKCPMode,
 		remoteSyncNamespace: remoteSyncNamespace,
 	}
 }
@@ -151,7 +148,6 @@ func (p *Parser) newManifestFromTemplate(
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	manifest.Spec.Remote = p.inKCPMode
 
 	switch module.CustomResourcePolicy {
 	case v1beta2.CustomResourcePolicyIgnore:

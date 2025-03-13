@@ -29,11 +29,6 @@ func (r *RemoteClusterLookup) ConfigResolver(
 	if !ok {
 		return nil, errTypeAssertManifest
 	}
-	// in single cluster mode return the default cluster info
-	// since the resources need to be installed in the same cluster
-	if !manifest.Spec.Remote {
-		return r.KCP, nil
-	}
 
 	kymaOwnerLabel, err := internal.GetResourceLabel(manifest, shared.KymaName)
 	if err != nil {

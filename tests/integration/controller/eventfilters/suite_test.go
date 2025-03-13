@@ -145,7 +145,6 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
-		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},

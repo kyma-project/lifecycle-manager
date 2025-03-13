@@ -114,7 +114,6 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:  descriptorProvider,
 		RequeueIntervals:    intervals,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		InKCPMode:           false,
 		Metrics:             metrics.NewMandatoryModulesMetrics(),
 	}
 
