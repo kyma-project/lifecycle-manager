@@ -388,14 +388,6 @@ func (kyma *Kyma) AllModulesReady() bool {
 	return true
 }
 
-func (kyma *Kyma) HasSyncLabelEnabled() bool {
-	if sync, found := kyma.Labels[shared.SyncLabel]; found {
-		return shared.IsEnabled(sync)
-	}
-
-	return true // missing label defaults to enabled sync
-}
-
 func (kyma *Kyma) SkipReconciliation() bool {
 	skip, found := kyma.Labels[shared.SkipReconcileLabel]
 	return found && shared.IsEnabled(skip)
