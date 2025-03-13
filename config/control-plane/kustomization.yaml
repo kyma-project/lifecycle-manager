@@ -28,9 +28,6 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --in-kcp-mode
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
         value: --rate-limiter-burst=2000
       - op: add
         path: /spec/template/spec/containers/0/args/-
