@@ -20,7 +20,7 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 	const europe = "europe"
 	const asia = "asia"
 
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	kyma.Labels[shared.RegionLabel] = europe
 	kyma.Spec.SkipMaintenanceWindows = false
 

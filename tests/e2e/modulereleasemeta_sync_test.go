@@ -13,7 +13,7 @@ import (
 )
 
 var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	var skrKyma *v1beta2.Kyma
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	v1Version := "1.1.1-e2e-test"

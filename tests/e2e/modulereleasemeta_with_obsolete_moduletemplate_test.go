@@ -13,7 +13,7 @@ import (
 )
 
 var _ = Describe("ModuleReleaseMeta With Obsolete ModuleTemplate", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
 	expectedErrorMessage := fmt.Sprintf("failed to get module template: ModuleTemplate.operator.kyma-project.io \"%s-%s\" not found",

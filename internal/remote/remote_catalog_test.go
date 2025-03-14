@@ -100,7 +100,7 @@ func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandato
 	})
 
 	require.NoError(t, err)
-	require.Len(t, mts, 2)
+	require.Len(t, mts, 3)
 	assert.Equal(t, "regular-module-1.0.0", mts[0].ObjectMeta.Name)
 	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
 }
@@ -116,7 +116,7 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 			build(),
 	})
 
-	require.Len(t, mts, 2)
+	require.Len(t, mts, 3)
 	assert.Equal(t, "regular-module-1.0.0", mts[0].ObjectMeta.Name)
 	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
 }
@@ -137,7 +137,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNo
 	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
-	require.Len(t, mts, 1)
+	require.Len(t, mts, 2)
 	assert.Equal(t, "old-module-regular", mts[0].ObjectMeta.Name)
 }
 
@@ -148,7 +148,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMa
 	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
-	require.Len(t, mts, 2)
+	require.Len(t, mts, 3)
 	assert.Equal(t, "old-beta-module-regular", mts[0].ObjectMeta.Name)
 	assert.Equal(t, "old-module-regular", mts[1].ObjectMeta.Name)
 }
@@ -160,7 +160,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMa
 	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
-	require.Len(t, mts, 2)
+	require.Len(t, mts, 3)
 	assert.Equal(t, "old-internal-module-fast", mts[0].ObjectMeta.Name)
 	assert.Equal(t, "old-module-regular", mts[1].ObjectMeta.Name)
 }
@@ -172,7 +172,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonManda
 	mts, err := remoteCatalog.GetOldModuleTemplatesToSync(context.Background(), kyma)
 
 	require.NoError(t, err)
-	require.Len(t, mts, 4)
+	require.Len(t, mts, 5)
 	assert.Equal(t, "old-beta-module-regular", mts[0].ObjectMeta.Name)
 	assert.Equal(t, "old-internal-beta-module-fast", mts[1].ObjectMeta.Name)
 	assert.Equal(t, "old-internal-module-fast", mts[2].ObjectMeta.Name)
@@ -391,7 +391,6 @@ func moduleTemplates() v1beta2.ModuleTemplateList {
 		withName("regular-module-3.0.0").
 		withModuleName("regular-module").
 		withVersion("3.0.0").
-		withSyncDisabled().
 		build()
 	mt4 := newModuleTemplateBuilder().
 		withName("regular-module-4.0.0").
@@ -435,7 +434,6 @@ func moduleTemplates() v1beta2.ModuleTemplateList {
 	mt11 := newModuleTemplateBuilder().
 		withName("old-sync-disabled-module-experimental").
 		withChannel("experimental").
-		withSyncDisabled().
 		build()
 	mt12 := newModuleTemplateBuilder().
 		withName("old-mandatory-module").
@@ -560,11 +558,6 @@ func (b *moduleTemplateBuilder) withModuleName(module string) *moduleTemplateBui
 
 func (b *moduleTemplateBuilder) withChannel(channel string) *moduleTemplateBuilder {
 	b.moduleTemplate.Spec.Channel = channel
-	return b
-}
-
-func (b *moduleTemplateBuilder) withSyncDisabled() *moduleTemplateBuilder {
-	b.moduleTemplate.ObjectMeta.Labels[shared.SyncLabel] = shared.DisableLabelValue
 	return b
 }
 

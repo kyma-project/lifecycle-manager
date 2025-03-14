@@ -39,11 +39,6 @@ const (
 	InternalLabel          = OperatorGroup + Separator + "internal"
 	BetaLabel              = OperatorGroup + Separator + "beta"
 
-	// Controls ModuleTemplate sync logic.
-	// If put on the Kyma object, allows to disable sync for all ModuleTemplatesByLabel
-	// If put on a single ModuleTemplate, allows to disable sync just for this object.
-	SyncLabel = OperatorGroup + Separator + "sync"
-
 	GlobalAccountIDLabel = KymaGroup + Separator + "global-account-id"
 	RegionLabel          = KymaGroup + Separator + "region"
 	PlatformRegionLabel  = KymaGroup + Separator + "platform-region"
