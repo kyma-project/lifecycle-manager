@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -62,7 +61,7 @@ type CertificateConfig struct {
 	Duration           time.Duration
 	RenewBefore        time.Duration
 	RenewBuffer        time.Duration
-	KeySize            int
+	KeySize            int32
 }
 
 type CertificateSecret struct {
@@ -155,6 +154,7 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 		return nil, fmt.Errorf("error getting issuer: %w", err)
 	}
 
+	rsaKeyAlgorithm := certmanagerv1.RSAKeyAlgorithm
 	cert := certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,
@@ -165,29 +165,20 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 			Namespace: c.config.IstioNamespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
-			Duration:       &apimetav1.Duration{Duration: c.config.Duration},
-			RenewBefore:    &apimetav1.Duration{Duration: c.config.RenewBefore},
-			DNSNames:       subjectAltName.DNSNames,
-			IPAddresses:    subjectAltName.IPAddresses,
-			URIs:           subjectAltName.URIs,
-			EmailAddresses: subjectAltName.EmailAddresses,
-			SecretName:     c.secretName,
-			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: c.labelSet,
+			Duration: &apimetav1.Duration{Duration: c.config.Duration},
+			// TODO: find replacement for RenewBefore
+			DNSNames:     subjectAltName.DNSNames,
+			SecretName:   &c.secretName,
+			SecretLabels: c.labelSet,
+			IssuerRef: &certmanagerv1.IssuerRef{
+				Name:      issuer.Name,
+				Namespace: "default",
 			},
-			IssuerRef: certmanagermetav1.ObjectReference{
-				Name: issuer.Name,
-			},
-			IsCA: false,
-			Usages: []certmanagerv1.KeyUsage{
-				certmanagerv1.UsageDigitalSignature,
-				certmanagerv1.UsageKeyEncipherment,
-			},
+			// TODO: see if Usages is required for us
 			PrivateKey: &certmanagerv1.CertificatePrivateKey{
-				RotationPolicy: certmanagerv1.RotationPolicyAlways,
-				Encoding:       certmanagerv1.PKCS1,
-				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
-				Size:           c.config.KeySize,
+				// TODO: find replacement for RotationPolicy, Encoding
+				Algorithm: &rsaKeyAlgorithm,
+				Size:      (*certmanagerv1.PrivateKeySize)(&c.config.KeySize),
 			},
 		},
 	}

@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -131,12 +131,16 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 func (m *SKRWebhookManifestManager) updateCertNotRenewMetrics(certificate *certmanagerv1.Certificate,
 	kyma *v1beta2.Kyma,
 ) {
-	if certificate.Status.RenewalTime != nil &&
-		time.Now().Add(-m.certificateConfig.RenewBuffer).After(certificate.Status.RenewalTime.Time) {
-		m.WatcherMetrics.SetCertNotRenew(kyma.Name)
-	} else {
-		m.WatcherMetrics.CleanupMetrics(kyma.Name)
+	// TODO: check if valid replacement
+	if certificate.Status.ExpirationDate != nil {
+		expirationDate, err := time.Parse(time.RFC3339, *certificate.Status.ExpirationDate)
+		if err == nil && time.Now().Add(-m.certificateConfig.RenewBuffer).After(expirationDate) {
+			m.WatcherMetrics.SetCertNotRenew(kyma.Name)
+		} else {
+			m.WatcherMetrics.CleanupMetrics(kyma.Name)
+		}
 	}
+	m.WatcherMetrics.CleanupMetrics(kyma.Name)
 }
 
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {

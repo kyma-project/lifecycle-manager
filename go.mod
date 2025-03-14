@@ -10,6 +10,7 @@ replace (
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/cert-manager/cert-manager v1.17.1
+	github.com/gardener/cert-management v0.17.5
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
@@ -188,7 +189,7 @@ require (
 	github.com/goccy/go-yaml v1.13.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.1 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
@@ -299,10 +300,10 @@ require (
 	github.com/skeema/knownhosts v1.3.0 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
-	github.com/spf13/afero v1.11.0 // indirect
+	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.4.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
@@ -345,7 +346,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 // indirect
+	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
@@ -372,7 +373,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7 // indirect
 	oras.land/oras-go v1.2.6 // indirect
 	oras.land/oras-go/v2 v2.5.0 // indirect
-	sigs.k8s.io/gateway-api v1.1.0 // indirect
+	sigs.k8s.io/gateway-api v1.2.1 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/kustomize/api v0.18.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.18.1 // indirect

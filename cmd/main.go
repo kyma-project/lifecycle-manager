@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -366,7 +366,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		AdditionalDNSNames:  strings.Split(flagVar.AdditionalDNSNames, ","),
 		Duration:            flagVar.SelfSignedCertDuration,
 		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
-		KeySize:             flagVar.SelfSignedCertKeySize,
+		KeySize:             int32(flagVar.SelfSignedCertKeySize),
 	}
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,

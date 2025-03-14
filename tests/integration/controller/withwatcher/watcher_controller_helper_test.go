@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	istioapiv1beta1 "istio.io/api/networking/v1beta1"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"

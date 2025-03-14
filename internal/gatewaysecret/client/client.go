@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	certmanagerclientv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/client/cert/clientset/versioned"
+	certmanagerclientv1 "github.com/gardener/cert-management/pkg/client/cert/clientset/versioned/typed/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -30,7 +30,7 @@ type GatewaySecretRotationClient struct {
 
 func NewGatewaySecretRotationClient(config *rest.Config) *GatewaySecretRotationClient {
 	return &GatewaySecretRotationClient{
-		certificateInterface: versioned.NewForConfigOrDie(config).CertmanagerV1().Certificates(shared.IstioNamespace),
+		certificateInterface: versioned.NewForConfigOrDie(config).CertV1alpha1().Certificates(shared.IstioNamespace),
 		secretInterface:      kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(shared.IstioNamespace),
 	}
 }

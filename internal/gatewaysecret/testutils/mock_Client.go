@@ -5,7 +5,7 @@ package testutils
 import (
 	context "context"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 
 	mock "github.com/stretchr/testify/mock"
 

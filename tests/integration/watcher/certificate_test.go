@@ -3,7 +3,7 @@ package watcher_test
 import (
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

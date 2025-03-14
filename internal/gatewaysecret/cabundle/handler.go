@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -43,7 +43,9 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 	if err != nil {
 		return err
 	}
-	if caCert.Status.NotBefore == nil || caCert.Status.NotAfter == nil {
+
+	// TODO: check if this a valid replacement
+	if caCert.Status.ExpirationDate == nil {
 		return ErrCACertificateNotReady
 	}
 
@@ -98,7 +100,9 @@ func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, caCert *certmanag
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
 	if lastModified, err := h.parseTimeFromAnnotationFunc(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
-		if lastModified.After(caCert.Status.NotBefore.Time) {
+		// TODO: check if valid replacement
+		expirationDate, err := time.Parse(time.RFC3339, *caCert.Status.ExpirationDate)
+		if err == nil && lastModified.After(expirationDate) {
 			return false
 		}
 	}
@@ -133,7 +137,8 @@ func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Cert
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
-	secret.Annotations[CurrentCAExpirationAnnotation] = caCert.Status.NotAfter.Time.Format(time.RFC3339)
+	// TODO: check if valid replacement
+	secret.Annotations[CurrentCAExpirationAnnotation] = *caCert.Status.ExpirationDate
 }
 
 func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
