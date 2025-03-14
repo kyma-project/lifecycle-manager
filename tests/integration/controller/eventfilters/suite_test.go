@@ -68,12 +68,13 @@ const (
 )
 
 var (
-	kcpClient client.Client
-	mgr       manager.Manager
-	kcpEnv    *envtest.Environment
-	ctx       context.Context
-	cancel    context.CancelFunc
-	cfg       *rest.Config
+	kcpClient             client.Client
+	mgr                   manager.Manager
+	kcpEnv                *envtest.Environment
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	cfg                   *rest.Config
+	testSkrContextFactory *testskrcontext.DualClusterFactory
 )
 
 func TestAPIs(t *testing.T) {
@@ -137,7 +138,7 @@ var _ = BeforeSuite(func() {
 
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
@@ -145,7 +146,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
-		InKCPMode:           false,
+		InKCPMode:           true,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
