@@ -57,7 +57,7 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 			manifest := testutils.NewTestManifest("test")
 			manifest.Status.State = shared.StateDeleting
 			cleanup := resources.NewConcurrentCleanup(fakeClient, manifest)
-			_ = cleanup.DeleteDiffResources(context.Background(), resourcesInfo)
+			_ = cleanup.DeleteDiffResources(t.Context(), resourcesInfo)
 			if manifest.Status.State != testCase.expectManifestState {
 				t.Errorf("SplitResources() manifest.Status.State = %v, want %v",
 					manifest.Status.State, testCase.expectManifestState)

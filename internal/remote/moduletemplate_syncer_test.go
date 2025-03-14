@@ -73,7 +73,7 @@ func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl // duplication
 	}
 
 	// when
-	err = subject.SyncToSKR(context.Background(), []v1beta2.ModuleTemplate{mtKCP1, mtKCP2, mtKCP3})
+	err = subject.SyncToSKR(t.Context(), []v1beta2.ModuleTemplate{mtKCP1, mtKCP2, mtKCP3})
 
 	// then
 	assert.NoError(t, err)
@@ -133,7 +133,7 @@ func TestSyncer_SyncToSKR_nilList(t *testing.T) {
 
 	// when
 	var nilModuleTemplateList []v1beta2.ModuleTemplate = nil
-	err = subject.SyncToSKR(context.Background(), nilModuleTemplateList)
+	err = subject.SyncToSKR(t.Context(), nilModuleTemplateList)
 
 	// then
 	assert.NoError(t, err)

@@ -1,7 +1,6 @@
 package moduletemplateinfolookup_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,7 +56,7 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 		},
 	))
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
@@ -82,7 +81,7 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingGlobalChannel(
 		},
 	))
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
@@ -107,7 +106,7 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingDefaultChannel
 		},
 	))
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
@@ -124,7 +123,7 @@ func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 		Items: []v1beta2.ModuleTemplate{},
 	}))
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -132,14 +131,14 @@ func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 		"no templates were found: for module test-module in channel regular")
 }
 
-func Test_ByChannelStrateg_Lookup_WhenFailedToListModuleTemplates(t *testing.T) {
+func Test_ByChannelStrategy_Lookup_WhenFailedToListModuleTemplates(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(&failedClientStub{})
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -170,7 +169,7 @@ func Test_ByChannelStrategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing
 		},
 	))
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -193,7 +192,7 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateHasNoChannel(t *testing.T) 
 		},
 	))
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -218,7 +217,7 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
 		},
 	))
 
-	moduleTemplateInfo := byChannelStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)

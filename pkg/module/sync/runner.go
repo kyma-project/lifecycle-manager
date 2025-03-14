@@ -79,7 +79,7 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		}(module)
 	}
 	var errs []error
-	for range len(modules) {
+	for range modules {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
 		}

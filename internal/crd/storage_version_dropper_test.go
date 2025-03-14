@@ -1,7 +1,6 @@
 package crd_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,10 +63,10 @@ func TestDropStoredVersion(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	_ = apiextensionsv1.AddToScheme(scheme)
 	fakeClientBuilder := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(currentCrds...).Build()
-	crd.DropStoredVersion(context.TODO(), fakeClientBuilder, versionToBeDropped)
+	crd.DropStoredVersion(t.Context(), fakeClientBuilder, versionToBeDropped)
 
 	var updatedCRD apiextensionsv1.CustomResourceDefinition
-	err := fakeClientBuilder.Get(context.TODO(), client.ObjectKey{Name: "Manifest"}, &updatedCRD)
+	err := fakeClientBuilder.Get(t.Context(), client.ObjectKey{Name: "Manifest"}, &updatedCRD)
 	require.NoError(t, err, "error getting updated CustomResourceDefinition")
 
 	expectedStatus := apiextensionsv1.CustomResourceDefinitionStatus{

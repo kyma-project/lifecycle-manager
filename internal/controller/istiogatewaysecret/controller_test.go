@@ -24,7 +24,7 @@ func TestReconcile_WhenGetSecretFuncReturnsError_ReturnError(t *testing.T) {
 	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
-	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
+	_, err := reconciler.Reconcile(t.Context(), ctrl.Request{})
 
 	// ASSERT
 	require.ErrorContains(t, err, "failed to get istio gateway root secret: some-error")
@@ -40,7 +40,7 @@ func TestReconcile_WhenGetSecretFuncReturnsNoErrorAndSecretIsNil_ReturnError(t *
 	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
-	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
+	_, err := reconciler.Reconcile(t.Context(), ctrl.Request{})
 
 	// ASSERT
 	require.ErrorIs(t, err, istiogatewaysecret.ErrSecretNotFound)
@@ -61,7 +61,7 @@ func TestReconcile_WhenGetSecretFuncIsCalled_IsCalledWithRequestNamespacedName(t
 
 	// ACT
 	// ASSERT
-	_, _ = reconciler.Reconcile(context.TODO(), request)
+	_, _ = reconciler.Reconcile(t.Context(), request)
 }
 
 func TestReconcile_WhenGetSecretFuncReturnsSecret_HandlerManageGatewaySecretIsCalled(t *testing.T) {
@@ -74,7 +74,7 @@ func TestReconcile_WhenGetSecretFuncReturnsSecret_HandlerManageGatewaySecretIsCa
 	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
-	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
+	_, err := reconciler.Reconcile(t.Context(), ctrl.Request{})
 
 	// ASSERT
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestReconcile_WhenHandlerManageGatewaySecretReturnsError_ReturnError(t *tes
 	reconciler := istiogatewaysecret.NewReconciler(stubGetterFunc, mockHandler, queue.RequeueIntervals{})
 
 	// ACT
-	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{})
+	_, err := reconciler.Reconcile(t.Context(), ctrl.Request{})
 
 	// ASSERT
 	require.ErrorContains(t, err, "failed to manage gateway secret: some-error")

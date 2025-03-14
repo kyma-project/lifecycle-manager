@@ -87,18 +87,18 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesHaveLabels(t *testing.T) {
 
 	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+	err = service.RemoveManagedByLabel(t.Context(), manifest, fakeClient)
 	require.NoError(t, err)
 
 	firstObj, secondObj := &unstructured.Unstructured{}, &unstructured.Unstructured{}
 	firstObj.SetGroupVersionKind(gvk)
-	err = fakeClient.Get(context.TODO(), client.ObjectKey{Name: "test-resource-1", Namespace: "test-1"},
+	err = fakeClient.Get(t.Context(), client.ObjectKey{Name: "test-resource-1", Namespace: "test-1"},
 		firstObj)
 	require.NoError(t, err)
 	require.Empty(t, firstObj.GetLabels())
 
 	secondObj.SetGroupVersionKind(gvk)
-	err = fakeClient.Get(context.TODO(), client.ObjectKey{Name: "test-resource-2", Namespace: "test-2"},
+	err = fakeClient.Get(t.Context(), client.ObjectKey{Name: "test-resource-2", Namespace: "test-2"},
 		secondObj)
 	require.NoError(t, err)
 	require.Empty(t, secondObj.GetLabels())
@@ -136,7 +136,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourceCannotBeFetched(t *testing.T)
 
 	svc := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = svc.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+	err = svc.RemoveManagedByLabel(t.Context(), manifest, fakeClient)
 	require.ErrorContains(t, err, "failed to get resource")
 	assert.False(t, manifestClient.called)
 }
@@ -167,11 +167,11 @@ func Test_RemoveManagedByLabel_WhenDefaultCRHasLabels(t *testing.T) {
 
 	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+	err = service.RemoveManagedByLabel(t.Context(), manifest, fakeClient)
 
 	require.NoError(t, err)
 
-	err = fakeClient.Get(context.TODO(),
+	err = fakeClient.Get(t.Context(),
 		client.ObjectKey{Name: "default-cr", Namespace: "default-ns"},
 		defaultCR)
 	require.NoError(t, err)
@@ -203,7 +203,7 @@ func Test_RemoveManagedByLabel_WhenDefaultCRCannotBeFetched(t *testing.T) {
 
 	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+	err = service.RemoveManagedByLabel(t.Context(), manifest, fakeClient)
 
 	require.ErrorContains(t, err, "failed to get default CR")
 	assert.False(t, manifestClient.called)
@@ -254,7 +254,7 @@ func Test_RemoveManagedByLabel_WhenObjCannotBeUpdated(t *testing.T) {
 
 	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = service.RemoveManagedByLabel(context.TODO(), manifest, errorClientStub{fakeClient: fakeClient})
+	err = service.RemoveManagedByLabel(t.Context(), manifest, errorClientStub{fakeClient: fakeClient})
 
 	require.ErrorContains(t, err, "failed to update object")
 	require.ErrorContains(t, err, "test error")
@@ -272,7 +272,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesAreNilAndNoDefaultCR(t *test
 
 	service := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = service.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+	err = service.RemoveManagedByLabel(t.Context(), manifest, fakeClient)
 
 	require.NoError(t, err)
 	assert.True(t, manifestClient.called)
@@ -323,7 +323,7 @@ func Test_RemoveManagedByLabel_WhenFinalizerIsRemoved(t *testing.T) {
 	manifestClient := manifestClientStub{}
 	svc := labelsremoval.NewManagedByLabelRemovalService(&manifestClient)
 
-	err = svc.RemoveManagedByLabel(context.TODO(), manifest, fakeClient)
+	err = svc.RemoveManagedByLabel(t.Context(), manifest, fakeClient)
 
 	require.NoError(t, err)
 	assert.Empty(t, manifest.GetFinalizers())

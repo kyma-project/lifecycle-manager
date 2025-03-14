@@ -1,7 +1,6 @@
 package templatelookup_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -140,7 +139,7 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 		WithObjects(firstModuleTemplate, secondModuleTemplate, thirdModuleTemplate).
 		Build()
 
-	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+	result, err := templatelookup.GetMandatory(t.Context(), fakeClient)
 
 	require.NoError(t, err)
 	require.Len(t, result, 2)
@@ -195,7 +194,7 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 		WithObjects(firstModuleTemplate, secondModuleTemplate, thirdModuleTemplate, fourthModuleTemplate).
 		Build()
 
-	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+	result, err := templatelookup.GetMandatory(t.Context(), fakeClient)
 
 	require.NoError(t, err)
 	require.Len(t, result, 2)
@@ -237,7 +236,7 @@ func TestGetMandatory_WithErrorNotSemVer(t *testing.T) {
 		WithObjects(firstModuleTemplate, secondModuleTemplate).
 		Build()
 
-	result, err := templatelookup.GetMandatory(context.TODO(), fakeClient)
+	result, err := templatelookup.GetMandatory(t.Context(), fakeClient)
 
 	require.NoError(t, err)
 	require.Len(t, result, 1)

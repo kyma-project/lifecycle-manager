@@ -15,7 +15,7 @@ import (
 )
 
 // TestModuleReleaseMetaSyncer_SyncToSKR_happypath tests the happy path of the SyncToSKR method,
-// with some ModuleReleseMetas to be installed in the SKR and some objects to be deleted from the SKR.
+// with some ModuleReleaseMetas to be installed in the SKR and some objects to be deleted from the SKR.
 func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl // duplication will be removed: https://github.com/kyma-project/lifecycle-manager/issues/2015
 	// given
 	mrmKCP1 := moduleReleaseMeta("mrm1", "kcp-system") // this one should be installed in the SKR, because it's not there
@@ -58,7 +58,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 		}
 	}
 
-	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
+	syncWorkerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
 		return &fakeModuleReleaseMetaSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,
@@ -69,11 +69,11 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 	subject := moduleReleaseMetaSyncer{
 		skrClient:           skrClient,
 		settings:            getSettings(),
-		syncWorkerFactoryFn: syncWokerFactoryFn,
+		syncWorkerFactoryFn: syncWorkerFactoryFn,
 	}
 
 	// when
-	err = subject.SyncToSKR(context.Background(), []v1beta2.ModuleReleaseMeta{mrmKCP1, mrmKCP2, mrmKCP3})
+	err = subject.SyncToSKR(t.Context(), []v1beta2.ModuleReleaseMeta{mrmKCP1, mrmKCP2, mrmKCP3})
 
 	// then
 	assert.NoError(t, err)
@@ -117,7 +117,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_nilList(t *testing.T) {
 		}
 	}
 
-	syncWokerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
+	syncWorkerFactoryFn := func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
 		return &fakeModuleReleaseMetaSyncWorker{
 			namespace:            settings.Namespace,
 			onSyncConcurrently:   onSyncConcurrentlyFn,
@@ -128,12 +128,12 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_nilList(t *testing.T) {
 	subject := moduleReleaseMetaSyncer{
 		skrClient:           skrClient,
 		settings:            getSettings(),
-		syncWorkerFactoryFn: syncWokerFactoryFn,
+		syncWorkerFactoryFn: syncWorkerFactoryFn,
 	}
 
 	// when
 	var nilModuleReleaseMetaList []v1beta2.ModuleReleaseMeta = nil
-	err = subject.SyncToSKR(context.Background(), nilModuleReleaseMetaList)
+	err = subject.SyncToSKR(t.Context(), nilModuleReleaseMetaList)
 
 	// then
 	assert.NoError(t, err)

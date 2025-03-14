@@ -54,12 +54,11 @@ func Test_GetSpec(t *testing.T) {
 		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
 
 		// when
-		ctx := context.TODO()
 		mft := v1beta2.Manifest{}
 		err := yaml.Unmarshal([]byte(testManifest), &mft)
 		require.NoError(t, err)
 
-		actual, err := specResolver.GetSpec(ctx, &mft)
+		actual, err := specResolver.GetSpec(t.Context(), &mft)
 		require.NoError(t, err)
 
 		// then
@@ -81,12 +80,11 @@ func Test_GetSpec(t *testing.T) {
 		invalidManifest := strings.ReplaceAll(testManifest, "type: oci-ref", "type: invalid-ref")
 
 		// when
-		ctx := context.TODO()
 		mft := v1beta2.Manifest{}
 		err := yaml.Unmarshal([]byte(invalidManifest), &mft)
 		require.NoError(t, err)
 
-		_, err = specResolver.GetSpec(ctx, &mft)
+		_, err = specResolver.GetSpec(t.Context(), &mft)
 		require.ErrorIs(t, err, manifest.ErrRenderModeInvalid)
 		require.ErrorContains(t, err, "could not determine render mode for")
 	})
@@ -98,12 +96,11 @@ func Test_GetSpec(t *testing.T) {
 		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
 
 		// when
-		ctx := context.TODO()
 		mft := v1beta2.Manifest{}
 		err := yaml.Unmarshal([]byte(testManifest), &mft)
 		require.NoError(t, err)
 
-		_, err = specResolver.GetSpec(ctx, &mft)
+		_, err = specResolver.GetSpec(t.Context(), &mft)
 		require.ErrorContains(t, err, "failed to fetch keyChain: unexpected")
 	})
 
@@ -114,12 +111,11 @@ func Test_GetSpec(t *testing.T) {
 		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
 
 		// when
-		ctx := context.TODO()
 		mft := v1beta2.Manifest{}
 		err := yaml.Unmarshal([]byte(testManifest), &mft)
 		require.NoError(t, err)
 
-		_, err = specResolver.GetSpec(ctx, &mft)
+		_, err = specResolver.GetSpec(t.Context(), &mft)
 		require.ErrorContains(t, err, "failed to extract raw manifest from layer digest: unexpected")
 	})
 }
@@ -128,7 +124,7 @@ type mockKeyChainLookup struct {
 	mockError error
 }
 
-func (m *mockKeyChainLookup) Get(ctx context.Context, imageSpec v1beta2.ImageSpec) (authn.Keychain, error) {
+func (m *mockKeyChainLookup) Get(_ context.Context, _ v1beta2.ImageSpec) (authn.Keychain, error) {
 	return nil, m.mockError
 }
 
@@ -136,9 +132,7 @@ type mockPathExtractor struct {
 	mockError error
 }
 
-func (m *mockPathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec,
-	keyChain authn.Keychain,
-) (string, error) {
+func (m *mockPathExtractor) GetPathFromRawManifest(_ context.Context, _ v1beta2.ImageSpec, _ authn.Keychain) (string, error) {
 	if m.mockError != nil {
 		return "", m.mockError
 	}

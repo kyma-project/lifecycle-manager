@@ -3,7 +3,6 @@ package img_test
 import (
 	"archive/tar"
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -104,7 +103,7 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 			p := img.NewPathExtractor()
 			imageSpec, err := testCase.want.ConvertToImageSpec()
 			require.NoError(t, err)
-			extractedFilePath, err := p.GetPathFromRawManifest(context.TODO(), *imageSpec, authn.DefaultKeychain)
+			extractedFilePath, err := p.GetPathFromRawManifest(t.Context(), *imageSpec, authn.DefaultKeychain)
 			require.NoError(t, err)
 			assert.Contains(t, extractedFilePath,
 				fmt.Sprintf("%s/%s", imageSpec.Ref, testCase.fileName))

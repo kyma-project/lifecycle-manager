@@ -1,7 +1,6 @@
 package v2_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -112,7 +111,7 @@ func Test_defaultTransforms(t *testing.T) {
 				t.Parallel()
 				obj := &testObj{Unstructured: &unstructured.Unstructured{}}
 				obj.SetName("test-object")
-				err := testCase.ObjectTransform(context.Background(), obj, testCase.resources)
+				err := testCase.ObjectTransform(t.Context(), obj, testCase.resources)
 				testCase.wantErr(
 					t, err, testCase.resources,
 				)

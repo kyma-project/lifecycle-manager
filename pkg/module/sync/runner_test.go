@@ -82,7 +82,7 @@ func TestMetricsOnDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, []string{ModuleShouldKeep}, []string{testCase.ModuleInStatus})
 			kymaMetrics := &KymaMockMetrics{}
-			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule,
+			sync.DeleteNoLongerExistingModuleStatus(t.Context(), kyma, testCase.getModule,
 				kymaMetrics.RemoveModuleStateMetrics)
 			if testCase.expectModuleMetricsGetCalled {
 				assert.Equal(t, 1, kymaMetrics.callCount)
@@ -153,7 +153,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			kymaMetrics := &KymaMockMetrics{}
 			kyma := testutils.NewTestKyma("test-kyma")
 			configureModuleInKyma(kyma, testCase.ModulesInKymaSpec, testCase.ModulesInKymaStatus)
-			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule,
+			sync.DeleteNoLongerExistingModuleStatus(t.Context(), kyma, testCase.getModule,
 				kymaMetrics.RemoveModuleStateMetrics)
 			var modulesInFinalModuleStatus []string
 			for _, moduleStatus := range kyma.Status.Modules {

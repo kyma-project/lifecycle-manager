@@ -1,7 +1,6 @@
 package cabundle_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -30,7 +29,7 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertReturnsError_ReturnsError(
 	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -48,7 +47,7 @@ func TestManageGatewaySecret_WhenGetWatcherServingCertReturnsIncompleteStatus_Re
 	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -66,7 +65,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *te
 	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -91,7 +90,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
 	require.NoError(t, err)
@@ -124,7 +123,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 	handler := cabundle.NewGatewaySecretHandler(mockClient, nil, gatewaySwitchCertBeforeExpirationTime)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -156,7 +155,7 @@ func TestManageGatewaySecret_WhenLegacySecret_BootstrapsLegacyGatewaySecret(t *t
 	}
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
 	require.NoError(t, err)
@@ -193,7 +192,7 @@ func TestManageGatewaySecret_WhenRequiresBundling_BundlesGatewaySecretWithRootSe
 	}
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
 	require.NoError(t, err)
@@ -232,7 +231,7 @@ func TestManageGatewaySecret_WhenUpdateSecretFails_ReturnsError(t *testing.T) {
 	}
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
 	require.Error(t, err)
@@ -266,7 +265,7 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 	}
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
 	require.NoError(t, err)
