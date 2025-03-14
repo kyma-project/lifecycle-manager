@@ -26,7 +26,7 @@ var managedSkrResources = map[types.NamespacedName]schema.GroupVersionKind{
 }
 
 var _ = Describe("Labelling SKR resources", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
