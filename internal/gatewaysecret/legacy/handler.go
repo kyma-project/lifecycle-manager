@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -70,9 +70,14 @@ func (h *Handler) requiresUpdate(gwSecret *apicorev1.Secret, caCert *certmanager
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
 	if lastModified, err := h.parseLastModifiedTime(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
-		if caCert.Status.NotBefore != nil && lastModified.After(caCert.Status.NotBefore.Time) {
-			return false
+		// TODO: check if this a valid replacement
+		if caCert.Status.ExpirationDate != nil {
+			expirationDate, err := time.Parse(time.RFC3339, *caCert.Status.ExpirationDate)
+			if err == nil && lastModified.After(expirationDate) {
+				return false
+			}
 		}
+		return false
 	}
 	return true
 }

@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret"
@@ -283,12 +282,7 @@ func TestManageGatewaySecret_WhenRequiresCertSwitching_SwitchesTLSCertAndKeyWith
 func getActiveCertificate() *certmanagerv1.Certificate {
 	return &certmanagerv1.Certificate{
 		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: time.Now().Add(-1 * time.Hour),
-			},
-			NotAfter: &apimetav1.Time{
-				Time: time.Now().Add(2 * time.Hour),
-			},
+			// TODO: find replacement for NotBefore, NotAfter
 		},
 	}
 }

@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"

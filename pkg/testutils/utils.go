@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,9 +77,7 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 			},
 		},
 		Spec: certmanagerv1.IssuerSpec{
-			IssuerConfig: certmanagerv1.IssuerConfig{
-				SelfSigned: &certmanagerv1.SelfSignedIssuer{},
-			},
+			SelfSigned: &certmanagerv1.SelfSignedSpec{},
 		},
 	}
 }
