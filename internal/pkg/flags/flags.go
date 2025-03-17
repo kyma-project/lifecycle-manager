@@ -44,10 +44,10 @@ const (
 	DefaultIstioGatewayNamespace                                        = "kcp-system"
 	DefaultIstioNamespace                                               = "istio-system"
 	DefaultCaCertName                                                   = "klm-watcher-serving"
-	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour
+	DefaultSelfSignedCertDuration                         time.Duration = 1441 * time.Hour // must be smaller than duration of root cert, greater than 1440
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
-	DefaultSelfSignedCertKeySize                                        = 4096
+	DefaultSelfSignedCertKeySize                                        = 2048 // Gardener cert-manager seems to have problems with RSA 4096 keys
 	DefaultIstioGatewayCertSwitchBeforeExpirationTime                   = 24 * time.Hour
 	DefaultIstioGatewaySecretRequeueSuccessInterval                     = 5 * time.Minute
 	DefaultIstioGatewaySecretRequeueErrInterval                         = 2 * time.Second
@@ -349,7 +349,8 @@ func (f FlagVar) Validate() error {
 	}
 
 	if !map[int]bool{
-		2048: false, // 2048 is a valid value for cert-manager, but explicitly prohibited as not compliant to security requirements
+		// Gardener cert-manager seems to have problems with RSA 4096 keys
+		2048: true, // 2048 is a valid value for cert-manager, but explicitly prohibited as not compliant to security requirements
 		4096: true,
 		8192: false, // see https://github.com/kyma-project/lifecycle-manager/issues/1793
 	}[f.SelfSignedCertKeySize] {

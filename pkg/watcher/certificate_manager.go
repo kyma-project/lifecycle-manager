@@ -217,14 +217,14 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	issuerList := &certmanagerv1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(c.labelSet),
-		Namespace:     c.config.IstioNamespace,
+		Namespace:     "default",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not list cert-manager issuer %w", err)
 	}
 	if len(issuerList.Items) == 0 {
 		return nil, fmt.Errorf("%w (Namespace: %s, Labels %s)",
-			ErrIssuerNotFound, c.config.IstioNamespace, c.labelSet.String())
+			ErrIssuerNotFound, "default", c.labelSet.String())
 	} else if len(issuerList.Items) > 1 {
 		logger.Info("Found more than one issuer, will use by default first one in list",
 			"issuer", issuerList.Items)

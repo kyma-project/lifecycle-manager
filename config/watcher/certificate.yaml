@@ -12,16 +12,17 @@ metadata:
   name: watcher-serving
   namespace: istio-system
 spec:
-  dnsNames:
-    - 'listener.kyma.cloud.sap' # REQUIRED, otherwise: "challenge pending for at least one domain of certificate"
   isCA: true
   commonName: klm-watcher-root-ca
+  dnsNames:
+    - 'listener.kyma.cloud.sap' # this will be overwritten by kustomization
   secretName: klm-watcher
   secretLabels:
       operator.kyma-project.io/managed-by: "lifecycle-manager"
-  privateKey:
-    algorithm: RSA
-    size: 4096
+  # Gardener cert-manager seems to have problems with RSA 4096 keys
+  # privateKey:
+  #   algorithm: RSA
+  #   size: 4096
   issuerRef:
     name: klm-watcher-root
     namespace: default

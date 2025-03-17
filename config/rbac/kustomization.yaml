@@ -10,3 +10,5 @@ resources:
   - crd_cluster_role_binding.yaml
   - certmanager_role.yaml
   - certmanager_role_binding.yaml
+  - gardener_certmanager_role.yaml
+  - gardener_certmanager_role_binding.yaml

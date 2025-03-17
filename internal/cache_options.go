@@ -71,6 +71,7 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 			},
 			&certmanagerv1.Issuer{}: {
 				Namespaces: map[string]cache.Config{
+					"default":        {},
 					c.kcpNamespace:   {},
 					c.istioNamespace: {},
 				},

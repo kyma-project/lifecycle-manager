@@ -63,8 +63,8 @@ patches:
         path: /spec/servers/0/hosts/0
         value: "host.k3d.internal"
   - target:
-      group: cert-manager.io
-      version: v1
+      group: cert.gardener.cloud
+      version: v1alpha1
       kind: Certificate
       name: watcher-serving
     patch: |-
