@@ -1,4 +1,4 @@
-package eventfilters_test
+package kcp_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
