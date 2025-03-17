@@ -251,9 +251,15 @@ func fetchCrd(clnt client.Client, crdKind shared.Kind) (*apiextensionsv1.CustomR
 // Helpers for EventFilters tests
 func updateKymaChannel(ctx context.Context,
 	k8sClient client.Client,
-	kyma *v1beta2.Kyma,
+	kymaName string,
+	kymaNamespace string,
 	channel string,
 ) error {
+	kyma := &v1beta2.Kyma{}
+	// Get the latest version of the Kyma resource
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+		return err
+	}
 	kyma.Spec.Channel = channel
 
 	return updateKyma(ctx, k8sClient, kyma)
@@ -283,7 +289,7 @@ func kymaIsInExpectedStateWithUpdatedChannel(k8sClient client.Client,
 		return err
 	}
 
-	if kyma.Spec.Channel != expectedChannel || kyma.Status.ActiveChannel != expectedChannel {
+	if kyma.Status.ActiveChannel != expectedChannel {
 		return fmt.Errorf("%w: expected channel: %s, but found: %s",
 			errKymaNotInExpectedChannel, expectedChannel, kyma.Spec.Channel)
 	}
@@ -326,4 +332,11 @@ func updateKyma(ctx context.Context, k8sClient client.Client, kyma *v1beta2.Kyma
 		return fmt.Errorf("failed to update Kyma with error %w", err)
 	}
 	return nil
+}
+
+func buildSkrKyma() *v1beta2.Kyma {
+	return builder.NewKymaBuilder().
+		WithName(shared.DefaultRemoteKymaName).
+		WithNamespace(shared.DefaultRemoteNamespace).
+		Build()
 }

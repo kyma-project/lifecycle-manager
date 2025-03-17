@@ -223,15 +223,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 })
 
-func buildSkrKyma() *v1beta2.Kyma {
-	return &v1beta2.Kyma{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      shared.DefaultRemoteKymaName,
-			Namespace: flags.DefaultRemoteSyncNamespace,
-		},
-	}
-}
-
 func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
 	key := cache.GenerateDescriptorKey(template)
 	result := descriptorProvider.DescriptorCache.Get(key)
