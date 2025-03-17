@@ -9,6 +9,7 @@ linters:
     - sqlclosecheck # not needed for this project
     - tenv # deprecated, feature already covered by another linter
     - paralleltest # should be enabled consciously for long running tests
+    - recvcheck # too many changes required, created an issue to enable this explicitly
     - wsl # too strict and mostly code is not more readable
 linters-settings:
   gomoddirectives:

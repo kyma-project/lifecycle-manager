@@ -360,7 +360,7 @@ func createKyma(channel string, moduleNames []string) *v1beta2.Kyma {
 		WithChannel(channel).
 		Build()
 
-	var modules []v1beta2.Module
+	modules := make([]v1beta2.Module, 0, len(moduleNames))
 	for _, moduleName := range moduleNames {
 		modules = append(modules, v1beta2.Module{
 			Name:    moduleName,
