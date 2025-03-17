@@ -41,8 +41,6 @@ metadata:
     skr-domain: "example.domain.com"
   name: kyma-sample
   namespace: kcp-system
-  labels:
-    "operator.kyma-project.io/sync": "true"
 spec:
   channel: regular
 EOF

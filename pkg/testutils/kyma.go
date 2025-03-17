@@ -33,18 +33,17 @@ const (
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
-	return NewKymaWithSyncLabel(name, ControlPlaneNamespace, v1beta2.DefaultChannel)
+	return NewKymaWithNamespaceName(name, ControlPlaneNamespace, v1beta2.DefaultChannel)
 }
 
-// NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
+// NewKymaWithNamespaceName use this function to initialize kyma CR with SyncStrategyLocalSecret
 // are typically used in e2e test, which expect related access secret provided.
-func NewKymaWithSyncLabel(name, namespace, channel string) *v1beta2.Kyma {
+func NewKymaWithNamespaceName(name, namespace, channel string) *v1beta2.Kyma {
 	return builder.NewKymaBuilder().
 		WithNamePrefix(name).
 		WithNamespace(namespace).
 		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
 		WithLabel(shared.InstanceIDLabel, "test-instance").
-		WithLabel(shared.SyncLabel, shared.EnableLabelValue).
 		WithChannel(channel).
 		Build()
 }

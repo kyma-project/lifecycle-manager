@@ -200,10 +200,6 @@ func FilterAllowedModuleTemplates(
 			continue
 		}
 
-		if moduleTemplate.HasSyncDisabled() {
-			continue
-		}
-
 		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName, moduleTemplate.Spec.Version)]; found {
 			filteredModuleTemplates = append(filteredModuleTemplates, moduleTemplate)
 		}
