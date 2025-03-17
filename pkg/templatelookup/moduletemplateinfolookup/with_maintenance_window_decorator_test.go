@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
-func Test_WithMWDecorator_IsReponsible_CallsDecoratedIsResponsible(t *testing.T) {
+func Test_WithMWDecorator_IsResponsible_CallsDecoratedIsResponsible(t *testing.T) {
 	decorated := &lookupStrategyStub{
 		responsible: true,
 	}
@@ -35,7 +35,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenDecoratedLookupRe
 	}
 	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
 
-	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(context.Background(),
+	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
 		nil,
 		nil)
@@ -54,7 +54,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenDecoratedLookupRe
 	}
 	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
 
-	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(context.Background(),
+	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
 		nil,
 		nil)
@@ -81,7 +81,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenNoMWRequired(t *t
 	}
 	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
 
-	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(context.Background(),
+	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
 		nil,
 		nil)
@@ -108,7 +108,7 @@ func Test_WithMWDecorator_Lookup_ReturnsError_WhenIsActiveReturnsError(t *testin
 	}
 	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
 
-	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(context.Background(),
+	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
 		nil,
 		nil)
@@ -136,7 +136,7 @@ func Test_WithMWDecorator_Lookup_ReturnsError_WhenMWIsRequiredAndNotActive(t *te
 	}
 	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
 
-	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(context.Background(),
+	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
 		nil,
 		nil)
@@ -165,7 +165,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenMWIsRequiredAndAc
 	}
 	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
 
-	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(context.Background(),
+	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
 		nil,
 		nil)
@@ -186,7 +186,7 @@ func (s *lookupStrategyStub) IsResponsible(_ *templatelookup.ModuleInfo, _ *v1be
 	return s.responsible
 }
 
-func (s lookupStrategyStub) Lookup(_ context.Context,
+func (s *lookupStrategyStub) Lookup(_ context.Context,
 	_ *templatelookup.ModuleInfo,
 	_ *v1beta2.Kyma,
 	_ *v1beta2.ModuleReleaseMeta,

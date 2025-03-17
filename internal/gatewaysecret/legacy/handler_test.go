@@ -1,7 +1,6 @@
 package legacy_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -28,7 +27,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *te
 	handler := legacy.NewGatewaySecretHandler(mockClient, nil)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -51,7 +50,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	handler := legacy.NewGatewaySecretHandler(mockClient, nil)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
 	require.NoError(t, err)
@@ -80,7 +79,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 	handler := legacy.NewGatewaySecretHandler(mockClient, nil)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -98,7 +97,7 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	handler := legacy.NewGatewaySecretHandler(mockClient, nil)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.NoError(t, err)
@@ -120,7 +119,7 @@ func TestManageGatewaySecret_WhenWatcherServingCertReturnsError_ReturnsError(t *
 	handler := legacy.NewGatewaySecretHandler(mockClient, nil)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -157,7 +156,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecr
 	}
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), rootSecret)
+	err := handler.ManageGatewaySecret(t.Context(), rootSecret)
 
 	// ASSERT
 	require.NoError(t, err)
@@ -199,7 +198,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.NoError(t, err)
@@ -238,7 +237,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateAndUpdateFails_ReturnsError(t *te
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.Error(t, err)
@@ -268,7 +267,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateIsFalse_DoesNotUpdateGatewaySecre
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
 
 	// ACT
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.NoError(t, err)
@@ -296,7 +295,7 @@ func TestManageGatewaySecret_WhenTimeParserFuncReturnsError_UpdatesGatewaySecret
 	handler := legacy.NewGatewaySecretHandler(mockClient, mockFunc)
 
 	// ACT″
-	err := handler.ManageGatewaySecret(context.TODO(), &apicorev1.Secret{})
+	err := handler.ManageGatewaySecret(t.Context(), &apicorev1.Secret{})
 
 	// ASSERT
 	require.NoError(t, err)

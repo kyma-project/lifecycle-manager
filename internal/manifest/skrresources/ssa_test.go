@@ -1,7 +1,6 @@
 package skrresources_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -27,7 +26,7 @@ func TestConcurrentSSA(t *testing.T) {
 		},
 	}
 	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
-	_ = fakeClientBuilder.Create(context.Background(), pod)
+	_ = fakeClientBuilder.Create(t.Context(), pod)
 
 	inactiveCollector := skrresources.NewManifestLogCollector(nil, client.FieldOwner("test"))
 
@@ -57,7 +56,7 @@ func TestConcurrentSSA(t *testing.T) {
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
 				ssa := skrresources.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner, inactiveCollector)
-				if err := ssa.Run(context.Background(), testCase.apply); err != nil {
+				if err := ssa.Run(t.Context(), testCase.apply); err != nil {
 					require.ErrorIs(t, err, testCase.err)
 				}
 			},

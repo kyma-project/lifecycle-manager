@@ -342,7 +342,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 				Spec:   test.KymaSpec,
 				Status: test.KymaStatus,
 			}
-			got := lookup.GetRegularTemplates(context.TODO(), kyma)
+			got := lookup.GetRegularTemplates(t.Context(), kyma)
 			for _, err := range got {
 				if !errors.Is(err.Err, test.wantErr) {
 					t.Errorf("GetRegularTemplates() = %v, want %v", got, test.wantErr)
@@ -477,7 +477,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
@@ -784,7 +784,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
@@ -852,7 +852,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
@@ -995,7 +995,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Equal(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
@@ -1123,7 +1123,7 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
-			got := lookup.GetRegularTemplates(context.TODO(), testCase.kyma)
+			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Len(t, got, 1)
 			for key, module := range got {
 				assert.Equal(t, key, moduleToInstall.Name)

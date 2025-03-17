@@ -84,30 +84,30 @@ func Test_SynchronizeKymaMetadata_SkipsIfSKRKymaIsDeleting(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().WithDeletionTimestamp().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
 
-	event := &eventStub{}
-	client := &clientStub{}
-	skrContext := NewSkrContext(client, event)
+	eventStub := &eventStub{}
+	clientStub := &clientStub{}
+	skrContext := NewSkrContext(clientStub, eventStub)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
-	assert.False(t, client.called)
-	assert.False(t, event.called)
+	assert.False(t, clientStub.called)
+	assert.False(t, eventStub.called)
 }
 
 func Test_SynchronizeKymaMetadata_Syncs(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
 
-	event := &eventStub{}
-	client := &clientStub{}
-	skrContext := NewSkrContext(client, event)
+	eventStub := &eventStub{}
+	clientStub := &clientStub{}
+	skrContext := NewSkrContext(clientStub, eventStub)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
-	assert.True(t, client.called)
-	assert.False(t, event.called)
+	assert.True(t, clientStub.called)
+	assert.False(t, eventStub.called)
 }
 
 func Test_SynchronizeKymaMetadata_SkipsSyncIfLabelsAndAnnotationsUnchanged(t *testing.T) {
@@ -118,15 +118,15 @@ func Test_SynchronizeKymaMetadata_SkipsSyncIfLabelsAndAnnotationsUnchanged(t *te
 		Build()
 	kcpKyma := builder.NewKymaBuilder().WithName(kymaName).WithNamespace(kymaNamespace).Build()
 
-	event := &eventStub{}
-	client := &clientStub{}
-	skrContext := NewSkrContext(client, event)
+	eventStub := &eventStub{}
+	clientStub := &clientStub{}
+	skrContext := NewSkrContext(clientStub, eventStub)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
-	assert.False(t, client.called)
-	assert.False(t, event.called)
+	assert.False(t, clientStub.called)
+	assert.False(t, eventStub.called)
 }
 
 func Test_SynchronizeKymaMetadata_ErrorsWhenFailedToSync(t *testing.T) {
@@ -134,48 +134,48 @@ func Test_SynchronizeKymaMetadata_ErrorsWhenFailedToSync(t *testing.T) {
 	kcpKyma := builder.NewKymaBuilder().Build()
 
 	expectedError := errors.New("test error")
-	event := &eventStub{}
-	client := &clientStub{err: expectedError}
-	skrContext := NewSkrContext(client, event)
+	eventStub := &eventStub{}
+	clientStub := &clientStub{err: expectedError}
+	skrContext := NewSkrContext(clientStub, eventStub)
 
-	err := skrContext.SynchronizeKymaMetadata(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
 
 	require.ErrorIs(t, err, expectedError)
 	assert.Contains(t, err.Error(), "failed to synchronise Kyma metadata to SKR")
-	assert.True(t, client.called)
-	assert.True(t, event.called)
+	assert.True(t, clientStub.called)
+	assert.True(t, eventStub.called)
 }
 
 func Test_SynchronizeKymaStatus_SkipsIfSKRKymaIsDeleting(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().WithDeletionTimestamp().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
 
-	event := &eventStub{}
+	eventStub := &eventStub{}
 	statusClient := &statusClient{}
-	client := &clientStub{status: statusClient}
-	skrContext := NewSkrContext(client, event)
+	clientStub := &clientStub{status: statusClient}
+	skrContext := NewSkrContext(clientStub, eventStub)
 
-	err := skrContext.SynchronizeKymaStatus(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKymaStatus(t.Context(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
 	assert.False(t, statusClient.called)
-	assert.False(t, event.called)
+	assert.False(t, eventStub.called)
 }
 
 func Test_SynchronizeKymaStatus_Syncs(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
 
-	event := &eventStub{}
+	eventStub := &eventStub{}
 	statusClient := &statusClient{}
-	client := &clientStub{status: statusClient}
-	skrContext := NewSkrContext(client, event)
+	clientStub := &clientStub{status: statusClient}
+	skrContext := NewSkrContext(clientStub, eventStub)
 
-	err := skrContext.SynchronizeKymaStatus(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKymaStatus(t.Context(), kcpKyma, skrKyma)
 
 	require.NoError(t, err)
 	assert.True(t, statusClient.called)
-	assert.False(t, event.called)
+	assert.False(t, eventStub.called)
 }
 
 func Test_SynchronizeKymaStatus_ErrorsWhenFailedToSync(t *testing.T) {
@@ -183,17 +183,17 @@ func Test_SynchronizeKymaStatus_ErrorsWhenFailedToSync(t *testing.T) {
 	kcpKyma := builder.NewKymaBuilder().Build()
 
 	expectedError := errors.New("test error")
-	event := &eventStub{}
+	eventStub := &eventStub{}
 	statusClient := &statusClient{err: expectedError}
-	client := &clientStub{status: statusClient}
-	skrContext := NewSkrContext(client, event)
+	clientStub := &clientStub{status: statusClient}
+	skrContext := NewSkrContext(clientStub, eventStub)
 
-	err := skrContext.SynchronizeKymaStatus(context.Background(), kcpKyma, skrKyma)
+	err := skrContext.SynchronizeKymaStatus(t.Context(), kcpKyma, skrKyma)
 
 	require.ErrorIs(t, err, expectedError)
 	assert.Contains(t, err.Error(), "failed to synchronise Kyma status to SKR")
 	assert.True(t, statusClient.called)
-	assert.True(t, event.called)
+	assert.True(t, eventStub.called)
 }
 
 func Test_syncStatus_AssignsRemoteNamespace(t *testing.T) {
@@ -360,7 +360,7 @@ func createKyma(channel string, moduleNames []string) *v1beta2.Kyma {
 		WithChannel(channel).
 		Build()
 
-	modules := []v1beta2.Module{}
+	modules := make([]v1beta2.Module, 0, len(moduleNames))
 	for _, moduleName := range moduleNames {
 		modules = append(modules, v1beta2.Module{
 			Name:    moduleName,
@@ -391,7 +391,7 @@ type eventStub struct {
 	called bool
 }
 
-func (e *eventStub) Warning(object machineryruntime.Object, reason event.Reason, err error) {
+func (e *eventStub) Warning(_ machineryruntime.Object, _ event.Reason, _ error) {
 	e.called = true
 }
 
@@ -402,7 +402,7 @@ type clientStub struct {
 	called bool
 }
 
-func (c *clientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (c *clientStub) Patch(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
 	c.called = true
 	return c.err
 }
@@ -421,7 +421,7 @@ type statusClient struct {
 	called bool
 }
 
-func (s *statusClient) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
+func (s *statusClient) Update(_ context.Context, _ client.Object, _ ...client.SubResourceUpdateOption) error {
 	s.called = true
 	return s.err
 }

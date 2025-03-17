@@ -67,7 +67,7 @@ func TestManagerStateCheck_GetState(t *testing.T) {
 			statefulsetChecker := &StatefulSetStateCheckerStub{}
 			deploymentChecker := &DeploymentStateCheckerStub{}
 			m := statecheck.NewManagerStateCheck(statefulsetChecker, deploymentChecker)
-			got, err := m.GetState(context.Background(), clnt, testCase.resources)
+			got, err := m.GetState(t.Context(), clnt, testCase.resources)
 
 			if testCase.expectedError == nil {
 				require.NoError(t, err)
