@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("Kyma is reconciled correctly based on the event filters", Ordered, func() {
 	kyma := NewTestKyma("kyma")
-	skrKyma := buildSkrKyma()
+	skrKyma := NewSKRKyma()
 	var skrClient client.Client
 	var err error
 

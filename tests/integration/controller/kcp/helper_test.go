@@ -333,10 +333,3 @@ func updateKyma(ctx context.Context, k8sClient client.Client, kyma *v1beta2.Kyma
 	}
 	return nil
 }
-
-func buildSkrKyma() *v1beta2.Kyma {
-	return builder.NewKymaBuilder().
-		WithName(shared.DefaultRemoteKymaName).
-		WithNamespace(shared.DefaultRemoteNamespace).
-		Build()
-}
