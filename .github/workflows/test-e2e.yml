@@ -116,7 +116,4 @@ jobs:
 
       - name: Post debug
         if: always()
-        run: |
-          k3d cluster list
-          kubectl get deploy klm-controller-manager -n kcp-system -o yaml
-          kubectl describe deploy klm-controller-manager  -n kcp-system
+        run: ./.github/scripts/debug/teardown.sh
