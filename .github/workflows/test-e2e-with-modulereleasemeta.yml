@@ -131,4 +131,4 @@ jobs:
           make -C tests/e2e ${{ matrix.e2e-test }}
       - name: Post debug
         if: always()
-        run: ./.github/scripts/debug/teardown.sh
+        run: ./lifecycle-manager/.github/scripts/debug/teardown.sh
