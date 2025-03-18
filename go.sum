@@ -993,8 +993,8 @@ github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6Kllzaw
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
-github.com/vbatts/tar-split v0.11.7 h1:ixZ93pO/GmvaZw4Vq9OwmfZK/kc2zKdPfu0B+gYqs3U=
-github.com/vbatts/tar-split v0.11.7/go.mod h1:eF6B6i6ftWQcDqEn3/iGFRFRo8cBIMSJVOpnNdfTMFA=
+github.com/vbatts/tar-split v0.12.1 h1:CqKoORW7BUWBe7UL/iqTVvkTBOF8UvOMKOIZykxnnbo=
+github.com/vbatts/tar-split v0.12.1/go.mod h1:eF6B6i6ftWQcDqEn3/iGFRFRo8cBIMSJVOpnNdfTMFA=
 github.com/weppos/publicsuffix-go v0.40.3-0.20240815124645-a8ed110559c9 h1:4pH9wXOWQdW8kVMJ8P/kxbuxJKR+iNvDeC8zEVLy7eM=
 github.com/weppos/publicsuffix-go v0.40.3-0.20240815124645-a8ed110559c9/go.mod h1:o4XOb/pL91sSlesP+I2Xcp38P4/emRvDF6N6xUWvwzg=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
