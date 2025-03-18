@@ -40,11 +40,11 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 		return nil
 	}
 
-	skrEnv := &envtest.Environment{
+	f.skrEnv = &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 		// Scheme: scheme,
 	}
-	cfg, err := skrEnv.Start()
+	cfg, err := f.GetSkrEnv().Start()
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 	}
 
 	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(envtest.User{
+	authUser, err = f.GetSkrEnv().AddUser(envtest.User{
 		Name:   "skr-admin-account",
 		Groups: []string{"system:masters"},
 	}, cfg)
@@ -86,4 +86,8 @@ func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
 
 func (f *DualClusterFactory) GetSkrEnv() *envtest.Environment {
 	return f.skrEnv
+}
+
+func (f *DualClusterFactory) Stop() error {
+	return f.skrEnv.Stop()
 }
