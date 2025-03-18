@@ -317,7 +317,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
 	})
 
-	if err := (&kyma.Reconciler{
+	if err := (&kyma.KymaInstallationReconciler{
 		Client:             mgr.GetClient(),
 		SkrContextFactory:  skrContextFactory,
 		Event:              event,
@@ -338,6 +338,33 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider,
 			moduleTemplateInfoLookupStrategies),
+	}).SetupWithManager(
+		mgr, options, kyma.SetupOptions{
+			ListenerAddr:                 flagVar.KymaListenerAddr,
+			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
+			IstioNamespace:               flagVar.IstioNamespace,
+		},
+	); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
+		os.Exit(1)
+	}
+
+	if err := (&kyma.KymaDeletionReconciler{
+		Client:            mgr.GetClient(),
+		SkrContextFactory: skrContextFactory,
+		Event:             event,
+		SKRWebhookManager: skrWebhookManager,
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.KymaRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+			Error:   flagVar.KymaRequeueErrInterval,
+			Warning: flagVar.KymaRequeueWarningInterval,
+		},
+		InKCPMode:     flagVar.InKCPMode,
+		IsManagedKyma: flagVar.IsKymaManaged,
+		Metrics:       kymaMetrics,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
+			flagVar.RemoteSyncNamespace),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,

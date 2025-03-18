@@ -137,7 +137,7 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
-	err = (&kyma.Reconciler{
+	err = (&kyma.KymaInstallationReconciler{
 		Client:              kcpClient,
 		Event:               testEventRec,
 		DescriptorProvider:  descriptorProvider,
@@ -147,11 +147,12 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-		})),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+				moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+			})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{
 		RateLimiter: internal.RateLimiter(
 			1*time.Second, 5*time.Second,

@@ -138,7 +138,7 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
-	err = (&kyma.Reconciler{
+	err = (&kyma.KymaInstallationReconciler{
 		Client:              kcpClient,
 		SkrContextFactory:   testSkrContextFactory,
 		Event:               testEventRec,

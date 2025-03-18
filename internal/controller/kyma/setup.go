@@ -40,7 +40,9 @@ var (
 	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
 )
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
+func (r *KymaInstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options,
+	settings SetupOptions,
+) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
@@ -68,7 +70,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
 				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler())).
+		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, skrEventHandler())).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
 	}
@@ -76,7 +78,45 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 	return nil
 }
 
-func (r *Reconciler) skrEventHandler() *handler.Funcs {
+func (r *KymaDeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options,
+	settings SetupOptions,
+) error {
+	var verifyFunc watcherevent.Verify
+	if settings.EnableDomainNameVerification {
+		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
+	} else {
+		verifyFunc = func(r *http.Request, watcherEvtObject *types.WatchEvent) error {
+			return nil
+		}
+	}
+	runnableListener := watcherevent.NewSKREventListener(
+		settings.ListenerAddr,
+		shared.OperatorName,
+		verifyFunc,
+	)
+	if err := mgr.Add(runnableListener); err != nil {
+		return fmt.Errorf("KymaReconciler %w", err)
+	}
+	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+		Named(controllerName).
+		WithOptions(opts).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
+		Watches(&v1beta2.ModuleTemplate{},
+			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
+		Watches(&v1beta2.ModuleReleaseMeta{}, watch.NewModuleReleaseMetaEventHandler(r)).
+		Watches(&apicorev1.Secret{}, handler.Funcs{}).
+		Watches(&v1beta2.Manifest{},
+			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
+				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, skrEventHandler())).
+		Complete(r); err != nil {
+		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
+	}
+
+	return nil
+}
+
+func skrEventHandler() *handler.Funcs {
 	return &handler.Funcs{
 		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
 			queue workqueue.TypedRateLimitingInterface[ctrl.Request],
