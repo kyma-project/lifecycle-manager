@@ -116,3 +116,4 @@ jobs:
       - name: Post debug
         if: always()
         run: ./lifecycle-manager/.github/scripts/debug/teardown.sh
+        continue-on-error: true
