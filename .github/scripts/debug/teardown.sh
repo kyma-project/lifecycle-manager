@@ -5,6 +5,6 @@ echo "--- KLM DEPLOYMENT ---"
 kubectl get deploy klm-controller-manager -n kcp-system -o yaml
 kubectl describe deploy klm-controller-manager  -n kcp-system
 echo "--- KLM POD ---"
-kubectl describe pod -n kcp-system $(kubectl get pods -n kcp-system --selector=app.kubernetes.io/name=kcp-lifecycle-manager -o jsonpath='{.items[0].metadata.name}')
+kubectl describe pod -n kcp-system --selector=app.kubernetes.io/name=kcp-lifecycle-manager
 echo "--- KLM LOGS ---"
-kubectl logs -n kcp-system $(kubectl get pods -n kcp-system --selector=app.kubernetes.io/name=kcp-lifecycle-manager -o jsonpath='{.items[0].metadata.name}')
+kubectl logs deploy/klm-controller-manager -n kcp-system --container manager
