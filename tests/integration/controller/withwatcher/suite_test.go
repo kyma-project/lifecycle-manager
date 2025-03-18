@@ -253,8 +253,14 @@ var _ = AfterSuite(func() {
 	// cancel environment context
 	cancel()
 
-	err := kcpEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
+	var kcpEnvStopErr error
+	var skrEnvStopErr error
+
+	kcpEnvStopErr = kcpEnv.Stop()
+	skrEnvStopErr = testSkrContextFactory.GetSkrEnv().Stop()
+
+	Expect(kcpEnvStopErr).NotTo(HaveOccurred())
+	Expect(skrEnvStopErr).NotTo(HaveOccurred())
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {

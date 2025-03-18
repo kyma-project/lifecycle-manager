@@ -23,6 +23,7 @@ type DualClusterFactory struct {
 	clients sync.Map
 	scheme  *machineryruntime.Scheme
 	event   event.Event
+	skrEnv  *envtest.Environment
 }
 
 func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *DualClusterFactory {
@@ -81,4 +82,8 @@ func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext,
 
 func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
 	// no-op
+}
+
+func (f *DualClusterFactory) GetSkrEnv() *envtest.Environment {
+	return f.skrEnv
 }
