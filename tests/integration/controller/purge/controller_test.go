@@ -23,7 +23,7 @@ const (
 	testFinalizer = "purge.reconciler/test"
 )
 
-var _ = FDescribe("When kyma is not deleted within configured timeout", Ordered, func() {
+var _ = Describe("When kyma is not deleted within configured timeout", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
 	skrKyma := NewSKRKyma() // Only used to create the Issuers, not actually deployed itself
 	var skrClient client.Client
@@ -123,63 +123,99 @@ var _ = FDescribe("When kyma is not deleted within configured timeout", Ordered,
 	})
 })
 
-//var _ = Describe("When kyma is deleted before configured timeout", Ordered, func() {
-//	kyma := NewTestKyma("drop-intantly-kyma")
-//
-//	It("Should start purging right after the kyma is deleted", func() {
-//		var issuer1 *unstructured.Unstructured
-//		var issuer2 *unstructured.Unstructured
-//
-//		By("Creating the kyma object first", func() {
-//			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
-//			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
-//				var err error
-//				for range 2 {
-//					err = kcpClient.Update(ctx, kyma)
-//					if err == nil {
-//						break
-//					}
-//					err = kcpClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
-//					time.Sleep(5 * time.Millisecond)
-//				}
-//				Expect(err).ToNot(HaveOccurred())
-//			}
-//		})
-//
-//		By("Create some CR with finalizer(s)", func() {
-//			issuer1 = createIssuerFor(kyma, "1")
-//			Expect(issuer1).NotTo(BeNil())
-//			Expect(kcpClient.Create(ctx, issuer1)).Should(Succeed())
-//			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), kcpClient)).
-//				Should(ContainElement(testFinalizer))
-//
-//			issuer2 = createIssuerFor(kyma, "2")
-//			Expect(issuer2).NotTo(BeNil())
-//			Expect(kcpClient.Create(ctx, issuer2)).Should(Succeed())
-//			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), kcpClient)).
-//				Should(ContainElement(testFinalizer))
-//		})
-//
-//		By("Triggering kyma deletion and is completely removed", func() {
-//			//	Kyma delete event
-//			err := kcpClient.Delete(ctx, kyma)
-//			Expect(err).ToNot(HaveOccurred())
-//		})
-//
-//		By("Target finalizers should be dropped immediately", func() {
-//			Eventually(getIssuerFinalizers, Timeout, Interval).
-//				WithContext(ctx).
-//				WithArguments(client.ObjectKeyFromObject(issuer1), kcpClient).
-//				Should(BeEmpty())
-//
-//			Eventually(getIssuerFinalizers, Timeout, Interval).
-//				WithContext(ctx).
-//				WithArguments(client.ObjectKeyFromObject(issuer2), kcpClient).
-//				Should(BeEmpty())
-//		})
-//	})
-//})
-//
+var _ = Describe("When kyma is deleted before configured timeout", Ordered, func() {
+	kyma := NewTestKyma("drop-intantly-kyma")
+	skrKyma := NewSKRKyma() // Only used to create the Issuers, not actually deployed itself
+	var skrClient client.Client
+	var err error
+
+	BeforeAll(func() {
+		Eventually(func() error {
+			err = testSkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
+
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
+
+		Eventually(CreateNamespace, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, shared.DefaultRemoteNamespace).
+			Should(Succeed())
+
+		// Patching the SKR Cluster to have the necessary CRDs
+		Eventually(func() error {
+			externalCRDs, err := AppendExternalCRDs(
+				filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds"),
+				"cert-manager-v1.10.1.crds.yaml",
+				"istio-v1.17.1.crds.yaml")
+
+			Expect(err).ShouldNot(HaveOccurred())
+
+			for _, crd := range externalCRDs {
+				err = skrClient.Create(ctx, crd)
+				Expect(err).ShouldNot(HaveOccurred())
+			}
+			return err
+		}, Timeout, Interval).Should(Succeed())
+	})
+
+	It("Should start purging right after the kyma is deleted", func() {
+		var issuer1 *unstructured.Unstructured
+		var issuer2 *unstructured.Unstructured
+
+		By("Creating the kyma object first", func() {
+			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
+			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
+				var err error
+				for range 2 {
+					err = kcpClient.Update(ctx, kyma)
+					if err == nil {
+						break
+					}
+					err = kcpClient.Get(ctx, client.ObjectKeyFromObject(kyma), kyma)
+					time.Sleep(5 * time.Millisecond)
+				}
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
+
+		By("Create some CR with finalizer(s)", func() {
+			issuer1 = createIssuerFor(skrKyma, "1")
+			Expect(issuer1).NotTo(BeNil())
+			Expect(skrClient.Create(ctx, issuer1)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer1), skrClient)).
+				Should(ContainElement(testFinalizer))
+
+			issuer2 = createIssuerFor(skrKyma, "2")
+			Expect(issuer2).NotTo(BeNil())
+			Expect(skrClient.Create(ctx, issuer2)).Should(Succeed())
+			Expect(getIssuerFinalizers(ctx, client.ObjectKeyFromObject(issuer2), skrClient)).
+				Should(ContainElement(testFinalizer))
+		})
+
+		By("Triggering kyma deletion and is completely removed", func() {
+			//	Kyma delete event
+			err := kcpClient.Delete(ctx, kyma)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Target finalizers should be dropped immediately", func() {
+			Eventually(getIssuerFinalizers, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(client.ObjectKeyFromObject(issuer1), skrClient).
+				Should(BeEmpty())
+
+			Eventually(getIssuerFinalizers, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(client.ObjectKeyFromObject(issuer2), skrClient).
+				Should(BeEmpty())
+		})
+	})
+})
+
 //var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 //	kyma := NewTestKyma("skip-crds-kyma")
 //	const retries = 5
