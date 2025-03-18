@@ -1,7 +1,6 @@
 package kcp_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -11,7 +10,6 @@ import (
 
 var _ = Describe("Manifest.Spec.Remote in KCP mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
-	kyma.Labels[shared.SyncLabel] = shared.DisableLabelValue
 
 	module := NewTestModule("module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)

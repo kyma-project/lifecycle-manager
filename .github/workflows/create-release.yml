@@ -1,6 +1,7 @@
 name: "Create release"
 
 permissions:
+  id-token: write
   contents: write
 
 on:

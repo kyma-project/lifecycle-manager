@@ -164,9 +164,3 @@ The list is purely informational and does not introduce functional changes to th
 ### **.spec.requiresDowntime**
 
 The `requiresDowntime` field indicates whether the module requires downtime to support maintenance windows during module upgrades. It is optional and defaults to `false`, meaning the module version upgrades don't require downtime.
-
-## `operator.kyma-project.io` Labels
-
-These are the synchronization labels available on the ModuleTemplate CR:
-
-* `operator.kyma-project.io/sync`: A boolean value. If set to `false`, this ModuleTemplate CR is not synchronized with any remote cluster. The default value is `true`.

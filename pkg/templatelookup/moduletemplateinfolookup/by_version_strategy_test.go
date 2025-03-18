@@ -62,7 +62,7 @@ func Test_ByVersion_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 		},
 	))
 
-	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byVersionStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
@@ -97,7 +97,7 @@ func Test_ByVersion_Strategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testin
 		},
 	))
 
-	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byVersionStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -112,7 +112,7 @@ func Test_ByVersion_Strategy_Lookup_WhenFailedToListModuleTemplates(t *testing.T
 
 	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(&failedClientStub{})
 
-	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byVersionStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -131,7 +131,7 @@ func Test_ByVersion_Strategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 		},
 	))
 
-	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byVersionStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -159,7 +159,7 @@ func Test_ByVersion_Strategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) 
 		},
 	))
 
-	moduleTemplateInfo := byVersionStrategy.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := byVersionStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
@@ -207,6 +207,6 @@ type failedClientStub struct {
 	client.Client
 }
 
-func (c *failedClientStub) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (c *failedClientStub) List(_ context.Context, _ client.ObjectList, _ ...client.ListOption) error {
 	return errors.New("failed to list module templates")
 }

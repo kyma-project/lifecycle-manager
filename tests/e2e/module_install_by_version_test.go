@@ -12,7 +12,7 @@ import (
 )
 
 var _ = Describe("Module Install By Version", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	templateOperatorModule := NewTemplateOperatorWithVersion(NewerVersion)
 	moduleCR := builder.NewModuleCRBuilder().
 		WithName("sample-2.4.2-e2e-test").

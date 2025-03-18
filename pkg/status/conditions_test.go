@@ -5,55 +5,26 @@ import (
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 type testCase struct {
-	name                  string
-	watcherEnabled        bool
-	hasSyncLabel          bool
-	syncLabelValueEnabled bool
+	name           string
+	watcherEnabled bool
 }
 
 func TestInitConditions(t *testing.T) {
 	t.Parallel()
 	testcases := []testCase{
 		{
-			name:                  "Should Init Conditions properly with Watcher & Sync Enabled",
-			watcherEnabled:        true,
-			hasSyncLabel:          true,
-			syncLabelValueEnabled: true,
-		},
-		{
-			name:                  "Should Init Conditions properly with Watcher & Sync Disabled",
-			watcherEnabled:        false,
-			hasSyncLabel:          true,
-			syncLabelValueEnabled: false,
-		},
-		{
-			name:                  "Should Init Conditions properly with Watcher Enabled & Sync Disabled",
-			watcherEnabled:        true,
-			hasSyncLabel:          true,
-			syncLabelValueEnabled: false,
-		},
-		{
-			name:                  "Should Init Conditions properly with Watcher Disabled & Sync Enabled",
-			watcherEnabled:        false,
-			hasSyncLabel:          true,
-			syncLabelValueEnabled: true,
-		},
-		{
 			name:           "Should Init Conditions properly with Watcher Enabled & missing sync label",
 			watcherEnabled: true,
-			hasSyncLabel:   false,
 		},
 		{
 			name:           "Should Init Conditions properly with Watcher Disabled & missing sync label",
 			watcherEnabled: false,
-			hasSyncLabel:   false,
 		},
 	}
 
@@ -74,18 +45,11 @@ func TestInitConditions(t *testing.T) {
 					Reason: "Deprecated",
 				})
 
-			if testcase.hasSyncLabel {
-				labelValue := shared.DisableLabelValue
-				if testcase.syncLabelValueEnabled {
-					labelValue = shared.EnableLabelValue
-				}
-				kymaBuilder.WithLabel(shared.SyncLabel, labelValue)
-			}
 			kyma := kymaBuilder.Build()
 
-			status.InitConditions(kyma, kyma.HasSyncLabelEnabled(), testcase.watcherEnabled)
+			status.InitConditions(kyma, true, testcase.watcherEnabled)
 
-			requiredConditions := v1beta2.GetRequiredConditionTypes(kyma.HasSyncLabelEnabled(), testcase.watcherEnabled)
+			requiredConditions := v1beta2.GetRequiredConditionTypes(true, testcase.watcherEnabled)
 			if !onlyRequiredKymaConditionsPresent(kyma, requiredConditions) {
 				t.Error("Incorrect Condition Initialization")
 				return

@@ -1,7 +1,6 @@
 package metrics_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -75,7 +74,7 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 	k := &metrics.KymaMetrics{
 		KymaStateGauge: sampleGauge,
 	}
-	if err := k.CleanupNonExistingKymaCrsMetrics(context.TODO(), fakeClientBuilder); err != nil {
+	if err := k.CleanupNonExistingKymaCrsMetrics(t.Context(), fakeClientBuilder); err != nil {
 		t.Errorf("CleanupNonExistingKymaCrsMetrics() error = %v", err)
 	}
 

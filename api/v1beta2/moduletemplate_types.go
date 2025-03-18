@@ -195,10 +195,6 @@ func init() {
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
-	if m.HasSyncDisabled() {
-		return false
-	}
-
 	if m.IsBeta() && !betaEnabled {
 		return false
 	}
@@ -257,15 +253,6 @@ func (m *ModuleTemplate) IsBeta() bool {
 
 func (m *ModuleTemplate) IsMandatory() bool {
 	return m.Spec.Mandatory
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2090
-// Will be deprecated.
-func (m *ModuleTemplate) HasSyncDisabled() bool {
-	if isSync, found := m.Labels[shared.SyncLabel]; found {
-		return strings.ToLower(isSync) == shared.DisableLabelValue
-	}
-	return false
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096

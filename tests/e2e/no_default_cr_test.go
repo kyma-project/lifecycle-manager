@@ -12,7 +12,7 @@ import (
 )
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)

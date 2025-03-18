@@ -8,6 +8,7 @@ BUILD_VERSION := from_makefile
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = $(shell yq e '.k8s' ./versions.yaml)
+ENVTEST_VERSION = $(shell yq e '.envtest' ./versions.yaml)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -164,7 +165,7 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(ENVTEST_VERSION)
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
