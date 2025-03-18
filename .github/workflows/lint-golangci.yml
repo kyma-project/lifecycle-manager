@@ -31,7 +31,7 @@ jobs:
           version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager
-          cache-invalidation-interval: 5
+          skip-cache: true
         env:
           GOSUMDB: sum.golang.org
       - name: golangci-lint for api module
@@ -40,7 +40,7 @@ jobs:
           version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager/api
-          cache-invalidation-interval: 5
+          skip-cache: true
         env:
           GOSUMDB: sum.golang.org
       - name: golangci-lint for maintenancewindows module
@@ -49,6 +49,6 @@ jobs:
           version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager/maintenancewindows
-          cache-invalidation-interval: 5
+          skip-cache: true
         env:
           GOSUMDB: sum.golang.org
