@@ -65,6 +65,7 @@ patches:
         path: /metadata/labels/grafana_dashboard
         value: "1"
 # Note: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
+# TODO: inject-CA not supported gy gardener CM
 transformers:
   - |-
     apiVersion: builtin
