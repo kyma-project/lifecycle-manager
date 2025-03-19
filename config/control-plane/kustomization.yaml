@@ -91,7 +91,7 @@ transformers:
     metadata:
       name: add-ca-inject-annotation
     annotations:
-      cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
+      cert.gardener.cloud/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
     fieldSpecs:
     - kind: CustomResourceDefinition
       path: metadata/annotations
@@ -104,5 +104,5 @@ transformers:
     target:
       kind: Certificate
       name: klm-controller-manager-webhook-serving
-      version: v1
-      group: cert-manager.io
+      version: v1alpha1
+      group: cert.gardener.cloud

@@ -239,8 +239,8 @@ func createDestinationRuleObj() *unstructured.Unstructured {
 
 func createIssuerObj() *unstructured.Unstructured {
 	gvk := schema.GroupVersionKind{
-		Group:   "cert-manager.io",
-		Version: "v1",
+		Group:   "cert.gardener.cloud",
+		Version: "v1alpha1",
 		Kind:    "Issuer",
 	}
 	res := unstructured.Unstructured{}

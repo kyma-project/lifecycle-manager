@@ -86,12 +86,12 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"get", "list", "watch"},
 				},
 				{
-					APIGroups: []string{"cert-manager.io"},
+					APIGroups: []string{"cert.gardener.cloud"},
 					Resources: []string{"certificates"},
 					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
 				},
 				{
-					APIGroups: []string{"cert-manager.io"},
+					APIGroups: []string{"cert.gardener.cloud"},
 					Resources: []string{"issuers"},
 					Verbs:     []string{"get", "list", "watch"},
 				},
@@ -189,12 +189,12 @@ var _ = Describe("RBAC Privileges", func() {
 					Verbs:     []string{"list", "watch", "get", "create", "delete", "update"},
 				},
 				{
-					APIGroups: []string{"cert-manager.io"},
+					APIGroups: []string{"cert.gardener.cloud"},
 					Resources: []string{"certificates"},
 					Verbs:     []string{"patch", "list", "watch", "get", "create", "delete"},
 				},
 				{
-					APIGroups: []string{"cert-manager.io"},
+					APIGroups: []string{"cert.gardener.cloud"},
 					Resources: []string{"issuers"},
 					Verbs:     []string{"list", "watch"},
 				},

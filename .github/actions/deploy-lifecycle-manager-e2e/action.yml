@@ -114,7 +114,7 @@ runs:
           path: /spec/duration
           value: 1h">> certificate_renewal.yaml
         cat certificate_renewal.yaml
-        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
+        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert.gardener.cloud --version v1alpha1 --name watcher-serving
         popd
     - name: Use legacy istio gateway secret rotation strategy
       if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation'}}
