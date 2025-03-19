@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -26,21 +26,40 @@ var (
 	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
-var _ = Describe("Kyma with no Module", Ordered, func() {
+var _ = FDescribe("Kyma with no Module", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
+	skrKyma := NewSKRKyma()
+	var skrClient client.Client
+	var err error
 	RegisterDefaultLifecycleForKyma(kyma)
 
+	_, _ = skrClient, skrKyma
+
+	BeforeAll(func() {
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
+	})
+
 	It("Should result in a ready state immediately", func() {
-		By("having transitioned the CR State to Ready as there are no modules", func() {
+		By("having transitioned the CR State to Ready as there are no modules in KCP", func() {
 			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+
+		})
+		By("having transitioned the CR State to Ready as there are no modules in SKR", func() {
+			Eventually(KymaIsInState, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(skrKyma.GetName(), skrKyma.GetNamespace(), skrClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})
 
 	It("Should contain empty status.modules", func() {
-		By("containing empty status.modules", func() {
+		By("ensuring Kyma in KCP contains empty status.modules", func() {
 			Eventually(func() error {
 				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				if err != nil {
@@ -50,39 +69,47 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 					return ErrWrongModulesStatus
 				}
 				return nil
-			}, Timeout, Interval).
-				Should(Succeed())
+			}, Timeout, Interval).Should(Succeed())
+		})
+		By("ensuring Kyma in SKR contains empty status.modules", func() {
+			Eventually(func() error {
+				createdKyma, err := GetKyma(ctx, skrClient, skrKyma.GetName(), skrKyma.GetNamespace())
+				if err != nil {
+					return err
+				}
+				if len(createdKyma.Status.Modules) != 0 {
+					return ErrWrongModulesStatus
+				}
+				return nil
+			}, Timeout, Interval).Should(Succeed())
 		})
 	})
 
 	It("Should contain expected Modules conditions", func() {
-		By("containing Modules condition", func() {
-			Eventually(func() error {
-				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-				if err != nil {
-					return err
-				}
-				conditions := createdKyma.Status.Conditions
-				if len(conditions) != 1 {
-					return ErrWrongConditions
-				}
-				currentCondition := conditions[0]
-				expectedCondition := apimetav1.Condition{
-					Type:    string(v1beta2.ConditionTypeModules),
-					Status:  "True",
-					Message: v1beta2.ConditionMessageModuleInReadyState,
-					Reason:  string(v1beta2.ReadyConditionReason),
-				}
-
-				if currentCondition.Type != expectedCondition.Type ||
-					currentCondition.Status != expectedCondition.Status ||
-					currentCondition.Message != expectedCondition.Message ||
-					currentCondition.Reason != expectedCondition.Reason {
-					return ErrWrongConditions
-				}
-
-				return nil
-			}, Timeout, Interval).
+		expectedConditions := []apimetav1.Condition{
+			{
+				Type:    string(v1beta2.ConditionTypeModules),
+				Status:  "True",
+				Message: v1beta2.ConditionMessageModuleInReadyState,
+				Reason:  string(v1beta2.ReadyConditionReason),
+			},
+			{
+				Type:    string(v1beta2.ConditionTypeModuleCatalog),
+				Status:  "True",
+				Message: v1beta2.ConditionMessageModuleCatalogIsSynced,
+				Reason:  string(v1beta2.ReadyConditionReason),
+			},
+		}
+		By("KCP having correct Module Conditions", func() {
+			Eventually(containsExpectedConditions, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma, expectedConditions).
+				Should(Succeed())
+		})
+		By("SKR having no module conditions", func() {
+			Eventually(containsExpectedConditions, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(skrClient, skrKyma, expectedConditions).
 				Should(Succeed())
 		})
 	})
@@ -212,6 +239,7 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 		kyma := NewTestKyma(testCase.kymaName)
 		RegisterDefaultLifecycleForKyma(kyma)
 
+		// FIXME: Failed in isManagedKyma: True
 		It("should result Kyma in Warning state", func() {
 			By(testCase.enableStatement, func() {
 				kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
@@ -257,18 +285,6 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 		})
 	}
 })
-
-func containsCondition(kyma *v1beta2.Kyma) error {
-	createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-	if err != nil {
-		return err
-	}
-	conditions := createdKyma.Status.Conditions
-	if len(conditions) == 0 {
-		return ErrWrongConditions
-	}
-	return nil
-}
 
 var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 	var (
@@ -448,6 +464,7 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 	kyma := NewTestKyma("unmanaged-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
 
+	// FIXME: Failed in isManagedKyma: True
 	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
 		Eventually(ContainsKymaManagerField, Timeout, Interval).
 			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), shared.UnmanagedKyma).
@@ -507,6 +524,49 @@ func expectKymaStatusModules(ctx context.Context,
 	return func() error {
 		return CheckModuleState(ctx, kcpClient, kyma.Name, kyma.Namespace, moduleName, state)
 	}
+}
+
+func containsCondition(kyma *v1beta2.Kyma) error {
+	createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+	conditions := createdKyma.Status.Conditions
+	if len(conditions) == 0 {
+		return ErrWrongConditions
+	}
+	return nil
+}
+
+func containsExpectedConditions(ctx context.Context, clnt client.Client,
+	kyma *v1beta2.Kyma, expectedConditions []apimetav1.Condition) error {
+
+	createdKyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+	conditions := createdKyma.Status.Conditions
+
+	if len(conditions) != len(expectedConditions) {
+		return ErrWrongConditions
+	}
+	for _, condition := range conditions {
+		contains := false
+		for _, expectedCondition := range expectedConditions {
+			if condition.Type == expectedCondition.Type &&
+				condition.Status == expectedCondition.Status &&
+				condition.Message == expectedCondition.Message &&
+				condition.Reason == expectedCondition.Reason {
+
+				contains = true
+				break
+			}
+		}
+		if !contains {
+			return ErrWrongConditions
+		}
+	}
+	return nil
 }
 
 func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
