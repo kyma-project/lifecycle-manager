@@ -129,3 +129,7 @@ jobs:
         working-directory: lifecycle-manager
         run: |
           make -C tests/e2e ${{ matrix.e2e-test }}
+      - name: Post debug
+        if: always()
+        run: ./lifecycle-manager/.github/scripts/debug/teardown.sh
+        continue-on-error: true
