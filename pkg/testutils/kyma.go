@@ -40,6 +40,7 @@ func NewSKRKyma() *v1beta2.Kyma {
 	return builder.NewKymaBuilder().
 		WithName(shared.DefaultRemoteKymaName).
 		WithNamespace(shared.DefaultRemoteNamespace).
+		WithChannel(v1beta2.DefaultChannel).
 		Build()
 }
 

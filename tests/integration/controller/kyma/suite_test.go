@@ -17,6 +17,7 @@ package kyma_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"os"
 	"path/filepath"
 	"testing"
@@ -143,7 +144,7 @@ var _ = BeforeSuite(func() {
 		Event:               testEventRec,
 		DescriptorProvider:  descriptorProvider,
 		SkrContextFactory:   testSkrContextFactory,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
 		RequeueIntervals:    intervals,
 		InKCPMode:           true,
 		IsManagedKyma:       true,

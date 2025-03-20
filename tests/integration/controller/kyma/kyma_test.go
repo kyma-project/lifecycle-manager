@@ -33,8 +33,6 @@ var _ = FDescribe("Kyma with no Module", Ordered, func() {
 	var err error
 	RegisterDefaultLifecycleForKyma(kyma)
 
-	_, _ = skrClient, skrKyma
-
 	BeforeAll(func() {
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
@@ -115,18 +113,44 @@ var _ = FDescribe("Kyma with no Module", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma enable one Module", Ordered, func() {
+var _ = FDescribe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
+	skrKyma := NewSKRKyma()
+
+	var skrClient client.Client
+	var err error
+
+	kyma.Labels["manual-trigger"] = "1"
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
+	BeforeAll(func() {
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
+
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, skrKyma).Should(Succeed())
+	})
+
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing", func() {
+
+			kyma.Labels["manual-trigger"] = "2"
+			Eventually(kcpClient.Update, Timeout, Interval).
+				WithContext(ctx).WithArguments(kyma).Should(Succeed())
+
 			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
+				Should(Succeed())
+			Eventually(KymaIsInState, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(skrKyma.GetName(), skrKyma.GetNamespace(), skrClient, shared.StateProcessing).
 				Should(Succeed())
 		})
 
@@ -150,20 +174,35 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+			Eventually(KymaIsInState, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(skrKyma.GetName(), skrKyma.GetNamespace(), skrClient, shared.StateReady).
+				Should(Succeed())
 		})
 
 		By("Kyma status contains expected condition", func() {
-			kymaInCluster, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+			latestKymaKCP, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(
-				kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
+				latestKymaKCP.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
 			Expect(
-				kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog,
-					apimetav1.ConditionTrue)).To(BeFalse())
+				latestKymaKCP.ContainsCondition(v1beta2.ConditionTypeModuleCatalog,
+					apimetav1.ConditionTrue)).To(BeTrue())
+
+			latestKymaSKR, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(
+				latestKymaSKR.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
+			Expect(
+				latestKymaSKR.ContainsCondition(v1beta2.ConditionTypeModuleCatalog,
+					apimetav1.ConditionTrue)).To(BeTrue())
 		})
 		By("Module Catalog created", func() {
 			Eventually(AllModuleTemplatesExists, Timeout, Interval).
 				WithArguments(ctx, kcpClient, kyma).
+				Should(Succeed())
+			Eventually(AllModuleTemplatesExists, Timeout, Interval).
+				WithArguments(ctx, skrClient, skrKyma).
 				Should(Succeed())
 		})
 	})
@@ -181,15 +220,16 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 						},
 					},
 				}
-				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
+				// For KCP
+				latestKymaKCP, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
 				if err != nil {
 					return err
 				}
-				modulesStatus := createdKyma.Status.Modules
+				modulesStatus := latestKymaKCP.Status.Modules
 				if len(modulesStatus) != 1 {
 					return ErrWrongModulesStatus
 				}
-				template, err := GetModuleTemplate(ctx, kcpClient, module, createdKyma)
+				template, err := GetModuleTemplate(ctx, kcpClient, module, latestKymaKCP)
 				if err != nil {
 					return err
 				}
@@ -199,12 +239,31 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 					return err
 				}
 				if moduleStatus.Version != descriptor.Version {
-					return fmt.Errorf("version mismatch: %w", ErrWrongModulesStatus)
+					return fmt.Errorf("version mismatch in KCP module status: %w", ErrWrongModulesStatus)
 				}
 				if moduleStatus.Name != expectedModule.Name ||
 					moduleStatus.State != expectedModule.State ||
 					moduleStatus.Channel != expectedModule.Channel ||
 					moduleStatus.Resource.Namespace != expectedModule.Resource.Namespace {
+					return ErrWrongModulesStatus
+				}
+
+				// For SKR
+				latestKymaSKR, err := GetKyma(ctx, skrClient, skrKyma.GetName(), skrKyma.GetNamespace())
+				if err != nil {
+					return err
+				}
+				modulesStatusSKR := latestKymaSKR.Status.Modules
+				if len(modulesStatus) != 1 {
+					return ErrWrongModulesStatus
+				}
+				if modulesStatusSKR[0].Version != descriptor.Version {
+					return fmt.Errorf("version mismatch in KCP module status: %w", ErrWrongModulesStatus)
+				}
+				if modulesStatusSKR[0].Name != expectedModule.Name ||
+					modulesStatusSKR[0].State != expectedModule.State ||
+					modulesStatusSKR[0].Channel != expectedModule.Channel ||
+					modulesStatusSKR[0].Resource.Namespace != expectedModule.Resource.Namespace {
 					return ErrWrongModulesStatus
 				}
 
