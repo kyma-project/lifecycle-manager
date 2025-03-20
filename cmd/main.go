@@ -367,6 +367,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		Duration:            flagVar.SelfSignedCertDuration,
 		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
 		KeySize:             int32(flagVar.SelfSignedCertKeySize),
+		IssuerNamespace:     flagVar.SelfSignedCertIssuerNamespace,
 	}
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,

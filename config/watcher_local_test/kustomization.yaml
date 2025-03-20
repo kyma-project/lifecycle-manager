@@ -19,6 +19,9 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-issuer-namespace=default
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
         value: --kyma-requeue-success-interval=20s
       - op: add
         path: /spec/template/spec/containers/0/args/-

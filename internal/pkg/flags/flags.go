@@ -224,6 +224,7 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
 		"istio-gateway-cert-switch-before-expiration-time", DefaultIstioGatewayCertSwitchBeforeExpirationTime,
 		"Time before the expiration of the current CA certificate when the Gateway certificate should be switched")
+	flag.StringVar(&flagVar.SelfSignedCertIssuerNamespace, "self-signed-cert-issuer-namespace", "istio-system", "Namespace of the issuer for self-signed certificates")
 	flag.DurationVar(&flagVar.IstioGatewaySecretRequeueSuccessInterval,
 		"istio-gateway-secret-requeue-success-interval", DefaultIstioGatewaySecretRequeueSuccessInterval,
 		"determines the duration after which the istio gateway secret is enqueued after successful reconciliation.")
@@ -313,6 +314,7 @@ type FlagVar struct {
 	SelfSignedCertRenewBefore                  time.Duration
 	SelfSignedCertRenewBuffer                  time.Duration
 	SelfSignedCertKeySize                      int
+	SelfSignedCertIssuerNamespace              string
 	UseLegacyStrategyForIstioGatewaySecret     bool
 	DropCrdStoredVersionMap                    string
 	WatcherImageTag                            string
