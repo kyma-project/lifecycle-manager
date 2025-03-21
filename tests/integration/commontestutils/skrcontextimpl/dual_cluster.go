@@ -89,5 +89,8 @@ func (f *DualClusterFactory) GetSkrEnv() *envtest.Environment {
 }
 
 func (f *DualClusterFactory) Stop() error {
+	if f.skrEnv == nil {
+		return nil
+	}
 	return f.skrEnv.Stop()
 }
