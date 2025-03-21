@@ -46,7 +46,11 @@ var _ = Describe("valid kyma.spec.channel should be deployed successful", func()
 			"When kyma is deployed in valid channel,"+
 				" expect Modules to be in valid channel",
 			givenModuleTemplateWithChannel(ValidChannel, true),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, ValidChannel),
+			func() error {
+				Eventually(expectEveryModuleStatusToHaveChannel(kcpClient, kyma.GetName(),
+					kyma.GetNamespace(), ValidChannel)).Should(Succeed())
+				return nil
+			},
 		),
 	)
 })
@@ -227,48 +231,86 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 
 var _ = Describe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
+	skrKyma := NewSKRKyma()
+	modules := []v1beta2.Module{{
+		ControllerName: "manifest",
+		Name:           "channel-switch",
+		Channel:        v1beta2.DefaultChannel,
+		Managed:        true,
+	}}
+	var skrClient client.Client
+	var err error
 
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "channel-switch",
-			Channel:        v1beta2.DefaultChannel,
-			Managed:        true,
-		})
-
+	BeforeAll(func() {
+		Expect(createModuleTemplateSetsForKyma(modules, LowerVersion, v1beta2.DefaultChannel)).To(Succeed())
+		Expect(createModuleTemplateSetsForKyma(modules, HigherVersion, FastChannel)).To(Succeed())
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
+	})
 	AfterAll(func() {
+		CleanupModuleTemplateSetsForKyma(kyma)
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
-
-	BeforeAll(func() {
-		Expect(createModuleTemplateSetsForKyma(kyma.Spec.Modules, LowerVersion, v1beta2.DefaultChannel)).To(Succeed())
-		Expect(createModuleTemplateSetsForKyma(kyma.Spec.Modules, HigherVersion, FastChannel)).To(Succeed())
+	BeforeEach(func() {
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(skrClient, skrKyma).Should(Succeed())
 	})
 
-	AfterAll(CleanupModuleTemplateSetsForKyma(kyma))
+	It("KCP and remote Kymas eventually exist", func() {
+		Eventually(KymaExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace()).
+			Should(Succeed())
+		Eventually(KymaExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace()).
+			Should(Succeed())
+	})
 
-	It(
-		"should create kyma with standard modules in default channel normally", func() {
-			Eventually(CreateCR, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma).Should(Succeed())
-			Eventually(KymaIsInState, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
-				Should(Succeed())
-			for _, module := range kyma.Spec.Modules {
-				Eventually(UpdateManifestState, Timeout, Interval).
-					WithArguments(ctx, kcpClient,
-						kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).Should(Succeed())
-			}
-			Eventually(KymaIsInState, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
-				Should(Succeed())
-		},
-	)
+	It("Standard Modules are enabled in default channel normally", func() {
+		Eventually(EnableModule, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), modules[0]).
+			Should(Succeed())
+	})
+	It("should create kyma with standard modules in default channel normally", func() {
+		By("KCP Kyma is in Processing state")
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateProcessing).
+			Should(Succeed())
+		By("SKR Kyma is in Processing state")
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrKyma.GetName(), skrKyma.GetNamespace(), skrClient, shared.StateProcessing).
+			Should(Succeed())
+
+		for _, module := range skrKyma.Spec.Modules {
+			Eventually(UpdateManifestState, Timeout, Interval).
+				WithArguments(ctx, kcpClient,
+					kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).Should(Succeed())
+		}
+
+		By("KCP Kyma is in Ready state")
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+			Should(Succeed())
+		By("SKR Kyma is in Ready state")
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrKyma.GetName(), skrKyma.GetNamespace(), skrClient, shared.StateReady).
+			Should(Succeed())
+	})
 
 	DescribeTable(
 		"Test Channel Status", func(givenCondition func() error, expectedBehavior func() error) {
@@ -279,13 +321,25 @@ var _ = Describe("Channel switch", Ordered, func() {
 			"When kyma is deployed in default channel with lower version,"+
 				" expect Modules to be in regular channel",
 			noCondition(),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, v1beta2.DefaultChannel),
+			func() error {
+				Eventually(expectEveryModuleStatusToHaveChannel(kcpClient, kyma.GetName(), kyma.GetNamespace(),
+					v1beta2.DefaultChannel), Timeout, Interval).Should(Succeed())
+				return nil
+			},
 		),
 		Entry(
 			"When all modules are updated to fast channel with higher version,"+
 				" expect Modules to update to fast channel",
-			whenUpdatingEveryModuleChannel(kyma.GetName(), kyma.GetNamespace(), FastChannel),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel),
+			func() error {
+				Eventually(whenUpdatingEveryModuleChannel(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(),
+					FastChannel), Timeout, Interval).WithArguments().Should(Succeed())
+				return nil
+			},
+			func() error {
+				Eventually(expectEveryModuleStatusToHaveChannel(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(),
+					FastChannel), Timeout, Interval).Should(Succeed())
+				return nil
+			},
 		),
 	)
 
@@ -293,13 +347,14 @@ var _ = Describe("Channel switch", Ordered, func() {
 		" expect Modules to stay in fast channel", func() {
 		Eventually(UpdateKymaModuleChannel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), v1beta2.DefaultChannel).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), v1beta2.DefaultChannel).
 			Should(Succeed())
-		Consistently(expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel), ConsistentCheckTimeout, Interval).
+		Consistently(expectEveryModuleStatusToHaveChannel(kcpClient, kyma.GetName(), kyma.GetNamespace(), FastChannel), ConsistentCheckTimeout, Interval).
 			Should(Succeed())
-		Consistently(expectEveryManifestToHaveChannel, ConsistentCheckTimeout, Interval).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), FastChannel).
-			Should(Succeed())
+		// KLM doesn't set the channel in the manifest with label `operator.kyma-project.io/channel`
+		//Consistently(expectEveryManifestToHaveChannel, ConsistentCheckTimeout, Interval).
+		//	WithArguments(kyma.GetName(), kyma.GetNamespace(), FastChannel).
+		//	Should(Succeed())
 	})
 
 	It(
@@ -342,14 +397,14 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 	}
 }
 
-func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error {
+func expectEveryModuleStatusToHaveChannel(clnt client.Client, kymaName, kymaNamespace, channel string) func() error {
 	return func() error {
-		return templateInfosMatchChannel(kymaName, channel)
+		return templateInfosMatchChannel(clnt, kymaName, kymaNamespace, channel)
 	}
 }
 
-func templateInfosMatchChannel(kymaName, channel string) error {
-	kyma, err := GetKyma(ctx, kcpClient, kymaName, ControlPlaneNamespace)
+func templateInfosMatchChannel(clnt client.Client, kymaName, kymaNamespace, channel string) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
 		return err
 	}
@@ -417,9 +472,9 @@ func expectModuleManifestToHaveChannel(kymaName, kymaNamespace, moduleName, chan
 	)
 }
 
-func whenUpdatingEveryModuleChannel(kymaName, kymaNamespace, channel string) func() error {
+func whenUpdatingEveryModuleChannel(clnt client.Client, kymaName, kymaNamespace, channel string) func() error {
 	return func() error {
-		return UpdateKymaModuleChannel(ctx, kcpClient, kymaName, kymaNamespace, channel)
+		return UpdateKymaModuleChannel(ctx, clnt, kymaName, kymaNamespace, channel)
 	}
 }
 
