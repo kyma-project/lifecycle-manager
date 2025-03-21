@@ -11,6 +11,7 @@ kind: Certificate
 metadata:
   name: controller-manager-webhook-serving  # this name should match the one appeared in kustomizeconfig.yaml
 spec:
+  renew: true
   commonName: controller-manager-webhook-serving # TODO: check if the replacing (see kustomizeconfig.yaml) was working before and if GCM now just needs common-name while it was optinal for OSCM
   isCA: true
   # $(SERVICE_NAME) and $(SERVICE_NAMESPACE) will be substituted by kustomize

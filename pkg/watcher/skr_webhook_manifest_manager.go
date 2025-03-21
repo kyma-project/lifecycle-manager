@@ -131,16 +131,12 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 func (m *SKRWebhookManifestManager) updateCertNotRenewMetrics(certificate *certmanagerv1.Certificate,
 	kyma *v1beta2.Kyma,
 ) {
-	// TODO: check if valid replacement
-	if certificate.Status.ExpirationDate != nil {
-		expirationDate, err := time.Parse(time.RFC3339, *certificate.Status.ExpirationDate)
-		if err == nil && time.Now().Add(-m.certificateConfig.RenewBuffer).After(expirationDate) {
-			m.WatcherMetrics.SetCertNotRenew(kyma.Name)
-		} else {
-			m.WatcherMetrics.CleanupMetrics(kyma.Name)
-		}
+	if certificate.Spec.EnsureRenewedAfter != nil &&
+		time.Now().Add(-m.certificateConfig.RenewBuffer).After(certificate.Spec.EnsureRenewedAfter.Time) {
+		m.WatcherMetrics.SetCertNotRenew(kyma.Name)
+	} else {
+		m.WatcherMetrics.CleanupMetrics(kyma.Name)
 	}
-	m.WatcherMetrics.CleanupMetrics(kyma.Name)
 }
 
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {

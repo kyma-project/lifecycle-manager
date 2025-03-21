@@ -12,6 +12,7 @@ metadata:
   name: watcher-serving
   namespace: istio-system
 spec:
+  renew: true
   isCA: true
   commonName: klm-watcher-root-ca
   dnsNames:
