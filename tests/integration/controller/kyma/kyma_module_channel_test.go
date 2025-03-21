@@ -8,6 +8,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"ocm.software/ocm/api/ocm/compdesc"
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -21,9 +22,9 @@ import (
 
 const (
 	ValidChannel            = "valid"
-	InValidChannel          = "Invalid01"                                       // lower case characters from a to z
-	InValidMinLengthChannel = "ch"                                              // minlength = 3
-	InValidMaxLengthChannel = "averylongchannelwhichlargerthanallowedmaxlength" // maxlength = 32
+	InvalidChannel          = "Invalid01"                                       // lower case characters from a to z
+	InvalidMinLengthChannel = "ch"                                              // minlength = 3
+	InvalidMaxLengthChannel = "averylongchannelwhichlargerthanallowedmaxlength" // maxlength = 32
 	LowerVersion            = "0.0.1"
 	HigherVersion           = "0.0.2"
 )
@@ -50,26 +51,65 @@ var _ = Describe("valid kyma.spec.channel should be deployed successful", func()
 	)
 })
 
-var _ = Describe("module channel different from the global channel", func() {
+var _ = Describe("module channel different from the global channel", Ordered, func() {
 	kyma := NewTestKyma("kyma")
+	skrKyma := NewSKRKyma()
 	moduleName := "test-different-channel"
+	var skrClient client.Client
+	var err error
+	moduleInFastChannel := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           moduleName,
+		Channel:        FastChannel,
+		Managed:        true,
+	}
+	kyma.Spec.Channel = ValidChannel
+	skrKyma.Spec.Channel = ""
 
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           moduleName,
-			Channel:        FastChannel,
-			Managed:        true,
-		})
-	It("should create kyma with standard modules in a valid channel", func() {
-		kyma.Spec.Channel = ValidChannel
-		Expect(kcpClient.Create(ctx, kyma)).ToNot(HaveOccurred())
+	BeforeAll(func() {
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
+	})
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+	})
+	BeforeEach(func() {
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(skrClient, skrKyma).Should(Succeed())
 	})
 
+	It("KCP and remote Kymas eventually exist", func() {
+		Eventually(KymaExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace()).
+			Should(Succeed())
+		Eventually(KymaExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace()).
+			Should(Succeed())
+	})
+	It("KCP and remote Kymas are in valid channel", func() {
+		Expect(kyma.Spec.Channel).Should(Equal(ValidChannel))
+		Expect(skrKyma.Spec.Channel).Should(Equal(ValidChannel))
+	})
+	It("should enable standard modules in a valid channel in SKR Kyma", func() {
+		Eventually(EnableModule, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), moduleInFastChannel).
+			Should(Succeed())
+	})
 	It("Should deploy ModuleTemplate in fast channel", func() {
 		Eventually(deployModuleInChannel).WithArguments(FastChannel, moduleName).Should(Succeed())
 	})
-
 	It("Manifest should be deployed in fast channel", func() {
 		Eventually(expectModuleManifestToHaveChannel, Timeout, Interval).WithArguments(
 			kyma.GetName(), kyma.GetNamespace(), moduleName, FastChannel).Should(Succeed())
@@ -83,39 +123,39 @@ var _ = Describe("Given invalid channel which is rejected by CRD validation rule
 		},
 		Entry(
 			"invalid channel with not allowed characters",
-			givenModuleTemplateWithChannel(InValidChannel, false),
+			givenModuleTemplateWithChannel(InvalidChannel, false),
 		),
 		Entry(
 			"invalid channel with less than min length",
-			givenModuleTemplateWithChannel(InValidMinLengthChannel, false),
+			givenModuleTemplateWithChannel(InvalidMinLengthChannel, false),
 		),
 		Entry(
 			"invalid channel with more than max length",
-			givenModuleTemplateWithChannel(InValidMaxLengthChannel, false),
+			givenModuleTemplateWithChannel(InvalidMaxLengthChannel, false),
 		),
 		Entry(
 			"invalid channel with not allowed characters",
-			givenKymaWithInvalidChannel(InValidChannel),
+			givenKymaWithInvalidChannel(InvalidChannel),
 		),
 		Entry(
 			"invalid channel with less than min length",
-			givenKymaWithInvalidChannel(InValidMinLengthChannel),
+			givenKymaWithInvalidChannel(InvalidMinLengthChannel),
 		),
 		Entry(
 			"invalid channel with more than max length",
-			givenKymaWithInvalidChannel(InValidMaxLengthChannel),
+			givenKymaWithInvalidChannel(InvalidMaxLengthChannel),
 		),
 		Entry(
 			"invalid channel with not allowed characters",
-			givenKymaSpecModulesWithInvalidChannel(InValidChannel),
+			givenKymaSpecModulesWithInvalidChannel(InvalidChannel),
 		),
 		Entry(
 			"invalid channel with less than min length",
-			givenKymaSpecModulesWithInvalidChannel(InValidMinLengthChannel),
+			givenKymaSpecModulesWithInvalidChannel(InvalidMinLengthChannel),
 		),
 		Entry(
 			"invalid channel with more than max length",
-			givenKymaSpecModulesWithInvalidChannel(InValidMaxLengthChannel),
+			givenKymaSpecModulesWithInvalidChannel(InvalidMaxLengthChannel),
 		),
 	)
 })

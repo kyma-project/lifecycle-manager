@@ -58,6 +58,11 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 				return err
 			}, Timeout, Interval).Should(Succeed())
 		})
+		AfterAll(func() {
+			Eventually(DeleteCR, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma).Should(Succeed())
+		})
 
 		BeforeEach(func() {
 			Eventually(SyncKyma, Timeout, Interval).
