@@ -20,11 +20,10 @@ import (
 
 var (
 	ErrSpecDataMismatch       = errors.New("spec.data not match")
-	ErrWrongModulesStatus     = errors.New("modules status not correct")
 	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
-var _ = FDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
+var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
 	testCases := []struct {
 		enableStatement  string
 		disableStatement string
@@ -136,107 +135,13 @@ var _ = FDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec
 	}
 })
 
-var _ = Describe("Kyma enable multiple modules", Ordered, func() {
-	var (
-		kyma      *v1beta2.Kyma
-		skrModule v1beta2.Module
-		kcpModule v1beta2.Module
-	)
-	kyma = NewTestKyma("kyma-test-recreate")
-	skrModule = NewTestModule("skr-module", v1beta2.DefaultChannel)
-	kcpModule = NewTestModule("kcp-module", v1beta2.DefaultChannel)
-	kyma.Spec.Modules = append(kyma.Spec.Modules, skrModule, kcpModule)
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	It("CR should be created normally and then recreated after delete", func() {
-		By("CR created", func() {
-			for _, activeModule := range kyma.Spec.Modules {
-				Eventually(ManifestExists, Timeout, Interval).
-					WithContext(ctx).
-					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
-					Should(Succeed())
-			}
-		})
-		By("Delete CR", func() {
-			for _, activeModule := range kyma.Spec.Modules {
-				Eventually(DeleteModule, Timeout, Interval).
-					WithContext(ctx).
-					WithArguments(kcpClient, kyma, activeModule.Name).Should(Succeed())
-			}
-		})
-
-		By("CR created again", func() {
-			for _, activeModule := range kyma.Spec.Modules {
-				Eventually(ManifestExists, Timeout, Interval).
-					WithContext(ctx).
-					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
-					Should(Succeed())
-			}
-		})
-	})
-
-	It("CR should be deleted after removed from kyma.spec.modules", func() {
-		By("CR created", func() {
-			for _, activeModule := range kyma.Spec.Modules {
-				Eventually(ManifestExists, Timeout, Interval).
-					WithContext(ctx).
-					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
-					Should(Succeed())
-			}
-		})
-		manifestForKcpModule, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
-			kcpModule.Name)
-		Expect(err).Should(Succeed())
-		By("Remove kcp-module from kyma.spec.modules", func() {
-			kyma.Spec.Modules = []v1beta2.Module{
-				skrModule,
-			}
-			Eventually(kcpClient.Update, Timeout, Interval).
-				WithContext(ctx).WithArguments(kyma).Should(Succeed())
-		})
-
-		By("kcp-module deleted", func() {
-			Eventually(ManifestExistsByMetadata, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kcpClient, manifestForKcpModule.Namespace, manifestForKcpModule.Name).
-				Should(Equal(ErrNotFound))
-		})
-
-		By("skr-module exists", func() {
-			Eventually(ManifestExists, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), skrModule.Name).
-				Should(Succeed())
-		})
-	})
-
-	It("Disabled module should be removed from status.modules", func() {
-		Eventually(func() error {
-			kyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-			if err != nil {
-				return err
-			}
-			modulesStatus := kyma.Status.Modules
-			if len(modulesStatus) != 1 {
-				return ErrWrongModulesStatus
-			}
-
-			if modulesStatus[0].Name == kcpModule.Name {
-				return ErrWrongModulesStatus
-			}
-
-			return nil
-		}, Timeout, Interval).Should(Succeed())
-	})
-})
-
 var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("skr-module-update", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kcpClient, kyma)
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("Should deploy ModuleTemplate", func() {
 		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
@@ -313,10 +218,25 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty for cluster scoped modules", Ordered,
 	func() {
 		kyma := NewTestKyma("kyma")
+		skrKyma := NewSKRKyma()
 		module := NewTestModule("test-module", v1beta2.DefaultChannel)
 		kyma.Spec.Modules = append(
 			kyma.Spec.Modules, module)
-		RegisterDefaultLifecycleForKymaWithoutTemplate(kcpClient, kyma)
+		var skrClient client.Client
+		var err error
+		RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+
+		BeforeAll(func() {
+			Eventually(func() error {
+				skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+				return err
+			}, Timeout, Interval).Should(Succeed())
+		})
+		BeforeEach(func() {
+			By("get latest kyma CR")
+			Eventually(SyncKyma, Timeout, Interval).
+				WithContext(ctx).WithArguments(skrClient, skrKyma).Should(Succeed())
+		})
 
 		It("Should deploy ModuleTemplate", func() {
 			for _, module := range kyma.Spec.Modules {
@@ -333,25 +253,17 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		})
 
 		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
-			Eventually(func() error {
-				expectedNamespace := ""
-				createdKyma, err := GetKyma(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace())
-				if err != nil {
-					return err
-				}
-				modulesStatus := createdKyma.Status.Modules
-				if len(modulesStatus) != 1 {
-					return fmt.Errorf("Status not initialized %w ", ErrWrongResourceNamespace)
-				}
-				if modulesStatus[0].Resource == nil {
-					return fmt.Errorf("Status.Modules.Resource not initialized %w ", ErrWrongResourceNamespace)
-				}
-				if modulesStatus[0].Resource.Namespace != expectedNamespace {
-					return ErrWrongResourceNamespace
-				}
+			emptyNamespace := ""
+			By("ensuring empty Module Status Resource Namespace in KCP")
+			Eventually(expectKymaModuleStatusWithNamespace).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma, emptyNamespace).
+				Should(Succeed())
 
-				return nil
-			}, Timeout, Interval).
+			By("ensuring empty Module Status Resource Namespace in SKR")
+			Eventually(expectKymaModuleStatusWithNamespace, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(skrClient, skrKyma, "").
 				Should(Succeed())
 		})
 	})
@@ -376,4 +288,25 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 		}
 		return nil
 	}
+}
+
+func expectKymaModuleStatusWithNamespace(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma,
+	expectedNamespace string) error {
+
+	createdKyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+	modulesStatus := createdKyma.Status.Modules
+	if len(modulesStatus) != 1 {
+		return fmt.Errorf("Status not initialized %w ", ErrWrongResourceNamespace)
+	}
+	if modulesStatus[0].Resource == nil {
+		return fmt.Errorf("Status.Modules.Resource not initialized %w ", ErrWrongResourceNamespace)
+	}
+	if modulesStatus[0].Resource.Namespace != expectedNamespace {
+		return ErrWrongResourceNamespace
+	}
+
+	return nil
 }

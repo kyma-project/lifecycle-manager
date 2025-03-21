@@ -104,7 +104,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
 
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kcpClient, kyma)
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs not contains credSecretSelector", func() {
 		DeployModuleTemplates(ctx, kcpClient, kyma)
@@ -118,7 +118,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kcpClient, kyma)
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs contains credSecretSelector", func() {
 		template := builder.NewModuleTemplateBuilder().
