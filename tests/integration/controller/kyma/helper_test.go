@@ -27,7 +27,7 @@ const (
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kcpClient, kyma)
 	BeforeAll(func() {
 		DeployMandatoryModuleTemplate(ctx, kcpClient)
 		DeployModuleTemplates(ctx, kcpClient, kyma)
@@ -39,23 +39,23 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 }
 
-func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
+func RegisterDefaultLifecycleForKymaWithoutTemplate(clnt client.Client, kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kcpClient, kyma).Should(Succeed())
+			WithArguments(clnt, kyma).Should(Succeed())
 	})
 
 	AfterAll(func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kcpClient, kyma).Should(Succeed())
+			WithArguments(clnt, kyma).Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
 		Eventually(SyncKyma, Timeout, Interval).
-			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
+			WithContext(ctx).WithArguments(clnt, kyma).Should(Succeed())
 	})
 }
 
