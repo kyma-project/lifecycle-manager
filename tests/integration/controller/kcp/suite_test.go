@@ -177,6 +177,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := kcpEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(kcpEnv.Stop()).To(Succeed())
+	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })

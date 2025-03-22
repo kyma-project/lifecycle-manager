@@ -35,7 +35,7 @@ var (
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-1")
-	skrKyma := buildSkrKyma()
+	skrKyma := NewSKRKyma()
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
@@ -223,15 +223,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 })
 
-func buildSkrKyma() *v1beta2.Kyma {
-	return &v1beta2.Kyma{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      shared.DefaultRemoteKymaName,
-			Namespace: flags.DefaultRemoteSyncNamespace,
-		},
-	}
-}
-
 func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
 	key := cache.GenerateDescriptorKey(template)
 	result := descriptorProvider.DescriptorCache.Get(key)
@@ -242,7 +233,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	kyma := NewTestKyma("kyma-2")
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleInKCP)
-	skrKyma := buildSkrKyma()
+	skrKyma := NewSKRKyma()
 	var skrClient client.Client
 	var err error
 	registerControlPlaneLifecycleForKyma(kyma)
@@ -318,7 +309,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, "0.1.0").
 		Build()
 	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
-	skrKyma := buildSkrKyma()
+	skrKyma := NewSKRKyma()
 	var skrClient client.Client
 	var err error
 	registerControlPlaneLifecycleForKyma(kyma)

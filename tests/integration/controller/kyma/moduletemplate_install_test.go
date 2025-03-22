@@ -4,25 +4,58 @@ import (
 	"fmt"
 
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("ModuleTemplate installation", func() {
-	DescribeTable("Test Modules",
-		func(givenCondition func(kyma *v1beta2.Kyma) error, expectedBehavior func(kyma *v1beta2.Kyma) error) {
-			kyma := NewTestKyma("kyma")
+var _ = Describe("ModuleTemplate installation", Ordered, func() {
+	kyma := NewTestKyma("something")
+	skrKyma := NewSKRKyma()
+	var skrClient client.Client
+	var err error
 
-			kyma.Spec.Modules = append(
-				kyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
-			Eventually(givenCondition, Timeout, Interval).WithArguments(kyma).Should(Succeed())
+	BeforeAll(func() {
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
+		By("Waiting for KCP Kyma to exist")
+		Eventually(KymaExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace()).
+			Should(Succeed())
+		By("Waiting for SKR Kyma to exist")
+		Eventually(KymaExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace()).
+			Should(Succeed())
+	})
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+	})
+	BeforeEach(func() {
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(skrClient, skrKyma).Should(Succeed())
+	})
+	DescribeTable("Test Modules",
+		func(givenCondition func(client.Client, *v1beta2.Kyma) error, expectedBehavior func(*v1beta2.Kyma) error) {
+			skrKyma.Spec.Modules = append(
+				skrKyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
+			Eventually(givenCondition, Timeout, Interval).WithArguments(skrClient, skrKyma).Should(Succeed())
 			Eventually(expectedBehavior, Timeout, Interval).WithArguments(kyma).Should(Succeed())
 		},
 		Entry("With non-internal kyma and internal ModuleTemplate, expect no manifest installed",
@@ -84,18 +117,18 @@ func givenKymaAndModuleTemplateCondition(
 	isKymaBeta,
 	isModuleTemplateInternal,
 	isModuleTemplateBeta bool,
-) func(kyma *v1beta2.Kyma) error {
-	return func(kyma *v1beta2.Kyma) error {
-		if kyma.Labels == nil {
-			kyma.Labels = map[string]string{}
+) func(client.Client, *v1beta2.Kyma) error {
+	return func(skrClient client.Client, skrKyma *v1beta2.Kyma) error {
+		if skrKyma.Labels == nil {
+			skrKyma.Labels = map[string]string{}
 		}
 		if isKymaInternal {
-			kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
+			skrKyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
 		}
 		if isKymaBeta {
-			kyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
+			skrKyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
 		}
-		for _, module := range kyma.Spec.Modules {
+		for _, module := range skrKyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
 				WithLabelModuleName(module.Name).
@@ -112,14 +145,14 @@ func givenKymaAndModuleTemplateCondition(
 				WithArguments(template).
 				Should(Succeed())
 		}
-		Eventually(kcpClient.Create, Timeout, Interval).
+		Eventually(skrClient.Update, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma).Should(Succeed())
+			WithArguments(skrKyma).Should(Succeed())
 		return nil
 	}
 }
 
-func expectManifestInstalled(shouldInstalled bool) func(kyma *v1beta2.Kyma) error {
+func expectManifestInstalled(shouldInstalled bool) func(*v1beta2.Kyma) error {
 	return func(kyma *v1beta2.Kyma) error {
 		for _, module := range kyma.Spec.Modules {
 			manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
