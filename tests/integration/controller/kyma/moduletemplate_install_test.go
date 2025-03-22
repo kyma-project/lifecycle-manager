@@ -16,7 +16,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = FDescribe("ModuleTemplate installation", Ordered, func() {
+var _ = Describe("ModuleTemplate installation", Ordered, func() {
 	kyma := NewTestKyma("something")
 	skrKyma := NewSKRKyma()
 	var skrClient client.Client
