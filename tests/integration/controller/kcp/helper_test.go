@@ -14,10 +14,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -27,7 +26,7 @@ var (
 	ErrGlobalChannelMisMatch    = errors.New("kyma global channel mismatch")
 )
 
-// For EventFilters tests
+// For EventFilters tests.
 var (
 	errKymaNotInExpectedState   = errors.New("kyma is not in expected state")
 	errKymaNotInExpectedChannel = errors.New("kyma doesn't have expected channel")
@@ -248,7 +247,7 @@ func fetchCrd(clnt client.Client, crdKind shared.Kind) (*apiextensionsv1.CustomR
 	return crd, nil
 }
 
-// Helpers for EventFilters tests
+// Helpers for EventFilters tests.
 func updateKymaChannel(ctx context.Context,
 	k8sClient client.Client,
 	kymaName string,

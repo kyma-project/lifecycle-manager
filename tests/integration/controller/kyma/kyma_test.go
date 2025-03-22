@@ -4,18 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (
@@ -296,8 +296,8 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 }
 
 func expectKymaModuleStatusWithNamespace(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma,
-	expectedNamespace string) error {
-
+	expectedNamespace string,
+) error {
 	createdKyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.GetNamespace())
 	if err != nil {
 		return err

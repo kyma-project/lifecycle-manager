@@ -10,10 +10,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("ModuleTemplate installation", Ordered, func() {
@@ -54,7 +53,6 @@ var _ = Describe("ModuleTemplate installation", Ordered, func() {
 	})
 	DescribeTable("Test Modules",
 		func(givenCondition func(client.Client, *v1beta2.Kyma) error, expectedBehavior func(*v1beta2.Kyma) error) {
-
 			skrKyma.Spec.Modules = append(
 				skrKyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
 			Eventually(givenCondition, Timeout, Interval).WithArguments(skrClient, skrKyma).Should(Succeed())
