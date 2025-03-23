@@ -320,7 +320,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 		Entry(
 			"When kyma is deployed in default channel with lower version,"+
 				" expect Modules to be in regular channel",
-			noCondition(),
+			func() error { return nil },
 			func() error {
 				Eventually(expectEveryModuleStatusToHaveChannel(kcpClient, kyma.GetName(), kyma.GetNamespace(),
 					v1beta2.DefaultChannel), Timeout, Interval).Should(Succeed())
