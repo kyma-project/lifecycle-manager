@@ -32,6 +32,7 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
+	// TODO: good location to change in E2E tests
 	Context("Given SKR Cluster", func() {
 		It("When SKR cluster is setup", func() {
 			By("Then SKR Kyma CR is labelled with watched-by label")
