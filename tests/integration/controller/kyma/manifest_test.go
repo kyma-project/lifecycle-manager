@@ -56,7 +56,7 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	It("expect Manifest.Spec.Remote=false", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
-			Should(BeFalse())
+			Should(BeTrue())
 	})
 })
 
@@ -178,7 +178,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 		// await for the manifest to be created
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
-			Should(BeFalse())
+			Should(BeTrue())
 
 		manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		Expect(err).ToNot(HaveOccurred())

@@ -36,6 +36,14 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 	return NewKymaWithNamespaceName(name, ControlPlaneNamespace, v1beta2.DefaultChannel)
 }
 
+func NewSKRKyma() *v1beta2.Kyma {
+	return builder.NewKymaBuilder().
+		WithName(shared.DefaultRemoteKymaName).
+		WithNamespace(shared.DefaultRemoteNamespace).
+		WithChannel(v1beta2.DefaultChannel).
+		Build()
+}
+
 // NewKymaWithNamespaceName use this function to initialize kyma CR with SyncStrategyLocalSecret
 // are typically used in e2e test, which expect related access secret provided.
 func NewKymaWithNamespaceName(name, namespace, channel string) *v1beta2.Kyma {
