@@ -7,9 +7,9 @@ import (
 )
 
 // InitConditions initializes the required conditions in the Kyma CR.
-func InitConditions(kyma *v1beta2.Kyma, syncEnabled bool, watcherEnabled bool) {
+func InitConditions(kyma *v1beta2.Kyma, watcherEnabled bool) {
 	kyma.Status.Conditions = []apimetav1.Condition{}
-	for _, cond := range v1beta2.GetRequiredConditionTypes(syncEnabled, watcherEnabled) {
+	for _, cond := range v1beta2.GetRequiredConditionTypes(watcherEnabled) {
 		kyma.UpdateCondition(cond, apimetav1.ConditionUnknown)
 	}
 }

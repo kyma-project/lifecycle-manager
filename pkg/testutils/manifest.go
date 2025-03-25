@@ -165,20 +165,6 @@ func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt cli
 	return fmt.Errorf("manifest with annotation `%s: %s` does not exist", annotationKey, annotationValue)
 }
 
-func GetManifestSpecRemote(
-	ctx context.Context,
-	clnt client.Client,
-	kymaName,
-	kymaNamespace,
-	moduleName string,
-) (bool, error) {
-	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
-	if err != nil {
-		return false, err
-	}
-	return manifest.Spec.Remote, nil
-}
-
 func ManifestExists(
 	ctx context.Context,
 	clnt client.Client,

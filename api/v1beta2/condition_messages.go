@@ -64,11 +64,10 @@ func GenerateMessage(conditionType KymaConditionType, status apimetav1.Condition
 }
 
 // GetRequiredConditionTypes returns all required ConditionTypes for a KymaCR.
-func GetRequiredConditionTypes(syncEnabled, watcherEnabled bool) []KymaConditionType {
+func GetRequiredConditionTypes(watcherEnabled bool) []KymaConditionType {
 	requiredConditions := []KymaConditionType{ConditionTypeModules}
-	if syncEnabled {
-		requiredConditions = append(requiredConditions, ConditionTypeModuleCatalog)
-	}
+	requiredConditions = append(requiredConditions, ConditionTypeModuleCatalog)
+
 	if watcherEnabled {
 		requiredConditions = append(requiredConditions, ConditionTypeSKRWebhook)
 	}
