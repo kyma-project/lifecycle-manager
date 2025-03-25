@@ -60,6 +60,7 @@ var (
 	kcpEnv                      *envtest.Environment
 	ctx                         context.Context
 	cancel                      context.CancelFunc
+	testSkrContextFactory       *testskrcontext.DualClusterFactory
 	skipFinalizerRemovalForCRDs = "*.networking.istio.io"
 )
 
@@ -107,7 +108,7 @@ var _ = BeforeSuite(func() {
 
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	reconciler = &purge.Reconciler{
 		Client:                kcpClient,
 		SkrContextFactory:     testSkrContextFactory,
@@ -135,6 +136,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := kcpEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(kcpEnv.Stop()).To(Succeed())
+	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })
