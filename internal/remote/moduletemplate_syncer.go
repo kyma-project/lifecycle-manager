@@ -19,7 +19,8 @@ type moduleTemplateSyncWorker interface {
 }
 
 // moduleTemplateSyncWorkerFactory is a factory function for creating new moduleTemplateSyncWorker instance.
-type moduleTemplateSyncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker
+type moduleTemplateSyncWorkerFactory func(kcpClient, skrClient client.Client,
+	settings *Settings) moduleTemplateSyncWorker
 
 // moduleTemplateSyncer provides a top-level API for synchronizing ModuleTemplates from KCP to SKR.
 // It expects a ready-to-use client to the KCP and SKR cluster.
@@ -30,8 +31,9 @@ type moduleTemplateSyncer struct {
 	syncWorkerFactoryFn moduleTemplateSyncWorkerFactory
 }
 
-func newModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateSyncer {
-	var syncWokerFactoryFn moduleTemplateSyncWorkerFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
+func NewModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateSyncer {
+	var syncWokerFactoryFn moduleTemplateSyncWorkerFactory = func(kcpClient, skrClient client.Client,
+		settings *Settings) moduleTemplateSyncWorker {
 		return newModuleTemplateConcurrentWorker(kcpClient, skrClient, settings)
 	}
 
@@ -105,7 +107,7 @@ func moduleTemplatesDiffFor(first []v1beta2.ModuleTemplate) *collections.DiffCal
 
 func isModuleTemplateManagedByKcp(skrTemplate *v1beta2.ModuleTemplate) bool {
 	for _, managedFieldEntry := range skrTemplate.ObjectMeta.ManagedFields {
-		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
+		if managedFieldEntry.Manager == ModuleCatalogSyncFieldManager {
 			return true
 		}
 	}

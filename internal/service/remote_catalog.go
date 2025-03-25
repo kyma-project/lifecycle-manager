@@ -1,4 +1,4 @@
-package remote
+package service
 
 import (
 	"context"
@@ -9,20 +9,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )
 
-const moduleCatalogSyncFieldManager = "catalog-sync"
-
-type Settings struct {
-	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
-	Namespace       string
-	SSAPatchOptions *client.PatchOptions
-}
-
-type RemoteCatalog struct {
+type RemoteCatalogService struct {
 	kcpClient                         client.Client
-	skrContextFactory                 SkrContextProvider
-	settings                          Settings
+	skrContextService                 *SKRContextService
+	settings                          *remote.Settings
 	moduleTemplateSyncAPIFactoryFn    moduleTemplateSyncAPIFactory
 	moduleReleaseMetaSyncAPIFactoryFn moduleReleaseMetaSyncAPIFactory
 }
@@ -39,35 +32,40 @@ type moduleReleaseMetaSyncAPI interface {
 }
 
 // moduleTemplateSyncAPIFactory is a function that creates moduleTemplateSyncAPI instances.
-type moduleTemplateSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI
+type moduleTemplateSyncAPIFactory func(kcpClient, skrClient client.Client,
+	settings *remote.Settings) moduleTemplateSyncAPI
 
 // moduleReleaseMetaSyncAPIFactory is a function that creates moduleReleaseMetaSyncAPI instances.
-type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI
+type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client,
+	settings *remote.Settings) moduleReleaseMetaSyncAPI
 
-func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
+func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextService *SKRContextService,
 	remoteSyncNamespace string,
-) *RemoteCatalog {
+) *RemoteCatalogService {
 	force := true
-	return newRemoteCatalog(kcpClient, skrContextFactory,
-		Settings{
-			SSAPatchOptions: &client.PatchOptions{FieldManager: moduleCatalogSyncFieldManager, Force: &force},
+	return newRemoteCatalog(kcpClient, skrContextService,
+		&remote.Settings{
+			SSAPatchOptions: &client.PatchOptions{FieldManager: remote.ModuleCatalogSyncFieldManager, Force: &force},
 			Namespace:       remoteSyncNamespace,
 		},
 	)
 }
 
-func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
-	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI {
-		return newModuleTemplateSyncer(kcpClient, skrClient, settings)
+func newRemoteCatalog(kcpClient client.Client, skrContextService *SKRContextService,
+	settings *remote.Settings) *RemoteCatalogService {
+	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client,
+		settings *remote.Settings) moduleTemplateSyncAPI {
+		return remote.NewModuleTemplateSyncer(kcpClient, skrClient, settings)
 	}
 
-	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI {
-		return newModuleReleaseMetaSyncer(kcpClient, skrClient, settings)
+	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client,
+		settings *remote.Settings) moduleReleaseMetaSyncAPI {
+		return remote.NewModuleReleaseMetaSyncer(kcpClient, skrClient, settings)
 	}
 
-	res := &RemoteCatalog{
+	res := &RemoteCatalogService{
 		kcpClient:                         kcpClient,
-		skrContextFactory:                 skrContextFactory,
+		skrContextService:                 skrContextService,
 		settings:                          settings,
 		moduleTemplateSyncAPIFactoryFn:    moduleTemplateSyncerAPIFactoryFn,
 		moduleReleaseMetaSyncAPIFactoryFn: moduleReleaseMetaSyncerAPIFactoryFn,
@@ -76,7 +74,7 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 	return res
 }
 
-func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (c *RemoteCatalogService) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
 	moduleReleaseMetas, err := c.GetModuleReleaseMetasToSync(ctx, kyma)
 	if err != nil {
 		return err
@@ -98,19 +96,19 @@ func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kym
 	return c.sync(ctx, kyma.GetNamespacedName(), moduleTemplates, moduleReleaseMetas)
 }
 
-func (c *RemoteCatalog) sync(
+func (c *RemoteCatalogService) sync(
 	ctx context.Context,
 	kyma types.NamespacedName,
 	kcpModules []v1beta2.ModuleTemplate,
 	kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta,
 ) error {
-	skrContext, err := c.skrContextFactory.Get(kyma)
+	skrContext, err := c.skrContextService.GetCache(kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get SKR context: %w", err)
 	}
 
-	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
-	moduleReleaseMetas := c.moduleReleaseMetaSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
+	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, c.settings)
+	moduleReleaseMetas := c.moduleReleaseMetaSyncAPIFactoryFn(c.kcpClient, skrContext.Client, c.settings)
 
 	mtErr := moduleTemplates.SyncToSKR(ctx, kcpModules)
 	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, kcpModuleReleaseMeta)
@@ -118,22 +116,22 @@ func (c *RemoteCatalog) sync(
 	return errors.Join(mtErr, mrmErr)
 }
 
-func (c *RemoteCatalog) Delete(
+func (c *RemoteCatalogService) Delete(
 	ctx context.Context,
 	kyma types.NamespacedName,
 ) error {
-	skrContext, err := c.skrContextFactory.Get(kyma)
+	skrContext, err := c.skrContextService.GetCache(kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get SKR context: %w", err)
 	}
 
-	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
+	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, c.settings)
 	return moduleTemplates.DeleteAllManaged(ctx)
 }
 
 // GetModuleReleaseMetasToSync returns a list of ModuleReleaseMetas that should be synced to the SKR.
 // A ModuleReleaseMeta that is Beta or Internal is synced only if the Kyma is also Beta or Internal.
-func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
+func (c *RemoteCatalogService) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
 ) ([]v1beta2.ModuleReleaseMeta, error) {
@@ -144,7 +142,7 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 
 	moduleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
-		if IsAllowedModuleReleaseMeta(moduleReleaseMeta, kyma) {
+		if remote.IsAllowedModuleReleaseMeta(moduleReleaseMeta, kyma) {
 			moduleReleaseMetas = append(moduleReleaseMetas, moduleReleaseMeta)
 		}
 	}
@@ -152,23 +150,10 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	return moduleReleaseMetas, nil
 }
 
-// IsAllowedModuleReleaseMeta determines whether the given ModuleReleaseMeta is allowed for the given Kyma.
-// If the ModuleReleaseMeta is Beta, it is allowed only if the Kyma is also Beta.
-// If the ModuleReleaseMeta is Internal, it is allowed only if the Kyma is also Internal.
-func IsAllowedModuleReleaseMeta(moduleReleaseMeta v1beta2.ModuleReleaseMeta, kyma *v1beta2.Kyma) bool {
-	if moduleReleaseMeta.IsBeta() && !kyma.IsBeta() {
-		return false
-	}
-	if moduleReleaseMeta.IsInternal() && !kyma.IsInternal() {
-		return false
-	}
-	return true
-}
-
 // GetModuleTemplatesToSync returns a list of ModuleTemplates that should be synced to the SKR.
 // A ModuleTemplate is synced if it is not mandatory and does not have sync disabled, and if
 // it is referenced by a ModuleReleaseMeta that is synced.
-func (c *RemoteCatalog) GetModuleTemplatesToSync(
+func (c *RemoteCatalogService) GetModuleTemplatesToSync(
 	ctx context.Context,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
 ) ([]v1beta2.ModuleTemplate, error) {
@@ -204,7 +189,8 @@ func FilterAllowedModuleTemplates(
 			continue
 		}
 
-		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName, moduleTemplate.Spec.Version)]; found {
+		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName,
+			moduleTemplate.Spec.Version)]; found {
 			filteredModuleTemplates = append(filteredModuleTemplates, moduleTemplate)
 		}
 	}
@@ -214,7 +200,7 @@ func FilterAllowedModuleTemplates(
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
-func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
+func (c *RemoteCatalogService) GetOldModuleTemplatesToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
 ) ([]v1beta2.ModuleTemplate, error) {

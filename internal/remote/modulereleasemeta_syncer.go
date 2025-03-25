@@ -12,6 +12,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+type Settings struct {
+	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
+	Namespace       string
+	SSAPatchOptions *client.PatchOptions
+}
+
+const ModuleCatalogSyncFieldManager = "catalog-sync"
+
 // moduleReleaseMetaSyncWorker is an interface for worker synchronizing ModuleReleaseMetas from KCP to SKR.
 type moduleReleaseMetaSyncWorker interface {
 	SyncConcurrently(ctx context.Context, kcpModules []v1beta2.ModuleReleaseMeta) error
@@ -19,7 +27,8 @@ type moduleReleaseMetaSyncWorker interface {
 }
 
 // moduleReleaseMetaSyncWorkerFactory is a factory function for creating new moduleReleaseMetaSyncWorker instance.
-type moduleReleaseMetaSyncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker
+type moduleReleaseMetaSyncWorkerFactory func(kcpClient, skrClient client.Client,
+	settings *Settings) moduleReleaseMetaSyncWorker
 
 // moduleReleaseMetaSyncer provides a top-level API for synchronizing ModuleReleaseMetas from KCP to SKR.
 // It expects a ready-to-use client to the KCP and SKR cluster.
@@ -30,8 +39,10 @@ type moduleReleaseMetaSyncer struct {
 	syncWorkerFactoryFn moduleReleaseMetaSyncWorkerFactory
 }
 
-func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleReleaseMetaSyncer {
-	var syncWokerFactoryFn moduleReleaseMetaSyncWorkerFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
+func NewModuleReleaseMetaSyncer(kcpClient, skrClient client.Client,
+	settings *Settings) *moduleReleaseMetaSyncer {
+	var syncWokerFactoryFn moduleReleaseMetaSyncWorkerFactory = func(kcpClient, skrClient client.Client,
+		settings *Settings) moduleReleaseMetaSyncWorker {
 		return newModuleReleaseMetaConcurrentWorker(kcpClient, skrClient, settings)
 	}
 
@@ -49,7 +60,8 @@ func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Se
 // 1. All ModuleReleaseMeta that have to be created based on the ModuleReleaseMetas existing in the Control Plane.
 // 2. All ModuleReleaseMeta that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context, kcpModuleReleases []v1beta2.ModuleReleaseMeta) error {
+func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context,
+	kcpModuleReleases []v1beta2.ModuleReleaseMeta) error {
 	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModuleReleases); err != nil {
@@ -105,9 +117,22 @@ func moduleReleaseMetasDiffFor(first []v1beta2.ModuleReleaseMeta) *collections.D
 
 func isModuleReleaseMetaManagedByKcp(skrObject *v1beta2.ModuleReleaseMeta) bool {
 	for _, managedFieldEntry := range skrObject.ObjectMeta.ManagedFields {
-		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
+		if managedFieldEntry.Manager == ModuleCatalogSyncFieldManager {
 			return true
 		}
 	}
 	return false
+}
+
+// IsAllowedModuleReleaseMeta determines whether the given ModuleReleaseMeta is allowed for the given Kyma.
+// If the ModuleReleaseMeta is Beta, it is allowed only if the Kyma is also Beta.
+// If the ModuleReleaseMeta is Internal, it is allowed only if the Kyma is also Internal.
+func IsAllowedModuleReleaseMeta(moduleReleaseMeta v1beta2.ModuleReleaseMeta, kyma *v1beta2.Kyma) bool {
+	if moduleReleaseMeta.IsBeta() && !kyma.IsBeta() {
+		return false
+	}
+	if moduleReleaseMeta.IsInternal() && !kyma.IsInternal() {
+		return false
+	}
+	return true
 }

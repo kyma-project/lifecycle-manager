@@ -10,23 +10,23 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/repository"
 )
 
 type KymaHelper struct {
-	client.StatusWriter
+	kymaRepository          *repository.KymaRepository
 	recordKymaStatusMetrics func(ctx context.Context, kyma *v1beta2.Kyma)
 	isManagedKyma           bool
 }
 
 type HelperClient interface {
-	Status() client.StatusWriter
 	UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma)
 	IsKymaManaged() bool
 }
 
-func Helper(handler HelperClient) *KymaHelper {
+func Helper(kymaRepository *repository.KymaRepository, handler HelperClient) *KymaHelper {
 	return &KymaHelper{
-		StatusWriter:            handler.Status(),
+		kymaRepository:          kymaRepository,
 		recordKymaStatusMetrics: handler.UpdateMetrics,
 		isManagedKyma:           handler.IsKymaManaged(),
 	}
@@ -58,8 +58,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	if k.isManagedKyma {
 		fieldOwner = shared.OperatorName
 	}
-	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
-		client.FieldOwner(fieldOwner)); err != nil {
+	if err := k.kymaRepository.StatusPatch(ctx, kyma, fieldOwner); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

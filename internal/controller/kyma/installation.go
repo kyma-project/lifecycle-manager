@@ -35,6 +35,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -45,12 +46,10 @@ import (
 )
 
 var (
-	ErrManifestsStillExist = errors.New("manifests still exist")
-	ErrInvalidKymaSpec     = errors.New("invalid kyma spec")
+	ErrInvalidKymaSpec = errors.New("invalid kyma spec")
 )
 
 const (
-	metricsError      event.Reason = "MetricsError"
 	updateSpecError   event.Reason = "UpdateSpecError"
 	updateStatusError event.Reason = "UpdateStatusError"
 	patchStatusError  event.Reason = "PatchStatus"
@@ -63,12 +62,12 @@ type KymaInstallationReconciler struct {
 	SkrContextFactory   remote.SkrContextProvider
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	SyncRemoteCrds      remote.SyncCrdsUseCase
-	SKRWebhookManager   *watcher.SKRWebhookManifestManager
+	SKRWebhookManager   *service.SKRWebhookManagerService
 	InKCPMode           bool
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
 	Metrics             *metrics.KymaMetrics
-	RemoteCatalog       *remote.RemoteCatalog
+	RemoteCatalog       *service.RemoteCatalogService
 	TemplateLookup      *templatelookup.TemplateLookup
 }
 

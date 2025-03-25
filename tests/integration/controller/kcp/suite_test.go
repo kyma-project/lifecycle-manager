@@ -45,6 +45,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -154,7 +155,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+		RemoteCatalog: service.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{

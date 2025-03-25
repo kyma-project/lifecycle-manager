@@ -51,6 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -172,7 +173,7 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(ctx, istioResource)).To(Succeed())
 	}
 
-	skrChartCfg := watcher.SkrWebhookManagerConfig{
+	skrChartCfg := service.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
@@ -198,7 +199,7 @@ var _ = BeforeSuite(func() {
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	Expect(err).ToNot(HaveOccurred())
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
+	skrWebhookChartManager, err := service.NewSKRWebhookManifestManager(
 		kcpClient,
 		testSkrContextFactory,
 		skrChartCfg, certificateConfig, resolvedKcpAddr)
@@ -215,7 +216,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+		RemoteCatalog: service.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())

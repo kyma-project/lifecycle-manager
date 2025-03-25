@@ -18,7 +18,8 @@ import (
 // with some ModuleReleseMetas to be installed in the SKR and some objects to be deleted from the SKR.
 func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl // duplication will be removed: https://github.com/kyma-project/lifecycle-manager/issues/2015
 	// given
-	mrmKCP1 := moduleReleaseMeta("mrm1", "kcp-system") // this one should be installed in the SKR, because it's not there
+	mrmKCP1 := moduleReleaseMeta("mrm1",
+		"kcp-system") // this one should be installed in the SKR, because it's not there
 	mrmKCP2 := moduleReleaseMeta("mrm2", "kcp-system")
 	mrmKCP3 := moduleReleaseMeta("mrm3", "kcp-system")
 
@@ -146,7 +147,7 @@ func moduleReleaseMeta(name, namespace string) v1beta2.ModuleReleaseMeta {
 			Namespace: namespace,
 			ManagedFields: []apimetav1.ManagedFieldsEntry{
 				{
-					Manager: moduleCatalogSyncFieldManager,
+					Manager: ModuleCatalogSyncFieldManager,
 				},
 			},
 		},
@@ -160,7 +161,8 @@ type fakeModuleReleaseMetaSyncWorker struct {
 	onDeleteConcurrently func(ctx context.Context, runtimeModules []v1beta2.ModuleReleaseMeta)
 }
 
-func (f *fakeModuleReleaseMetaSyncWorker) SyncConcurrently(ctx context.Context, kcpModules []v1beta2.ModuleReleaseMeta) error {
+func (f *fakeModuleReleaseMetaSyncWorker) SyncConcurrently(ctx context.Context,
+	kcpModules []v1beta2.ModuleReleaseMeta) error {
 	f.onSyncConcurrently(ctx, kcpModules)
 
 	// Simulate namespace switch on modules in kcpModules list that happens in moduleReleaseMetaConcurrentWorker.SyncConcurrently
@@ -172,7 +174,8 @@ func (f *fakeModuleReleaseMetaSyncWorker) SyncConcurrently(ctx context.Context, 
 	return nil
 }
 
-func (f *fakeModuleReleaseMetaSyncWorker) DeleteConcurrently(ctx context.Context, runtimeModules []v1beta2.ModuleReleaseMeta) error {
+func (f *fakeModuleReleaseMetaSyncWorker) DeleteConcurrently(ctx context.Context,
+	runtimeModules []v1beta2.ModuleReleaseMeta) error {
 	f.onDeleteConcurrently(ctx, runtimeModules)
 	return nil
 }

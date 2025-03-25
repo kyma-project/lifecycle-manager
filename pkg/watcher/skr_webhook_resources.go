@@ -23,7 +23,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
-type unstructuredResourcesConfig struct {
+type UnstructuredResourcesConfig struct {
 	contractVersion          string
 	kcpAddress               string
 	secretResVer             string
@@ -38,7 +38,7 @@ const (
 	kcpAddressEnvName       = "KCP_ADDR"
 	SkrTLSName              = "skr-webhook-tls"
 	SkrResourceName         = "skr-webhook"
-	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
+	SkrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
 	version                 = "v1"
 	webhookTimeOutInSeconds = 15
 )
@@ -50,7 +50,25 @@ var (
 		"at least the deployment selector label")
 )
 
-func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.ObjectKey,
+func NewUnstructuredResourcesConfig(kcpAddr, cpuResLimit, memResLimit, skrWatcherImage string,
+	tlsSecret *apicorev1.Secret,
+	gatewaySecret *apicorev1.Secret,
+	remoteNs string) *UnstructuredResourcesConfig {
+	return &UnstructuredResourcesConfig{
+		contractVersion: version,
+		kcpAddress:      kcpAddr,
+		secretResVer:    tlsSecret.ResourceVersion,
+		cpuResLimit:     cpuResLimit,
+		memResLimit:     memResLimit,
+		skrWatcherImage: skrWatcherImage,
+		caCert:          gatewaySecret.Data[caCertKey],
+		tlsCert:         tlsSecret.Data[tlsCertKey],
+		tlsKey:          tlsSecret.Data[tlsPrivateKeyKey],
+		remoteNs:        remoteNs,
+	}
+}
+
+func createSKRSecret(cfg *UnstructuredResourcesConfig, secretObjKey client.ObjectKey,
 ) *apicorev1.Secret {
 	return &apicorev1.Secret{
 		TypeMeta: apimetav1.TypeMeta{
@@ -142,7 +160,7 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 
 var errConvertUnstruct = errors.New("failed to convert deployment to unstructured")
 
-func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
+func configureClusterRoleBinding(cfg *UnstructuredResourcesConfig, resource *unstructured.Unstructured,
 ) (*apirbacv1.ClusterRoleBinding, error) {
 	crb := &apirbacv1.ClusterRoleBinding{}
 	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, crb); err != nil {
@@ -157,7 +175,7 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *uns
 	return crb, nil
 }
 
-func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Unstructured,
+func configureDeployment(cfg *UnstructuredResourcesConfig, obj *unstructured.Unstructured,
 ) (*apiappsv1.Deployment, error) {
 	deployment := &apiappsv1.Deployment{}
 	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
@@ -201,7 +219,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	return deployment, nil
 }
 
-func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
+func GetGeneratedClientObjects(resourcesConfig *UnstructuredResourcesConfig,
 	watchers []v1beta2.Watcher, remoteNs string,
 ) []client.Object {
 	var genClientObjects []client.Object
@@ -225,7 +243,7 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 	return append(genClientObjects, skrSecret)
 }
 
-func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watcher, error) {
+func GetWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watcher, error) {
 	watcherList := &v1beta2.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
@@ -234,7 +252,7 @@ func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watche
 	return watcherList.Items, nil
 }
 
-func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
+func ConfigureUnstructuredObject(cfg *UnstructuredResourcesConfig, object *unstructured.Unstructured,
 ) (client.Object, error) {
 	if object.GetAPIVersion() == apiappsv1.SchemeGroupVersion.String() && object.GetKind() == "Deployment" {
 		return configureDeployment(cfg, object)
@@ -245,7 +263,7 @@ func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstr
 	return object.DeepCopy(), nil
 }
 
-func closeFileAndLogErr(ctx context.Context, closer io.Closer, path string) {
+func CloseFileAndLogErr(ctx context.Context, closer io.Closer, path string) {
 	logger := logf.FromContext(ctx)
 	err := closer.Close()
 	if err != nil {

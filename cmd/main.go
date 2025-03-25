@@ -62,6 +62,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -151,15 +152,14 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
 	}
-	kcpRestConfig := mgr.GetConfig()
 	remoteClientCache := remote.NewClientCache()
-	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder)
-	var skrWebhookManager *watcher.SKRWebhookManifestManager
+	skrContextService := service.NewSKRContextService(mgr.GetClient(), mgr.GetConfig(), remoteClientCache,
+		eventRecorder)
+	var skrWebhookManagerService *service.SKRWebhookManagerService
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
+		if skrWebhookManagerService, err = createSkrWebhookManager(mgr, skrContextService, flagVar); err != nil {
 			logger.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
@@ -177,14 +177,15 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow)
+	setupKymaReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, skrWebhookManagerService, kymaMetrics,
+		logger,
+		maintenanceWindow, skrContextService)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, logger,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, logger)
 	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
+		setupPurgeReconciler(mgr, skrContextService, eventRecorder, flagVar, options, logger)
 	}
 
 	if flagVar.EnableWebhooks {
@@ -300,11 +301,10 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 	setupLog.V(log.DebugLevel).Info("scheduled job for cleaning up metrics")
 }
 
-func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
-	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow,
-) {
+func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider, event event.Event,
+	flagVar *flags.FlagVar, options ctrlruntime.Options, skrWebhookManager *service.SKRWebhookManagerService,
+	kymaMetrics *metrics.KymaMetrics, setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow,
+	skrContextService *service.SKRContextService) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
@@ -334,7 +334,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
+		RemoteCatalog: service.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider,
 			moduleTemplateInfoLookupStrategies),
@@ -348,24 +348,15 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-
-	if err := (&kyma.KymaDeletionReconciler{
-		Client:            mgr.GetClient(),
-		SkrContextFactory: skrContextFactory,
-		Event:             event,
-		SKRWebhookManager: skrWebhookManager,
-		RequeueIntervals: queue.RequeueIntervals{
+	kymaDeletionReconciler := kyma.NewKymaDeletionReconciler(mgr.GetClient(), skrContextService, event,
+		queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-		InKCPMode:     flagVar.InKCPMode,
-		IsManagedKyma: flagVar.IsKymaManaged,
-		Metrics:       kymaMetrics,
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
-			flagVar.RemoteSyncNamespace),
-	}).SetupWithManager(
+		}, skrWebhookManager, flagVar.InKCPMode, flagVar.IsKymaManaged, flagVar.RemoteSyncNamespace, kymaMetrics)
+
+	if err := kymaDeletionReconciler.SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
@@ -377,10 +368,10 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	}
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
+func createSkrWebhookManager(mgr ctrl.Manager, skrContextService *service.SKRContextService,
 	flagVar *flags.FlagVar,
-) (*watcher.SKRWebhookManifestManager, error) {
-	config := watcher.SkrWebhookManagerConfig{
+) (*service.SKRWebhookManagerService, error) {
+	config := service.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
 		SkrWatcherImage:        flagVar.GetWatcherImage(),
 		SkrWebhookCPULimits:    flagVar.WatcherResourceLimitsCPU,
@@ -406,9 +397,9 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 	if err != nil {
 		return nil, err
 	}
-	return watcher.NewSKRWebhookManifestManager(
+	return service.NewSKRWebhookManifestManager(
 		mgr.GetClient(),
-		skrContextFactory,
+		skrContextService,
 		config,
 		certConfig,
 		resolvedKcpAddr)

@@ -23,7 +23,7 @@ type resourceOperation func(ctx context.Context, clt client.Client, resource cli
 
 // runResourceOperationWithGroupedErrors loops through the resources and runs the passed operation
 // on each resource concurrently and groups their returned errors into one.
-func runResourceOperationWithGroupedErrors(ctx context.Context, skrClient client.Client,
+func RunResourceOperationWithGroupedErrors(ctx context.Context, skrClient client.Client,
 	resources []client.Object, operation resourceOperation,
 ) error {
 	errGrp, grpCtx := errgroup.WithContext(ctx)
@@ -43,7 +43,7 @@ func ResolveTLSCertName(kymaName string) string {
 	return fmt.Sprintf(webhookTLSCfgNameTpl, kymaName)
 }
 
-func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstructured.Unstructured, error) {
+func GetRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstructured.Unstructured, error) {
 	decoder := machineryaml.NewYAMLOrJSONDecoder(rawManifestReader, defaultBufferSize)
 	var resources []*unstructured.Unstructured
 	for {
