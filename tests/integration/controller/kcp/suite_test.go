@@ -17,6 +17,7 @@ package kcp_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"os"
 	"path/filepath"
 	"testing"
@@ -143,18 +144,21 @@ var _ = BeforeSuite(func() {
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	descriptorProvider = provider.NewCachedDescriptorProvider()
 	crdCache = crd.NewCache(nil)
+	noOpMetricsFunc := func(kymaName, moduleName string) {}
+	modulesStatusService := modules.NewModulesStatusService(kcpClient, noOpMetricsFunc)
 	err = (&kyma.Reconciler{
-		Client:              kcpClient,
-		SkrContextFactory:   testSkrContextFactory,
-		Event:               testEventRec,
-		RequeueIntervals:    intervals,
-		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
-		InKCPMode:           true,
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:       true,
-		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		Client:               kcpClient,
+		SkrContextFactory:    testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
+		ModulesStatusService: modulesStatusService,
+		InKCPMode:            true,
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		IsManagedKyma:        true,
+		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
 			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),

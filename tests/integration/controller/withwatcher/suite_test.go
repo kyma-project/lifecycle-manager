@@ -17,6 +17,7 @@ package withwatcher_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"os"
 	"path/filepath"
 	"testing"
@@ -203,18 +204,21 @@ var _ = BeforeSuite(func() {
 		skrChartCfg, certificateConfig, resolvedKcpAddr)
 	Expect(err).ToNot(HaveOccurred())
 
+	noOpMetricsFunc := func(kymaName, moduleName string) {}
+	modulesStatusService := modules.NewModulesStatusService(kcpClient, noOpMetricsFunc)
 	err = (&kyma.Reconciler{
-		Client:              kcpClient,
-		SkrContextFactory:   testSkrContextFactory,
-		Event:               testEventRec,
-		RequeueIntervals:    intervals,
-		SKRWebhookManager:   skrWebhookChartManager,
-		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		InKCPMode:           true,
-		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		Client:               kcpClient,
+		SkrContextFactory:    testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		SKRWebhookManager:    skrWebhookChartManager,
+		DescriptorProvider:   provider.NewCachedDescriptorProvider(),
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		ModulesStatusService: modulesStatusService,
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		InKCPMode:            true,
+		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
