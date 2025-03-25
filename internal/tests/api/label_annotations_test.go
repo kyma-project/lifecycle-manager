@@ -22,7 +22,6 @@ func Test_LabelHasExternalDependencies(t *testing.T) {
 	assert.Equal(t, "operator.kyma-project.io/skip-reconciliation", shared.SkipReconcileLabel)
 	assert.Equal(t, "operator.kyma-project.io/internal", shared.InternalLabel)
 	assert.Equal(t, "operator.kyma-project.io/beta", shared.BetaLabel)
-	assert.Equal(t, "operator.kyma-project.io/sync", shared.SyncLabel)
 	assert.Equal(t, "operator.kyma-project.io/module-name", shared.ModuleName)
 	assert.Equal(t, "operator.kyma-project.io/kyma-name", shared.KymaName)
 	assert.Equal(t, "operator.kyma-project.io/channel", shared.ChannelLabel)

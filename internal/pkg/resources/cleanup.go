@@ -88,17 +88,17 @@ func IsOperatorRelatedResources(kind string) bool {
 }
 
 func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) error {
-	results := make(chan error, len(infos))
+	infosCount := len(infos)
+	results := make(chan error, infosCount)
 	for i := range infos {
 		go c.cleanupResource(ctx, infos[i], results)
 	}
 
 	var errs []error
-	present := len(infos)
-	for range len(infos) {
+	for range infos {
 		err := <-results
 		if util.IsNotFound(err) {
-			present--
+			infosCount--
 			continue
 		}
 		if err != nil {
@@ -110,7 +110,7 @@ func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) err
 		return errors.Join(errs...)
 	}
 
-	if present > 0 {
+	if infosCount > 0 {
 		return ErrDeletionNotFinished
 	}
 	return nil

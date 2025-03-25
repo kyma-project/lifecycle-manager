@@ -15,7 +15,7 @@ import (
 )
 
 var _ = Describe("Mandatory Module Metrics", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", "kcp-system", v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)

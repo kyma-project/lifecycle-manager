@@ -4,13 +4,12 @@ linters:
     - contextcheck # too many false positives
     - depguard # checks if package imports are whitelisted
     - exhaustruct # too subjective and harms code readability
-    - exportloopref # deprecated (since v1.60.2), replaced by copyloopvar
-    - gomnd # deprecated (since v1.58.0), renamed to mnd
     - lll
-    - execinquery # deprecated (since v1.58.0) due to: The repository of the linter has been archived by the owner.
     - nlreturn # too strict and mostly code is not more readable
     - sqlclosecheck # not needed for this project
+    - tenv # deprecated, feature already covered by another linter
     - paralleltest # should be enabled consciously for long running tests
+    - recvcheck # too many changes required, created an issue to enable this explicitly
     - wsl # too strict and mostly code is not more readable
 linters-settings:
   gomoddirectives:
@@ -184,6 +183,7 @@ issues:
         - funlen # Table driven unit and integration tests exceed function length by design
         - maintidx # Table driven unit and integration tests exceed maintainability index by design
         - nilnil # Test mocks will use nilnil return values purposely
+        - fatcontext # Tests will use fatcontext for convenience
     - path: "pkg/testutils/"
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils

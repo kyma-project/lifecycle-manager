@@ -26,20 +26,29 @@ jobs:
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6.1.0
+        uses: golangci/golangci-lint-action@4696ba8babb6127d732c3c6dde519db15edab9ea # v6.5.1
         with:
           version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager
+          skip-cache: true
+        env:
+          GOSUMDB: sum.golang.org
       - name: golangci-lint for api module
-        uses: golangci/golangci-lint-action@v6.1.0
+        uses: golangci/golangci-lint-action@4696ba8babb6127d732c3c6dde519db15edab9ea # v6.5.1
         with:
           version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager/api
+          skip-cache: true
+        env:
+          GOSUMDB: sum.golang.org
       - name: golangci-lint for maintenancewindows module
-        uses: golangci/golangci-lint-action@v6.1.0
+        uses: golangci/golangci-lint-action@4696ba8babb6127d732c3c6dde519db15edab9ea # v6.5.1
         with:
           version: v${{ steps.configuration.outputs.golangci_lint_version }}
           args: --verbose
           working-directory: ./lifecycle-manager/maintenancewindows
+          skip-cache: true
+        env:
+          GOSUMDB: sum.golang.org
