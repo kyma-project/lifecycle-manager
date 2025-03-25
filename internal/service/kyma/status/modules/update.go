@@ -3,6 +3,7 @@ package modules
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,13 +21,13 @@ type GetModuleFunc func(ctx context.Context, module client.Object) error
 type RemoveMetricsFunc func(kymaName, moduleName string)
 
 type StatusService struct {
-	getModuleFunc     GetModuleFunc
+	kcpClient         client.Client
 	removeMetricsFunc RemoveMetricsFunc
 }
 
-func NewModulesStatusService(getModuleFunc GetModuleFunc, removeMetricsFunc RemoveMetricsFunc) *StatusService {
+func NewModulesStatusService(client client.Client, removeMetricsFunc RemoveMetricsFunc) *StatusService {
 	return &StatusService{
-		getModuleFunc:     getModuleFunc,
+		kcpClient:         client,
 		removeMetricsFunc: removeMetricsFunc,
 	}
 }
@@ -167,7 +168,7 @@ func (m *StatusService) deleteNoLongerExistingModuleStatus(ctx context.Context, 
 			continue
 		}
 		manifestCR := moduleStatus.GetManifestCR()
-		err := m.getModuleFunc(ctx, manifestCR)
+		err := m.getModule(ctx, manifestCR)
 		if util.IsNotFound(err) {
 			m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
@@ -176,6 +177,14 @@ func (m *StatusService) deleteNoLongerExistingModuleStatus(ctx context.Context, 
 		}
 	}
 	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
+}
+
+func (m *StatusService) getModule(ctx context.Context, module client.Object) error {
+	err := m.kcpClient.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
+	if err != nil {
+		return fmt.Errorf("failed to get module by name-namespace: %w", err)
+	}
+	return nil
 }
 
 func convertToNewModuleStatus(moduleStatusMap map[string]*v1beta2.ModuleStatus) []v1beta2.ModuleStatus {

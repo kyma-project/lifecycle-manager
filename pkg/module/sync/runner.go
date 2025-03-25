@@ -31,11 +31,6 @@ func New(clnt client.Client) *Runner {
 	}
 }
 
-type (
-	RemoveMetricsFunc func(kymaName, moduleName string)
-	GetModuleFunc     func(ctx context.Context, module client.Object) error
-)
-
 type Runner struct {
 	client.Client
 	versioner machineryruntime.GroupVersioner
@@ -86,14 +81,6 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 		return errors.Join(errs...)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
-	return nil
-}
-
-func (r *Runner) getModule(ctx context.Context, module client.Object) error {
-	err := r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
-	if err != nil {
-		return fmt.Errorf("failed to get module by name-namespace: %w", err)
-	}
 	return nil
 }
 

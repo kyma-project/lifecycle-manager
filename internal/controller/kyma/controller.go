@@ -71,7 +71,7 @@ type Reconciler struct {
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SyncRemoteCrds       remote.SyncCrdsUseCase
-	modulesStatusService UpdateStatusModulesService
+	ModulesStatusService UpdateStatusModulesService
 	SKRWebhookManager    *watcher.SKRWebhookManifestManager
 	InKCPMode            bool
 	RemoteSyncNamespace  string
@@ -511,7 +511,7 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
-	r.modulesStatusService.UpdateStatusModule(ctx, kyma, modules)
+	r.ModulesStatusService.UpdateStatusModule(ctx, kyma, modules)
 
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
