@@ -161,6 +161,11 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("update Manifest", func() {
+		Eventually(ManifestExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			Should(Succeed())
+
 		manifest, err := GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		Expect(err).ToNot(HaveOccurred())
 
