@@ -311,7 +311,6 @@ func Test_syncWatcherLabelsAnnotations_AddsAnnotations(t *testing.T) {
 	assertLabelsAndAnnotations(t, skrKyma)
 }
 
-// TODO: change here too
 func Test_syncWatcherLabelsAnnotations_ChangesAnnotations(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().
 		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
