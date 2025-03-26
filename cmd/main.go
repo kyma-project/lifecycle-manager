@@ -158,7 +158,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar, logger); err != nil {
 			logger.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
@@ -349,7 +349,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
-	flagVar *flags.FlagVar,
+	flagVar *flags.FlagVar, setupLog logr.Logger,
 ) (*watcher.SKRWebhookManifestManager, error) {
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
@@ -357,6 +357,9 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		SkrWebhookCPULimits:    flagVar.WatcherResourceLimitsCPU,
 		SkrWebhookMemoryLimits: flagVar.WatcherResourceLimitsMemory,
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
+	}
+	if flagVar.CertificateManagement == "gardener" {
+		setupLog.Info("[SETUP] Request to use Gardener for certificate management is not supported yet")
 	}
 	certConfig := watcher.CertificateConfig{
 		IstioNamespace:      flagVar.IstioNamespace,
