@@ -358,8 +358,6 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		SkrWebhookMemoryLimits: flagVar.WatcherResourceLimitsMemory,
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
 	}
-	// To be implemented: Gardener Certificate Management
-	// https://github.com/kyma-project/lifecycle-manager/issues/2353
 	certConfig := watcher.CertificateConfig{
 		IstioNamespace:      flagVar.IstioNamespace,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
