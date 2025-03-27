@@ -158,7 +158,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	var skrWebhookManager *watcher.SKRWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar, logger); err != nil {
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
 			logger.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
@@ -349,7 +349,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
-	flagVar *flags.FlagVar, setupLog logr.Logger,
+	flagVar *flags.FlagVar,
 ) (*watcher.SKRWebhookManifestManager, error) {
 	config := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         flagVar.WatcherResourcesPath,
@@ -359,7 +359,8 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
 	}
 	if flagVar.CertificateManagement == "gardener" {
-		setupLog.Info("[SETUP] Request to use Gardener for certificate management is not supported yet")
+		// TODO: Implement Gardener Certificate Management
+		// https://github.com/kyma-project/lifecycle-manager/issues/2353
 	}
 	certConfig := watcher.CertificateConfig{
 		IstioNamespace:      flagVar.IstioNamespace,
