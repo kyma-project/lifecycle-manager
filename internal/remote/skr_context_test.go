@@ -146,6 +146,90 @@ func Test_SynchronizeKymaMetadata_ErrorsWhenFailedToSync(t *testing.T) {
 	assert.True(t, eventStub.called)
 }
 
+func Test_SynchronizeKymaMetadata_SyncsBTPRelatedLabels(t *testing.T) {
+	skrKyma := builder.NewKymaBuilder().Build()
+	kcpKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "sub-account-id").
+		Build()
+
+	eventStub := &eventStub{}
+	clientStub := &clientStub{}
+	skrContext := NewSkrContext(clientStub, eventStub)
+
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
+
+	require.NoError(t, err)
+	assert.True(t, clientStub.called)
+	assert.False(t, eventStub.called)
+	assert.Equal(t, "global-account-id", skrKyma.Labels[shared.GlobalAccountIDLabel])
+	assert.Equal(t, "sub-account-id", skrKyma.Labels[shared.SubAccountIDLabel])
+}
+
+func Test_SynchronizeKymaMetadata_UpdatesBTPRelatedLabels(t *testing.T) {
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "old-global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "old-sub-account-id").
+		Build()
+	kcpKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "new-global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "new-sub-account-id").
+		Build()
+
+	eventStub := &eventStub{}
+	clientStub := &clientStub{}
+	skrContext := NewSkrContext(clientStub, eventStub)
+
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
+
+	require.NoError(t, err)
+	assert.True(t, clientStub.called)
+	assert.False(t, eventStub.called)
+	assert.Equal(t, "new-global-account-id", skrKyma.Labels[shared.GlobalAccountIDLabel])
+	assert.Equal(t, "new-sub-account-id", skrKyma.Labels[shared.SubAccountIDLabel])
+}
+
+func Test_SynchronizeKymaMetadata_SkipsSyncIfBTPRelatedLabelsUnchanged(t *testing.T) {
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "sub-account-id").
+		Build()
+	kcpKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "sub-account-id").
+		Build()
+
+	eventStub := &eventStub{}
+	clientStub := &clientStub{}
+	skrContext := NewSkrContext(clientStub, eventStub)
+
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
+
+	require.NoError(t, err)
+	assert.Equal(t, "global-account-id", skrKyma.Labels[shared.GlobalAccountIDLabel])
+	assert.Equal(t, "sub-account-id", skrKyma.Labels[shared.SubAccountIDLabel])
+}
+
+func Test_SynchronizeKymaMetadata_ErrorsWhenFailedToSyncBTPRelatedLabels(t *testing.T) {
+	skrKyma := builder.NewKymaBuilder().Build()
+	kcpKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "sub-account-id").
+		Build()
+
+	expectedError := errors.New("test error")
+	eventStub := &eventStub{}
+	clientStub := &clientStub{err: expectedError}
+	skrContext := NewSkrContext(clientStub, eventStub)
+
+	err := skrContext.SynchronizeKymaMetadata(t.Context(), kcpKyma, skrKyma)
+
+	require.ErrorIs(t, err, expectedError)
+	assert.Contains(t, err.Error(), "failed to synchronise Kyma metadata to SKR")
+	assert.True(t, clientStub.called)
+	assert.True(t, eventStub.called)
+}
+
 func Test_SynchronizeKymaStatus_SkipsIfSKRKymaIsDeleting(t *testing.T) {
 	skrKyma := builder.NewKymaBuilder().WithDeletionTimestamp().Build()
 	kcpKyma := builder.NewKymaBuilder().Build()
