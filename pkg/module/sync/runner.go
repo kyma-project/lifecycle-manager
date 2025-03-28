@@ -16,7 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -38,14 +38,14 @@ type Runner struct {
 }
 
 func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
-	modules common.Modules,
+	modules modulecommon.Modules,
 ) error {
 	ssaStart := time.Now()
 	baseLogger := logf.FromContext(ctx)
 
 	results := make(chan error, len(modules))
 	for _, module := range modules {
-		go func(module *common.Module) {
+		go func(module *modulecommon.Module) {
 			// Should not happen, but in case of NPE, we should stop process further.
 			if module.Template == nil {
 				results <- nil
@@ -85,7 +85,7 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 }
 
 func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
-	module *common.Module,
+	module *modulecommon.Module,
 ) error {
 	if err := r.setupModule(module, kyma); err != nil {
 		return err
@@ -123,7 +123,7 @@ func getManifestStatus(manifest, manifestInCluster *v1beta2.Manifest) shared.Sta
 	return manifest.Status
 }
 
-func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
+func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *modulecommon.Module,
 	manifestInCluster, newManifest *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
 	if !NeedToUpdate(manifestInCluster, newManifest, kymaModuleStatus, module) {
@@ -181,7 +181,7 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 }
 
 func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStatus *v1beta2.ModuleStatus,
-	module *common.Module,
+	module *modulecommon.Module,
 ) bool {
 	if manifestInCluster == nil {
 		return !(module.IsUnmanaged)
@@ -205,7 +205,7 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 	return diffInTemplate || diffInSpec
 }
 
-func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
+func (r *Runner) deleteManifest(ctx context.Context, module *modulecommon.Module) error {
 	err := r.Delete(ctx, module.Manifest)
 	if util.IsNotFound(err) {
 		return nil
@@ -213,7 +213,7 @@ func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) erro
 	return fmt.Errorf("failed to delete manifest: %w", err)
 }
 
-func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
+func (r *Runner) setupModule(module *modulecommon.Module, kyma *v1beta2.Kyma) error {
 	module.ApplyDefaultMetaToManifest(kyma)
 
 	refs := module.GetOwnerReferences()

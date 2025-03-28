@@ -7,7 +7,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
@@ -97,8 +97,8 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithUnmanaged_SetsUnmanagedAnnotat
 	assert.Equal(t, "true", resultAnnotations["operator.kyma-project.io/is-unmanaged"])
 }
 
-func createModule() *common.Module {
-	return &common.Module{
+func createModule() *modulecommon.Module {
+	return &modulecommon.Module{
 		Manifest: &v1beta2.Manifest{
 			ObjectMeta: apimetav1.ObjectMeta{},
 		},

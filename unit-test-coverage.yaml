@@ -16,12 +16,13 @@ packages:
   internal/manifest/manifestclient: 5
   internal/manifest/modulecr: 47
   internal/maintenancewindows: 87
-  internal/service/kyma/status/modules: 68
+  internal/service/kyma/status/modules: 78
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/istio: 63
   internal/pkg/resources: 91
   internal/remote: 29
   internal/util/collections: 87
+  pkg/module/sync: 10
   pkg/templatelookup: 88
   pkg/templatelookup/moduletemplateinfolookup: 98

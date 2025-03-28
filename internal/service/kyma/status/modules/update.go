@@ -2,6 +2,7 @@ package modules
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -22,7 +23,7 @@ type ModuleStatusGenerator interface {
 	GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)
 }
 
-var errNilKyma = fmt.Errorf("kyma object is nil")
+var errNilKyma = errors.New("kyma object is nil")
 
 type StatusService struct {
 	statusGenerator   ModuleStatusGenerator
@@ -58,24 +59,6 @@ func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 	}
 
 	DeleteNoLongerExistingModuleStatus(ctx, kyma, m.getModule, m.removeMetricsFunc)
-	//moduleStatusMap = kyma.GetModuleStatusMap()
-	//moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
-	//for _, moduleStatus := range moduleStatusesToBeDeletedFromKymaStatus {
-	//	if moduleStatus.Manifest == nil {
-	//		m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
-	//		delete(moduleStatusMap, moduleStatus.Name)
-	//		continue
-	//	}
-	//	manifestCR := moduleStatus.GetManifestCR()
-	//	err := m.getModule(ctx, manifestCR)
-	//	if util.IsNotFound(err) {
-	//		m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
-	//		delete(moduleStatusMap, moduleStatus.Name)
-	//	} else {
-	//		moduleStatus.State = stateFromManifest(manifestCR)
-	//	}
-	//}
-	//kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
 
 	return nil
 }

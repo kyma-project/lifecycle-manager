@@ -2,18 +2,20 @@ package modules_test
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -174,19 +176,35 @@ func configureModuleInKyma(
 func TestUpdateModuleStatuses_WhenCalledWithNilKyma_Returns(t *testing.T) {
 	statusService := modules.NewModulesStatusService(nil, nil, nil)
 
-	_ = statusService.UpdateModuleStatuses(t.Context(), nil, common.Modules{})
+	_ = statusService.UpdateModuleStatuses(t.Context(), nil, modulecommon.Modules{})
 }
 
 func TestUpdateModuleStatuses_WhenCalledWithEmptyModules_Returns(t *testing.T) {
 	statusService := modules.NewModulesStatusService(nil, nil, nil)
 
-	_ = statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, common.Modules{})
+	_ = statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
 }
 
 func TestUpdateModuleStatuses_WhenCalledWithTemplateErrorTemplateUpdateNotAllowed_CreatesStateWarning(t *testing.T) {
 	statusService := modules.NewModulesStatusService(nil, nil, nil)
 
-	_ = statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, common.Modules{})
+	_ = statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
+}
+
+func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_ReturnsError(t *testing.T) {
+	statusGenerator := &mockStatusGenerator{
+		generateModuleStatusFunc: func() (v1beta2.ModuleStatus, error) {
+			return v1beta2.ModuleStatus{}, errors.New("status generator error")
+		},
+	}
+	statusService := modules.NewModulesStatusService(statusGenerator, nil, nil)
+
+	err := statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{
+		&modulecommon.Module{ModuleName: "test-module"},
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "status generator error")
 }
 
 func moduleDeletedSuccessfullyMock(_ context.Context, _ client.Object) error {
@@ -197,10 +215,12 @@ func moduleStillExistsInClusterMock(_ context.Context, _ client.Object) error {
 	return apierrors.NewAlreadyExists(schema.GroupResource{}, "module-still-exists")
 }
 
-type mockStatusGenerator struct{}
+type mockStatusGenerator struct {
+	generateModuleStatusFunc func() (v1beta2.ModuleStatus, error)
+}
 
-func (m *mockStatusGenerator) GenerateModuleStatus(_ *common.Module, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
-	return v1beta2.ModuleStatus{}, nil
+func (m *mockStatusGenerator) GenerateModuleStatus(_ *modulecommon.Module, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
+	return m.generateModuleStatusFunc()
 }
 
 type KymaMockMetrics struct {

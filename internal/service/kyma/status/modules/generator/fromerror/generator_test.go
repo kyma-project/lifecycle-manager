@@ -25,7 +25,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithAnyOtherError_ReturnsDefaul
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
 
 	assert.NotNil(t, result)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotEqual(t, status.DeepCopy(), result)
 
 	// Module info is used for creating a new status

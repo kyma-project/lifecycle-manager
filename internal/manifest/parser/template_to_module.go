@@ -15,7 +15,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
@@ -37,10 +37,10 @@ func NewParser(clnt client.Client,
 }
 
 func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates templatelookup.ModuleTemplatesByModuleName,
-) common.Modules {
+) modulecommon.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
-	modules := make(common.Modules, 0)
+	modules := make(modulecommon.Modules, 0)
 
 	for _, module := range templatelookup.FetchModuleInfo(kyma) {
 		template := templates[module.Name]
@@ -52,8 +52,8 @@ func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates temp
 func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates templatelookup.ModuleTemplatesByModuleName,
-) common.Modules {
-	modules := make(common.Modules, 0)
+) modulecommon.Modules {
+	modules := make(modulecommon.Modules, 0)
 
 	for _, template := range templates {
 		moduleName, ok := template.ObjectMeta.Labels[shared.ModuleName]
@@ -77,10 +77,10 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 }
 
 func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, kyma *v1beta2.Kyma,
-	template *templatelookup.ModuleTemplateInfo, modules common.Modules,
-) common.Modules {
+	template *templatelookup.ModuleTemplateInfo, modules modulecommon.Modules,
+) modulecommon.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
-		modules = append(modules, &common.Module{
+		modules = append(modules, &modulecommon.Module{
 			ModuleName:  module.Name,
 			Template:    template,
 			Enabled:     module.Enabled,
@@ -91,7 +91,7 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	descriptor, err := p.descriptorProvider.GetDescriptor(template.ModuleTemplate)
 	if err != nil {
 		template.Err = err
-		modules = append(modules, &common.Module{
+		modules = append(modules, &modulecommon.Module{
 			ModuleName:  module.Name,
 			Template:    template,
 			Enabled:     module.Enabled,
@@ -100,13 +100,13 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		return modules
 	}
 	fqdn := descriptor.GetName()
-	name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
+	name := modulecommon.CreateModuleName(fqdn, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
 	if manifest, err = p.newManifestFromTemplate(module.Module,
 		template.ModuleTemplate); err != nil {
 		template.Err = err
-		modules = append(modules, &common.Module{
+		modules = append(modules, &modulecommon.Module{
 			ModuleName:  module.Name,
 			Template:    template,
 			Enabled:     module.Enabled,
@@ -118,7 +118,7 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	manifest.SetName(name)
 	// to have correct owner references, the manifest must always have the same namespace as kyma
 	manifest.SetNamespace(kyma.GetNamespace())
-	modules = append(modules, &common.Module{
+	modules = append(modules, &modulecommon.Module{
 		ModuleName:  module.Name,
 		FQDN:        fqdn,
 		Template:    template,

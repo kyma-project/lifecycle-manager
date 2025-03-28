@@ -3,13 +3,14 @@ package sync_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/stretchr/testify/assert"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
 func TestNeedToUpdate(t *testing.T) {
@@ -17,7 +18,7 @@ func TestNeedToUpdate(t *testing.T) {
 		manifestInCluster *v1beta2.Manifest
 		newManifest       *v1beta2.Manifest
 		moduleStatus      *v1beta2.ModuleStatus
-		module            *common.Module
+		module            *modulecommon.Module
 	}
 	const trackedModuleTemplateGeneration = 1
 	const updatedModuleTemplateGeneration = 2
@@ -32,7 +33,7 @@ func TestNeedToUpdate(t *testing.T) {
 				nil,
 				&v1beta2.Manifest{},
 				&v1beta2.ModuleStatus{},
-				&common.Module{},
+				&modulecommon.Module{},
 			},
 			true,
 		},
@@ -42,7 +43,7 @@ func TestNeedToUpdate(t *testing.T) {
 				nil,
 				&v1beta2.Manifest{},
 				&v1beta2.ModuleStatus{},
-				&common.Module{
+				&modulecommon.Module{
 					IsUnmanaged: true,
 				},
 			},
@@ -54,7 +55,7 @@ func TestNeedToUpdate(t *testing.T) {
 				&v1beta2.Manifest{},
 				&v1beta2.Manifest{},
 				nil,
-				&common.Module{
+				&modulecommon.Module{
 					IsUnmanaged: true,
 				},
 			},
@@ -79,7 +80,7 @@ func TestNeedToUpdate(t *testing.T) {
 						},
 					},
 				},
-				&common.Module{
+				&modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
@@ -107,7 +108,7 @@ func TestNeedToUpdate(t *testing.T) {
 						},
 					},
 				},
-				&common.Module{
+				&modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
@@ -134,7 +135,7 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, &common.Module{
+				}, &modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
@@ -164,7 +165,7 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, &common.Module{
+				}, &modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
@@ -195,7 +196,7 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, &common.Module{
+				}, &modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
@@ -230,7 +231,7 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, &common.Module{
+				}, &modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
@@ -267,7 +268,7 @@ func TestNeedToUpdate(t *testing.T) {
 							Generation: trackedModuleTemplateGeneration,
 						},
 					},
-				}, &common.Module{
+				}, &modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
@@ -302,7 +303,7 @@ func TestNeedToUpdate(t *testing.T) {
 						},
 					},
 				},
-				&common.Module{
+				&modulecommon.Module{
 					Template: &templatelookup.ModuleTemplateInfo{
 						ModuleTemplate: &v1beta2.ModuleTemplate{
 							ObjectMeta: apimetav1.ObjectMeta{
