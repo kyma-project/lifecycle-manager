@@ -81,10 +81,10 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 ) modulecommon.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
 		modules = append(modules, &modulecommon.Module{
-			ModuleName:  module.Name,
-			Template:    template,
-			Enabled:     module.Enabled,
-			IsUnmanaged: module.Unmanaged,
+			ModuleName:   module.Name,
+			TemplateInfo: template,
+			Enabled:      module.Enabled,
+			IsUnmanaged:  module.Unmanaged,
 		})
 		return modules
 	}
@@ -92,10 +92,10 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	if err != nil {
 		template.Err = err
 		modules = append(modules, &modulecommon.Module{
-			ModuleName:  module.Name,
-			Template:    template,
-			Enabled:     module.Enabled,
-			IsUnmanaged: module.Unmanaged,
+			ModuleName:   module.Name,
+			TemplateInfo: template,
+			Enabled:      module.Enabled,
+			IsUnmanaged:  module.Unmanaged,
 		})
 		return modules
 	}
@@ -107,10 +107,10 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		template.ModuleTemplate); err != nil {
 		template.Err = err
 		modules = append(modules, &modulecommon.Module{
-			ModuleName:  module.Name,
-			Template:    template,
-			Enabled:     module.Enabled,
-			IsUnmanaged: module.Unmanaged,
+			ModuleName:   module.Name,
+			TemplateInfo: template,
+			Enabled:      module.Enabled,
+			IsUnmanaged:  module.Unmanaged,
 		})
 		return modules
 	}
@@ -119,12 +119,12 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	// to have correct owner references, the manifest must always have the same namespace as kyma
 	manifest.SetNamespace(kyma.GetNamespace())
 	modules = append(modules, &modulecommon.Module{
-		ModuleName:  module.Name,
-		FQDN:        fqdn,
-		Template:    template,
-		Manifest:    manifest,
-		Enabled:     module.Enabled,
-		IsUnmanaged: module.Unmanaged,
+		ModuleName:   module.Name,
+		FQDN:         fqdn,
+		TemplateInfo: template,
+		Manifest:     manifest,
+		Enabled:      module.Enabled,
+		IsUnmanaged:  module.Unmanaged,
 	})
 	return modules
 }

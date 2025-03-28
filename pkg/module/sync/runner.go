@@ -47,17 +47,17 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	for _, module := range modules {
 		go func(module *modulecommon.Module) {
 			// Should not happen, but in case of NPE, we should stop process further.
-			if module.Template == nil {
+			if module.TemplateInfo == nil {
 				results <- nil
 				return
 			}
 			// Due to module template visibility change, some module previously deployed should be removed.
-			if errors.Is(module.Template.Err, templatelookup.ErrTemplateNotAllowed) {
+			if errors.Is(module.TemplateInfo.Err, templatelookup.ErrTemplateNotAllowed) {
 				results <- r.deleteManifest(ctx, module)
 				return
 			}
 			// ModuleInStatus template in other error status should be ignored.
-			if module.Template.Err != nil {
+			if module.TemplateInfo.Err != nil {
 				results <- nil
 				return
 			}
@@ -201,7 +201,7 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 		return diffInSpec
 	}
 
-	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != module.Template.GetGeneration()
+	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != module.TemplateInfo.GetGeneration()
 	return diffInTemplate || diffInSpec
 }
 

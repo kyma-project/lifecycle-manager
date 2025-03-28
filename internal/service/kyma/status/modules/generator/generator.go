@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	ErrModuleNeedsTemplate = errors.New("module needs a template")
-	ErrModuleNeedsManifest = errors.New("module needs either manifest or template error")
+	ErrModuleNeedsTemplateInfo = errors.New("module needs a template")
+	ErrModuleNeedsManifest     = errors.New("module needs either manifest or template error")
 )
 
 type GenerateFromErrorFunc func(err error, moduleName, desiredChannel, fqdn string, status *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)
@@ -28,12 +28,12 @@ func NewModuleStatusGenerator(fromErrorGeneratorFunc GenerateFromErrorFunc) *Mod
 }
 
 func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
-	if module.Template == nil || module.Template.ModuleTemplate == nil {
-		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplate
+	if module.TemplateInfo == nil {
+		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplateInfo
 	}
 
-	if module.Template.Err != nil {
-		return m.generateFromErrorFunc(module.Template.Err, module.ModuleName, module.Template.DesiredChannel, module.FQDN, currentStatus)
+	if module.TemplateInfo.Err != nil {
+		return m.generateFromErrorFunc(module.TemplateInfo.Err, module.ModuleName, module.TemplateInfo.DesiredChannel, module.FQDN, currentStatus)
 	}
 
 	if module.Manifest == nil {
@@ -43,12 +43,12 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 	manifest := module.Manifest
 
 	manifestAPIVersion, manifestKind := manifest.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+	templateAPIVersion, templateKind := module.TemplateInfo.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	moduleStatus := v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
 		State:   manifest.Status.State,
-		Channel: module.Template.DesiredChannel,
+		Channel: module.TemplateInfo.DesiredChannel,
 		Version: manifest.Spec.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
@@ -60,9 +60,9 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 		},
 		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
-				Name:       module.Template.GetName(),
-				Namespace:  module.Template.GetNamespace(),
-				Generation: module.Template.GetGeneration(),
+				Name:       module.TemplateInfo.GetName(),
+				Namespace:  module.TemplateInfo.GetNamespace(),
+				Generation: module.TemplateInfo.GetGeneration(),
 			},
 			TypeMeta: apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
@@ -79,7 +79,7 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 			TypeMeta: apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
-		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == shared.EnableLabelValue {
+		if module.TemplateInfo.Annotations[shared.IsClusterScopedAnnotation] == shared.EnableLabelValue {
 			moduleStatus.Resource.PartialMeta.Namespace = ""
 		}
 	}

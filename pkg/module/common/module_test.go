@@ -34,7 +34,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsKymaLabel
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithMandatoryModule_SetsMandatoryModuleLabel(t *testing.T) {
 	module := createModule()
-	module.Template.Spec.Mandatory = true
+	module.TemplateInfo.Spec.Mandatory = true
 	kyma := &v1beta2.Kyma{}
 
 	module.ApplyDefaultMetaToManifest(kyma)
@@ -45,7 +45,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithMandatoryModule_SetsMandatoryM
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithControllerName_SetsControllerNameLabel(t *testing.T) {
 	module := createModule()
-	module.Template.SetLabels(map[string]string{"operator.kyma-project.io/controller-name": "some-controller"})
+	module.TemplateInfo.SetLabels(map[string]string{"operator.kyma-project.io/controller-name": "some-controller"})
 	kyma := &v1beta2.Kyma{}
 
 	module.ApplyDefaultMetaToManifest(kyma)
@@ -56,7 +56,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithControllerName_SetsControllerN
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithChannel_SetsChannelLabel(t *testing.T) {
 	module := createModule()
-	module.Template.Spec.Channel = "some-channel"
+	module.TemplateInfo.Spec.Channel = "some-channel"
 	kyma := &v1beta2.Kyma{}
 
 	module.ApplyDefaultMetaToManifest(kyma)
@@ -102,7 +102,7 @@ func createModule() *modulecommon.Module {
 		Manifest: &v1beta2.Manifest{
 			ObjectMeta: apimetav1.ObjectMeta{},
 		},
-		Template: &templatelookup.ModuleTemplateInfo{
+		TemplateInfo: &templatelookup.ModuleTemplateInfo{
 			ModuleTemplate: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{},
 			},

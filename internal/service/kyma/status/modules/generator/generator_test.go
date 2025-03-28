@@ -17,30 +17,18 @@ import (
 )
 
 func TestGenerateModuleStatus_WhenCalledWithNilTemplateInfo_ReturnsError(t *testing.T) {
-	module := &modulecommon.Module{Template: nil}
+	module := &modulecommon.Module{TemplateInfo: nil}
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
 	_, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, generator.ErrModuleNeedsTemplate)
-}
-
-func TestGenerateModuleStatus_WhenCalledWithNilTemplate_ReturnsError(t *testing.T) {
-	module := &modulecommon.Module{
-		Template: &templatelookup.ModuleTemplateInfo{ModuleTemplate: nil},
-	}
-
-	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
-	_, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
-
-	require.Error(t, err)
-	require.ErrorIs(t, err, generator.ErrModuleNeedsTemplate)
+	require.ErrorIs(t, err, generator.ErrModuleNeedsTemplateInfo)
 }
 
 func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErrorFunc(t *testing.T) {
 	module := &modulecommon.Module{
-		Template: &templatelookup.ModuleTemplateInfo{
+		TemplateInfo: &templatelookup.ModuleTemplateInfo{
 			Err:            errors.New("some template error"),
 			ModuleTemplate: createModuleTemplate(),
 		},
@@ -61,7 +49,7 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErr
 
 func TestGenerateModuleStatus_WhenCalledWithErrorInTemplateAndFuncReturnsError_ReturnsError(t *testing.T) {
 	module := &modulecommon.Module{
-		Template: &templatelookup.ModuleTemplateInfo{
+		TemplateInfo: &templatelookup.ModuleTemplateInfo{
 			Err:            errors.New("some template error"),
 			ModuleTemplate: createModuleTemplate(),
 		},
@@ -79,7 +67,7 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplateAndFuncReturnsError_R
 
 func TestGenerateModuleStatus_WhenCalledWithNilManifest_ReturnsError(t *testing.T) {
 	module := &modulecommon.Module{
-		Template: &templatelookup.ModuleTemplateInfo{
+		TemplateInfo: &templatelookup.ModuleTemplateInfo{
 			ModuleTemplate: createModuleTemplate(),
 		},
 	}
@@ -93,8 +81,8 @@ func TestGenerateModuleStatus_WhenCalledWithNilManifest_ReturnsError(t *testing.
 
 func TestGenerateModuleStatus_WhenCalledWithManifestNilSpec_ReturnsError(t *testing.T) {
 	module := &modulecommon.Module{
-		Template: &templatelookup.ModuleTemplateInfo{},
-		Manifest: &v1beta2.Manifest{},
+		TemplateInfo: &templatelookup.ModuleTemplateInfo{},
+		Manifest:     &v1beta2.Manifest{},
 	}
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
@@ -150,7 +138,7 @@ func TestGenerateModuleStatus_WhenCalledWithManifestResource_CreatesTrackingObje
 
 func TestGenerateModuleStatus_WhenCalledWithIsClusterScopedAnnotation_RemovesResourceNamespace(t *testing.T) {
 	module := createModule()
-	module.Template.ModuleTemplate = createClusterScopedModuleTemplate()
+	module.TemplateInfo.ModuleTemplate = createClusterScopedModuleTemplate()
 	module.Manifest = createManifestWithResource()
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
@@ -185,7 +173,7 @@ func createModule() *modulecommon.Module {
 	return &modulecommon.Module{
 		ModuleName: "test-module",
 		FQDN:       "test-fqdn",
-		Template: &templatelookup.ModuleTemplateInfo{
+		TemplateInfo: &templatelookup.ModuleTemplateInfo{
 			DesiredChannel: "test-channel",
 			ModuleTemplate: createModuleTemplate(),
 		},
