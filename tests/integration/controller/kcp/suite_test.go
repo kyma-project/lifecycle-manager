@@ -17,7 +17,8 @@ package kcp_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,6 +42,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -145,7 +147,8 @@ var _ = BeforeSuite(func() {
 	descriptorProvider = provider.NewCachedDescriptorProvider()
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
-	modulesStatusService := modules.NewModulesStatusService(kcpClient, noOpMetricsFunc)
+	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
+	modulesStatusService := modules.NewModulesStatusService(moduleStatusGen, kcpClient, noOpMetricsFunc)
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -154,7 +157,6 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:   descriptorProvider,
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
 		ModulesStatusService: modulesStatusService,
-		InKCPMode:            true,
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:        true,
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
