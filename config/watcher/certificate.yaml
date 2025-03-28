@@ -2,9 +2,10 @@
 # More document can be found at https://docs.cert-manager.io
 # WARNING: Targets CertManager v1.0. Check https://cert-manager.io/docs/installation/upgrading/ for breaking changes.
 apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
+kind: Issuer
 metadata:
-  name: watcher-selfsigned
+  name: watcher-root
+  namespace: istio-system
 spec:
   selfSigned: { }
 ---
@@ -27,8 +28,8 @@ spec:
     algorithm: RSA
     size: 4096
   issuerRef:
-    name: klm-watcher-selfsigned
-    kind: ClusterIssuer
+    name: klm-watcher-root
+    kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
