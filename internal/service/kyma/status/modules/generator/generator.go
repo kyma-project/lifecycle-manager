@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	ErrModuleNeedsTemplateInfo = errors.New("module needs a template")
-	ErrModuleNeedsManifest     = errors.New("module needs either manifest or template error")
+	ErrModuleNeedsTemplateInfo            = errors.New("module needs a template info")
+	ErrModuleNeedsTemplateErrorOrTemplate = errors.New("module needs either a TemplateError or a ModuleTemplate")
+	ErrModuleNeedsManifest                = errors.New("module needs either manifest or template error")
 )
 
 type GenerateFromErrorFunc func(err error, moduleName, desiredChannel, fqdn string, status *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)
@@ -30,6 +31,10 @@ func NewModuleStatusGenerator(fromErrorGeneratorFunc GenerateFromErrorFunc) *Mod
 func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
 	if module.TemplateInfo == nil {
 		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplateInfo
+	}
+	
+	if module.TemplateInfo.ModuleTemplate == nil && module.TemplateInfo.Err == nil {
+		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplateErrorOrTemplate
 	}
 
 	if module.TemplateInfo.Err != nil {

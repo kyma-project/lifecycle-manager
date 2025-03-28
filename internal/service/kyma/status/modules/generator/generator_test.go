@@ -26,6 +26,19 @@ func TestGenerateModuleStatus_WhenCalledWithNilTemplateInfo_ReturnsError(t *test
 	require.ErrorIs(t, err, generator.ErrModuleNeedsTemplateInfo)
 }
 
+func TestGenerateModuleStatus_WhenCalledWithNilTemplateErrorAndNilModuleTemplate_ReturnsError(t *testing.T) {
+	module := &modulecommon.Module{TemplateInfo: &templatelookup.ModuleTemplateInfo{
+		Err:            nil,
+		ModuleTemplate: nil,
+	}}
+
+	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
+	_, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, generator.ErrModuleNeedsTemplateErrorOrTemplate)
+}
+
 func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErrorFunc(t *testing.T) {
 	module := &modulecommon.Module{
 		TemplateInfo: &templatelookup.ModuleTemplateInfo{
