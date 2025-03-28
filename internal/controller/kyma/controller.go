@@ -39,6 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -59,19 +60,24 @@ const (
 	patchStatusError  event.Reason = "PatchStatus"
 )
 
+type ModuleStatusHandler interface {
+	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error
+}
+
 type Reconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
-	SkrContextFactory   remote.SkrContextProvider
-	DescriptorProvider  *provider.CachedDescriptorProvider
-	SyncRemoteCrds      remote.SyncCrdsUseCase
-	SKRWebhookManager   *watcher.SKRWebhookManifestManager
-	RemoteSyncNamespace string
-	IsManagedKyma       bool
-	Metrics             *metrics.KymaMetrics
-	RemoteCatalog       *remote.RemoteCatalog
-	TemplateLookup      *templatelookup.TemplateLookup
+	SkrContextFactory    remote.SkrContextProvider
+	DescriptorProvider   *provider.CachedDescriptorProvider
+	SyncRemoteCrds       remote.SyncCrdsUseCase
+	ModulesStatusHandler ModuleStatusHandler
+	SKRWebhookManager    *watcher.SKRWebhookManifestManager
+	RemoteSyncNamespace  string
+	IsManagedKyma        bool
+	Metrics              *metrics.KymaMetrics
+	RemoteCatalog        *remote.RemoteCatalog
+	TemplateLookup       *templatelookup.TemplateLookup
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -492,7 +498,12 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
-	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
+
+	err := r.ModulesStatusHandler.UpdateModuleStatuses(ctx, kyma, modules)
+	if err != nil {
+		return fmt.Errorf("failed to update module statuses: %w", err)
+	}
+
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)

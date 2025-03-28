@@ -16,9 +16,9 @@ import (
 type (
 	Modules []*Module
 	Module  struct {
-		ModuleName string
-		FQDN       string
-		Template   *templatelookup.ModuleTemplateInfo
+		ModuleName   string
+		FQDN         string
+		TemplateInfo *templatelookup.ModuleTemplateInfo
 		*v1beta2.Manifest
 		Enabled     bool
 		IsUnmanaged bool
@@ -29,8 +29,8 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
 		"fqdn", m.FQDN,
 		"module", m.GetName(),
-		"channel", m.Template.Spec.Channel,
-		"templateGeneration", m.Template.GetGeneration(),
+		"channel", m.TemplateInfo.Spec.Channel,
+		"templateGeneration", m.TemplateInfo.GetGeneration(),
 	)
 }
 
@@ -40,14 +40,14 @@ func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
 		lbls = make(map[string]string)
 	}
 	lbls[shared.KymaName] = kyma.Name
-	templateLabels := m.Template.GetLabels()
+	templateLabels := m.TemplateInfo.GetLabels()
 	if templateLabels != nil {
-		lbls[shared.ControllerName] = m.Template.GetLabels()[shared.ControllerName]
+		lbls[shared.ControllerName] = m.TemplateInfo.GetLabels()[shared.ControllerName]
 	}
 	lbls[shared.ModuleName] = m.ModuleName
-	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
+	lbls[shared.ChannelLabel] = m.TemplateInfo.Spec.Channel
 	lbls[shared.ManagedBy] = shared.OperatorName
-	if m.Template.Spec.Mandatory {
+	if m.TemplateInfo.Spec.Mandatory {
 		lbls[shared.IsMandatoryModule] = shared.EnableLabelValue
 	}
 	m.SetLabels(lbls)

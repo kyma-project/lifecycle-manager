@@ -61,6 +61,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -316,13 +319,18 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
 	})
 
+	kcpClient := mgr.GetClient()
+	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
+	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
+
 	if err := (&kyma.Reconciler{
-		Client:             mgr.GetClient(),
-		SkrContextFactory:  skrContextFactory,
-		Event:              event,
-		DescriptorProvider: descriptorProvider,
-		SyncRemoteCrds:     remote.NewSyncCrdsUseCase(mgr.GetClient(), skrContextFactory, nil),
-		SKRWebhookManager:  skrWebhookManager,
+		Client:               kcpClient,
+		SkrContextFactory:    skrContextFactory,
+		Event:                event,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+		ModulesStatusHandler: modulesStatusHandler,
+		SKRWebhookManager:    skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
@@ -332,9 +340,9 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             kymaMetrics,
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(mgr.GetClient(), skrContextFactory,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(mgr.GetClient(), descriptorProvider,
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookupStrategies),
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{

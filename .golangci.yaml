@@ -135,6 +135,8 @@ linters-settings:
         alias: gatewaysecretclient
       - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler
         alias: gatewaysecrethandler
+      - pkg: github.com/kyma-project/lifecycle-manager/pkg/module/common
+        alias: modulecommon
   ireturn:
     allow:
       - anon
@@ -184,6 +186,7 @@ issues:
         - maintidx # Table driven unit and integration tests exceed maintainability index by design
         - nilnil # Test mocks will use nilnil return values purposely
         - fatcontext # Tests will use fatcontext for convenience
+        - goconst # Tests will use repetetive values all the time
     - path: "pkg/testutils/"
       linters:
         - wrapcheck # Errors do not need to be wrapped in unit and integration test utils
