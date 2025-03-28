@@ -143,14 +143,14 @@ var _ = BeforeSuite(func() {
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-	modulesStatusService := modules.NewModulesStatusService(moduleStatusGen, kcpClient, noOpMetricsFunc)
+	modulesStatusService := modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc)
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		Event:                testEventRec,
 		DescriptorProvider:   descriptorProvider,
 		SkrContextFactory:    testSkrContextFactory,
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
-		ModulesStatusService: modulesStatusService,
+		ModulesStatusHandler: modulesStatusService,
 		RequeueIntervals:     intervals,
 		IsManagedKyma:        true,
 		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),

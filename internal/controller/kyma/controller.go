@@ -60,7 +60,7 @@ const (
 	patchStatusError  event.Reason = "PatchStatus"
 )
 
-type ModuleStatusService interface {
+type ModuleStatusHandler interface {
 	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error
 }
 
@@ -71,7 +71,7 @@ type Reconciler struct {
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SyncRemoteCrds       remote.SyncCrdsUseCase
-	ModulesStatusService ModuleStatusService
+	ModulesStatusHandler ModuleStatusHandler
 	SKRWebhookManager    *watcher.SKRWebhookManifestManager
 	RemoteSyncNamespace  string
 	IsManagedKyma        bool
@@ -499,7 +499,7 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
-	err := r.ModulesStatusService.UpdateModuleStatuses(ctx, kyma, modules)
+	err := r.ModulesStatusHandler.UpdateModuleStatuses(ctx, kyma, modules)
 	if err != nil {
 		return fmt.Errorf("failed to update module statuses: %w", err)
 	}

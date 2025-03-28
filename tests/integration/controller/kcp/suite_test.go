@@ -148,7 +148,7 @@ var _ = BeforeSuite(func() {
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-	modulesStatusService := modules.NewModulesStatusService(moduleStatusGen, kcpClient, noOpMetricsFunc)
+	modulesStatusService := modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc)
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -156,7 +156,7 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:     intervals,
 		DescriptorProvider:   descriptorProvider,
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
-		ModulesStatusService: modulesStatusService,
+		ModulesStatusHandler: modulesStatusService,
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:        true,
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),

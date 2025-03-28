@@ -25,21 +25,21 @@ type ModuleStatusGenerator interface {
 
 var errNilKyma = errors.New("kyma object is nil")
 
-type StatusService struct {
+type StatusHandler struct {
 	statusGenerator   ModuleStatusGenerator
 	kcpClient         client.Client
 	removeMetricsFunc RemoveMetricsFunc
 }
 
-func NewModulesStatusService(statusGenerator ModuleStatusGenerator, client client.Client, removeMetricsFunc RemoveMetricsFunc) *StatusService {
-	return &StatusService{
+func NewStatusHandler(statusGenerator ModuleStatusGenerator, client client.Client, removeMetricsFunc RemoveMetricsFunc) *StatusHandler {
+	return &StatusHandler{
 		statusGenerator:   statusGenerator,
 		kcpClient:         client,
 		removeMetricsFunc: removeMetricsFunc,
 	}
 }
 
-func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error {
+func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error {
 	if kyma == nil {
 		return errNilKyma
 	}
@@ -96,7 +96,7 @@ func stateFromManifest(obj client.Object) shared.State {
 	}
 }
 
-func (m *StatusService) getModule(ctx context.Context, module client.Object) error {
+func (m *StatusHandler) getModule(ctx context.Context, module client.Object) error {
 	err := m.kcpClient.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 	if err != nil {
 		return fmt.Errorf("failed to get module by name-namespace: %w", err)

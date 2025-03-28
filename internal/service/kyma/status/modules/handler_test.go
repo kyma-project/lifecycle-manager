@@ -174,21 +174,21 @@ func configureModuleInKyma(
 }
 
 func TestUpdateModuleStatuses_WhenCalledWithNilKyma_Returns(t *testing.T) {
-	statusService := modules.NewModulesStatusService(nil, nil, nil)
+	statusHandler := modules.NewStatusHandler(nil, nil, nil)
 
-	_ = statusService.UpdateModuleStatuses(t.Context(), nil, modulecommon.Modules{})
+	_ = statusHandler.UpdateModuleStatuses(t.Context(), nil, modulecommon.Modules{})
 }
 
 func TestUpdateModuleStatuses_WhenCalledWithEmptyModules_Returns(t *testing.T) {
-	statusService := modules.NewModulesStatusService(nil, nil, nil)
+	statusHandler := modules.NewStatusHandler(nil, nil, nil)
 
-	_ = statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
+	_ = statusHandler.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
 }
 
 func TestUpdateModuleStatuses_WhenCalledWithTemplateErrorTemplateUpdateNotAllowed_CreatesStateWarning(t *testing.T) {
-	statusService := modules.NewModulesStatusService(nil, nil, nil)
+	statusHandler := modules.NewStatusHandler(nil, nil, nil)
 
-	_ = statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
+	_ = statusHandler.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
 }
 
 func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_ReturnsError(t *testing.T) {
@@ -197,7 +197,7 @@ func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_ReturnsError(t *te
 			return v1beta2.ModuleStatus{}, errors.New("status generator error")
 		},
 	}
-	statusService := modules.NewModulesStatusService(statusGenerator, nil, nil)
+	statusService := modules.NewStatusHandler(statusGenerator, nil, nil)
 
 	err := statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{
 		&modulecommon.Module{ModuleName: "test-module"},
