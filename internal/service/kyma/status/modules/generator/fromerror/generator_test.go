@@ -4,9 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -27,7 +26,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithAnyOtherError_ReturnsDefaul
 
 	assert.NotNil(t, result)
 	assert.NoError(t, err)
-	assert.NotEqual(t, status.DeepCopy(), result)
+	require.NotEqual(t, status.DeepCopy(), result)
 
 	// Module info is used for creating a new status
 	assert.Equal(t, someModuleName, result.Name)
@@ -53,7 +52,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
 
 	assert.NotNil(t, result)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	assert.Equal(t, *expectedStatus, result)
@@ -74,7 +73,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
 
 	assert.NotNil(t, result)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateError
@@ -96,7 +95,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
 
 	assert.NotNil(t, result)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateWarning
@@ -118,7 +117,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultErro
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedModuleName, expectedChannel, expectedFQDN, status)
 
 	assert.NotNil(t, result)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, status.DeepCopy(), result)
 
 	// Module info is used for creating a new status
@@ -149,7 +148,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNilStatus_ReturnsNewDefault
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedName, expectedChannel, expectedFQDN, nil)
 
 	assert.NotNil(t, result)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedName, result.Name)
 	assert.Equal(t, expectedChannel, result.Channel)
 	assert.Equal(t, expectedFQDN, result.FQDN)

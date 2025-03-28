@@ -22,6 +22,8 @@ type ModuleStatusGenerator interface {
 	GenerateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)
 }
 
+var errNilKyma = fmt.Errorf("kyma object is nil")
+
 type StatusService struct {
 	statusGenerator   ModuleStatusGenerator
 	kcpClient         client.Client
@@ -38,7 +40,7 @@ func NewModulesStatusService(statusGenerator ModuleStatusGenerator, client clien
 
 func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules) error {
 	if kyma == nil {
-		return fmt.Errorf("kyma object is nil")
+		return errNilKyma
 	}
 
 	moduleStatusMap := kyma.GetModuleStatusMap()
@@ -57,8 +59,7 @@ func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 
 	moduleStatusMap = kyma.GetModuleStatusMap()
 	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
-	for idx := range moduleStatusesToBeDeletedFromKymaStatus {
-		moduleStatus := moduleStatusesToBeDeletedFromKymaStatus[idx]
+	for _, moduleStatus := range moduleStatusesToBeDeletedFromKymaStatus {
 		if moduleStatus.Manifest == nil {
 			m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)

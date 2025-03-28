@@ -39,7 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	commonmodule "github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -61,7 +61,7 @@ const (
 )
 
 type ModuleStatusService interface {
-	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules commonmodule.Modules) error
+	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error
 }
 
 type Reconciler struct {

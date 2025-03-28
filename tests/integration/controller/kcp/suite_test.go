@@ -22,9 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
-	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -49,6 +46,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"

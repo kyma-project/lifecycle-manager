@@ -9,9 +9,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
+var errFunctionCalledWitNilErr = errors.New("can not generate a modulestatus without error")
+
 func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn string, status *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
 	if err == nil {
-		return v1beta2.ModuleStatus{}, errors.New("can not generate a modulestatus without error")
+		return v1beta2.ModuleStatus{}, errFunctionCalledWitNilErr
 	}
 
 	if status == nil {

@@ -55,7 +55,7 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErr
 	statusGenerator := generator.NewModuleStatusGenerator(generateFromErrorFuncStub)
 	result, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "stub status", result.Name)
 }
 
