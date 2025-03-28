@@ -16,6 +16,7 @@ packages:
   internal/manifest/manifestclient: 5.0
   internal/manifest/modulecr: 47.0
   internal/maintenancewindows: 87.5
+  internal/service/kyma/status/modules/fromerror: 100
   internal/istio: 63.3
   internal/pkg/resources: 91.7
   internal/remote: 29

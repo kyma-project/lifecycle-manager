@@ -2,9 +2,8 @@ package modules
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,13 +11,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type GetModuleFunc func(ctx context.Context, module client.Object) error
 type RemoveMetricsFunc func(kymaName, moduleName string)
+
+type ModuleStatusGenerator interface {
+	GenerateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus
+}
 
 type StatusService struct {
 	kcpClient         client.Client
@@ -32,32 +33,50 @@ func NewModulesStatusService(client client.Client, removeMetricsFunc RemoveMetri
 	}
 }
 
-func (m *StatusService) UpdateStatusModule(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules) {
-	updateModuleStatusFromExistingModules(kyma, modules)
-	m.deleteNoLongerExistingModuleStatus(ctx, kyma)
-}
+func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules) {
+	if kyma == nil {
+		return
+	}
 
-func updateModuleStatusFromExistingModules(kyma *v1beta2.Kyma, modules common.Modules) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	for _, module := range modules {
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
-		latestModuleStatus := generateModuleStatus(module, moduleStatus)
+
+		newModuleStatus := generateModuleStatus(module, moduleStatus)
 		if exists {
-			*moduleStatus = latestModuleStatus
+			*moduleStatus = newModuleStatus
 		} else {
-			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
+			kyma.Status.Modules = append(kyma.Status.Modules, newModuleStatus)
 		}
 	}
+
+	moduleStatusMap = kyma.GetModuleStatusMap()
+	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
+	for idx := range moduleStatusesToBeDeletedFromKymaStatus {
+		moduleStatus := moduleStatusesToBeDeletedFromKymaStatus[idx]
+		if moduleStatus.Manifest == nil {
+			m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
+			delete(moduleStatusMap, moduleStatus.Name)
+			continue
+		}
+		manifestCR := moduleStatus.GetManifestCR()
+		err := m.getModule(ctx, manifestCR)
+		if util.IsNotFound(err) {
+			m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
+			delete(moduleStatusMap, moduleStatus.Name)
+		} else {
+			moduleStatus.State = stateFromManifest(manifestCR)
+		}
+	}
+	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
 }
 
-func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
+func generateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
 	if module.Template.Err != nil {
-		return generateModuleStatusFromError(module, existStatus)
+		return fromerror.GenerateModuleStatusFromError(module.Template.Err, module.ModuleName, module.Template.DesiredChannel, module.FQDN, currentStatus)
 	}
 
 	manifestObject := module.Manifest
-	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	var moduleResource *v1beta2.TrackingObject
 	if manifestObject.Spec.Resource != nil {
 		moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.
@@ -76,6 +95,8 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		}
 	}
 
+	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	moduleStatus := v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
@@ -111,41 +132,6 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 	return moduleStatus
 }
 
-func generateModuleStatusFromError(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
-	switch {
-	case errors.Is(module.Template.Err, templatelookup.ErrTemplateUpdateNotAllowed):
-		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.State = shared.StateWarning
-		newModuleStatus.Message = module.Template.Err.Error()
-		return *newModuleStatus
-	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult):
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateWarning,
-			Message: module.Template.Err.Error(),
-		}
-	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow):
-		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.Message = module.Template.Err.Error()
-		return *newModuleStatus
-	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrFailedToDetermineIfMaintenanceWindowIsActive):
-		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.Message = module.Template.Err.Error()
-		newModuleStatus.State = shared.StateError
-		return *newModuleStatus
-	default:
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateError,
-			Message: module.Template.Err.Error(),
-		}
-	}
-}
-
 func stateFromManifest(obj client.Object) shared.State {
 	switch manifest := obj.(type) {
 	case *v1beta2.Manifest:
@@ -156,27 +142,6 @@ func stateFromManifest(obj client.Object) shared.State {
 	default:
 		return ""
 	}
-}
-func (m *StatusService) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma) {
-	moduleStatusMap := kyma.GetModuleStatusMap()
-	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
-	for idx := range moduleStatusesToBeDeletedFromKymaStatus {
-		moduleStatus := moduleStatusesToBeDeletedFromKymaStatus[idx]
-		if moduleStatus.Manifest == nil {
-			m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
-			delete(moduleStatusMap, moduleStatus.Name)
-			continue
-		}
-		manifestCR := moduleStatus.GetManifestCR()
-		err := m.getModule(ctx, manifestCR)
-		if util.IsNotFound(err) {
-			m.removeMetricsFunc(kyma.Name, moduleStatus.Name)
-			delete(moduleStatusMap, moduleStatus.Name)
-		} else {
-			moduleStatus.State = stateFromManifest(manifestCR)
-		}
-	}
-	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
 }
 
 func (m *StatusService) getModule(ctx context.Context, module client.Object) error {

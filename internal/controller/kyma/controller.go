@@ -60,8 +60,8 @@ const (
 	patchStatusError  event.Reason = "PatchStatus"
 )
 
-type UpdateStatusModulesService interface {
-	UpdateStatusModule(ctx context.Context, kyma *v1beta2.Kyma, modules commonmodule.Modules)
+type ModuleStatusService interface {
+	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules commonmodule.Modules)
 }
 
 type Reconciler struct {
@@ -71,7 +71,7 @@ type Reconciler struct {
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SyncRemoteCrds       remote.SyncCrdsUseCase
-	ModulesStatusService UpdateStatusModulesService
+	ModulesStatusService ModuleStatusService
 	SKRWebhookManager    *watcher.SKRWebhookManifestManager
 	InKCPMode            bool
 	RemoteSyncNamespace  string
@@ -511,7 +511,7 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
-	r.ModulesStatusService.UpdateStatusModule(ctx, kyma, modules)
+	r.ModulesStatusService.UpdateModuleStatuses(ctx, kyma, modules)
 
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
