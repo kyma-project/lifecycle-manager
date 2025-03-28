@@ -353,6 +353,56 @@ func Test_syncWatcherLabelsAnnotations_ReturnsFalseIfLabelsAndAnnotationsUnchang
 	assertLabelsAndAnnotations(t, skrKyma)
 }
 
+func Test_syncBTPRelatedLabels_AddsLabels(t *testing.T) {
+	kcpKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "sub-account-id").
+		Build()
+	skrKyma := builder.NewKymaBuilder().Build()
+
+	changed := syncBTPRelatedLabels(kcpKyma, skrKyma)
+
+	assert.True(t, changed)
+	assert.Equal(t, "global-account-id", skrKyma.Labels[shared.GlobalAccountIDLabel])
+	assert.Equal(t, "sub-account-id", skrKyma.Labels[shared.SubAccountIDLabel])
+}
+
+func Test_syncBTPRelatedLabels_UpdatesLabels(t *testing.T) {
+	kcpKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "new-global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "new-sub-account-id").
+		Build()
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "old-global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "old-sub-account-id").
+		Build()
+
+	changed := syncBTPRelatedLabels(kcpKyma, skrKyma)
+
+	assert.True(t, changed)
+	assert.Equal(t, "new-global-account-id", skrKyma.Labels[shared.GlobalAccountIDLabel])
+	assert.Equal(t, "new-sub-account-id", skrKyma.Labels[shared.SubAccountIDLabel])
+}
+
+func Test_syncBTPRelatedLabels_NoChange(t *testing.T) {
+	kcpKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").WithLabel(shared.SubAccountIDLabel, "sub-account-id").Build()
+	skrKyma := builder.NewKymaBuilder().
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "sub-account-id").
+		WithLabel(shared.WatchedByLabel, shared.WatchedByLabelValue).
+		WithLabel(shared.ManagedBy, shared.ManagedByLabelValue).
+		Build()
+
+	changed := syncBTPRelatedLabels(kcpKyma, skrKyma)
+
+	assert.False(t, changed)
+	assert.Equal(t, "global-account-id", skrKyma.Labels[shared.GlobalAccountIDLabel])
+	assert.Equal(t, "sub-account-id", skrKyma.Labels[shared.SubAccountIDLabel])
+	assert.Equal(t, shared.WatchedByLabelValue, skrKyma.Labels[shared.WatchedByLabel])
+	assert.Equal(t, shared.ManagedByLabelValue, skrKyma.Labels[shared.ManagedBy])
+}
+
 // test helpers
 
 func createKyma(channel string, moduleNames []string) *v1beta2.Kyma {

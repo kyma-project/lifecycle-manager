@@ -251,9 +251,6 @@ func syncBTPRelatedLabels(kcpKyma, skrKyma *v1beta2.Kyma) bool {
 		labelsMap[shared.SubAccountIDLabel] = subAccountIDLabelValue
 	}
 
-	labelsMap[shared.WatchedByLabel] = shared.WatchedByLabelValue
-	labelsMap[shared.ManagedBy] = shared.ManagedByLabelValue
-
 	labels, labelsChanged := collections.MergeMaps(skrKyma.Labels, labelsMap)
 
 	skrKyma.Labels = labels
