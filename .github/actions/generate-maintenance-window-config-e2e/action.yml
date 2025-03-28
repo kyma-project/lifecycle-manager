@@ -1,0 +1,52 @@
+name: Generate maintenance window policy file
+description:
+  Creates a maintenance window policy file in the JSON format.
+  Overwrites the file if it already exists.
+inputs:
+  output_file_path:
+    description: The path of the output file. For example, "lifecycle-manager/config/maintenance-windows/policy.json".
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Generate policy file
+      shell: bash
+      run: |
+        current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        time_plus_2_hours=$(date -u -d "2 hours" +"%Y-%m-%dT%H:%M:%SZ")
+        time_plus_1_day=$(date -u -d "1 day" +"%Y-%m-%dT%H:%M:%SZ")
+        time_plus_1_day_plus_2_hours=$(date -u -d "1 day 2 hours" +"%Y-%m-%dT%H:%M:%SZ")
+
+        cat <<EOF > ${{ inputs.output_file_path }}
+        {
+          "rules": [
+            {
+              "match": {
+                "region": "asia"
+              },
+              "windows": [
+                {
+                  "begin": "$current_time",
+                  "end": "$time_plus_2_hours"
+                }
+              ]
+            },
+            {
+              "match": {
+                "region": "europe"
+              },
+              "windows": [
+                {
+                  "begin": "$time_plus_1_day",
+                  "end": "$time_plus_1_day_plus_2_hours"
+                }
+              ]
+            }
+          ],
+          "default": {}
+        }
+        EOF
+
+        echo "Maintenance window policy data written to: ${{ inputs.output_file_path }}"
+        echo "Maintenance window policy:"
+        cat ${{ inputs.output_file_path }}
