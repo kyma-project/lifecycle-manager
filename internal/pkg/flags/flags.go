@@ -83,6 +83,8 @@ var (
 //nolint:funlen // defines all program flags
 func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
+	flag.StringVar(&flagVar.CertificateManagement, "cert-management", "", "Configures which certificate management"+
+		" system to use. Default is CNCF open source cert-manager. Accepted value: `gardener`")
 	flag.StringVar(&flagVar.MetricsAddr, "metrics-bind-address", DefaultMetricsAddress,
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.ProbeAddr, "health-probe-bind-address", DefaultProbeAddress,
@@ -257,6 +259,7 @@ func DefineFlagVar() *FlagVar {
 }
 
 type FlagVar struct {
+	CertificateManagement                          string
 	MetricsAddr                                    string
 	EnableDomainNameVerification                   bool
 	EnableLeaderElection                           bool

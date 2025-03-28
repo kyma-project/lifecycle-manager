@@ -305,6 +305,16 @@ func Test_Flags_Validate(t *testing.T) {
 		err   error
 	}{
 		{
+			name:  "CertificateManagement is provided",
+			flags: newFlagVarBuilder().withCertificateManagement("gardener").build(),
+			err:   nil,
+		},
+		{
+			name:  "CertificateManagement is NOT provided",
+			flags: newFlagVarBuilder().withCertificateManagement("").build(),
+			err:   nil,
+		},
+		{
 			name:  "WatcherImageTag is required",
 			flags: newFlagVarBuilder().withEnabledKcpWatcher(true).withWatcherImageTag("").build(),
 			err:   ErrMissingWatcherImageTag,
@@ -439,6 +449,11 @@ func newFlagVarBuilder() *flagVarBuilder {
 
 func (b *flagVarBuilder) build() FlagVar {
 	return b.flags
+}
+
+func (b *flagVarBuilder) withCertificateManagement(certificateManagement string) *flagVarBuilder {
+	b.flags.CertificateManagement = certificateManagement
+	return b
 }
 
 func (b *flagVarBuilder) withEnabledKcpWatcher(enabled bool) *flagVarBuilder {
