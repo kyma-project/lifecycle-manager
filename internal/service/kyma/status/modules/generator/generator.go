@@ -7,7 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 )
 
 var (
@@ -27,7 +27,7 @@ func NewModuleStatusGenerator(fromErrorGeneratorFunc GenerateFromErrorFunc) *Mod
 	}
 }
 
-func (m *ModuleStatusGenerator) GenerateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
+func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
 	if module.Template == nil || module.Template.ModuleTemplate == nil {
 		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplate
 	}

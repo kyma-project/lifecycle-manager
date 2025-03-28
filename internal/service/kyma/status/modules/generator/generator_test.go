@@ -11,13 +11,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 func TestGenerateModuleStatus_WhenCalledWithNilTemplateInfo_ReturnsError(t *testing.T) {
-	module := &common.Module{Template: nil}
+	module := &modulecommon.Module{Template: nil}
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
 	_, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
@@ -27,7 +27,7 @@ func TestGenerateModuleStatus_WhenCalledWithNilTemplateInfo_ReturnsError(t *test
 }
 
 func TestGenerateModuleStatus_WhenCalledWithNilTemplate_ReturnsError(t *testing.T) {
-	module := &common.Module{
+	module := &modulecommon.Module{
 		Template: &templatelookup.ModuleTemplateInfo{ModuleTemplate: nil},
 	}
 
@@ -39,7 +39,7 @@ func TestGenerateModuleStatus_WhenCalledWithNilTemplate_ReturnsError(t *testing.
 }
 
 func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErrorFunc(t *testing.T) {
-	module := &common.Module{
+	module := &modulecommon.Module{
 		Template: &templatelookup.ModuleTemplateInfo{
 			Err:            errors.New("some template error"),
 			ModuleTemplate: createModuleTemplate(),
@@ -60,7 +60,7 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErr
 }
 
 func TestGenerateModuleStatus_WhenCalledWithErrorInTemplateAndFuncReturnsError_ReturnsError(t *testing.T) {
-	module := &common.Module{
+	module := &modulecommon.Module{
 		Template: &templatelookup.ModuleTemplateInfo{
 			Err:            errors.New("some template error"),
 			ModuleTemplate: createModuleTemplate(),
@@ -78,7 +78,7 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplateAndFuncReturnsError_R
 }
 
 func TestGenerateModuleStatus_WhenCalledWithNilManifest_ReturnsError(t *testing.T) {
-	module := &common.Module{
+	module := &modulecommon.Module{
 		Template: &templatelookup.ModuleTemplateInfo{
 			ModuleTemplate: createModuleTemplate(),
 		},
@@ -92,7 +92,7 @@ func TestGenerateModuleStatus_WhenCalledWithNilManifest_ReturnsError(t *testing.
 }
 
 func TestGenerateModuleStatus_WhenCalledWithManifestNilSpec_ReturnsError(t *testing.T) {
-	module := &common.Module{
+	module := &modulecommon.Module{
 		Template: &templatelookup.ModuleTemplateInfo{},
 		Manifest: &v1beta2.Manifest{},
 	}
@@ -181,8 +181,8 @@ func TestGenerateModuleStatus_WhenModuleIsUnmanaged_StateIsUnmanagedAndTrackingO
 
 // Resource creator helper functions
 
-func createModule() *common.Module {
-	return &common.Module{
+func createModule() *modulecommon.Module {
+	return &modulecommon.Module{
 		ModuleName: "test-module",
 		FQDN:       "test-fqdn",
 		Template: &templatelookup.ModuleTemplateInfo{
