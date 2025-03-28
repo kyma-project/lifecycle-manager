@@ -321,7 +321,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	kcpClient := mgr.GetClient()
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-	modulesStatusService := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
+	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
@@ -329,7 +329,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Event:                event,
 		DescriptorProvider:   descriptorProvider,
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
-		ModulesStatusHandler: modulesStatusService,
+		ModulesStatusHandler: modulesStatusHandler,
 		SKRWebhookManager:    skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
