@@ -46,7 +46,7 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErr
 		},
 	}
 
-	var generateFromErrorFuncStub = func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
+	generateFromErrorFuncStub := func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
 		return v1beta2.ModuleStatus{
 			Name: "stub status",
 		}, nil
@@ -67,7 +67,7 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplateAndFuncReturnsError_R
 		},
 	}
 	expectedErr := errors.New("generator error")
-	var generateFromErrorFuncStub = func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
+	generateFromErrorFuncStub := func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
 		return v1beta2.ModuleStatus{}, expectedErr
 	}
 

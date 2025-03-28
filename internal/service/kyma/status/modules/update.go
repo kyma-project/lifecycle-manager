@@ -3,6 +3,7 @@ package modules
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -12,8 +13,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-type GetModuleFunc func(ctx context.Context, module client.Object) error
-type RemoveMetricsFunc func(kymaName, moduleName string)
+type (
+	GetModuleFunc     func(ctx context.Context, module client.Object) error
+	RemoveMetricsFunc func(kymaName, moduleName string)
+)
 
 type ModuleStatusGenerator interface {
 	GenerateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)

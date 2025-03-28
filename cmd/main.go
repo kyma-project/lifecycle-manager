@@ -21,14 +21,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
-	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
-	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-co-op/gocron"

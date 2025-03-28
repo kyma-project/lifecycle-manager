@@ -186,7 +186,7 @@ type ModuleStatus struct {
 
 	// Manifest contains the Information of a related Manifest
 	Manifest *TrackingObject `json:"manifest,omitempty"`
-	
+
 	// Resource contains information about the created module CR.
 	Resource *TrackingObject `json:"resource,omitempty"`
 

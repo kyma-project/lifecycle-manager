@@ -1,9 +1,10 @@
 package modules_test
 
 import (
+	"testing"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 )
