@@ -170,8 +170,11 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 		return nil
 	}
 
-	changed := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
-	if !changed {
+	watcherLabelsChanged := syncWatcherLabelsAnnotations(kcpKyma, skrKyma)
+
+	btpRelatedLabelsChanged := syncBTPRelatedLabels(kcpKyma, skrKyma)
+
+	if !watcherLabelsChanged && !btpRelatedLabelsChanged {
 		return nil
 	}
 
@@ -232,6 +235,26 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 	}
 
 	return skrKyma, nil
+}
+
+// syncBTPRelatedLabels sets the BTP related labels on the SKR Kyma CR.
+// It returns true if any of the labels were changed.
+func syncBTPRelatedLabels(kcpKyma, skrKyma *v1beta2.Kyma) bool {
+	labelsMap := map[string]string{}
+	globalAccountIDLabelValue, ok := kcpKyma.Labels[shared.GlobalAccountIDLabel]
+	if ok {
+		labelsMap[shared.GlobalAccountIDLabel] = globalAccountIDLabelValue
+	}
+
+	subAccountIDLabelValue, ok := kcpKyma.Labels[shared.SubAccountIDLabel]
+	if ok {
+		labelsMap[shared.SubAccountIDLabel] = subAccountIDLabelValue
+	}
+
+	labels, labelsChanged := collections.MergeMaps(skrKyma.Labels, labelsMap)
+
+	skrKyma.Labels = labels
+	return labelsChanged
 }
 
 // syncWatcherLabelsAnnotations adds required labels and annotations to the skrKyma.
