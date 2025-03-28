@@ -32,7 +32,7 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 	if module.TemplateInfo == nil {
 		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplateInfo
 	}
-	
+
 	if module.TemplateInfo.ModuleTemplate == nil && module.TemplateInfo.Err == nil {
 		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplateErrorOrTemplate
 	}
