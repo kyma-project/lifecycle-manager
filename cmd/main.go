@@ -22,6 +22,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -318,7 +320,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	})
 
 	kcpClient := mgr.GetClient()
-	modulesStatusService := modules.NewModulesStatusService(kcpClient, kymaMetrics.RemoveModuleStateMetrics)
+	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
+	modulesStatusService := modules.NewModulesStatusService(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,

@@ -3,8 +3,6 @@ package modules
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,31 +16,35 @@ type GetModuleFunc func(ctx context.Context, module client.Object) error
 type RemoveMetricsFunc func(kymaName, moduleName string)
 
 type ModuleStatusGenerator interface {
-	GenerateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus
+	GenerateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)
 }
 
 type StatusService struct {
+	statusGenerator   ModuleStatusGenerator
 	kcpClient         client.Client
 	removeMetricsFunc RemoveMetricsFunc
 }
 
-func NewModulesStatusService(client client.Client, removeMetricsFunc RemoveMetricsFunc) *StatusService {
+func NewModulesStatusService(statusGenerator ModuleStatusGenerator, client client.Client, removeMetricsFunc RemoveMetricsFunc) *StatusService {
 	return &StatusService{
+		statusGenerator:   statusGenerator,
 		kcpClient:         client,
 		removeMetricsFunc: removeMetricsFunc,
 	}
 }
 
-func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules) {
+func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules) error {
 	if kyma == nil {
-		return
+		return fmt.Errorf("kyma object is nil")
 	}
 
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	for _, module := range modules {
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
-
-		newModuleStatus := generateModuleStatus(module, moduleStatus)
+		newModuleStatus, err := m.statusGenerator.GenerateModuleStatus(module, moduleStatus)
+		if err != nil {
+			return fmt.Errorf("failed to generate module status for module %s: %w", module.ModuleName, err)
+		}
 		if exists {
 			*moduleStatus = newModuleStatus
 		} else {
@@ -69,67 +71,8 @@ func (m *StatusService) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 		}
 	}
 	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
-}
 
-func generateModuleStatus(module *common.Module, currentStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
-	if module.Template.Err != nil {
-		return fromerror.GenerateModuleStatusFromError(module.Template.Err, module.ModuleName, module.Template.DesiredChannel, module.FQDN, currentStatus)
-	}
-
-	manifestObject := module.Manifest
-	var moduleResource *v1beta2.TrackingObject
-	if manifestObject.Spec.Resource != nil {
-		moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.
-			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		moduleResource = &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMeta{
-				Name:       manifestObject.Spec.Resource.GetName(),
-				Namespace:  manifestObject.Spec.Resource.GetNamespace(),
-				Generation: manifestObject.Spec.Resource.GetGeneration(),
-			},
-			TypeMeta: apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
-		}
-
-		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == shared.EnableLabelValue {
-			moduleResource.PartialMeta.Namespace = ""
-		}
-	}
-
-	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	moduleStatus := v1beta2.ModuleStatus{
-		Name:    module.ModuleName,
-		FQDN:    module.FQDN,
-		State:   manifestObject.Status.State,
-		Channel: module.Template.DesiredChannel,
-		Version: manifestObject.Spec.Version,
-		Manifest: &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMeta{
-				Name:       manifestObject.GetName(),
-				Namespace:  manifestObject.GetNamespace(),
-				Generation: manifestObject.GetGeneration(),
-			},
-			TypeMeta: apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
-		},
-		Template: &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMeta{
-				Name:       module.Template.GetName(),
-				Namespace:  module.Template.GetNamespace(),
-				Generation: module.Template.GetGeneration(),
-			},
-			TypeMeta: apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
-		},
-		Resource: moduleResource,
-	}
-
-	if module.IsUnmanaged {
-		moduleStatus.State = shared.StateUnmanaged
-		moduleStatus.Manifest = nil
-		moduleStatus.Template = nil
-		moduleStatus.Resource = nil
-	}
-
-	return moduleStatus
+	return nil
 }
 
 func stateFromManifest(obj client.Object) shared.State {

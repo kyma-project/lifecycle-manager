@@ -61,7 +61,7 @@ const (
 )
 
 type ModuleStatusService interface {
-	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules commonmodule.Modules)
+	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules commonmodule.Modules) error
 }
 
 type Reconciler struct {
@@ -511,7 +511,10 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
-	r.ModulesStatusService.UpdateModuleStatuses(ctx, kyma, modules)
+	err := r.ModulesStatusService.UpdateModuleStatuses(ctx, kyma, modules)
+	if err != nil {
+		return fmt.Errorf("failed to update module statuses: %w", err)
+	}
 
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
