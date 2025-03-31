@@ -83,6 +83,8 @@ var (
 //nolint:funlen // defines all program flags
 func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
+	flag.StringVar(&flagVar.CertificateManagement, "cert-management", "", "Configures which certificate management"+
+		" system to use. Default is CNCF open source cert-manager. Accepted value: `gardener`")
 	flag.StringVar(&flagVar.MetricsAddr, "metrics-bind-address", DefaultMetricsAddress,
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.ProbeAddr, "health-probe-bind-address", DefaultProbeAddress,
@@ -199,8 +201,6 @@ func DefineFlagVar() *FlagVar {
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
-	flag.BoolVar(&flagVar.InKCPMode, "in-kcp-mode", false,
-		"Indicates lifecycle manager is deployed in control-plane mode (multiple clusters mode)")
 	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enabling purge finalizer")
 	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", DefaultPurgeFinalizerTimeout,
@@ -259,6 +259,7 @@ func DefineFlagVar() *FlagVar {
 }
 
 type FlagVar struct {
+	CertificateManagement                          string
 	MetricsAddr                                    string
 	EnableDomainNameVerification                   bool
 	EnableLeaderElection                           bool
@@ -303,7 +304,6 @@ type FlagVar struct {
 	RateLimiterBurst, RateLimiterFrequency     int
 	CacheSyncTimeout                           time.Duration
 	LogLevel                                   int
-	InKCPMode                                  bool
 	PurgeFinalizerTimeout                      time.Duration
 	SkipPurgingFor                             string
 	RemoteSyncNamespace                        string

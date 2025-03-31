@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -82,7 +81,7 @@ func WithClientCacheKey() declarativev2.WithClientCacheKeyOption {
 				"resource", objectKey)
 			return "", false
 		}
-		cacheKey := GenerateCacheKey(labelValue, strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
+		cacheKey := GenerateCacheKey(labelValue, manifest.GetNamespace())
 		return cacheKey, true
 	}
 	return declarativev2.WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}

@@ -150,16 +150,17 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:    intervals,
 		DescriptorProvider:  descriptorProvider,
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
-		InKCPMode:           true,
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-		})),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+				moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+			})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
@@ -177,6 +178,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := kcpEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(kcpEnv.Stop()).To(Succeed())
+	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })

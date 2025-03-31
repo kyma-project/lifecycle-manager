@@ -16,17 +16,22 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var managedSkrResources = map[types.NamespacedName]schema.GroupVersionKind{
-	{Name: "default", Namespace: RemoteNamespace}:         v1beta2.GroupVersion.WithKind("Kyma"),
-	{Name: "skr-webhook", Namespace: RemoteNamespace}:     apiappsv1.SchemeGroupVersion.WithKind("Deployment"),
-	{Name: "skr-webhook", Namespace: RemoteNamespace}:     admissionregistrationv1.SchemeGroupVersion.WithKind("ValidatingWebhookConfiguration"),
-	{Name: "skr-webhook-tls", Namespace: RemoteNamespace}: apicorev1.SchemeGroupVersion.WithKind("Secret"),
-	{Name: "skr-webhook-sa", Namespace: RemoteNamespace}:  apicorev1.SchemeGroupVersion.WithKind("ServiceAccount"),
-	{Name: RemoteNamespace, Namespace: ""}:                apicorev1.SchemeGroupVersion.WithKind("Namespace"),
-}
+var (
+	managedSkrResources = map[types.NamespacedName]schema.GroupVersionKind{
+		{Name: "default", Namespace: RemoteNamespace}:         v1beta2.GroupVersion.WithKind("Kyma"),
+		{Name: "skr-webhook", Namespace: RemoteNamespace}:     apiappsv1.SchemeGroupVersion.WithKind("Deployment"),
+		{Name: "skr-webhook", Namespace: RemoteNamespace}:     admissionregistrationv1.SchemeGroupVersion.WithKind("ValidatingWebhookConfiguration"),
+		{Name: "skr-webhook-tls", Namespace: RemoteNamespace}: apicorev1.SchemeGroupVersion.WithKind("Secret"),
+		{Name: "skr-webhook-sa", Namespace: RemoteNamespace}:  apicorev1.SchemeGroupVersion.WithKind("ServiceAccount"),
+		{Name: RemoteNamespace, Namespace: ""}:                apicorev1.SchemeGroupVersion.WithKind("Namespace"),
+	}
+	globalAccountIDLabelValue = "dummy-global-account"
+	subAccountIDLabelValue    = "dummy-sub-account"
+)
 
 var _ = Describe("Labelling SKR resources", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	setBTPRelatedLabels(kyma)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
@@ -63,6 +68,26 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 					"istio-injection": "enabled",
 					"namespaces.warden.kyma-project.io/validate": "enabled",
 				}).Should(Succeed())
+		})
+		It("Contains BTP related Labels", func() {
+			By("Global account label being propagated")
+			Eventually(HasExpectedLabel).
+				WithContext(ctx).
+				WithArguments(
+					skrClient,
+					types.NamespacedName{Name: "default", Namespace: RemoteNamespace},
+					v1beta2.GroupVersion.WithKind("Kyma"),
+					shared.GlobalAccountIDLabel, globalAccountIDLabelValue).
+				Should(Succeed())
+			By("Sub account label being propagated")
+			Eventually(HasExpectedLabel).
+				WithContext(ctx).
+				WithArguments(
+					skrClient,
+					types.NamespacedName{Name: "default", Namespace: RemoteNamespace},
+					v1beta2.GroupVersion.WithKind("Kyma"),
+					shared.SubAccountIDLabel, subAccountIDLabelValue).
+				Should(Succeed())
 		})
 
 		It("When Kyma Module is enabled in SKR Kyma CR", func() {
@@ -101,3 +126,8 @@ var _ = Describe("Labelling SKR resources", Ordered, func() {
 		})
 	})
 })
+
+func setBTPRelatedLabels(kyma *v1beta2.Kyma) {
+	kyma.Labels[shared.GlobalAccountIDLabel] = globalAccountIDLabelValue
+	kyma.Labels[shared.SubAccountIDLabel] = subAccountIDLabelValue
+}

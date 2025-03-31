@@ -1,7 +1,8 @@
-package eventfilters_test
+package kcp_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,10 +12,19 @@ import (
 
 var _ = Describe("Kyma is reconciled correctly based on the event filters", Ordered, func() {
 	kyma := NewTestKyma("kyma")
+	skrKyma := NewSKRKyma()
+	var skrClient client.Client
+	var err error
+
 	BeforeAll(func() {
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+
+		Eventually(func() error {
+			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
+			return err
+		}, Timeout, Interval).Should(Succeed())
 
 		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
@@ -29,12 +39,12 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 	})
 
 	Context("Given Kyma Controller is set with generation predicate event filter", func() {
-		newChannel := "test"
+		newChannel := "fantastic"
 
 		It("When kyma.spec is updated", func() {
 			Eventually(updateKymaChannel).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma, newChannel).
+				WithArguments(skrClient, skrKyma.Name, skrKyma.Namespace, newChannel).
 				Should(Succeed())
 		})
 

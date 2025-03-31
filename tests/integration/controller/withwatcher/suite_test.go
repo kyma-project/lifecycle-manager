@@ -57,10 +57,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -213,9 +212,9 @@ var _ = BeforeSuite(func() {
 		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
 		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		InKCPMode:           true,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -253,8 +252,8 @@ var _ = AfterSuite(func() {
 	// cancel environment context
 	cancel()
 
-	err := kcpEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(kcpEnv.Stop()).To(Succeed())
+	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {

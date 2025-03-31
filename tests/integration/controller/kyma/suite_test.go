@@ -39,6 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -53,10 +54,9 @@ import (
 
 	_ "ocm.software/ocm/api/ocm"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -65,13 +65,14 @@ import (
 const randomPort = "0"
 
 var (
-	kcpClient          client.Client
-	mgr                manager.Manager
-	controlPlaneEnv    *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
-	cfg                *rest.Config
-	descriptorProvider *provider.CachedDescriptorProvider
+	kcpClient             client.Client
+	mgr                   manager.Manager
+	kcpEnv                *envtest.Environment
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	cfg                   *rest.Config
+	descriptorProvider    *provider.CachedDescriptorProvider
+	testSkrContextFactory *testskrcontext.DualClusterFactory
 )
 
 func TestAPIs(t *testing.T) {
@@ -101,13 +102,13 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
-	controlPlaneEnv = &envtest.Environment{
+	kcpEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join(integration.GetProjectRoot(), "config", "crd", "bases")},
 		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = controlPlaneEnv.Start()
+	cfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -136,15 +137,16 @@ var _ = BeforeSuite(func() {
 	descriptorProvider = provider.NewCachedDescriptorProvider()
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	testSkrContextFactory := testskrcontext.NewSingleClusterFactory(kcpClient, mgr.GetConfig(), testEventRec)
+	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	err = (&kyma.Reconciler{
 		Client:              kcpClient,
 		Event:               testEventRec,
 		DescriptorProvider:  descriptorProvider,
 		SkrContextFactory:   testSkrContextFactory,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
 		RequeueIntervals:    intervals,
-		InKCPMode:           false,
+		IsManagedKyma:       true,
+		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
@@ -152,12 +154,7 @@ var _ = BeforeSuite(func() {
 			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
 			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
 		})),
-	}).SetupWithManager(mgr, ctrlruntime.Options{
-		RateLimiter: internal.RateLimiter(
-			1*time.Second, 5*time.Second,
-			30, 200,
-		),
-	},
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 	Eventually(CreateNamespace, Timeout, Interval).
@@ -174,6 +171,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
 
-	err := controlPlaneEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(kcpEnv.Stop()).To(Succeed())
+	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })

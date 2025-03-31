@@ -40,6 +40,7 @@ const (
 	BetaLabel              = OperatorGroup + Separator + "beta"
 
 	GlobalAccountIDLabel = KymaGroup + Separator + "global-account-id"
+	SubAccountIDLabel    = KymaGroup + Separator + "subaccount-id"
 	RegionLabel          = KymaGroup + Separator + "region"
 	PlatformRegionLabel  = KymaGroup + Separator + "platform-region"
 	PlanLabel            = KymaGroup + Separator + "broker-plan-name"
