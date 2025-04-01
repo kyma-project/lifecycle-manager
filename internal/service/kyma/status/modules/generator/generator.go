@@ -16,7 +16,8 @@ var (
 	ErrModuleNeedsManifest                = errors.New("module needs either manifest or template error")
 )
 
-type GenerateFromErrorFunc func(err error, moduleName, desiredChannel, fqdn string, status *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)
+type GenerateFromErrorFunc func(err error, moduleName, desiredChannel, fqdn string,
+	status *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus, error)
 
 type ModuleStatusGenerator struct {
 	generateFromErrorFunc GenerateFromErrorFunc
@@ -28,28 +29,33 @@ func NewModuleStatusGenerator(fromErrorGeneratorFunc GenerateFromErrorFunc) *Mod
 	}
 }
 
-func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
+func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module,
+	currentStatus *v1beta2.ModuleStatus,
+) (*v1beta2.ModuleStatus, error) {
+	// This nil pointer check is for defensive programming and should never occur in a production environment.
 	if module.TemplateInfo == nil {
-		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplateInfo
+		return nil, ErrModuleNeedsTemplateInfo
 	}
 
 	if module.TemplateInfo.ModuleTemplate == nil && module.TemplateInfo.Err == nil {
-		return v1beta2.ModuleStatus{}, ErrModuleNeedsTemplateErrorOrTemplate
+		return nil, ErrModuleNeedsTemplateErrorOrTemplate
 	}
 
 	if module.TemplateInfo.Err != nil {
-		return m.generateFromErrorFunc(module.TemplateInfo.Err, module.ModuleName, module.TemplateInfo.DesiredChannel, module.FQDN, currentStatus)
+		return m.generateFromErrorFunc(module.TemplateInfo.Err, module.ModuleName, module.TemplateInfo.DesiredChannel,
+			module.FQDN, currentStatus)
 	}
 
+	// This nil pointer check is for defensive programming and should never occur in a production environment.
 	if module.Manifest == nil {
-		return v1beta2.ModuleStatus{}, ErrModuleNeedsManifest
+		return nil, ErrModuleNeedsManifest
 	}
 
 	manifest := module.Manifest
 
 	manifestAPIVersion, manifestKind := manifest.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.TemplateInfo.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	moduleStatus := v1beta2.ModuleStatus{
+	moduleStatus := &v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
 		State:   manifest.Status.State,

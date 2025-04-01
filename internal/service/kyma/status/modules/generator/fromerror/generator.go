@@ -11,9 +11,11 @@ import (
 
 var errFunctionCalledWitNilError = errors.New("can not generate a modulestatus without error")
 
-func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn string, status *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
+func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn string,
+	status *v1beta2.ModuleStatus,
+) (*v1beta2.ModuleStatus, error) {
 	if err == nil {
-		return v1beta2.ModuleStatus{}, errFunctionCalledWitNilError
+		return nil, errFunctionCalledWitNilError
 	}
 
 	if status == nil {
@@ -23,21 +25,21 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn s
 	if errorIsMaintenanceWindowActive(err) {
 		newModuleStatus := status.DeepCopy()
 		newModuleStatus.Message = err.Error()
-		return *newModuleStatus, nil
+		return newModuleStatus, nil
 	}
 
 	if errorIsMaintenanceWindowUnknown(err) {
 		newModuleStatus := status.DeepCopy()
 		newModuleStatus.Message = err.Error()
 		newModuleStatus.State = shared.StateError
-		return *newModuleStatus, nil
+		return newModuleStatus, nil
 	}
 
 	if errorIsForbiddenTemplateUpdate(err) {
 		newModuleStatus := status.DeepCopy()
 		newModuleStatus.Message = err.Error()
 		newModuleStatus.State = shared.StateWarning
-		return *newModuleStatus, nil
+		return newModuleStatus, nil
 	}
 
 	newStatus := newDefaultErrorStatus(moduleName, desiredChannel, fqdn, err)
@@ -65,8 +67,8 @@ func errorIsTemplateNotFound(err error) bool {
 	return errors.Is(err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
 }
 
-func newDefaultErrorStatus(moduleName, desiredChannel, fqdn string, err error) v1beta2.ModuleStatus {
-	return v1beta2.ModuleStatus{
+func newDefaultErrorStatus(moduleName, desiredChannel, fqdn string, err error) *v1beta2.ModuleStatus {
+	return &v1beta2.ModuleStatus{
 		Name:    moduleName,
 		Channel: desiredChannel,
 		FQDN:    fqdn,

@@ -20,7 +20,8 @@ type (
 )
 
 type ModuleStatusGenerator interface {
-	GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error)
+	GenerateModuleStatus(module *modulecommon.Module, currentStatus *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus,
+		error)
 }
 
 var errNilKyma = errors.New("kyma object is nil")
@@ -31,7 +32,9 @@ type StatusHandler struct {
 	removeMetricsFunc RemoveMetricsFunc
 }
 
-func NewStatusHandler(statusGenerator ModuleStatusGenerator, client client.Client, removeMetricsFunc RemoveMetricsFunc) *StatusHandler {
+func NewStatusHandler(statusGenerator ModuleStatusGenerator, client client.Client,
+	removeMetricsFunc RemoveMetricsFunc,
+) *StatusHandler {
 	return &StatusHandler{
 		statusGenerator:   statusGenerator,
 		kcpClient:         client,
@@ -39,7 +42,10 @@ func NewStatusHandler(statusGenerator ModuleStatusGenerator, client client.Clien
 	}
 }
 
-func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error {
+func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma,
+	modules modulecommon.Modules,
+) error {
+	// This nil pointer check is for defensive programming and should never occur in a production environment.
 	if kyma == nil {
 		return errNilKyma
 	}
@@ -47,14 +53,18 @@ func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	for _, module := range modules {
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
+		// Even defensive error occurs, we are not blocking module status to be updated.
 		newModuleStatus, err := m.statusGenerator.GenerateModuleStatus(module, moduleStatus)
 		if err != nil {
-			return fmt.Errorf("failed to generate module status for module %s: %w", module.ModuleName, err)
+			newModuleStatus = &v1beta2.ModuleStatus{
+				Name: module.ModuleName,
+				FQDN: module.FQDN,
+			}
 		}
 		if exists {
-			*moduleStatus = newModuleStatus
+			*moduleStatus = *newModuleStatus
 		} else {
-			kyma.Status.Modules = append(kyma.Status.Modules, newModuleStatus)
+			kyma.Status.Modules = append(kyma.Status.Modules, *newModuleStatus)
 		}
 	}
 
@@ -63,19 +73,25 @@ func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 	return nil
 }
 
-func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, getModule GetModuleFunc, removeMetrics RemoveMetricsFunc) {
+func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, getModule GetModuleFunc,
+	removeMetrics RemoveMetricsFunc,
+) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
 	for _, moduleStatus := range moduleStatusesToBeDeletedFromKymaStatus {
 		if moduleStatus.Manifest == nil {
-			removeMetrics(kyma.Name, moduleStatus.Name)
+			if removeMetrics != nil {
+				removeMetrics(kyma.Name, moduleStatus.Name)
+			}
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
 		manifestCR := moduleStatus.GetManifestCR()
 		err := getModule(ctx, manifestCR)
 		if util.IsNotFound(err) {
-			removeMetrics(kyma.Name, moduleStatus.Name)
+			if removeMetrics != nil {
+				removeMetrics(kyma.Name, moduleStatus.Name)
+			}
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
 			moduleStatus.State = stateFromManifest(manifestCR)

@@ -62,7 +62,7 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 				return
 			}
 			if err := r.updateManifest(ctx, kyma, module); err != nil {
-				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
+				results <- fmt.Errorf("could not update module %s: %w", module.Manifest.GetName(), err)
 				return
 			}
 			module.Logger(baseLogger).V(log.DebugLevel).Info("successfully patched module")
@@ -216,11 +216,11 @@ func (r *Runner) deleteManifest(ctx context.Context, module *modulecommon.Module
 func (r *Runner) setupModule(module *modulecommon.Module, kyma *v1beta2.Kyma) error {
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	refs := module.GetOwnerReferences()
+	refs := module.Manifest.GetOwnerReferences()
 	if len(refs) == 0 {
 		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
-				module.GetName(), kyma.Name, err)
+				module.Manifest.GetName(), kyma.Name, err)
 		}
 	}
 

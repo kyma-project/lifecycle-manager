@@ -27,10 +27,12 @@ func TestGenerateModuleStatus_WhenCalledWithNilTemplateInfo_ReturnsError(t *test
 }
 
 func TestGenerateModuleStatus_WhenCalledWithNilTemplateErrorAndNilModuleTemplate_ReturnsError(t *testing.T) {
-	module := &modulecommon.Module{TemplateInfo: &templatelookup.ModuleTemplateInfo{
-		Err:            nil,
-		ModuleTemplate: nil,
-	}}
+	module := &modulecommon.Module{
+		TemplateInfo: &templatelookup.ModuleTemplateInfo{
+			Err:            nil,
+			ModuleTemplate: nil,
+		},
+	}
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
 	_, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
@@ -47,8 +49,8 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplate_CallsGenerateFromErr
 		},
 	}
 
-	generateFromErrorFuncStub := func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
-		return v1beta2.ModuleStatus{
+	generateFromErrorFuncStub := func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus, error) {
+		return &v1beta2.ModuleStatus{
 			Name: "stub status",
 		}, nil
 	}
@@ -68,8 +70,8 @@ func TestGenerateModuleStatus_WhenCalledWithErrorInTemplateAndFuncReturnsError_R
 		},
 	}
 	expectedErr := errors.New("generator error")
-	generateFromErrorFuncStub := func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
-		return v1beta2.ModuleStatus{}, expectedErr
+	generateFromErrorFuncStub := func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus, error) {
+		return nil, expectedErr
 	}
 
 	statusGenerator := generator.NewModuleStatusGenerator(generateFromErrorFuncStub)
@@ -241,6 +243,6 @@ func createClusterScopedModuleTemplate() *v1beta2.ModuleTemplate {
 		Build()
 }
 
-var noOpGenerateFromError = func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
-	return v1beta2.ModuleStatus{}, nil
+var noOpGenerateFromError = func(_ error, _, _, _ string, _ *v1beta2.ModuleStatus) (*v1beta2.ModuleStatus, error) {
+	return nil, nil
 }

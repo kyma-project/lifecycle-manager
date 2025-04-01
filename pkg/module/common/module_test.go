@@ -17,7 +17,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsEmptyKyma
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultLabels := module.GetLabels()
+	resultLabels := module.Manifest.GetLabels()
 	assert.Equal(t, "", resultLabels["operator.kyma-project.io/kyma-name"])
 }
 
@@ -28,7 +28,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsKymaLabel
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultLabels := module.GetLabels()
+	resultLabels := module.Manifest.GetLabels()
 	assert.Equal(t, "some-kyma-name", resultLabels["operator.kyma-project.io/kyma-name"])
 }
 
@@ -39,7 +39,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithMandatoryModule_SetsMandatoryM
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultLabels := module.GetLabels()
+	resultLabels := module.Manifest.GetLabels()
 	assert.Equal(t, "true", resultLabels["operator.kyma-project.io/mandatory-module"])
 }
 
@@ -50,7 +50,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithControllerName_SetsControllerN
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultLabels := module.GetLabels()
+	resultLabels := module.Manifest.GetLabels()
 	assert.Equal(t, "some-controller", resultLabels["operator.kyma-project.io/controller-name"])
 }
 
@@ -61,7 +61,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithChannel_SetsChannelLabel(t *te
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultLabels := module.GetLabels()
+	resultLabels := module.Manifest.GetLabels()
 	assert.Equal(t, "some-channel", resultLabels["operator.kyma-project.io/channel"])
 }
 
@@ -71,7 +71,7 @@ func TestApplyDefaultMetaToManifest_WhenCalled_SetsManagedByLabel(t *testing.T) 
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultLabels := module.GetLabels()
+	resultLabels := module.Manifest.GetLabels()
 	assert.Equal(t, "lifecycle-manager", resultLabels["operator.kyma-project.io/managed-by"])
 }
 
@@ -82,7 +82,7 @@ func TestApplyDefaultMetaToManifest_WhenCalled_SetsFQDNAnnotation(t *testing.T) 
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultAnnotations := module.GetAnnotations()
+	resultAnnotations := module.Manifest.GetAnnotations()
 	assert.Equal(t, "some-fqdn", resultAnnotations["operator.kyma-project.io/fqdn"])
 }
 
@@ -93,7 +93,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithUnmanaged_SetsUnmanagedAnnotat
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	resultAnnotations := module.GetAnnotations()
+	resultAnnotations := module.Manifest.GetAnnotations()
 	assert.Equal(t, "true", resultAnnotations["operator.kyma-project.io/is-unmanaged"])
 }
 

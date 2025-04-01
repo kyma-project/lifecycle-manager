@@ -191,20 +191,21 @@ func TestUpdateModuleStatuses_WhenCalledWithTemplateErrorTemplateUpdateNotAllowe
 	_ = statusHandler.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
 }
 
-func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_ReturnsError(t *testing.T) {
+func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_NotReturnsError_And_ModuleStatusExists(t *testing.T) {
 	statusGenerator := &mockStatusGenerator{
-		generateModuleStatusFunc: func() (v1beta2.ModuleStatus, error) {
-			return v1beta2.ModuleStatus{}, errors.New("status generator error")
+		generateModuleStatusFunc: func() (*v1beta2.ModuleStatus, error) {
+			return nil, errors.New("status generator error")
 		},
 	}
 	statusService := modules.NewStatusHandler(statusGenerator, nil, nil)
-
-	err := statusService.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{
+	kyma := testutils.NewTestKyma("test-kyma")
+	configureModuleInKyma(kyma, []string{"test-module"}, nil)
+	err := statusService.UpdateModuleStatuses(t.Context(), kyma, modulecommon.Modules{
 		&modulecommon.Module{ModuleName: "test-module"},
 	})
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "status generator error")
+	require.NoError(t, err)
+	assert.Equal(t, "test-module", kyma.Status.Modules[0].Name)
 }
 
 func moduleDeletedSuccessfullyMock(_ context.Context, _ client.Object) error {
@@ -216,10 +217,12 @@ func moduleStillExistsInClusterMock(_ context.Context, _ client.Object) error {
 }
 
 type mockStatusGenerator struct {
-	generateModuleStatusFunc func() (v1beta2.ModuleStatus, error)
+	generateModuleStatusFunc func() (*v1beta2.ModuleStatus, error)
 }
 
-func (m *mockStatusGenerator) GenerateModuleStatus(_ *modulecommon.Module, _ *v1beta2.ModuleStatus) (v1beta2.ModuleStatus, error) {
+func (m *mockStatusGenerator) GenerateModuleStatus(_ *modulecommon.Module,
+	_ *v1beta2.ModuleStatus,
+) (*v1beta2.ModuleStatus, error) {
 	return m.generateModuleStatusFunc()
 }
 

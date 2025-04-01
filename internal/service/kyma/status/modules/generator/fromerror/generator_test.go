@@ -55,7 +55,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 	require.NoError(t, err)
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
-	assert.Equal(t, *expectedStatus, result)
+	assert.Equal(t, expectedStatus, result)
 
 	// Passed module info is not used for new status, but the deep-copied object
 	assert.NotEqual(t, someModuleName, result.Name)
@@ -77,7 +77,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateError
-	assert.Equal(t, *expectedStatus, result)
+	assert.Equal(t, expectedStatus, result)
 
 	// Passed module info is not used for new status, but the deep-copied object
 	assert.NotEqual(t, someModuleName, result.Name)
@@ -99,7 +99,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateWarning
-	assert.Equal(t, *expectedStatus, result)
+	assert.Equal(t, expectedStatus, result)
 
 	// Passed module info is not used for new status, but the deep-copied object
 	assert.NotEqual(t, someModuleName, result.Name)
@@ -114,7 +114,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultErro
 	status := createStatus()
 	templateError := moduletemplateinfolookup.ErrNoTemplatesInListResult
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedModuleName, expectedChannel, expectedFQDN, status)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedModuleName, expectedChannel,
+		expectedFQDN, status)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
@@ -145,7 +146,8 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNilStatus_ReturnsNewDefault
 	expectedFQDN := "some-fqdn"
 	templateError := errors.New("some-error")
 
-	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedName, expectedChannel, expectedFQDN, nil)
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedName, expectedChannel, expectedFQDN,
+		nil)
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
