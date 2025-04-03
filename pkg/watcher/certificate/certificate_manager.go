@@ -43,7 +43,7 @@ type CertificateClient interface {
 	) (time.Time, error)
 }
 
-type CertificateSecretClientInterface interface {
+type CertificateSecretClient interface {
 	Get(ctx context.Context,
 		name string,
 		namespace string,
@@ -68,12 +68,12 @@ type CertificateManagerConfig struct {
 
 type CertificateManager struct {
 	certClient   CertificateClient
-	secretClient CertificateSecretClientInterface
+	secretClient CertificateSecretClient
 	config       CertificateManagerConfig
 }
 
 func NewCertificateManager(certClient CertificateClient,
-	secretClient CertificateSecretClientInterface,
+	secretClient CertificateSecretClient,
 	config CertificateManagerConfig,
 ) *CertificateManager {
 
