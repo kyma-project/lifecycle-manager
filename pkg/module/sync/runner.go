@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,12 +14,10 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -35,11 +31,6 @@ func New(clnt client.Client) *Runner {
 	}
 }
 
-type (
-	RemoveMetricsFunc func(kymaName, moduleName string)
-	GetModuleFunc     func(ctx context.Context, module client.Object) error
-)
-
 type Runner struct {
 	client.Client
 	versioner machineryruntime.GroupVersioner
@@ -47,31 +38,31 @@ type Runner struct {
 }
 
 func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
-	modules common.Modules,
+	modules modulecommon.Modules,
 ) error {
 	ssaStart := time.Now()
 	baseLogger := logf.FromContext(ctx)
 
 	results := make(chan error, len(modules))
 	for _, module := range modules {
-		go func(module *common.Module) {
+		go func(module *modulecommon.Module) {
 			// Should not happen, but in case of NPE, we should stop process further.
-			if module.Template == nil {
+			if module.TemplateInfo == nil {
 				results <- nil
 				return
 			}
 			// Due to module template visibility change, some module previously deployed should be removed.
-			if errors.Is(module.Template.Err, templatelookup.ErrTemplateNotAllowed) {
+			if errors.Is(module.TemplateInfo.Err, templatelookup.ErrTemplateNotAllowed) {
 				results <- r.deleteManifest(ctx, module)
 				return
 			}
 			// ModuleInStatus template in other error status should be ignored.
-			if module.Template.Err != nil {
+			if module.TemplateInfo.Err != nil {
 				results <- nil
 				return
 			}
 			if err := r.updateManifest(ctx, kyma, module); err != nil {
-				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
+				results <- fmt.Errorf("could not update module %s: %w", module.Manifest.GetName(), err)
 				return
 			}
 			module.Logger(baseLogger).V(log.DebugLevel).Info("successfully patched module")
@@ -93,16 +84,8 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	return nil
 }
 
-func (r *Runner) getModule(ctx context.Context, module client.Object) error {
-	err := r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
-	if err != nil {
-		return fmt.Errorf("failed to get module by name-namespace: %w", err)
-	}
-	return nil
-}
-
 func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
-	module *common.Module,
+	module *modulecommon.Module,
 ) error {
 	if err := r.setupModule(module, kyma); err != nil {
 		return err
@@ -140,7 +123,7 @@ func getManifestStatus(manifest, manifestInCluster *v1beta2.Manifest) shared.Sta
 	return manifest.Status
 }
 
-func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *common.Module,
+func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module *modulecommon.Module,
 	manifestInCluster, newManifest *v1beta2.Manifest, kymaModuleStatus *v1beta2.ModuleStatus,
 ) error {
 	if !NeedToUpdate(manifestInCluster, newManifest, kymaModuleStatus, module) {
@@ -198,7 +181,7 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 }
 
 func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStatus *v1beta2.ModuleStatus,
-	module *common.Module,
+	module *modulecommon.Module,
 ) bool {
 	if manifestInCluster == nil {
 		return !(module.IsUnmanaged)
@@ -218,11 +201,11 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 		return diffInSpec
 	}
 
-	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != module.Template.GetGeneration()
+	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != module.TemplateInfo.GetGeneration()
 	return diffInTemplate || diffInSpec
 }
 
-func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
+func (r *Runner) deleteManifest(ctx context.Context, module *modulecommon.Module) error {
 	err := r.Delete(ctx, module.Manifest)
 	if util.IsNotFound(err) {
 		return nil
@@ -230,181 +213,16 @@ func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) erro
 	return fmt.Errorf("failed to delete manifest: %w", err)
 }
 
-func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
+func (r *Runner) setupModule(module *modulecommon.Module, kyma *v1beta2.Kyma) error {
 	module.ApplyDefaultMetaToManifest(kyma)
 
-	refs := module.GetOwnerReferences()
+	refs := module.Manifest.GetOwnerReferences()
 	if len(refs) == 0 {
 		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
-				module.GetName(), kyma.Name, err)
+				module.Manifest.GetName(), kyma.Name, err)
 		}
 	}
 
 	return nil
-}
-
-func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
-	kymaMetrics *metrics.KymaMetrics,
-) {
-	updateModuleStatusFromExistingModules(kyma, modules)
-	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, kymaMetrics.RemoveModuleStateMetrics)
-}
-
-func updateModuleStatusFromExistingModules(
-	kyma *v1beta2.Kyma,
-	modules common.Modules,
-) {
-	moduleStatusMap := kyma.GetModuleStatusMap()
-
-	for idx := range modules {
-		module := modules[idx]
-		moduleStatus, exists := moduleStatusMap[module.ModuleName]
-		latestModuleStatus := generateModuleStatus(module, moduleStatus)
-		if exists {
-			*moduleStatus = latestModuleStatus
-		} else {
-			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
-		}
-	}
-}
-
-func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
-	if module.Template.Err != nil {
-		return generateModuleStatusFromError(module, existStatus)
-	}
-
-	manifestObject := module.Manifest
-	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	var moduleResource *v1beta2.TrackingObject
-	if manifestObject.Spec.Resource != nil {
-		moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.
-			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		moduleResource = &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMeta{
-				Name:       manifestObject.Spec.Resource.GetName(),
-				Namespace:  manifestObject.Spec.Resource.GetNamespace(),
-				Generation: manifestObject.Spec.Resource.GetGeneration(),
-			},
-			TypeMeta: apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
-		}
-
-		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == shared.EnableLabelValue {
-			moduleResource.PartialMeta.Namespace = ""
-		}
-	}
-
-	moduleStatus := v1beta2.ModuleStatus{
-		Name:    module.ModuleName,
-		FQDN:    module.FQDN,
-		State:   manifestObject.Status.State,
-		Channel: module.Template.DesiredChannel,
-		Version: manifestObject.Spec.Version,
-		Manifest: &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMeta{
-				Name:       manifestObject.GetName(),
-				Namespace:  manifestObject.GetNamespace(),
-				Generation: manifestObject.GetGeneration(),
-			},
-			TypeMeta: apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
-		},
-		Template: &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMeta{
-				Name:       module.Template.GetName(),
-				Namespace:  module.Template.GetNamespace(),
-				Generation: module.Template.GetGeneration(),
-			},
-			TypeMeta: apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
-		},
-		Resource: moduleResource,
-	}
-
-	if module.IsUnmanaged {
-		moduleStatus.State = shared.StateUnmanaged
-		moduleStatus.Manifest = nil
-		moduleStatus.Template = nil
-		moduleStatus.Resource = nil
-	}
-
-	return moduleStatus
-}
-
-func generateModuleStatusFromError(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
-	switch {
-	case errors.Is(module.Template.Err, templatelookup.ErrTemplateUpdateNotAllowed):
-		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.State = shared.StateWarning
-		newModuleStatus.Message = module.Template.Err.Error()
-		return *newModuleStatus
-	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult):
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateWarning,
-			Message: module.Template.Err.Error(),
-		}
-	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow):
-		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.Message = module.Template.Err.Error()
-		return *newModuleStatus
-	case errors.Is(module.Template.Err, moduletemplateinfolookup.ErrFailedToDetermineIfMaintenanceWindowIsActive):
-		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.Message = module.Template.Err.Error()
-		newModuleStatus.State = shared.StateError
-		return *newModuleStatus
-	default:
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateError,
-			Message: module.Template.Err.Error(),
-		}
-	}
-}
-
-func stateFromManifest(obj client.Object) shared.State {
-	switch manifest := obj.(type) {
-	case *v1beta2.Manifest:
-		return manifest.Status.State
-	case *unstructured.Unstructured:
-		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
-		return shared.State(state)
-	default:
-		return ""
-	}
-}
-
-func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, moduleFunc GetModuleFunc,
-	kymaMetricsRemoveMetrics RemoveMetricsFunc,
-) {
-	moduleStatusMap := kyma.GetModuleStatusMap()
-	moduleStatusesToBeDeletedFromKymaStatus := kyma.GetNoLongerExistingModuleStatus()
-	for idx := range moduleStatusesToBeDeletedFromKymaStatus {
-		moduleStatus := moduleStatusesToBeDeletedFromKymaStatus[idx]
-		if moduleStatus.Manifest == nil {
-			kymaMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
-			delete(moduleStatusMap, moduleStatus.Name)
-			continue
-		}
-		manifestCR := moduleStatus.GetManifestCR()
-		err := moduleFunc(ctx, manifestCR)
-		if util.IsNotFound(err) {
-			kymaMetricsRemoveMetrics(kyma.Name, moduleStatus.Name)
-			delete(moduleStatusMap, moduleStatus.Name)
-		} else {
-			moduleStatus.State = stateFromManifest(manifestCR)
-		}
-	}
-	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
-}
-
-func convertToNewModuleStatus(moduleStatusMap map[string]*v1beta2.ModuleStatus) []v1beta2.ModuleStatus {
-	newModuleStatus := make([]v1beta2.ModuleStatus, 0)
-	for _, moduleStatus := range moduleStatusMap {
-		newModuleStatus = append(newModuleStatus, *moduleStatus)
-	}
-	return newModuleStatus
 }
