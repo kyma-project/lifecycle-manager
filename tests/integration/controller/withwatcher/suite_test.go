@@ -202,7 +202,7 @@ var _ = BeforeSuite(func() {
 
 	certificateManager := certificate.NewCertificateManager(
 		cert_manager.NewCertificateClient(mgr.GetClient(),
-			"klm-watcher-selfsigned",
+			"test-issuer",
 			certificateConfig,
 		),
 		secret.NewCertificateSecretClient(mgr.GetClient()),
