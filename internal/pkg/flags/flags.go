@@ -209,8 +209,6 @@ func DefineFlagVar() *FlagVar {
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.RemoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
-	flag.StringVar(&flagVar.CaCertName, "ca-cert-name", DefaultCaCertName,
-		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
 	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", DefaultSelfSignedCertDuration,
 		"The lifetime duration of self-signed certificate, minimum accepted duration is 1 hour.")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
@@ -307,7 +305,6 @@ type FlagVar struct {
 	PurgeFinalizerTimeout                      time.Duration
 	SkipPurgingFor                             string
 	RemoteSyncNamespace                        string
-	CaCertName                                 string
 	IsKymaManaged                              bool
 	SelfSignedCertDuration                     time.Duration
 	SelfSignedCertRenewBefore                  time.Duration
