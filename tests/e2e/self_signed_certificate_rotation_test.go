@@ -11,7 +11,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
@@ -23,7 +22,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 	Context("Given Kyma deployed in KCP", func() {
 		It("When self signed certificate exists", func() {
 			certName := types.NamespacedName{
-				Name:      watcher.ResolveTLSCertName(kyma.Name),
+				Name:      fmt.Sprintf("%s-webhook-tls", kyma.Name),
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {

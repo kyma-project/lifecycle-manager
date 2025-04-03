@@ -106,7 +106,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
 	certificateCR := &certmanagerv1.Certificate{}
 	err := clnt.Get(ctx,
-		client.ObjectKey{Name: watcher.ResolveTLSCertName(kymaName), Namespace: istioSystemNs},
+		client.ObjectKey{Name: fmt.Sprintf("%s-webhook-tls", kymaName), Namespace: istioSystemNs},
 		certificateCR)
 	return certificateCR, err
 }

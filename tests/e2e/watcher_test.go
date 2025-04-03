@@ -165,7 +165,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 			By("And KCP TLS Certificate and Secret are deleted")
 			secretNamespacedName := types.NamespacedName{
-				Name:      watcher.ResolveTLSCertName(kyma.Name),
+				Name:      fmt.Sprintf("%s-webhook-tls", kyma.Name),
 				Namespace: IstioNamespace,
 			}
 			Eventually(CertificateSecretExists).

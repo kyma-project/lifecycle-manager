@@ -3,6 +3,7 @@ package withwatcher_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -19,7 +20,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/istio"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -169,7 +169,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 func createWatcherSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 	return &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
+			Name:      fmt.Sprintf("%s-webhook-tls", kymaObjKey.Name),
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
 				shared.ManagedBy: shared.OperatorName,

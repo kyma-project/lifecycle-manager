@@ -14,7 +14,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -74,7 +73,7 @@ func configureKCPKyma(kymaName, moduleName string, beta, internal bool) error {
 	kyma := builder.NewKymaBuilder().
 		WithName(kymaName).
 		WithNamespace(ControlPlaneNamespace).
-		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
+		WithAnnotation(shared.SKRDomainAnnotation, "example.domain.com").
 		WithLabel(shared.InstanceIDLabel, "test-instance").
 		WithChannel(v1beta2.DefaultChannel).
 		Build()
