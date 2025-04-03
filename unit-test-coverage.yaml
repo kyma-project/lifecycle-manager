@@ -28,3 +28,4 @@ packages:
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher/certificate/cert_manager: 100
   pkg/watcher/certificate/secret: 100
+  pkg/watcher/certificate: 100

@@ -20,6 +20,7 @@ var (
 	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
 	ErrSkrCertificateNotReady  = errors.New("SKR certificate not ready")
 )
+
 var serviceSuffixes = []string{
 	"svc.cluster.local",
 	"svc",
@@ -122,17 +123,17 @@ func (c *CertificateManager) DeleteSkrCertificate(ctx context.Context, kymaName 
 // RenewSKRCertificate checks if the gateway certificate secret has been rotated. If so, it renews
 // the SKR certificate by removing its certificate secret which will trigger a new certificate to be issued.
 func (c *CertificateManager) RenewSkrCertificate(ctx context.Context, kymaName string) error {
-	gatewaySecret, err := c.secretClient.Get(ctx, shared.GatewaySecretName, shared.IstioNamespace)
+	gatewaySecret, err := c.secretClient.Get(ctx, c.config.CertificateNamespace, shared.IstioNamespace)
 	if err != nil {
-		return fmt.Errorf("failed to get gateway secret: %w", err)
+		return fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
 
-	skrCertificate, err := c.secretClient.Get(ctx, c.constructSkrCertificateName(kymaName), c.config.CertificateNamespace)
+	skrCertificateSecret, err := c.secretClient.Get(ctx, c.constructSkrCertificateName(kymaName), c.config.CertificateNamespace)
 	if err != nil {
 		return fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
-	if !skrSecretRequiresRenewal(gatewaySecret, skrCertificate) {
+	if !skrSecretRequiresRenewal(gatewaySecret, skrCertificateSecret) {
 		return nil
 	}
 
