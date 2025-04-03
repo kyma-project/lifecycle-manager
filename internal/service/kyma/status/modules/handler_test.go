@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -191,21 +192,25 @@ func TestUpdateModuleStatuses_WhenCalledWithTemplateErrorTemplateUpdateNotAllowe
 	_ = statusHandler.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
 }
 
-func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_NotReturnsError_And_ModuleStatusExists(t *testing.T) {
+func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_NotReturnsError_And_ModuleStatusExistsWithErrorState(t *testing.T) {
+	const moduleStatusError = "status generator error"
+	const moduleUnderTest = "test-module"
 	statusGenerator := &mockStatusGenerator{
 		generateModuleStatusFunc: func() (*v1beta2.ModuleStatus, error) {
-			return nil, errors.New("status generator error")
+			return nil, errors.New(moduleStatusError)
 		},
 	}
-	statusService := modules.NewStatusHandler(statusGenerator, nil, nil)
+	statusHandler := modules.NewStatusHandler(statusGenerator, nil, nil)
 	kyma := testutils.NewTestKyma("test-kyma")
-	configureModuleInKyma(kyma, []string{"test-module"}, nil)
-	err := statusService.UpdateModuleStatuses(t.Context(), kyma, modulecommon.Modules{
-		&modulecommon.Module{ModuleName: "test-module"},
+	configureModuleInKyma(kyma, []string{moduleUnderTest}, nil)
+	err := statusHandler.UpdateModuleStatuses(t.Context(), kyma, modulecommon.Modules{
+		&modulecommon.Module{ModuleName: moduleUnderTest},
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "test-module", kyma.Status.Modules[0].Name)
+	assert.Equal(t, shared.StateError, kyma.Status.Modules[0].State)
+	assert.Equal(t, moduleStatusError, kyma.Status.Modules[0].Message)
+	assert.Equal(t, moduleUnderTest, kyma.Status.Modules[0].Name)
 }
 
 func moduleDeletedSuccessfullyMock(_ context.Context, _ client.Object) error {
