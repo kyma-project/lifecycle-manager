@@ -7,9 +7,14 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/cert_manager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,7 +38,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        "test-kyma-1",
 					Namespace:   "testcase-1",
-					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
+					Annotations: map[string]string{shared.SKRDomainAnnotation: "example.domain.com"},
 				},
 			},
 			issuer:         NewTestIssuer("testcase-1"),
@@ -47,7 +52,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        "test-kyma-2",
 					Namespace:   "testcase-2",
-					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
+					Annotations: map[string]string{shared.SKRDomainAnnotation: "example.domain.com"},
 				},
 			},
 			issuer:         nil,
@@ -75,18 +80,33 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			if test.issuer != nil {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
-			config := watcher.CertificateConfig{
-				IstioNamespace:      test.namespace.Name,
-				RemoteSyncNamespace: test.namespace.Name,
-				CACertificateName:   caCertName,
-				AdditionalDNSNames:  []string{},
-				Duration:            1 * time.Hour,
-				RenewBefore:         5 * time.Minute,
-			}
-			cert := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma.Name, config)
 
-			_, err := cert.CreateSelfSignedCert(ctx, test.kyma)
+			certificateConfig := certificate.CertificateConfig{
+				Duration:    1 * time.Hour,
+				RenewBefore: 5 * time.Minute,
+				KeySize:     flags.DefaultSelfSignedCertKeySize,
+			}
+
+			certificateManagerConfig := certificate.CertificateManagerConfig{
+				SkrServiceName:               watcher.SkrResourceName,
+				SkrNamespace:                 test.namespace.Name,
+				CertificateNamespace:         test.namespace.Name,
+				AdditionalDNSNames:           []string{},
+				GatewaySecretName:            shared.GatewaySecretName,
+				RenewBuffer:                  flags.DefaultSelfSignedCertificateRenewBuffer,
+				SkrCertificateNamingTemplate: "%s-webhook-tls",
+			}
+
+			certificateManager := certificate.NewCertificateManager(
+				cert_manager.NewCertificateClient(controlPlaneClient,
+					"klm-watcher-selfsigned",
+					certificateConfig,
+				),
+				secret.NewCertificateSecretClient(controlPlaneClient),
+				certificateManagerConfig,
+			)
+
+			err := certificateManager.CreateSkrCertificate(ctx, test.kyma)
 			if test.wantCreateErr {
 				Expect(err).Should(HaveOccurred())
 				return

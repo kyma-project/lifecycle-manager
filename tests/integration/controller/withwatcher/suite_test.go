@@ -57,6 +57,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/cert_manager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
@@ -175,20 +178,36 @@ var _ = BeforeSuite(func() {
 	}
 
 	skrChartCfg := watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:         skrWatcherPath,
+		SkrWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
 		RemoteSyncNamespace:    flags.DefaultRemoteSyncNamespace,
 	}
 
-	certificateConfig := watcher.CertificateConfig{
-		IstioNamespace:      istioSystemNs,
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		CACertificateName:   caCertificateName,
-		AdditionalDNSNames:  []string{},
-		Duration:            1 * time.Hour,
-		RenewBefore:         5 * time.Minute,
+	certificateConfig := certificate.CertificateConfig{
+		Duration:    1 * time.Hour,
+		RenewBefore: 5 * time.Minute,
+		KeySize:     flags.DefaultSelfSignedCertKeySize,
 	}
+
+	certificateManagerConfig := certificate.CertificateManagerConfig{
+		SkrServiceName:               watcher.SkrResourceName,
+		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
+		CertificateNamespace:         flags.DefaultIstioNamespace,
+		AdditionalDNSNames:           []string{},
+		GatewaySecretName:            shared.GatewaySecretName,
+		RenewBuffer:                  flags.DefaultSelfSignedCertificateRenewBuffer,
+		SkrCertificateNamingTemplate: "%s-webhook-tls",
+	}
+
+	certificateManager := certificate.NewCertificateManager(
+		cert_manager.NewCertificateClient(mgr.GetClient(),
+			"klm-watcher-selfsigned",
+			certificateConfig,
+		),
+		secret.NewCertificateSecretClient(mgr.GetClient()),
+		certificateManagerConfig,
+	)
 
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          gatewayName,
@@ -203,7 +222,11 @@ var _ = BeforeSuite(func() {
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
 		kcpClient,
 		testSkrContextFactory,
-		skrChartCfg, certificateConfig, resolvedKcpAddr)
+		skrChartCfg,
+		resolvedKcpAddr,
+		certificateManager,
+		metrics.NewWatcherMetrics(),
+	)
 	Expect(err).ToNot(HaveOccurred())
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
