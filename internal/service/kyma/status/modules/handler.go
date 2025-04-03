@@ -53,7 +53,7 @@ func (m *StatusHandler) UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	for _, module := range modules {
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
-		// Even defensive error occurs, we are not blocking module status to be updated.
+		// Even if defensive error occurs, we are not blocking module status to be updated.
 		newModuleStatus, err := m.statusGenerator.GenerateModuleStatus(module, moduleStatus)
 		if err != nil {
 			newModuleStatus = &v1beta2.ModuleStatus{
