@@ -27,3 +27,4 @@ packages:
   pkg/templatelookup: 88
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher/certificate/cert_manager: 100
+  pkg/watcher/certificate/secret: 100
