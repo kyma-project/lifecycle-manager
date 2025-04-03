@@ -45,6 +45,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -143,24 +146,25 @@ var _ = BeforeSuite(func() {
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	descriptorProvider = provider.NewCachedDescriptorProvider()
 	crdCache = crd.NewCache(nil)
+	noOpMetricsFunc := func(kymaName, moduleName string) {}
+	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	err = (&kyma.Reconciler{
-		Client:              kcpClient,
-		SkrContextFactory:   testSkrContextFactory,
-		Event:               testEventRec,
-		RequeueIntervals:    intervals,
-		DescriptorProvider:  descriptorProvider,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:       true,
-		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
-			flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-				moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-			})),
+		Client:               kcpClient,
+		SkrContextFactory:    testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		IsManagedKyma:        true,
+		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+		})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

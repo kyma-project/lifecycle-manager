@@ -1,24 +1,28 @@
 packages:
-  internal/controller/istiogatewaysecret: 28.9
-  internal/crd: 92.1
-  internal/descriptor/cache: 92.3
-  internal/descriptor/provider: 66.7
+  internal/controller/istiogatewaysecret: 28
+  internal/crd: 92
+  internal/descriptor/cache: 92
+  internal/descriptor/provider: 66
   internal/event: 100
+  internal/gatewaysecret/cabundle: 97
   internal/gatewaysecret/legacy: 100
-  internal/gatewaysecret/cabundle: 97.6
-  internal/manifest: 15.8
-  internal/manifest/statecheck: 71
+  internal/istio: 63
+  internal/manifest: 15
   internal/manifest/filemutex: 100
-  internal/manifest/finalizer: 17.5
-  internal/manifest/skrresources: 20.2
+  internal/manifest/finalizer: 17
+  internal/manifest/img: 65
   internal/manifest/labelsremoval: 100
-  internal/manifest/img: 65.5
-  internal/manifest/manifestclient: 5.0
-  internal/manifest/modulecr: 47.0
-  internal/maintenancewindows: 87.5
-  internal/istio: 63.3
-  internal/pkg/resources: 91.7
+  internal/manifest/manifestclient: 5
+  internal/manifest/modulecr: 47
+  internal/manifest/skrresources: 20
+  internal/manifest/statecheck: 71
+  internal/maintenancewindows: 87
+  internal/pkg/resources: 91
   internal/remote: 29
+  internal/service/kyma/status/modules: 78
+  internal/service/kyma/status/modules/generator: 100
+  internal/service/kyma/status/modules/generator/fromerror: 100
   internal/util/collections: 87
+  pkg/module/sync: 10
   pkg/templatelookup: 88
-  pkg/templatelookup/moduletemplateinfolookup: 98.4
+  pkg/templatelookup/moduletemplateinfolookup: 98

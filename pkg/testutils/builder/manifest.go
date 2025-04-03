@@ -52,6 +52,12 @@ func (mb ManifestBuilder) WithAnnotation(key string, value string) ManifestBuild
 	return mb
 }
 
+// WithGeneration sets v1beta2.Manifest.ObjectMeta.Generation.
+func (mb ManifestBuilder) WithGeneration(generation int) ManifestBuilder {
+	mb.manifest.ObjectMeta.Generation = int64(generation)
+	return mb
+}
+
 // WithLabel adds a label to v1beta2.Manifest.ObjectMeta.Labels.
 func (mb ManifestBuilder) WithLabel(key string, value string) ManifestBuilder {
 	if mb.manifest.Labels == nil {
