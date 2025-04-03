@@ -45,6 +45,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -138,17 +141,20 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	noOpMetricsFunc := func(kymaName, moduleName string) {}
+	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	err = (&kyma.Reconciler{
-		Client:              kcpClient,
-		Event:               testEventRec,
-		DescriptorProvider:  descriptorProvider,
-		SkrContextFactory:   testSkrContextFactory,
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
-		RequeueIntervals:    intervals,
-		IsManagedKyma:       true,
-		RemoteCatalog:       remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Client:               kcpClient,
+		Event:                testEventRec,
+		DescriptorProvider:   descriptorProvider,
+		SkrContextFactory:    testSkrContextFactory,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		RequeueIntervals:     intervals,
+		IsManagedKyma:        true,
+		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
 			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),

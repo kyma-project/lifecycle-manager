@@ -171,14 +171,6 @@ type ModuleStatus struct {
 	// FQDN is used to calculate Namespace and Name of the Manifest for tracking.
 	FQDN string `json:"fqdn,omitempty"`
 
-	// Manifest contains the Information of a related Manifest
-	Manifest *TrackingObject `json:"manifest,omitempty"`
-
-	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
-	// This will update when Channel or the ModuleTemplate is changed.
-	// +optional
-	Template *TrackingObject `json:"template,omitempty"`
-
 	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.
 	Channel string `json:"channel,omitempty"`
@@ -192,8 +184,16 @@ type ModuleStatus struct {
 	// State of the Module in the currently tracked Generation
 	State shared.State `json:"state"`
 
+	// Manifest contains the Information of a related Manifest
+	Manifest *TrackingObject `json:"manifest,omitempty"`
+
 	// Resource contains information about the created module CR.
 	Resource *TrackingObject `json:"resource,omitempty"`
+
+	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
+	// This will update when Channel or the ModuleTemplate is changed.
+	// +optional
+	Template *TrackingObject `json:"template,omitempty"`
 }
 
 func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {

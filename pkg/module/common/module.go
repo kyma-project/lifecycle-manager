@@ -16,43 +16,43 @@ import (
 type (
 	Modules []*Module
 	Module  struct {
-		ModuleName string
-		FQDN       string
-		Template   *templatelookup.ModuleTemplateInfo
-		*v1beta2.Manifest
-		Enabled     bool
-		IsUnmanaged bool
+		ModuleName   string
+		FQDN         string
+		TemplateInfo *templatelookup.ModuleTemplateInfo
+		Manifest     *v1beta2.Manifest
+		Enabled      bool
+		IsUnmanaged  bool
 	}
 )
 
 func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
 		"fqdn", m.FQDN,
-		"module", m.GetName(),
-		"channel", m.Template.Spec.Channel,
-		"templateGeneration", m.Template.GetGeneration(),
+		"module", m.Manifest.GetName(),
+		"channel", m.TemplateInfo.Spec.Channel,
+		"templateGeneration", m.TemplateInfo.GetGeneration(),
 	)
 }
 
 func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
-	lbls := m.GetLabels()
+	lbls := m.Manifest.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
 	lbls[shared.KymaName] = kyma.Name
-	templateLabels := m.Template.GetLabels()
+	templateLabels := m.TemplateInfo.GetLabels()
 	if templateLabels != nil {
-		lbls[shared.ControllerName] = m.Template.GetLabels()[shared.ControllerName]
+		lbls[shared.ControllerName] = m.TemplateInfo.GetLabels()[shared.ControllerName]
 	}
 	lbls[shared.ModuleName] = m.ModuleName
-	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
+	lbls[shared.ChannelLabel] = m.TemplateInfo.Spec.Channel
 	lbls[shared.ManagedBy] = shared.OperatorName
-	if m.Template.Spec.Mandatory {
+	if m.TemplateInfo.Spec.Mandatory {
 		lbls[shared.IsMandatoryModule] = shared.EnableLabelValue
 	}
-	m.SetLabels(lbls)
+	m.Manifest.SetLabels(lbls)
 
-	anns := m.GetAnnotations()
+	anns := m.Manifest.GetAnnotations()
 	if anns == nil {
 		anns = make(map[string]string)
 	}
@@ -60,14 +60,14 @@ func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
 	if m.IsUnmanaged {
 		anns[shared.UnmanagedAnnotation] = shared.EnableLabelValue
 	}
-	m.SetAnnotations(anns)
+	m.Manifest.SetAnnotations(anns)
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
-	if m.GetOwnerReferences() == nil {
+	if m.Manifest.GetOwnerReferences() == nil {
 		return false
 	}
-	for _, owner := range m.GetOwnerReferences() {
+	for _, owner := range m.Manifest.GetOwnerReferences() {
 		if owner.Name == ownerName {
 			return true
 		}

@@ -51,6 +51,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
+	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -203,18 +206,20 @@ var _ = BeforeSuite(func() {
 		skrChartCfg, certificateConfig, resolvedKcpAddr)
 	Expect(err).ToNot(HaveOccurred())
 
+	noOpMetricsFunc := func(kymaName, moduleName string) {}
+	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	err = (&kyma.Reconciler{
-		Client:              kcpClient,
-		SkrContextFactory:   testSkrContextFactory,
-		Event:               testEventRec,
-		RequeueIntervals:    intervals,
-		SKRWebhookManager:   skrWebhookChartManager,
-		DescriptorProvider:  provider.NewCachedDescriptorProvider(),
-		SyncRemoteCrds:      remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
-			flags.DefaultRemoteSyncNamespace),
+		Client:               kcpClient,
+		SkrContextFactory:    testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		SKRWebhookManager:    skrWebhookChartManager,
+		DescriptorProvider:   provider.NewCachedDescriptorProvider(),
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
