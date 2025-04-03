@@ -2,6 +2,7 @@ package cert_manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,8 @@ var certificateLabels = k8slabels.Set{
 	shared.PurposeLabel: shared.CertManager,
 	shared.ManagedBy:    shared.OperatorName,
 }
+
+var ErrNoRenewalTime = errors.New("no renewal time set for certificate")
 
 type kcpClient interface {
 	Get(ctx context.Context,
@@ -137,6 +140,10 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 
 	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
 		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
+	}
+
+	if cert.Status.RenewalTime == nil || cert.Status.RenewalTime.Time.IsZero() {
+		return time.Time{}, ErrNoRenewalTime
 	}
 
 	return cert.Status.RenewalTime.Time, nil
