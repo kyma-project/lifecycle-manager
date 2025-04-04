@@ -187,10 +187,12 @@ func (m *SkrWebhookManifestManager) writeCertificateRenewalMetrics(ctx context.C
 	if err != nil {
 		m.watcherMetrics.SetCertNotRenew(kymaName)
 		logger.Error(err, "failed to check if certificate renewal is overdue for kyma "+kymaName)
+		return
 	}
 
 	if overdue {
 		m.watcherMetrics.SetCertNotRenew(kymaName)
+		return
 	}
 
 	m.watcherMetrics.CleanupMetrics(kymaName)
