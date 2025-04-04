@@ -123,7 +123,7 @@ func (c *CertificateManager) DeleteSkrCertificate(ctx context.Context, kymaName 
 // RenewSKRCertificate checks if the gateway certificate secret has been rotated. If so, it renews
 // the SKR certificate by removing its certificate secret which will trigger a new certificate to be issued.
 func (c *CertificateManager) RenewSkrCertificate(ctx context.Context, kymaName string) error {
-	gatewaySecret, err := c.secretClient.Get(ctx, c.config.CertificateNamespace, shared.IstioNamespace)
+	gatewaySecret, err := c.secretClient.Get(ctx, c.config.GatewaySecretName, c.config.CertificateNamespace)
 	if err != nil {
 		return fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}

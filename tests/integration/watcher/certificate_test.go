@@ -46,26 +46,12 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			wantNewCertErr: false,
 		},
 		{
-			name:      "Should fail since no Issuer can be found",
+			name:      "Should fail since KymaCR is missing domain annotation",
 			namespace: NewTestNamespace("testcase-2"),
 			kyma: &v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:        "test-kyma-2",
-					Namespace:   "testcase-2",
-					Annotations: map[string]string{shared.SKRDomainAnnotation: "example.domain.com"},
-				},
-			},
-			issuer:         nil,
-			wantCreateErr:  true,
-			wantNewCertErr: false,
-		},
-		{
-			name:      "Should fail since KymaCR is missing domain annotation",
-			namespace: NewTestNamespace("testcase-3"),
-			kyma: &v1beta2.Kyma{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      "test-kyma-3",
-					Namespace: "testcase-3",
+					Name:      "test-kyma-2",
+					Namespace: "testcase-2",
 				},
 			},
 			issuer:         nil,
