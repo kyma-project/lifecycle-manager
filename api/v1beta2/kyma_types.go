@@ -447,3 +447,7 @@ func (kyma *Kyma) GetPlatformRegion() string {
 func (kyma *Kyma) GetPlan() string {
 	return kyma.Labels[shared.PlanLabel]
 }
+
+func (kyma *Kyma) GetRuntimeID() string {
+	return kyma.Labels[shared.RuntimeIDLabel]
+}

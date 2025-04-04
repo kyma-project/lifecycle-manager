@@ -44,6 +44,7 @@ const (
 	RegionLabel          = KymaGroup + Separator + "region"
 	PlatformRegionLabel  = KymaGroup + Separator + "platform-region"
 	PlanLabel            = KymaGroup + Separator + "broker-plan-name"
+	RuntimeIDLabel       = KymaGroup + Separator + "runtime-id"
 
 	EnableLabelValue  = "true"
 	DisableLabelValue = "false"
