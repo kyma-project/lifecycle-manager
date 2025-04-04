@@ -270,7 +270,7 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	assert.Equal(t, certmanager.ErrNoRenewalTime, err)
+	assert.Equal(t, certificate.ErrNoRenewalTime, err)
 	assert.True(t, time.IsZero())
 	assert.True(t, clientStub.getCalled)
 }

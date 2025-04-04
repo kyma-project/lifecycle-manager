@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -20,6 +22,11 @@ func Test_ConstantFlags(t *testing.T) {
 		constValue    string
 		expectedValue string
 	}{
+		{
+			constName:     "DefaultCertificateManagement",
+			constValue:    certmanagerv1.SchemeGroupVersion.String(),
+			expectedValue: "cert-manager.io/v1",
+		},
 		{
 			constName:     "DefaultKymaRequeueSuccessInterval",
 			constValue:    DefaultKymaRequeueSuccessInterval.String(),
@@ -310,14 +317,19 @@ func Test_Flags_Validate(t *testing.T) {
 		err   error
 	}{
 		{
-			name:  "CertificateManagement is provided",
-			flags: newFlagVarBuilder().withCertificateManagement("gardener").build(),
+			name:  "CertificateManagement cert-manager.io/v1",
+			flags: newFlagVarBuilder().withCertificateManagement(certmanagerv1.SchemeGroupVersion.String()).build(),
 			err:   nil,
 		},
 		{
-			name:  "CertificateManagement is NOT provided",
-			flags: newFlagVarBuilder().withCertificateManagement("").build(),
+			name:  "CertificateManagement cert.gardener.cloud/v1alpha1",
+			flags: newFlagVarBuilder().withCertificateManagement(gcertv1alpha1.SchemeGroupVersion.String()).build(),
 			err:   nil,
+		},
+		{
+			name:  "CertificateManagement unsupported",
+			flags: newFlagVarBuilder().withCertificateManagement("foobar").build(),
+			err:   ErrUnsupportedCertificateManagementSystem,
 		},
 		{
 			name:  "WatcherImageTag is required",
@@ -440,6 +452,7 @@ func newFlagVarBuilder() *flagVarBuilder {
 	}
 
 	return builder.
+		withCertificateManagement(certmanagerv1.SchemeGroupVersion.String()).
 		withEnabledKcpWatcher(false).
 		withWatcherImageTag("v1.0.0").
 		withWatcherImageName("runtime-watcher").

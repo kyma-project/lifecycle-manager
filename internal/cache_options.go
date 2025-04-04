@@ -1,7 +1,6 @@
 package internal
 
 import (
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -19,9 +18,10 @@ type DefaultCacheOptions struct {
 }
 
 type KcpCacheOptions struct {
-	CacheOptions   cache.Options
-	istioNamespace string
-	kcpNamespace   string
+	CacheOptions          cache.Options
+	istioNamespace        string
+	kcpNamespace          string
+	certManagementObjects []client.Object
 }
 
 func (c *DefaultCacheOptions) GetCacheOptions() cache.Options {
@@ -35,7 +35,7 @@ func (c *DefaultCacheOptions) GetCacheOptions() cache.Options {
 }
 
 func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
-	return cache.Options{
+	options := cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
 			&apicorev1.Secret{}: {
 				Label: k8slabels.Everything(),
@@ -69,27 +69,31 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 					c.kcpNamespace: {},
 				},
 			},
-			&certmanagerv1.Issuer{}: {
-				Namespaces: map[string]cache.Config{
-					c.kcpNamespace:   {},
-					c.istioNamespace: {},
-				},
-			},
-			&certmanagerv1.Certificate{}: {
-				Namespaces: map[string]cache.Config{
-					c.kcpNamespace:   {},
-					c.istioNamespace: {},
-				},
-			},
 		},
 	}
+
+	for _, certManagementObject := range c.certManagementObjects {
+		options.ByObject[certManagementObject] = cache.ByObject{
+			Namespaces: map[string]cache.Config{
+				c.kcpNamespace:   {},
+				c.istioNamespace: {},
+			},
+		}
+	}
+
+	return options
 }
 
-func GetCacheOptions(isKymaManaged bool, istioNamespace, kcpNamespace string) cache.Options {
+func GetCacheOptions(isKymaManaged bool,
+	istioNamespace,
+	kcpNamespace string,
+	certManagementObjects []client.Object,
+) cache.Options {
 	if isKymaManaged {
 		options := &KcpCacheOptions{
-			istioNamespace: istioNamespace,
-			kcpNamespace:   kcpNamespace,
+			istioNamespace:        istioNamespace,
+			kcpNamespace:          kcpNamespace,
+			certManagementObjects: certManagementObjects,
 		}
 		return options.GetCacheOptions()
 	}

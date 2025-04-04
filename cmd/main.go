@@ -28,6 +28,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -38,6 +39,7 @@ import (
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -72,6 +74,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -122,8 +125,12 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout, setupLog)
 	}
 
-	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged, flagVar.IstioNamespace,
-		flagVar.IstioGatewayNamespace)
+	cacheOptions := internal.GetCacheOptions(
+		flagVar.IsKymaManaged,
+		flagVar.IstioNamespace,
+		flagVar.IstioGatewayNamespace,
+		getCertificateClientCacheOptions(flagVar.CertificateManagement, setupLog),
+	)
 	setupManager(flagVar, cacheOptions, scheme, setupLog)
 }
 
@@ -164,7 +171,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar, logger); err != nil {
 			logger.Error(err, "failed to create skr webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
@@ -359,8 +366,10 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	}
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
+func createSkrWebhookManager(mgr ctrl.Manager,
+	skrContextFactory remote.SkrContextProvider,
 	flagVar *flags.FlagVar,
+	setupLog logr.Logger,
 ) (*watcher.SkrWebhookManifestManager, error) {
 	skrWebhookManagerConfig := watcher.SkrWebhookManagerConfig{
 		SkrWatcherPath:         flagVar.WatcherResourcesPath,
@@ -381,12 +390,6 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		return nil, err
 	}
 
-	certificateConfig := certificate.CertificateConfig{
-		Duration:    flagVar.SelfSignedCertDuration,
-		RenewBefore: flagVar.SelfSignedCertRenewBefore,
-		KeySize:     flagVar.SelfSignedCertKeySize,
-	}
-
 	certificateManagerConfig := certificate.CertificateManagerConfig{
 		SkrServiceName:               watcher.SkrResourceName,
 		SkrNamespace:                 flagVar.RemoteSyncNamespace,
@@ -398,10 +401,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 	}
 
 	certificateManager := certificate.NewCertificateManager(
-		certmanager.NewCertificateClient(mgr.GetClient(),
-			flagVar.SelfSignedCertificateIssuerName,
-			certificateConfig,
-		),
+		getCertificateClient(mgr.GetClient(), flagVar, setupLog),
 		secret.NewCertificateSecretClient(mgr.GetClient()),
 		certificateManagerConfig,
 	)
@@ -413,6 +413,57 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 		resolvedKcpAddr,
 		certificateManager,
 		metrics.NewWatcherMetrics())
+}
+
+func getCertificateClient(kcpClient client.Client,
+	flagVar *flags.FlagVar,
+	setupLog logr.Logger,
+) certificate.CertificateClient {
+	certificateConfig := certificate.CertificateConfig{
+		Duration:    flagVar.SelfSignedCertDuration,
+		RenewBefore: flagVar.SelfSignedCertRenewBefore,
+		KeySize:     flagVar.SelfSignedCertKeySize,
+	}
+
+	if flagVar.CertificateManagement == certmanagerv1.SchemeGroupVersion.String() {
+		return certmanager.NewCertificateClient(kcpClient,
+			flagVar.SelfSignedCertificateIssuerName,
+			certificateConfig,
+		)
+	}
+
+	if flagVar.CertificateManagement == gcertv1alpha1.SchemeGroupVersion.String() {
+		certClient, err := gardener.NewCertificateClient(kcpClient,
+			flagVar.SelfSignedCertificateIssuerName,
+			flagVar.IstioNamespace,
+			certificateConfig,
+		)
+
+		if err != nil {
+			setupLog.Error(err, "unable to initialize certificate management")
+			os.Exit(bootstrapFailedExitCode)
+		}
+
+		return certClient
+	}
+
+	setupLog.Error(errors.New("unsupported certificate management"), "unable to initialize certificate management")
+	os.Exit(bootstrapFailedExitCode)
+	return nil
+}
+
+func getCertificateClientCacheOptions(certificateManagement string, setupLog logr.Logger) []client.Object {
+	if certificateManagement == certmanagerv1.SchemeGroupVersion.String() {
+		return certmanager.CacheObjects
+	}
+
+	if certificateManagement == gcertv1alpha1.SchemeGroupVersion.String() {
+		return gardener.CacheObjects
+	}
+
+	setupLog.Error(errors.New("unsupported certificate management"), "unable to get cache options for certificate management")
+	os.Exit(bootstrapFailedExitCode)
+	return []client.Object{}
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
