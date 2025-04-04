@@ -25,7 +25,7 @@ var (
 	certName      = random.Name()
 	certNamespace = random.Name()
 	certCAName    = random.Name()
-	certDnsNames  = []string{
+	certDNSNames  = []string{
 		random.Name(),
 		random.Name(),
 	}
@@ -47,7 +47,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 		Spec: certmanagerv1.CertificateSpec{
 			Duration:    &apimetav1.Duration{Duration: certDuration},
 			RenewBefore: &apimetav1.Duration{Duration: certRenewBefore},
-			DNSNames:    certDnsNames,
+			DNSNames:    certDNSNames,
 			SecretName:  certName,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: k8slabels.Set{
@@ -88,7 +88,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 		certName,
 		certNamespace,
 		certCAName,
-		certDnsNames,
+		certDNSNames,
 	)
 
 	require.NoError(t, err)
@@ -115,7 +115,7 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 		certName,
 		certNamespace,
 		certCAName,
-		certDnsNames,
+		certDNSNames,
 	)
 
 	require.Error(t, err)
@@ -292,6 +292,7 @@ type kcpClientStub struct {
 func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	c.getCalled = true
 	if c.getCert != nil {
+		//nolint:forcetypeassert // test code
 		c.getCert.DeepCopyInto(obj.(*certmanagerv1.Certificate))
 	}
 	return c.getErr
@@ -299,12 +300,14 @@ func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj clien
 
 func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.deleteCalled = true
+	//nolint:forcetypeassert // test code
 	c.deleteArg = obj.(*certmanagerv1.Certificate)
 	return c.deleteErr
 }
 
 func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	c.patchCalled = true
+	//nolint:forcetypeassert // test code
 	c.patchArg = obj.(*certmanagerv1.Certificate)
 	return c.patchErr
 }

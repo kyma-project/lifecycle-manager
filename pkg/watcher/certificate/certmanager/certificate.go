@@ -17,6 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 )
 
+//nolint:gochecknoglobals // this is const config
 var certificateLabels = k8slabels.Set{
 	shared.PurposeLabel: shared.CertManager,
 	shared.ManagedBy:    shared.OperatorName,

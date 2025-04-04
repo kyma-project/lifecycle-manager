@@ -21,6 +21,7 @@ var (
 	ErrSkrCertificateNotReady  = errors.New("SKR certificate not ready")
 )
 
+//nolint:gochecknoglobals // this is const config
 var serviceSuffixes = []string{
 	"svc.cluster.local",
 	"svc",

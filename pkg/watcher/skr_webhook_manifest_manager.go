@@ -182,21 +182,18 @@ func (m *SkrWebhookManifestManager) RemoveSkrCertificate(ctx context.Context, ky
 	return nil
 }
 
-func (m *SkrWebhookManifestManager) writeCertificateRenewalMetrics(ctx context.Context, kymaName string, logger logr.Logger) error {
+func (m *SkrWebhookManifestManager) writeCertificateRenewalMetrics(ctx context.Context, kymaName string, logger logr.Logger) {
 	overdue, err := m.certificateManager.IsSkrCertificateRenewalOverdue(ctx, kymaName)
 	if err != nil {
 		m.watcherMetrics.SetCertNotRenew(kymaName)
 		logger.Error(err, "failed to check if certificate renewal is overdue for kyma "+kymaName)
-		return nil
 	}
 
 	if overdue {
 		m.watcherMetrics.SetCertNotRenew(kymaName)
-		return nil
 	}
 
 	m.watcherMetrics.CleanupMetrics(kymaName)
-	return nil
 }
 
 func (m *SkrWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Context,

@@ -110,6 +110,7 @@ type kcpClientStub struct {
 func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	c.getCalled = true
 	if c.getSecret != nil {
+		//nolint:forcetypeassert // test code
 		c.getSecret.DeepCopyInto(obj.(*apicorev1.Secret))
 	}
 	return c.getErr
@@ -117,6 +118,7 @@ func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj clien
 
 func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.deleteCalled = true
+	//nolint:forcetypeassert // test code
 	c.deleteArg = obj.(*apicorev1.Secret)
 	return c.deleteErr
 }
