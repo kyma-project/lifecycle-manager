@@ -96,7 +96,8 @@ func (c *CertificateManager) CreateSelfSignedCert(ctx context.Context, kyma *v1b
 	if err != nil {
 		return nil, fmt.Errorf("error get Subject Alternative Name from KymaCR: %w", err)
 	}
-	return c.patchCertificate(ctx, subjectAltNames)
+	runtimeID := kyma.GetRuntimeID()
+	return c.patchCertificate(ctx, subjectAltNames, runtimeID)
 }
 
 // Remove removes the certificate including its certificate secret.
@@ -148,7 +149,7 @@ func (c *CertificateManager) removeSecret(ctx context.Context) error {
 }
 
 func (c *CertificateManager) patchCertificate(ctx context.Context,
-	subjectAltName *SubjectAltName,
+	subjectAltName *SubjectAltName, commonName string,
 ) (*certmanagerv1.Certificate, error) {
 	issuer, err := c.getIssuer(ctx)
 	if err != nil {
@@ -165,6 +166,7 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 			Namespace: c.config.IstioNamespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
+			CommonName:     commonName,
 			Duration:       &apimetav1.Duration{Duration: c.config.Duration},
 			RenewBefore:    &apimetav1.Duration{Duration: c.config.RenewBefore},
 			DNSNames:       subjectAltName.DNSNames,
