@@ -31,6 +31,7 @@ var (
 		random.Name(),
 	}
 	skrDomainName = random.Name()
+	runtimeId     = random.Name()
 
 	renewBuffer = 10 * time.Minute
 )
@@ -54,6 +55,9 @@ func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
 			Annotations: map[string]string{
 				shared.SKRDomainAnnotation: skrDomainName,
 			},
+			Labels: map[string]string{
+				shared.RuntimeIDLabel: runtimeId,
+			},
 		},
 	}
 
@@ -61,7 +65,7 @@ func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.True(t, certClientStub.createCalled)
-	assert.Equal(t, kymaName, certClientStub.createCommonName)
+	assert.Equal(t, runtimeId, certClientStub.createCommonName)
 	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), certClientStub.createName)
 	assert.Equal(t, certNamespace, certClientStub.createNamespace)
 	assert.Contains(t, certClientStub.createDNSNames, skrDomainName)
