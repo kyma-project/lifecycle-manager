@@ -96,7 +96,7 @@ func (c *CertificateManager) CreateSkrCertificate(ctx context.Context, kyma *v1b
 	if err = c.certClient.Create(ctx,
 		c.constructSkrCertificateName(kyma.Name),
 		c.config.CertificateNamespace,
-		kyma.Name,
+		kyma.GetRuntimeID(),
 		dnsNames,
 	); err != nil {
 		return fmt.Errorf("failed to create SKR certificate: %w", err)

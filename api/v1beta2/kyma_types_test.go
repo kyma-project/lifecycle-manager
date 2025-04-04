@@ -206,3 +206,41 @@ func Test_GetPlan(t *testing.T) {
 		})
 	}
 }
+
+func Test_GetRuntimeID(t *testing.T) {
+	tests := []struct {
+		name          string
+		labels        map[string]string
+		expectSuccess bool
+	}{
+		{
+			name: "Test GetRuntimeID() with existing label",
+			labels: map[string]string{
+				shared.RuntimeIDLabel: "test123",
+			},
+			expectSuccess: true,
+		},
+		{
+			name:          "Test GetRuntimeID() with non-existing label",
+			labels:        map[string]string{},
+			expectSuccess: false,
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			kyma := &v1beta2.Kyma{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Labels: testCase.labels,
+					Name:   "test-kyma",
+				},
+			}
+
+			id := kyma.GetRuntimeID()
+			if testCase.expectSuccess {
+				assert.Equal(t, testCase.labels[shared.RuntimeIDLabel], id)
+			} else {
+				assert.Empty(t, id)
+			}
+		})
+	}
+}
