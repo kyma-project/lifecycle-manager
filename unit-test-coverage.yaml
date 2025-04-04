@@ -26,6 +26,6 @@ packages:
   pkg/module/sync: 10
   pkg/templatelookup: 88
   pkg/templatelookup/moduletemplateinfolookup: 98
-  pkg/watcher/certificate/cert_manager: 100
-  pkg/watcher/certificate/secret: 100
   pkg/watcher/certificate: 100
+  pkg/watcher/certificate/certmanager: 100
+  pkg/watcher/certificate/secret: 100
