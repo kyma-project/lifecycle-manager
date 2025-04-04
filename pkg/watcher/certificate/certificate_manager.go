@@ -77,7 +77,6 @@ func NewCertificateManager(certClient CertificateClient,
 	secretClient CertificateSecretClient,
 	config CertificateManagerConfig,
 ) *CertificateManager {
-
 	return &CertificateManager{
 		certClient:   certClient,
 		secretClient: secretClient,
@@ -182,7 +181,6 @@ func (c *CertificateManager) GetGatewayCertificateSecret(ctx context.Context) (*
 		c.config.GatewaySecretName,
 		c.config.CertificateNamespace,
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
@@ -190,7 +188,7 @@ func (c *CertificateManager) GetGatewayCertificateSecret(ctx context.Context) (*
 	return secret, nil
 }
 
-// renewal is required if the gateway certficiate secret is newer than the SKR certificate secret
+// renewal is required if the gateway certficiate secret is newer than the SKR certificate secret.
 func skrSecretRequiresRenewal(gatewaySecret *apicorev1.Secret, skrSecret *apicorev1.Secret) bool {
 	gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
 	// always renew if the annotation is not set

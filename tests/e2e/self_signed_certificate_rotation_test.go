@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
@@ -22,7 +23,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 	Context("Given Kyma deployed in KCP", func() {
 		It("When self signed certificate exists", func() {
 			certName := types.NamespacedName{
-				Name:      fmt.Sprintf("%s-webhook-tls", kyma.Name),
+				Name:      kyma.Name + "-webhook-tls",
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {

@@ -16,11 +16,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -165,7 +164,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 			By("And KCP TLS Certificate and Secret are deleted")
 			secretNamespacedName := types.NamespacedName{
-				Name:      fmt.Sprintf("%s-webhook-tls", kyma.Name),
+				Name:      kyma.Name + "-webhook-tls",
 				Namespace: IstioNamespace,
 			}
 			Eventually(CertificateSecretExists).

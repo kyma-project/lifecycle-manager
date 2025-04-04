@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 )
 
 var certificateLabels = k8slabels.Set{
@@ -64,7 +64,6 @@ func (c *CertificateClient) Create(ctx context.Context,
 	commonName string,
 	dnsNames []string,
 ) error {
-
 	cert := &certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,
@@ -107,7 +106,6 @@ func (c *CertificateClient) Create(ctx context.Context,
 		client.ForceOwnership,
 		fieldowners.LifecycleManager,
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to patch certificate: %w", err)
 	}

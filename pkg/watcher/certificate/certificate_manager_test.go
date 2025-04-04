@@ -214,7 +214,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew(t *testing.T) {
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified now
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      gatewaySecretName,
 					Namespace: certNamespace,
@@ -224,7 +224,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew(t *testing.T) {
 				},
 			},
 			// skr secret, created a minute ago
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
 					Namespace: certNamespace,
@@ -257,7 +257,7 @@ func Test_CertificateManager_RenewSkrCertificate_NoRenew(t *testing.T) {
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified a minute ago
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      gatewaySecretName,
 					Namespace: certNamespace,
@@ -267,7 +267,7 @@ func Test_CertificateManager_RenewSkrCertificate_NoRenew(t *testing.T) {
 				},
 			},
 			// skr secret, created now
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
 					Namespace: certNamespace,
@@ -298,7 +298,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_NoLastModified(t *testing
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, no last modified
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        gatewaySecretName,
 					Namespace:   certNamespace,
@@ -306,7 +306,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_NoLastModified(t *testing
 				},
 			},
 			// skr secret, created a minute ago
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
 					Namespace: certNamespace,
@@ -339,7 +339,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_InvalidLastModified(t *te
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, no last modified
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      gatewaySecretName,
 					Namespace: certNamespace,
@@ -349,7 +349,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_InvalidLastModified(t *te
 				},
 			},
 			// skr secret, created a minute ago
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
 					Namespace: certNamespace,
@@ -384,7 +384,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_GatewaySecret(t *testing.
 			// no gateway secret
 			nil,
 			// skr secret, created a minute ago
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
 					Namespace: certNamespace,
@@ -417,7 +417,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_SkrSecret(t *testing.T) {
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified now
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      gatewaySecretName,
 					Namespace: certNamespace,
@@ -452,7 +452,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_Delete(t *testing.T) {
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified now
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      gatewaySecretName,
 					Namespace: certNamespace,
@@ -462,7 +462,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_Delete(t *testing.T) {
 				},
 			},
 			// skr secret, created a minute ago
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
 					Namespace: certNamespace,
@@ -556,7 +556,7 @@ func Test_CertificateManager_GetSkrCertificateSecret(t *testing.T) {
 	certClientStub := &certificateClientStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
 					Namespace: certNamespace,
@@ -621,7 +621,7 @@ func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
 	certClientStub := &certificateClientStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
-			&apicorev1.Secret{
+			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      gatewaySecretName,
 					Namespace: certNamespace,
