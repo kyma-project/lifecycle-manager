@@ -41,6 +41,10 @@ const (
 	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
 	version                 = "v1"
 	webhookTimeOutInSeconds = 15
+
+	caCertKey        = "ca.crt"
+	tlsCertKey       = "tls.crt"
+	tlsPrivateKeyKey = "tls.key"
 )
 
 var (

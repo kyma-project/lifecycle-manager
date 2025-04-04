@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	webhookTLSCfgNameTpl = "%s-webhook-tls"
-	defaultBufferSize    = 2048
+	defaultBufferSize = 2048
 )
 
 var ErrGatewayHostWronglyConfigured = errors.New("gateway should have configured exactly one server and one host")
@@ -37,10 +36,6 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, skrClient client
 		return fmt.Errorf("failed to run resource operation: %w", err)
 	}
 	return nil
-}
-
-func ResolveTLSCertName(kymaName string) string {
-	return fmt.Sprintf(webhookTLSCfgNameTpl, kymaName)
 }
 
 func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstructured.Unstructured, error) {
