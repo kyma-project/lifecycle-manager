@@ -388,19 +388,18 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 	}
 
 	certificateManagerConfig := certificate.CertificateManagerConfig{
-		SkrServiceName:       watcher.SkrResourceName,
-		SkrNamespace:         flagVar.RemoteSyncNamespace,
-		CertificateNamespace: flagVar.IstioNamespace,
-		AdditionalDNSNames:   strings.Split(flagVar.AdditionalDNSNames, ","),
-		GatewaySecretName:    shared.GatewaySecretName,
-		RenewBuffer:          flagVar.SelfSignedCertRenewBuffer,
-		//TODO: make flagvar?
-		SkrCertificateNamingTemplate: "%s-webhook-tls",
+		SkrServiceName:               watcher.SkrResourceName,
+		SkrNamespace:                 flagVar.RemoteSyncNamespace,
+		CertificateNamespace:         flagVar.IstioNamespace,
+		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),
+		GatewaySecretName:            shared.GatewaySecretName,
+		RenewBuffer:                  flagVar.SelfSignedCertRenewBuffer,
+		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
 	}
 
 	certificateManager := certificate.NewCertificateManager(
 		cert_manager.NewCertificateClient(mgr.GetClient(),
-			"klm-watcher-selfsigned",
+			flagVar.SelfSignedCertificateIssuerName,
 			certificateConfig,
 		),
 		secret.NewCertificateSecretClient(mgr.GetClient()),

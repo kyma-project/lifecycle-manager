@@ -191,6 +191,16 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "4096",
 		},
 		{
+			constName:     "DefaultSelfSignedCertificateIssuerName",
+			constValue:    DefaultSelfSignedCertificateIssuerName,
+			expectedValue: "klm-watcher-selfsigned",
+		},
+		{
+			constName:     "DefaultSelfSignedCertificateNamingTemplate",
+			constValue:    DefaultSelfSignedCertificateNamingTemplate,
+			expectedValue: "%s-webhook-tls",
+		},
+		{
 			constName:     "DefaultIstioGatewayCertSwitchBeforeExpirationTime",
 			constValue:    DefaultIstioGatewayCertSwitchBeforeExpirationTime.String(),
 			expectedValue: (24 * time.Hour).String(),
