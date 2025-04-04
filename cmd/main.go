@@ -71,7 +71,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/cert_manager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -398,7 +398,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 	}
 
 	certificateManager := certificate.NewCertificateManager(
-		cert_manager.NewCertificateClient(mgr.GetClient(),
+		certmanager.NewCertificateClient(mgr.GetClient(),
 			flagVar.SelfSignedCertificateIssuerName,
 			certificateConfig,
 		),

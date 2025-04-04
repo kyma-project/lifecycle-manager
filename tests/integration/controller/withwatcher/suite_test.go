@@ -58,7 +58,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/cert_manager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
@@ -201,7 +201,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	certificateManager := certificate.NewCertificateManager(
-		cert_manager.NewCertificateClient(mgr.GetClient(),
+		certmanager.NewCertificateClient(mgr.GetClient(),
 			"test-issuer",
 			certificateConfig,
 		),

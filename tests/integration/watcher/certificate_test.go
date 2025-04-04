@@ -13,7 +13,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/cert_manager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -84,7 +84,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			}
 
 			certificateManager := certificate.NewCertificateManager(
-				cert_manager.NewCertificateClient(controlPlaneClient,
+				certmanager.NewCertificateClient(controlPlaneClient,
 					"klm-watcher-selfsigned",
 					certificateConfig,
 				),

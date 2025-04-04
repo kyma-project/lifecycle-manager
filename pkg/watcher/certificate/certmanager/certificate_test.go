@@ -1,4 +1,4 @@
-package cert_manager_test
+package certmanager_test
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/cert_manager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 )
 
 var (
@@ -74,7 +74,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	}
 
 	clientStub := &kcpClientStub{}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -101,7 +101,7 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		patchErr: assert.AnError,
 	}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -125,7 +125,7 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 
 func Test_CertificateClient_Delete_Success(t *testing.T) {
 	clientStub := &kcpClientStub{}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -148,7 +148,7 @@ func Test_CertificateClient_Delete_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		deleteErr: assert.AnError,
 	}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -169,7 +169,7 @@ func Test_CertificateClient_Delete_IgnoreNotFoundError(t *testing.T) {
 	clientStub := &kcpClientStub{
 		deleteErr: apierrors.NewNotFound(certmanagerv1.Resource("certificates"), certName),
 	}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -204,7 +204,7 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 			},
 		},
 	}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -225,7 +225,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getErr: assert.AnError,
 	}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -257,7 +257,7 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 			Status: certmanagerv1.CertificateStatus{},
 		},
 	}
-	certClient := cert_manager.NewCertificateClient(
+	certClient := certmanager.NewCertificateClient(
 		clientStub,
 		issuerName,
 		certificate.CertificateConfig{
@@ -270,7 +270,7 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	assert.Equal(t, cert_manager.ErrNoRenewalTime, err)
+	assert.Equal(t, certmanager.ErrNoRenewalTime, err)
 	assert.True(t, time.IsZero())
 	assert.True(t, clientStub.getCalled)
 }
