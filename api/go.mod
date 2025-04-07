@@ -1,6 +1,7 @@
 module github.com/kyma-project/lifecycle-manager/api
 
 go 1.24.2
+
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/stretchr/testify v1.10.0

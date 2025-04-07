@@ -20,14 +20,14 @@ require (
 	github.com/kyma-project/lifecycle-manager/maintenancewindows v0.0.0-20250113095044-41115399d588
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240502124257-9d96561ef070
 	github.com/onsi/ginkgo/v2 v2.23.3
-	github.com/onsi/gomega v1.36.3
+	github.com/onsi/gomega v1.37.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/time v0.11.0
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
-	ocm.software/ocm v0.22.0
+	ocm.software/ocm v0.22.1
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/yaml v1.4.0
 )
