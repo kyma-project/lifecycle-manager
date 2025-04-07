@@ -36,7 +36,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        "test-kyma-1",
 					Namespace:   "testcase-1",
-					Annotations: map[string]string{shared.SKRDomainAnnotation: "example.domain.com"},
+					Annotations: map[string]string{shared.SkrDomainAnnotation: "example.domain.com"},
 				},
 			},
 			issuer:         NewTestIssuer("testcase-1"),

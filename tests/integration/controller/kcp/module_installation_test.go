@@ -73,7 +73,7 @@ func configureKCPKyma(kymaName, moduleName string, beta, internal bool) error {
 	kyma := builder.NewKymaBuilder().
 		WithName(kymaName).
 		WithNamespace(ControlPlaneNamespace).
-		WithAnnotation(shared.SKRDomainAnnotation, "example.domain.com").
+		WithAnnotation(shared.SkrDomainAnnotation, "example.domain.com").
 		WithLabel(shared.InstanceIDLabel, "test-instance").
 		WithChannel(v1beta2.DefaultChannel).
 		Build()

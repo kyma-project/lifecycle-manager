@@ -49,7 +49,7 @@ func NewKymaWithNamespaceName(name, namespace, channel string) *v1beta2.Kyma {
 	return builder.NewKymaBuilder().
 		WithNamePrefix(name).
 		WithNamespace(namespace).
-		WithAnnotation(shared.SKRDomainAnnotation, "example.domain.com").
+		WithAnnotation(shared.SkrDomainAnnotation, "example.domain.com").
 		WithLabel(shared.InstanceIDLabel, "test-instance").
 		WithChannel(channel).
 		Build()

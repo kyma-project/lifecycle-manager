@@ -53,7 +53,7 @@ func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: kymaName,
 			Annotations: map[string]string{
-				shared.SKRDomainAnnotation: skrDomainName,
+				shared.SkrDomainAnnotation: skrDomainName,
 			},
 			Labels: map[string]string{
 				shared.RuntimeIDLabel: runtimeID,
@@ -91,7 +91,7 @@ func Test_CertificateManager_CreateSkrCertificate_Error(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: kymaName,
 			Annotations: map[string]string{
-				shared.SKRDomainAnnotation: skrDomainName,
+				shared.SkrDomainAnnotation: skrDomainName,
 			},
 		},
 	}
@@ -141,7 +141,7 @@ func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationEmpty(t *te
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: kymaName,
 			Annotations: map[string]string{
-				shared.SKRDomainAnnotation: "",
+				shared.SkrDomainAnnotation: "",
 			},
 		},
 	}

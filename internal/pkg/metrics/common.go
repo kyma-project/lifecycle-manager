@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", shared.SKRDomainAnnotation)
-	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", shared.SKRDomainAnnotation)
+	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", shared.SkrDomainAnnotation)
+	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", shared.SkrDomainAnnotation)
 	errMissingInstanceLabel   = fmt.Errorf("expected label '%s' not found", shared.InstanceIDLabel)
 	errInstanceLabelNoValue   = fmt.Errorf("label '%s' has empty value", shared.InstanceIDLabel)
 	errMetric                 = errors.New("failed to update metrics")
@@ -32,7 +32,7 @@ var (
 
 func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
 	shoot := ""
-	shootFQDN, keyExists := kyma.Annotations[shared.SKRDomainAnnotation]
+	shootFQDN, keyExists := kyma.Annotations[shared.SkrDomainAnnotation]
 	if keyExists {
 		parts := strings.Split(shootFQDN, ".")
 		minFqdnParts := 2

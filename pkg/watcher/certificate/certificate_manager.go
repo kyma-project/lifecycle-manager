@@ -211,7 +211,7 @@ func skrSecretRequiresRenewal(gatewaySecret *apicorev1.Secret, skrSecret *apicor
 //   - local K8s addresses for the SKR service
 //   - additional DNS names from the config
 func (c *CertificateManager) constuctDNSNames(kyma *v1beta2.Kyma) ([]string, error) {
-	skrDomain, found := kyma.Annotations[shared.SKRDomainAnnotation]
+	skrDomain, found := kyma.Annotations[shared.SkrDomainAnnotation]
 
 	if !found {
 		return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationMissing, kyma.Name)
