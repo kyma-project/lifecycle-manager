@@ -1,5 +1,11 @@
 # ADR 001 - XXX-Defined Interfaces
 
+- status: work in progress
+- date: 2025-04-08
+- contributors:
+  - @c-pius
+  - @ruanxin
+
 ## Context
 
 In contrast to many other programming languages, Go supports the concept of consumer-defined interfaces that are implemented implicitly.
