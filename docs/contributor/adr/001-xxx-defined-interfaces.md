@@ -1,10 +1,8 @@
 # ADR 001 - XXX-Defined Interfaces
 
-- status: work in progress
-- date: 2025-04-08
-- contributors:
-  - @c-pius
-  - @ruanxin
+## Status
+
+Accepted
 
 ## Context
 
@@ -25,9 +23,5 @@ It needs to be decided what criteria shall be used to choose between consumer-de
 TBD
 
 ## Consequence
-
-TBD
-
-## Discussion
 
 TBD
