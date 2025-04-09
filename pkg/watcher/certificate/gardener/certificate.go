@@ -19,9 +19,6 @@ var CacheObjects []client.Object = []client.Object{
 	&gcertv1alpha1.Certificate{},
 }
 
-//nolint:gochecknoglobals // this is const config
-var rsaKeyAlgorithm = gcertv1alpha1.RSAKeyAlgorithm
-
 type kcpClient interface {
 	Get(ctx context.Context,
 		key client.ObjectKey,
@@ -71,6 +68,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 ) error {
 	// save as of the guard clause in constructor
 	keySize := gcertv1alpha1.PrivateKeySize(int32(c.config.KeySize))
+	rsaKeyAlgorithm := gcertv1alpha1.RSAKeyAlgorithm
 
 	cert := &gcertv1alpha1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
