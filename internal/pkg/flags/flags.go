@@ -48,6 +48,8 @@ const (
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
 	DefaultSelfSignedCertKeySize                                        = 4096
+	DefaultSelfSignedCertificateIssuerName                              = "klm-watcher-selfsigned"
+	DefaultSelfSignedCertificateNamingTemplate                          = "%s-webhook-tls"
 	DefaultIstioGatewayCertSwitchBeforeExpirationTime                   = 24 * time.Hour
 	DefaultIstioGatewaySecretRequeueSuccessInterval                     = 5 * time.Minute
 	DefaultIstioGatewaySecretRequeueErrInterval                         = 2 * time.Second
@@ -209,8 +211,6 @@ func DefineFlagVar() *FlagVar {
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.RemoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
-	flag.StringVar(&flagVar.CaCertName, "ca-cert-name", DefaultCaCertName,
-		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
 	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", DefaultSelfSignedCertDuration,
 		"The lifetime duration of self-signed certificate, minimum accepted duration is 1 hour.")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
@@ -221,6 +221,11 @@ func DefineFlagVar() *FlagVar {
 		"The buffer duration to wait before confirm self-signed certificate not renewed")
 	flag.IntVar(&flagVar.SelfSignedCertKeySize, "self-signed-cert-key-size", DefaultSelfSignedCertKeySize,
 		"The key size for the self-signed certificate")
+	flag.StringVar(&flagVar.SelfSignedCertificateIssuerName, "self-signed-cert-issuer-name",
+		DefaultSelfSignedCertificateIssuerName, "The issuer name for the self-signed certificate")
+	flag.StringVar(&flagVar.SelfSignedCertificateNamingTemplate, "self-signed-cert-naming-template",
+		DefaultSelfSignedCertificateNamingTemplate,
+		"The naming template for the self-signed certificate. Should contain one '%s' placeholder for the Kyma name.")
 	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
 		"istio-gateway-cert-switch-before-expiration-time", DefaultIstioGatewayCertSwitchBeforeExpirationTime,
 		"Time before the expiration of the current CA certificate when the Gateway certificate should be switched")
@@ -307,12 +312,13 @@ type FlagVar struct {
 	PurgeFinalizerTimeout                      time.Duration
 	SkipPurgingFor                             string
 	RemoteSyncNamespace                        string
-	CaCertName                                 string
 	IsKymaManaged                              bool
 	SelfSignedCertDuration                     time.Duration
 	SelfSignedCertRenewBefore                  time.Duration
 	SelfSignedCertRenewBuffer                  time.Duration
 	SelfSignedCertKeySize                      int
+	SelfSignedCertificateIssuerName            string
+	SelfSignedCertificateNamingTemplate        string
 	UseLegacyStrategyForIstioGatewaySecret     bool
 	DropCrdStoredVersionMap                    string
 	WatcherImageTag                            string

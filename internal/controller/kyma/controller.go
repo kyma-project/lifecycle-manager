@@ -60,6 +60,12 @@ const (
 	patchStatusError  event.Reason = "PatchStatus"
 )
 
+type SKRWebhookManager interface {
+	Reconcile(ctx context.Context, kyma *v1beta2.Kyma) error
+	Remove(ctx context.Context, kyma *v1beta2.Kyma) error
+	RemoveSkrCertificate(ctx context.Context, kymaName string) error
+}
+
 type ModuleStatusHandler interface {
 	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error
 }
@@ -72,7 +78,7 @@ type Reconciler struct {
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SyncRemoteCrds       remote.SyncCrdsUseCase
 	ModulesStatusHandler ModuleStatusHandler
-	SKRWebhookManager    *watcher.SKRWebhookManifestManager
+	SKRWebhookManager    SKRWebhookManager
 	RemoteSyncNamespace  string
 	IsManagedKyma        bool
 	Metrics              *metrics.KymaMetrics
@@ -354,9 +360,9 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 
 	if r.WatcherEnabled() {
 		errGroup.Go(func() error {
-			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
+			if err := r.SKRWebhookManager.Reconcile(ctx, kyma); err != nil {
 				r.Metrics.RecordRequeueReason(metrics.SkrWebhookResourcesInstallation, queue.UnexpectedRequeue)
-				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
+				if errors.Is(err, watcher.ErrSkrCertificateNotReady) {
 					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 					return nil
 				}
@@ -392,7 +398,6 @@ func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		}
-		r.SKRWebhookManager.WatcherMetrics.CleanupMetrics(kyma.Name)
 	}
 
 	if err := r.RemoteCatalog.Delete(ctx, kyma.GetNamespacedName()); err != nil {
@@ -607,7 +612,7 @@ func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
 
 func (r *Reconciler) deleteOrphanedCertificate(ctx context.Context, kymaName string) error {
 	if r.WatcherEnabled() {
-		if err := r.SKRWebhookManager.RemoveKCPCertificate(ctx, kymaName); err != nil {
+		if err := r.SKRWebhookManager.RemoveSkrCertificate(ctx, kymaName); err != nil {
 			return err
 		}
 	}
