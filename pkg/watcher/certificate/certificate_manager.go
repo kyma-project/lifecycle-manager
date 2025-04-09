@@ -21,12 +21,6 @@ var (
 	ErrSkrCertificateNotReady  = errors.New("SKR certificate not ready")
 )
 
-//nolint:gochecknoglobals // this is const config
-var serviceSuffixes = []string{
-	"svc.cluster.local",
-	"svc",
-}
-
 type CertificateClient interface {
 	Create(
 		ctx context.Context,
@@ -211,6 +205,11 @@ func skrSecretRequiresRenewal(gatewaySecret *apicorev1.Secret, skrSecret *apicor
 //   - local K8s addresses for the SKR service
 //   - additional DNS names from the config
 func (c *CertificateManager) constuctDNSNames(kyma *v1beta2.Kyma) ([]string, error) {
+	var serviceSuffixes = []string{
+		"svc.cluster.local",
+		"svc",
+	}
+
 	skrDomain, found := kyma.Annotations[shared.SkrDomainAnnotation]
 
 	if !found {
