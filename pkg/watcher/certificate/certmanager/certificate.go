@@ -14,9 +14,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 )
 
-// CacheObjects is a list of objects that need to be cached for this client.
-var CacheObjects []client.Object = []client.Object{
-	&certmanagerv1.Certificate{},
+// GetCacheObjects returns a list of objects that need to be cached for this client.
+func GetCacheObjects() []client.Object {
+	return []client.Object{
+		&certmanagerv1.Certificate{},
+	}
 }
 
 type kcpClient interface {
@@ -74,7 +76,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 			DNSNames:    dnsNames,
 			SecretName:  name,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: certificate.CertificateLabels,
+				Labels: certificate.GetCertificateLabels(),
 			},
 			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: c.issuerName,

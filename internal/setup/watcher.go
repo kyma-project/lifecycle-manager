@@ -1,17 +1,17 @@
 package setup
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/common"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -52,7 +52,6 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 		resolvedKcpAddr,
 		certManager,
 		watcherMetrics)
-
 	if err != nil {
 		setupLog.Error(err, "failed to setup SKR webhook manager")
 		os.Exit(bootstrapFailedExitCode)
@@ -63,7 +62,8 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 
 func getResolvedKcpAddress(mgr ctrl.Manager,
 	flagVar *flags.FlagVar,
-	setupLog logr.Logger) string {
+	setupLog logr.Logger,
+) string {
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
@@ -114,7 +114,7 @@ func setupCertClient(kcpClient client.Client,
 	}[flagVar.CertificateManagement]
 
 	if !ok {
-		setupLog.Error(fmt.Errorf("unsupported certificate management: %s", flagVar.CertificateManagement),
+		setupLog.Error(common.ErrUnsupportedCertificateManagementSystem,
 			"unable to initialize certificate management")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -159,7 +159,6 @@ func setupGardenerCertificateManagementClient(kcpClient client.Client,
 		flagVar.IstioNamespace,
 		config,
 	)
-
 	if err != nil {
 		setupLog.Error(err, "unable to initialize Gardener certificate management")
 		os.Exit(bootstrapFailedExitCode)

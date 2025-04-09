@@ -7,11 +7,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 const (
@@ -76,7 +77,6 @@ const (
 )
 
 var (
-	ErrUnsupportedCertificateManagementSystem  = errors.New("unsupported certificate management system")
 	ErrMissingWatcherImageTag                  = errors.New("runtime watcher image tag is not provided")
 	ErrMissingWatcherImageRegistry             = errors.New("runtime watcher image registry is not provided")
 	ErrWatcherDirNotExist                      = errors.New("failed to locate watcher resource manifest folder")
@@ -380,7 +380,7 @@ func (f FlagVar) Validate() error {
 		certmanagerv1.SchemeGroupVersion.String(): true,
 		gcertv1alpha1.SchemeGroupVersion.String(): true,
 	}[f.CertificateManagement] {
-		return fmt.Errorf("%w: '%s'", ErrUnsupportedCertificateManagementSystem, f.CertificateManagement)
+		return fmt.Errorf("%w: '%s'", common.ErrUnsupportedCertificateManagementSystem, f.CertificateManagement)
 	}
 
 	return nil

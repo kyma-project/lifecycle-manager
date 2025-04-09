@@ -10,6 +10,7 @@ import (
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kyma-project/lifecycle-manager/internal/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	. "github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -329,7 +330,7 @@ func Test_Flags_Validate(t *testing.T) {
 		{
 			name:  "CertificateManagement unsupported",
 			flags: newFlagVarBuilder().withCertificateManagement("foobar").build(),
-			err:   ErrUnsupportedCertificateManagementSystem,
+			err:   common.ErrUnsupportedCertificateManagementSystem,
 		},
 		{
 			name:  "WatcherImageTag is required",

@@ -2,21 +2,26 @@ package gardener
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 )
 
-// CacheObjects is a list of objects that need to be cached for this client.
-var CacheObjects []client.Object = []client.Object{
-	&gcertv1alpha1.Certificate{},
+var ErrKeySizeOutOfRange = errors.New("KeySize is out of range for int32")
+
+// GetCacheObjects returns a list of objects that need to be cached for this client.
+func GetCacheObjects() []client.Object {
+	return []client.Object{
+		&gcertv1alpha1.Certificate{},
+	}
 }
 
 type kcpClient interface {
@@ -49,7 +54,7 @@ func NewCertificateClient(kcpClient kcpClient,
 	config certificate.CertificateConfig,
 ) (*CertificateClient, error) {
 	if config.KeySize > math.MaxInt32 || config.KeySize < math.MinInt32 {
-		return nil, fmt.Errorf("KeySize %d is out of range for int32", config.KeySize)
+		return nil, ErrKeySizeOutOfRange
 	}
 
 	return &CertificateClient{
@@ -66,7 +71,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 	commonName string,
 	dnsNames []string,
 ) error {
-	// save as of the guard clause in constructor
+	//nolint:gosec // save as of the guard clause in constructor
 	keySize := gcertv1alpha1.PrivateKeySize(int32(c.config.KeySize))
 	rsaKeyAlgorithm := gcertv1alpha1.RSAKeyAlgorithm
 
@@ -83,7 +88,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 			Duration:     &apimetav1.Duration{Duration: c.config.Duration},
 			DNSNames:     dnsNames,
 			SecretName:   &name,
-			SecretLabels: certificate.CertificateLabels,
+			SecretLabels: certificate.GetCertificateLabels(),
 			IssuerRef: &gcertv1alpha1.IssuerRef{
 				Name:      c.issuerName,
 				Namespace: c.issuerNamespace,

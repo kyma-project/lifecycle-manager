@@ -62,7 +62,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 			Duration:     &apimetav1.Duration{Duration: certDuration},
 			DNSNames:     certDNSNames,
 			SecretName:   &certName,
-			SecretLabels: certificate.CertificateLabels,
+			SecretLabels: certificate.GetCertificateLabels(),
 			IssuerRef: &gcertv1alpha1.IssuerRef{
 				Name:      issuerName,
 				Namespace: issuerNamespace,
@@ -325,6 +325,7 @@ type kcpClientStub struct {
 func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	c.getCalled = true
 	if c.getCert != nil {
+		//nolint:forcetypeassert // this is a stub
 		c.getCert.DeepCopyInto(obj.(*gcertv1alpha1.Certificate))
 	}
 	return c.getErr
@@ -332,12 +333,14 @@ func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj clien
 
 func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.deleteCalled = true
+	//nolint:forcetypeassert // this is a stub
 	c.deleteArg = obj.(*gcertv1alpha1.Certificate)
 	return c.deleteErr
 }
 
 func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	c.patchCalled = true
+	//nolint:forcetypeassert // this is a stub
 	c.patchArg = obj.(*gcertv1alpha1.Certificate)
 	return c.patchErr
 }

@@ -1,18 +1,18 @@
 package setup
 
 import (
-	"fmt"
 	"os"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 )
@@ -20,7 +20,8 @@ import (
 func SetupCacheOptions(isKymaManaged bool,
 	istioNamespace string,
 	kcpNamespace string,
-	certificateManagement string, setupLog logr.Logger) cache.Options {
+	certificateManagement string, setupLog logr.Logger,
+) cache.Options {
 	if isKymaManaged {
 		options := &KcpCacheOptions{
 			istioNamespace:             istioNamespace,
@@ -111,12 +112,12 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 
 func getCertManagementCacheObjects(certificateManagement string, setupLog logr.Logger) []client.Object {
 	cacheObjects, ok := map[string][]client.Object{
-		certmanagerv1.SchemeGroupVersion.String(): certmanager.CacheObjects,
-		gcertv1alpha1.SchemeGroupVersion.String(): gardener.CacheObjects,
+		certmanagerv1.SchemeGroupVersion.String(): certmanager.GetCacheObjects(),
+		gcertv1alpha1.SchemeGroupVersion.String(): gardener.GetCacheObjects(),
 	}[certificateManagement]
 
 	if !ok {
-		setupLog.Error(fmt.Errorf("unsupported certificate management: %s", certificateManagement),
+		setupLog.Error(common.ErrUnsupportedCertificateManagementSystem,
 			"unable to get cache options for certificate management")
 		os.Exit(bootstrapFailedExitCode)
 	}

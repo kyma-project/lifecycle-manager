@@ -19,8 +19,10 @@ type CertificateConfig struct {
 	KeySize     int
 }
 
-// CertificateLabels are the labels that are added to the certificate.
-var CertificateLabels = k8slabels.Set{
-	shared.PurposeLabel: shared.CertManager,
-	shared.ManagedBy:    shared.OperatorName,
+// GetCertificateLabels returns the labels that are added to the certificate.
+func GetCertificateLabels() k8slabels.Set {
+	return k8slabels.Set{
+		shared.PurposeLabel: shared.CertManager,
+		shared.ManagedBy:    shared.OperatorName,
+	}
 }
