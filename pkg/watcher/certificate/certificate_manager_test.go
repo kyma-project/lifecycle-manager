@@ -616,7 +616,7 @@ func Test_CertificateManager_GetSkrCertificateSecret_NotFound(t *testing.T) {
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, certificate.ErrSkrCertificateNotReady)
+	assert.Contains(t, err.Error(), "failed to get SKR certificate secret:")
 	assert.Nil(t, result)
 	assert.True(t, secretClientStub.getCalled)
 }

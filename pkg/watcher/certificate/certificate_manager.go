@@ -7,7 +7,6 @@ import (
 	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -18,7 +17,6 @@ import (
 var (
 	ErrDomainAnnotationEmpty   = errors.New("domain annotation is empty")
 	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
-	ErrSkrCertificateNotReady  = errors.New("SKR certificate not ready")
 )
 
 type CertificateClient interface {
@@ -158,10 +156,6 @@ func (c *CertificateManager) GetSkrCertificateSecret(ctx context.Context, kymaNa
 		c.constructSkrCertificateName(kymaName),
 		c.config.CertificateNamespace,
 	)
-
-	if apierrors.IsNotFound(err) {
-		return nil, ErrSkrCertificateNotReady
-	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)

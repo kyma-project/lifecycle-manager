@@ -45,7 +45,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 var (
@@ -362,7 +362,7 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 		errGroup.Go(func() error {
 			if err := r.SKRWebhookManager.Reconcile(ctx, kyma); err != nil {
 				r.Metrics.RecordRequeueReason(metrics.SkrWebhookResourcesInstallation, queue.UnexpectedRequeue)
-				if errors.Is(err, certificate.ErrSkrCertificateNotReady) {
+				if errors.Is(err, watcher.ErrSkrCertificateNotReady) {
 					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 					return nil
 				}
