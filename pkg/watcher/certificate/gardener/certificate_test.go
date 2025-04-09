@@ -44,8 +44,8 @@ func Test_CertificateClient_New_Error(t *testing.T) {
 		},
 	)
 	require.Error(t, err)
+	require.ErrorIs(t, err, gardener.ErrKeySizeOutOfRange)
 	assert.Nil(t, certClient)
-	assert.Contains(t, err.Error(), "KeySize 2147483648 is out of range for int32")
 }
 
 func Test_CertificateClient_Create_Success(t *testing.T) {
