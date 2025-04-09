@@ -171,11 +171,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "istio-system",
 		},
 		{
-			constName:     "DefaultCaCertName",
-			constValue:    DefaultCaCertName,
-			expectedValue: "klm-watcher-serving",
-		},
-		{
 			constName:     "DefaultSelfSignedCertDuration",
 			constValue:    DefaultSelfSignedCertDuration.String(),
 			expectedValue: (90 * 24 * time.Hour).String(),
@@ -194,6 +189,16 @@ func Test_ConstantFlags(t *testing.T) {
 			constName:     "DefaultSelfSignedCertKeySize",
 			constValue:    strconv.Itoa(int(DefaultSelfSignedCertKeySize)),
 			expectedValue: "4096",
+		},
+		{
+			constName:     "DefaultSelfSignedCertificateIssuerName",
+			constValue:    DefaultSelfSignedCertificateIssuerName,
+			expectedValue: "klm-watcher-selfsigned",
+		},
+		{
+			constName:     "DefaultSelfSignedCertificateNamingTemplate",
+			constValue:    DefaultSelfSignedCertificateNamingTemplate,
+			expectedValue: "%s-webhook-tls",
 		},
 		{
 			constName:     "DefaultIstioGatewayCertSwitchBeforeExpirationTime",

@@ -70,6 +70,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "ocm.software/ocm/api/ocm"
@@ -158,7 +161,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder)
-	var skrWebhookManager *watcher.SKRWebhookManifestManager
+	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
 		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
@@ -304,7 +307,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	skrWebhookManager *watcher.SKRWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
+	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
 	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
@@ -358,23 +361,15 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
 	flagVar *flags.FlagVar,
-) (*watcher.SKRWebhookManifestManager, error) {
-	config := watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:         flagVar.WatcherResourcesPath,
+) (*watcher.SkrWebhookManifestManager, error) {
+	skrWebhookManagerConfig := watcher.SkrWebhookManagerConfig{
+		SkrWatcherPath:         flagVar.WatcherResourcesPath,
 		SkrWatcherImage:        flagVar.GetWatcherImage(),
 		SkrWebhookCPULimits:    flagVar.WatcherResourceLimitsCPU,
 		SkrWebhookMemoryLimits: flagVar.WatcherResourceLimitsMemory,
 		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
 	}
-	certConfig := watcher.CertificateConfig{
-		IstioNamespace:      flagVar.IstioNamespace,
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		CACertificateName:   flagVar.CaCertName,
-		AdditionalDNSNames:  strings.Split(flagVar.AdditionalDNSNames, ","),
-		Duration:            flagVar.SelfSignedCertDuration,
-		RenewBefore:         flagVar.SelfSignedCertRenewBefore,
-		KeySize:             flagVar.SelfSignedCertKeySize,
-	}
+
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
@@ -385,12 +380,39 @@ func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrConte
 	if err != nil {
 		return nil, err
 	}
+
+	certificateConfig := certificate.CertificateConfig{
+		Duration:    flagVar.SelfSignedCertDuration,
+		RenewBefore: flagVar.SelfSignedCertRenewBefore,
+		KeySize:     flagVar.SelfSignedCertKeySize,
+	}
+
+	certificateManagerConfig := certificate.CertificateManagerConfig{
+		SkrServiceName:               watcher.SkrResourceName,
+		SkrNamespace:                 flagVar.RemoteSyncNamespace,
+		CertificateNamespace:         flagVar.IstioNamespace,
+		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),
+		GatewaySecretName:            shared.GatewaySecretName,
+		RenewBuffer:                  flagVar.SelfSignedCertRenewBuffer,
+		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
+	}
+
+	certificateManager := certificate.NewCertificateManager(
+		certmanager.NewCertificateClient(mgr.GetClient(),
+			flagVar.SelfSignedCertificateIssuerName,
+			certificateConfig,
+		),
+		secret.NewCertificateSecretClient(mgr.GetClient()),
+		certificateManagerConfig,
+	)
+
 	return watcher.NewSKRWebhookManifestManager(
 		mgr.GetClient(),
 		skrContextFactory,
-		config,
-		certConfig,
-		resolvedKcpAddr)
+		skrWebhookManagerConfig,
+		resolvedKcpAddr,
+		certificateManager,
+		metrics.NewWatcherMetrics())
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
