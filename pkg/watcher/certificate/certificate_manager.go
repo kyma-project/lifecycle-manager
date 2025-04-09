@@ -156,7 +156,6 @@ func (c *CertificateManager) GetSkrCertificateSecret(ctx context.Context, kymaNa
 		c.constructSkrCertificateName(kymaName),
 		c.config.CertificateNamespace,
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
@@ -199,7 +198,7 @@ func skrSecretRequiresRenewal(gatewaySecret *apicorev1.Secret, skrSecret *apicor
 //   - local K8s addresses for the SKR service
 //   - additional DNS names from the config
 func (c *CertificateManager) constuctDNSNames(kyma *v1beta2.Kyma) ([]string, error) {
-	var serviceSuffixes = []string{
+	serviceSuffixes := []string{
 		"svc.cluster.local",
 		"svc",
 	}
