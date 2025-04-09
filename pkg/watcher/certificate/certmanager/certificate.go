@@ -17,8 +17,6 @@ import (
 // CacheObjects is a list of objects that need to be cached for this client.
 var CacheObjects []client.Object = []client.Object{
 	&certmanagerv1.Certificate{},
-	// TODO: verify if issuer is still needed
-	&certmanagerv1.Issuer{},
 }
 
 type kcpClient interface {
