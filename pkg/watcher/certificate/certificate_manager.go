@@ -7,7 +7,6 @@ import (
 	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -18,14 +17,7 @@ import (
 var (
 	ErrDomainAnnotationEmpty   = errors.New("domain annotation is empty")
 	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
-	ErrSkrCertificateNotReady  = errors.New("SKR certificate not ready")
 )
-
-//nolint:gochecknoglobals // this is const config
-var serviceSuffixes = []string{
-	"svc.cluster.local",
-	"svc",
-}
 
 type CertificateClient interface {
 	Create(
@@ -164,11 +156,6 @@ func (c *CertificateManager) GetSkrCertificateSecret(ctx context.Context, kymaNa
 		c.constructSkrCertificateName(kymaName),
 		c.config.CertificateNamespace,
 	)
-
-	if apierrors.IsNotFound(err) {
-		return nil, ErrSkrCertificateNotReady
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
@@ -211,7 +198,12 @@ func skrSecretRequiresRenewal(gatewaySecret *apicorev1.Secret, skrSecret *apicor
 //   - local K8s addresses for the SKR service
 //   - additional DNS names from the config
 func (c *CertificateManager) constuctDNSNames(kyma *v1beta2.Kyma) ([]string, error) {
-	skrDomain, found := kyma.Annotations[shared.SKRDomainAnnotation]
+	serviceSuffixes := []string{
+		"svc.cluster.local",
+		"svc",
+	}
+
+	skrDomain, found := kyma.Annotations[shared.SkrDomainAnnotation]
 
 	if !found {
 		return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationMissing, kyma.Name)

@@ -53,7 +53,7 @@ func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: kymaName,
 			Annotations: map[string]string{
-				shared.SKRDomainAnnotation: skrDomainName,
+				shared.SkrDomainAnnotation: skrDomainName,
 			},
 			Labels: map[string]string{
 				shared.RuntimeIDLabel: runtimeID,
@@ -91,7 +91,7 @@ func Test_CertificateManager_CreateSkrCertificate_Error(t *testing.T) {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: kymaName,
 			Annotations: map[string]string{
-				shared.SKRDomainAnnotation: skrDomainName,
+				shared.SkrDomainAnnotation: skrDomainName,
 			},
 		},
 	}
@@ -141,7 +141,7 @@ func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationEmpty(t *te
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: kymaName,
 			Annotations: map[string]string{
-				shared.SKRDomainAnnotation: "",
+				shared.SkrDomainAnnotation: "",
 			},
 		},
 	}
@@ -616,7 +616,7 @@ func Test_CertificateManager_GetSkrCertificateSecret_NotFound(t *testing.T) {
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, certificate.ErrSkrCertificateNotReady)
+	assert.Contains(t, err.Error(), "failed to get SKR certificate secret:")
 	assert.Nil(t, result)
 	assert.True(t, secretClientStub.getCalled)
 }

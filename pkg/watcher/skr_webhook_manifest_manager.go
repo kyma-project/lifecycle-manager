@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -20,6 +21,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
+
+var ErrSkrCertificateNotReady = errors.New("SKR certificate not ready")
 
 type WatcherMetrics interface {
 	SetCertNotRenew(kymaName string)
@@ -250,6 +253,10 @@ func (m *SkrWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 ) (*unstructuredResourcesConfig, error) {
 	skrCertificateSecret, err := m.certificateManager.GetSkrCertificateSecret(ctx, kymaName)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, ErrSkrCertificateNotReady
+		}
+
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
