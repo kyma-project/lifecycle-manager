@@ -17,7 +17,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 var (
@@ -50,7 +49,7 @@ func NewKymaWithNamespaceName(name, namespace, channel string) *v1beta2.Kyma {
 	return builder.NewKymaBuilder().
 		WithNamePrefix(name).
 		WithNamespace(namespace).
-		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
+		WithAnnotation(shared.SkrDomainAnnotation, "example.domain.com").
 		WithLabel(shared.InstanceIDLabel, "test-instance").
 		WithChannel(channel).
 		Build()
