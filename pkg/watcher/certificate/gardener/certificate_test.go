@@ -31,6 +31,12 @@ var (
 	certKeySize     gcertv1alpha1.PrivateKeySize = 4096
 )
 
+func Test_GetCacheObjects(t *testing.T) {
+	objects := gardener.GetCacheObjects()
+	require.Len(t, objects, 1)
+	assert.IsType(t, &gcertv1alpha1.Certificate{}, objects[0])
+}
+
 func Test_CertificateClient_New_Error(t *testing.T) {
 	invalidKeySize := math.MaxInt32 + 1
 	certClient, err := gardener.NewCertificateClient(

@@ -34,6 +34,12 @@ var (
 	certKeySize     = 4096
 )
 
+func Test_GetCacheObjects(t *testing.T) {
+	objects := certmanager.GetCacheObjects()
+	require.Len(t, objects, 1)
+	assert.IsType(t, &certmanagerv1.Certificate{}, objects[0])
+}
+
 func Test_CertificateClient_Create_Success(t *testing.T) {
 	expectedCertificate := &certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
