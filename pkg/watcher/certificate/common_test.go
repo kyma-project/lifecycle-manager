@@ -3,9 +3,10 @@ package certificate_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_GetCertificateLabels(t *testing.T) {
