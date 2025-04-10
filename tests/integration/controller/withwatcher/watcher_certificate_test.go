@@ -14,10 +14,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var ErrPrivateKeyNotMatching = errors.New("private Key for the TLS secret doesn't match")
@@ -106,7 +105,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
 	certificateCR := &certmanagerv1.Certificate{}
 	err := clnt.Get(ctx,
-		client.ObjectKey{Name: watcher.ResolveTLSCertName(kymaName), Namespace: istioSystemNs},
+		client.ObjectKey{Name: kymaName + "-webhook-tls", Namespace: istioSystemNs},
 		certificateCR)
 	return certificateCR, err
 }
