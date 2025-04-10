@@ -23,4 +23,4 @@ For decisions internal to lifecycle-manager, e.g., implementation- or architectu
 
 ## Consequence
 
-Each new significant decision 
+Each new significant decision about internal lifecycle-manager implementation or architecture is documented as ADR.
