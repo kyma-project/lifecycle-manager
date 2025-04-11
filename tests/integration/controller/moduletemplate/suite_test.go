@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -31,8 +32,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -66,7 +67,8 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
-	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+	logr := log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter))
+	logf.SetLogger(logr)
 
 	By("bootstrapping test environment")
 
@@ -90,7 +92,11 @@ var _ = BeforeSuite(func() {
 				BindAddress: randomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace),
+			Cache: setup.SetupCacheOptions(false,
+				"istio-system",
+				ControlPlaneNamespace,
+				certmanagerv1.SchemeGroupVersion.String(),
+				logr),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

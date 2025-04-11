@@ -7,7 +7,11 @@ import (
 	"os"
 	"time"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -85,8 +89,11 @@ var (
 //nolint:funlen // defines all program flags
 func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
-	flag.StringVar(&flagVar.CertificateManagement, "cert-management", "", "Configures which certificate management"+
-		" system to use. Default is CNCF open source cert-manager. Accepted value: `gardener`")
+	flag.StringVar(&flagVar.CertificateManagement, "cert-management", certmanagerv1.SchemeGroupVersion.String(),
+		fmt.Sprintf("Configures which certificate management system to use. Accepted values: '%s', '%s'. Default: '%s'",
+			certmanagerv1.SchemeGroupVersion.String(),
+			gcertv1alpha1.SchemeGroupVersion.String(),
+			certmanagerv1.SchemeGroupVersion.String()))
 	flag.StringVar(&flagVar.MetricsAddr, "metrics-bind-address", DefaultMetricsAddress,
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.ProbeAddr, "health-probe-bind-address", DefaultProbeAddress,
@@ -367,6 +374,13 @@ func (f FlagVar) Validate() error {
 	}
 	if f.ManifestRequeueJitterPercentage < 0 || f.ManifestRequeueJitterPercentage > 1 {
 		return ErrInvalidManifestRequeueJitterProbability
+	}
+
+	if !map[string]bool{
+		certmanagerv1.SchemeGroupVersion.String(): true,
+		gcertv1alpha1.SchemeGroupVersion.String(): true,
+	}[f.CertificateManagement] {
+		return fmt.Errorf("%w: '%s'", common.ErrUnsupportedCertificateManagementSystem, f.CertificateManagement)
 	}
 
 	return nil

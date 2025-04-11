@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
@@ -46,6 +47,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -91,7 +93,8 @@ var _ = BeforeSuite(func() {
 		"rendered.yaml")
 	manifestTarPath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
 		"rendered.tar")
-	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+	logr := log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter))
+	logf.SetLogger(logr)
 
 	// create registry and server
 	newReg := registry.New()
@@ -125,7 +128,11 @@ var _ = BeforeSuite(func() {
 				BindAddress: metricsBindAddress,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  internal.GetCacheOptions(false, "istio-system", ControlPlaneNamespace),
+			Cache: setup.SetupCacheOptions(false,
+				"istio-system",
+				ControlPlaneNamespace,
+				certmanagerv1.SchemeGroupVersion.String(),
+				logr),
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
