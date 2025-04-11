@@ -21,11 +21,11 @@ import (
 )
 
 var (
-	issuerName    = random.Name()
-	certName      = random.Name()
-	certNamespace = random.Name()
-	certCAName    = random.Name()
-	certDNSNames  = []string{
+	issuerName         = random.Name()
+	certName           = random.Name()
+	certNamespace      = random.Name()
+	certCommonNameName = random.Name()
+	certDNSNames       = []string{
 		random.Name(),
 		random.Name(),
 	}
@@ -51,6 +51,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 			Namespace: certNamespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
+			CommonName:  certCommonNameName,
 			Duration:    &apimetav1.Duration{Duration: certDuration},
 			RenewBefore: &apimetav1.Duration{Duration: certRenewBefore},
 			DNSNames:    certDNSNames,
@@ -93,7 +94,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	err := certClient.Create(t.Context(),
 		certName,
 		certNamespace,
-		certCAName,
+		certCommonNameName,
 		certDNSNames,
 	)
 
@@ -120,7 +121,7 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 	err := certClient.Create(t.Context(),
 		certName,
 		certNamespace,
-		certCAName,
+		certCommonNameName,
 		certDNSNames,
 	)
 

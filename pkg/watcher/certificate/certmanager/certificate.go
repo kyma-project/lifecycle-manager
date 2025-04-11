@@ -71,6 +71,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 			Namespace: namespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
+			CommonName:  commonName,
 			Duration:    &apimetav1.Duration{Duration: c.config.Duration},
 			RenewBefore: &apimetav1.Duration{Duration: c.config.RenewBefore},
 			DNSNames:    dnsNames,

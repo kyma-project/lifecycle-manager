@@ -65,6 +65,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 			Namespace: certNamespace,
 		},
 		Spec: gcertv1alpha1.CertificateSpec{
+			CommonName:   &certCommonName,
 			Duration:     &apimetav1.Duration{Duration: certDuration},
 			DNSNames:     certDNSNames,
 			SecretName:   &certName,

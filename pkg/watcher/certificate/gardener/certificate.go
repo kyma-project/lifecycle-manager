@@ -85,6 +85,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 			Namespace: namespace,
 		},
 		Spec: gcertv1alpha1.CertificateSpec{
+			CommonName:   &commonName,
 			Duration:     &apimetav1.Duration{Duration: c.config.Duration},
 			DNSNames:     dnsNames,
 			SecretName:   &name,
