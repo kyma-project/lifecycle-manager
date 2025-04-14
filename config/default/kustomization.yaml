@@ -27,24 +27,3 @@ transformers:
       namespace: kcp-system
     unsetOnly: true
     setRoleBindingSubjects: allServiceAccounts
-  - |-
-    apiVersion: builtin
-    kind: AnnotationsTransformer
-    metadata:
-      name: add-ca-inject-annotation
-    annotations:
-      cert-manager.io/inject-ca-from: kcp-system/klm-controller-manager-webhook-serving
-    fieldSpecs:
-    - kind: CustomResourceDefinition
-      path: metadata/annotations
-  - |-
-    apiVersion: builtin
-    kind: PatchTransformer
-    metadata:
-      name: fix-cert-dns-names
-    patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
-    target:
-      kind: Certificate
-      name: klm-controller-manager-webhook-serving
-      version: v1
-      group: cert-manager.io
