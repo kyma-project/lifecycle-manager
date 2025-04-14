@@ -21,11 +21,11 @@ import (
 )
 
 var (
-	issuerName    = random.Name()
-	certName      = random.Name()
-	certNamespace = random.Name()
-	certCAName    = random.Name()
-	certDNSNames  = []string{
+	issuerName         = random.Name()
+	certName           = random.Name()
+	certNamespace      = random.Name()
+	certCommonNameName = random.Name()
+	certDNSNames       = []string{
 		random.Name(),
 		random.Name(),
 	}
@@ -33,6 +33,12 @@ var (
 	certRenewBefore = 12 * time.Hour
 	certKeySize     = 4096
 )
+
+func Test_GetCacheObjects(t *testing.T) {
+	objects := certmanager.GetCacheObjects()
+	require.Len(t, objects, 1)
+	assert.IsType(t, &certmanagerv1.Certificate{}, objects[0])
+}
 
 func Test_CertificateClient_Create_Success(t *testing.T) {
 	expectedCertificate := &certmanagerv1.Certificate{
@@ -45,6 +51,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 			Namespace: certNamespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
+			CommonName:  certCommonNameName,
 			Duration:    &apimetav1.Duration{Duration: certDuration},
 			RenewBefore: &apimetav1.Duration{Duration: certRenewBefore},
 			DNSNames:    certDNSNames,
@@ -87,7 +94,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	err := certClient.Create(t.Context(),
 		certName,
 		certNamespace,
-		certCAName,
+		certCommonNameName,
 		certDNSNames,
 	)
 
@@ -114,7 +121,7 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 	err := certClient.Create(t.Context(),
 		certName,
 		certNamespace,
-		certCAName,
+		certCommonNameName,
 		certDNSNames,
 	)
 
@@ -270,7 +277,7 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	assert.Equal(t, certmanager.ErrNoRenewalTime, err)
+	assert.Equal(t, certificate.ErrNoRenewalTime, err)
 	assert.True(t, time.IsZero())
 	assert.True(t, clientStub.getCalled)
 }
