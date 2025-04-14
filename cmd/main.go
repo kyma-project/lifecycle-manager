@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"strings"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -64,15 +63,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "ocm.software/ocm/api/ocm"
@@ -122,8 +119,12 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout, setupLog)
 	}
 
-	cacheOptions := internal.GetCacheOptions(flagVar.IsKymaManaged, flagVar.IstioNamespace,
-		flagVar.IstioGatewayNamespace)
+	cacheOptions := setup.SetupCacheOptions(flagVar.IsKymaManaged,
+		flagVar.IstioNamespace,
+		flagVar.IstioGatewayNamespace,
+		flagVar.CertificateManagement,
+		setupLog,
+	)
 	setupManager(flagVar, cacheOptions, scheme, setupLog)
 }
 
@@ -164,10 +165,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, skrContextProvider, flagVar); err != nil {
-			logger.Error(err, "failed to create skr webhook manager")
-			os.Exit(bootstrapFailedExitCode)
-		}
+		skrWebhookManager = setup.SetupSkrWebhookManager(mgr, skrContextProvider, flagVar, logger)
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
 		err = istiogatewaysecret.SetupReconciler(mgr, flagVar, options)
 		if err != nil {
@@ -357,62 +355,6 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-}
-
-func createSkrWebhookManager(mgr ctrl.Manager, skrContextFactory remote.SkrContextProvider,
-	flagVar *flags.FlagVar,
-) (*watcher.SkrWebhookManifestManager, error) {
-	skrWebhookManagerConfig := watcher.SkrWebhookManagerConfig{
-		SkrWatcherPath:         flagVar.WatcherResourcesPath,
-		SkrWatcherImage:        flagVar.GetWatcherImage(),
-		SkrWebhookCPULimits:    flagVar.WatcherResourceLimitsCPU,
-		SkrWebhookMemoryLimits: flagVar.WatcherResourceLimitsMemory,
-		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
-	}
-
-	gatewayConfig := watcher.GatewayConfig{
-		IstioGatewayName:          flagVar.IstioGatewayName,
-		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
-		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
-	}
-
-	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
-	if err != nil {
-		return nil, err
-	}
-
-	certificateConfig := certificate.CertificateConfig{
-		Duration:    flagVar.SelfSignedCertDuration,
-		RenewBefore: flagVar.SelfSignedCertRenewBefore,
-		KeySize:     flagVar.SelfSignedCertKeySize,
-	}
-
-	certificateManagerConfig := certificate.CertificateManagerConfig{
-		SkrServiceName:               watcher.SkrResourceName,
-		SkrNamespace:                 flagVar.RemoteSyncNamespace,
-		CertificateNamespace:         flagVar.IstioNamespace,
-		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),
-		GatewaySecretName:            shared.GatewaySecretName,
-		RenewBuffer:                  flagVar.SelfSignedCertRenewBuffer,
-		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
-	}
-
-	certificateManager := certificate.NewCertificateManager(
-		certmanager.NewCertificateClient(mgr.GetClient(),
-			flagVar.SelfSignedCertificateIssuerName,
-			certificateConfig,
-		),
-		secret.NewCertificateSecretClient(mgr.GetClient()),
-		certificateManagerConfig,
-	)
-
-	return watcher.NewSKRWebhookManifestManager(
-		mgr.GetClient(),
-		skrContextFactory,
-		skrWebhookManagerConfig,
-		resolvedKcpAddr,
-		certificateManager,
-		metrics.NewWatcherMetrics())
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
