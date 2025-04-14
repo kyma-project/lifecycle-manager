@@ -12,12 +12,12 @@ patches:
   - path: patches/deployment_webhook.yaml
 resources:
   - ../manager
-  - ../certmanager
   - namespace.yaml
 components:
   - ../crd
   - ../rbac
   - ../webhook
+  - ../certmanager
 transformers:
   - |-
     apiVersion: builtin

@@ -8,8 +8,3 @@ resources:
   - bases/operator.kyma-project.io_modulereleasemetas.yaml
 configurations:
   - kustomizeconfig.yaml
-patches:
-  - path: patches/cainjection_in_kymas.yaml
-  - path: patches/cainjection_in_moduletemplates.yaml
-  - path: patches/cainjection_in_watchers.yaml
-  - path: patches/cainjection_in_manifests.yaml
