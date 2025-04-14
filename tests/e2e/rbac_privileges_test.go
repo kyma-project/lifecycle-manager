@@ -33,7 +33,7 @@ var _ = Describe("RBAC Privileges", func() {
 				klmClusterRoleBindings)).To(Equal(crdRoleRules))
 
 			By("And KLM Service Account has the correct number of RoleBindings in kcp-system namespace")
-			expectedNumberOfRoleBindings := 2
+			expectedNumberOfRoleBindings := 3
 			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
@@ -83,16 +83,6 @@ var _ = Describe("RBAC Privileges", func() {
 				{
 					APIGroups: []string{""},
 					Resources: []string{"services"},
-					Verbs:     []string{"get", "list", "watch"},
-				},
-				{
-					APIGroups: []string{"cert-manager.io"},
-					Resources: []string{"certificates"},
-					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
-				},
-				{
-					APIGroups: []string{"cert-manager.io"},
-					Resources: []string{"issuers"},
 					Verbs:     []string{"get", "list", "watch"},
 				},
 				{
@@ -174,6 +164,25 @@ var _ = Describe("RBAC Privileges", func() {
 				"klm-controller-manager",
 				"kcp-system",
 				kcpSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
+
+			By("And controller-manager-certmanager Role has the correct PolicyRules")
+			klmManagerCertManagerRoleRules := []apirbacv1.PolicyRule{
+				{
+					APIGroups: []string{"cert-manager.io"},
+					Resources: []string{"certificates"},
+					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
+				},
+				{
+					APIGroups: []string{"cert-manager.io"},
+					Resources: []string{"issuers"},
+					Verbs:     []string{"get", "list", "watch"},
+				},
+			}
+			Expect(GetRoleBindingRolePolicyRules(ctx,
+				kcpClient,
+				"klm-controller-manager-certmanager",
+				"kcp-system",
+				kcpSystemKlmRoleBindings)).To(Equal(klmManagerCertManagerRoleRules))
 
 			By("And KLM Service Account has the correct number of RoleBindings in istio-system namespace")
 			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
