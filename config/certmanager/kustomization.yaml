@@ -31,6 +31,6 @@ transformers:
     patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
     target:
       kind: Certificate
-      name: klm-controller-manager-webhook-serving
+      name: controller-manager-webhook-serving
       version: v1
       group: cert-manager.io
