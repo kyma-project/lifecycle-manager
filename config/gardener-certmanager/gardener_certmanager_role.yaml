@@ -1,0 +1,52 @@
+---
+# Give controller-manager permissions to the cert-manager-related resources for watcher
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: controller-manager-gardener-certmanager
+  namespace: istio-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - list
+      - watch
+      - get
+      - create
+      - delete
+      - update
+  - apiGroups:
+      - certgardener.cloud
+    resources:
+      - certificates
+    verbs:
+      - patch
+      - list
+      - watch
+      - get
+      - create
+      - delete
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - issuers
+    verbs:
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: controller-manager-gardener-certmanager
+  namespace: default
+rules:
+  - apiGroups:
+      - cert.gardener.cloud
+    resources:
+      - issuers
+    verbs:
+      - get
+      - list
+      - watch
