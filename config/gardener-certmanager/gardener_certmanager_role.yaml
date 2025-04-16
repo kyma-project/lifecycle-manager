@@ -3,7 +3,13 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: controller-manager-gardener-certmanager
+  labels:
+    app.kubernetes.io/created-by: argo-cd
+    app.kubernetes.io/instance: kcp-lifecycle-manager
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: lifecycle-manager
+    app.kubernetes.io/part-of: kcp
+  name: klm-controller-manager-gardener-certmanager
   namespace: istio-system
 rules:
   - apiGroups:
@@ -18,7 +24,7 @@ rules:
       - delete
       - update
   - apiGroups:
-      - certgardener.cloud
+      - cert.gardener.cloud
     resources:
       - certificates
     verbs:
@@ -28,18 +34,17 @@ rules:
       - get
       - create
       - delete
-  - apiGroups:
-      - cert-manager.io
-    resources:
-      - issuers
-    verbs:
-      - list
-      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: controller-manager-gardener-certmanager
+  labels:
+    app.kubernetes.io/created-by: argo-cd
+    app.kubernetes.io/instance: kcp-lifecycle-manager
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: lifecycle-manager
+    app.kubernetes.io/part-of: kcp
+  name: klm-controller-manager-gardener-certmanager
   namespace: default
 rules:
   - apiGroups:
@@ -47,6 +52,5 @@ rules:
     resources:
       - issuers
     verbs:
-      - get
       - list
       - watch

@@ -18,7 +18,6 @@ components:
   - ../watcher
   - ../webhook
   - ../grafana
-  - ../certmanager
 patches:
   - path: patches/deployment_resources.yaml
   - path: patches/unique_deployment_webhook_patch.yaml

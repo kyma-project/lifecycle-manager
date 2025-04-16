@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../watcher_local_test
+components:
+  - ../certmanager
+patches:
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: klm-watcher-serving
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: "localhost"
+      - op: add
+        path: /spec/dnsNames/1
+        value: "host.k3d.internal"
+      - op: add
+        path: /spec/dnsNames/2
+        value: "skr.cluster.local"

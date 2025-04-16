@@ -4,7 +4,13 @@
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: watcher-root
+  labels:
+    app.kubernetes.io/created-by: argo-cd
+    app.kubernetes.io/instance: kcp-lifecycle-manager
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: lifecycle-manager
+    app.kubernetes.io/part-of: kcp
+  name: klm-watcher-root
   namespace: istio-system
 spec:
   selfSigned: { }
@@ -12,7 +18,13 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: watcher-serving
+  labels:
+    app.kubernetes.io/created-by: argo-cd
+    app.kubernetes.io/instance: kcp-lifecycle-manager
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: lifecycle-manager
+    app.kubernetes.io/part-of: kcp
+  name: klm-watcher-serving
   namespace: istio-system
 spec:
   dnsNames:
@@ -35,11 +47,16 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: watcher-selfsigned
-  namespace: istio-system
   labels:
+    app.kubernetes.io/created-by: argo-cd
+    app.kubernetes.io/instance: kcp-lifecycle-manager
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: lifecycle-manager
+    app.kubernetes.io/part-of: kcp
     operator.kyma-project.io/purpose: "klm-watcher-cert-manager"
     operator.kyma-project.io/managed-by: "lifecycle-manager"
+  name: klm-watcher-selfsigned
+  namespace: istio-system
 spec:
   ca:
     secretName: klm-watcher
