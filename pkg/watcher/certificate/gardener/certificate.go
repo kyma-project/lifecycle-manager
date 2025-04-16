@@ -154,3 +154,10 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 
 	return expirationDate.Add(-c.config.RenewBefore), nil
 }
+
+func (c *CertificateClient) GetValidity(ctx context.Context,
+	name string,
+	namespace string,
+) (time.Time, time.Time, error) {
+	return time.Time{}, time.Time{}, fmt.Errorf("GetValidity is not implemented for Gardener certificate management")
+}

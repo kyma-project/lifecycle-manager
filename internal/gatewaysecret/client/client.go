@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/cert-manager/cert-manager/pkg/client/clientset/versioned"
-	certmanagerclientv1 "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -23,25 +21,29 @@ const (
 
 var errInvalidGatewaySecret = errors.New("invalid gateway secret")
 
+type certificate interface {
+	GetValidity(ctx context.Context, name string, namespace string) (time.Time, time.Time, error)
+}
+
 type GatewaySecretRotationClient struct {
-	certificateInterface certmanagerclientv1.CertificateInterface
+	certificateInterface certificate
 	secretInterface      k8scorev1.SecretInterface
 }
 
-func NewGatewaySecretRotationClient(config *rest.Config) *GatewaySecretRotationClient {
+func NewGatewaySecretRotationClient(config *rest.Config, certificateInterface certificate) *GatewaySecretRotationClient {
 	return &GatewaySecretRotationClient{
-		certificateInterface: versioned.NewForConfigOrDie(config).CertmanagerV1().Certificates(shared.IstioNamespace),
+		certificateInterface: certificateInterface,
 		secretInterface:      kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(shared.IstioNamespace),
 	}
 }
 
-func (c *GatewaySecretRotationClient) GetWatcherServingCert(ctx context.Context) (*certmanagerv1.Certificate, error) {
-	caCert, err := c.certificateInterface.Get(ctx, kcpCACertName, apimetav1.GetOptions{})
+func (c *GatewaySecretRotationClient) GetWatcherServingCertValidity(ctx context.Context) (time.Time, time.Time, error) {
+	notBefore, notAfter, err := c.certificateInterface.GetValidity(ctx, kcpCACertName, shared.IstioNamespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CA certificate %s: %w", kcpCACertName, err)
+		return time.Time{}, time.Time{}, fmt.Errorf("failed to get watcher serving cert validity: %w", err)
 	}
 
-	return caCert, nil
+	return notBefore, notAfter, nil
 }
 
 func (c *GatewaySecretRotationClient) GetGatewaySecret(ctx context.Context) (*apicorev1.Secret, error) {

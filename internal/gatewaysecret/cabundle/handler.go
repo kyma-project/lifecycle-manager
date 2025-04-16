@@ -6,7 +6,6 @@ import (
 	"slices"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -39,37 +38,39 @@ func NewGatewaySecretHandler(client gatewaysecret.Client, timeParserFunc gateway
 }
 
 func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1.Secret) error {
-	caCert, err := h.client.GetWatcherServingCert(ctx)
+	notBefore, notAfter, err := h.client.GetWatcherServingCertValidity(ctx)
 	if err != nil {
 		return err
 	}
-	if caCert.Status.NotBefore == nil || caCert.Status.NotAfter == nil {
+	if notBefore.IsZero() || notAfter.IsZero() {
 		return ErrCACertificateNotReady
 	}
 
 	gwSecret, err := h.client.GetGatewaySecret(ctx)
 	if util.IsNotFound(err) {
-		return h.createGatewaySecretFromRootSecret(ctx, rootSecret, caCert)
+		return h.createGatewaySecretFromRootSecret(ctx, rootSecret, notBefore, notAfter)
 	} else if err != nil {
 		return err
 	}
 
 	// this is for the case when we switch existing secret from legacy to new rotation mechanism
-	bootstrapLegacyGatewaySecret(gwSecret, rootSecret, caCert)
+	bootstrapLegacyGatewaySecret(gwSecret, rootSecret, notAfter)
 
-	if h.requiresBundling(gwSecret, caCert) {
+	if h.requiresBundling(gwSecret, notBefore) {
 		bundleCACrt(gwSecret, rootSecret)
 		setLastModifiedToNow(gwSecret)
 	}
 	if h.requiresCertSwitching(gwSecret) {
 		switchCertificate(gwSecret, rootSecret)
-		setCurrentCAExpiration(gwSecret, caCert)
+		setCurrentCAExpiration(gwSecret, notAfter)
 	}
 	return h.client.UpdateGatewaySecret(ctx, gwSecret)
 }
 
-func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSecret *apicorev1.Secret,
-	caCert *certmanagerv1.Certificate,
+func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context,
+	rootSecret *apicorev1.Secret,
+	notBefore time.Time,
+	notAfter time.Time,
 ) error {
 	newSecret := &apicorev1.Secret{
 		TypeMeta: apimetav1.TypeMeta{
@@ -89,16 +90,16 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 
 	newSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
 	setLastModifiedToNow(newSecret)
-	setCurrentCAExpiration(newSecret, caCert)
+	setCurrentCAExpiration(newSecret, notAfter)
 
 	return h.client.CreateGatewaySecret(ctx, newSecret)
 }
 
-func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, caCert *certmanagerv1.Certificate) bool {
+func (h *Handler) requiresBundling(gwSecret *apicorev1.Secret, notBefore time.Time) bool {
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
 	if lastModified, err := h.parseTimeFromAnnotationFunc(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
-		if lastModified.After(caCert.Status.NotBefore.Time) {
+		if lastModified.After(notBefore) {
 			return false
 		}
 	}
@@ -111,11 +112,12 @@ func (h *Handler) requiresCertSwitching(gwSecret *apicorev1.Secret) bool {
 	return err != nil || time.Now().After(caExpirationTime.Add(-h.switchCertBeforeExpirationTime))
 }
 
-func bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret, rootSecret *apicorev1.Secret,
-	caCert *certmanagerv1.Certificate,
+func bootstrapLegacyGatewaySecret(gwSecret *apicorev1.Secret,
+	rootSecret *apicorev1.Secret,
+	notAfter time.Time,
 ) {
 	if _, ok := gwSecret.Annotations[CurrentCAExpirationAnnotation]; !ok {
-		setCurrentCAExpiration(gwSecret, caCert)
+		setCurrentCAExpiration(gwSecret, notAfter)
 	}
 	if _, ok := gwSecret.Data[caBundleTempCertKey]; !ok {
 		gwSecret.Data[caBundleTempCertKey] = rootSecret.Data[gatewaysecret.CACrt]
@@ -129,11 +131,11 @@ func setLastModifiedToNow(secret *apicorev1.Secret) {
 	secret.Annotations[shared.LastModifiedAtAnnotation] = apimetav1.Now().Format(time.RFC3339)
 }
 
-func setCurrentCAExpiration(secret *apicorev1.Secret, caCert *certmanagerv1.Certificate) {
+func setCurrentCAExpiration(secret *apicorev1.Secret, notAfter time.Time) {
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
-	secret.Annotations[CurrentCAExpirationAnnotation] = caCert.Status.NotAfter.Time.Format(time.RFC3339)
+	secret.Annotations[CurrentCAExpirationAnnotation] = notAfter.Format(time.RFC3339)
 }
 
 func bundleCACrt(gatewaySecret *apicorev1.Secret, rootSecret *apicorev1.Secret) {
