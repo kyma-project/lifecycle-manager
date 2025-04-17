@@ -1,39 +1,25 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/created-by: argo-cd
-    app.kubernetes.io/instance: kcp-lifecycle-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: lifecycle-manager
-    app.kubernetes.io/part-of: kcp
-  name: klm-controller-manager-certmanager
+  name: controller-manager-certmanager
   namespace: istio-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: klm-controller-manager-certmanager
+  name: controller-manager-certmanager
 subjects:
   - kind: ServiceAccount
-    name: klm-controller-manager
-    namespace: kcp-system
+    name: controller-manager
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/created-by: argo-cd
-    app.kubernetes.io/instance: kcp-lifecycle-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: lifecycle-manager
-    app.kubernetes.io/part-of: kcp
-  name: klm-controller-manager-certmanager
+  name: controller-manager-certmanager
   namespace: kcp-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: klm-controller-manager-certmanager
+  name: controller-manager-certmanager
 subjects:
   - kind: ServiceAccount
-    name: klm-controller-manager
-    namespace: kcp-system
+    name: controller-manager

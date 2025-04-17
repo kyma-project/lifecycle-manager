@@ -4,13 +4,7 @@
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Issuer
 metadata:
-  labels:
-    app.kubernetes.io/created-by: argo-cd
-    app.kubernetes.io/instance: kcp-lifecycle-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: lifecycle-manager
-    app.kubernetes.io/part-of: kcp
-  name: klm-controller-manager-selfsigned
+  name: controller-manager-selfsigned
   namespace: default
 spec:
   selfSigned: { }
@@ -18,16 +12,10 @@ spec:
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
 metadata:
-  labels:
-    app.kubernetes.io/created-by: argo-cd
-    app.kubernetes.io/instance: kcp-lifecycle-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: lifecycle-manager
-    app.kubernetes.io/part-of: kcp
-  name: klm-controller-manager-webhook-serving  # this name should match the one appeared in kustomizeconfig.yaml
+  name: controller-manager-webhook-serving  # this name should match the one appeared in kustomizeconfig.yaml
   namespace: kcp-system
 spec:
-  commonName: controller-manager-webhook-serving
+  commonName: klm-controller-manager-webhook-serving
   isCA: true
   # $(SERVICE_NAME) and $(SERVICE_NAMESPACE) will be substituted by kustomize
   dnsNames:

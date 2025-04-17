@@ -8,5 +8,5 @@ nameReference:
         path: spec/issuerRef/name
 varReference:
   - kind: Certificate
-    group: cert-manager.io
+    group: cert.gardener.cloud
     path: spec/dnsNames

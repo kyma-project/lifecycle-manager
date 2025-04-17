@@ -4,19 +4,59 @@
 # but are necessary for testing the watcher on locally provisioned clusters using k3d.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namePrefix: klm-
+commonLabels:
+  app.kubernetes.io/instance: kcp-lifecycle-manager
+  app.kubernetes.io/name: lifecycle-manager
+  app.kubernetes.io/created-by: argo-cd
+  app.kubernetes.io/part-of: kcp
+  app.kubernetes.io/managed-by: kustomize
+images:
+  - name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
 generatorOptions:
   disableNameSuffixHash: true
 resources:
   - namespace.yaml
-  - ../control-plane
+  - ../manager
 components:
+  - ../crd
+  - ../rbac
   - ../istio
+  - ../watcher
+  - ../webhook
+  - ../grafana
+  - ../certmanager
   - ../maintenance_windows
 patches:
   - path: patches/deployment_resources.yaml
+  - path: patches/unique_deployment_webhook_patch.yaml
   - target:
       kind: Deployment
     patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-frequency=1000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-qps=1000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cache-sync-timeout=60m
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-max-delay=30s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-base-delay=5s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --is-kyma-managed
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --kyma-requeue-success-interval=20s
@@ -45,6 +85,17 @@ patches:
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
   - target:
+      kind: ConfigMap
+      name: dashboard-(overview|status|watcher|mandatory-modules)
+      version: v1
+    patch: |-
+      - op: add
+        path: /metadata/labels
+        value: { }
+      - op: add
+        path: /metadata/labels/grafana_dashboard
+        value: "1"
+  - target:
       group: security.istio.io
       version: v1beta1
       kind: AuthorizationPolicy
@@ -62,3 +113,38 @@ patches:
       - op: replace
         path: /spec/servers/0/hosts/0
         value: "host.k3d.internal"
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: watcher-serving
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: "localhost"
+      - op: add
+        path: /spec/dnsNames/1
+        value: "host.k3d.internal"
+      - op: add
+        path: /spec/dnsNames/2
+        value: "skr.cluster.local"
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: PrefixSuffixTransformer
+    metadata:
+      name: add-klm-prefix-to-resources
+    prefix: klm-
+    fieldSpecs:
+    - path: subjects/name
+      kind: RoleBinding
+    - path: subjects/name
+      kind: ClusterRoleBinding
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: add-resources-to-kcp-system
+      namespace: kcp-system
+    unsetOnly: true
+    setRoleBindingSubjects: allServiceAccounts

@@ -1,13 +1,7 @@
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Issuer
 metadata:
-  labels:
-    app.kubernetes.io/created-by: argo-cd
-    app.kubernetes.io/instance: kcp-lifecycle-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: lifecycle-manager
-    app.kubernetes.io/part-of: kcp
-  name: klm-watcher-root
+  name: watcher-root
   namespace: default
 spec:
   selfSigned: { }
@@ -15,13 +9,7 @@ spec:
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
 metadata:
-  labels:
-    app.kubernetes.io/created-by: argo-cd
-    app.kubernetes.io/instance: kcp-lifecycle-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: lifecycle-manager
-    app.kubernetes.io/part-of: kcp
-  name: klm-watcher-serving
+  name: watcher-serving
   namespace: istio-system
 spec:
   dnsNames:
@@ -42,14 +30,9 @@ apiVersion: cert.gardener.cloud/v1alpha1
 kind: Issuer
 metadata:
   labels:
-    app.kubernetes.io/created-by: argo-cd
-    app.kubernetes.io/instance: kcp-lifecycle-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: lifecycle-manager
-    app.kubernetes.io/part-of: kcp
     operator.kyma-project.io/purpose: "klm-watcher-cert-manager"
     operator.kyma-project.io/managed-by: "lifecycle-manager"
-  name: klm-watcher-selfsigned
+  name: watcher-selfsigned
   namespace: default
 spec:
   ca:

@@ -9,8 +9,12 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
 images:
   - name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
+generatorOptions:
+  disableNameSuffixHash: true
 resources:
+  - namespace.yaml
   - ../manager
+  - crd/dns.gardener.cloud_dnsentries.yaml # needed for GCM to work since this is not included in the helm chart for GCM
 components:
   - ../crd
   - ../rbac
@@ -18,7 +22,8 @@ components:
   - ../watcher
   - ../webhook
   - ../grafana
-  - ../certmanager
+  - ../gardener-certmanager
+  - ../maintenance_windows
 patches:
   - path: patches/deployment_resources.yaml
   - path: patches/unique_deployment_webhook_patch.yaml
@@ -49,6 +54,33 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-success-interval=20s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --manifest-requeue-success-interval=5s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --log-level=9
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --additional-dns-names=localhost,127.0.0.1,host.k3d.internal
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --listener-port-overwrite=9443
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-lease-duration=20s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-renew-deadline=15s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-retry-period=3s
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
@@ -60,7 +92,39 @@ patches:
       - op: add
         path: /metadata/labels/grafana_dashboard
         value: "1"
-# Note: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
+  - target:
+      group: security.istio.io
+      version: v1beta1
+      kind: AuthorizationPolicy
+      name: controller-manager
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: kcp-system
+  - target:
+      group: networking.istio.io
+      version: v1beta1
+      kind: Gateway
+      name: watcher
+    patch: |-
+      - op: replace
+        path: /spec/servers/0/hosts/0
+        value: "host.k3d.internal"
+  - target:
+      group: cert.gardener.cloud
+      version: v1alpha1
+      kind: Certificate
+      name: watcher-serving
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: "localhost"
+      - op: add
+        path: /spec/dnsNames/1
+        value: "host.k3d.internal"
+      - op: add
+        path: /spec/dnsNames/2
+        value: "skr.cluster.local"
 transformers:
   - |-
     apiVersion: builtin
