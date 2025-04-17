@@ -21,16 +21,16 @@ const (
 
 var errInvalidGatewaySecret = errors.New("invalid gateway secret")
 
-type certificate interface {
+type CertificateInterface interface {
 	GetValidity(ctx context.Context, name string, namespace string) (time.Time, time.Time, error)
 }
 
 type GatewaySecretRotationClient struct {
-	certificateInterface certificate
+	certificateInterface CertificateInterface
 	secretInterface      k8scorev1.SecretInterface
 }
 
-func NewGatewaySecretRotationClient(config *rest.Config, certificateInterface certificate) *GatewaySecretRotationClient {
+func NewGatewaySecretRotationClient(config *rest.Config, certificateInterface CertificateInterface) *GatewaySecretRotationClient {
 	return &GatewaySecretRotationClient{
 		certificateInterface: certificateInterface,
 		secretInterface:      kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(shared.IstioNamespace),

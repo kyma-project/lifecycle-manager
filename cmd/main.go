@@ -167,7 +167,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	if flagVar.EnableKcpWatcher {
 		skrWebhookManager = setup.SetupSkrWebhookManager(mgr, skrContextProvider, flagVar, logger)
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
-		err = istiogatewaysecret.SetupReconciler(mgr, flagVar, options)
+		err = istiogatewaysecret.SetupReconciler(mgr,
+			setup.SetupCertInterface(kcpClient, flagVar, logger),
+			flagVar,
+			options)
 		if err != nil {
 			logger.Error(err, "unable to create controller", "controller", "Istio")
 			os.Exit(bootstrapFailedExitCode)
