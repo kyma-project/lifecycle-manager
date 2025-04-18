@@ -1,0 +1,12 @@
+#This configuration is for teaching kustomize how to update name ref and var substitution
+nameReference:
+  - kind: Issuer
+    group: cert.gardener.cloud
+    fieldSpecs:
+      - kind: Certificate
+        group: cert.gardener.cloud
+        path: spec/issuerRef/name
+varReference:
+  - kind: Certificate
+    group: cert.gardener.cloud
+    path: spec/dnsNames

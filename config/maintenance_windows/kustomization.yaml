@@ -10,8 +10,7 @@ patches:
   - path: patches/volume_mount.yaml
     target:
       kind: Deployment
-      name: klm-controller-manager
-      namespace: kcp-system
+      name: controller-manager
 transformers:
   - |-
     apiVersion: builtin

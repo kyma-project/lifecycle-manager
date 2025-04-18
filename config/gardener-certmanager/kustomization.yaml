@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - certificate_webhook.yaml
+  - certificate_watcher.yaml
+  - gardener_certmanager_role.yaml
+  - gardener_certmanager_role_binding.yaml
+configurations:
+  - kustomizeconfig.yaml
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: PatchTransformer
+    metadata:
+      name: fix-cert-dns-names
+    patch: '[{"op": "replace", "path": "/spec/dnsNames/0", "value": "klm-webhook-service.kcp-system.svc"}, {"op": "replace", "path": "/spec/dnsNames/1", "value": "klm-webhook-service.kcp-system.svc.cluster.local"}]'
+    target:
+      kind: Certificate
+      name: controller-manager-webhook-serving
+      version: v1alpha1
+      group: cert.gardener.cloud
