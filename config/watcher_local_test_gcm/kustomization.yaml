@@ -80,6 +80,9 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cert-management=cert.gardener.cloud/v1alpha1
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
