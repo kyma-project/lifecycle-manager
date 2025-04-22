@@ -6,6 +6,6 @@ filename: "mock_{{.InterfaceName}}_test.go"
 inpackage: true
 issue-845-fix: true
 packages:
-  github.com/kyma-project/lifecycle-manager/pkg/gatewaysecret:
+  github.com/kyma-project/lifecycle-manager/internal/gatewaysecret:
     interfaces:
       Client:
