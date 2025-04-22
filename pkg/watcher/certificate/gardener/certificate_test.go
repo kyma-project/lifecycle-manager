@@ -315,6 +315,28 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 	assert.True(t, clientStub.getCalled)
 }
 
+func Test_CertificateClient_GetValidity_Error_NotImplemented(t *testing.T) {
+	clientStub := &kcpClientStub{}
+	certClient, err := gardener.NewCertificateClient(
+		clientStub,
+		issuerName,
+		issuerNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     int(certKeySize),
+		},
+	)
+	require.NoError(t, err)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, gardener.ErrGetValidityNotImplementedYet)
+	assert.Zero(t, notBefore)
+	assert.Zero(t, notAfter)
+}
+
 // Helper functions and stubs
 
 type kcpClientStub struct {
