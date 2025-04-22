@@ -32,12 +32,12 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 		return err
 	}
 
-	noteBefore, _, err := h.client.GetWatcherServingCertValidity(ctx)
+	notBefore, _, err := h.client.GetWatcherServingCertValidity(ctx)
 	if err != nil {
 		return err
 	}
 
-	if h.requiresUpdate(gwSecret, noteBefore) {
+	if h.requiresUpdate(gwSecret, notBefore) {
 		copyDataFromRootSecret(gwSecret, rootSecret)
 		setLastModifiedToNow(gwSecret)
 
