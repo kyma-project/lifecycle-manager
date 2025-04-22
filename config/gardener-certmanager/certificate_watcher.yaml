@@ -23,7 +23,7 @@ spec:
     algorithm: RSA
     size: 4096
   issuerRef:
-    name: klm-watcher-root
+    name: watcher-root
     namespace: default
 ---
 apiVersion: cert.gardener.cloud/v1alpha1

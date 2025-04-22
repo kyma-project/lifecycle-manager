@@ -22,6 +22,6 @@ spec:
     - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc
     - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc.cluster.local
   issuerRef:
-    name: klm-controller-manager-selfsigned
+    name: controller-manager-selfsigned
     namespace: default
   secretName: klm-controller-manager-webhook # this secret will not be prefixed, since it's not managed by kustomize

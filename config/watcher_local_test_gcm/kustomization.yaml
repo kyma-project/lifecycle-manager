@@ -136,6 +136,8 @@ transformers:
       kind: RoleBinding
     - path: subjects/name
       kind: ClusterRoleBinding
+    - path: spec/issuerRef/name
+      kind: Certificate
   - |-
     apiVersion: builtin
     kind: NamespaceTransformer
