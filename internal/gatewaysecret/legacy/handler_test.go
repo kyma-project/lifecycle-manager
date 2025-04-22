@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
@@ -17,6 +16,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/legacy"
 	"github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/testutils"
 )
+
+var notBefore = time.Now().Add(time.Hour)
 
 func TestManageGatewaySecret_WhenGetGatewaySecretReturnsError_ReturnsError(t *testing.T) {
 	// ARRANGE
@@ -109,12 +110,12 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 		}))
 }
 
-func TestManageGatewaySecret_WhenWatcherServingCertReturnsError_ReturnsError(t *testing.T) {
+func TestManageGatewaySecret_WhenGetWatcherServingCertValidityReturnsError_ReturnsError(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
 	expectedError := errors.New("some-error")
-	mockClient.On("GetWatcherServingCert", mock.Anything).Return(nil, expectedError)
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Time{}, time.Time{}, expectedError)
 
 	handler := legacy.NewGatewaySecretHandler(mockClient, nil)
 
@@ -125,21 +126,14 @@ func TestManageGatewaySecret_WhenWatcherServingCertReturnsError_ReturnsError(t *
 	require.Error(t, err)
 	require.ErrorIs(t, err, expectedError)
 	mockClient.AssertNumberOfCalls(t, "GetGatewaySecret", 1)
-	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCert", 1)
+	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCertValidity", 1)
 }
 
 func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithRootSecretData(t *testing.T) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
-	cert := &certmanagerv1.Certificate{
-		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: time.Now().Add(time.Hour),
-			},
-		},
-	}
-	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
 		annotation string,
@@ -181,14 +175,7 @@ func TestManageGatewaySecret_WhenRequiresUpdate_UpdatesGatewaySecretWithUpdatedM
 		},
 	}
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(gwSecret, nil)
-	cert := &certmanagerv1.Certificate{
-		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: time.Now().Add(time.Hour),
-			},
-		},
-	}
-	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
 		annotation string,
@@ -219,14 +206,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateAndUpdateFails_ReturnsError(t *te
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
-	cert := &certmanagerv1.Certificate{
-		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: time.Now().Add(time.Hour),
-			},
-		},
-	}
-	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, time.Time{}, nil)
 	expectedError := errors.New("some-error")
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(expectedError)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
@@ -242,7 +222,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateAndUpdateFails_ReturnsError(t *te
 	// ASSERT
 	require.Error(t, err)
 	require.ErrorIs(t, err, expectedError)
-	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCert", 1)
+	mockClient.AssertNumberOfCalls(t, "GetWatcherServingCertValidity", 1)
 	mockClient.AssertNumberOfCalls(t, "UpdateGatewaySecret", 1)
 }
 
@@ -250,14 +230,7 @@ func TestManageGatewaySecret_WhenRequiresUpdateIsFalse_DoesNotUpdateGatewaySecre
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
-	cert := &certmanagerv1.Certificate{
-		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: time.Now().Add(-time.Hour),
-			},
-		},
-	}
-	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(time.Now().Add(-1*time.Hour), time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
 		annotation string,
@@ -278,14 +251,7 @@ func TestManageGatewaySecret_WhenTimeParserFuncReturnsError_UpdatesGatewaySecret
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(&apicorev1.Secret{}, nil)
-	cert := &certmanagerv1.Certificate{
-		Status: certmanagerv1.CertificateStatus{
-			NotBefore: &apimetav1.Time{
-				Time: time.Now().Add(time.Hour),
-			},
-		},
-	}
-	mockClient.On("GetWatcherServingCert", mock.Anything).Return(cert, nil)
+	mockClient.On("GetWatcherServingCertValidity", mock.Anything).Return(notBefore, time.Time{}, nil)
 	mockClient.On("UpdateGatewaySecret", mock.Anything, mock.Anything).Return(nil)
 	var mockFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
 		annotation string,

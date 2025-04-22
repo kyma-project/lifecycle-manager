@@ -1,8 +1,8 @@
 with-expecter: true
-dir: "{{.InterfaceDir}}"
+dir: "{{.InterfaceDir}}/testutils"
 mockname: "{{.InterfaceName}}Mock"
-outpkg: "{{.PackageName}}_test"
-filename: "mock_{{.InterfaceName}}_test.go"
+outpkg: "testutils"
+filename: "mock_{{.InterfaceName}}.go"
 inpackage: true
 issue-845-fix: true
 packages:
