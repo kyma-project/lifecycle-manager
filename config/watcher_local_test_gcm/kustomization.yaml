@@ -1,7 +1,3 @@
-# Configuration for testing the watcher locally.
-# Enables the ability to configure additional components,
-# that we do not want in the default configuration (e.g. vendor-specific gateway implementation),
-# but are necessary for testing the watcher on locally provisioned clusters using k3d.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namePrefix: klm-
@@ -18,13 +14,14 @@ generatorOptions:
 resources:
   - namespace.yaml
   - ../manager
+  - https://raw.githubusercontent.com/gardener/cert-management/master/examples/11-dns.gardener.cloud_dnsentries.yaml # needed for GCM to work since this is not included in the helm chart for GCM
 components:
   - ../crd
   - ../rbac
   - ../istio
   - ../watcher
   - ../webhook
-  - ../certmanager
+  - ../gardener-certmanager
   - ../maintenance_windows
 patches:
   - path: patches/deployment_resources.yaml
@@ -113,8 +110,8 @@ patches:
         path: /spec/servers/0/hosts/0
         value: "host.k3d.internal"
   - target:
-      group: cert-manager.io
-      version: v1
+      group: cert.gardener.cloud
+      version: v1alpha1
       kind: Certificate
       name: watcher-serving
     patch: |-
@@ -139,6 +136,8 @@ transformers:
       kind: RoleBinding
     - path: subjects/name
       kind: ClusterRoleBinding
+    - path: spec/issuerRef/name
+      kind: Certificate
   - |-
     apiVersion: builtin
     kind: NamespaceTransformer
