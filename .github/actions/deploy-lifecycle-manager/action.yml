@@ -23,7 +23,7 @@ runs:
         for retry in $(seq 1 $maxRetry)
         do
           if make "$E2E_MAKE_TARGET" IMG=europe-docker.pkg.dev/kyma-project/${{ inputs.klm_image_repo }}/lifecycle-manager:${{ inputs.klm_version_tag }}; then
-            kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=90s
+            kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=180s
             echo "KLM deployed successfully"
             exit 0
           elif [[ $retry -lt $maxRetry ]]; then
