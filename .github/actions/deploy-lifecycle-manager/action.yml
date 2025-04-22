@@ -14,10 +14,16 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
+        if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
+          E2E_MAKE_TARGET=local-deploy-with-watcher-gcm
+        else
+          E2E_MAKE_TARGET=local-deploy-with-watcher
+        fi
+        
         maxRetry=5
         for retry in $(seq 1 $maxRetry)
         do
-          if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/${{ inputs.klm_image_repo }}/lifecycle-manager:${{ inputs.klm_version_tag }}; then
+          if make "$E2E_MAKE_TARGET" IMG=europe-docker.pkg.dev/kyma-project/${{ inputs.klm_image_repo }}/lifecycle-manager:${{ inputs.klm_version_tag }}; then
             kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=90s
             echo "KLM deployed successfully"
             exit 0

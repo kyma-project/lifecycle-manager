@@ -10,12 +10,20 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Set Kustomize Directory
+      shell: bash
+      run: |
+        if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
+          echo "E2E_KUSTOMIZE_DIR=config/watcher_local_test_gcm" >> $GITHUB_ENV
+        else
+          echo "E2E_KUSTOMIZE_DIR=config/watcher_local_test" >> $GITHUB_ENV
+        fi
     - name: Patch purge finalizer flags
       if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        pushd config/watcher_local_test
+        pushd ${E2E_KUSTOMIZE_DIR}
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
@@ -31,7 +39,7 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        pushd config/watcher_local_test
+        pushd ${E2E_KUSTOMIZE_DIR}
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
@@ -44,17 +52,30 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        pushd config/watcher_local_test
-        echo \
-        "- op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-duration=1h
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-before=59m
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+        pushd ${E2E_KUSTOMIZE_DIR}
+        if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-duration=${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-renew-before=${E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW}
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+        else
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-duration=1h
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-renew-before=59m
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+        fi
         cat self-signed-cert.yaml
         kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
         popd
@@ -63,7 +84,7 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        pushd config/watcher_local_test
+        pushd ${E2E_KUSTOMIZE_DIR}
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/args/16
@@ -85,7 +106,7 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        pushd config/watcher_local_test
+        pushd ${E2E_KUSTOMIZE_DIR}
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/args/16
@@ -105,23 +126,32 @@ runs:
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        pushd config/watcher_local_test
-        echo \
-        "- op: replace
-          path: /spec/renewBefore
-          value: 59m
-        - op: replace
-          path: /spec/duration
-          value: 1h">> certificate_renewal.yaml
-        cat certificate_renewal.yaml
-        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
+        pushd ${E2E_KUSTOMIZE_DIR}
+        if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
+          echo \
+          "- op: replace
+            path: /spec/duration
+            value: ${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}">> certificate_renewal.yaml
+          cat certificate_renewal.yaml
+          kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert.gardener.cloud --version v1alpha1 --name watcher-serving
+        else
+          echo \
+          "- op: replace
+            path: /spec/renewBefore
+            value: 59m
+          - op: replace
+            path: /spec/duration
+            value: 1h">> certificate_renewal.yaml
+          cat certificate_renewal.yaml
+          kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
+        fi
         popd
     - name: Use legacy istio gateway secret rotation strategy
       if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |
-        pushd config/watcher_local_test
+        pushd ${E2E_KUSTOMIZE_DIR}
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
