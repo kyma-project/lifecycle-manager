@@ -84,7 +84,7 @@ jobs:
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters-gcm
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
-          gardener_cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
+          gardener_cert_manager_version: ${{ steps.configuration.outputs.gardener_cert_manager_version }}
           gardener_cert_manager_renewal_window: ${{ env.E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW }}
       - name: Deploy lifecycle-manager
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e

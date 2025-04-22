@@ -54,27 +54,27 @@ runs:
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
         if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
-          echo \
-          "- op: add
-            path: /spec/template/spec/containers/0/args/-
-            value: --self-signed-cert-duration=${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}
-          - op: add
-            path: /spec/template/spec/containers/0/args/-
-            value: --self-signed-cert-renew-before=${E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW}
-          - op: add
-            path: /spec/template/spec/containers/0/args/-
-            value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-duration=${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-before=${E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW}
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
         else
-          echo \
-          "- op: add
-            path: /spec/template/spec/containers/0/args/-
-            value: --self-signed-cert-duration=1h
-          - op: add
-            path: /spec/template/spec/containers/0/args/-
-            value: --self-signed-cert-renew-before=59m
-          - op: add
-            path: /spec/template/spec/containers/0/args/-
-            value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-duration=1h
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-before=59m
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
         fi
         cat self-signed-cert.yaml
         kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
@@ -128,22 +128,22 @@ runs:
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
         if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
-          echo \
-          "- op: replace
-            path: /spec/duration
-            value: ${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}">> certificate_renewal.yaml
-          cat certificate_renewal.yaml
-          kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert.gardener.cloud --version v1alpha1 --name watcher-serving
+        echo \
+        "- op: replace
+          path: /spec/duration
+          value: ${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}">> certificate_renewal.yaml
+        cat certificate_renewal.yaml
+        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert.gardener.cloud --version v1alpha1 --name watcher-serving
         else
-          echo \
-          "- op: replace
-            path: /spec/renewBefore
-            value: 59m
-          - op: replace
-            path: /spec/duration
-            value: 1h">> certificate_renewal.yaml
-          cat certificate_renewal.yaml
-          kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
+        echo \
+        "- op: replace
+          path: /spec/renewBefore
+          value: 59m
+        - op: replace
+          path: /spec/duration
+          value: 1h">> certificate_renewal.yaml
+        cat certificate_renewal.yaml
+        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
         fi
         popd
     - name: Use legacy istio gateway secret rotation strategy

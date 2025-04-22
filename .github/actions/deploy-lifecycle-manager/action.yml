@@ -19,7 +19,6 @@ runs:
         else
           E2E_MAKE_TARGET=local-deploy-with-watcher
         fi
-        
         maxRetry=5
         for retry in $(seq 1 $maxRetry)
         do
