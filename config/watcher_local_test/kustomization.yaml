@@ -24,7 +24,6 @@ components:
   - ../istio
   - ../watcher
   - ../webhook
-  - ../grafana
   - ../certmanager
   - ../maintenance_windows
 patches:
