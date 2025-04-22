@@ -6,13 +6,15 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/internal/common"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+//nolint:ireturn // chosen implementation shall be abstracted
 func SetupCertInterface(kcpClient client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,

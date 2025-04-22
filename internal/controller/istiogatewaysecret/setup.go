@@ -33,7 +33,8 @@ var errCouldNotGetTimeFromAnnotation = errors.New("getting time from annotation 
 func SetupReconciler(mgr ctrl.Manager,
 	certificateInterface gatewaysecretclient.CertificateInterface,
 	flagVar *flags.FlagVar,
-	options ctrlruntime.Options) error {
+	options ctrlruntime.Options,
+) error {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
 	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig(), certificateInterface)

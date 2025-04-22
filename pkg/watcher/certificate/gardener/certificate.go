@@ -15,7 +15,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 )
 
-var ErrKeySizeOutOfRange = errors.New("KeySize is out of range for int32")
+var (
+	ErrKeySizeOutOfRange            = errors.New("KeySize is out of range for int32")
+	ErrGetValidityNotImplementedYet = errors.New("GetValidity is not implemented for Gardener certificate management")
+)
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
 func GetCacheObjects() []client.Object {
@@ -159,5 +162,5 @@ func (c *CertificateClient) GetValidity(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, time.Time, error) {
-	return time.Time{}, time.Time{}, fmt.Errorf("GetValidity is not implemented for Gardener certificate management")
+	return time.Time{}, time.Time{}, ErrGetValidityNotImplementedYet
 }

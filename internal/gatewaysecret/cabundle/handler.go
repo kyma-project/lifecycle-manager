@@ -48,7 +48,7 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 
 	gwSecret, err := h.client.GetGatewaySecret(ctx)
 	if util.IsNotFound(err) {
-		return h.createGatewaySecretFromRootSecret(ctx, rootSecret, notBefore, notAfter)
+		return h.createGatewaySecretFromRootSecret(ctx, rootSecret, notAfter)
 	} else if err != nil {
 		return err
 	}
@@ -69,7 +69,6 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 
 func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context,
 	rootSecret *apicorev1.Secret,
-	notBefore time.Time,
 	notAfter time.Time,
 ) error {
 	newSecret := &apicorev1.Secret{
