@@ -158,7 +158,7 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	return expirationDate.Add(-c.config.RenewBefore), nil
 }
 
-func (c *CertificateClient) GetValidity(ctx context.Context,
+func (*CertificateClient) GetValidity(_ context.Context,
 	name string,
 	namespace string,
 ) (time.Time, time.Time, error) {
