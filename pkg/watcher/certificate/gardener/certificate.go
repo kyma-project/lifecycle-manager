@@ -159,8 +159,8 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 }
 
 func (*CertificateClient) GetValidity(_ context.Context,
-	name string,
-	namespace string,
+	_ string,
+	_ string,
 ) (time.Time, time.Time, error) {
 	return time.Time{}, time.Time{}, ErrGetValidityNotImplementedYet
 }
