@@ -4,7 +4,7 @@ packages:
   internal/descriptor/cache: 92
   internal/descriptor/provider: 66
   internal/event: 100
-  internal/gatewaysecret/cabundle: 97
+  internal/gatewaysecret/cabundle: 100
   internal/gatewaysecret/legacy: 100
   internal/istio: 63
   internal/manifest: 15
