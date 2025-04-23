@@ -42,12 +42,12 @@ require (
 	github.com/go-co-op/gocron v1.37.0
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.2
-	k8s.io/api v0.32.3
-	k8s.io/apiextensions-apiserver v0.32.3
-	k8s.io/apimachinery v0.32.3
-	k8s.io/cli-runtime v0.32.3
-	k8s.io/client-go v0.32.3
-	k8s.io/kubectl v0.32.3
+	k8s.io/api v0.32.4
+	k8s.io/apiextensions-apiserver v0.32.4
+	k8s.io/apimachinery v0.32.4
+	k8s.io/cli-runtime v0.32.4
+	k8s.io/client-go v0.32.4
+	k8s.io/kubectl v0.32.4
 )
 
 require (
@@ -369,7 +369,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.17.3 // indirect
-	k8s.io/component-base v0.32.3 // indirect
+	k8s.io/component-base v0.32.4 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250304201544-e5f78fe3ede9 // indirect
 	oras.land/oras-go v1.2.6 // indirect

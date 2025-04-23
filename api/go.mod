@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/stretchr/testify v1.10.0
-	k8s.io/apimachinery v0.32.3
+	k8s.io/apimachinery v0.32.4
 	sigs.k8s.io/controller-runtime v0.20.4
 )
 
@@ -42,9 +42,9 @@ require (
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.32.3 // indirect
-	k8s.io/apiextensions-apiserver v0.32.3 // indirect
-	k8s.io/client-go v0.32.3 // indirect
+	k8s.io/api v0.32.4 // indirect
+	k8s.io/apiextensions-apiserver v0.32.4 // indirect
+	k8s.io/client-go v0.32.4 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250304201544-e5f78fe3ede9 // indirect
 	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
