@@ -9,7 +9,7 @@ inputs:
     required: true
   gardener_cert_manager_renewal_window:
     description: The duration before the certificate expiration when the renewal should be triggered. Default is 720h.
-    required: false
+    required: true
 runs:
   using: composite
   steps:

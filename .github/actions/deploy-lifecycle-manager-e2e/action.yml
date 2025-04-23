@@ -13,7 +13,7 @@ runs:
     - name: Set Kustomize Directory
       shell: bash
       run: |
-        if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
+        if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
           echo "E2E_KUSTOMIZE_DIR=config/watcher_local_test_gcm" >> $GITHUB_ENV
         else
           echo "E2E_KUSTOMIZE_DIR=config/watcher_local_test" >> $GITHUB_ENV
@@ -53,7 +53,7 @@ runs:
       shell: bash
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
-        if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
+        if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
@@ -127,7 +127,7 @@ runs:
       shell: bash
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
-        if [[ "${E2E_USE_GARDENER_CERT_MANAGER}" == "1" ]]; then
+        if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
         echo \
         "- op: replace
           path: /spec/duration

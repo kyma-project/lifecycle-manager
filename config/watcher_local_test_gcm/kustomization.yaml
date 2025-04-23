@@ -14,7 +14,6 @@ generatorOptions:
 resources:
   - namespace.yaml
   - ../manager
-  - https://raw.githubusercontent.com/gardener/cert-management/master/examples/11-dns.gardener.cloud_dnsentries.yaml # needed for GCM to work since this is not included in the helm chart for GCM
 components:
   - ../crd
   - ../rbac
