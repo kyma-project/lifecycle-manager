@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	ErrKeySizeOutOfRange                 = errors.New("KeySize is out of range for int32")
-	ErrInputStringNotContainValidDates   = errors.New("input string does not contain valid dates")
-	ErrCertificateStateNotContainMessage = errors.New("certificate status does not contain message")
-	regexMatchesCount                    = 3
-	dateRegex                            = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`)
+	ErrKeySizeOutOfRange                  = errors.New("KeySize is out of range for int32")
+	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
+	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
+	regexMatchesCount                     = 3
+	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`)
 )
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
@@ -176,7 +176,7 @@ func (c *CertificateClient) GetValidity(ctx context.Context,
 	}
 
 	if cert.Status.Message == nil {
-		return time.Time{}, time.Time{}, ErrCertificateStateNotContainMessage
+		return time.Time{}, time.Time{}, ErrCertificateStatusNotContainMessage
 	}
 
 	notBefore, notAfter, err := parseValidity(*cert.Status.Message)

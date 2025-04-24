@@ -388,7 +388,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), gardener.ErrCertificateStateNotContainMessage)
+	assert.ErrorIs(t, err, gardener.ErrCertificateStatusNotContainMessage)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 	assert.True(t, clientStub.getCalled)
@@ -403,7 +403,7 @@ func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), gardener.ErrInputStringNotContainValidDates)
+	require.ErrorIs(t, err, gardener.ErrInputStringNotContainValidDates)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 }
