@@ -388,7 +388,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, gardener.ErrCertificateStatusNotContainMessage)
+	require.ErrorIs(t, err, gardener.ErrCertificateStatusNotContainMessage)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 	assert.True(t, clientStub.getCalled)
@@ -455,7 +455,8 @@ type kcpClientStub struct {
 }
 
 func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object,
-	opts ...client.GetOption) error {
+	opts ...client.GetOption,
+) error {
 	c.getCalled = true
 	if c.getCert != nil {
 		//nolint:forcetypeassert // this is a stub
@@ -472,7 +473,8 @@ func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...c
 }
 
 func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch,
-	opts ...client.PatchOption) error {
+	opts ...client.PatchOption,
+) error {
 	c.patchCalled = true
 	//nolint:forcetypeassert // this is a stub
 	c.patchArg = obj.(*gcertv1alpha1.Certificate)
