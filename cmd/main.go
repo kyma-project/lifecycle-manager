@@ -27,6 +27,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -96,6 +97,7 @@ func registerSchemas(scheme *machineryruntime.Scheme) {
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 	machineryutilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	machineryutilruntime.Must(certmanagerv1.AddToScheme(scheme))
+	machineryutilruntime.Must(gcertv1alpha1.AddToScheme(scheme))
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
