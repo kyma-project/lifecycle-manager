@@ -2,6 +2,7 @@ package gardener_test
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -12,7 +13,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"fmt"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
@@ -413,7 +413,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "certificate status does not contain message")
+	assert.Contains(t, err.Error(), gardener.ErrCertificateStateNotContainMessage)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 	assert.True(t, clientStub.getCalled)
@@ -452,7 +452,7 @@ func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "input string does not contain valid dates")
+	require.Contains(t, err.Error(), gardener.ErrInputStringNotContainValidDates)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 	assert.True(t, clientStub.getCalled)
