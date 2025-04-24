@@ -322,31 +322,7 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to %v",
 		expectedNotBefore, expectedNotAfter)
 
-	clientStub := &kcpClientStub{
-		getCert: &gcertv1alpha1.Certificate{
-			TypeMeta: apimetav1.TypeMeta{
-				Kind:       gcertv1alpha1.CertificateKind,
-				APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
-			},
-			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      certName,
-				Namespace: certNamespace,
-			},
-			Status: gcertv1alpha1.CertificateStatus{
-				Message: &certificateStateMessage,
-			},
-		},
-	}
-	certClient, err := gardener.NewCertificateClient(
-		clientStub,
-		issuerName,
-		issuerNamespace,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     int(certKeySize),
-		},
-	)
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
@@ -354,7 +330,6 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedNotBefore, notBefore)
 	assert.Equal(t, expectedNotAfter, notAfter)
-	assert.True(t, clientStub.getCalled)
 }
 
 func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
@@ -422,31 +397,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 	certificateStateMessage := "certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid"
 
-	clientStub := &kcpClientStub{
-		getCert: &gcertv1alpha1.Certificate{
-			TypeMeta: apimetav1.TypeMeta{
-				Kind:       gcertv1alpha1.CertificateKind,
-				APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
-			},
-			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      certName,
-				Namespace: certNamespace,
-			},
-			Status: gcertv1alpha1.CertificateStatus{
-				Message: &certificateStateMessage,
-			},
-		},
-	}
-	certClient, err := gardener.NewCertificateClient(
-		clientStub,
-		issuerName,
-		issuerNamespace,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     int(certKeySize),
-		},
-	)
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
@@ -455,7 +406,6 @@ func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 	require.Contains(t, err.Error(), gardener.ErrInputStringNotContainValidDates)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
-	assert.True(t, clientStub.getCalled)
 }
 
 func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) {
@@ -463,31 +413,7 @@ func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) 
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from 2025-04-24 13:60:60.148938 +0000 UTC to %v",
 		expectedNotAfter)
 
-	clientStub := &kcpClientStub{
-		getCert: &gcertv1alpha1.Certificate{
-			TypeMeta: apimetav1.TypeMeta{
-				Kind:       gcertv1alpha1.CertificateKind,
-				APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
-			},
-			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      certName,
-				Namespace: certNamespace,
-			},
-			Status: gcertv1alpha1.CertificateStatus{
-				Message: &certificateStateMessage,
-			},
-		},
-	}
-	certClient, err := gardener.NewCertificateClient(
-		clientStub,
-		issuerName,
-		issuerNamespace,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     int(certKeySize),
-		},
-	)
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
@@ -496,7 +422,6 @@ func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) 
 	assert.Contains(t, err.Error(), "failed to parse notBefore date")
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
-	assert.True(t, clientStub.getCalled)
 }
 
 func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
@@ -504,31 +429,7 @@ func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to 2025-04-24 13:60:60.148938 +0000 UTC",
 		expectedNotBefore)
 
-	clientStub := &kcpClientStub{
-		getCert: &gcertv1alpha1.Certificate{
-			TypeMeta: apimetav1.TypeMeta{
-				Kind:       gcertv1alpha1.CertificateKind,
-				APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
-			},
-			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      certName,
-				Namespace: certNamespace,
-			},
-			Status: gcertv1alpha1.CertificateStatus{
-				Message: &certificateStateMessage,
-			},
-		},
-	}
-	certClient, err := gardener.NewCertificateClient(
-		clientStub,
-		issuerName,
-		issuerNamespace,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     int(certKeySize),
-		},
-	)
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
@@ -537,7 +438,6 @@ func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse notAfter date")
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
-	assert.True(t, clientStub.getCalled)
 }
 
 // Helper functions and stubs
@@ -581,4 +481,34 @@ func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch clie
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func getCertClientWithStatusMessage(message string) (*gardener.CertificateClient, error) {
+	clientStub := &kcpClientStub{
+		getCert: &gcertv1alpha1.Certificate{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       gcertv1alpha1.CertificateKind,
+				APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      certName,
+				Namespace: certNamespace,
+			},
+			Status: gcertv1alpha1.CertificateStatus{
+				Message: &message,
+			},
+		},
+	}
+	certClient, err := gardener.NewCertificateClient(
+		clientStub,
+		issuerName,
+		issuerNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     int(certKeySize),
+		},
+	)
+
+	return certClient, err
 }
