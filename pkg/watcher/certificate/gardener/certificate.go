@@ -99,8 +99,8 @@ func (c *CertificateClient) Create(ctx context.Context,
 			SecretName:   &name,
 			SecretLabels: certificate.GetCertificateLabels(),
 			IssuerRef: &gcertv1alpha1.IssuerRef{
-				Name:      c.issuerName,
-				Namespace: c.issuerNamespace,
+				Name: c.issuerName,
+				//Namespace: c.issuerNamespace,
 			},
 			PrivateKey: &gcertv1alpha1.CertificatePrivateKey{
 				Algorithm: &rsaKeyAlgorithm,
