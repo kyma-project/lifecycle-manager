@@ -1,7 +1,3 @@
-# Configuration for testing the watcher locally.
-# Enables the ability to configure additional components,
-# that we do not want in the default configuration (e.g. vendor-specific gateway implementation),
-# but are necessary for testing the watcher on locally provisioned clusters using k3d.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namePrefix: klm-
@@ -24,7 +20,7 @@ components:
   - ../istio
   - ../watcher
   - ../webhook
-  - ../certmanager
+  - ../gardener-certmanager
   - ../maintenance_windows
 patches:
   - path: patches/deployment_resources.yaml
@@ -83,6 +79,9 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cert-management=cert.gardener.cloud/v1alpha1
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
@@ -113,8 +112,8 @@ patches:
         path: /spec/servers/0/hosts/0
         value: "host.k3d.internal"
   - target:
-      group: cert-manager.io
-      version: v1
+      group: cert.gardener.cloud
+      version: v1alpha1
       kind: Certificate
       name: watcher-serving
     patch: |-
@@ -139,6 +138,8 @@ transformers:
       kind: RoleBinding
     - path: subjects/name
       kind: ClusterRoleBinding
+    - path: spec/issuerRef/name
+      kind: Certificate
   - |-
     apiVersion: builtin
     kind: NamespaceTransformer

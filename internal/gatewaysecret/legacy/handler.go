@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -33,12 +32,12 @@ func (h *Handler) ManageGatewaySecret(ctx context.Context, rootSecret *apicorev1
 		return err
 	}
 
-	caCert, err := h.client.GetWatcherServingCert(ctx)
+	notBefore, _, err := h.client.GetWatcherServingCertValidity(ctx)
 	if err != nil {
 		return err
 	}
 
-	if h.requiresUpdate(gwSecret, caCert) {
+	if h.requiresUpdate(gwSecret, notBefore) {
 		copyDataFromRootSecret(gwSecret, rootSecret)
 		setLastModifiedToNow(gwSecret)
 
@@ -66,11 +65,11 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 	return h.client.CreateGatewaySecret(ctx, newSecret)
 }
 
-func (h *Handler) requiresUpdate(gwSecret *apicorev1.Secret, caCert *certmanagerv1.Certificate) bool {
+func (h *Handler) requiresUpdate(gwSecret *apicorev1.Secret, notBefore time.Time) bool {
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
 	if lastModified, err := h.parseLastModifiedTime(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
-		if caCert.Status.NotBefore != nil && lastModified.After(caCert.Status.NotBefore.Time) {
+		if !notBefore.IsZero() && lastModified.After(notBefore) {
 			return false
 		}
 	}

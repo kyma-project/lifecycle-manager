@@ -17,8 +17,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 )
 
@@ -108,61 +106,26 @@ func setupCertClient(kcpClient client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) certificate.CertificateClient {
-	setupFunc, ok := map[string]certClientSetupFunc{
-		certmanagerv1.SchemeGroupVersion.String(): setupCertManagerClient,
-		gcertv1alpha1.SchemeGroupVersion.String(): setupGardenerCertificateManagementClient,
-	}[flagVar.CertificateManagement]
-
-	if !ok {
-		setupLog.Error(common.ErrUnsupportedCertificateManagementSystem,
-			"unable to initialize certificate management")
-		os.Exit(bootstrapFailedExitCode)
-	}
-
 	certificateConfig := certificate.CertificateConfig{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,
 	}
 
-	return setupFunc(kcpClient,
-		flagVar,
-		certificateConfig,
-		setupLog,
-	)
-}
+	setupFunc, ok := map[string]func() certificate.CertificateClient{
+		certmanagerv1.SchemeGroupVersion.String(): func() certificate.CertificateClient {
+			return setupCertManagerClient(kcpClient, flagVar, certificateConfig, setupLog)
+		},
+		gcertv1alpha1.SchemeGroupVersion.String(): func() certificate.CertificateClient {
+			return setupGardenerCertificateManagementClient(kcpClient, flagVar, certificateConfig, setupLog)
+		},
+	}[flagVar.CertificateManagement]
 
-type certClientSetupFunc func(client.Client,
-	*flags.FlagVar,
-	certificate.CertificateConfig,
-	logr.Logger,
-) certificate.CertificateClient
-
-func setupCertManagerClient(kcpClient client.Client,
-	flagVar *flags.FlagVar,
-	config certificate.CertificateConfig,
-	_ logr.Logger,
-) certificate.CertificateClient {
-	return certmanager.NewCertificateClient(kcpClient,
-		flagVar.SelfSignedCertificateIssuerName,
-		config,
-	)
-}
-
-func setupGardenerCertificateManagementClient(kcpClient client.Client,
-	flagVar *flags.FlagVar,
-	config certificate.CertificateConfig,
-	setupLog logr.Logger,
-) certificate.CertificateClient {
-	certClient, err := gardener.NewCertificateClient(kcpClient,
-		flagVar.SelfSignedCertificateIssuerName,
-		flagVar.IstioNamespace,
-		config,
-	)
-	if err != nil {
-		setupLog.Error(err, "unable to initialize Gardener certificate management")
+	if !ok {
+		setupLog.Error(common.ErrUnsupportedCertificateManagementSystem,
+			"unable to initialize certificate managemer client")
 		os.Exit(bootstrapFailedExitCode)
 	}
 
-	return certClient
+	return setupFunc()
 }
