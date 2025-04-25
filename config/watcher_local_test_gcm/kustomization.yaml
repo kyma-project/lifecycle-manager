@@ -82,6 +82,9 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --cert-management=cert.gardener.cloud/v1alpha1
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-issuer-namespace=default
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
