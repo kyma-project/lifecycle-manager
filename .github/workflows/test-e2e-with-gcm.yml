@@ -74,7 +74,10 @@ jobs:
         run: |
           echo "E2E_USE_GARDENER_CERT_MANAGER=1" >> $GITHUB_ENV
           echo "E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION=1441h" >> $GITHUB_ENV
+          echo 'Raw: [[ "${{ matrix.e2e-test }}" == "legacy-istio-gateway-secret-rotation" ]]'
+          
           if [[ "${{ matrix.e2e-test }}" == "legacy-istio-gateway-secret-rotation" || "${{ matrix.e2e-test }}" == "self-signed-certificate-rotation" ]]; then
+            echo "HEREEEE"
             # renewing every minute, since certificate duration is 1441h
             echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=1440h59m" >> $GITHUB_ENV
           else
