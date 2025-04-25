@@ -1,4 +1,4 @@
-# ADR 001 - XXX-Defined Interfaces
+# ADR 001 - Consumer-Defined Interfaces
 
 ## Status
 
@@ -35,8 +35,14 @@ It needs to be decided what criteria shall be used to choose between consumer-de
 
 ## Decision
 
-TBD
+It is decided to define interfaces at the consumer side as the preferred approach.
+Major decision drivers are the key arguments for consumer-defined interfaces presented above.
+
+However, it is acknowledged that there may be cases where producer-defined interfaces should be preferred.
+For such cases, there may be justified exceptions.
 
 ## Consequence
 
-TBD
+Without specific arguments, the interface is defined at the consumer side.
+If there are specific arguments for it, the interface may be defined at the producer side.
+As such cases appear, generalizable guidelines for these are derived and added to this ADR as further guidance for when not to use consumer-defined interfaces.
