@@ -9,7 +9,7 @@ replace (
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
-	github.com/cert-manager/cert-manager v1.17.1
+	github.com/cert-manager/cert-manager v1.17.2
 	github.com/gardener/cert-management v0.17.5
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
