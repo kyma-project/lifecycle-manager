@@ -48,7 +48,7 @@ const (
 	DefaultIstioGatewayNamespace                                        = "kcp-system"
 	DefaultIstioNamespace                                               = "istio-system"
 	DefaultCaCertName                                                   = "klm-watcher-serving"
-	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour
+	DefaultSelfSignedCertDuration                         time.Duration = 1441 * time.Hour
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
 	DefaultSelfSignedCertKeySize                                        = 4096
