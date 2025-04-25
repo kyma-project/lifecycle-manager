@@ -19,9 +19,9 @@ spec:
   secretName: klm-watcher # this secret will not be prefixed, since it's not managed by kustomize
   secretLabels:
     operator.kyma-project.io/managed-by: "lifecycle-manager"
-  privateKey:
-    algorithm: RSA
-    size: 4096
+#  privateKey:
+#    algorithm: RSA
+#    size: 4096
   issuerRef:
     name: watcher-root
     namespace: default
