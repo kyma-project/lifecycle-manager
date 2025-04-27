@@ -6,6 +6,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 )
 
+const authKey = "abcd12345601101010somethingrapid4"
+
 type DescriptorCache struct {
 	cache sync.Map
 }
