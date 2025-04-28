@@ -151,7 +151,6 @@ spec:
             required:
             - field
             - gateway
-            - labelsToWatch
             - resourceToWatch
             - serviceInfo
             type: object
@@ -391,7 +390,6 @@ spec:
             required:
             - field
             - gateway
-            - labelsToWatch
             - resourceToWatch
             - serviceInfo
             type: object

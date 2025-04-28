@@ -452,13 +452,13 @@ func (in *ModuleStatus) DeepCopyInto(out *ModuleStatus) {
 		*out = new(TrackingObject)
 		**out = **in
 	}
-	if in.Template != nil {
-		in, out := &in.Template, &out.Template
+	if in.Resource != nil {
+		in, out := &in.Resource, &out.Resource
 		*out = new(TrackingObject)
 		**out = **in
 	}
-	if in.Resource != nil {
-		in, out := &in.Resource, &out.Resource
+	if in.Template != nil {
+		in, out := &in.Template, &out.Template
 		*out = new(TrackingObject)
 		**out = **in
 	}
