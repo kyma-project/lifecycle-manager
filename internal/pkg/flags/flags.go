@@ -48,6 +48,7 @@ const (
 	DefaultIstioGatewayNamespace                                        = "kcp-system"
 	DefaultIstioNamespace                                               = "istio-system"
 	DefaultCaCertName                                                   = "klm-watcher-serving"
+	DefaultSelfSignedCertIssuerNamespace                                = "istio-system"
 	DefaultSelfSignedCertDuration                         time.Duration = 1441 * time.Hour
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
@@ -236,7 +237,8 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
 		"istio-gateway-cert-switch-before-expiration-time", DefaultIstioGatewayCertSwitchBeforeExpirationTime,
 		"Time before the expiration of the current CA certificate when the Gateway certificate should be switched")
-	flag.StringVar(&flagVar.SelfSignedCertIssuerNamespace, "self-signed-cert-issuer-namespace", "istio-system",
+	flag.StringVar(&flagVar.SelfSignedCertIssuerNamespace, "self-signed-cert-issuer-namespace",
+		DefaultSelfSignedCertIssuerNamespace,
 		"Namespace of the issuer for self-signed certificates")
 	flag.DurationVar(&flagVar.IstioGatewaySecretRequeueSuccessInterval,
 		"istio-gateway-secret-requeue-success-interval", DefaultIstioGatewaySecretRequeueSuccessInterval,
