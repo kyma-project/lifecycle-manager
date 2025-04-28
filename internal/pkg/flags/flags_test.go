@@ -186,7 +186,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultSelfSignedCertDuration",
 			constValue:    DefaultSelfSignedCertDuration.String(),
-			expectedValue: (1441 * time.Hour).String(),
+			expectedValue: (90 * 24 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultSelfSignedCertRenewBefore",
