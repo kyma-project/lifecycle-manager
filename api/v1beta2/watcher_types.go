@@ -29,7 +29,8 @@ type WatcherSpec struct {
 	ServiceInfo Service `json:"serviceInfo"`
 
 	// LabelsToWatch describes the labels that should be watched
-	LabelsToWatch map[string]string `json:"labelsToWatch"`
+	// +optional
+	LabelsToWatch map[string]string `json:"labelsToWatch,omitempty"`
 
 	// ResourceToWatch is the GroupVersionResource of the resource that should be watched.
 	ResourceToWatch WatchableGVR `json:"resourceToWatch"`
