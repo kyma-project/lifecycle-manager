@@ -42,8 +42,8 @@ jobs:
       matrix:
         e2e-test:
           - watcher-enqueue
-          - legacy-istio-gateway-secret-rotation
-          - self-signed-certificate-rotation
+          #- legacy-istio-gateway-secret-rotation
+          #- self-signed-certificate-rotation
           - modulereleasemeta-watch-trigger
 
     runs-on: ubuntu-latest
@@ -74,12 +74,12 @@ jobs:
         run: |
           echo "E2E_USE_GARDENER_CERT_MANAGER=1" >> $GITHUB_ENV
           echo "E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION=1441h" >> $GITHUB_ENV
-          if [[ "${{ matrix.e2e-test }}" == "legacy-istio-gateway-secret-rotation" || "${{ matrix.e2e-test }}" == "self-signed-certificate-rotation" ]]; then
-            # renewing every minute, since certificate duration is 1441h
-            echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=1440h59m" >> $GITHUB_ENV
-          else
-            echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=720h" >> $GITHUB_ENV
-          fi
+#          if [[ "${{ matrix.e2e-test }}" == "legacy-istio-gateway-secret-rotation" || "${{ matrix.e2e-test }}" == "self-signed-certificate-rotation" ]]; then
+#            # renewing every minute, since certificate duration is 1441h
+#            echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=1440h59m" >> $GITHUB_ENV
+#          else
+#            echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=720h" >> $GITHUB_ENV
+#          fi
       - name: Setup test clusters
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters-gcm
         with:

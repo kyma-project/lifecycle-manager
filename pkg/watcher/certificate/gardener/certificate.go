@@ -80,7 +80,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 	dnsNames []string,
 ) error {
 	//nolint:gosec // save as of the guard clause in constructor
-	keySize := gcertv1alpha1.PrivateKeySize(2048)
+	keySize := gcertv1alpha1.PrivateKeySize(int32(c.config.KeySize))
 	rsaKeyAlgorithm := gcertv1alpha1.RSAKeyAlgorithm
 
 	cert := &gcertv1alpha1.Certificate{
