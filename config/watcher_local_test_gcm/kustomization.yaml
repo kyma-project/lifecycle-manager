@@ -85,6 +85,9 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --self-signed-cert-issuer-namespace=default
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-duration=1441h
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
