@@ -31,9 +31,10 @@ import (
 
 var (
 	ErrManagerInErrorState            = errors.New("manager is in error state")
+	errStateRequireUpdate             = errors.New("manifest state requires update")
+	errOrphanedManifest               = errors.New("orphaned manifest detected")
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
-	errStateRequireUpdate = errors.New("manifest state requires update")
 )
 
 const (
@@ -80,7 +81,7 @@ type Reconciler struct {
 	managedLabelRemovalService ManagedByLabelRemoval
 }
 
-//nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
+//nolint:funlen,cyclop,gocyclo,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
@@ -94,6 +95,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
+
+	err := r.detectOrphanedManifest(ctx, manifest)
+	if err != nil {
+		previousStatus := manifest.GetStatus()
+		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+		return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
+	}
+
 	manifestStatus := manifest.GetStatus()
 
 	if manifest.SkipReconciliation() {
@@ -549,4 +558,27 @@ func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name stri
 	} else {
 		r.ManifestMetrics.RemoveManifestDuration(name)
 	}
+}
+
+func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return fmt.Errorf("error during orphaned manifest detection: %w", err)
+	}
+
+	kymaKey := client.ObjectKey{
+		Name:      kymaName,
+		Namespace: manifest.GetNamespace(),
+	}
+
+	kyma := &v1beta2.Kyma{}
+	if err := r.Get(ctx, kymaKey, kyma); err != nil {
+		if util.IsNotFound(err) {
+			logf.FromContext(ctx).Error(errOrphanedManifest, "Manifest name: "+manifest.Name)
+			return errOrphanedManifest
+		}
+		return fmt.Errorf("error during orphaned manifest detection: %w", err)
+	}
+
+	return nil
 }
