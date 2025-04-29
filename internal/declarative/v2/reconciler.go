@@ -563,7 +563,7 @@ func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name stri
 func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
 	kymaName, err := manifest.GetKymaName()
 	if err != nil {
-		return fmt.Errorf("error during orphaned manifest detection: %w", err)
+		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot get parent Kyma name: %w", manifest.Name, err)
 	}
 
 	kymaKey := client.ObjectKey{
@@ -574,10 +574,9 @@ func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1bet
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, kymaKey, kyma); err != nil {
 		if util.IsNotFound(err) {
-			logf.FromContext(ctx).Error(errOrphanedManifest, "Manifest name: "+manifest.Name)
 			return errOrphanedManifest
 		}
-		return fmt.Errorf("error during orphaned manifest detection: %w", err)
+		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot fetch parent Kyma object: %w", manifest.Name, err)
 	}
 
 	return nil
