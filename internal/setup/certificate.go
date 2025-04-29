@@ -30,7 +30,7 @@ func setupGardenerCertificateManagementClient(kcpClient client.Client,
 ) *gardener.CertificateClient {
 	certClient, err := gardener.NewCertificateClient(kcpClient,
 		flagVar.SelfSignedCertificateIssuerName,
-		flagVar.IstioNamespace,
+		flagVar.SelfSignedCertIssuerNamespace,
 		config,
 	)
 	if err != nil {

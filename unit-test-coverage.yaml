@@ -28,5 +28,5 @@ packages:
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher/certificate: 100
   pkg/watcher/certificate/certmanager: 100
-  pkg/watcher/certificate/gardener: 100
+  pkg/watcher/certificate/gardener: 98
   pkg/watcher/certificate/secret: 100

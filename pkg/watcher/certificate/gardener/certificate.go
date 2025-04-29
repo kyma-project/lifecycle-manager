@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"time"
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -16,9 +17,13 @@ import (
 )
 
 var (
-	ErrKeySizeOutOfRange            = errors.New("KeySize is out of range for int32")
-	ErrGetValidityNotImplementedYet = errors.New("GetValidity is not implemented for Gardener certificate management")
+	ErrKeySizeOutOfRange                  = errors.New("KeySize is out of range for int32")
+	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
+	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
+	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`)
 )
+
+const regexMatchesCount = 3
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
 func GetCacheObjects() []client.Object {
@@ -152,15 +157,54 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 
 	expirationDate, err := time.Parse(time.RFC3339, *cert.Status.ExpirationDate)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse certificate's expiration date '%s': %w", *cert.Status.ExpirationDate, err)
+		return time.Time{}, fmt.Errorf("failed to parse certificate's expiration date '%s': %w",
+			*cert.Status.ExpirationDate, err)
 	}
 
 	return expirationDate.Add(-c.config.RenewBefore), nil
 }
 
-func (*CertificateClient) GetValidity(_ context.Context,
-	_ string,
-	_ string,
+func (c *CertificateClient) GetValidity(ctx context.Context,
+	name string,
+	namespace string,
 ) (time.Time, time.Time, error) {
-	return time.Time{}, time.Time{}, ErrGetValidityNotImplementedYet
+	cert := &gcertv1alpha1.Certificate{}
+	cert.SetName(name)
+	cert.SetNamespace(namespace)
+
+	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
+	}
+
+	if cert.Status.Message == nil {
+		return time.Time{}, time.Time{}, ErrCertificateStatusNotContainMessage
+	}
+
+	notBefore, notAfter, err := parseValidity(*cert.Status.Message)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("failed to extract validity: %w", err)
+	}
+
+	return notBefore, notAfter, nil
+}
+
+func parseValidity(input string) (time.Time, time.Time, error) {
+	matches := dateRegex.FindStringSubmatch(input)
+	if len(matches) != regexMatchesCount {
+		return time.Time{}, time.Time{}, ErrInputStringNotContainValidDates
+	}
+
+	layout := "2006-01-02 15:04:05 -0700 MST"
+
+	notBefore, err := time.Parse(layout, matches[1])
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("failed to parse notBefore date: %w", err)
+	}
+
+	notAfter, err := time.Parse(layout, matches[2])
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("failed to parse notAfter date: %w", err)
+	}
+
+	return notBefore, notAfter, nil
 }
