@@ -592,12 +592,7 @@ func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1bet
 		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot fetch parent Kyma object: %w", manifest.Name, err)
 	}
 
-	targetModuleName, err := manifest.GetModuleName()
-	if err != nil {
-		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot get module name for manifest: %w", manifest.Name, err)
-	}
-
-	if !isManifestReferencedInKymaStatus(kyma, targetModuleName) {
+	if !isManifestReferencedInKymaStatus(kyma, manifest.Name) {
 		return fmt.Errorf("%w: Manifest is not referenced in Kyma status", errOrphanedManifest)
 	}
 

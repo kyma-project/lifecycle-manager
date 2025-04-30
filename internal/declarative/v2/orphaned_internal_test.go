@@ -26,6 +26,9 @@ func TestIsManifestReferencedInKymaStatus(t *testing.T) {
 						},
 					},
 				},
+				{
+					Name: "entry-with-nil-manifest",
+				},
 			},
 		},
 	}
