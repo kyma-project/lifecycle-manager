@@ -31,18 +31,16 @@ Key arguments for producer-defined interfaces are:
 + easier to trace where the producer is consumed and to find which consumers will break upon changes of the producer
 ```
 
-It needs to be decided what criteria shall be used to choose between consumer-defined and provider-defined interfaces, or whether we want to unifromly follow one pattern where the other is only used in exceptional cases.
+We must decide what criteria shall be used to choose between consumer-defined and provider-defined interfaces, or whether we want to uniformly follow one pattern while the other is only used in exceptional cases.
 
 ## Decision
 
-It is decided to define interfaces at the consumer side as the preferred approach.
-Major decision drivers are the key arguments for consumer-defined interfaces presented above.
+Weighing the key arguments, we prefer to define interfaces at the consumer side.
 
-However, it is acknowledged that there may be cases where producer-defined interfaces should be preferred.
-For such cases, there may be justified exceptions.
+However, there may be cases where producer-defined interfaces are better and exceptions may be justified.
 
 ## Consequence
 
-Without specific arguments, the interface is defined at the consumer side.
-If there are specific arguments for it, the interface may be defined at the producer side.
-As such cases appear, generalizable guidelines for these are derived and added to this ADR as further guidance for when not to use consumer-defined interfaces.
+By default, the interface is defined at the consumer side.
+If there is specific justification for it, the interface may be defined at the producer side.
+When such cases appear, we derive criteria when to prefer producer-defined interface, and add them as guidance to this ADR.
