@@ -25,7 +25,7 @@ Key arguments for consumer-defined interfaces are:
 
 The question is, whether there are still scenarios in Go where producer-defined interfaces may be preferred over consumer-defined ones.
 
-Key arguments for producer-defined interfaces are:
+Key argument for producer-defined interfaces is:
 
 ```diff
 + easier to trace where the producer is consumed and to find which consumers will break upon changes of the producer
