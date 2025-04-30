@@ -8,4 +8,4 @@ resources:
 images:
 - name: controller
   newName: tsmsap/lifecycle-manager
-  newTag: 14-57
+  newTag: 06-28
