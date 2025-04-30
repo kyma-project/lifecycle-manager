@@ -564,7 +564,6 @@ func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name stri
 }
 
 func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
-
 	if manifest.IsMandatoryModule() {
 		// Mandatory modules are not refereced by any Kyma object so cannot be orphaned
 		return nil
@@ -612,7 +611,6 @@ func isManifestReferencedInKymaStatus(kyma *v1beta2.Kyma, targetManifestName str
 	}
 
 	for _, module := range kymaStatusModules {
-
 		if module.Manifest != nil && module.Manifest.Name == targetManifestName {
 			return true
 		}

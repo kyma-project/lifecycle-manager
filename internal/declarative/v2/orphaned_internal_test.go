@@ -3,8 +3,9 @@ package v2
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 func TestIsManifestReferencedInKymaStatus(t *testing.T) {
