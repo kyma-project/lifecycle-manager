@@ -13,6 +13,15 @@ patches:
 transformers:
   - |-
     apiVersion: builtin
+    kind: PrefixSuffixTransformer
+    metadata:
+      name: add-klm-prefix-to-issuer-refs
+    prefix: klm-
+    fieldSpecs:
+    - path: spec/issuerRef/name
+      kind: Certificate
+  - |-
+    apiVersion: builtin
     kind: AnnotationsTransformer
     metadata:
       name: add-ca-inject-annotation

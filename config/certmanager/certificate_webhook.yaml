@@ -15,12 +15,12 @@ metadata:
   name: controller-manager-webhook-serving
   namespace: kcp-system
 spec:
-  commonName: "klm-controller-manager-webhook-serving"
+  commonName: klm-controller-manager-webhook-serving
   # $(SERVICE_NAME) and $(SERVICE_NAMESPACE) will be substituted by kustomize
   dnsNames:
     - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc
     - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc.cluster.local
   issuerRef:
     kind: Issuer
-    name: klm-controller-manager-selfsigned
+    name: controller-manager-selfsigned
   secretName: klm-controller-manager-webhook # this secret will not be prefixed, since it's not managed by kustomize
