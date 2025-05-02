@@ -28,7 +28,7 @@ spec:
     algorithm: RSA
     size: 4096
   issuerRef:
-    name: watcher-root
+    name: klm-watcher-root
     kind: Issuer
     group: cert-manager.io
 ---
