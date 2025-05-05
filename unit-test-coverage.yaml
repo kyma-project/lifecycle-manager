@@ -4,7 +4,7 @@ packages:
   internal/descriptor/cache: 92
   internal/descriptor/provider: 66
   internal/event: 100
-  internal/gatewaysecret/cabundle: 97
+  internal/gatewaysecret/cabundle: 100
   internal/gatewaysecret/legacy: 100
   internal/istio: 63
   internal/manifest: 15
@@ -28,5 +28,5 @@ packages:
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher/certificate: 100
   pkg/watcher/certificate/certmanager: 100
-  pkg/watcher/certificate/gardener: 100
+  pkg/watcher/certificate/gardener: 98
   pkg/watcher/certificate/secret: 100

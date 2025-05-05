@@ -30,10 +30,14 @@ const (
 
 var errCouldNotGetTimeFromAnnotation = errors.New("getting time from annotation failed")
 
-func SetupReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options) error {
+func SetupReconciler(mgr ctrl.Manager,
+	certificateInterface gatewaysecretclient.CertificateInterface,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+) error {
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
-	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig())
+	clnt := gatewaysecretclient.NewGatewaySecretRotationClient(mgr.GetConfig(), certificateInterface)
 	var parseLastModifiedFunc gatewaysecret.TimeParserFunc = func(secret *apicorev1.Secret,
 		annotation string,
 	) (time.Time, error) {

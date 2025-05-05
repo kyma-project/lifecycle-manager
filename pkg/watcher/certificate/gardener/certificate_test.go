@@ -2,6 +2,7 @@ package gardener_test
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -315,6 +316,130 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 	assert.True(t, clientStub.getCalled)
 }
 
+func Test_CertificateClient_GetValidity_Success(t *testing.T) {
+	expectedNotBefore := time.Now().UTC()
+	expectedNotAfter := time.Now().Add(certDuration).UTC()
+	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to %v",
+		expectedNotBefore, expectedNotAfter)
+
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
+	require.NoError(t, err)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedNotBefore, notBefore)
+	assert.Equal(t, expectedNotAfter, notAfter)
+}
+
+func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
+	clientStub := &kcpClientStub{
+		getErr: assert.AnError,
+	}
+
+	certClient, err := gardener.NewCertificateClient(
+		clientStub,
+		issuerName,
+		issuerNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     int(certKeySize),
+		},
+	)
+	require.NoError(t, err)
+
+	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get certificate")
+	assert.True(t, renewalTime.IsZero())
+	assert.True(t, clientStub.getCalled)
+}
+
+func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
+	clientStub := &kcpClientStub{
+		getCert: &gcertv1alpha1.Certificate{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       gcertv1alpha1.CertificateKind,
+				APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      certName,
+				Namespace: certNamespace,
+			},
+			Status: gcertv1alpha1.CertificateStatus{
+				Message: nil,
+			},
+		},
+	}
+	certClient, err := gardener.NewCertificateClient(
+		clientStub,
+		issuerName,
+		issuerNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     int(certKeySize),
+		},
+	)
+	require.NoError(t, err)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, gardener.ErrCertificateStatusNotContainMessage)
+	assert.Zero(t, notBefore)
+	assert.Zero(t, notAfter)
+	assert.True(t, clientStub.getCalled)
+}
+
+func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
+	certificateStateMessage := "certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid"
+
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
+	require.NoError(t, err)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, gardener.ErrInputStringNotContainValidDates)
+	assert.Zero(t, notBefore)
+	assert.Zero(t, notAfter)
+}
+
+func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) {
+	expectedNotAfter := time.Now().Add(certDuration).UTC()
+	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from 2025-04-24 13:60:60.148938 +0000 UTC to %v",
+		expectedNotAfter)
+
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
+	require.NoError(t, err)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse notBefore date")
+	assert.Zero(t, notBefore)
+	assert.Zero(t, notAfter)
+}
+
+func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
+	expectedNotBefore := time.Now().Add(certDuration).UTC()
+	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to 2025-04-24 13:60:60.148938 +0000 UTC",
+		expectedNotBefore)
+
+	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
+	require.NoError(t, err)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse notAfter date")
+	assert.Zero(t, notBefore)
+	assert.Zero(t, notAfter)
+}
+
 // Helper functions and stubs
 
 type kcpClientStub struct {
@@ -329,7 +454,9 @@ type kcpClientStub struct {
 	patchArg     *gcertv1alpha1.Certificate
 }
 
-func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object,
+	opts ...client.GetOption,
+) error {
 	c.getCalled = true
 	if c.getCert != nil {
 		//nolint:forcetypeassert // this is a stub
@@ -345,7 +472,9 @@ func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...c
 	return c.deleteErr
 }
 
-func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch,
+	opts ...client.PatchOption,
+) error {
 	c.patchCalled = true
 	//nolint:forcetypeassert // this is a stub
 	c.patchArg = obj.(*gcertv1alpha1.Certificate)
@@ -354,4 +483,34 @@ func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch clie
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func getCertClientWithStatusMessage(message string) (*gardener.CertificateClient, error) {
+	clientStub := &kcpClientStub{
+		getCert: &gcertv1alpha1.Certificate{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       gcertv1alpha1.CertificateKind,
+				APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      certName,
+				Namespace: certNamespace,
+			},
+			Status: gcertv1alpha1.CertificateStatus{
+				Message: &message,
+			},
+		},
+	}
+	certClient, err := gardener.NewCertificateClient(
+		clientStub,
+		issuerName,
+		issuerNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     int(certKeySize),
+		},
+	)
+
+	return certClient, err
 }

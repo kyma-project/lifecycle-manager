@@ -282,6 +282,134 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
+func Test_CertificateClient_GetValidity_Success(t *testing.T) {
+	clientStub := &kcpClientStub{
+		getCert: &certmanagerv1.Certificate{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       certmanagerv1.CertificateKind,
+				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      certName,
+				Namespace: certNamespace,
+			},
+			Status: certmanagerv1.CertificateStatus{
+				NotBefore: &apimetav1.Time{Time: time.Now().Add(-time.Hour)},
+				NotAfter:  &apimetav1.Time{Time: time.Now().Add(time.Hour)},
+			},
+		},
+	}
+	certClient := certmanager.NewCertificateClient(
+		clientStub,
+		issuerName,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
+	)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.NoError(t, err)
+	assert.Equal(t, clientStub.getCert.Status.NotBefore.Time, notBefore)
+	assert.Equal(t, clientStub.getCert.Status.NotAfter.Time, notAfter)
+	assert.True(t, clientStub.getCalled)
+}
+
+func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
+	clientStub := &kcpClientStub{
+		getCert: &certmanagerv1.Certificate{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       certmanagerv1.CertificateKind,
+				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      certName,
+				Namespace: certNamespace,
+			},
+			Status: certmanagerv1.CertificateStatus{
+				NotAfter: &apimetav1.Time{Time: time.Now().Add(time.Hour)},
+			},
+		},
+	}
+	certClient := certmanager.NewCertificateClient(
+		clientStub,
+		issuerName,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
+	)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	assert.Equal(t, certmanager.ErrNoNotBefore, err)
+	assert.True(t, notBefore.IsZero())
+	assert.True(t, notAfter.IsZero())
+	assert.True(t, clientStub.getCalled)
+}
+
+func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
+	clientStub := &kcpClientStub{
+		getCert: &certmanagerv1.Certificate{
+			TypeMeta: apimetav1.TypeMeta{
+				Kind:       certmanagerv1.CertificateKind,
+				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      certName,
+				Namespace: certNamespace,
+			},
+			Status: certmanagerv1.CertificateStatus{
+				NotBefore: &apimetav1.Time{Time: time.Now().Add(-time.Hour)},
+			},
+		},
+	}
+	certClient := certmanager.NewCertificateClient(
+		clientStub,
+		issuerName,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
+	)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	assert.Equal(t, certmanager.ErrNoNotAfter, err)
+	assert.True(t, notBefore.IsZero())
+	assert.True(t, notAfter.IsZero())
+	assert.True(t, clientStub.getCalled)
+}
+
+func Test_CertificateClient_GetValidity_GetError(t *testing.T) {
+	clientStub := &kcpClientStub{
+		getErr: assert.AnError,
+	}
+	certClient := certmanager.NewCertificateClient(
+		clientStub,
+		issuerName,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
+	)
+
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get certificate")
+	assert.Zero(t, notBefore)
+	assert.Zero(t, notAfter)
+	assert.True(t, clientStub.getCalled)
+}
+
 // Test stubs
 
 type kcpClientStub struct {

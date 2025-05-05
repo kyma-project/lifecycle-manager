@@ -2,6 +2,7 @@ package certmanager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+)
+
+var (
+	ErrNoNotBefore = errors.New("notBefore not found")
+	ErrNoNotAfter  = errors.New("notAfter not found")
 )
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
@@ -130,12 +136,9 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, error) {
-	cert := &certmanagerv1.Certificate{}
-	cert.SetName(name)
-	cert.SetNamespace(namespace)
-
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
+	cert, err := c.getCertificate(ctx, name, namespace)
+	if err != nil {
+		return time.Time{}, err
 	}
 
 	if cert.Status.RenewalTime == nil || cert.Status.RenewalTime.Time.IsZero() {
@@ -143,4 +146,39 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	}
 
 	return cert.Status.RenewalTime.Time, nil
+}
+
+func (c *CertificateClient) GetValidity(ctx context.Context,
+	name string,
+	namespace string,
+) (time.Time, time.Time, error) {
+	cert, err := c.getCertificate(ctx, name, namespace)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+
+	if cert.Status.NotBefore == nil {
+		return time.Time{}, time.Time{}, ErrNoNotBefore
+	}
+
+	if cert.Status.NotAfter == nil {
+		return time.Time{}, time.Time{}, ErrNoNotAfter
+	}
+
+	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
+}
+
+func (c *CertificateClient) getCertificate(ctx context.Context,
+	name string,
+	namespace string,
+) (*certmanagerv1.Certificate, error) {
+	cert := &certmanagerv1.Certificate{}
+	cert.SetName(name)
+	cert.SetNamespace(namespace)
+
+	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+		return nil, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
+	}
+
+	return cert, nil
 }
