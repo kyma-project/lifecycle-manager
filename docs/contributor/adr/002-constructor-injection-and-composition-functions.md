@@ -20,7 +20,8 @@ Composition functions live in a separate pacakge at `cmd/composition`.
 Composition functions should follow the naming pattern `Compose<struct name>`.
 Composition functions may build dependencies of the unit to compose themselves or have them injected from outside (depends on the kind of dependency).
 Composition functions do NOT return errors but instead log them and exit the startup process.
-Composition functions are called from `main` and import the dependencies at the highest level needed.
+From `main`, the top-layer composition functions are called only exposing the top-layer dependencies.
+Within the composition functions, other composition functions from the downstream layers may be called.
 
 ## Consequence
 
