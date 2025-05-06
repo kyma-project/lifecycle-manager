@@ -409,3 +409,25 @@ func ModuleVersionInKymaStatusIsCorrect(ctx context.Context,
 
 	return ErrModuleVersionInStatusIsIncorrect
 }
+
+// AddManifestToKymaStatus adds a reference of the provided module in the status.modules in the Kyma CR
+// to prevent Manifest reconciliation error due to orphaned module.
+func AddManifestToKymaStatus(ctx context.Context, kcpClient client.Client,
+	kymaName, kymaNamespace, manifestName string) error {
+	kyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	kyma.Status.Modules = append(kyma.Status.Modules, v1beta2.ModuleStatus{
+		Manifest: &v1beta2.TrackingObject{
+			PartialMeta: v1beta2.PartialMeta{
+				Name: manifestName,
+			},
+		},
+	})
+	err = kcpClient.Status().Update(ctx, kyma)
+	if err != nil {
+		return err
+	}
+	return nil
+}

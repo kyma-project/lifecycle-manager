@@ -44,8 +44,16 @@ var _ = Describe(
 		Context("Given a Manifest CR", func() {
 			It("When Manifest CR contains a valid install OCI image specification",
 				func() {
-					manifest := NewTestManifest("oci")
+					manifest, kyma := NewTestManifestWithParentKyma("oci")
 
+					Eventually(CreateCR, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma).
+						Should(Succeed())
+					Eventually(AddManifestToKymaStatus, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), manifest.Name).
+						Should(Succeed())
 					Eventually(WithValidInstallImageSpecFromFile(ctx, kcpClient, installName,
 						manifestFilePath,
 						serverAddress, false, false), standardTimeout, standardInterval).
@@ -71,8 +79,16 @@ var _ = Describe(
 			)
 			It("When Manifest CR contains a valid install OCI image specification and enabled deploy resource",
 				func() {
-					manifest := NewTestManifest("oci")
+					manifest, kyma := NewTestManifestWithParentKyma("oci")
 
+					Eventually(CreateCR, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma).
+						Should(Succeed())
+					Eventually(AddManifestToKymaStatus, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), manifest.Name).
+						Should(Succeed())
 					Eventually(WithValidInstallImageSpecFromFile(ctx, kcpClient, installName,
 						manifestFilePath,
 						serverAddress, true, false), standardTimeout, standardInterval).
@@ -104,8 +120,16 @@ var _ = Describe(
 			)
 			It("When Manifest CR contains an invalid install OCI image specification and enabled deploy resource",
 				func() {
-					manifest := NewTestManifest("oci")
+					manifest, kyma := NewTestManifestWithParentKyma("oci")
 
+					Eventually(CreateCR, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma).
+						Should(Succeed())
+					Eventually(AddManifestToKymaStatus, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), manifest.Name).
+						Should(Succeed())
 					Eventually(WithInvalidInstallImageSpec(ctx, kcpClient, false, manifestFilePath),
 						standardTimeout, standardInterval).
 						WithArguments(manifest).
@@ -172,8 +196,16 @@ var _ = Describe(
 		Context("Given a Manifest CR", func() {
 			It("When Manifest CR contains a valid install OCI image specification",
 				func() {
-					manifest := NewTestManifest("oci")
+					manifest, kyma := NewTestManifestWithParentKyma("oci")
 
+					Eventually(CreateCR, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma).
+						Should(Succeed())
+					Eventually(AddManifestToKymaStatus, standardTimeout, standardInterval).
+						WithContext(ctx).
+						WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), manifest.Name).
+						Should(Succeed())
 					Eventually(WithValidInstallImageSpecFromTar(ctx, kcpClient, installName,
 						manifestTarPath,
 						serverAddress, false, false), standardTimeout, standardInterval).
@@ -211,7 +243,16 @@ var _ = Describe(
 		)
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
-			manifestWithInstall := NewTestManifest("private-oci-registry")
+			manifestWithInstall, kyma := NewTestManifestWithParentKyma("private-oci-registry")
+
+			Eventually(CreateCR, standardTimeout, standardInterval).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma).
+				Should(Succeed())
+			Eventually(AddManifestToKymaStatus, standardTimeout, standardInterval).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), manifestWithInstall.Name).
+				Should(Succeed())
 			Eventually(WithValidInstallImageSpecFromFile(ctx, kcpClient, installName, manifestFilePath,
 				server.Listener.Addr().String(), false, true),
 				standardTimeout,

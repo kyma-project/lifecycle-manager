@@ -39,7 +39,16 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		},
 	)
 	It("Install OCI specs including an nginx deployment", func() {
-		testManifest := NewTestManifest("custom-check-oci")
+		testManifest, kyma := NewTestManifestWithParentKyma("custom-check-oci")
+		Eventually(CreateCR, standardTimeout, standardInterval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).
+			Should(Succeed())
+		Eventually(AddManifestToKymaStatus, standardTimeout, standardInterval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), testManifest.Name).
+			Should(Succeed())
+
 		manifestName := testManifest.GetName()
 		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath,
