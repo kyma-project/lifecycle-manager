@@ -95,17 +95,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
-
-	err := r.detectOrphanedManifest(ctx, manifest)
-	if err != nil {
-		if errors.Is(err, errOrphanedManifest) {
-			previousStatus := manifest.GetStatus()
-			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
-		}
-		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
-	}
-
 	manifestStatus := manifest.GetStatus()
 
 	if manifest.SkipReconciliation() {
@@ -149,6 +138,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if finalizer.FinalizersUpdateRequired(manifest) {
 			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
 		}
+	}
+
+	err = r.detectOrphanedManifest(ctx, manifest)
+	if err != nil {
+		if errors.Is(err, errOrphanedManifest) {
+			previousStatus := manifest.GetStatus()
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
+		}
+		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
 
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
