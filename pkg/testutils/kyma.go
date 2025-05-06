@@ -413,7 +413,8 @@ func ModuleVersionInKymaStatusIsCorrect(ctx context.Context,
 // AddManifestToKymaStatus adds a reference of the provided module in the status.modules in the Kyma CR
 // to prevent Manifest reconciliation error due to orphaned module.
 func AddManifestToKymaStatus(ctx context.Context, kcpClient client.Client,
-	kymaName, kymaNamespace, manifestName string) error {
+	kymaName, kymaNamespace, manifestName string,
+) error {
 	kyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
 	if err != nil {
 		return err
