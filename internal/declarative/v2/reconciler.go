@@ -140,7 +140,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
-	err = r.detectOrphanedManifest(ctx, manifest)
+	/*err = r.detectOrphanedManifest(ctx, manifest)
 	if err != nil {
 		if errors.Is(err, errOrphanedManifest) {
 			previousStatus := manifest.GetStatus()
@@ -148,7 +148,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
 		}
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
-	}
+	}*/
 
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
