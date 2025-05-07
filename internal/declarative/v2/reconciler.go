@@ -134,12 +134,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	if manifest.GetDeletionTimestamp().IsZero() {
-		if finalizer.FinalizersUpdateRequired(manifest) {
-			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
-		}
-	}
-
 	err = r.detectOrphanedManifest(ctx, manifest)
 	if err != nil {
 		if errors.Is(err, errOrphanedManifest) {
@@ -148,6 +142,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
 		}
 		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+	}
+
+	if manifest.GetDeletionTimestamp().IsZero() {
+		if finalizer.FinalizersUpdateRequired(manifest) {
+			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
+		}
 	}
 
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
