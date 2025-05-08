@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-We need to design a maintainable, testable, and scalable system for [Your Project Name], which interacts with Kubernetes APIs and includes business logic and orchestration of resources.
+We need to design a maintainable, testable, and scalable architecture for lifecycle-manager, which interacts with Kubernetes APIs and includes business logic and orchestration of resources.
 
 To achieve this, we have adopted a Layered Architecture pattern with the following three layers:
 1. Controller Layer (Top)
