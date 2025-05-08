@@ -94,6 +94,9 @@ runs:
           value: --kyma-requeue-warning-interval=1h
         - op: add
           path: /spec/template/spec/containers/0/args/-
+          value: --kyma-requeue-error-interval=1h
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
           value: --kyma-requeue-busy-interval=1s" >> requeue-interval-patch.yaml
         cat requeue-interval-patch.yaml
         kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
