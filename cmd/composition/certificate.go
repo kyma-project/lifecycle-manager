@@ -1,4 +1,4 @@
-package setup
+package composition
 
 import (
 	"os"
@@ -12,23 +12,23 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/gardener"
 )
 
-func setupCertManagerClient(kcpClient client.Client,
+func getCertManagerClient(kcp client.Client,
 	flagVar *flags.FlagVar,
 	config certrepo.CertificateConfig,
 	_ logr.Logger,
 ) *certmanager.Certificate {
-	return certmanager.NewCertificate(kcpClient,
+	return certmanager.NewCertificate(kcp,
 		flagVar.SelfSignedCertificateIssuerName,
 		config,
 	)
 }
 
-func setupGardenerCertificateManagementClient(kcpClient client.Client,
+func getGardenerCertificateManagementClient(kcp client.Client,
 	flagVar *flags.FlagVar,
 	config certrepo.CertificateConfig,
 	setupLog logr.Logger,
 ) *gardener.Certificate {
-	certClient, err := gardener.NewCertificate(kcpClient,
+	certClient, err := gardener.NewCertificate(kcp,
 		flagVar.SelfSignedCertificateIssuerName,
 		flagVar.SelfSignedCertIssuerNamespace,
 		config,

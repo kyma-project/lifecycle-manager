@@ -35,10 +35,10 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -104,7 +104,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: useRandomPort,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache: setup.SetupCacheOptions(false,
+			Cache: composition.ComposeCacheOptions(false,
 				"istio-system",
 				ControlPlaneNamespace,
 				certmanagerv1.SchemeGroupVersion.String(),

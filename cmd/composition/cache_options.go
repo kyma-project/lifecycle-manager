@@ -1,4 +1,4 @@
-package setup
+package composition
 
 import (
 	"os"
@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/gardener"
 )
 
-func SetupCacheOptions(isKymaManaged bool,
+func ComposeCacheOptions(isKymaManaged bool,
 	istioNamespace string,
 	kcpNamespace string,
 	certificateManagement string, setupLog logr.Logger,

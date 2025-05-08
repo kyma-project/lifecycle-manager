@@ -1,4 +1,4 @@
-package setup
+package composition
 
 import (
 	"os"
@@ -23,14 +23,14 @@ import (
 
 const bootstrapFailedExitCode = 1
 
-func SetupSkrWebhookManager(mgr ctrl.Manager,
+func ComposeSkrWebhookManager(mgr ctrl.Manager,
 	skrContextFactory remote.SkrContextProvider,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) *watcher.SkrWebhookManifestManager {
 	kcpClient := mgr.GetClient()
 
-	certManager := setupCertManager(kcpClient, flagVar, setupLog)
+	certManager := getCertManager(kcpClient, flagVar, setupLog)
 
 	resolvedKcpAddr := getResolvedKcpAddress(mgr, flagVar, setupLog)
 
@@ -78,13 +78,13 @@ func getResolvedKcpAddress(mgr ctrl.Manager,
 	return resolvedKcpAddr
 }
 
-func setupCertManager(kcpClient client.Client,
+func getCertManager(kcp client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) *certsvc.CertificateManager {
-	certClient := setupCertClient(kcpClient, flagVar, setupLog)
+	certificate := getCertificate(kcp, flagVar, setupLog)
 
-	secretClient := secret.NewCertificateSecretClient(kcpClient)
+	secretClient := secret.NewCertificateSecretClient(kcp)
 
 	config := certsvc.CertificateManagerConfig{
 		SkrServiceName:               watcher.SkrResourceName,
@@ -97,14 +97,14 @@ func setupCertManager(kcpClient client.Client,
 	}
 
 	return certsvc.NewCertificateManager(
-		certClient,
+		certificate,
 		secretClient,
 		config,
 	)
 }
 
 //nolint:ireturn // chosen implementation shall be abstracted
-func setupCertClient(kcpClient client.Client,
+func getCertificate(kcp client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) certsvc.Certificate {
@@ -116,10 +116,10 @@ func setupCertClient(kcpClient client.Client,
 
 	setupFunc, ok := map[string]func() certsvc.Certificate{
 		certmanagerv1.SchemeGroupVersion.String(): func() certsvc.Certificate {
-			return setupCertManagerClient(kcpClient, flagVar, certificateConfig, setupLog)
+			return getCertManagerClient(kcp, flagVar, certificateConfig, setupLog)
 		},
 		gcertv1alpha1.SchemeGroupVersion.String(): func() certsvc.Certificate {
-			return setupGardenerCertificateManagementClient(kcpClient, flagVar, certificateConfig, setupLog)
+			return getGardenerCertificateManagementClient(kcp, flagVar, certificateConfig, setupLog)
 		},
 	}[flagVar.CertificateManagement]
 

@@ -1,4 +1,4 @@
-package setup
+package composition
 
 import (
 	"os"
@@ -15,7 +15,7 @@ import (
 )
 
 //nolint:ireturn // chosen implementation shall be abstracted
-func SetupCertInterface(kcpClient client.Client,
+func ComposeCertificateInterface(kcp client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) gatewaysecretclient.CertificateInterface {
@@ -27,10 +27,10 @@ func SetupCertInterface(kcpClient client.Client,
 
 	setupFunc, ok := map[string]func() gatewaysecretclient.CertificateInterface{
 		certmanagerv1.SchemeGroupVersion.String(): func() gatewaysecretclient.CertificateInterface {
-			return setupCertManagerClient(kcpClient, flagVar, certificateConfig, setupLog)
+			return getCertManagerClient(kcp, flagVar, certificateConfig, setupLog)
 		},
 		gcertv1alpha1.SchemeGroupVersion.String(): func() gatewaysecretclient.CertificateInterface {
-			return setupGardenerCertificateManagementClient(kcpClient, flagVar, certificateConfig, setupLog)
+			return getGardenerCertificateManagementClient(kcp, flagVar, certificateConfig, setupLog)
 		},
 	}[flagVar.CertificateManagement]
 

@@ -46,6 +46,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
@@ -64,7 +65,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -121,7 +121,7 @@ func main() {
 		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout, setupLog)
 	}
 
-	cacheOptions := setup.SetupCacheOptions(flagVar.IsKymaManaged,
+	cacheOptions := composition.ComposeCacheOptions(flagVar.IsKymaManaged,
 		flagVar.IstioNamespace,
 		flagVar.IstioGatewayNamespace,
 		flagVar.CertificateManagement,
@@ -167,10 +167,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		skrWebhookManager = setup.SetupSkrWebhookManager(mgr, skrContextProvider, flagVar, logger)
+		skrWebhookManager = composition.ComposeSkrWebhookManager(mgr, skrContextProvider, flagVar, logger)
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
 		err = istiogatewaysecret.SetupReconciler(mgr,
-			setup.SetupCertInterface(kcpClient, flagVar, logger),
+			composition.ComposeCertificateInterface(kcpClient, flagVar, logger),
 			flagVar,
 			options)
 		if err != nil {
