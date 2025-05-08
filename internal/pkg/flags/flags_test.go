@@ -179,6 +179,11 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "istio-system",
 		},
 		{
+			constName:     "DefaultSelfSignedCertIssuerNamespace",
+			constValue:    DefaultSelfSignedCertIssuerNamespace,
+			expectedValue: "istio-system",
+		},
+		{
 			constName:     "DefaultSelfSignedCertDuration",
 			constValue:    DefaultSelfSignedCertDuration.String(),
 			expectedValue: (90 * 24 * time.Hour).String(),

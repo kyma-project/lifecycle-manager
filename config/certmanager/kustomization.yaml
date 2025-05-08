@@ -5,14 +5,21 @@ resources:
   - certificate_watcher.yaml
   - certmanager_role.yaml
   - certmanager_role_binding.yaml
-configurations:
-  - kustomizeconfig.yaml
 patches:
   - path: patches/cainjection_in_kymas.yaml
   - path: patches/cainjection_in_moduletemplates.yaml
   - path: patches/cainjection_in_watchers.yaml
   - path: patches/cainjection_in_manifests.yaml
 transformers:
+  - |-
+    apiVersion: builtin
+    kind: PrefixSuffixTransformer
+    metadata:
+      name: add-klm-prefix-to-issuer-refs
+    prefix: klm-
+    fieldSpecs:
+    - path: spec/issuerRef/name
+      kind: Certificate
   - |-
     apiVersion: builtin
     kind: AnnotationsTransformer

@@ -14,7 +14,6 @@ generatorOptions:
 resources:
   - namespace.yaml
   - ../manager
-  - https://raw.githubusercontent.com/gardener/cert-management/master/examples/11-dns.gardener.cloud_dnsentries.yaml # needed for GCM to work since this is not included in the helm chart for GCM
 components:
   - ../crd
   - ../rbac
@@ -80,6 +79,15 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cert-management=cert.gardener.cloud/v1alpha1
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-issuer-namespace=default
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-duration=1441h
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)
