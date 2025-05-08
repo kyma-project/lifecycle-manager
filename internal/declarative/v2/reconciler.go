@@ -133,6 +133,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
+
+	err = r.detectOrphanedManifest(ctx, manifest)
+	if err != nil {
+		if errors.Is(err, errOrphanedManifest) {
+			previousStatus := manifest.GetStatus()
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
+		}
+		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+	}
+
 	if manifest.GetDeletionTimestamp().IsZero() {
 		if finalizer.FinalizersUpdateRequired(manifest) {
 			return r.ssaSpec(ctx, manifest, metrics.ManifestAddFinalizer)
@@ -151,16 +162,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if notContainsSyncedOCIRefAnnotation(manifest) {
 		updateSyncedOCIRefAnnotation(manifest, spec.OCIRef)
 		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
-	}
-
-	err = r.detectOrphanedManifest(ctx, manifest)
-	if err != nil {
-		if errors.Is(err, errOrphanedManifest) {
-			previousStatus := manifest.GetStatus()
-			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
-			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
-		}
-		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
 
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
@@ -572,11 +573,6 @@ func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1bet
 		return nil
 	}
 
-	moduleName, err := manifest.GetModuleName()
-	if err != nil {
-		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot get module name: %w", manifest.Name, err)
-	}
-
 	kymaName, err := manifest.GetKymaName()
 	if err != nil {
 		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot get parent Kyma name: %w", manifest.Name, err)
@@ -595,21 +591,21 @@ func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1bet
 		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot fetch parent Kyma object: %w", manifest.Name, err)
 	}
 
-	if !isModuleReferencedInKymaStatus(kyma, moduleName) {
+	if !isManifestReferencedInKymaStatus(kyma, manifest.Name) {
 		return fmt.Errorf("%w: Manifest is not referenced in Kyma status", errOrphanedManifest)
 	}
 
 	return nil
 }
 
-func isModuleReferencedInKymaStatus(kyma *v1beta2.Kyma, targetModuleName string) bool {
+func isManifestReferencedInKymaStatus(kyma *v1beta2.Kyma, targetManifestName string) bool {
 	kymaStatusModules := kyma.Status.Modules
 	if len(kymaStatusModules) == 0 {
 		return false
 	}
 
 	for _, module := range kymaStatusModules {
-		if module.Manifest != nil && module.Name == targetModuleName {
+		if module.Manifest != nil && module.Manifest.Name == targetManifestName {
 			return true
 		}
 	}
