@@ -19,13 +19,11 @@ Given this, we have choices:
 
 This decision will influence how we encapsulate data access logic aka kube API access and how flexible our system will be for testing.
 
-Furthermore the 
-
 ## Decision
 
 We will use the `client.Client` interface provided by `controller-runtime` directly in the Repository layer and avoid creating custom interfaces or client implementations. This approach minimizes unnecessary abstraction and leverages the mature, well-tested interfaces provided by the Kubernetes ecosystem.
 
-Whenever possible, we will reference the most specific sub-interface from the `client.Client` composition (e.g., `Reader`, `Writer`) rather than the full `Client` interface. This promotes better adherence to the Interface Segregation Principle and allows for more precise dependency injection, leading to simpler and more focused unit tests.
+Whenever possible, we will reference the most specific sub-interface from the `client.Client` composition (e.g., `Reader`, `Writer`) rather than the full `Client` interface. This promotes better adherence to the Interface Segregation Principle and allows for more precise dependency injection, leading to simpler and more focused unit tests. If methods from multiple sub-interfaces are needed, the `client.Client` is used.
 
 The client will **only** be referenced in the Repository layer. All other layers, such as Service and Reconciler, will remain decoupled from infrastructure concerns and interact only through higher-level abstractions defined in the application domain.
 
