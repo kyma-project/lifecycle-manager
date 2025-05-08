@@ -35,10 +35,10 @@ func TestIsManifestReferencedInKymaStatus(t *testing.T) {
 
 	// Test if the function returns true for a referenced manifest
 	referencedManifestName := "test-manifest-1"
-	actual := isManifestReferencedInKymaStatus(kyma, referencedManifestName)
+	actual := isModuleReferencedInKymaStatus(kyma, referencedManifestName)
 	require.True(t, actual, "Manifest %s should be referenced in Kyma status", referencedManifestName)
 
 	orphanedManifestName := "test-manifest-6"
-	actual = isManifestReferencedInKymaStatus(kyma, orphanedManifestName)
+	actual = isModuleReferencedInKymaStatus(kyma, orphanedManifestName)
 	require.False(t, actual, "Manifest %s should not be referenced in Kyma status", orphanedManifestName)
 }
