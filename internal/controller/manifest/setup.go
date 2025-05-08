@@ -3,6 +3,7 @@ package manifest
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"net/http"
 	"strings"
 
@@ -38,6 +39,7 @@ type SetupOptions struct {
 func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueIntervals queue.RequeueIntervals,
 	settings SetupOptions, manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestClient declarativev2.ManifestAPIClient,
+	kymaClient orphan.KymaAPIClient,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -83,7 +85,7 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
 		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-			manifestClient)); err != nil {
+			manifestClient, kymaClient)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

@@ -24,6 +24,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -32,7 +33,6 @@ import (
 var (
 	ErrManagerInErrorState            = errors.New("manager is in error state")
 	errStateRequireUpdate             = errors.New("manifest state requires update")
-	errOrphanedManifest               = errors.New("orphaned manifest detected")
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
 )
@@ -45,7 +45,7 @@ const (
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
-	specResolver SpecResolver, options ...Option,
+	kymaClient orphan.KymaAPIClient, specResolver SpecResolver, options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
@@ -54,6 +54,7 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 	reconciler.specResolver = specResolver
 	reconciler.manifestClient = manifestAPIClient
 	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
+	reconciler.orphanDetectionService = orphan.NewDetectionService(kymaClient)
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -72,6 +73,10 @@ type ManifestAPIClient interface {
 	SsaSpec(ctx context.Context, obj client.Object) error
 }
 
+type OrphanDetection interface {
+	DetectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error
+}
+
 type Reconciler struct {
 	queue.RequeueIntervals
 	*Options
@@ -80,6 +85,7 @@ type Reconciler struct {
 	specResolver               SpecResolver
 	manifestClient             ManifestAPIClient
 	managedLabelRemovalService ManagedByLabelRemoval
+	orphanDetectionService     OrphanDetection
 }
 
 //nolint:funlen,cyclop,gocyclo,gocognit // Declarative pkg will be removed soon
@@ -135,9 +141,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	err = r.detectOrphanedManifest(ctx, manifest)
+	err = r.orphanDetectionService.DetectOrphanedManifest(ctx, manifest)
 	if err != nil {
-		if errors.Is(err, errOrphanedManifest) && !isManifestRecentlyCreated(manifest.CreationTimestamp.Time) {
+		if errors.Is(err, orphan.ErrOrphanedManifest) && !isManifestRecentlyCreated(manifest.CreationTimestamp.Time) {
 			previousStatus := manifest.GetStatus()
 			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
 			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
@@ -565,55 +571,4 @@ func (r *Reconciler) recordReconciliationDuration(startTime time.Time, name stri
 	} else {
 		r.ManifestMetrics.RemoveManifestDuration(name)
 	}
-}
-
-func (r *Reconciler) detectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if manifest.IsMandatoryModule() {
-		// Mandatory modules are not refereced by any Kyma object so cannot be orphaned
-		return nil
-	}
-
-	if manifest.GetDeletionTimestamp() != nil {
-		// If the manifest is being deleted, we don't check for orphaned status (as it should be eventually deleted)
-		return nil
-	}
-
-	kymaName, err := manifest.GetKymaName()
-	if err != nil {
-		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot get parent Kyma name: %w", manifest.Name, err)
-	}
-
-	kymaKey := client.ObjectKey{
-		Name:      kymaName,
-		Namespace: manifest.GetNamespace(),
-	}
-
-	kyma := &v1beta2.Kyma{}
-	if err := r.Get(ctx, kymaKey, kyma); err != nil {
-		if util.IsNotFound(err) {
-			return fmt.Errorf("%w: Parent Kyma does not exist", errOrphanedManifest)
-		}
-		return fmt.Errorf("error during orphaned manifest detection for manifest %s: Cannot fetch parent Kyma object: %w", manifest.Name, err)
-	}
-
-	if !isManifestReferencedInKymaStatus(kyma, manifest.Name) {
-		return fmt.Errorf("%w: Manifest is not referenced in Kyma status", errOrphanedManifest)
-	}
-
-	return nil
-}
-
-func isManifestReferencedInKymaStatus(kyma *v1beta2.Kyma, targetManifestName string) bool {
-	kymaStatusModules := kyma.Status.Modules
-	if len(kymaStatusModules) == 0 {
-		return false
-	}
-
-	for _, module := range kymaStatusModules {
-		if module.Manifest != nil && module.Manifest.Name == targetManifestName {
-			return true
-		}
-	}
-
-	return false
 }

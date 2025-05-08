@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -13,7 +14,7 @@ import (
 
 func NewReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
 	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestClient declarativev2.ManifestAPIClient,
+	manifestClient declarativev2.ManifestAPIClient, kymaClient orphan.KymaAPIClient,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
@@ -25,7 +26,7 @@ func NewReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
-		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
+		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient, kymaClient,
 		manifest.NewSpecResolver(keyChainLookup, extractor),
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),

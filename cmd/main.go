@@ -21,6 +21,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest/orphan"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -399,6 +400,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
+	kymaClient := orphan.NewKymaClient(mgr.GetClient())
 
 	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
@@ -412,7 +414,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
-		manifestClient,
+		manifestClient, kymaClient,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
