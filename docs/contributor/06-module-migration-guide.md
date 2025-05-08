@@ -10,7 +10,7 @@ TODO: describe current process
 
 ## Target Process
 
-The target process is shown in the figure below. As an example, the `telemetry` module is used. The lifecycle of the modules is managed via three individual processes.
+The target process is shown in the figure below. As an example, the `telemetry` module is used. The promotion of module versions and their assignments to channels is managed via three individual processes. In addition, there is a fourth process to delete a module version.
 
 ![Target Process](./assets/module-migration.png)
 
@@ -38,7 +38,7 @@ For more details, see [New submission pipeline](https://github.tools.sap/kyma/te
 
 > Note that the ModuleReleaseMeta and kustomization are generated landscape specific. I.e., there is a separate ModuleReleaseMeta and kustomization per landscape. Reason behind this is that the `dev` channel is only allowed in `dev` landscape, and `experimental` channel is only allowed in `dev` and `stage` landscapes.
 
-> Note that the kustomization is extended with ModuleTemplates for the versions referenced in the `module-releases.yaml` only. ModuleTemplates for versions not referenced are NOT added. Also, versions are not automatically removed from the kustomization, even if not referenced anymore. This needs to be done manually once all modules have been migrated to the new version in the respective landscape. To do so, the module developer submits a PR deleting the `module-config.yaml` of the module version to be removed. The submission pipeline then removes this version from the kustomization.
+> Note that the kustomization is extended with ModuleTemplates for the versions referenced in the `module-releases.yaml` only. ModuleTemplates for versions not referenced are NOT added. Also, versions are not automatically removed from the kustomization, even if not referenced anymore. This needs to be done manually, see step 4).
 
 > Note that this process and the previous one cannot be combined in one PR. First, the new module version must be submitted via 1), only then the channel mapping can be updated via 2).
 
@@ -49,6 +49,16 @@ As noted above, the creation of a new ModuleTemplate does not automatically prom
 Once those are updated by the submission pipeline, ArgoCD picks these changes up and deploys the ModuleTemplates and ModuleReleaseMetas relevant for the respective landscape.
 
 TODO: verify with SRE that ArgoCD is ready to pick up the new kustomizations. Especially, in the NEW approach the DEV channel is automatically promoted to DEV landscape. Verify if this is okay.
+
+### 4) Deleting a module version
+
+To delete a unused module version, a PR to the `/kyma/module-manifests` repository is opened deleting the module versions' `module-config.yaml` file under `/modules/<module-name>/<module-version>`.
+
+Once the PR is opened, the submission pipeline checks if the version is still in use by one or more channels. If so, the PR can't be merged.
+
+Once the PR is merged, the submission pipeline deletes the related ModuleTemplate `/<module-name>/moduletemplate-<module-name>-<module-version>.yaml` in the `/kyma/kyma-modules` repository. In addition, it removes the reference to the module from the kustomization (*).
+
+ArgoCD picks these changes to `/kyma/kyma-modules` up and undeploys the ModuleTemplate from the landscapes.
 
 ## Migration Path
 
