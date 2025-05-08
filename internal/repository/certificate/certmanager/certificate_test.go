@@ -15,9 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 )
 
 var (
@@ -40,7 +40,7 @@ func Test_GetCacheObjects(t *testing.T) {
 	assert.IsType(t, &certmanagerv1.Certificate{}, objects[0])
 }
 
-func Test_CertificateClient_Create_Success(t *testing.T) {
+func Test_Certificate_Create_Success(t *testing.T) {
 	expectedCertificate := &certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,
@@ -81,10 +81,10 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	}
 
 	clientStub := &kcpClientStub{}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -104,14 +104,14 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	assert.Equal(t, expectedCertificate, clientStub.patchArg)
 }
 
-func Test_CertificateClient_Create_Error(t *testing.T) {
+func Test_Certificate_Create_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		patchErr: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -130,12 +130,12 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 	assert.True(t, clientStub.patchCalled)
 }
 
-func Test_CertificateClient_Delete_Success(t *testing.T) {
+func Test_Certificate_Delete_Success(t *testing.T) {
 	clientStub := &kcpClientStub{}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -151,14 +151,14 @@ func Test_CertificateClient_Delete_Success(t *testing.T) {
 	assert.Equal(t, certNamespace, clientStub.deleteArg.Namespace)
 }
 
-func Test_CertificateClient_Delete_Error(t *testing.T) {
+func Test_Certificate_Delete_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		deleteErr: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -172,14 +172,14 @@ func Test_CertificateClient_Delete_Error(t *testing.T) {
 	assert.True(t, clientStub.deleteCalled)
 }
 
-func Test_CertificateClient_Delete_IgnoreNotFoundError(t *testing.T) {
+func Test_Certificate_Delete_IgnoreNotFoundError(t *testing.T) {
 	clientStub := &kcpClientStub{
 		deleteErr: apierrors.NewNotFound(certmanagerv1.Resource("certificates"), certName),
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -195,7 +195,7 @@ func Test_CertificateClient_Delete_IgnoreNotFoundError(t *testing.T) {
 	assert.Equal(t, certNamespace, clientStub.deleteArg.Namespace)
 }
 
-func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
+func Test_Certificate_GetRenewalTime_Success(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -211,10 +211,10 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -228,14 +228,14 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
+func Test_Certificate_GetRenewalTime_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getErr: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -250,7 +250,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
+func Test_Certificate_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -264,10 +264,10 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 			Status: certmanagerv1.CertificateStatus{},
 		},
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -277,12 +277,12 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	assert.Equal(t, certificate.ErrNoRenewalTime, err)
+	assert.Equal(t, certrepo.ErrNoRenewalTime, err)
 	assert.True(t, time.IsZero())
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetValidity_Success(t *testing.T) {
+func Test_Certificate_GetValidity_Success(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -299,10 +299,10 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -317,7 +317,7 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
+func Test_Certificate_GetValidity_NoNotBefore(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -333,10 +333,10 @@ func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -352,7 +352,7 @@ func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
+func Test_Certificate_GetValidity_NoNotAfter(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -368,10 +368,10 @@ func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -387,14 +387,14 @@ func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetValidity_GetError(t *testing.T) {
+func Test_Certificate_GetValidity_GetError(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getErr: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateClient(
+	certClient := certmanager.NewCertificate(
 		clientStub,
 		issuerName,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,

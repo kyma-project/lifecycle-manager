@@ -11,7 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/common"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
 )
 
 //nolint:ireturn // chosen implementation shall be abstracted
@@ -19,7 +19,7 @@ func SetupCertInterface(kcpClient client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) gatewaysecretclient.CertificateInterface {
-	certificateConfig := certificate.CertificateConfig{
+	certificateConfig := certrepo.CertificateConfig{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,

@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
 )
 
 var (
@@ -44,24 +44,24 @@ type kcpClient interface {
 	) error
 }
 
-type CertificateClient struct {
+type Certificate struct {
 	kcpClient  kcpClient
 	issuerName string
-	config     certificate.CertificateConfig
+	config     certrepo.CertificateConfig
 }
 
-func NewCertificateClient(kcpClient kcpClient,
+func NewCertificate(kcpClient kcpClient,
 	issuerName string,
-	config certificate.CertificateConfig,
-) *CertificateClient {
-	return &CertificateClient{
+	config certrepo.CertificateConfig,
+) *Certificate {
+	return &Certificate{
 		kcpClient,
 		issuerName,
 		config,
 	}
 }
 
-func (c *CertificateClient) Create(ctx context.Context,
+func (c *Certificate) Create(ctx context.Context,
 	name string,
 	namespace string,
 	commonName string,
@@ -83,7 +83,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 			DNSNames:    dnsNames,
 			SecretName:  name,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: certificate.GetCertificateLabels(),
+				Labels: certrepo.GetCertificateLabels(),
 			},
 			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: c.issuerName,
@@ -117,7 +117,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 	return nil
 }
 
-func (c *CertificateClient) Delete(ctx context.Context,
+func (c *Certificate) Delete(ctx context.Context,
 	name string,
 	namespace string,
 ) error {
@@ -132,7 +132,7 @@ func (c *CertificateClient) Delete(ctx context.Context,
 	return nil
 }
 
-func (c *CertificateClient) GetRenewalTime(ctx context.Context,
+func (c *Certificate) GetRenewalTime(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, error) {
@@ -142,13 +142,13 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	}
 
 	if cert.Status.RenewalTime == nil || cert.Status.RenewalTime.Time.IsZero() {
-		return time.Time{}, certificate.ErrNoRenewalTime
+		return time.Time{}, certrepo.ErrNoRenewalTime
 	}
 
 	return cert.Status.RenewalTime.Time, nil
 }
 
-func (c *CertificateClient) GetValidity(ctx context.Context,
+func (c *Certificate) GetValidity(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, time.Time, error) {
@@ -168,7 +168,7 @@ func (c *CertificateClient) GetValidity(ctx context.Context,
 	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
 }
 
-func (c *CertificateClient) getCertificate(ctx context.Context,
+func (c *Certificate) getCertificate(ctx context.Context,
 	name string,
 	namespace string,
 ) (*certmanagerv1.Certificate, error) {

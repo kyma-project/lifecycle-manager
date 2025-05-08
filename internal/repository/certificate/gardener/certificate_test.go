@@ -13,9 +13,9 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/gardener"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 )
 
 var rsaKeyAlgorithm = gcertv1alpha1.RSAKeyAlgorithm
@@ -38,13 +38,13 @@ func Test_GetCacheObjects(t *testing.T) {
 	assert.IsType(t, &gcertv1alpha1.Certificate{}, objects[0])
 }
 
-func Test_CertificateClient_New_Error(t *testing.T) {
+func Test_Certificate_New_Error(t *testing.T) {
 	invalidKeySize := math.MaxInt32 + 1
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		&kcpClientStub{},
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     invalidKeySize,
@@ -55,7 +55,7 @@ func Test_CertificateClient_New_Error(t *testing.T) {
 	assert.Nil(t, certClient)
 }
 
-func Test_CertificateClient_Create_Success(t *testing.T) {
+func Test_Certificate_Create_Success(t *testing.T) {
 	expectedCertificate := &gcertv1alpha1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       gcertv1alpha1.CertificateKind,
@@ -70,7 +70,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 			Duration:     &apimetav1.Duration{Duration: certDuration},
 			DNSNames:     certDNSNames,
 			SecretName:   &certName,
-			SecretLabels: certificate.GetCertificateLabels(),
+			SecretLabels: certrepo.GetCertificateLabels(),
 			IssuerRef: &gcertv1alpha1.IssuerRef{
 				Name:      issuerName,
 				Namespace: issuerNamespace,
@@ -83,11 +83,11 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	}
 
 	clientStub := &kcpClientStub{}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -108,15 +108,15 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	assert.Equal(t, expectedCertificate, clientStub.patchArg)
 }
 
-func Test_CertificateClient_Create_Error(t *testing.T) {
+func Test_Certificate_Create_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		patchErr: assert.AnError,
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -136,13 +136,13 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 	assert.True(t, clientStub.patchCalled)
 }
 
-func Test_CertificateClient_Delete_Success(t *testing.T) {
+func Test_Certificate_Delete_Success(t *testing.T) {
 	clientStub := &kcpClientStub{}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -159,15 +159,15 @@ func Test_CertificateClient_Delete_Success(t *testing.T) {
 	assert.Equal(t, certNamespace, clientStub.deleteArg.Namespace)
 }
 
-func Test_CertificateClient_Delete_Error(t *testing.T) {
+func Test_Certificate_Delete_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		deleteErr: assert.AnError,
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -182,7 +182,7 @@ func Test_CertificateClient_Delete_Error(t *testing.T) {
 	assert.True(t, clientStub.deleteCalled)
 }
 
-func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
+func Test_Certificate_GetRenewalTime_Success(t *testing.T) {
 	now := time.Now()
 	expected := now.Add(certDuration - certRenewBefore)
 
@@ -201,11 +201,11 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -221,15 +221,15 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
+func Test_Certificate_GetRenewalTime_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getErr: assert.AnError,
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -245,7 +245,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetRenewalTime_Error_NoExpirationDate(t *testing.T) {
+func Test_Certificate_GetRenewalTime_Error_NoExpirationDate(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &gcertv1alpha1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -259,11 +259,11 @@ func Test_CertificateClient_GetRenewalTime_Error_NoExpirationDate(t *testing.T) 
 			Status: gcertv1alpha1.CertificateStatus{},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -274,13 +274,13 @@ func Test_CertificateClient_GetRenewalTime_Error_NoExpirationDate(t *testing.T) 
 	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, certificate.ErrNoRenewalTime)
+	require.ErrorIs(t, err, certrepo.ErrNoRenewalTime)
 	assert.Contains(t, err.Error(), "no expiration date")
 	assert.True(t, renewalTime.IsZero())
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testing.T) {
+func Test_Certificate_GetRenewalTime_Error_InvalidExpirationDate(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &gcertv1alpha1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -296,11 +296,11 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -316,7 +316,7 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetValidity_Success(t *testing.T) {
+func Test_Certificate_GetValidity_Success(t *testing.T) {
 	expectedNotBefore := time.Now().UTC()
 	expectedNotAfter := time.Now().Add(certDuration).UTC()
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to %v",
@@ -332,16 +332,16 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	assert.Equal(t, expectedNotAfter, notAfter)
 }
 
-func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
+func Test_Certificate_GetValidity_GetCertificateError(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getErr: assert.AnError,
 	}
 
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -357,7 +357,7 @@ func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
+func Test_Certificate_GetValidity_NilMessageError(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &gcertv1alpha1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -373,11 +373,11 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),
@@ -394,7 +394,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 	assert.True(t, clientStub.getCalled)
 }
 
-func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
+func Test_Certificate_GetValidity_NoValidDatesError(t *testing.T) {
 	certificateStateMessage := "certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid"
 
 	certClient, err := getCertClientWithStatusMessage(certificateStateMessage)
@@ -408,7 +408,7 @@ func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 	assert.Zero(t, notAfter)
 }
 
-func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) {
+func Test_Certificate_GetValidity_InvalidNotBeforeDateError(t *testing.T) {
 	expectedNotAfter := time.Now().Add(certDuration).UTC()
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from 2025-04-24 13:60:60.148938 +0000 UTC to %v",
 		expectedNotAfter)
@@ -424,7 +424,7 @@ func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) 
 	assert.Zero(t, notAfter)
 }
 
-func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
+func Test_Certificate_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 	expectedNotBefore := time.Now().Add(certDuration).UTC()
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to 2025-04-24 13:60:60.148938 +0000 UTC",
 		expectedNotBefore)
@@ -485,7 +485,7 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-func getCertClientWithStatusMessage(message string) (*gardener.CertificateClient, error) {
+func getCertClientWithStatusMessage(message string) (*gardener.Certificate, error) {
 	clientStub := &kcpClientStub{
 		getCert: &gcertv1alpha1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -501,11 +501,11 @@ func getCertClientWithStatusMessage(message string) (*gardener.CertificateClient
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gardener.NewCertificate(
 		clientStub,
 		issuerName,
 		issuerNamespace,
-		certificate.CertificateConfig{
+		certrepo.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     int(certKeySize),

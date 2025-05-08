@@ -7,17 +7,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/gardener"
 )
 
 func setupCertManagerClient(kcpClient client.Client,
 	flagVar *flags.FlagVar,
-	config certificate.CertificateConfig,
+	config certrepo.CertificateConfig,
 	_ logr.Logger,
-) *certmanager.CertificateClient {
-	return certmanager.NewCertificateClient(kcpClient,
+) *certmanager.Certificate {
+	return certmanager.NewCertificate(kcpClient,
 		flagVar.SelfSignedCertificateIssuerName,
 		config,
 	)
@@ -25,10 +25,10 @@ func setupCertManagerClient(kcpClient client.Client,
 
 func setupGardenerCertificateManagementClient(kcpClient client.Client,
 	flagVar *flags.FlagVar,
-	config certificate.CertificateConfig,
+	config certrepo.CertificateConfig,
 	setupLog logr.Logger,
-) *gardener.CertificateClient {
-	certClient, err := gardener.NewCertificateClient(kcpClient,
+) *gardener.Certificate {
+	certClient, err := gardener.NewCertificate(kcpClient,
 		flagVar.SelfSignedCertificateIssuerName,
 		flagVar.SelfSignedCertIssuerNamespace,
 		config,

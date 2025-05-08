@@ -13,8 +13,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/gardener"
 )
 
 func SetupCacheOptions(isKymaManaged bool,

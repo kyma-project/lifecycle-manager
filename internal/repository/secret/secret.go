@@ -20,17 +20,17 @@ type kcpClient interface {
 	) error
 }
 
-type CertificateSecretClient struct {
+type Secret struct {
 	kcpClient kcpClient
 }
 
-func NewCertificateSecretClient(kcpClient kcpClient) *CertificateSecretClient {
-	return &CertificateSecretClient{
+func NewCertificateSecretClient(kcpClient kcpClient) *Secret {
+	return &Secret{
 		kcpClient,
 	}
 }
 
-func (s *CertificateSecretClient) Get(ctx context.Context,
+func (s *Secret) Get(ctx context.Context,
 	name string,
 	namespace string,
 ) (*apicorev1.Secret, error) {
@@ -44,7 +44,7 @@ func (s *CertificateSecretClient) Get(ctx context.Context,
 	return secret, nil
 }
 
-func (s *CertificateSecretClient) Delete(ctx context.Context,
+func (s *Secret) Delete(ctx context.Context,
 	name string,
 	namespace string,
 ) error {
