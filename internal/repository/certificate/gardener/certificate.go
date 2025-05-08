@@ -32,31 +32,14 @@ func GetCacheObjects() []client.Object {
 	}
 }
 
-type kcpClient interface {
-	Get(ctx context.Context,
-		key client.ObjectKey,
-		obj client.Object,
-		opts ...client.GetOption,
-	) error
-	Delete(ctx context.Context,
-		obj client.Object,
-		opts ...client.DeleteOption,
-	) error
-	Patch(ctx context.Context,
-		obj client.Object,
-		patch client.Patch,
-		opts ...client.PatchOption,
-	) error
-}
-
 type Certificate struct {
-	kcpClient       kcpClient
+	kcp             client.Client
 	issuerName      string
 	issuerNamespace string
 	config          certrepo.CertificateConfig
 }
 
-func NewCertificate(kcpClient kcpClient,
+func NewCertificate(kcp client.Client,
 	issuerName string,
 	issuerNamespace string,
 	config certrepo.CertificateConfig,
@@ -66,7 +49,7 @@ func NewCertificate(kcpClient kcpClient,
 	}
 
 	return &Certificate{
-		kcpClient,
+		kcp,
 		issuerName,
 		issuerNamespace,
 		config,
@@ -110,7 +93,7 @@ func (c *Certificate) Create(ctx context.Context,
 	}
 
 	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
-	err := c.kcpClient.Patch(ctx,
+	err := c.kcp.Patch(ctx,
 		cert,
 		client.Apply,
 		client.ForceOwnership,
@@ -131,7 +114,7 @@ func (c *Certificate) Delete(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
+	if err := c.kcp.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, namespace, err)
 	}
 
@@ -147,7 +130,7 @@ func (c *Certificate) GetRenewalTime(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	if err := c.kcp.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
 		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
 	}
 
@@ -172,7 +155,7 @@ func (c *Certificate) GetValidity(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	if err := c.kcp.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
 	}
 

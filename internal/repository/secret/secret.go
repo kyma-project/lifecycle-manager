@@ -8,25 +8,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type kcpClient interface {
-	Get(ctx context.Context,
-		key client.ObjectKey,
-		obj client.Object,
-		opts ...client.GetOption,
-	) error
-	Delete(ctx context.Context,
-		obj client.Object,
-		opts ...client.DeleteOption,
-	) error
-}
-
 type Secret struct {
-	kcpClient kcpClient
+	kcp client.Client
 }
 
-func NewCertificateSecretClient(kcpClient kcpClient) *Secret {
+func NewCertificateSecretClient(kcp client.Client) *Secret {
 	return &Secret{
-		kcpClient,
+		kcp,
 	}
 }
 
@@ -35,7 +23,7 @@ func (s *Secret) Get(ctx context.Context,
 	namespace string,
 ) (*apicorev1.Secret, error) {
 	secret := &apicorev1.Secret{}
-	err := s.kcpClient.Get(ctx,
+	err := s.kcp.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secret %s-%s: %w", name, namespace, err)
@@ -52,7 +40,7 @@ func (s *Secret) Delete(ctx context.Context,
 	secret.SetName(name)
 	secret.SetNamespace(namespace)
 
-	if err := s.kcpClient.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
+	if err := s.kcp.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete secret %s-%s: %w", name, namespace, err)
 	}
 

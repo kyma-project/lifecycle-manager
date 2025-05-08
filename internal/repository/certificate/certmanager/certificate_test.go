@@ -80,9 +80,9 @@ func Test_Certificate_Create_Success(t *testing.T) {
 		},
 	}
 
-	clientStub := &kcpClientStub{}
+	kcpStub := &kcpStub{}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -99,17 +99,17 @@ func Test_Certificate_Create_Success(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.True(t, clientStub.patchCalled)
-	assert.NotNil(t, clientStub.patchArg)
-	assert.Equal(t, expectedCertificate, clientStub.patchArg)
+	assert.True(t, kcpStub.patchCalled)
+	assert.NotNil(t, kcpStub.patchArg)
+	assert.Equal(t, expectedCertificate, kcpStub.patchArg)
 }
 
 func Test_Certificate_Create_Error(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		patchErr: assert.AnError,
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -127,13 +127,13 @@ func Test_Certificate_Create_Error(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to patch certificate")
-	assert.True(t, clientStub.patchCalled)
+	assert.True(t, kcpStub.patchCalled)
 }
 
 func Test_Certificate_Delete_Success(t *testing.T) {
-	clientStub := &kcpClientStub{}
+	kcpStub := &kcpStub{}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -145,18 +145,18 @@ func Test_Certificate_Delete_Success(t *testing.T) {
 	err := certClient.Delete(t.Context(), certName, certNamespace)
 
 	require.NoError(t, err)
-	assert.True(t, clientStub.deleteCalled)
-	assert.NotNil(t, clientStub.deleteArg)
-	assert.Equal(t, certName, clientStub.deleteArg.Name)
-	assert.Equal(t, certNamespace, clientStub.deleteArg.Namespace)
+	assert.True(t, kcpStub.deleteCalled)
+	assert.NotNil(t, kcpStub.deleteArg)
+	assert.Equal(t, certName, kcpStub.deleteArg.Name)
+	assert.Equal(t, certNamespace, kcpStub.deleteArg.Namespace)
 }
 
 func Test_Certificate_Delete_Error(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		deleteErr: assert.AnError,
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -169,15 +169,15 @@ func Test_Certificate_Delete_Error(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to delete certificate")
-	assert.True(t, clientStub.deleteCalled)
+	assert.True(t, kcpStub.deleteCalled)
 }
 
 func Test_Certificate_Delete_IgnoreNotFoundError(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		deleteErr: apierrors.NewNotFound(certmanagerv1.Resource("certificates"), certName),
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -189,14 +189,14 @@ func Test_Certificate_Delete_IgnoreNotFoundError(t *testing.T) {
 	err := certClient.Delete(t.Context(), certName, certNamespace)
 
 	require.NoError(t, err)
-	assert.True(t, clientStub.deleteCalled)
-	assert.NotNil(t, clientStub.deleteArg)
-	assert.Equal(t, certName, clientStub.deleteArg.Name)
-	assert.Equal(t, certNamespace, clientStub.deleteArg.Namespace)
+	assert.True(t, kcpStub.deleteCalled)
+	assert.NotNil(t, kcpStub.deleteArg)
+	assert.Equal(t, certName, kcpStub.deleteArg.Name)
+	assert.Equal(t, certNamespace, kcpStub.deleteArg.Namespace)
 }
 
 func Test_Certificate_GetRenewalTime_Success(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
@@ -212,7 +212,7 @@ func Test_Certificate_GetRenewalTime_Success(t *testing.T) {
 		},
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -224,16 +224,16 @@ func Test_Certificate_GetRenewalTime_Success(t *testing.T) {
 	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
 
 	require.NoError(t, err)
-	assert.Equal(t, clientStub.getCert.Status.RenewalTime.Time, time)
-	assert.True(t, clientStub.getCalled)
+	assert.Equal(t, kcpStub.getCert.Status.RenewalTime.Time, time)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_Certificate_GetRenewalTime_Error(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getErr: assert.AnError,
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -247,11 +247,11 @@ func Test_Certificate_GetRenewalTime_Error(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get certificate")
 	assert.True(t, time.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_Certificate_GetRenewalTime_NoRenewalTime(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
@@ -265,7 +265,7 @@ func Test_Certificate_GetRenewalTime_NoRenewalTime(t *testing.T) {
 		},
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -279,11 +279,11 @@ func Test_Certificate_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, certrepo.ErrNoRenewalTime, err)
 	assert.True(t, time.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_Certificate_GetValidity_Success(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
@@ -300,7 +300,7 @@ func Test_Certificate_GetValidity_Success(t *testing.T) {
 		},
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -312,13 +312,13 @@ func Test_Certificate_GetValidity_Success(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.NoError(t, err)
-	assert.Equal(t, clientStub.getCert.Status.NotBefore.Time, notBefore)
-	assert.Equal(t, clientStub.getCert.Status.NotAfter.Time, notAfter)
-	assert.True(t, clientStub.getCalled)
+	assert.Equal(t, kcpStub.getCert.Status.NotBefore.Time, notBefore)
+	assert.Equal(t, kcpStub.getCert.Status.NotAfter.Time, notAfter)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_Certificate_GetValidity_NoNotBefore(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
@@ -334,7 +334,7 @@ func Test_Certificate_GetValidity_NoNotBefore(t *testing.T) {
 		},
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -349,11 +349,11 @@ func Test_Certificate_GetValidity_NoNotBefore(t *testing.T) {
 	assert.Equal(t, certmanager.ErrNoNotBefore, err)
 	assert.True(t, notBefore.IsZero())
 	assert.True(t, notAfter.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_Certificate_GetValidity_NoNotAfter(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getCert: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
@@ -369,7 +369,7 @@ func Test_Certificate_GetValidity_NoNotAfter(t *testing.T) {
 		},
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -384,15 +384,15 @@ func Test_Certificate_GetValidity_NoNotAfter(t *testing.T) {
 	assert.Equal(t, certmanager.ErrNoNotAfter, err)
 	assert.True(t, notBefore.IsZero())
 	assert.True(t, notAfter.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_Certificate_GetValidity_GetError(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getErr: assert.AnError,
 	}
 	certClient := certmanager.NewCertificate(
-		clientStub,
+		kcpStub,
 		issuerName,
 		certrepo.CertificateConfig{
 			Duration:    certDuration,
@@ -407,12 +407,13 @@ func Test_Certificate_GetValidity_GetError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get certificate")
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, kcpStub.getCalled)
 }
 
 // Test stubs
 
-type kcpClientStub struct {
+type kcpStub struct {
+	client.Client
 	getCert      *certmanagerv1.Certificate
 	getCalled    bool
 	getErr       error
@@ -424,7 +425,7 @@ type kcpClientStub struct {
 	patchArg     *certmanagerv1.Certificate
 }
 
-func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (c *kcpStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	c.getCalled = true
 	if c.getCert != nil {
 		//nolint:forcetypeassert // test code
@@ -433,14 +434,14 @@ func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj clien
 	return c.getErr
 }
 
-func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+func (c *kcpStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.deleteCalled = true
 	//nolint:forcetypeassert // test code
 	c.deleteArg = obj.(*certmanagerv1.Certificate)
 	return c.deleteErr
 }
 
-func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (c *kcpStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	c.patchCalled = true
 	//nolint:forcetypeassert // test code
 	c.patchArg = obj.(*certmanagerv1.Certificate)

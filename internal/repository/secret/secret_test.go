@@ -22,7 +22,7 @@ var (
 )
 
 func Test_CertificateSecretClient_Get_Success(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getSecret: &apicorev1.Secret{
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      secretName,
@@ -30,7 +30,7 @@ func Test_CertificateSecretClient_Get_Success(t *testing.T) {
 			},
 		},
 	}
-	secretClient := secret.NewCertificateSecretClient(clientStub)
+	secretClient := secret.NewCertificateSecretClient(kcpStub)
 
 	result, err := secretClient.Get(t.Context(), secretName, secretNamespace)
 
@@ -38,67 +38,68 @@ func Test_CertificateSecretClient_Get_Success(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, secretName, result.Name)
 	assert.Equal(t, secretNamespace, result.Namespace)
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_CertificateSecretClient_Get_Error(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		getErr: errors.New("failed to get secret"),
 	}
-	secretClient := secret.NewCertificateSecretClient(clientStub)
+	secretClient := secret.NewCertificateSecretClient(kcpStub)
 
 	result, err := secretClient.Get(t.Context(), secretName, secretNamespace)
 
 	require.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "failed to get secret")
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, kcpStub.getCalled)
 }
 
 func Test_CertificateSecretClient_Delete_Success(t *testing.T) {
-	clientStub := &kcpClientStub{}
-	secretClient := secret.NewCertificateSecretClient(clientStub)
+	kcpStub := &kcpStub{}
+	secretClient := secret.NewCertificateSecretClient(kcpStub)
 
 	err := secretClient.Delete(t.Context(), secretName, secretNamespace)
 
 	require.NoError(t, err)
-	assert.True(t, clientStub.deleteCalled)
-	assert.NotNil(t, clientStub.deleteArg)
-	assert.Equal(t, secretName, clientStub.deleteArg.Name)
-	assert.Equal(t, secretNamespace, clientStub.deleteArg.Namespace)
+	assert.True(t, kcpStub.deleteCalled)
+	assert.NotNil(t, kcpStub.deleteArg)
+	assert.Equal(t, secretName, kcpStub.deleteArg.Name)
+	assert.Equal(t, secretNamespace, kcpStub.deleteArg.Namespace)
 }
 
 func Test_CertificateSecretClient_Delete_Error(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		deleteErr: errors.New("failed to delete secret"),
 	}
-	secretClient := secret.NewCertificateSecretClient(clientStub)
+	secretClient := secret.NewCertificateSecretClient(kcpStub)
 
 	err := secretClient.Delete(t.Context(), secretName, secretNamespace)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to delete secret")
-	assert.True(t, clientStub.deleteCalled)
+	assert.True(t, kcpStub.deleteCalled)
 }
 
 func Test_CertificateSecretClient_Delete_IgnoreNotFoundError(t *testing.T) {
-	clientStub := &kcpClientStub{
+	kcpStub := &kcpStub{
 		deleteErr: apierrors.NewNotFound(apicorev1.Resource("secrets"), secretName),
 	}
-	secretClient := secret.NewCertificateSecretClient(clientStub)
+	secretClient := secret.NewCertificateSecretClient(kcpStub)
 
 	err := secretClient.Delete(t.Context(), secretName, secretNamespace)
 
 	require.NoError(t, err)
-	assert.True(t, clientStub.deleteCalled)
-	assert.NotNil(t, clientStub.deleteArg)
-	assert.Equal(t, secretName, clientStub.deleteArg.Name)
-	assert.Equal(t, secretNamespace, clientStub.deleteArg.Namespace)
+	assert.True(t, kcpStub.deleteCalled)
+	assert.NotNil(t, kcpStub.deleteArg)
+	assert.Equal(t, secretName, kcpStub.deleteArg.Name)
+	assert.Equal(t, secretNamespace, kcpStub.deleteArg.Namespace)
 }
 
 // Test stubs
 
-type kcpClientStub struct {
+type kcpStub struct {
+	client.Client
 	getSecret    *apicorev1.Secret
 	getCalled    bool
 	getErr       error
@@ -107,7 +108,7 @@ type kcpClientStub struct {
 	deleteArg    *apicorev1.Secret
 }
 
-func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (c *kcpStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	c.getCalled = true
 	if c.getSecret != nil {
 		//nolint:forcetypeassert // test code
@@ -116,7 +117,7 @@ func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj clien
 	return c.getErr
 }
 
-func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+func (c *kcpStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.deleteCalled = true
 	//nolint:forcetypeassert // test code
 	c.deleteArg = obj.(*apicorev1.Secret)
