@@ -60,6 +60,8 @@ Once the PR is merged, the submission pipeline deletes the related ModuleTemplat
 
 ArgoCD picks these changes to `/kyma/kyma-modules` up and undeploys the ModuleTemplate from the landscapes.
 
+For more details, see [New submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
+
 ## Migration Path
 
 To support seamless migration to the new module metadata, KLM and the submission pipeline support both, old and new module metadata at the same time. KLM first checks for the new module metadata, i.e. ModuleReleaseMeta and version-based ModuleTemplates, and reconciles the module based on this data if found. If the new module metadata is not found, KLM falls back to the old module metadata, i.e. channel-based ModuleTemplates.
