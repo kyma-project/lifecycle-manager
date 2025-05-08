@@ -18,10 +18,9 @@ Constructors should follow the naming pattern `New<struct name>`.
 Stable dependencies of a consumer are resolved in a *composition function*.
 Composition functions live in a separate pacakge at `cmd/composition`.
 Composition functions should follow the naming pattern `Compose<struct name>`.
-Composition functions may build dependencies of the unit to compose themselves or have them injected from outside (depends on the kind of dependency).
+Composition functions should build stable dependencies of the unit to compose themselves and have other dependencies injected from the outside.
 Composition functions do NOT return errors but instead log them and exit the startup process.
-From `main`, the top-layer composition functions are called only exposing the top-layer dependencies.
-Within the composition functions, other composition functions from the downstream layers may be called.
+From `main`, composition functions are called and the dependency tree is resovled.
 
 ## Consequence
 
@@ -39,39 +38,28 @@ package webhook
 
 import (
   "github.com/kyma-project/lifecycle-manager/internal/watcher"
+  "github.com/kyma-project/lifecycle-manager/internal/watcher/certmanager"
 )
 
 func ComposeSkrWebhookManager(logger logr.Logger, flagVar *flags.FlagVar) *watcher.SkrWebhookManager {
-  certManager := composeCertManager(logger, flagVar)
+  skrWebhookManager, err := watcher.NewSKRWebhookManager(
+    certmanager.NewCertificateManager(
+      certmanager.CertificateManagerConfig{
+        CertificateNamespace: flagVar.SelfSignedCertificateNamespace
+      }
+    ),
+    watcher.SkrWebhookManagerConfig{
+      SkrWatcherPath:   flagVar.WatcherResourcesPath,
+      SkrWatcherImage:  flagVar.GetWatcherImage(),
+    },
+  )
 
-  config := watcher.SkrWebhookManagerConfig{
-    SkrWatcherPath:   flagVar.WatcherResourcesPath,
-    SkrWatcherImage:  flagVar.GetWatcherImage(),
-  }
-
-  skrWebhookManager, err := watcher.NewSKRWebhookManager(certManager, config)
   if err != nil {
     logger.Error(err, "failed to compose SKRWebhookManager")
     os.Exit(bootstrapFailedExitCode)
   }
 
   return skrWebhookManager
-}
-```
-
-```go
-// /cmd/composition/reconciler/kyma.go
-package reconciler
-
-import (
-  "github.com/kyma-project/lifecycle-manager/cmd/composition/service/webhook"
-  "github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-)
-
-func ComposeKymaReconciler(logger logr.Logger, flagVar *flags.FlagVar) *kyma.Reconciler {
-  return kyma.NewReconciler(
-    webhook.ComposeSkrWebhookManager(logger, flagVar)
-  )
 }
 ```
 
@@ -86,7 +74,10 @@ import (
 func main() {
   // ...
 
-  kymaReconciler := reconciler.ComposeKymaReconciler(logger, flagVar)
+  kymaReconciler := kyma.NewReconciler(
+    webhook.ComposeSkrWebhookManager(logger, flagVar)
+  )
+
   kymaReconciler.SetupWithManager(
     mgr,
     opts,
