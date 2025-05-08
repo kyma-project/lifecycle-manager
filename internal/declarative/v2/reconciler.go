@@ -38,8 +38,9 @@ var (
 )
 
 const (
-	namespaceNotBeRemoved  = "kyma-system"
-	SyncedOCIRefAnnotation = "sync-oci-ref"
+	namespaceNotBeRemoved     = "kyma-system"
+	SyncedOCIRefAnnotation    = "sync-oci-ref"
+	orphanedManifestTolerance = 5 * time.Minute
 )
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
@@ -136,7 +137,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	err = r.detectOrphanedManifest(ctx, manifest)
 	if err != nil {
-		if errors.Is(err, errOrphanedManifest) {
+		if errors.Is(err, errOrphanedManifest) && !isManifestRecentlyCreated(manifest.CreationTimestamp.Time) {
 			previousStatus := manifest.GetStatus()
 			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
 			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
@@ -219,6 +220,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
+}
+
+func isManifestRecentlyCreated(manifestCreationTimestamp time.Time) bool {
+	return manifestCreationTimestamp.Add(orphanedManifestTolerance).After(time.Now())
 }
 
 func recordMandatoryModuleState(manifest *v1beta2.Manifest, r *Reconciler) {
