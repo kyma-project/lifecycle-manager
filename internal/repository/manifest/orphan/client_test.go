@@ -1,8 +1,9 @@
-package orphan
+package orphan_test
 
 import (
 	"context"
 	"errors"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest/orphan"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,16 +20,16 @@ const (
 var errGeneric = errors.New("generic error")
 
 func TestClient_GetKyma_WhenKymaNotFound_ReturnNotFoundError(t *testing.T) {
-	orphanDetectionClient := NewClient(&readerStubKymaNotFound{})
-	_, err := orphanDetectionClient.GetKyma(context.Background(), kymaName, kymaNamespace)
+	orphanDetectionClient := orphan.NewClient(&readerStubKymaNotFound{})
+	_, err := orphanDetectionClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
 	require.True(t, apierrors.IsNotFound(err))
 }
 
 func TestClient_GetKyma_WhenReaderReturnsError_ReturnError(t *testing.T) {
-	orphanDetectionClient := NewClient(&readerStubGenericError{})
-	_, err := orphanDetectionClient.GetKyma(context.Background(), kymaName, kymaNamespace)
+	orphanDetectionClient := orphan.NewClient(&readerStubGenericError{})
+	_, err := orphanDetectionClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
 	require.False(t, apierrors.IsNotFound(err))
@@ -36,8 +37,8 @@ func TestClient_GetKyma_WhenReaderReturnsError_ReturnError(t *testing.T) {
 }
 
 func TestClient_GetKyma_WhenKymaFound_ReturnNoError(t *testing.T) {
-	orphanDetectionClient := NewClient(&readerStubValidKyma{})
-	foundKyma, err := orphanDetectionClient.GetKyma(context.Background(), kymaName, kymaNamespace)
+	orphanDetectionClient := orphan.NewClient(&readerStubValidKyma{})
+	foundKyma, err := orphanDetectionClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.NoError(t, err)
 	require.Equal(t, kymaName, foundKyma.GetName())
