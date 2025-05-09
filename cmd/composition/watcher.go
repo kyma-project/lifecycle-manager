@@ -1,4 +1,4 @@
-package setup
+package composition
 
 import (
 	"os"
@@ -15,21 +15,22 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	certsvc "github.com/kyma-project/lifecycle-manager/internal/service/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 )
 
 const bootstrapFailedExitCode = 1
 
-func SetupSkrWebhookManager(mgr ctrl.Manager,
+func ComposeSkrWebhookManager(mgr ctrl.Manager,
 	skrContextFactory remote.SkrContextProvider,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) *watcher.SkrWebhookManifestManager {
 	kcpClient := mgr.GetClient()
 
-	certManager := setupCertManager(kcpClient, flagVar, setupLog)
+	certManager := getCertManager(kcpClient, flagVar, setupLog)
 
 	resolvedKcpAddr := getResolvedKcpAddress(mgr, flagVar, setupLog)
 
@@ -77,15 +78,15 @@ func getResolvedKcpAddress(mgr ctrl.Manager,
 	return resolvedKcpAddr
 }
 
-func setupCertManager(kcpClient client.Client,
+func getCertManager(kcp client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
-) *certificate.CertificateManager {
-	certClient := setupCertClient(kcpClient, flagVar, setupLog)
+) *certsvc.CertificateManager {
+	certificate := getCertificate(kcp, flagVar, setupLog)
 
-	secretClient := secret.NewCertificateSecretClient(kcpClient)
+	secretClient := secret.NewCertificateSecretClient(kcp)
 
-	config := certificate.CertificateManagerConfig{
+	config := certsvc.CertificateManagerConfig{
 		SkrServiceName:               watcher.SkrResourceName,
 		SkrNamespace:                 flagVar.RemoteSyncNamespace,
 		CertificateNamespace:         flagVar.IstioNamespace,
@@ -95,29 +96,30 @@ func setupCertManager(kcpClient client.Client,
 		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
 	}
 
-	return certificate.NewCertificateManager(
-		certClient,
+	return certsvc.NewCertificateManager(
+		certificate,
 		secretClient,
 		config,
 	)
 }
 
-func setupCertClient(kcpClient client.Client,
+//nolint:ireturn // chosen implementation shall be abstracted
+func getCertificate(kcp client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
-) certificate.CertificateClient {
-	certificateConfig := certificate.CertificateConfig{
+) certsvc.Certificate {
+	certificateConfig := certrepo.CertificateConfig{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,
 	}
 
-	setupFunc, ok := map[string]func() certificate.CertificateClient{
-		certmanagerv1.SchemeGroupVersion.String(): func() certificate.CertificateClient {
-			return setupCertManagerClient(kcpClient, flagVar, certificateConfig, setupLog)
+	setupFunc, ok := map[string]func() certsvc.Certificate{
+		certmanagerv1.SchemeGroupVersion.String(): func() certsvc.Certificate {
+			return getCertManagerClient(kcp, flagVar, certificateConfig, setupLog)
 		},
-		gcertv1alpha1.SchemeGroupVersion.String(): func() certificate.CertificateClient {
-			return setupGardenerCertificateManagementClient(kcpClient, flagVar, certificateConfig, setupLog)
+		gcertv1alpha1.SchemeGroupVersion.String(): func() certsvc.Certificate {
+			return getGardenerCertificateManagementClient(kcp, flagVar, certificateConfig, setupLog)
 		},
 	}[flagVar.CertificateManagement]
 

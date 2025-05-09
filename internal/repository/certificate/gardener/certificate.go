@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
 )
 
 var (
@@ -32,48 +32,31 @@ func GetCacheObjects() []client.Object {
 	}
 }
 
-type kcpClient interface {
-	Get(ctx context.Context,
-		key client.ObjectKey,
-		obj client.Object,
-		opts ...client.GetOption,
-	) error
-	Delete(ctx context.Context,
-		obj client.Object,
-		opts ...client.DeleteOption,
-	) error
-	Patch(ctx context.Context,
-		obj client.Object,
-		patch client.Patch,
-		opts ...client.PatchOption,
-	) error
-}
-
-type CertificateClient struct {
-	kcpClient       kcpClient
+type Certificate struct {
+	kcp             client.Client
 	issuerName      string
 	issuerNamespace string
-	config          certificate.CertificateConfig
+	config          certrepo.CertificateConfig
 }
 
-func NewCertificateClient(kcpClient kcpClient,
+func NewCertificate(kcp client.Client,
 	issuerName string,
 	issuerNamespace string,
-	config certificate.CertificateConfig,
-) (*CertificateClient, error) {
+	config certrepo.CertificateConfig,
+) (*Certificate, error) {
 	if config.KeySize > math.MaxInt32 || config.KeySize < math.MinInt32 {
 		return nil, ErrKeySizeOutOfRange
 	}
 
-	return &CertificateClient{
-		kcpClient,
+	return &Certificate{
+		kcp,
 		issuerName,
 		issuerNamespace,
 		config,
 	}, nil
 }
 
-func (c *CertificateClient) Create(ctx context.Context,
+func (c *Certificate) Create(ctx context.Context,
 	name string,
 	namespace string,
 	commonName string,
@@ -97,7 +80,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 			Duration:     &apimetav1.Duration{Duration: c.config.Duration},
 			DNSNames:     dnsNames,
 			SecretName:   &name,
-			SecretLabels: certificate.GetCertificateLabels(),
+			SecretLabels: certrepo.GetCertificateLabels(),
 			IssuerRef: &gcertv1alpha1.IssuerRef{
 				Name:      c.issuerName,
 				Namespace: c.issuerNamespace,
@@ -110,7 +93,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 	}
 
 	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
-	err := c.kcpClient.Patch(ctx,
+	err := c.kcp.Patch(ctx,
 		cert,
 		client.Apply,
 		client.ForceOwnership,
@@ -123,7 +106,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 	return nil
 }
 
-func (c *CertificateClient) Delete(ctx context.Context,
+func (c *Certificate) Delete(ctx context.Context,
 	name string,
 	namespace string,
 ) error {
@@ -131,7 +114,7 @@ func (c *CertificateClient) Delete(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
+	if err := c.kcp.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, namespace, err)
 	}
 
@@ -139,7 +122,7 @@ func (c *CertificateClient) Delete(ctx context.Context,
 }
 
 // GetRenewalTime returns the expiration date of the certificate minus the renewal time.
-func (c *CertificateClient) GetRenewalTime(ctx context.Context,
+func (c *Certificate) GetRenewalTime(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, error) {
@@ -147,12 +130,12 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	if err := c.kcp.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
 		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
 	}
 
 	if cert.Status.ExpirationDate == nil {
-		return time.Time{}, fmt.Errorf("%w: no expiration date", certificate.ErrNoRenewalTime)
+		return time.Time{}, fmt.Errorf("%w: no expiration date", certrepo.ErrNoRenewalTime)
 	}
 
 	expirationDate, err := time.Parse(time.RFC3339, *cert.Status.ExpirationDate)
@@ -164,7 +147,7 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	return expirationDate.Add(-c.config.RenewBefore), nil
 }
 
-func (c *CertificateClient) GetValidity(ctx context.Context,
+func (c *Certificate) GetValidity(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, time.Time, error) {
@@ -172,7 +155,7 @@ func (c *CertificateClient) GetValidity(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	if err := c.kcp.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
 	}
 

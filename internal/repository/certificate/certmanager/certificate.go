@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
 )
 
 var (
@@ -27,41 +27,24 @@ func GetCacheObjects() []client.Object {
 	}
 }
 
-type kcpClient interface {
-	Get(ctx context.Context,
-		key client.ObjectKey,
-		obj client.Object,
-		opts ...client.GetOption,
-	) error
-	Delete(ctx context.Context,
-		obj client.Object,
-		opts ...client.DeleteOption,
-	) error
-	Patch(ctx context.Context,
-		obj client.Object,
-		patch client.Patch,
-		opts ...client.PatchOption,
-	) error
-}
-
-type CertificateClient struct {
-	kcpClient  kcpClient
+type Certificate struct {
+	kcp        client.Client
 	issuerName string
-	config     certificate.CertificateConfig
+	config     certrepo.CertificateConfig
 }
 
-func NewCertificateClient(kcpClient kcpClient,
+func NewCertificate(kcp client.Client,
 	issuerName string,
-	config certificate.CertificateConfig,
-) *CertificateClient {
-	return &CertificateClient{
-		kcpClient,
+	config certrepo.CertificateConfig,
+) *Certificate {
+	return &Certificate{
+		kcp,
 		issuerName,
 		config,
 	}
 }
 
-func (c *CertificateClient) Create(ctx context.Context,
+func (c *Certificate) Create(ctx context.Context,
 	name string,
 	namespace string,
 	commonName string,
@@ -83,7 +66,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 			DNSNames:    dnsNames,
 			SecretName:  name,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: certificate.GetCertificateLabels(),
+				Labels: certrepo.GetCertificateLabels(),
 			},
 			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: c.issuerName,
@@ -104,7 +87,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 	}
 
 	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
-	err := c.kcpClient.Patch(ctx,
+	err := c.kcp.Patch(ctx,
 		cert,
 		client.Apply,
 		client.ForceOwnership,
@@ -117,7 +100,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 	return nil
 }
 
-func (c *CertificateClient) Delete(ctx context.Context,
+func (c *Certificate) Delete(ctx context.Context,
 	name string,
 	namespace string,
 ) error {
@@ -125,14 +108,14 @@ func (c *CertificateClient) Delete(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
+	if err := c.kcp.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, namespace, err)
 	}
 
 	return nil
 }
 
-func (c *CertificateClient) GetRenewalTime(ctx context.Context,
+func (c *Certificate) GetRenewalTime(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, error) {
@@ -142,13 +125,13 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	}
 
 	if cert.Status.RenewalTime == nil || cert.Status.RenewalTime.Time.IsZero() {
-		return time.Time{}, certificate.ErrNoRenewalTime
+		return time.Time{}, certrepo.ErrNoRenewalTime
 	}
 
 	return cert.Status.RenewalTime.Time, nil
 }
 
-func (c *CertificateClient) GetValidity(ctx context.Context,
+func (c *Certificate) GetValidity(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, time.Time, error) {
@@ -168,7 +151,7 @@ func (c *CertificateClient) GetValidity(ctx context.Context,
 	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
 }
 
-func (c *CertificateClient) getCertificate(ctx context.Context,
+func (c *Certificate) getCertificate(ctx context.Context,
 	name string,
 	namespace string,
 ) (*certmanagerv1.Certificate, error) {
@@ -176,7 +159,7 @@ func (c *CertificateClient) getCertificate(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	if err := c.kcp.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
 		return nil, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
 	}
 

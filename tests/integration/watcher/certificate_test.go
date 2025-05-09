@@ -10,11 +10,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	certsvc "github.com/kyma-project/lifecycle-manager/internal/service/certificate"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -65,13 +66,13 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 
-			certificateConfig := certificate.CertificateConfig{
+			certificateConfig := certrepo.CertificateConfig{
 				Duration:    1 * time.Hour,
 				RenewBefore: 5 * time.Minute,
 				KeySize:     flags.DefaultSelfSignedCertKeySize,
 			}
 
-			certificateManagerConfig := certificate.CertificateManagerConfig{
+			certificateManagerConfig := certsvc.CertificateManagerConfig{
 				SkrServiceName:               watcher.SkrResourceName,
 				SkrNamespace:                 test.namespace.Name,
 				CertificateNamespace:         test.namespace.Name,
@@ -81,8 +82,8 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				SkrCertificateNamingTemplate: "%s-webhook-tls",
 			}
 
-			certificateManager := certificate.NewCertificateManager(
-				certmanager.NewCertificateClient(controlPlaneClient,
+			certificateManager := certsvc.NewCertificateManager(
+				certmanager.NewCertificate(controlPlaneClient,
 					"klm-watcher-selfsigned",
 					certificateConfig,
 				),

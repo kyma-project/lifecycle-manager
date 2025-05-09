@@ -40,6 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
@@ -48,7 +49,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -117,7 +117,7 @@ var _ = BeforeSuite(func() {
 	if !found {
 		metricsBindAddress = ":0"
 	}
-	cacheOpts := setup.SetupCacheOptions(false,
+	cacheOpts := composition.ComposeCacheOptions(false,
 		"istio-system",
 		ControlPlaneNamespace,
 		certmanagerv1.SchemeGroupVersion.String(),

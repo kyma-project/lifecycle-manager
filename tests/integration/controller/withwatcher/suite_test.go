@@ -43,6 +43,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
@@ -50,16 +51,16 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	certrepo "github.com/kyma-project/lifecycle-manager/internal/repository/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	certsvc "github.com/kyma-project/lifecycle-manager/internal/service/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
@@ -151,7 +152,7 @@ var _ = BeforeSuite(func() {
 				BindAddress: metricsBindAddress,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache: setup.SetupCacheOptions(false,
+			Cache: composition.ComposeCacheOptions(false,
 				"istio-system",
 				ControlPlaneNamespace,
 				certmanagerv1.SchemeGroupVersion.String(),
@@ -189,13 +190,13 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace:    flags.DefaultRemoteSyncNamespace,
 	}
 
-	certificateConfig := certificate.CertificateConfig{
+	certificateConfig := certrepo.CertificateConfig{
 		Duration:    1 * time.Hour,
 		RenewBefore: 5 * time.Minute,
 		KeySize:     flags.DefaultSelfSignedCertKeySize,
 	}
 
-	certificateManagerConfig := certificate.CertificateManagerConfig{
+	certificateManagerConfig := certsvc.CertificateManagerConfig{
 		SkrServiceName:               watcher.SkrResourceName,
 		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
 		CertificateNamespace:         flags.DefaultIstioNamespace,
@@ -205,8 +206,8 @@ var _ = BeforeSuite(func() {
 		SkrCertificateNamingTemplate: "%s-webhook-tls",
 	}
 
-	certificateManager := certificate.NewCertificateManager(
-		certmanager.NewCertificateClient(mgr.GetClient(),
+	certificateManager := certsvc.NewCertificateManager(
+		certmanager.NewCertificate(mgr.GetClient(),
 			"test-issuer",
 			certificateConfig,
 		),

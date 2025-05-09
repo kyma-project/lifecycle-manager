@@ -53,6 +53,10 @@ linters-settings:
     no-unaliased: true
     no-extra-aliases: true
     alias:
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/certificate
+        alias: certrepo
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/service/certificate
+        alias: certsvc
       - pkg: github.com/kyma-project/template-operator/api/v1alpha1
         alias: templatev1alpha1
       - pkg: github.com/gardener/cert-management/pkg/apis/cert/v1alpha1
