@@ -3,13 +3,14 @@ package orphan_test
 import (
 	"context"
 	"errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest/orphan"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest/orphan"
 )
 
 const (
