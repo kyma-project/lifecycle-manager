@@ -61,7 +61,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest/orphan"
+	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -400,7 +400,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
-	orphanDetectionClient := orphan.NewClient(mgr.GetClient())
+	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 
 	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{

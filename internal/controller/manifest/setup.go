@@ -39,7 +39,7 @@ type SetupOptions struct {
 func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueIntervals queue.RequeueIntervals,
 	settings SetupOptions, manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestClient declarativev2.ManifestAPIClient,
-	orphanDetectionClient orphan.APIClient,
+	orphanDetectionClient orphan.DetectionRepository,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {

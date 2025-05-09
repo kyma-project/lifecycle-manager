@@ -1,4 +1,4 @@
-package orphan
+package kyma
 
 import (
 	"context"

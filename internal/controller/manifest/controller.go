@@ -14,7 +14,7 @@ import (
 
 func NewReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
 	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestClient declarativev2.ManifestAPIClient, orphanDetectionClient orphan.APIClient,
+	manifestClient declarativev2.ManifestAPIClient, orphanDetectionClient orphan.DetectionRepository,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),

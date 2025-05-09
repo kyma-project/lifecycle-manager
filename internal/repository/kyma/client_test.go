@@ -1,4 +1,4 @@
-package orphan_test
+package kyma_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 )
 
 const (
@@ -21,16 +21,16 @@ const (
 var errGeneric = errors.New("generic error")
 
 func TestClient_GetKyma_WhenKymaNotFound_ReturnNotFoundError(t *testing.T) {
-	orphanDetectionClient := orphan.NewClient(&readerStubKymaNotFound{})
-	_, err := orphanDetectionClient.GetKyma(t.Context(), kymaName, kymaNamespace)
+	kymaClient := kyma.NewClient(&readerStubKymaNotFound{})
+	_, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
 	require.True(t, apierrors.IsNotFound(err))
 }
 
 func TestClient_GetKyma_WhenReaderReturnsError_ReturnError(t *testing.T) {
-	orphanDetectionClient := orphan.NewClient(&readerStubGenericError{})
-	_, err := orphanDetectionClient.GetKyma(t.Context(), kymaName, kymaNamespace)
+	kymaClient := kyma.NewClient(&readerStubGenericError{})
+	_, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
 	require.False(t, apierrors.IsNotFound(err))
@@ -38,8 +38,8 @@ func TestClient_GetKyma_WhenReaderReturnsError_ReturnError(t *testing.T) {
 }
 
 func TestClient_GetKyma_WhenKymaFound_ReturnNoError(t *testing.T) {
-	orphanDetectionClient := orphan.NewClient(&readerStubValidKyma{})
-	foundKyma, err := orphanDetectionClient.GetKyma(t.Context(), kymaName, kymaNamespace)
+	kymaClient := kyma.NewClient(&readerStubValidKyma{})
+	foundKyma, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.NoError(t, err)
 	require.Equal(t, kymaName, foundKyma.GetName())

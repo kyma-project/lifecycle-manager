@@ -26,14 +26,8 @@ var errGeneric = errors.New("generic error")
 
 func TestDetectionService_DetectOrphanedManifest_WhenMandatoryModule_ReturnNoError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubEmptyModuleStatus{})
-	manifest := &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: manifestName,
-			Labels: map[string]string{
-				shared.IsMandatoryModule: shared.EnableLabelValue,
-			},
-		},
-	}
+	manifest := generateDefaultManifest()
+	manifest.Labels[shared.IsMandatoryModule] = shared.EnableLabelValue
 
 	err := service.DetectOrphanedManifest(t.Context(), manifest)
 
@@ -42,28 +36,28 @@ func TestDetectionService_DetectOrphanedManifest_WhenMandatoryModule_ReturnNoErr
 
 func TestDetectionService_DetectOrphanedManifest_WhenDeletionTimestampSet_ReturnNoError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubEmptyModuleStatus{})
-	manifest := &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:              manifestName,
-			DeletionTimestamp: &apimetav1.Time{Time: time.Now()},
-		},
-	}
+	manifest := generateDefaultManifest()
+	manifest.SetDeletionTimestamp(&apimetav1.Time{Time: time.Now()})
 
 	err := service.DetectOrphanedManifest(t.Context(), manifest)
 
 	require.NoError(t, err)
 }
 
+func TestDetectionService_DetectOrphanedManifest_WhenKymaLabelNotFound_ReturnError(t *testing.T) {
+	service := orphan.NewDetectionService(&clientStubKymaNotFound{})
+	manifest := generateDefaultManifest()
+	manifest.Labels = map[string]string{}
+
+	err := service.DetectOrphanedManifest(t.Context(), manifest)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, v1beta2.ErrLabelNotFound)
+}
+
 func TestDetectionService_DetectOrphanedManifest_WhenKymaNotFound_ReturnOrphanedManifestError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubKymaNotFound{})
-	manifest := &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: manifestName,
-			Labels: map[string]string{
-				shared.KymaName: kymaName,
-			},
-		},
-	}
+	manifest := generateDefaultManifest()
 
 	err := service.DetectOrphanedManifest(t.Context(), manifest)
 
@@ -73,14 +67,7 @@ func TestDetectionService_DetectOrphanedManifest_WhenKymaNotFound_ReturnOrphaned
 
 func TestDetectionService_DetectOrphanedManifest_WhenClientReturnsError_ReturnError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubGenericError{})
-	manifest := &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: manifestName,
-			Labels: map[string]string{
-				shared.KymaName: kymaName,
-			},
-		},
-	}
+	manifest := generateDefaultManifest()
 
 	err := service.DetectOrphanedManifest(t.Context(), manifest)
 
@@ -91,14 +78,7 @@ func TestDetectionService_DetectOrphanedManifest_WhenClientReturnsError_ReturnEr
 
 func TestDetectionService_DetectOrphanedManifest_WhenEmptyModuleStatus_ReturnOrphanedManifestError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubEmptyModuleStatus{})
-	manifest := &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: manifestName,
-			Labels: map[string]string{
-				shared.KymaName: kymaName,
-			},
-		},
-	}
+	manifest := generateDefaultManifest()
 
 	err := service.DetectOrphanedManifest(t.Context(), manifest)
 
@@ -108,14 +88,7 @@ func TestDetectionService_DetectOrphanedManifest_WhenEmptyModuleStatus_ReturnOrp
 
 func TestDetectionService_DetectOrphanedManifest_WhenNoReference_ReturnOrphanedManifestError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubModuleNoReference{})
-	manifest := &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: manifestName,
-			Labels: map[string]string{
-				shared.KymaName: kymaName,
-			},
-		},
-	}
+	manifest := generateDefaultManifest()
 
 	err := service.DetectOrphanedManifest(t.Context(), manifest)
 
@@ -125,14 +98,7 @@ func TestDetectionService_DetectOrphanedManifest_WhenNoReference_ReturnOrphanedM
 
 func TestDetectionService_DetectOrphanedManifest_WhenModuleStatusManifestNil_ReturnOrphanedManifestError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubModuleStatusWithNilManifest{})
-	manifest := &v1beta2.Manifest{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name: manifestName,
-			Labels: map[string]string{
-				shared.KymaName: kymaName,
-			},
-		},
-	}
+	manifest := generateDefaultManifest()
 
 	err := service.DetectOrphanedManifest(t.Context(), manifest)
 
@@ -142,7 +108,15 @@ func TestDetectionService_DetectOrphanedManifest_WhenModuleStatusManifestNil_Ret
 
 func TestDetectionService_DetectOrphanedManifest_WhenValidReference_ReturnNoError(t *testing.T) {
 	service := orphan.NewDetectionService(&clientStubModuleValidReference{})
-	manifest := &v1beta2.Manifest{
+	manifest := generateDefaultManifest()
+
+	err := service.DetectOrphanedManifest(t.Context(), manifest)
+
+	require.NoError(t, err)
+}
+
+func generateDefaultManifest() *v1beta2.Manifest {
+	return &v1beta2.Manifest{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: manifestName,
 			Labels: map[string]string{
@@ -150,10 +124,6 @@ func TestDetectionService_DetectOrphanedManifest_WhenValidReference_ReturnNoErro
 			},
 		},
 	}
-
-	err := service.DetectOrphanedManifest(t.Context(), manifest)
-
-	require.NoError(t, err)
 }
 
 // Client stubs

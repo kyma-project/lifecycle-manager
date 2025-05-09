@@ -19,11 +19,11 @@ packages:
   internal/maintenancewindows: 87
   internal/pkg/resources: 91
   internal/remote: 29
-  internal/repository/manifest/orphan: 100
+  internal/repository/kyma: 100
   internal/service/kyma/status/modules: 78
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
-  internal/service/manifest/orphan: 95.8
+  internal/service/manifest/orphan: 100
   internal/util/collections: 87
   pkg/module/sync: 10
   pkg/templatelookup: 88

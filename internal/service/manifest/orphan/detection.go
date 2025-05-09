@@ -4,35 +4,32 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+const orphanedManifestTolerance = 5 * time.Minute
+
 var ErrOrphanedManifest = errors.New("orphaned manifest detected")
 
-type APIClient interface {
+type DetectionRepository interface {
 	GetKyma(ctx context.Context, kymaName string, kymaNamespace string) (*v1beta2.Kyma, error)
 }
 
 type DetectionService struct {
-	client APIClient
+	repository DetectionRepository
 }
 
-func NewDetectionService(client APIClient) *DetectionService {
+func NewDetectionService(repository DetectionRepository) *DetectionService {
 	return &DetectionService{
-		client: client,
+		repository: repository,
 	}
 }
 
 func (s *DetectionService) DetectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if manifest.IsMandatoryModule() {
-		// Mandatory modules are not refereced by any Kyma object so cannot be orphaned
-		return nil
-	}
-
-	if manifest.GetDeletionTimestamp() != nil {
-		// If the manifest is being deleted, we don't check for orphaned status (as it should be eventually deleted)
+	if shouldSkipCheck(manifest) {
 		return nil
 	}
 
@@ -42,10 +39,24 @@ func (s *DetectionService) DetectOrphanedManifest(ctx context.Context, manifest 
 	}
 
 	if !isManifestReferencedInKymaStatus(kyma, manifest.Name) {
-		return fmt.Errorf("%w: manifest is not referenced in Kyma status", ErrOrphanedManifest)
+		if !isManifestRecentlyCreated(manifest.GetCreationTimestamp().Time) {
+			return fmt.Errorf("%w: manifest is not referenced in Kyma status", ErrOrphanedManifest)
+		}
 	}
 
 	return nil
+}
+
+func shouldSkipCheck(manifest *v1beta2.Manifest) bool {
+	if manifest.IsMandatoryModule() {
+		// Mandatory modules are not refereced by any Kyma object so cannot be orphaned
+		return true
+	}
+	if manifest.GetDeletionTimestamp() != nil {
+		// If the manifest is being deleted, we don't check for orphaned status (as it should be eventually deleted)
+		return true
+	}
+	return false
 }
 
 func (s *DetectionService) getParentKyma(ctx context.Context, manifest *v1beta2.Manifest) (*v1beta2.Kyma, error) {
@@ -54,7 +65,7 @@ func (s *DetectionService) getParentKyma(ctx context.Context, manifest *v1beta2.
 		return nil, fmt.Errorf("cannot get parent Kyma name: %w", err)
 	}
 
-	kyma, err := s.client.GetKyma(ctx, kymaName, manifest.GetNamespace())
+	kyma, err := s.repository.GetKyma(ctx, kymaName, manifest.GetNamespace())
 	if err != nil {
 		if util.IsNotFound(err) {
 			return nil, fmt.Errorf("%w: parent Kyma does not exist", ErrOrphanedManifest)
@@ -72,4 +83,8 @@ func isManifestReferencedInKymaStatus(kyma *v1beta2.Kyma, targetManifestName str
 	}
 
 	return false
+}
+
+func isManifestRecentlyCreated(manifestCreationTimestamp time.Time) bool {
+	return manifestCreationTimestamp.Add(orphanedManifestTolerance).After(time.Now())
 }
