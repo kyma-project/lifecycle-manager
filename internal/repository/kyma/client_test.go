@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 var errGeneric = errors.New("generic error")
 
 func TestClient_GetKyma_WhenKymaNotFound_ReturnNotFoundError(t *testing.T) {
-	kymaClient := kyma.NewClient(&readerStubKymaNotFound{})
+	kymaClient := kymarepository.NewClient(&readerStubKymaNotFound{})
 	_, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
@@ -29,7 +29,7 @@ func TestClient_GetKyma_WhenKymaNotFound_ReturnNotFoundError(t *testing.T) {
 }
 
 func TestClient_GetKyma_WhenReaderReturnsError_ReturnError(t *testing.T) {
-	kymaClient := kyma.NewClient(&readerStubGenericError{})
+	kymaClient := kymarepository.NewClient(&readerStubGenericError{})
 	_, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.Error(t, err)
@@ -38,7 +38,7 @@ func TestClient_GetKyma_WhenReaderReturnsError_ReturnError(t *testing.T) {
 }
 
 func TestClient_GetKyma_WhenKymaFound_ReturnNoError(t *testing.T) {
-	kymaClient := kyma.NewClient(&readerStubValidKyma{})
+	kymaClient := kymarepository.NewClient(&readerStubValidKyma{})
 	foundKyma, err := kymaClient.GetKyma(t.Context(), kymaName, kymaNamespace)
 
 	require.NoError(t, err)

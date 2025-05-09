@@ -87,7 +87,7 @@ type Reconciler struct {
 	orphanDetectionService     OrphanDetection
 }
 
-//nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
+//nolint:funlen,cyclop,gocyclo,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
