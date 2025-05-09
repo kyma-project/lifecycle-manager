@@ -19,6 +19,11 @@ packages:
   internal/maintenancewindows: 87
   internal/pkg/resources: 91
   internal/remote: 29
+  internal/repository/certificate: 100
+  internal/repository/certificate/certmanager: 100
+  internal/repository/certificate/gardener: 98
+  internal/repository/secret: 100
+  internal/service/certificate: 100
   internal/service/kyma/status/modules: 78
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
@@ -26,7 +31,3 @@ packages:
   pkg/module/sync: 10
   pkg/templatelookup: 88
   pkg/templatelookup/moduletemplateinfolookup: 98
-  pkg/watcher/certificate: 100
-  pkg/watcher/certificate/certmanager: 100
-  pkg/watcher/certificate/gardener: 98
-  pkg/watcher/certificate/secret: 100
