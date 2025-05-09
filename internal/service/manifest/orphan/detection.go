@@ -4,25 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	ErrOrphanedManifest = errors.New("orphaned manifest detected")
-)
+var ErrOrphanedManifest = errors.New("orphaned manifest detected")
 
-type KymaAPIClient interface {
-	GetKyma(ctx context.Context, kymaName string, namespace string) (*v1beta2.Kyma, error)
+type APIClient interface {
+	GetKyma(ctx context.Context, kymaName string, kymaNamespace string) (*v1beta2.Kyma, error)
 }
 
 type DetectionService struct {
-	kymaClient KymaAPIClient
+	client APIClient
 }
 
-func NewDetectionService(kymaClient KymaAPIClient) *DetectionService {
+func NewDetectionService(client APIClient) *DetectionService {
 	return &DetectionService{
-		kymaClient: kymaClient,
+		client: client,
 	}
 }
 
@@ -55,7 +54,7 @@ func (s *DetectionService) getParentKyma(ctx context.Context, manifest *v1beta2.
 		return nil, fmt.Errorf("cannot get parent Kyma name: %w", err)
 	}
 
-	kyma, err := s.kymaClient.GetKyma(ctx, kymaName, manifest.GetNamespace())
+	kyma, err := s.client.GetKyma(ctx, kymaName, manifest.GetNamespace())
 	if err != nil {
 		if util.IsNotFound(err) {
 			return nil, fmt.Errorf("%w: parent Kyma does not exist", ErrOrphanedManifest)
