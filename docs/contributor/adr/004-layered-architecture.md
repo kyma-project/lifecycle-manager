@@ -8,14 +8,14 @@ Accepted
 
 We need to design a maintainable, testable, and scalable architecture for lifecycle-manager, which interacts with Kubernetes APIs and includes business logic and orchestration of resources.
 
+## Decision
+
 To achieve this, we have adopted a Layered Architecture pattern with the following three layers:
 1. Controller Layer (Top)
 2. Service Layer (Middle)
 3. Repository Layer (Bottom) 
 
 Each layer has distinct responsibilities and clear dependency rules to ensure separation of concerns and minimize coupling.
-
-## Decision
 
 ### Controller Layer
 Responsibility:
@@ -32,6 +32,7 @@ Key Points:
 Responsibility:
 - Implements business logic by orchestrating one or more repositories
 - Encapsulates complex workflows and business rules
+- Mayay also depend on or reference other services to reuse common business logic
 
 Key Points:
 - Depends on Repository Layer
@@ -40,9 +41,10 @@ Key Points:
 
 ### Repository Layer
 Responsibility:
-- Acts as the CRUD (Create, Read, Update, Delete) data layer
+- Acts as a pure CRUD (Create, Read, Update, Delete) data layer
 - Directly interacts with the Kubernetes API using the controller-runtime client
 - Responsible for all data persistence and retrieval operations
+- Does not contain any business logic
 
 Key Points:
 - This is the only layer that has direct access to the Kubernetes API
