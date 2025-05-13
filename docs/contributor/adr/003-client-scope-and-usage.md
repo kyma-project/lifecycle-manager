@@ -27,6 +27,80 @@ Whenever possible, we will reference the most specific sub-interface from the `c
 
 The client will **only** be referenced in the Repository layer. All other layers, such as Service and Reconciler, will remain decoupled from infrastructure concerns and interact only through higher-level abstractions defined in the application domain.
 
+### Do's
+
+A Service defines its dependecy named *Repository. The Repository implementation then uses controller-runtime's Client interfaces directly.
+```go 
+type SomeService struct {
+	manifestRepository ManifestRepository
+}
+
+type ManifestRepository interface {
+	Get(name, namespace string) (*v1beta2.Manifest, error)
+}
+```
+```go
+type ManifestRepositoryImpl struct {
+	readClient client.Reader
+}
+```
+Another example, for more than only read:
+```go
+type ManifestRepository interface {
+    Get(name, namespace string) (*v1beta2.Manifest, error)
+    Create(name, namespace string) error
+    Update(*v1beta2.Manifest) error
+}
+```
+```go
+type ManifestRepositoryImpl struct {
+	kcpClient client.Client
+}
+```
+
+### Don'ts
+
+The Service defines a dependency named *Client and uses it:
+```go
+type SomeService struct {
+	manifestClient ManifestClient
+}
+
+type ManifestClient interface {
+	Get(name, namespace string) (*v1beta2.Manifest, error)
+}
+```
+Mitigation: It should be called *Repository.
+
+
+The Service consumes the defined ManifestRespository interface as an embedded field:
+```go
+type SomeService struct {
+	ManifestRepository
+}
+
+type ManifestRepository interface {
+	Get(name, namespace string) (*v1beta2.Manifest, error)
+}
+```
+
+Mitigation: It should be referenced as a named, private field so it can not be accessed across the package.
+
+
+The Repository implementation defines its own intermediate composition interface from controller-runtime interfaces:
+```go
+type ManifestRepository struct {
+	manifestClient manifestClient
+}
+
+type manifestClient interface {
+	client.Writer
+	client.Reader
+}
+```
+
+Mitigation: It should use the `client.Client` directly if more than one sub interface is needed.
+
 ## Consequences
 
 - The Repository layer becomes the single point of interaction with the Kubernetes API, improving separation of concerns and making the system easier to reason about
