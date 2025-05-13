@@ -33,6 +33,7 @@ const (
 	ManifestReconcileFinished            ManifestRequeueReason = "manifest_reconcile_finished"
 	ManifestUnmanagedUpdate              ManifestRequeueReason = "manifest_unmanaged_update"
 	ManifestResourcesLabelRemoval        ManifestRequeueReason = "manifest_labels_removal"
+	ManifestOrphaned                     ManifestRequeueReason = "manifest_orphaned"
 )
 
 type ManifestMetrics struct {
