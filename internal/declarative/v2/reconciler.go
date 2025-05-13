@@ -24,6 +24,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -31,9 +32,9 @@ import (
 
 var (
 	ErrManagerInErrorState            = errors.New("manager is in error state")
+	errStateRequireUpdate             = errors.New("manifest state requires update")
 	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
 		"same oci layer, prevent sync resource to be deleted")
-	errStateRequireUpdate = errors.New("manifest state requires update")
 )
 
 const (
@@ -43,7 +44,7 @@ const (
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
-	specResolver SpecResolver, options ...Option,
+	orphanDetectionClient orphan.DetectionRepository, specResolver SpecResolver, options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
@@ -52,6 +53,7 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 	reconciler.specResolver = specResolver
 	reconciler.manifestClient = manifestAPIClient
 	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
+	reconciler.orphanDetectionService = orphan.NewDetectionService(orphanDetectionClient)
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -70,6 +72,10 @@ type ManifestAPIClient interface {
 	SsaSpec(ctx context.Context, obj client.Object) error
 }
 
+type OrphanDetection interface {
+	DetectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error
+}
+
 type Reconciler struct {
 	queue.RequeueIntervals
 	*Options
@@ -78,9 +84,10 @@ type Reconciler struct {
 	specResolver               SpecResolver
 	manifestClient             ManifestAPIClient
 	managedLabelRemovalService ManagedByLabelRemoval
+	orphanDetectionService     OrphanDetection
 }
 
-//nolint:funlen,cyclop,gocognit // Declarative pkg will be removed soon
+//nolint:funlen,cyclop,gocyclo,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
@@ -131,6 +138,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
 		return ctrl.Result{RequeueAfter: r.Success}, nil
+	}
+
+	err = r.orphanDetectionService.DetectOrphanedManifest(ctx, manifest)
+	if err != nil {
+		if errors.Is(err, orphan.ErrOrphanedManifest) {
+			previousStatus := manifest.GetStatus()
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
+			return r.finishReconcile(ctx, manifest, metrics.ManifestOrphaned, previousStatus, err)
+		}
+		return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 	}
 
 	if manifest.GetDeletionTimestamp().IsZero() {
