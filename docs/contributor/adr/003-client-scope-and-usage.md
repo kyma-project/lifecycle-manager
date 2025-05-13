@@ -8,7 +8,7 @@ Accepted
 
 Our current application architecture includes direct references to the Kubernetes client interface across multiple layers, such as the Reconciler and to be Service layers. This leads to a violation of the separation of concerns and tightly couples orchestration and business logic to infrastructure-specific code.
 
-To address this, we will adopt a 3-tier architecture, where infrastructure dependencies like the Kubernetes client should only be referenced within the Repository layer. This change aligns with our architectural goal of modularity and improves testability and maintainability, ensuring a clear boundary between data access and business logic or orchestration components.
+To address this, we will adopt a 3-tier architecture (see ADR 004), where infrastructure dependencies like the Kubernetes client should only be referenced within the Repository layer, ensuring a clear boundary between data access and business logic.
 
 We use dependency injection and interface-based programming to allow for mocking in tests. The Kubernetes client interface in use is provided by [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime/blob/6ad5c1dd4418489606d19dfb87bf38905b440561/pkg/client/interfaces.go#L164), specifically the `client.Client` interface. This interface is a composition of other interface definitions, `Reader`, `Writer`, `StatusClient`, and `SubResourceClientConstructor`as well as defining own methods.
 
