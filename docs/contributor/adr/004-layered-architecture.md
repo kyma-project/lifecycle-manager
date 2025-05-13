@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-We need to design a maintainable, testable, and scalable architecture for lifecycle-manager, which interacts with Kubernetes APIs and includes business logic and orchestration of resources.
+We need to design a maintainable, testable, and scalable architecture for lifecycle-manager, which interacts with Kubernetes APIs and includes business logic and orchestration of resources. A clear layering and therefore clear responsibilities of code components are missing and need to be introduced, which will also ease navigating the code base.
 
 ## Decision
 
