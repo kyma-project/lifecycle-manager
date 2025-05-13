@@ -32,7 +32,7 @@ Key Points:
 Responsibility:
 - Implements business logic by orchestrating one or more repositories
 - Encapsulates complex workflows and business rules
-- Mayay also depend on or reference other services to reuse common business logic
+- May also depend on or reference other services to reuse common business logic
 
 Key Points:
 - Depends on Repository Layer
