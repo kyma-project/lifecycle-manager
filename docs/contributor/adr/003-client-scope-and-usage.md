@@ -1,4 +1,4 @@
-# ADR 003 - Client scope and usage
+# ADR 003 - Client Scope and Usage
 
 ## Status
 
@@ -6,22 +6,22 @@ Accepted
 
 ## Context
 
-Our current application architecture includes direct references to the Kubernetes client interface across multiple layers, such as the Reconciler and to be Service layers. This leads to a violation of the separation of concerns and tightly couples orchestration and business logic to infrastructure-specific code.
+Our current application architecture includes direct references to the Kubernetes client interface across multiple layers, such as the Reconciler and the planned Service layers. This violates the separation of concerns and tightly couples orchestration and business logic to infrastructure-specific code.
 
 To address this, we will adopt a 3-tier architecture (see ADR 004), where infrastructure dependencies like the Kubernetes client should only be referenced within the Repository layer, ensuring a clear boundary between data access and business logic.
 
-We use dependency injection and interface-based programming to allow for mocking in tests. The Kubernetes client interface in use is provided by [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime/blob/6ad5c1dd4418489606d19dfb87bf38905b440561/pkg/client/interfaces.go#L164), specifically the `client.Client` interface. This interface is a composition of other interface definitions, `Reader`, `Writer`, `StatusClient`, and `SubResourceClientConstructor`as well as defining own methods.
+We use dependency injection and interface-based programming to allow for mocking in tests. The Kubernetes client interface in use is provided by [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime/blob/6ad5c1dd4418489606d19dfb87bf38905b440561/pkg/client/interfaces.go#L164), specifically the `client.Client` interface. This interface is a composition of other interface definitions, `Reader`, `Writer`, `StatusClient`, and `SubResourceClientConstructor`as well as defining its own methods.
 
-Given this, we have choices:
+Given this, we have the following choices:
 - Create our own simplified interfaces that align with our usage and ignore the embedded interfaces
-- Use the client.Client interface directly in the Repository layer
+- Use the `client.Client` interface directly in the Repository layer
 - Create an internal interface that embeds a subset or all of the controller-runtime interfaces
 
 This decision will influence how we encapsulate data access logic aka kube API access and how flexible our system will be for testing.
 
 ## Decision
 
-We will use the `client.Client` interface provided by `controller-runtime` directly in the Repository layer and avoid creating custom interfaces or client implementations. This approach minimizes unnecessary abstraction and leverages the mature, well-tested interfaces provided by the Kubernetes ecosystem.
+We will use the `client.Client` interface provided by controller-runtime directly in the Repository layer and avoid creating custom interfaces or client implementations. This approach minimizes unnecessary abstraction and leverages the mature, well-tested interfaces provided by the Kubernetes ecosystem.
 
 Whenever possible, we will reference the most specific sub-interface from the `client.Client` composition (e.g., `Reader`, `Writer`) rather than the full `Client` interface. This promotes better adherence to the Interface Segregation Principle and allows for more precise dependency injection, leading to simpler and more focused unit tests. If methods from multiple sub-interfaces are needed, the `client.Client` is used.
 
@@ -70,7 +70,7 @@ type ManifestClient interface {
 	Get(name, namespace string) (*v1beta2.Manifest, error)
 }
 ```
-Mitigation: It should be called *Repository.
+   Mitigation: The dependency must be called `*Repository`.
 
 
 The Service consumes the defined ManifestRespository interface as an embedded field:
@@ -84,10 +84,10 @@ type ManifestRepository interface {
 }
 ```
 
-Mitigation: It should be referenced as a named, private field so it can not be accessed across the package.
+   Mitigation: The `ManifestRepository` interface must be referenced as a named, private field so it can not be accessed across the package.
 
 
-The Repository implementation defines its own intermediate composition interface from controller-runtime interfaces:
+3. The Repository implementation defines its own intermediate composition interface from controller-runtime interfaces:
 ```go
 type ManifestRepository struct {
 	manifestClient manifestClient
@@ -99,11 +99,11 @@ type manifestClient interface {
 }
 ```
 
-Mitigation: It should use the `client.Client` directly if more than one sub interface is needed.
+   Mitigation: The Repository implementation must use the `client.Client` directly if more than one sub-interface is needed.
 
 ## Consequences
 
-- The Repository layer becomes the single point of interaction with the Kubernetes API, improving separation of concerns and making the system easier to reason about
+- The Repository layer becomes the single point of interaction with the Kubernetes API, improving separation of concerns and making the system easier to reason about.
 - By using specific sub-interfaces (e.g., Reader, Writer) when possible, dependencies are minimized, and unit testing becomes simpler and more focused.
-- Higher layers (Service, Reconciler) remain infrastructure-agnostic, promoting separation of concerns and better testability
-- We rely directly on the controller-runtime client interfaces, which reduces boilerplate but ties our implementation closely to that library’s abstractions
+- Higher layers (Service, Reconciler) remain infrastructure-agnostic, promoting separation of concerns and better testability.
+- We rely directly on the controller-runtime client interfaces, which reduces boilerplate but ties our implementation closely to that library’s abstractions.
