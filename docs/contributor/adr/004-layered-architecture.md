@@ -65,7 +65,7 @@ Key Points:
     - Controllers can be tested by mocking services.
 - Encapsulation:
     - The repository abstracts the Kubernetes API, allowing changes in API details with minimal impact.
-    - Business logic is confined to the Service layer, so no other layer will contain side-effects to the business code
+    - Business code is confined to the Service layer, so no other layer will cause side-effects to the business logic
 - Flexibility & Scalability:
     - Business logic is decoupled from infrastructure details, allowing for easier scaling and adaptation of business requirements.
 - Clear Ownership:
