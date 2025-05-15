@@ -11,20 +11,17 @@ rules:
     resources:
       - secrets
     verbs:
-      - list
       - watch
       - get
       - create
-      - delete
       - update
+      - delete
   - apiGroups:
       - cert-manager.io
     resources:
       - certificates
     verbs:
-      - patch
-      - list
-      - watch
       - get
-      - create
       - delete
+      - patch
+      - watch

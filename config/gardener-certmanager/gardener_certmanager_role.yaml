@@ -11,20 +11,17 @@ rules:
     resources:
       - secrets
     verbs:
-      - list
       - watch
       - get
       - create
-      - delete
       - update
+      - delete
   - apiGroups:
       - cert.gardener.cloud
     resources:
       - certificates
     verbs:
-      - patch
-      - list
-      - watch
       - get
-      - create
       - delete
+      - patch
+      - watch
