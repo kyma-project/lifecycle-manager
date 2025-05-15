@@ -53,6 +53,13 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 		string(uuid.NewUUID())).Build()
 }
 
+func NewTestManifestWithParentKyma(manifestPrefix string) (*v1beta2.Manifest, *v1beta2.Kyma) {
+	manifest := NewTestManifest(manifestPrefix)
+	kyma := NewTestKyma("kyma")
+	manifest.Labels[shared.KymaName] = kyma.GetName()
+	return manifest, kyma
+}
+
 // GetManifest should be only used when manifest still been tracked in kyma.status.
 func GetManifest(ctx context.Context,
 	clnt client.Client,
