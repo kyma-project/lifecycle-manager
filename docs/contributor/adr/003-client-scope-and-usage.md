@@ -29,7 +29,9 @@ The client will **only** be referenced in the Repository layer. All other layers
 
 ### Do's
 
-A Service defines its dependecy named *Repository. The Repository implementation then uses controller-runtime's Client interfaces directly.
+These configuration options are compliant with the decision:
+
+A Service defines its dependency as `[Prefix]Repository`. The Repository implementation then uses controller-runtime's Client interfaces directly.
 ```go 
 type SomeService struct {
 	manifestRepository ManifestRepository
@@ -60,7 +62,9 @@ type ManifestRepositoryImpl struct {
 
 ### Don'ts
 
-1. The Service defines a dependency named *Client and uses it:
+These configuration options are non-compliant with the decision:
+
+1 . The Service defines a dependency as `[Prefix]Client` and uses it:
 	```go
 	type SomeService struct {
 		manifestClient ManifestClient
