@@ -21,7 +21,7 @@ rules:
     resources:
       - certificates
     verbs:
-      - get
-      - delete
-      - patch
       - watch
+      - get
+      - patch
+      - delete
