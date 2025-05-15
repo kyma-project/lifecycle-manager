@@ -8,7 +8,7 @@ Accepted
 
 Our current application architecture includes direct references to the Kubernetes client interface across multiple layers, such as the Reconciler and the planned Service layers. This violates the separation of concerns and tightly couples orchestration and business logic to infrastructure-specific code.
 
-To address this, we will adopt a 3-tier architecture (see ADR 004), where infrastructure dependencies like the Kubernetes client should only be referenced within the Repository layer, ensuring a clear boundary between data access and business logic.
+To address this, we will adopt a 3-tier architecture (see [ADR 004](./004-layered-architecture.md)), where infrastructure dependencies like the Kubernetes client should only be referenced within the Repository layer, ensuring a clear boundary between data access and business logic.
 
 We use dependency injection and interface-based programming to allow for mocking in tests. The Kubernetes client interface in use is provided by [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime/blob/6ad5c1dd4418489606d19dfb87bf38905b440561/pkg/client/interfaces.go#L164), specifically the `client.Client` interface. This interface is a composition of other interface definitions, `Reader`, `Writer`, `StatusClient`, and `SubResourceClientConstructor`as well as defining its own methods.
 
@@ -60,46 +60,44 @@ type ManifestRepositoryImpl struct {
 
 ### Don'ts
 
-The Service defines a dependency named *Client and uses it:
-```go
-type SomeService struct {
-	manifestClient ManifestClient
-}
+1. The Service defines a dependency named *Client and uses it:
+	```go
+	type SomeService struct {
+		manifestClient ManifestClient
+	}
 
-type ManifestClient interface {
-	Get(name, namespace string) (*v1beta2.Manifest, error)
-}
-```
+	type ManifestClient interface {
+		Get(name, namespace string) (*v1beta2.Manifest, error)
+	}
+	```
    Mitigation: The dependency must be called `*Repository`.
 
+2. The Service consumes the defined ManifestRespository interface as an embedded field:
+	```go
+	type SomeService struct {
+		ManifestRepository
+	}
 
-The Service consumes the defined ManifestRespository interface as an embedded field:
-```go
-type SomeService struct {
-	ManifestRepository
-}
-
-type ManifestRepository interface {
-	Get(name, namespace string) (*v1beta2.Manifest, error)
-}
-```
-
-   Mitigation: The `ManifestRepository` interface must be referenced as a named, private field so it can not be accessed across the package.
-
+	type ManifestRepository interface {
+		Get(name, namespace string) (*v1beta2.Manifest, error)
+	}
+	```
+	Mitigation: The `ManifestRepository` interface must be referenced as a named, private field so it can not be accessed across the package.
 
 3. The Repository implementation defines its own intermediate composition interface from controller-runtime interfaces:
-```go
-type ManifestRepository struct {
-	manifestClient manifestClient
-}
+	```go
+	type ManifestRepository struct {
+		manifestClient manifestClient
+	}
 
-type manifestClient interface {
-	client.Writer
-	client.Reader
-}
-```
+	type manifestClient interface {
+		client.Writer
+		client.Reader
+	}
+	```
 
    Mitigation: The Repository implementation must use the `client.Client` directly if more than one sub-interface is needed.
+
 
 ## Consequences
 
