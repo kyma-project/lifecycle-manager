@@ -34,18 +34,20 @@ These configuration options are compliant with the decision:
 A Service defines its dependency as `[Prefix]Repository`. The Repository implementation then uses controller-runtime's Client interfaces directly.
 ```go 
 type SomeService struct {
-	manifestRepository ManifestRepository
+    manifestRepository ManifestRepository
 }
 
 type ManifestRepository interface {
-	Get(name, namespace string) (*v1beta2.Manifest, error)
+    Get(name, namespace string) (*v1beta2.Manifest, error)
 }
 ```
+
 ```go
 type ManifestRepositoryImpl struct {
-	readClient client.Reader
+    readClient client.Reader
 }
 ```
+
 Another example, for more than only read:
 ```go
 type ManifestRepository interface {
@@ -54,9 +56,10 @@ type ManifestRepository interface {
     Update(*v1beta2.Manifest) error
 }
 ```
+
 ```go
 type ManifestRepositoryImpl struct {
-	kcpClient client.Client
+    kcpClient client.Client
 }
 ```
 
@@ -64,43 +67,42 @@ type ManifestRepositoryImpl struct {
 
 These configuration options are non-compliant with the decision:
 
-1 . The Service defines a dependency as `[Prefix]Client` and uses it:
-	```go
-	type SomeService struct {
-		manifestClient ManifestClient
-	}
+1. The Service defines a dependency as `[Prefix]Client` and uses it:
+    ```go
+    type SomeService struct {
+        manifestClient ManifestClient
+    }
 
-	type ManifestClient interface {
-		Get(name, namespace string) (*v1beta2.Manifest, error)
-	}
-	```
-   Mitigation: The dependency must be called `*Repository`.
+    type ManifestClient interface {
+        Get(name, namespace string) (*v1beta2.Manifest, error)
+    }
+    ```
+    Mitigation: The dependency must be called `*Repository`.
 
 2. The Service consumes the defined ManifestRespository interface as an embedded field:
-	```go
-	type SomeService struct {
-		ManifestRepository
-	}
+    ```go
+    type SomeService struct {
+        ManifestRepository
+    }
 
-	type ManifestRepository interface {
-		Get(name, namespace string) (*v1beta2.Manifest, error)
-	}
-	```
-	Mitigation: The `ManifestRepository` interface must be referenced as a named, private field so it can not be accessed across the package.
+    type ManifestRepository interface {
+        Get(name, namespace string) (*v1beta2.Manifest, error)
+    }
+    ```
+    Mitigation: The `ManifestRepository` interface must be referenced as a named, private field so it can not be accessed across the package.
 
 3. The Repository implementation defines its own intermediate composition interface from controller-runtime interfaces:
-	```go
-	type ManifestRepository struct {
-		manifestClient manifestClient
-	}
+    ```go
+    type ManifestRepository struct {
+        manifestClient manifestClient
+    }
 
-	type manifestClient interface {
-		client.Writer
-		client.Reader
-	}
-	```
-
-   Mitigation: The Repository implementation must use the `client.Client` directly if more than one sub-interface is needed.
+    type manifestClient interface {
+        client.Writer
+        client.Reader
+    }
+    ```
+    Mitigation: The Repository implementation must use the `client.Client` directly if more than one sub-interface is needed.
 
 
 ## Consequences
