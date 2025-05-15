@@ -23,7 +23,7 @@ Once the PR is opened, the submission pipeline verifies that the info is correct
 
 Once the PR is merged, the submission pipeline builds and publishes the module via `modulectl` and pushes the generated ModuleTemplate to the `/kyma/kyma-modules` repository. The path of the generated ModuleTemplate is `/<module-name>/moduletemplate-<module-name>-<module-version>.yaml`.
 
-For more details, see [New submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
+For more details, see [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
 
 > Note that this process only builds the necessary artifacts and puts them into their repositories, i.e. the OCI Registry and the `/kyma/kyma-modules` repository. The ModuleTemplate is NOT directly deployed into the KCP landscape.
 
@@ -35,7 +35,7 @@ Once the PR is opened, the submission pipeline verifies that the mapping is corr
 
 Once the PR is merged, the submission pipeline generates the resulting ModuleReleaseMeta and kustomization and pushes them to the `/kyma/kyma-modules` repository. The kustomization includes the required ModuleTemplates and the ModuleReleaseMeta.
 
-For more details, see [New submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
+For more details, see [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
 
 > Note that the ModuleReleaseMeta and kustomization are generated landscape specific. I.e., there is a separate ModuleReleaseMeta and kustomization per landscape. Reason behind this is that the `dev` channel is only allowed in `dev` landscape, and `experimental` channel is only allowed in `dev` and `stage` landscapes.
 
