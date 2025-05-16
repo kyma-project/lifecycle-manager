@@ -12,6 +12,7 @@ rules:
       - secrets
     verbs:
       - watch
+      - list
       - get
       - create
       - update
@@ -22,6 +23,8 @@ rules:
       - certificates
     verbs:
       - watch
+      - list
       - get
+      - create
       - patch
       - delete
