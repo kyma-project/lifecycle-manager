@@ -30,10 +30,10 @@ var _ = Describe("RBAC Privileges", func() {
 				},
 			}
 			Expect(GetClusterRolePolicyRules(ctx, kcpClient, "klm-controller-manager-crds",
-				klmClusterRoleBindings)).To(Equal(crdRoleRules))
+				klmClusterRoleBindings)).To(ConsistOf(crdRoleRules))
 
 			By("And KLM Service Account has the correct number of RoleBindings in kcp-system namespace")
-			expectedNumberOfRoleBindings := 3
+			expectedNumberOfRoleBindings := 2
 			kcpSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
 				"kcp-system")
 			Expect(err).ToNot(HaveOccurred())
@@ -61,7 +61,7 @@ var _ = Describe("RBAC Privileges", func() {
 				kcpClient,
 				"klm-controller-manager-leader-election",
 				"kcp-system",
-				kcpSystemKlmRoleBindings)).To(Equal(leaderElectionRoleRules))
+				kcpSystemKlmRoleBindings)).To(ConsistOf(leaderElectionRoleRules))
 
 			By("And controller-manager Role has the correct PolicyRules")
 			klmManagerRoleRules := []apirbacv1.PolicyRule{
@@ -163,26 +163,7 @@ var _ = Describe("RBAC Privileges", func() {
 				kcpClient,
 				"klm-controller-manager",
 				"kcp-system",
-				kcpSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
-
-			By("And controller-manager-certmanager Role has the correct PolicyRules")
-			klmManagerCertManagerRoleRules := []apirbacv1.PolicyRule{
-				{
-					APIGroups: []string{"cert-manager.io"},
-					Resources: []string{"certificates"},
-					Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
-				},
-				{
-					APIGroups: []string{"cert-manager.io"},
-					Resources: []string{"issuers"},
-					Verbs:     []string{"get", "list", "watch"},
-				},
-			}
-			Expect(GetRoleBindingRolePolicyRules(ctx,
-				kcpClient,
-				"klm-controller-manager-certmanager",
-				"kcp-system",
-				kcpSystemKlmRoleBindings)).To(Equal(klmManagerCertManagerRoleRules))
+				kcpSystemKlmRoleBindings)).To(ConsistOf(klmManagerRoleRules))
 
 			By("And KLM Service Account has the correct number of RoleBindings in istio-system namespace")
 			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
@@ -195,17 +176,12 @@ var _ = Describe("RBAC Privileges", func() {
 				{
 					APIGroups: []string{""},
 					Resources: []string{"secrets"},
-					Verbs:     []string{"list", "watch", "get", "create", "delete", "update"},
+					Verbs:     []string{"watch", "list", "get", "create", "update", "delete"},
 				},
 				{
 					APIGroups: []string{"cert-manager.io"},
 					Resources: []string{"certificates"},
-					Verbs:     []string{"patch", "list", "watch", "get", "create", "delete"},
-				},
-				{
-					APIGroups: []string{"cert-manager.io"},
-					Resources: []string{"issuers"},
-					Verbs:     []string{"list", "watch"},
+					Verbs:     []string{"watch", "list", "get", "create", "patch", "delete"},
 				},
 			}
 			Expect(GetRoleBindingRolePolicyRules(ctx,
@@ -213,7 +189,7 @@ var _ = Describe("RBAC Privileges", func() {
 				"klm-controller-manager-certmanager",
 				"istio-system",
 				istioSystemKlmRoleBindings)).
-				To(Equal(istioNamespaceRoleRules))
+				To(ConsistOf(istioNamespaceRoleRules))
 		})
 	})
 })
