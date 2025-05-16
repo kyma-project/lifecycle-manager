@@ -30,7 +30,7 @@ var _ = Describe("RBAC Privileges", func() {
 				},
 			}
 			Expect(GetClusterRolePolicyRules(ctx, kcpClient, "klm-controller-manager-crds",
-				klmClusterRoleBindings)).To(Equal(crdRoleRules))
+				klmClusterRoleBindings)).To(ConsistOf(crdRoleRules))
 
 			By("And KLM Service Account has the correct number of RoleBindings in kcp-system namespace")
 			expectedNumberOfRoleBindings := 2
@@ -61,7 +61,7 @@ var _ = Describe("RBAC Privileges", func() {
 				kcpClient,
 				"klm-controller-manager-leader-election",
 				"kcp-system",
-				kcpSystemKlmRoleBindings)).To(Equal(leaderElectionRoleRules))
+				kcpSystemKlmRoleBindings)).To(ConsistOf(leaderElectionRoleRules))
 
 			By("And controller-manager Role has the correct PolicyRules")
 			klmManagerRoleRules := []apirbacv1.PolicyRule{
@@ -163,7 +163,7 @@ var _ = Describe("RBAC Privileges", func() {
 				kcpClient,
 				"klm-controller-manager",
 				"kcp-system",
-				kcpSystemKlmRoleBindings)).To(Equal(klmManagerRoleRules))
+				kcpSystemKlmRoleBindings)).To(ConsistOf(klmManagerRoleRules))
 
 			By("And KLM Service Account has the correct number of RoleBindings in istio-system namespace")
 			istioSystemKlmRoleBindings, err := ListKlmRoleBindings(kcpClient, ctx, "klm-controller-manager",
@@ -189,7 +189,7 @@ var _ = Describe("RBAC Privileges", func() {
 				"klm-controller-manager-certmanager",
 				"istio-system",
 				istioSystemKlmRoleBindings)).
-				To(Equal(istioNamespaceRoleRules))
+				To(ConsistOf(istioNamespaceRoleRules))
 		})
 	})
 })
