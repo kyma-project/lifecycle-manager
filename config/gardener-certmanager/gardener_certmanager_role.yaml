@@ -11,34 +11,20 @@ rules:
     resources:
       - secrets
     verbs:
-      - list
       - watch
+      - list
       - get
       - create
-      - delete
       - update
+      - delete
   - apiGroups:
       - cert.gardener.cloud
     resources:
       - certificates
     verbs:
-      - patch
-      - list
       - watch
+      - list
       - get
       - create
+      - patch
       - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: controller-manager-gardener-certmanager
-  namespace: default
-rules:
-  - apiGroups:
-      - cert.gardener.cloud
-    resources:
-      - issuers
-    verbs:
-      - list
-      - watch
