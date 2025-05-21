@@ -5,9 +5,6 @@ This guide provides detailed instructions for how to migrate a Kyma module from 
 It is highly recommended that module teams familiarize themselves with the new module metadata before starting the migration:
 - The ADR backing the migration is [#984](https://github.com/kyma-project/community/issues/984)
 - An [Update on Module Metadata](https://sap-my.sharepoint.com/:p:/p/c_schwaegerl/EbvSNmRnr3JEjaLoZ__cI9UB9lu5tt0qaly-f7yQO2Gwbw?e=EZuruF) has also been given in the 2024-11-26 Iteration Review
-## Current Process
-
-TODO Current process
 
 ## Target Process
 
@@ -45,11 +42,7 @@ For more details, see [new submission pipeline](https://github.tools.sap/kyma/te
 
 ### 3) Promoting ModuleTemplates and ModuleReleaseMeta
 
-As noted above, the creation of a new ModuleTemplate does not automatically promote it to the landscapes. Instead, the `module-releases.yaml` file must be changed so that the kustomizations and ModuleReleaseMeta are updated.
-
-Once those are updated by the submission pipeline, ArgoCD picks these changes up and deploys the ModuleTemplates and ModuleReleaseMetas relevant for the respective landscape.
-
-TODO: verify with SRE that ArgoCD is ready to pick up the new kustomizations. Especially, in the NEW approach the DEV channel is automatically promoted to DEV landscape. Verify if this is okay.
+ArgoCD detects and applies the changes from Step 2. It deploys only the `ModuleTemplates` and `ModuleReleaseMeta` relevant to each landscape.
 
 ### 4) Deleting a module version
 
@@ -65,9 +58,10 @@ For more details, see [New submission pipeline](https://github.tools.sap/kyma/te
 
 ## Migration Path
 
-To support seamless migration to the new module metadata, KLM and the submission pipeline support both, old and new module metadata at the same time. KLM first checks for the new module metadata, i.e. ModuleReleaseMeta and version-based ModuleTemplates, and reconciles the module based on this data if found. If the new module metadata is not found, KLM falls back to the old module metadata, i.e. channel-based ModuleTemplates.
+To ensure a smooth transition, the submission pipeline and KLM currently support **both** the old and new metadata formats. KLM will prefer the new format if both are present. If not, it falls back to the old channel-based metadata.
 
-To migrate a module to the new module metadata, the following steps need to be performed. The goal is to first replicate the existing setup with the NEW metadata, prepare a version update in the OLD metadata as a fallback, perform a version update using the NEW metadata, fallback to the OLD metadata in case of failures.
+The migration strategy involves replicating the current state with the **new metadata** while keeping the old metadata as a fallback.
+
 
 ### 1) Submit the Existing Versions with the NEW Approach
 
@@ -87,8 +81,6 @@ The developer needs to re-submit all versions above via the NEW approach. I.e., 
 
 For necessary changes in the `module-config.yaml` file, see [Migrating from Kyma CLI to `modulectl`](https://github.com/kyma-project/modulectl/blob/main/docs/contributor/migration-guide.md).
 
-TODO: update the Migration from Kyma CLI to `modulectl` doc. Split it into the modulectl part and updated config part for easier consumption. For readers here, only the updated config part should be relevant.
-
 Once the versions have been submitted, there are the following ModuleTemplates in `/kyma/kyma-modules`:
 
 - `/telemetry/moduletemplate-telemetry-1.32.0.yaml`
@@ -98,9 +90,7 @@ Once the versions have been submitted, there are the following ModuleTemplates i
 
 ### 2) Submit the Existing Channel Mapping with the NEW Approach
 
-Second, the module developer submits the channel-version mapping.
-
-Following the example above, the following `modules/telemetry/module-releases.yaml` file is submitted:
+Create a module-releases.yaml like:
 
 ```yaml
 channels:
@@ -113,8 +103,7 @@ channels:
   - channel: dev
     version: 1.35.0-rc1
 ```
-
-Once the mapping has been submitted, there are the following resources in `/kyma/kyma-modules`:
+Once submitted, this generates landscape-specific ModuleReleaseMeta and updates the kustomizations accordingly.
 
 - `/telemetry`
   - `/moduletemplate-telemetry-1.32.0.yaml`
@@ -159,7 +148,7 @@ Once the mapping has been submitted, there are the following resources in `/kyma
       - ModuleTemplate `../../telemetry/moduletemplate-telemetry-1.34.0.yaml`
       - ... (resources from other modules)
 
-### 3) Verify the New Module Metadata in KCP
+### 3) Verify in KCP
 
 ArgoCD pickes up and deploys the changes from step 2). All landscapes have the same channel-version mapping of the module described in OLD and NEW metadata.
 
@@ -186,8 +175,6 @@ In case a failure happens, the setup can be reverted to the old approach.
 To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 2). ArgoCD then undeploys the new module metdata and KLM falls back to the old module metadata.
 
 > Note that after rollback, the old submission pipeline can still be used to submit new versions of the module while working on a fix.
-
-TODO: verify with neighbors if this can be done easily.
 
 ### 5) Submit a Version Upgrade with the OLD Approach
 
@@ -225,7 +212,7 @@ Once the mapping has been submitted, the resources in `/kyma/kyma-modules` equal
 
 ArgoCD picks up this change and deploys the new ModuleReleaseMeta to the different landscapes. KLM is now picking up the version change and updates all modules using the `regular` channel to version `1.34.0`.
 
-### 8) [FAILURE] Rollback new Module Metadata
+### 8) [FAILURE] Rollback new Metadata
 
 In case a failure happens, the setup can be reverted to the old approach.
 
@@ -233,13 +220,9 @@ To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions f
 
 > Note that after rollback, the old submission pipeline can still be used to submit new versions of the module while working on a fix.
 
-TODO: verify with neighbors if this can be done easily.
+### 9) Remove the old Metadata
 
-### 9) Remove the OLD Metadata
-
-Once it has been verified that the module works with the new metadata, the old metadata is deleted.
-
-TODO: verify how this is done. Can we just delete the channels from `/kyma/module-manifests` and the submission pipeline deletes the images and ModuleTemplates. ArgoCD then removes them from KCP?
+After successful verification, delete all old metadata files related to the module.
 
 ### 10) Continue Module Lifecycle with the NEW Approach
 
