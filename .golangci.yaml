@@ -31,7 +31,8 @@ linters-settings:
       - name: line-length-limit
         severity: warning
         disabled: true
-        arguments: [120]
+        arguments:
+          - 120
   funlen:
     lines: 80
   cyclop:
@@ -208,9 +209,11 @@ issues:
         - wrapcheck # Errors do not need to be wrapped in integration test utils
         - err113 # Dynamic error creation in integration test utils is ok
     - path: tests/e2e/
-      linters: [gci] # Disable gci due to the test utilities dot import.
+      linters:
+        - gci # Disable gci due to the test utilities dot import.
     - path: tests/integration/
-      linters: [gci] # Disable gci due to the test utilities dot import.
+      linters:
+        - gci # Disable gci due to the test utilities dot import.
     - linters:
         - importas
       text: has alias "" which is not part of config # Ignore false positives that emerged due to https://github.com/julz/importas/issues/15.
