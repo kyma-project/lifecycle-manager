@@ -56,6 +56,8 @@ ArgoCD picks these changes to `/kyma/kyma-modules` up and undeploys the ModuleTe
 
 For more details, see [New submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
 
+> Note that this only deletes the ModuleTemplate in `/kyma-kyma-modules` and undeploys it from KCP. The artifacts pushed to the OCI registry remain and cannot be overwritten.
+
 ## Migration Path
 
 To ensure a smooth transition, the submission pipeline and KLM currently support **both** the old and new metadata formats. KLM will prefer the new format if both are present. If not, it falls back to the old channel-based metadata.
@@ -90,7 +92,7 @@ Once the versions have been submitted, there are the following ModuleTemplates i
 
 ### 2) Submit the Existing Channel Mapping with the NEW Approach
 
-Create a module-releases.yaml like:
+Create a `module-releases.yaml` that replicates the existing channel mapping. e.g.:
 
 ```yaml
 channels:
@@ -103,7 +105,7 @@ channels:
   - channel: dev
     version: 1.35.0-rc1
 ```
-Once submitted, this generates landscape-specific ModuleReleaseMeta and updates the kustomizations accordingly.
+Once submitted, this generates landscape-specific ModuleReleaseMeta and updates the kustomizations accordingly in `/kyma/kyma-modules`.
 
 - `/telemetry`
   - `/moduletemplate-telemetry-1.32.0.yaml`
@@ -178,7 +180,7 @@ To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission fr
 
 ### 5) Submit a Version Upgrade Using the Old Format
 
-To prepare for failure recovery, submit the same version upgrade using the old metadata.
+To prepare for failure recovery, first submit a version update using the old metadata.
 
 - `/modules/telemetry/regular/module-config.yaml` pointing to `1.34.0` (before `1.32.0`)
 
