@@ -11,54 +11,20 @@ rules:
     resources:
       - secrets
     verbs:
-      - list
       - watch
+      - list
       - get
       - create
-      - delete
       - update
+      - delete
   - apiGroups:
       - cert-manager.io
     resources:
       - certificates
     verbs:
-      - patch
-      - list
       - watch
+      - list
       - get
       - create
-      - delete
-  - apiGroups:
-      - cert-manager.io
-    resources:
-      - issuers
-    verbs:
-      - list
-      - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: controller-manager-certmanager
-  namespace: kcp-system
-rules:
-  - apiGroups:
-      - cert-manager.io
-    resources:
-      - certificates
-    verbs:
-      - create
-      - delete
-      - get
-      - list
       - patch
-      - update
-      - watch
-  - apiGroups:
-      - cert-manager.io
-    resources:
-      - issuers
-    verbs:
-      - get
-      - list
-      - watch
+      - delete

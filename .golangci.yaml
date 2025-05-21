@@ -143,6 +143,8 @@ linters-settings:
         alias: modulecommon
       - pkg: k8s.io/api/networking/v1
         alias: apinetworkv1
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/kyma
+        alias: kymarepository
   ireturn:
     allow:
       - anon

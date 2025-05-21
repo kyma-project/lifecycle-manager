@@ -41,7 +41,16 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 	)
 	It("Install OCI specs including an nginx deployment", func() {
 		By("Install test Manifest CR")
-		testManifest := NewTestManifest("warning-check")
+		testManifest, kyma := NewTestManifestWithParentKyma("warning-check")
+		Eventually(CreateCR, standardTimeout, standardInterval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).
+			Should(Succeed())
+		Eventually(AddManifestToKymaStatus, standardTimeout, standardInterval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), testManifest.Name).
+			Should(Succeed())
+
 		manifestName := testManifest.GetName()
 		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath,
