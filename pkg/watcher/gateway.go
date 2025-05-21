@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -10,6 +11,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var errInvalidIPAddress = errors.New("invalid ip address in specification")
 
 type GatewayConfig struct {
 	// IstioGatewayName represents the cluster resource name of the klm istio gateway
@@ -21,10 +24,10 @@ type GatewayConfig struct {
 	LocalGatewayPortOverwrite string
 }
 
-func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (string, error) { // Get public KCP DNS name and port from the Gateway
+func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*net.TCPAddr, error) { // Get public KCP DNS name and port from the Gateway
 	kcpClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	if err != nil {
-		return "", fmt.Errorf("can't create kcpClient: %w", err)
+		return nil, fmt.Errorf("can't create kcpClient: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.TODO())
@@ -34,18 +37,26 @@ func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (string, error) { // Get
 		Namespace: g.IstioGatewayNamespace,
 		Name:      g.IstioGatewayName,
 	}, gateway); err != nil {
-		return "", fmt.Errorf("failed to get istio gateway %s: %w", g.IstioGatewayName, err)
+		return nil, fmt.Errorf("failed to get istio gateway %s: %w", g.IstioGatewayName, err)
 	}
 
 	if len(gateway.Spec.GetServers()) != 1 || len(gateway.Spec.GetServers()[0].GetHosts()) != 1 {
-		return "", ErrGatewayHostWronglyConfigured
+		return nil, ErrGatewayHostWronglyConfigured
 	}
-	host := gateway.Spec.GetServers()[0].GetHosts()[0]
-	port := gateway.Spec.GetServers()[0].GetPort().GetNumber()
 
+	var kcpAddr *net.TCPAddr
+	kcpAddr.IP = net.ParseIP(gateway.Spec.GetServers()[0].GetHosts()[0])
+	if kcpAddr.IP == nil {
+		return nil, errInvalidIPAddress
+	}
 	if g.LocalGatewayPortOverwrite != "" {
-		return net.JoinHostPort(host, g.LocalGatewayPortOverwrite), nil
+		kcpAddr.Port, err = strconv.Atoi(g.LocalGatewayPortOverwrite)
+		if err != nil {
+			return nil, fmt.Errorf("invalid gateway port specified %s, must be a number (%w)", g.LocalGatewayPortOverwrite, err)
+		}
+	} else {
+		kcpAddr.Port = int(gateway.Spec.GetServers()[0].GetPort().GetNumber())
 	}
 
-	return net.JoinHostPort(host, strconv.Itoa(int(port))), nil
+	return kcpAddr, nil
 }

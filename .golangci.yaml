@@ -31,7 +31,7 @@ linters-settings:
       - name: line-length-limit
         severity: warning
         disabled: true
-        arguments: [ 120 ]
+        arguments: [120]
   funlen:
     lines: 80
   cyclop:
@@ -40,11 +40,11 @@ linters-settings:
     min-complexity: 6
   gci:
     sections:
-      - standard                                             # Standard packages.
-      - default                                              # Imports that could not be matched to another section type.
-      - prefix(github.com/kyma-project/lifecycle-manager)    # Imports with the specified prefix.
-      - blank                                                # Blank imports.
-      - dot                                                  # Dot imports.
+      - standard # Standard packages.
+      - default # Imports that could not be matched to another section type.
+      - prefix(github.com/kyma-project/lifecycle-manager) # Imports with the specified prefix.
+      - blank # Blank imports.
+      - dot # Dot imports.
     custom-order: true
     skip-generated: true
   nolintlint:
@@ -141,6 +141,8 @@ linters-settings:
         alias: gatewaysecrethandler
       - pkg: github.com/kyma-project/lifecycle-manager/pkg/module/common
         alias: modulecommon
+      - pkg: k8s.io/api/networking/v1
+        alias: apinetworkv1
   ireturn:
     allow:
       - anon
@@ -204,9 +206,9 @@ issues:
         - wrapcheck # Errors do not need to be wrapped in integration test utils
         - err113 # Dynamic error creation in integration test utils is ok
     - path: tests/e2e/
-      linters: [ gci ] # Disable gci due to the test utilities dot import.
+      linters: [gci] # Disable gci due to the test utilities dot import.
     - path: tests/integration/
-      linters: [ gci ] # Disable gci due to the test utilities dot import.
+      linters: [gci] # Disable gci due to the test utilities dot import.
     - linters:
         - importas
       text: has alias "" which is not part of config # Ignore false positives that emerged due to https://github.com/julz/importas/issues/15.

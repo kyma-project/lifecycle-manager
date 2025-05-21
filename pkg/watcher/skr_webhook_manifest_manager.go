@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/go-logr/logr"
@@ -42,7 +43,7 @@ type SkrWebhookManifestManager struct {
 	kcpClient          client.Client
 	skrContextFactory  remote.SkrContextProvider
 	config             SkrWebhookManagerConfig
-	kcpAddr            string
+	kcpAddr            net.TCPAddr
 	baseResources      []*unstructured.Unstructured
 	watcherMetrics     WatcherMetrics
 	certificateManager CertificateManager
@@ -64,7 +65,7 @@ func NewSKRWebhookManifestManager(
 	kcpClient client.Client,
 	skrContextFactory remote.SkrContextProvider,
 	managerConfig SkrWebhookManagerConfig,
-	resolvedKcpAddr string,
+	resolvedKcpAddr net.TCPAddr,
 	certificateManager CertificateManager,
 	watcherMetrics *metrics.WatcherMetrics,
 ) (*SkrWebhookManifestManager, error) {
