@@ -4,7 +4,7 @@ This guide provides detailed instructions for how to migrate a Kyma module from 
 
 It is highly recommended that module teams familiarize themselves with the new module metadata before starting the migration:
 - The ADR backing the migration is [#984](https://github.com/kyma-project/community/issues/984)
-- An [Update on Module Metadata](https://sap-my.sharepoint.com/:p:/p/c_schwaegerl/EbvSNmRnr3JEjaLoZ__cI9UB9lu5tt0qaly-f7yQO2Gwbw?e=EZuruF) has also been given in the 2024-11-26 Iteration Review
+- An Update on Module Metadata has also been given in the 2024-11-26 Iteration Review
 
 ## Target Process
 
