@@ -1,4 +1,3 @@
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -9,61 +8,66 @@ kind: ClusterRole
 metadata:
   name: kyma-reader
 rules:
-  - apiGroups: [ "operator.kyma-project.io" ]
-    resources: [ "kymas" ]
-    verbs: [ "get", "watch", "list" ]
+  - apiGroups:
+      - operator.kyma-project.io
+    resources:
+      - kymas
+    verbs:
+      - get
+      - watch
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: read-kymas
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kyma-reader
 subjects:
   - kind: ServiceAccount
     name: skr-webhook-sa
-roleRef:
-  kind: ClusterRole
-  name: kyma-reader
-  apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: skr-webhook
 spec:
+  ports:
+    - name: webhook
+      port: 443
+      targetPort: watcher-port
   selector:
     app: skr-webhook
-  ports:
-    - port: 443
-      targetPort: watcher-port
-      name: webhook
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: skr-webhook-metrics
 spec:
+  ports:
+    - name: http-metrics
+      port: 2112
+      targetPort: metrics-port
   selector:
     app: skr-webhook
-  ports:
-    - port: 2112
-      targetPort: metrics-port
-      name: http-metrics
 ---
 apiVersion: scheduling.k8s.io/v1
+description: This priority class is used for skr-webhook to ensure reconciliation, even with high workload.
+globalDefault: false
 kind: PriorityClass
 metadata:
   name: skr-webhook-priority
 value: 1000000000
-globalDefault: false
-description: "This priority class is used for skr-webhook to ensure reconciliation, even with high workload."
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skr-webhook
-  namespace: default
   labels:
     app: skr-webhook
+  name: skr-webhook
+  namespace: default
 spec:
   replicas: 1
   selector:
@@ -76,10 +80,8 @@ spec:
         operator.kyma-project.io/pod-restart-trigger: ""
         sidecar.istio.io/inject: "false"
     spec:
-      serviceAccountName: skr-webhook-sa
       containers:
-        - name: server
-          env:
+        - env:
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -89,38 +91,40 @@ spec:
             - name: METRICS_PORT
               value: "2112"
             - name: TLS_KEY
-              value: "/app/etc/ssl/tls.key"
+              value: /app/etc/ssl/tls.key
             - name: TLS_CERT
-              value: "/app/etc/ssl/tls.crt"
+              value: /app/etc/ssl/tls.crt
             - name: CA_CERT
-              value: "/app/etc/ssl/ca.crt"
+              value: /app/etc/ssl/ca.crt
             - name: TLS_CALLBACK
               value: "true"
             - name: KCP_CONTRACT
-              value: "v1"
+              value: v1
             - name: KCP_ADDR
-              value: "kcp-base-url-invalid"
-          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher:latest" # this image will be dynamically replaced by flags
+              value: kcp-base-url-invalid
+          image: europe-docker.pkg.dev/kyma-project/prod/runtime-watcher:latest
           imagePullPolicy: Always
-          volumeMounts:
-            - name: ssl
-              mountPath: /app/etc/ssl
-          resources:
-            requests:
-              memory: 20Mi
-              cpu: "0.01"
-            limits:
-              memory: 200Mi
-              cpu: "0.1"
+          name: server
           ports:
             - containerPort: 8443
               name: watcher-port
             - containerPort: 2112
               name: metrics-port
+          resources:
+            limits:
+              cpu: "0.1"
+              memory: 200Mi
+            requests:
+              cpu: "0.01"
+              memory: 20Mi
+          volumeMounts:
+            - mountPath: /app/etc/ssl
+              name: ssl
+      priorityClassName: skr-webhook-priority
+      serviceAccountName: skr-webhook-sa
       volumes:
         - name: ssl
           secret:
-            secretName: skr-webhook-tls
             items:
               - key: tls.key
                 path: tls.key
@@ -128,4 +132,91 @@ spec:
                 path: tls.crt
               - key: ca.crt
                 path: ca.crt
-      priorityClassName: skr-webhook-priority
+            secretName: skr-webhook-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app: skr-webhook
+  name: kyma-project.io--seed-to-watcher
+  namespace: default
+spec:
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              gardener.cloud/purpose: kube-system
+          podSelector:
+            matchLabels:
+              app: vpn-shoot
+  podSelector:
+    matchLabels:
+      app: skr-webhook
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app: skr-webhook
+  name: kyma-project.io--watcher-to-apiserver
+  namespace: default
+spec:
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+  podSelector:
+    matchLabels:
+      app: skr-webhook
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app: skr-webhook
+  name: kyma-project.io--watcher-to-dns
+  namespace: default
+spec:
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: node-local-dns
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+    - ports:
+        - port: 8053
+          protocol: UDP
+        - port: 8053
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+  podSelector:
+    matchLabels:
+      app: skr-webhook
+  policyTypes:
+    - Egress

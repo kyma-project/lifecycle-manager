@@ -5,15 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"strconv"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
+	apinetworkv1 "k8s.io/api/networking/v1"
 	apirbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -25,7 +29,7 @@ import (
 
 type unstructuredResourcesConfig struct {
 	contractVersion          string
-	kcpAddress               string
+	kcpAddress               net.TCPAddr
 	secretResVer             string
 	cpuResLimit, memResLimit string
 	skrWatcherImage          string
@@ -41,6 +45,7 @@ const (
 	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
 	version                 = "v1"
 	webhookTimeOutInSeconds = 15
+	apiserverNetpolName     = "kyma-project.io--watcher-to-apiserver"
 
 	caCertKey        = "ca.crt"
 	tlsCertKey       = "tls.crt"
@@ -180,7 +185,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 
 	for i := range len(serverContainer.Env) {
 		if serverContainer.Env[i].Name == kcpAddressEnvName {
-			serverContainer.Env[i].Value = cfg.kcpAddress
+			serverContainer.Env[i].Value = net.JoinHostPort(string(cfg.kcpAddress.IP), strconv.Itoa(cfg.kcpAddress.Port))
 		}
 	}
 
@@ -203,6 +208,33 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	}))
 
 	return deployment, nil
+}
+
+func configureNetworkPolicies(cfg *unstructuredResourcesConfig, obj *unstructured.Unstructured) (*apinetworkv1.NetworkPolicy, error) {
+	networkPolicy := &apinetworkv1.NetworkPolicy{}
+	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, networkPolicy); err != nil {
+		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
+	}
+
+	if networkPolicy.GetObjectMeta().GetName() == apiserverNetpolName {
+		kcpPortInt := intstr.FromInt(cfg.kcpAddress.Port)
+		networkProtocol := apicorev1.ProtocolTCP
+
+		egressRule := []apinetworkv1.NetworkPolicyEgressRule{
+			{
+				Ports: []apinetworkv1.NetworkPolicyPort{
+					{
+						Protocol: &networkProtocol,
+						Port:     &kcpPortInt,
+					},
+				},
+			},
+		}
+
+		networkPolicy.Spec.Egress = egressRule
+	}
+
+	return networkPolicy, nil
 }
 
 func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
@@ -245,6 +277,9 @@ func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstr
 	}
 	if object.GetAPIVersion() == apirbacv1.SchemeGroupVersion.String() && object.GetKind() == "ClusterRoleBinding" {
 		return configureClusterRoleBinding(cfg, object)
+	}
+	if object.GetAPIVersion() == apinetworkv1.SchemeGroupVersion.String() && object.GetKind() == "NetworkPolicy" {
+		return configureNetworkPolicies(cfg, object)
 	}
 	return object.DeepCopy(), nil
 }
