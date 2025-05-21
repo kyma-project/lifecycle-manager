@@ -176,17 +176,14 @@ To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission fr
 
 > Note that after rollback, the old submission pipeline can still be used to submit new versions of the module while working on a fix.
 
-### 5) Submit a Version Upgrade with the OLD Approach
+### 5) Submit a Version Upgrade Using the Old Format
 
-As a next migration step, a version upgrade of the module is rolled out. To prepare for failure, the same update is first prepared using the OLD metadata.
-
-Staying with the example above, the module developer submits a new version for the `regular` channel via the OLD approach. I.e., they submit:
+To prepare for failure recovery, submit the same version upgrade using the old metadata.
 
 - `/modules/telemetry/regular/module-config.yaml` pointing to `1.34.0` (before `1.32.0`)
 
-Once this update is submitted, ArgoCD will deploy the ModuleTemplate `kyma-system/telemetry-regular` with the updated version to KCP. However, since there is new module metadata available in KCP, KLM continues to use the new metadata and ignores this ModuleTemplate and therefore the new version.
-
-> Note that the reason for still submitting this old metadata is to be able to easly rollback to the old metadata in case the update with the new metadata fails. If the old metadata would be on a version lower than the new metadata, this could lead to additional errors when reverting as KLM doesn't support version downgrades.
+Since the new metadata exists, KLM continues to use it. The old metadata is ignored but remains available for rollback.
+> This avoids version downgrades if rollback becomes necessary.
 
 ### 6) Submit the Updated Channel Mapping with the NEW Approach
 
