@@ -44,7 +44,7 @@ func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*net.TCPAddr, error) { 
 		return nil, ErrGatewayHostWronglyConfigured
 	}
 
-	var kcpAddr *net.TCPAddr
+	var kcpAddr net.TCPAddr
 	kcpAddr.IP = net.ParseIP(gateway.Spec.GetServers()[0].GetHosts()[0])
 	if kcpAddr.IP == nil {
 		return nil, errInvalidIPAddress
@@ -58,5 +58,5 @@ func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*net.TCPAddr, error) { 
 		kcpAddr.Port = int(gateway.Spec.GetServers()[0].GetPort().GetNumber())
 	}
 
-	return kcpAddr, nil
+	return &kcpAddr, nil
 }
