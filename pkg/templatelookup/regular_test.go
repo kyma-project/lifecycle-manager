@@ -478,7 +478,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Len(t, len(got), len(testCase.want))
+			expected := len(testCase.want)
+			assert.Len(t, got, expected)
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
