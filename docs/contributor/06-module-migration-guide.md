@@ -92,7 +92,7 @@ Once the versions have been submitted, there are the following ModuleTemplates i
 
 ### 2) Submit the Existing Channel Mapping with the NEW Approach
 
-Create a `module-releases.yaml` that replicates the existing channel mapping. e.g.:
+Create a `/module-manifests/modules/<module-name>/module-releases.yaml` that replicates the existing channel mapping. e.g.:
 
 ```yaml
 channels:
@@ -152,15 +152,18 @@ Once submitted, this generates landscape-specific ModuleReleaseMeta and updates 
 
 ### 3) Verify in KCP
 
-ArgoCD pickes up and deploys the changes from step 2). All landscapes have the same channel-version mapping of the module described in OLD and NEW metadata.
+ArgoCD picks up and deploys the changes from step 2). All landscapes have the same channel-version mapping of the module described in OLD and NEW metadata.
 
 Following the example above, the following resources exist in KCP:
 
+#### New ModuleTemplates
 - ModuleTemplate `kyma-system/telemetry-regular` pointing to `1.32.0`
 - ModuleTemplate `kyma-system/telemetry-fast` pointing to `1.34.0`
 - ModuleTemplate `kyma-system/telemetry-experimental` pointing to `1.34.0-experimental` (only in DEV and STAGE)
 - ModuleTemplate `kyma-system/telemetry-dev` pointing to `1.35.0-rc1` (only in DEV)
 - ModuleReleaseMeta `kyma-system/telemetry`
+
+#### Old ModuleTemplates
 - ModuleTemplate `kyma-system/telemetry-1.32.0`
 - ModuleTemplate `kyma-system/telemetry-1.34.0`
 - ModuleTemplate `kyma-system/telemetry-1.34.0-experimental` (only in DEV and STAGE)
@@ -170,11 +173,11 @@ As the new module metadata takes precedence, the reconciliation of the module al
 
 The functionality can further be verified by enabling the module in a test SKR which will install it from scratch using the new metadata.
 
-### 4) [FAILURE] Rollback the New Module Metdata
+### 4) [FAILURE] Rollback the New Module Metadata
 
 In case a failure happens, the setup can be reverted to the old approach.
 
-To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 2). ArgoCD then undeploys the new module metdata and KLM falls back to the old module metadata.
+To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 2). ArgoCD then undeploys the new module metadata and KLM falls back to the old module metadata.
 
 > Note that after rollback, the old submission pipeline can still be used to submit new versions of the module while working on a fix.
 
