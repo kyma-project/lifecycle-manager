@@ -228,7 +228,7 @@ var _ = BeforeSuite(func() {
 		kcpClient,
 		testSkrContextFactory,
 		skrChartCfg,
-		resolvedKcpAddr,
+		*resolvedKcpAddr,
 		certificateManager,
 		metrics.NewWatcherMetrics(),
 	)

@@ -38,11 +38,16 @@ type CertificateManager interface {
 	GetGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error)
 }
 
+type KCPAddr struct {
+	Hostname string
+	Port     int
+}
+
 type SkrWebhookManifestManager struct {
 	kcpClient          client.Client
 	skrContextFactory  remote.SkrContextProvider
 	config             SkrWebhookManagerConfig
-	kcpAddr            string
+	kcpAddr            KCPAddr
 	baseResources      []*unstructured.Unstructured
 	watcherMetrics     WatcherMetrics
 	certificateManager CertificateManager
@@ -64,7 +69,7 @@ func NewSKRWebhookManifestManager(
 	kcpClient client.Client,
 	skrContextFactory remote.SkrContextProvider,
 	managerConfig SkrWebhookManagerConfig,
-	resolvedKcpAddr string,
+	resolvedKcpAddr KCPAddr,
 	certificateManager CertificateManager,
 	watcherMetrics *metrics.WatcherMetrics,
 ) (*SkrWebhookManifestManager, error) {

@@ -61,7 +61,7 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 func getResolvedKcpAddress(mgr ctrl.Manager,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
-) string {
+) watcher.KCPAddr {
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
@@ -69,12 +69,12 @@ func getResolvedKcpAddress(mgr ctrl.Manager,
 	}
 
 	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
-	if err != nil {
+	if err != nil || resolvedKcpAddr == nil {
 		setupLog.Error(err, "failed to resolve KCP address")
 		os.Exit(bootstrapFailedExitCode)
 	}
 
-	return resolvedKcpAddr
+	return *resolvedKcpAddr
 }
 
 func setupCertManager(kcpClient client.Client,
