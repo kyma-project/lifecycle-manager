@@ -60,7 +60,7 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("skipping mandatory modules reconciliation for Kyma: " + kyma.Name)
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	mandatoryTemplates, err := templatelookup.GetMandatory(ctx, r.Client)

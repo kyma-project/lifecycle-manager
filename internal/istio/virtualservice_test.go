@@ -225,7 +225,7 @@ func Test_NewVirtualService_SetsOwnerReference(t *testing.T) {
 	vs, err := vss.NewVirtualService(watcher, gateways)
 
 	require.NoError(t, err)
-	ownerReferences := vs.ObjectMeta.GetOwnerReferences()
+	ownerReferences := vs.GetOwnerReferences()
 	assert.Len(t, ownerReferences, 1)
 	assert.Equal(t, expectedOwnerReference, ownerReferences[0])
 }

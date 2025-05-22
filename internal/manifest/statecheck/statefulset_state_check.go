@@ -12,11 +12,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
+type StatefulSetStateCheck struct{}
+
 func NewStatefulSetStateCheck() *StatefulSetStateCheck {
 	return &StatefulSetStateCheck{}
 }
-
-type StatefulSetStateCheck struct{}
 
 func (*StatefulSetStateCheck) GetState(ctx context.Context,
 	clnt client.Client,

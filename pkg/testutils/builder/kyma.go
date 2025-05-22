@@ -36,7 +36,7 @@ func NewKymaBuilder() KymaBuilder {
 
 // WithName sets v1beta2.Kyma.ObjectMeta.Name.
 func (kb KymaBuilder) WithName(name string) KymaBuilder {
-	kb.kyma.ObjectMeta.Name = name
+	kb.kyma.Name = name
 	return kb
 }
 
@@ -51,13 +51,13 @@ func (kb KymaBuilder) WithEnabledModule(module v1beta2.Module) KymaBuilder {
 
 // WithNamePrefix sets v1beta2.Kyma.ObjectMeta.Name.
 func (kb KymaBuilder) WithNamePrefix(prefix string) KymaBuilder {
-	kb.kyma.ObjectMeta.Name = fmt.Sprintf("%s-%s", prefix, random.Name())
+	kb.kyma.Name = fmt.Sprintf("%s-%s", prefix, random.Name())
 	return kb
 }
 
 // WithNamespace sets v1beta2.Kyma.ObjectMeta.Namespace.
 func (kb KymaBuilder) WithNamespace(namespace string) KymaBuilder {
-	kb.kyma.ObjectMeta.Namespace = namespace
+	kb.kyma.Namespace = namespace
 	return kb
 }
 
@@ -131,7 +131,7 @@ func (kb KymaBuilder) WithSkipMaintenanceWindows(skip bool) KymaBuilder {
 
 // WithDeletionTimestamp sets v1beta2.Kyma.ObjectMeta.DeletionTimestamp.
 func (kb KymaBuilder) WithDeletionTimestamp() KymaBuilder {
-	kb.kyma.ObjectMeta.DeletionTimestamp = &apimetav1.Time{Time: time.Now()}
+	kb.kyma.DeletionTimestamp = &apimetav1.Time{Time: time.Now()}
 	return kb
 }
 

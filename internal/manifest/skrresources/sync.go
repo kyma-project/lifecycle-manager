@@ -27,7 +27,7 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 	}
 
 	oldSynced := manifestStatus.Synced
-	newSynced := NewInfoToResourceConverter().InfosToResources(target)
+	newSynced := NewDefaultInfoToResourceConverter().InfosToResources(target)
 	manifestStatus.Synced = newSynced
 
 	if HasDiff(oldSynced, newSynced) {

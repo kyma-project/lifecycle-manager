@@ -112,7 +112,7 @@ func handleKymaNotFoundError(logger logr.Logger, kyma *v1beta2.Kyma, err error) 
 func (r *Reconciler) handleKymaNotMarkedForDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if err := r.ensurePurgeFinalizer(ctx, kyma); err != nil {
 		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Failed setting purge finalizer for Kyma %s: %s", kyma.GetName(), err))
-		r.Event.Warning(kyma, setFinalizerFailure, err)
+		r.Warning(kyma, setFinalizerFailure, err)
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
@@ -125,7 +125,7 @@ func handlePurgeNotDue(logger logr.Logger, kyma *v1beta2.Kyma, requeueAfter time
 
 func (r *Reconciler) handleRemovingPurgeFinalizerFailedError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
 	logf.FromContext(ctx).Error(err, fmt.Sprintf("Failed removing purge finalizer from Kyma %s/%s", kyma.GetNamespace(), kyma.GetName()))
-	r.Event.Warning(kyma, removeFinalizerFailure, err)
+	r.Warning(kyma, removeFinalizerFailure, err)
 	r.Metrics.SetPurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 	return ctrl.Result{}, err
 }

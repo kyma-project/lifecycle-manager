@@ -91,7 +91,7 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 		}
 
 		if module.TemplateInfo.Annotations[shared.IsClusterScopedAnnotation] == shared.EnableLabelValue {
-			moduleStatus.Resource.PartialMeta.Namespace = ""
+			moduleStatus.Resource.Namespace = ""
 		}
 	}
 

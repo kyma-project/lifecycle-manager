@@ -41,21 +41,6 @@ func (c *ConcurrentCleanup) DeleteDiffResources(ctx context.Context, resources [
 	return c.cleanupResources(ctx, operatorRelatedResources, status)
 }
 
-func (c *ConcurrentCleanup) cleanupResources(
-	ctx context.Context,
-	resources []*resource.Info,
-	status shared.Status,
-) error {
-	if err := c.Run(ctx, resources); errors.Is(err, ErrDeletionNotFinished) {
-		c.manifest.SetStatus(status.WithState(shared.StateWarning).WithErr(err))
-		return err
-	} else if err != nil {
-		c.manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
-		return err
-	}
-	return nil
-}
-
 func SplitResources(resources []*resource.Info) ([]*resource.Info, []*resource.Info, error) {
 	operatorRelatedResources := make([]*resource.Info, 0)
 	operatorManagedResources := make([]*resource.Info, 0)
@@ -112,6 +97,21 @@ func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) err
 
 	if infosCount > 0 {
 		return ErrDeletionNotFinished
+	}
+	return nil
+}
+
+func (c *ConcurrentCleanup) cleanupResources(
+	ctx context.Context,
+	resources []*resource.Info,
+	status shared.Status,
+) error {
+	if err := c.Run(ctx, resources); errors.Is(err, ErrDeletionNotFinished) {
+		c.manifest.SetStatus(status.WithState(shared.StateWarning).WithErr(err))
+		return err
+	} else if err != nil {
+		c.manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		return err
 	}
 	return nil
 }

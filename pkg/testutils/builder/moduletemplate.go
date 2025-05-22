@@ -52,12 +52,12 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 }
 
 func (m ModuleTemplateBuilder) WithName(name string) ModuleTemplateBuilder {
-	m.moduleTemplate.ObjectMeta.Name = name
+	m.moduleTemplate.Name = name
 	return m
 }
 
 func (m ModuleTemplateBuilder) WithNamespace(namespace string) ModuleTemplateBuilder {
-	m.moduleTemplate.ObjectMeta.Namespace = namespace
+	m.moduleTemplate.Namespace = namespace
 	return m
 }
 
@@ -72,7 +72,7 @@ func (m ModuleTemplateBuilder) WithModuleName(moduleName string) ModuleTemplateB
 }
 
 func (m ModuleTemplateBuilder) WithGeneration(generation int) ModuleTemplateBuilder {
-	m.moduleTemplate.ObjectMeta.Generation = int64(generation)
+	m.moduleTemplate.Generation = int64(generation)
 	return m
 }
 

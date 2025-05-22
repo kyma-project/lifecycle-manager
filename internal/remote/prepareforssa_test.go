@@ -34,8 +34,8 @@ func TestPrepareForSSA(t *testing.T) {
 
 		prepareModuleTemplateForSSA(&testModule, "someNamespace")
 
-		assert.Equal(t, "", testModule.GetResourceVersion())
-		assert.EqualValues(t, "", testModule.GetUID())
+		assert.Empty(t, testModule.GetResourceVersion())
+		assert.Empty(t, testModule.GetUID())
 		assert.Empty(t, testModule.GetManagedFields())
 		assert.Len(t, testModule.GetLabels(), 2)
 		assert.Equal(t, "bar", testModule.GetLabels()["foo"])

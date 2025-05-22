@@ -15,11 +15,11 @@ const (
 	ReplicaSetUpdatedReason      = "ReplicaSetUpdated"
 )
 
+type DeploymentStateCheck struct{}
+
 func NewDeploymentStateCheck() *DeploymentStateCheck {
 	return &DeploymentStateCheck{}
 }
-
-type DeploymentStateCheck struct{}
 
 func (*DeploymentStateCheck) GetState(
 	deploy *apiappsv1.Deployment,

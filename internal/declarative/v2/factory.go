@@ -128,13 +128,6 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 	return clients, nil
 }
 
-func (s *SingletonClients) clientCacheKeyForMapping(mapping *meta.RESTMapping) string {
-	return fmt.Sprintf(
-		"%s+%s:%s",
-		mapping.Resource.String(), mapping.GroupVersionKind.String(), mapping.Scope.Name(),
-	)
-}
-
 func (s *SingletonClients) ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bool) (*resource.Info, error) {
 	mapping, err := getResourceMapping(obj, s.discoveryShortcutExpander, retryOnNoMatch)
 	if err != nil {
@@ -163,6 +156,13 @@ func (s *SingletonClients) ResourceInfo(obj *unstructured.Unstructured, retryOnN
 	info.Object = obj
 	info.ResourceVersion = obj.GetResourceVersion()
 	return info, nil
+}
+
+func (s *SingletonClients) clientCacheKeyForMapping(mapping *meta.RESTMapping) string {
+	return fmt.Sprintf(
+		"%s+%s:%s",
+		mapping.Resource.String(), mapping.GroupVersionKind.String(), mapping.Scope.Name(),
+	)
 }
 
 func setKubernetesDefaults(config *rest.Config) error {

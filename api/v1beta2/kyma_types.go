@@ -414,12 +414,12 @@ func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 		updateRequired = true
 	}
 
-	if kyma.ObjectMeta.Labels == nil {
-		kyma.ObjectMeta.Labels = make(map[string]string)
+	if kyma.Labels == nil {
+		kyma.Labels = make(map[string]string)
 	}
 
-	if _, ok := kyma.ObjectMeta.Labels[shared.ManagedBy]; !ok {
-		kyma.ObjectMeta.Labels[shared.ManagedBy] = shared.OperatorName
+	if _, ok := kyma.Labels[shared.ManagedBy]; !ok {
+		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		updateRequired = true
 	}
 	return updateRequired

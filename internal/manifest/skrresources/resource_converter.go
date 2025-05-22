@@ -25,22 +25,22 @@ type InfoToResourceConverter interface {
 	InfosToResources(resourceInfo []*resource.Info) []shared.Resource
 }
 
-func NewResourceToInfoConverter(
-	converter ResourceInfoConverter, defaultNamespace string,
-) *DefaultResourceToInfoConverter {
-	return &DefaultResourceToInfoConverter{converter: converter, defaultNamespace: defaultNamespace}
-}
-
 type DefaultResourceToInfoConverter struct {
 	converter        ResourceInfoConverter
 	defaultNamespace string
 }
 
-func NewInfoToResourceConverter() *DefaultInfoToResourceConverter {
-	return &DefaultInfoToResourceConverter{}
+func NewDefaultResourceToInfoConverter(
+	converter ResourceInfoConverter, defaultNamespace string,
+) *DefaultResourceToInfoConverter {
+	return &DefaultResourceToInfoConverter{converter: converter, defaultNamespace: defaultNamespace}
 }
 
 type DefaultInfoToResourceConverter struct{}
+
+func NewDefaultInfoToResourceConverter() *DefaultInfoToResourceConverter {
+	return &DefaultInfoToResourceConverter{}
+}
 
 func (c *DefaultInfoToResourceConverter) InfosToResources(infos []*resource.Info) []shared.Resource {
 	resources := make([]shared.Resource, 0, len(infos))

@@ -104,7 +104,7 @@ func moduleReleaseMetasDiffFor(first []v1beta2.ModuleReleaseMeta) *collections.D
 }
 
 func isModuleReleaseMetaManagedByKcp(skrObject *v1beta2.ModuleReleaseMeta) bool {
-	for _, managedFieldEntry := range skrObject.ObjectMeta.ManagedFields {
+	for _, managedFieldEntry := range skrObject.ManagedFields {
 		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
 			return true
 		}
