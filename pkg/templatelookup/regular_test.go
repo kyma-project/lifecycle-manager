@@ -786,7 +786,8 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Len(t, len(got), len(testCase.want))
+			expected := len(testCase.want)
+			assert.Len(t, got, expected)
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
@@ -854,7 +855,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Len(t, len(got), len(testCase.want))
+			expected := len(testCase.want)
+			assert.Len(t, got, expected)
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
@@ -996,8 +998,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					moduletemplateinfolookup.NewByChannelStrategy(reader),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
+			expected := len(testCase.want)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Len(t, len(got), len(testCase.want))
+			assert.Len(t, got, expected)
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
