@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"strconv"
+	"strings"
 
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var errInvalidIPAddress = errors.New("invalid ip address in specification")
+var errNoHostnameInGateway = errors.New("the gateway has no host specified")
 
 type GatewayConfig struct {
 	// IstioGatewayName represents the cluster resource name of the klm istio gateway
@@ -24,7 +24,7 @@ type GatewayConfig struct {
 	LocalGatewayPortOverwrite string
 }
 
-func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*net.TCPAddr, error) { // Get public KCP DNS name and port from the Gateway
+func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*KCPAddr, error) { // Get public KCP DNS name and port from the Gateway
 	kcpClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	if err != nil {
 		return nil, fmt.Errorf("can't create kcpClient: %w", err)
@@ -44,10 +44,10 @@ func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*net.TCPAddr, error) { 
 		return nil, ErrGatewayHostWronglyConfigured
 	}
 
-	var kcpAddr net.TCPAddr
-	kcpAddr.IP = net.ParseIP(gateway.Spec.GetServers()[0].GetHosts()[0])
-	if kcpAddr.IP == nil {
-		return nil, errInvalidIPAddress
+	var kcpAddr KCPAddr
+	kcpAddr.Hostname = gateway.Spec.GetServers()[0].GetHosts()[0]
+	if len(strings.TrimSpace(kcpAddr.Hostname)) == 0 {
+		return nil, errNoHostnameInGateway
 	}
 	if g.LocalGatewayPortOverwrite != "" {
 		kcpAddr.Port, err = strconv.Atoi(g.LocalGatewayPortOverwrite)

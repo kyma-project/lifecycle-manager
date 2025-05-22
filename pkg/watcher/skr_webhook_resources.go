@@ -29,7 +29,7 @@ import (
 
 type unstructuredResourcesConfig struct {
 	contractVersion          string
-	kcpAddress               net.TCPAddr
+	kcpAddress               KCPAddr
 	secretResVer             string
 	cpuResLimit, memResLimit string
 	skrWatcherImage          string
@@ -185,7 +185,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 
 	for i := range len(serverContainer.Env) {
 		if serverContainer.Env[i].Name == kcpAddressEnvName {
-			serverContainer.Env[i].Value = net.JoinHostPort(string(cfg.kcpAddress.IP), strconv.Itoa(cfg.kcpAddress.Port))
+			serverContainer.Env[i].Value = net.JoinHostPort(string(cfg.kcpAddress.Hostname), strconv.Itoa(cfg.kcpAddress.Port))
 		}
 	}
 

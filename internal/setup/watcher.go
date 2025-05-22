@@ -1,7 +1,6 @@
 package setup
 
 import (
-	"net"
 	"os"
 	"strings"
 
@@ -62,7 +61,7 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 func getResolvedKcpAddress(mgr ctrl.Manager,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
-) net.TCPAddr {
+) watcher.KCPAddr {
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,

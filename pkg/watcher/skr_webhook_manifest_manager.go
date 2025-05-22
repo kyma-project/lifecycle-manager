@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 
 	"github.com/go-logr/logr"
@@ -39,11 +38,16 @@ type CertificateManager interface {
 	GetGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error)
 }
 
+type KCPAddr struct {
+	Hostname string
+	Port     int
+}
+
 type SkrWebhookManifestManager struct {
 	kcpClient          client.Client
 	skrContextFactory  remote.SkrContextProvider
 	config             SkrWebhookManagerConfig
-	kcpAddr            net.TCPAddr
+	kcpAddr            KCPAddr
 	baseResources      []*unstructured.Unstructured
 	watcherMetrics     WatcherMetrics
 	certificateManager CertificateManager
@@ -65,7 +69,7 @@ func NewSKRWebhookManifestManager(
 	kcpClient client.Client,
 	skrContextFactory remote.SkrContextProvider,
 	managerConfig SkrWebhookManagerConfig,
-	resolvedKcpAddr net.TCPAddr,
+	resolvedKcpAddr KCPAddr,
 	certificateManager CertificateManager,
 	watcherMetrics *metrics.WatcherMetrics,
 ) (*SkrWebhookManifestManager, error) {
