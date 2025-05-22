@@ -11,16 +11,19 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
-const (
-	ManifestFilePrefix = "manifest"
-)
+const ManifestFilePrefix = "manifest"
 
 type ManifestParser interface {
 	Parse(spec *Spec) (internal.ManifestResources, error)
 	EvictCache(spec *Spec)
 }
 
-func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
+type InMemoryManifestCache struct {
+	TTL time.Duration
+	*ttlcache.Cache[string, internal.ManifestResources]
+}
+
+func NewInMemoryManifestCache(ttl time.Duration) *InMemoryManifestCache {
 	cache := ttlcache.New[string, internal.ManifestResources]()
 	go cache.Start()
 	return &InMemoryManifestCache{Cache: cache, TTL: ttl}
@@ -29,11 +32,6 @@ func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
 func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
 	key := generateCacheKey(spec)
 	c.Delete(key)
-}
-
-type InMemoryManifestCache struct {
-	TTL time.Duration
-	*ttlcache.Cache[string, internal.ManifestResources]
 }
 
 func (c *InMemoryManifestCache) Parse(spec *Spec,

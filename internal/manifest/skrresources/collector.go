@@ -70,13 +70,6 @@ func NewLogCollector(key string, owner client.FieldOwner) *LogCollector {
 	}
 }
 
-// safeAddEntry adds a new entry to the collector's entries slice in a thread-safe way.
-func (c *LogCollector) safeAddEntry(entry LogCollectorEntry) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.entries = append(c.entries, entry)
-}
-
 func (c *LogCollector) Collect(ctx context.Context, remoteObj client.Object) {
 	managedFields := remoteObj.GetManagedFields()
 	for _, mf := range managedFields {
@@ -121,6 +114,13 @@ func (c *LogCollector) Emit(ctx context.Context) error {
 	return nil
 }
 
+// safeAddEntry adds a new entry to the collector's entries slice in a thread-safe way.
+func (c *LogCollector) safeAddEntry(entry LogCollectorEntry) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.entries = append(c.entries, entry)
+}
+
 // compressAndBase64 compresses the input byte slice using gzip and encodes it to base64 so that it can be logged as a string.
 func compressAndBase64(in []byte) (string, error) {
 	var buf bytes.Buffer
@@ -162,8 +162,7 @@ func getAllowedManagers() []string {
 }
 
 func getFrequencyLimiterTTL() int {
-	var res = frequencyLimiterTTLDefault
-	
+	res := frequencyLimiterTTLDefault
 	if configured := os.Getenv(frequencyLimiterTTLEnvVar); configured != "" {
 		rxp := regexp.MustCompile(frequencyLimiterTTLRegexp)
 		if rxp.MatchString(configured) {

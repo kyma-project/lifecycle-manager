@@ -490,7 +490,7 @@ func (b *moduleReleaseMetaBuilder) build() *v1beta2.ModuleReleaseMeta {
 }
 
 func (b *moduleReleaseMetaBuilder) withName(module string) *moduleReleaseMetaBuilder {
-	b.moduleReleaseMeta.ObjectMeta.Name = module
+	b.moduleReleaseMeta.Name = module
 	b.moduleReleaseMeta.Spec.ModuleName = module
 	return b
 }

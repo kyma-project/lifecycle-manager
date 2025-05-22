@@ -33,6 +33,12 @@ type ModuleTemplateInfoLookupStrategy interface {
 	) ModuleTemplateInfo
 }
 
+type TemplateLookup struct {
+	client.Reader
+	descriptorProvider               *provider.CachedDescriptorProvider
+	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy
+}
+
 func NewTemplateLookup(reader client.Reader,
 	descriptorProvider *provider.CachedDescriptorProvider,
 	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy,
@@ -42,12 +48,6 @@ func NewTemplateLookup(reader client.Reader,
 		descriptorProvider:               descriptorProvider,
 		moduleTemplateInfoLookupStrategy: moduleTemplateInfoLookupStrategy,
 	}
-}
-
-type TemplateLookup struct {
-	client.Reader
-	descriptorProvider               *provider.CachedDescriptorProvider
-	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo

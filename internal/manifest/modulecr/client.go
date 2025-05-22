@@ -93,23 +93,6 @@ func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest
 	return nil
 }
 
-func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
-	if manifest.Spec.Resource == nil {
-		return false, nil
-	}
-
-	resource := manifest.Spec.Resource.DeepCopy()
-	propagation := apimetav1.DeletePropagationBackground
-	err := c.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-	if util.IsNotFound(err) {
-		return true, nil
-	}
-	if err != nil {
-		return false, fmt.Errorf("failed to fetch resource: %w", err)
-	}
-	return false, nil
-}
-
 // SyncModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
 func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) error {
@@ -132,4 +115,21 @@ func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) e
 		}
 	}
 	return nil
+}
+
+func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
+	if manifest.Spec.Resource == nil {
+		return false, nil
+	}
+
+	resource := manifest.Spec.Resource.DeepCopy()
+	propagation := apimetav1.DeletePropagationBackground
+	err := c.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
+	if util.IsNotFound(err) {
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch resource: %w", err)
+	}
+	return false, nil
 }
