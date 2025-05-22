@@ -29,7 +29,7 @@ func NewModuleReleaseMetaBuilder() ModuleReleaseMetaBuilder {
 }
 
 func (m ModuleReleaseMetaBuilder) WithName(name string) ModuleReleaseMetaBuilder {
-	m.moduleReleaseMeta.ObjectMeta.Name = name
+	m.moduleReleaseMeta.Name = name
 	return m
 }
 
@@ -52,7 +52,7 @@ func (m ModuleReleaseMetaBuilder) WithModuleName(moduleName string) ModuleReleas
 }
 
 func (m ModuleReleaseMetaBuilder) WithNamespace(namespace string) ModuleReleaseMetaBuilder {
-	m.moduleReleaseMeta.ObjectMeta.Namespace = namespace
+	m.moduleReleaseMeta.Namespace = namespace
 	return m
 }
 

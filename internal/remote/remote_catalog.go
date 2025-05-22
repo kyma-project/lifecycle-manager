@@ -98,26 +98,6 @@ func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kym
 	return c.sync(ctx, kyma.GetNamespacedName(), moduleTemplates, moduleReleaseMetas)
 }
 
-func (c *RemoteCatalog) sync(
-	ctx context.Context,
-	kyma types.NamespacedName,
-	kcpModules []v1beta2.ModuleTemplate,
-	kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta,
-) error {
-	skrContext, err := c.skrContextFactory.Get(kyma)
-	if err != nil {
-		return fmt.Errorf("failed to get SKR context: %w", err)
-	}
-
-	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
-	moduleReleaseMetas := c.moduleReleaseMetaSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
-
-	mtErr := moduleTemplates.SyncToSKR(ctx, kcpModules)
-	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, kcpModuleReleaseMeta)
-
-	return errors.Join(mtErr, mrmErr)
-}
-
 func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 	kyma types.NamespacedName,
@@ -231,6 +211,26 @@ func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
 	}
 
 	return moduleTemplates, nil
+}
+
+func (c *RemoteCatalog) sync(
+	ctx context.Context,
+	kyma types.NamespacedName,
+	kcpModules []v1beta2.ModuleTemplate,
+	kcpModuleReleaseMeta []v1beta2.ModuleReleaseMeta,
+) error {
+	skrContext, err := c.skrContextFactory.Get(kyma)
+	if err != nil {
+		return fmt.Errorf("failed to get SKR context: %w", err)
+	}
+
+	moduleTemplates := c.moduleTemplateSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
+	moduleReleaseMetas := c.moduleReleaseMetaSyncAPIFactoryFn(c.kcpClient, skrContext.Client, &c.settings)
+
+	mtErr := moduleTemplates.SyncToSKR(ctx, kcpModules)
+	mrmErr := moduleReleaseMetas.SyncToSKR(ctx, kcpModuleReleaseMeta)
+
+	return errors.Join(mtErr, mrmErr)
 }
 
 func formatModuleName(moduleName, version string) string {

@@ -17,11 +17,11 @@ type StateCheck interface {
 	GetState(ctx context.Context, clnt client.Client, resources []*resource.Info) (shared.State, error)
 }
 
+type ExistsStateCheck struct{}
+
 func NewExistsStateCheck() *ExistsStateCheck {
 	return &ExistsStateCheck{}
 }
-
-type ExistsStateCheck struct{}
 
 func (c *ExistsStateCheck) GetState(
 	ctx context.Context,

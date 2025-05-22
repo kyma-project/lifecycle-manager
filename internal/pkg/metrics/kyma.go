@@ -109,40 +109,6 @@ func (k *KymaMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
 	})
 }
 
-func (k *KymaMetrics) setKymaStateGauge(newState shared.State, kymaName, shootID, instanceID string) {
-	states := shared.AllStates()
-	for _, state := range states {
-		newValue := calcStateValue(state, newState)
-		k.KymaStateGauge.With(prometheus.Labels{
-			KymaNameLabel:   kymaName,
-			shootIDLabel:    shootID,
-			instanceIDLabel: instanceID,
-			stateLabel:      string(state),
-		}).Set(newValue)
-	}
-}
-
-func (k *KymaMetrics) setModuleStateGauge(newState shared.State, moduleName, kymaName, shootID, instanceID string) {
-	states := shared.AllStates()
-	for _, state := range states {
-		newValue := calcStateValue(state, newState)
-		k.moduleStateGauge.With(prometheus.Labels{
-			moduleNameLabel: moduleName,
-			KymaNameLabel:   kymaName,
-			shootIDLabel:    shootID,
-			instanceIDLabel: instanceID,
-			stateLabel:      string(state),
-		}).Set(newValue)
-	}
-}
-
-func calcStateValue(state, newState shared.State) float64 {
-	if state == newState {
-		return 1
-	}
-	return 0
-}
-
 func (k *KymaMetrics) RecordRequeueReason(kymaRequeueReason KymaRequeueReason, requeueType queue.RequeueType) {
 	k.requeueReasonCounter.WithLabelValues(string(kymaRequeueReason), string(requeueType)).Inc()
 }
@@ -194,6 +160,40 @@ func FetchLifecycleManagerMetrics() ([]*prometheusclient.Metric, error) {
 	}
 
 	return nil, nil
+}
+
+func (k *KymaMetrics) setKymaStateGauge(newState shared.State, kymaName, shootID, instanceID string) {
+	states := shared.AllStates()
+	for _, state := range states {
+		newValue := calcStateValue(state, newState)
+		k.KymaStateGauge.With(prometheus.Labels{
+			KymaNameLabel:   kymaName,
+			shootIDLabel:    shootID,
+			instanceIDLabel: instanceID,
+			stateLabel:      string(state),
+		}).Set(newValue)
+	}
+}
+
+func (k *KymaMetrics) setModuleStateGauge(newState shared.State, moduleName, kymaName, shootID, instanceID string) {
+	states := shared.AllStates()
+	for _, state := range states {
+		newValue := calcStateValue(state, newState)
+		k.moduleStateGauge.With(prometheus.Labels{
+			moduleNameLabel: moduleName,
+			KymaNameLabel:   kymaName,
+			shootIDLabel:    shootID,
+			instanceIDLabel: instanceID,
+			stateLabel:      string(state),
+		}).Set(newValue)
+	}
+}
+
+func calcStateValue(state, newState shared.State) float64 {
+	if state == newState {
+		return 1
+	}
+	return 0
 }
 
 func getKymaNameFromLabels(metric *prometheusclient.Metric) string {

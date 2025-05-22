@@ -56,7 +56,7 @@ func (s *SkrContext) RemoveFinalizersFromKyma(ctx context.Context) error {
 		controllerutil.RemoveFinalizer(remoteKyma, finalizer)
 	}
 
-	err = s.Client.Update(ctx, remoteKyma)
+	err = s.Update(ctx, remoteKyma)
 	if err != nil {
 		return fmt.Errorf("failed to update remote kyma when removing finalizers: %w", err)
 	}
@@ -68,7 +68,7 @@ func (s *SkrContext) DeleteKyma(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = s.Client.Delete(ctx, remoteKyma)
+	err = s.Delete(ctx, remoteKyma)
 	if err != nil {
 		return fmt.Errorf("failed to delete remote kyma: %w", err)
 	}
@@ -97,39 +97,8 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
 	patchOpts := &client.PatchOptions{Force: &force, FieldManager: fieldManager}
-	if err := s.Client.Patch(ctx, namespace, patch, patchOpts); err != nil {
+	if err := s.Patch(ctx, namespace, patch, patchOpts); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
-	}
-
-	return nil
-}
-
-func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Client, plural string) error {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
-	var err error
-	err = kcpClient.Get(ctx, client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crd,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
-	}
-
-	err = s.Client.Get(
-		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crdFromRuntime,
-	)
-
-	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
-		return PatchCRD(ctx, s.Client, crd)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to get kyma CRDs on remote: %w", err)
 	}
 
 	return nil
@@ -151,7 +120,7 @@ func (s *SkrContext) CreateOrFetchKyma(
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
 		}
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
-		err = s.Client.Create(ctx, remoteKyma)
+		err = s.Create(ctx, remoteKyma)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create remote kyma: %w", err)
 		}
@@ -186,7 +155,7 @@ func (s *SkrContext) SynchronizeKymaMetadata(ctx context.Context, kcpKyma, skrKy
 	metadataToSync.SetAnnotations(skrKyma.GetAnnotations())
 
 	forceOwnership := true
-	err := s.Client.Patch(ctx,
+	err := s.Patch(ctx,
 		metadataToSync,
 		client.Apply,
 		&client.PatchOptions{FieldManager: fieldManager, Force: &forceOwnership})
@@ -222,6 +191,37 @@ func ReplaceSpec(controlPlaneKyma *v1beta2.Kyma, remoteKyma *v1beta2.Kyma) {
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
 }
 
+func (s *SkrContext) createOrUpdateCRD(ctx context.Context, kcpClient client.Client, plural string) error {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
+	var err error
+	err = kcpClient.Get(ctx, client.ObjectKey{
+		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+		// name changes, this also has to be adjusted here. We can think of making this configurable later
+		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+	}, crd,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
+	}
+
+	err = s.Get(
+		ctx, client.ObjectKey{
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+		}, crdFromRuntime,
+	)
+
+	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
+		return PatchCRD(ctx, s.Client, crd)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get kyma CRDs on remote: %w", err)
+	}
+
+	return nil
+}
+
 func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 	skrKyma := &v1beta2.Kyma{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -230,7 +230,7 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 		},
 	}
 
-	if err := s.Client.Get(ctx, client.ObjectKeyFromObject(skrKyma), skrKyma); err != nil {
+	if err := s.Get(ctx, client.ObjectKeyFromObject(skrKyma), skrKyma); err != nil {
 		return skrKyma, fmt.Errorf("failed to get remote kyma: %w", err)
 	}
 

@@ -64,7 +64,7 @@ type Reconciler struct {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := logf.FromContext(ctx).WithName(req.NamespacedName.String())
+	logger := logf.FromContext(ctx).WithName(req.String())
 	logger.V(log.DebugLevel).Info("Reconciliation loop starting")
 
 	watcher := &v1beta2.Watcher{}
@@ -94,7 +94,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 }
 
 func (r *Reconciler) updateFinalizer(ctx context.Context, watcher *v1beta2.Watcher) error {
-	err := r.Client.Update(ctx, watcher)
+	err := r.Update(ctx, watcher)
 	if err != nil {
 		r.Event.Warning(watcher, updateFinalizerFailure, err)
 		return fmt.Errorf("failed to update finalizer: %w", err)
@@ -172,11 +172,17 @@ func (r *Reconciler) updateWatcherState(ctx context.Context, watcher *v1beta2.Wa
 	err error,
 ) (ctrl.Result, error) {
 	watcher.Status.State = state
-	if state == shared.StateReady {
+	switch state {
+	case shared.StateReady:
 		watcher.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
-	} else if state == shared.StateError {
+	case shared.StateError:
 		watcher.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
+	case shared.StateWarning:
+	case shared.StateProcessing:
+	case shared.StateDeleting:
+	case shared.StateUnmanaged:
 	}
+
 	if err != nil {
 		r.Event.Warning(watcher, watcherStatusUpdateFailure, err)
 	}

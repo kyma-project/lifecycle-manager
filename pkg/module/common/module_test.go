@@ -18,7 +18,7 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsEmptyKyma
 	module.ApplyDefaultMetaToManifest(kyma)
 
 	resultLabels := module.Manifest.GetLabels()
-	assert.Equal(t, "", resultLabels["operator.kyma-project.io/kyma-name"])
+	assert.Empty(t, resultLabels["operator.kyma-project.io/kyma-name"])
 }
 
 func TestApplyDefaultMetaToManifest_WhenCalledWithEmptyKymaName_ReturnsKymaLabelSet(t *testing.T) {

@@ -75,6 +75,26 @@ func (v *RequestVerifier) Verify(request *http.Request, watcherEvtObject *types.
 	return errNotVerified
 }
 
+// VerifySAN checks if given domain exists in the SAN information of the given certificate.
+func (v *RequestVerifier) VerifySAN(certificate *x509.Certificate, kymaDomain string) (bool, error) {
+	uris := certificate.URIs
+	dnsNames := certificate.DNSNames
+	IPAddresses := certificate.IPAddresses
+
+	if (len(uris) + len(dnsNames) + len(IPAddresses)) > limitSANValues {
+		return false, errTooManySANValues
+	}
+
+	if contains(uris, kymaDomain) ||
+		contains(dnsNames, kymaDomain) ||
+		contains(IPAddresses, kymaDomain) {
+		v.Log.V(log.DebugLevel).Info("Received request verified")
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // getCertificateFromHeader extracts the XFCC header and pareses it into a valid x509 certificate.
 func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certificate, error) {
 	// Fetch XFCC-Header data
@@ -130,26 +150,6 @@ func (v *RequestVerifier) getDomain(request *http.Request, watcherEvtObject *typ
 	return domain, nil
 }
 
-// VerifySAN checks if given domain exists in the SAN information of the given certificate.
-func (v *RequestVerifier) VerifySAN(certificate *x509.Certificate, kymaDomain string) (bool, error) {
-	uris := certificate.URIs
-	dnsNames := certificate.DNSNames
-	IPAddresses := certificate.IPAddresses
-
-	if (len(uris) + len(dnsNames) + len(IPAddresses)) > limitSANValues {
-		return false, errTooManySANValues
-	}
-
-	if contains(uris, kymaDomain) ||
-		contains(dnsNames, kymaDomain) ||
-		contains(IPAddresses, kymaDomain) {
-		v.Log.V(log.DebugLevel).Info("Received request verified")
-		return true, nil
-	}
-
-	return false, nil
-}
-
 // contains checks if given string is present in slice.
 func contains[E net.IP | *url.URL | string](arr []E, s string) bool {
 	for i := range arr {
@@ -170,8 +170,7 @@ func (e AnnotationMissingError) Error() string {
 	return fmt.Sprintf("KymaCR '%s' does not have annotation `%s`", e.KymaCR, e.Annotation)
 }
 
-// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists.
-// Otherwise an empty string is returned.
+// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists. Otherwise an empty string is returned.
 func getCertTokenFromXFCCHeader(hVal string) string {
 	certStartIdx := strings.Index(hVal, certificateKey)
 	if certStartIdx >= 0 {

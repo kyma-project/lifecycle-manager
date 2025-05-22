@@ -29,7 +29,7 @@ func DefaultOptions() *Options {
 		),
 		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
-		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
+		WithManifestParser(NewInMemoryManifestCache(DefaultInMemoryParseTTL)),
 		WithCustomResourceLabels{
 			shared.ManagedBy: shared.ManagedByLabelValue,
 		},
