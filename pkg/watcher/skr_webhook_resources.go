@@ -185,7 +185,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 
 	for i := range len(serverContainer.Env) {
 		if serverContainer.Env[i].Name == kcpAddressEnvName {
-			serverContainer.Env[i].Value = net.JoinHostPort(string(cfg.kcpAddress.Hostname), strconv.Itoa(cfg.kcpAddress.Port))
+			serverContainer.Env[i].Value = net.JoinHostPort(cfg.kcpAddress.Hostname, strconv.Itoa(cfg.kcpAddress.Port))
 		}
 	}
 
