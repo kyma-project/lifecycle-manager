@@ -162,8 +162,8 @@ func getAllowedManagers() []string {
 }
 
 func getFrequencyLimiterTTL() int {
-	var res int = frequencyLimiterTTLDefault
-
+	var res = frequencyLimiterTTLDefault
+	
 	if configured := os.Getenv(frequencyLimiterTTLEnvVar); configured != "" {
 		rxp := regexp.MustCompile(frequencyLimiterTTLRegexp)
 		if rxp.MatchString(configured) {

@@ -294,7 +294,7 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta
 		if ok {
 			logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
 				clientsCacheKey))
-			r.ClientCache.DeleteClient(clientsCacheKey)
+			r.DeleteClient(clientsCacheKey)
 		}
 	}
 }
@@ -382,7 +382,7 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 		}
 	}
 
-	targetResources, err := r.ManifestParser.Parse(spec)
+	targetResources, err := r.Parse(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +417,7 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1bet
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
-		r.ManifestParser.EvictCache(spec)
+		r.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 

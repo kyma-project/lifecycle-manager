@@ -478,7 +478,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Equal(t, len(got), len(testCase.want))
+			assert.Len(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
@@ -785,7 +785,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Equal(t, len(got), len(testCase.want))
+			assert.Len(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
@@ -853,7 +853,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Equal(t, len(got), len(testCase.want))
+			assert.Len(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
@@ -996,14 +996,14 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
 				}))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Equal(t, len(got), len(testCase.want))
+			assert.Len(t, len(got), len(testCase.want))
 			for key, module := range got {
 				wantModule, ok := testCase.want[key]
 				assert.True(t, ok)
 				assert.Equal(t, wantModule.DesiredChannel, module.DesiredChannel)
 				require.ErrorIs(t, module.Err, wantModule.Err)
 				if !testCase.mrmExist {
-					assert.Equal(t, wantModule.ModuleTemplate.Spec.Channel, module.ModuleTemplate.Spec.Channel)
+					assert.Equal(t, wantModule.Spec.Channel, module.Spec.Channel)
 				}
 			}
 		})
@@ -1131,7 +1131,7 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 					assert.Contains(t, module.Err.Error(), testCase.wantErrContains)
 				} else {
 					assert.Equal(t, testCase.wantChannel, module.DesiredChannel)
-					assert.Equal(t, testCase.wantVersion, module.ModuleTemplate.Spec.Version)
+					assert.Equal(t, testCase.wantVersion, module.Spec.Version)
 				}
 			}
 		})

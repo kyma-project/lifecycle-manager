@@ -1,0 +1,226 @@
+linters:
+  enable-all: true
+  disable:
+    - contextcheck # too many false positives
+    - depguard # checks if package imports are whitelisted
+    - exhaustruct # too subjective and harms code readability
+    - lll
+    - nlreturn # too strict and mostly code is not more readable
+    - sqlclosecheck # not needed for this project
+    - tenv # deprecated, feature already covered by another linter
+    - paralleltest # should be enabled consciously for long running tests
+    - recvcheck # too many changes required, created an issue to enable this explicitly
+    - wsl # too strict and mostly code is not more readable
+linters-settings:
+  gomoddirectives:
+    replace-local: true
+    replace-allow-list:
+      - github.com/kyma-project/lifecycle-manager/api
+  stylecheck:
+    dot-import-whitelist:
+      - github.com/onsi/ginkgo/v2
+      - github.com/onsi/gomega
+  revive:
+    severity: error
+    rules:
+      - name: comment-spacings
+        disabled: true
+      - name: dot-imports
+        severity: warning
+        disabled: true
+      - name: line-length-limit
+        severity: warning
+        disabled: true
+        arguments: [ 120 ]
+  funlen:
+    lines: 80
+  cyclop:
+    max-complexity: 20
+  nestif:
+    min-complexity: 6
+  gci:
+    sections:
+      - standard                                             # Standard packages.
+      - default                                              # Imports that could not be matched to another section type.
+      - prefix(github.com/kyma-project/lifecycle-manager)    # Imports with the specified prefix.
+      - blank                                                # Blank imports.
+      - dot                                                  # Dot imports.
+    custom-order: true
+    skip-generated: true
+  nolintlint:
+    require-explanation: true
+  importas:
+    no-unaliased: true
+    no-extra-aliases: true
+    alias:
+      - pkg: github.com/kyma-project/template-operator/api/v1alpha1
+        alias: templatev1alpha1
+      - pkg: github.com/gardener/cert-management/pkg/apis/cert/v1alpha1
+        alias: gcertv1alpha1
+      - pkg: github.com/gardener/cert-management/pkg/client/cert/clientset/versioned/typed/cert/v1alpha1
+        alias: gcertclientv1alpha1
+      - pkg: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
+        alias: certmanagerv1
+      - pkg: github.com/cert-manager/cert-manager/pkg/apis/meta/v1
+        alias: certmanagermetav1
+      - pkg: github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1
+        alias: certmanagerclientv1
+      - pkg: github.com/google/go-containerregistry/pkg/v1
+        alias: containerregistryv1
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics
+        alias: commonmetrics
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2
+        alias: declarativev2
+      - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/declarative
+        alias: declarativetest
+      - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest
+        alias: manifesttest
+      - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/event
+        alias: watcherevent
+      - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/metrics
+        alias: watchermetrics
+      - pkg: ocm.software/ocm/api/ocm/compdesc/meta/v1
+        alias: ocmmetav1
+      - pkg: ocm.software/ocm/api/ocm/compdesc/versions/v2
+        alias: compdescv2
+      - pkg: istio.io/api/networking/v1beta1
+        alias: istioapiv1beta1
+      - pkg: istio.io/client-go/pkg/apis/networking/v1beta1
+        alias: istioclientapiv1beta1
+      - pkg: istio.io/client-go/pkg/clientset/versioned
+        alias: istioclient
+      - pkg: istio.io/client-go/pkg/clientset/versioned/scheme
+        alias: istioscheme
+      - pkg: k8s.io/api/admission/v1
+        alias: apiadmissionv1
+      - pkg: k8s.io/api/admissionregistration/v1
+        alias: admissionregistrationv1
+      - pkg: k8s.io/api/apps/v1
+        alias: apiappsv1
+      - pkg: k8s.io/api/core/v1
+        alias: apicorev1
+      - pkg: k8s.io/api/rbac/v1
+        alias: apirbacv1
+      - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
+        alias: apiextensionsv1
+      - pkg: k8s.io/apimachinery/pkg/api/errors
+        alias: apierrors
+      - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+        alias: apimetav1
+      - pkg: k8s.io/apimachinery/pkg/labels
+        alias: k8slabels
+      - pkg: k8s.io/apimachinery/pkg/runtime
+        alias: machineryruntime
+      - pkg: k8s.io/apimachinery/pkg/util/runtime
+        alias: machineryutilruntime
+      - pkg: k8s.io/apimachinery/pkg/util/yaml
+        alias: machineryaml
+      - pkg: k8s.io/client-go/kubernetes/scheme
+        alias: k8sclientscheme
+      - pkg: k8s.io/client-go/kubernetes/typed/core/v1
+        alias: k8scorev1
+      - pkg: sigs.k8s.io/controller-runtime
+        alias: ctrl
+      - pkg: sigs.k8s.io/controller-runtime/pkg/controller
+        alias: ctrlruntime
+      - pkg: sigs.k8s.io/controller-runtime/pkg/log
+        alias: logf
+      - pkg: sigs.k8s.io/controller-runtime/pkg/metrics
+        alias: ctrlmetrics
+      - pkg: sigs.k8s.io/controller-runtime/pkg/metrics/server
+        alias: metricsserver
+      - pkg: github.com/prometheus/client_model/go
+        alias: prometheusclient
+      - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl
+        alias: testskrcontext
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/watcher
+        alias: watcherctrl
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client
+        alias: gatewaysecretclient
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/handler
+        alias: gatewaysecrethandler
+      - pkg: github.com/kyma-project/lifecycle-manager/pkg/module/common
+        alias: modulecommon
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/kyma
+        alias: kymarepository
+  ireturn:
+    allow:
+      - anon
+      - error
+      - empty
+      - stdlib
+      - Client
+      - record.EventRecorder
+      - client.Object
+      - schema.ObjectKind #api/v1beta2/moduletemplate_types.go
+      - runtime.Object #api/v1beta2/moduletemplate_types.go
+      - meta.RESTMapper #internal/declarative/v2/client_proxy.go, internal/declarative/v2/rest_getter_proxy.go
+      - client.SubResourceWriter #internal/declarative/v2/client_proxy.go
+      - openapi.Resources #internal/declarative/v2/kube_factory_proxy.go
+      - validation.Schema #internal/declarative/v2/kube_factory_proxy.go
+      - discovery.CachedDiscoveryInterface #internal/declarative/v2/rest_getter_proxy.go
+      - machineryruntime.Object #internal/declarative/v2/ssa.go
+      - v1.Layer #internal/manifest/parse.go, tests/integration/controller/manifest/manifest.go
+      - authn.Keychain #internal/manifest/spec_resolver.go, pkg/ocmextensions/cred.go
+      - ratelimiter.RateLimiter #internal/rate_limiter.go
+  wrapcheck:
+    ignorePackageGlobs:
+      - github.com/kyma-project/lifecycle-manager/pkg/*
+      - github.com/kyma-project/lifecycle-manager/internal/*
+  varnamelen:
+    ignore-names:
+      - ok # Ignore "ok" variables as return values of functions
+    # Ignore "ok" variables that hold the bool return value of a type assertion. (defaults to false)
+    ignore-type-assert-ok: true
+    # Ignore "ok" variables that hold the bool return value of a map index. (defaults to false)
+    ignore-map-index-ok: true
+    # Ignore "ok" variables that hold the bool return value of a channel receive. (defaults to false)
+    ignore-chan-recv-ok: true
+  exhaustruct:
+    exclude:
+      - gdfs
+issues:
+  exclude-files:
+    - zz_generated.deepcopy.go
+  exclude-rules:
+    - path: "_test\\.go"
+      linters:
+        - wrapcheck # Errors do not need to be wrapped in unit and integration tests
+        - err113 # Dynamic error creation in unit and integration tests is ok
+        - gochecknoglobals # Does not apply to unit and integration tests
+        - funlen # Table driven unit and integration tests exceed function length by design
+        - maintidx # Table driven unit and integration tests exceed maintainability index by design
+        - nilnil # Test mocks will use nilnil return values purposely
+        - fatcontext # Tests will use fatcontext for convenience
+        - goconst # Tests will use repetetive values all the time
+    - path: "pkg/testutils/"
+      linters:
+        - wrapcheck # Errors do not need to be wrapped in unit and integration test utils
+        - err113 # Dynamic error creation in unit and integration test utils is ok
+    - path: "tests/e2e/commontestutils/"
+      linters:
+        - wrapcheck # Errors do not need to be wrapped in e2e test utils
+        - err113 # Dynamic error creation in e2e test utils is ok
+    - path: "tests/integration/commontestutils/"
+      linters:
+        - wrapcheck # Errors do not need to be wrapped in integration test utils
+        - err113 # Dynamic error creation in integration test utils is ok
+    - path: tests/e2e/
+      linters: [ gci ] # Disable gci due to the test utilities dot import.
+    - path: tests/integration/
+      linters: [ gci ] # Disable gci due to the test utilities dot import.
+    - linters:
+        - importas
+      text: has alias "" which is not part of config # Ignore false positives that emerged due to https://github.com/julz/importas/issues/15.
+    - linters:
+        - lll
+      source: "^// +kubebuilder: " # Exclude lll issues for long lines starting with kubebuilder marker prefix
+    - linters:
+        - lll # Exclude lll issues for long lines starting with an url
+      source: "^// http "
+  max-issues-per-linter: 0
+  max-same-issues: 0
+output:
+  sort-results: true
+run:
+  timeout: 15m

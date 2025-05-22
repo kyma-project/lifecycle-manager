@@ -540,11 +540,11 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 }
 
 func updateComponentVersion(descriptor *types.Descriptor) {
-	descriptor.ComponentSpec.Version = updatedModuleTemplateVersion
+	descriptor.Version = updatedModuleTemplateVersion
 }
 
 func updateComponentResources(descriptor *types.Descriptor) {
-	resources := descriptor.ComponentSpec.Resources
+	resources := descriptor.Resources
 	for i := range resources {
 		res := &resources[i]
 		res.Version = updatedModuleTemplateVersion
@@ -561,7 +561,7 @@ func updateComponentResources(descriptor *types.Descriptor) {
 }
 
 func updateComponentSources(descriptor *types.Descriptor) {
-	sources := descriptor.ComponentSpec.Sources
+	sources := descriptor.Sources
 	for i := range sources {
 		src := &sources[i]
 		src.Version = updatedModuleTemplateVersion
@@ -595,7 +595,7 @@ func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate
 		return fmt.Errorf("Invalid descriptor version: %s, expected: %s", descriptor.Version, expectedVersion)
 	}
 
-	for _, res := range descriptor.ComponentSpec.Resources {
+	for _, res := range descriptor.Resources {
 		if res.Version != expectedVersion {
 			return fmt.Errorf("Invalid resource version: %s, expected: %s", res.Version, expectedVersion)
 		}
@@ -615,7 +615,7 @@ func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate
 		}
 	}
 
-	for _, source := range descriptor.ComponentSpec.Sources {
+	for _, source := range descriptor.Sources {
 		if source.Version != updatedModuleTemplateVersion {
 			return fmt.Errorf("Invalid source version: %s, expected: %s", source.Version, updatedModuleTemplateVersion)
 		}

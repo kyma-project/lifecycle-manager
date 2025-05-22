@@ -57,7 +57,7 @@ func (m *ManifestClient) SsaSpec(ctx context.Context, obj client.Object) error {
 }
 
 func HasStatusDiff(first, second shared.Status) bool {
-	return first.State != second.State || first.LastOperation.Operation != second.LastOperation.Operation
+	return first.State != second.State || first.Operation != second.Operation
 }
 
 func resetNonPatchableField(obj client.Object) {

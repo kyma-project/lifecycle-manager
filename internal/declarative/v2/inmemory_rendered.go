@@ -28,7 +28,7 @@ func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
 
 func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
 	key := generateCacheKey(spec)
-	c.Cache.Delete(key)
+	c.Delete(key)
 }
 
 type InMemoryManifestCache struct {
@@ -41,7 +41,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 	key := generateCacheKey(spec)
 
 	var err error
-	item := c.Cache.Get(key)
+	item := c.Get(key)
 	var resources internal.ManifestResources
 	if item != nil {
 		resources = item.Value()
@@ -50,7 +50,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 		if err != nil {
 			return internal.ManifestResources{}, fmt.Errorf("failed to parse manifest objects: %w", err)
 		}
-		c.Cache.Set(key, resources, c.TTL)
+		c.Set(key, resources, c.TTL)
 	}
 	copied := &internal.ManifestResources{
 		Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),

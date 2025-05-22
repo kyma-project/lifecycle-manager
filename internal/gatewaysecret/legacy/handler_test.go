@@ -62,8 +62,8 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGat
 	expectedName := "klm-istio-gateway"
 	mockClient.AssertCalled(t, "CreateGatewaySecret", mock.Anything, mock.MatchedBy(
 		func(secret *apicorev1.Secret) bool {
-			return secret.ObjectMeta.Name == expectedName &&
-				secret.ObjectMeta.Namespace == expectedNamespace &&
+			return secret.Name == expectedName &&
+				secret.Namespace == expectedNamespace &&
 				string(secret.Data["tls.crt"]) == string(rootSecret.Data["tls.crt"]) &&
 				string(secret.Data["tls.key"]) == string(rootSecret.Data["tls.key"]) &&
 				string(secret.Data["ca.crt"]) == string(rootSecret.Data["ca.crt"])

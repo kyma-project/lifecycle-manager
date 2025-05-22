@@ -101,8 +101,8 @@ func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandato
 
 	require.NoError(t, err)
 	require.Len(t, mts, 3)
-	assert.Equal(t, "regular-module-1.0.0", mts[0].ObjectMeta.Name)
-	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
+	assert.Equal(t, "regular-module-1.0.0", mts[0].Name)
+	assert.Equal(t, "regular-module-2.0.0", mts[1].Name)
 }
 
 func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
@@ -117,8 +117,8 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 	})
 
 	require.Len(t, mts, 3)
-	assert.Equal(t, "regular-module-1.0.0", mts[0].ObjectMeta.Name)
-	assert.Equal(t, "regular-module-2.0.0", mts[1].ObjectMeta.Name)
+	assert.Equal(t, "regular-module-1.0.0", mts[0].Name)
+	assert.Equal(t, "regular-module-2.0.0", mts[1].Name)
 }
 
 func Test_GetOldModuleTemplatesToSync_ReturnsError_ForErrorClient(t *testing.T) {
@@ -138,7 +138,7 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNo
 
 	require.NoError(t, err)
 	require.Len(t, mts, 2)
-	assert.Equal(t, "old-module-regular", mts[0].ObjectMeta.Name)
+	assert.Equal(t, "old-module-regular", mts[0].Name)
 }
 
 func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForBetaNonInternalKyma(t *testing.T) {
@@ -149,8 +149,8 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMa
 
 	require.NoError(t, err)
 	require.Len(t, mts, 3)
-	assert.Equal(t, "old-beta-module-regular", mts[0].ObjectMeta.Name)
-	assert.Equal(t, "old-module-regular", mts[1].ObjectMeta.Name)
+	assert.Equal(t, "old-beta-module-regular", mts[0].Name)
+	assert.Equal(t, "old-module-regular", mts[1].Name)
 }
 
 func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaInternalKyma(t *testing.T) {
@@ -161,8 +161,8 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMa
 
 	require.NoError(t, err)
 	require.Len(t, mts, 3)
-	assert.Equal(t, "old-internal-module-fast", mts[0].ObjectMeta.Name)
-	assert.Equal(t, "old-module-regular", mts[1].ObjectMeta.Name)
+	assert.Equal(t, "old-internal-module-fast", mts[0].Name)
+	assert.Equal(t, "old-module-regular", mts[1].Name)
 }
 
 func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonMandatoryMTs_ForBetaInternalKyma(t *testing.T) {
@@ -173,10 +173,10 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonManda
 
 	require.NoError(t, err)
 	require.Len(t, mts, 5)
-	assert.Equal(t, "old-beta-module-regular", mts[0].ObjectMeta.Name)
-	assert.Equal(t, "old-internal-beta-module-fast", mts[1].ObjectMeta.Name)
-	assert.Equal(t, "old-internal-module-fast", mts[2].ObjectMeta.Name)
-	assert.Equal(t, "old-module-regular", mts[3].ObjectMeta.Name)
+	assert.Equal(t, "old-beta-module-regular", mts[0].Name)
+	assert.Equal(t, "old-internal-beta-module-fast", mts[1].Name)
+	assert.Equal(t, "old-internal-module-fast", mts[2].Name)
+	assert.Equal(t, "old-module-regular", mts[3].Name)
 }
 
 func Test_IsAllowedModuleReleaseMeta_ReturnsTrue_ForNonBetaNonInternalMRMAndNonBetaNonInternalKyma(t *testing.T) {
@@ -542,7 +542,7 @@ func (b *moduleTemplateBuilder) build() *v1beta2.ModuleTemplate {
 }
 
 func (b *moduleTemplateBuilder) withName(name string) *moduleTemplateBuilder {
-	b.moduleTemplate.ObjectMeta.Name = name
+	b.moduleTemplate.Name = name
 	return b
 }
 
@@ -563,17 +563,17 @@ func (b *moduleTemplateBuilder) withChannel(channel string) *moduleTemplateBuild
 
 func (b *moduleTemplateBuilder) withMandatoryEnabled() *moduleTemplateBuilder {
 	b.moduleTemplate.Spec.Mandatory = true
-	b.moduleTemplate.ObjectMeta.Labels[shared.IsMandatoryModule] = shared.EnableLabelValue
+	b.moduleTemplate.Labels[shared.IsMandatoryModule] = shared.EnableLabelValue
 	return b
 }
 
 func (b *moduleTemplateBuilder) withBetaEnabled() *moduleTemplateBuilder {
-	b.moduleTemplate.ObjectMeta.Labels[shared.BetaLabel] = shared.EnableLabelValue
+	b.moduleTemplate.Labels[shared.BetaLabel] = shared.EnableLabelValue
 	return b
 }
 
 func (b *moduleTemplateBuilder) withInternalEnabled() *moduleTemplateBuilder {
-	b.moduleTemplate.ObjectMeta.Labels[shared.InternalLabel] = shared.EnableLabelValue
+	b.moduleTemplate.Labels[shared.InternalLabel] = shared.EnableLabelValue
 	return b
 }
 

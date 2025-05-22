@@ -146,11 +146,11 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 
 	require.Contains(t, result, "warden")
 	require.Contains(t, result, "mandatory")
-	require.Equal(t, result["warden"].ModuleTemplate.Name, firstModuleTemplate.Name)
-	require.Equal(t, result["warden"].ModuleTemplate.Spec.Version, firstModuleTemplate.Spec.Version)
+	require.Equal(t, result["warden"].Name, firstModuleTemplate.Name)
+	require.Equal(t, result["warden"].Spec.Version, firstModuleTemplate.Spec.Version)
 	require.NoError(t, result["warden"].Err)
-	require.Equal(t, result["mandatory"].ModuleTemplate.Name, thirdModuleTemplate.Name)
-	require.Equal(t, result["mandatory"].ModuleTemplate.Spec.Version, thirdModuleTemplate.Spec.Version)
+	require.Equal(t, result["mandatory"].Name, thirdModuleTemplate.Name)
+	require.Equal(t, result["mandatory"].Spec.Version, thirdModuleTemplate.Spec.Version)
 	require.NoError(t, result["mandatory"].Err)
 	require.NotContains(t, result, "template-operator")
 }
@@ -201,11 +201,11 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 
 	require.Contains(t, result, "warden")
 	require.Contains(t, result, "mandatory")
-	require.Equal(t, result["warden"].ModuleTemplate.Name, fourthModuleTemplate.Name)
-	require.Equal(t, result["warden"].ModuleTemplate.Spec.Version, fourthModuleTemplate.Spec.Version)
+	require.Equal(t, result["warden"].Name, fourthModuleTemplate.Name)
+	require.Equal(t, result["warden"].Spec.Version, fourthModuleTemplate.Spec.Version)
 	require.NoError(t, result["warden"].Err)
-	require.Equal(t, result["mandatory"].ModuleTemplate.Name, thirdModuleTemplate.Name)
-	require.Equal(t, result["mandatory"].ModuleTemplate.Spec.Version, thirdModuleTemplate.Spec.Version)
+	require.Equal(t, result["mandatory"].Name, thirdModuleTemplate.Name)
+	require.Equal(t, result["mandatory"].Spec.Version, thirdModuleTemplate.Spec.Version)
 	require.NoError(t, result["mandatory"].Err)
 	require.NotContains(t, result, "template-operator")
 }

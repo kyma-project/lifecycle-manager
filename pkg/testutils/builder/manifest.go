@@ -33,13 +33,13 @@ func NewManifestBuilder() ManifestBuilder {
 
 // WithName sets v1beta2.Manifest.ObjectMeta.Name.
 func (mb ManifestBuilder) WithName(name string) ManifestBuilder {
-	mb.manifest.ObjectMeta.Name = name
+	mb.manifest.Name = name
 	return mb
 }
 
 // WithNamespace sets v1beta2.Manifest.ObjectMeta.Namespace.
 func (mb ManifestBuilder) WithNamespace(namespace string) ManifestBuilder {
-	mb.manifest.ObjectMeta.Namespace = namespace
+	mb.manifest.Namespace = namespace
 	return mb
 }
 
@@ -54,7 +54,7 @@ func (mb ManifestBuilder) WithAnnotation(key string, value string) ManifestBuild
 
 // WithGeneration sets v1beta2.Manifest.ObjectMeta.Generation.
 func (mb ManifestBuilder) WithGeneration(generation int) ManifestBuilder {
-	mb.manifest.ObjectMeta.Generation = int64(generation)
+	mb.manifest.Generation = int64(generation)
 	return mb
 }
 

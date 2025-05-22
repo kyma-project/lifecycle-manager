@@ -104,7 +104,7 @@ func moduleTemplatesDiffFor(first []v1beta2.ModuleTemplate) *collections.DiffCal
 }
 
 func isModuleTemplateManagedByKcp(skrTemplate *v1beta2.ModuleTemplate) bool {
-	for _, managedFieldEntry := range skrTemplate.ObjectMeta.ManagedFields {
+	for _, managedFieldEntry := range skrTemplate.ManagedFields {
 		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
 			return true
 		}

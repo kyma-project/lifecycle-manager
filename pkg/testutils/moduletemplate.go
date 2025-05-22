@@ -123,7 +123,7 @@ func MandatoryModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Cl
 
 	var moduleTemplate *v1beta2.ModuleTemplate
 	for _, moduleTemplateInfo := range mandatoryModuleTemplates {
-		if moduleTemplateInfo.ModuleTemplate.Labels[shared.ModuleName] == moduleName {
+		if moduleTemplateInfo.Labels[shared.ModuleName] == moduleName {
 			moduleTemplate = moduleTemplateInfo.ModuleTemplate
 			break
 		}

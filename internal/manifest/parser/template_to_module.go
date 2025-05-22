@@ -56,7 +56,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	modules := make(modulecommon.Modules, 0)
 
 	for _, template := range templates {
-		moduleName, ok := template.ObjectMeta.Labels[shared.ModuleName]
+		moduleName, ok := template.Labels[shared.ModuleName]
 		if !ok {
 			logf.FromContext(ctx).V(log.InfoLevel).Info("ModuleTemplate does not contain Module Name as label, "+
 				"will fallback to use ModuleTemplate name as Module name",
@@ -130,16 +130,16 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 }
 
 func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateInfo, name, namespace string) {
-	if template.ModuleTemplate.Spec.Data == nil {
+	if template.Spec.Data == nil {
 		return
 	}
 	// if the default data does not contain a name, default it to the module name
-	if template.ModuleTemplate.Spec.Data.GetName() == "" {
-		template.ModuleTemplate.Spec.Data.SetName(name)
+	if template.Spec.Data.GetName() == "" {
+		template.Spec.Data.SetName(name)
 	}
 	// if the default data does not contain a namespace, default it to the provided namespace
-	if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
-		template.ModuleTemplate.Spec.Data.SetNamespace(namespace)
+	if template.Spec.Data.GetNamespace() == "" {
+		template.Spec.Data.SetNamespace(namespace)
 	}
 }
 
