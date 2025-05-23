@@ -70,14 +70,16 @@ type Module struct {
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
 	// together with Cache Configuration on the Operator responsible for the templated Modules to split
 	// workload.
-	ControllerName string `json:"controller,omitempty"`
+	// +optional
+	ControllerName string `json:"controller"`
 
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
-	Channel string `json:"channel,omitempty"`
+	// +optional
+	Channel string `json:"channel"`
 
 	// Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on this specific version.
@@ -89,10 +91,12 @@ type Module struct {
 
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
-	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef,omitempty"`
+	// +optional
+	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef"`
 
 	// +kubebuilder:default:=CreateAndDelete
-	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+	// +optional
+	CustomResourcePolicy `json:"customResourcePolicy"`
 
 	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
 	// for the lifecycle of the module.
