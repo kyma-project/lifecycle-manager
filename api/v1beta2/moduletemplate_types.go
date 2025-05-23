@@ -81,7 +81,8 @@ type ModuleTemplateSpec struct {
 	//
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:XEmbeddedResource
-	Data *unstructured.Unstructured `json:"data,omitempty"`
+	// +optional
+	Data *unstructured.Unstructured `json:"data"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
@@ -100,29 +101,31 @@ type ModuleTemplateSpec struct {
 	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	// CustomStateCheck is deprecated.
-	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
+	// +optional
+	CustomStateCheck []*CustomStateCheck `json:"customStateCheck"`
 
 	// Resources is a list of additional resources of the module that can be fetched, e.g., the raw manifest.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
-	Resources []Resource `json:"resources,omitempty"`
+	// +optional
+	Resources []Resource `json:"resources"`
 
 	// Info contains metadata about the module.
 	// +optional
-	Info *ModuleInfo `json:"info,omitempty"`
+	Info *ModuleInfo `json:"info"`
 
 	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
 	// +optional
-	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
+	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources"`
 
 	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource.
 	// +optional
-	Manager *Manager `json:"manager,omitempty"`
+	Manager *Manager `json:"manager"`
 
 	// RequiresDowntime indicates whether the module requires downtime in support of maintenance windows during module upgrades.
 	// +optional
-	RequiresDowntime bool `json:"requiresDowntime,omitempty"`
+	RequiresDowntime bool `json:"requiresDowntime"`
 }
 
 // Manager defines the structure for the manager field in ModuleTemplateSpec.
