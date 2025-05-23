@@ -10,7 +10,7 @@ It is highly recommended that module teams familiarize themselves with the new m
 
 The target process is shown in the figure below. As an example, the `telemetry` module is used. The promotion of module versions and their assignments to channels is managed via three individual processes. In addition, there is a fourth process to delete a module version.
 
-![Target Process](./assets/module-migration.png)
+![Target Process](./assets/module-migration.svg)
 
 ### 1) Submitting a new module version
 
