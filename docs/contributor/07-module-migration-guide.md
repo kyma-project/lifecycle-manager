@@ -22,7 +22,7 @@ The migration strategy involves replicating the current state with the NEW metad
    - `/modules/telemetry/1.34.0-experimental/module-config.yaml`
    - `/modules/telemetry/1.35.0-rc1/module-config.yaml`
 
-   For more information on the necessary changes in the `module-config.yaml` file, see [Migrating from Kyma CLI to `modulectl`](https://github.com/kyma-project/modulectl/blob/main/docs/contributor/migration-guide.md).
+   For more information on the necessary changes in the `module-config.yaml` file, see [Migrating from Kyma CLI to `modulectl`](https://github.com/kyma-project/modulectl/blob/main/docs/contributor/migration-guide.md#2-module-configuration-module-configyaml-differences).
 
    Once you submit all the versions, the following ModuleTemplate custom resources (CRs) appear in the `/kyma/kyma-modules` repository:
 

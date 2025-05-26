@@ -71,7 +71,7 @@ ArgoCD picks up these changes to `/kyma/kyma-modules` and undeploys the ModuleTe
 For more details, see the [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
 
 > [!Note]
-> In the deleting a module version process, only the ModuleTemplate in `/kyma-kyma-modules` gets deleted and undeployed from KCP. The artifacts pushed to the OCI registry remain and cannot be overwritten.
+> In the deleting a module version process, only the ModuleTemplate in `/kyma/kyma-modules` gets deleted and undeployed from KCP. The artifacts pushed to the OCI registry remain and cannot be overwritten.
 
 ## Related Information
 
