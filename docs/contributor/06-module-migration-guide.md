@@ -1,62 +1,75 @@
 # Module Migration Guideline
 
-This guide provides detailed instructions for how to migrate a Kyma module from existing (old) module metadata, especially channel-based ModuleTemplates, to the new module metadata, i.e. version-based ModuleTemplates accompanied by ModuleReleaseMeta.
+The existing module metadata is in channel-based ModuleTemplate custom resources (CRs). The new module metadata sources are version-based ModuleTemplates accompanied by ModuleReleaseMeta CRs. This document describes the target module submission process for module development teams. migrating a Kyma module from the existing module metadata to the new module metadata.
 
-It is highly recommended that module teams familiarize themselves with the new module metadata before starting the migration:
-- The ADR backing the migration is [#984](https://github.com/kyma-project/community/issues/984)
-- An Update on Module Metadata has also been given in the 2024-11-26 Iteration Review
+> [!Tip]
+> Before you start the migration, see the custom resource definitions (CRDs) related to the new module metadata and additional information around the changes.
+> - [ModuleTemplate](../resources/03-moduletemplate.md)
+> - [ModuleReleaseMeta](../resources/05-modulereleasemeta.md)
+> - The Architecture Decision Record backing the migration: [#984](https://github.com/kyma-project/community/issues/984)
+> - The PowerPoint presentation with an update given in the 2024-11-26 Kyma Iteration Review meeting: [2024-11-26 Update On Module Metadata](https://sap-my.sharepoint.com/:p:/p/c_schwaegerl/EbvSNmRnr3JEjaLoZ__cI9UB9lu5tt0qaly-f7yQO2Gwbw?e=slfiDf) <!-- markdown-link-check-disable-line -->
 
-## Target Process
+## The Target Module Submission and Promotion Process
 
-The target process is shown in the figure below. As an example, the `telemetry` module is used. The promotion of module versions and their assignments to channels is managed via three individual processes. In addition, there is a fourth process to delete a module version.
+The following diagram shows the target module submission and promotion process using the Telemetry module. The process consists of the following stages:
+
+1. Submitting a new module version
+2. Submitting the channel mapping
+3. Promoting ModuleTemplate and ModuleReleaseMeta CRs
+4. Deleting a module version
 
 ![Target Process](./assets/module-migration.svg)
 
-### 1) Submitting a new module version
+### 1. Submitting a New Module Version
 
-First, the module developer submits a new module version via a PR to the `/kyma/module-manifests` repository. The submission must provide a `module-config.yaml` file under the path `/modules/<module-name>/<module-version>` where `<module-version>` matches the version of the module configured in `module-config.yaml`. For the detailed format of the `module-config.yaml`, see below.
+You submit a new module version by creating a pull request (PR) to the `/kyma/module-manifests` repository. In the PR, you must provide a `module-config.yaml` file under the `/modules/<module-name>/<module-version>` path where `<module-version>` matches the version of the module configured in `module-config.yaml`.
 
-Once the PR is opened, the submission pipeline verifies that the info is correct. E.g., it verifies that the provided `module-config.yaml` is valid (e.g., it verifies that the FQDN of the module doesn't change), it builds the module via `modulectl` in `--dry-run` mode, and it verifies that the version does not exist yet.
+Once the PR is opened, the submission pipeline verifies all the information. For example, the pipeline verifies if the provided `module-config.yaml` is valid (that the FQDN of the module doesn't change), it builds the module using the `modulectl` in `--dry-run` mode, and checks if the version does not exist yet.
 
-Once the PR is merged, the submission pipeline builds and publishes the module via `modulectl` and pushes the generated ModuleTemplate to the `/kyma/kyma-modules` repository. The path of the generated ModuleTemplate is `/<module-name>/moduletemplate-<module-name>-<module-version>.yaml`.
+Once the PR is merged, the submission pipeline builds and publishes the module using `modulectl` and pushes the generated ModuleTemplate to the `/kyma/kyma-modules` repository. The path of the generated ModuleTemplate is `/<module-name>/moduletemplate-<module-name>-<module-version>.yaml`.
 
-For more details, see [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
+For more information, see the [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
 
-> Note that this process only builds the necessary artifacts and puts them into their repositories, i.e. the OCI Registry and the `/kyma/kyma-modules` repository. The ModuleTemplate is NOT directly deployed into the KCP landscape.
+> [!Note]
+> The new module version submission process only builds the necessary artifacts and puts them into their respective repositories, namely, the OCI Registry and the `/kyma/kyma-modules` repository. The ModuleTemplate is NOT directly deployed into the KCP landscape.
 
-### 2) Submitting a channel mapping
+### 2. Submitting a Channel Mapping
 
-Second, the module developer submits a channel mapping via a PR to the `/kyma/module-manifests` repository. The submission must update the `module-releases.yaml` file under the path `/modules/<module-name>`. The `module-releases.yaml` is a simple mapping file to define what version each channel should map to. For the detailed format of the `module-releases.yaml`, see below.
+You submit a channel mapping by creating a PR to the `/kyma/module-manifests` repository. In the PR, you must update the `module-releases.yaml` file under the `/modules/<module-name>` path. The `module-releases.yaml` is a simple mapping file defining what version each channel should map to.
 
-Once the PR is opened, the submission pipeline verifies that the mapping is correct. E.g., it verifies that no version downgrade is performed for a channel and it verifies that the referenced module version exists.
+Once the PR is opened, the submission pipeline verifies if the mapping is correct. For example, the pipeline verifies that no version downgrade is performed for a channel and that the referenced module version exists.
 
-Once the PR is merged, the submission pipeline generates the resulting ModuleReleaseMeta and kustomization and pushes them to the `/kyma/kyma-modules` repository. The kustomization includes the required ModuleTemplates and the ModuleReleaseMeta.
+Once the PR is merged, the submission pipeline generates a ModuleReleaseMeta CR and kustomization, and pushes them to the `/kyma/kyma-modules` repository. The kustomization includes the required ModuleTemplate and the ModuleReleaseMeta CRs.
 
-For more details, see [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
+For more details, see the [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
 
-> Note that the ModuleReleaseMeta and kustomization are generated landscape specific. I.e., there is a separate ModuleReleaseMeta and kustomization per landscape. Reason behind this is that the `dev` channel is only allowed in `dev` landscape, and `experimental` channel is only allowed in `dev` and `stage` landscapes.
+> [!Note]
+>  Because, for example, the `dev` channel is only allowed in the `dev` landscape, and the `experimental` channel is allowed in the `dev` and `stage` landscapes, the ModuleReleaseMeta CR and kustomization are generated landscape-specific. It means there is a separate ModuleReleaseMeta CR and kustomization per landscape.
 
-> Note that the kustomization is extended with ModuleTemplates for the versions referenced in the `module-releases.yaml` only. ModuleTemplates for versions not referenced are NOT added. Also, versions are not automatically removed from the kustomization, even if not referenced anymore. This needs to be done manually, see step 4).
+> [!Note] 
+> The kustomization is extended only with ModuleTemplates for the versions referenced in the `module-releases.yaml`. ModuleTemplates for the not-referenced versions are NOT added. Also, versions are not automatically removed from the kustomization, even if not referenced anymore. This needs to be done manually. For more information, see step 4.
 
-> Note that this process and the previous one cannot be combined in one PR. First, the new module version must be submitted via 1), only then the channel mapping can be updated via 2).
+> [!Note]
+> The new module version and the channel mapping submission processes cannot be combined in one PR. First, the new module version must be submitted. Only then can the channel mapping be updated.
 
-### 3) Promoting ModuleTemplates and ModuleReleaseMeta
+### 3. Promoting ModuleTemplates and ModuleReleaseMeta
 
-ArgoCD detects and applies the changes from Step 2. It deploys only the `ModuleTemplates` and `ModuleReleaseMeta` relevant to each landscape.
+ArgoCD detects and applies the changes from Step 2. It deploys only the ModuleTemplates and ModuleReleaseMeta CRs relevant to each landscape.
 
-### 4) Deleting a module version
+### 4. Deleting a Module Version
 
-To delete a unused module version, a PR to the `/kyma/module-manifests` repository is opened deleting the module versions' `module-config.yaml` file under `/modules/<module-name>/<module-version>`.
+To delete an unused module version, create a PR to the `/kyma/module-manifests` repository. In the PR, delete the module version's `module-config.yaml` file under `/modules/<module-name>/<module-version>`.
 
 Once the PR is opened, the submission pipeline checks if the version is still in use by one or more channels. If so, the PR can't be merged.
 
-Once the PR is merged, the submission pipeline deletes the related ModuleTemplate `/<module-name>/moduletemplate-<module-name>-<module-version>.yaml` in the `/kyma/kyma-modules` repository. In addition, it removes the reference to the module from the kustomization (*).
+Once the PR is merged, the submission pipeline deletes the related ModuleTemplate under `/<module-name>/moduletemplate-<module-name>-<module-version>.yaml` in the `/kyma/kyma-modules` repository. In addition, it removes the reference to the module from the kustomization (*).
 
-ArgoCD picks these changes to `/kyma/kyma-modules` up and undeploys the ModuleTemplate from the landscapes.
+ArgoCD picks up these changes to `/kyma/kyma-modules` and undeploys the ModuleTemplate from the landscapes.
 
-For more details, see [New submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
+For more details, see the [new submission pipeline](https://github.tools.sap/kyma/test-infra/blob/feature/new-submission-pipeline/ado/new-submission-pipeline-activity.md).
 
-> Note that this only deletes the ModuleTemplate in `/kyma-kyma-modules` and undeploys it from KCP. The artifacts pushed to the OCI registry remain and cannot be overwritten.
+> [!Note]
+> In the deleting a module version process, only the ModuleTemplate in `/kyma-kyma-modules` gets deleted and undeployed from KCP. The artifacts pushed to the OCI registry remain and cannot be overwritten.
 
 ## Migration Path
 
