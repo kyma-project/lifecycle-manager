@@ -115,7 +115,7 @@ The migration strategy involves replicating the current state with the NEW metad
 
    The functionality can further be verified by enabling the module in a test SKR which will install it from scratch using the new metadata.
 
-4. [OPTIONAL] Rollback the new module metadata
+4. [OPTIONAL] Roll back the new module metadata.
 
    In case of failure, the setup can be reverted to the old approach.
 
