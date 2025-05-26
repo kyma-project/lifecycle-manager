@@ -4,8 +4,8 @@ The existing module metadata is in channel-based ModuleTemplate custom resources
 
 > [!Tip]
 > Before you start the migration, see the custom resource definitions (CRDs) related to the new module metadata and additional information around the changes.
-> - [ModuleTemplate](../resources/03-moduletemplate.md)
-> - [ModuleReleaseMeta](../resources/05-modulereleasemeta.md)
+> - [ModuleTemplate](./resources/03-moduletemplate.md)
+> - [ModuleReleaseMeta](./resources/05-modulereleasemeta.md)
 > - The Architecture Decision Record backing the migration: [#984](https://github.com/kyma-project/community/issues/984)
 > - The PowerPoint presentation with an update given in the 2024-11-26 Kyma Iteration Review meeting: [2024-11-26 Update On Module Metadata](https://sap-my.sharepoint.com/:p:/p/c_schwaegerl/EbvSNmRnr3JEjaLoZ__cI9UB9lu5tt0qaly-f7yQO2Gwbw?e=slfiDf) <!-- markdown-link-check-disable-line -->
 
