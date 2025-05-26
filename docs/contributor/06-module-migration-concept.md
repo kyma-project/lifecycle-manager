@@ -1,8 +1,8 @@
 # New Module Submission and Promotion Concept
 
-The existing module metadata is in channel-based ModuleTemplate custom resources (CRs). The new module metadata sources are version-based ModuleTemplates accompanied by ModuleReleaseMeta CRs. This document describes the target module submission process for module development teams. Migrating a Kyma module from the existing module metadata to the new module metadata.
+The existing module metadata is in channel-based ModuleTemplate custom resources (CRs). The new module metadata sources are version-based ModuleTemplates accompanied by ModuleReleaseMeta CRs. This document describes the target module submission process for module development teams, migrating a Kyma module from the existing module metadata to the new module metadata.
 
-To go directly to the Migration Procedure, see [New Module Submission and Promotion Process: Migration Guide](./07-module-migration-guide.md.md).
+To go directly to the migration procedure, see [New Module Submission and Promotion Process: Migration Guide](./07-module-migration-guide.md.md).
 
 > [!Tip]
 > Before you start the migration, see the custom resource definitions (CRDs) related to the new module metadata and additional information around the changes.
