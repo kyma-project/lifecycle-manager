@@ -2,7 +2,7 @@
 
 The existing module metadata is in channel-based ModuleTemplate custom resources (CRs). The new module metadata sources are version-based ModuleTemplates accompanied by ModuleReleaseMeta CRs. This document describes the target module submission process for module development teams, migrating a Kyma module from the existing module metadata to the new module metadata.
 
-To go directly to the migration procedure, see [New Module Submission and Promotion Process: Migration Guide](./07-module-migration-guide.md.md).
+To go directly to the migration procedure, see [New Module Submission and Promotion Process: Migration Guide](./07-module-migration-guide.md).
 
 > [!Tip]
 > Before you start the migration, see the custom resource definitions (CRDs) related to the new module metadata and additional information around the changes.
@@ -11,7 +11,7 @@ To go directly to the migration procedure, see [New Module Submission and Promot
 > - The Architecture Decision Record backing the migration: [#984](https://github.com/kyma-project/community/issues/984)
 > - The PowerPoint presentation with an update given in the 2024-11-26 Kyma Iteration Review meeting: [2024-11-26 Update On Module Metadata](https://sap-my.sharepoint.com/:p:/p/c_schwaegerl/EbvSNmRnr3JEjaLoZ__cI9UB9lu5tt0qaly-f7yQO2Gwbw?e=slfiDf) <!-- markdown-link-check-disable-line -->
 
-## The Target Module Submission and Promotion Process
+## The Target Module Submission and Promotion Processes
 
 The following diagram shows the target module submission and promotion process using the Telemetry module. The process consists of the following stages:
 
@@ -75,5 +75,5 @@ For more details, see the [new submission pipeline](https://github.tools.sap/kym
 
 ## Related Information
 
-- [New Module Submission and Promotion Process: Migration Guide](./07-module-migration-guide.md.md)
+- [New Module Submission and Promotion Process: Migration Guide](./07-module-migration-guide.md)
 - [Migrating from Kyma CLI to modulectl](https://github.com/kyma-project/modulectl/blob/main/docs/contributor/migration-guide.md)
