@@ -56,7 +56,7 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("ModuleTemplate %s not found, probably already deleted",
 				req.NamespacedName))
-			return ctrl.Result{Requeue: false}, nil
+			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, fmt.Errorf("MandatoryModuleDeletionController: %w", err)
 	}

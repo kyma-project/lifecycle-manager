@@ -73,7 +73,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if !util.IsNotFound(err) {
 			return ctrl.Result{}, fmt.Errorf("watcherController: %w", err)
 		}
-		return ctrl.Result{Requeue: false}, nil
+		return ctrl.Result{}, nil
 	}
 
 	if !watcher.DeletionTimestamp.IsZero() && watcher.Status.State != shared.StateDeleting {
@@ -118,7 +118,7 @@ func (r *Reconciler) stateHandling(ctx context.Context, watcher *v1beta2.Watcher
 		return ctrl.Result{}, nil // no requeue of invalid state
 	}
 
-	return ctrl.Result{Requeue: false}, nil
+	return ctrl.Result{}, nil
 }
 
 func (r *Reconciler) handleDeletingState(ctx context.Context, watcher *v1beta2.Watcher) (ctrl.Result, error) {
