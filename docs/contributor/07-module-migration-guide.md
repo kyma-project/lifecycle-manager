@@ -121,8 +121,8 @@ The migration strategy involves replicating the current state with the NEW metad
 
    To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 2. ArgoCD then undeploys the new module metadata and KLM falls back to the old module metadata.
 
-   > [!Note]
-   > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
+> [!Note]
+> After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
 5. Submit a version upgrade using the old format.
 
@@ -162,8 +162,8 @@ The migration strategy involves replicating the current state with the NEW metad
 
    To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 2 and 6. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
 
-   > [!Note]
-   > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
+> [!Note]
+> After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
 9. Delete all old metadata files related to the module.
 

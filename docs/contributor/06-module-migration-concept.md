@@ -52,7 +52,7 @@ For more details, see the [new submission pipeline](https://github.tools.sap/kym
 > The kustomization is extended only with ModuleTemplates for the versions referenced in the `module-releases.yaml`. ModuleTemplates for the not-referenced versions are NOT added. Also, versions are not automatically removed from the kustomization, even if not referenced anymore. This needs to be done manually. For more information, see step 4.
 
 > [!Note]
-> The new module version and the channel mapping submission processes cannot be combined in one PR. First, the new module version must be submitted. Only then can the channel mapping be updated.
+> The new module version and the channel mapping submission processes cannot be combined in one PR. First, you must submit the new module version. Only then can you update the channel mapping.
 
 ### 3. Promoting ModuleTemplates and ModuleReleaseMeta
 
