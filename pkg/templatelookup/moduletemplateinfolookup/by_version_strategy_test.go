@@ -65,10 +65,10 @@ func Test_ByVersion_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 	moduleTemplateInfo := byVersionStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	assert.NotNil(t, moduleTemplateInfo)
-	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
-	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.ModuleTemplate.Spec.ModuleName)
-	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.ModuleTemplate.Spec.Version)
-	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.ModuleTemplate.Spec.Channel)
+	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
+	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
 }
 
 func Test_ByVersion_Strategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing.T) {
@@ -180,17 +180,17 @@ func newModuleInfoBuilder() moduleInfoBuilder {
 }
 
 func (b moduleInfoBuilder) WithName(name string) moduleInfoBuilder {
-	b.moduleInfo.Module.Name = name
+	b.moduleInfo.Name = name
 	return b
 }
 
 func (b moduleInfoBuilder) WithVersion(version string) moduleInfoBuilder {
-	b.moduleInfo.Module.Version = version
+	b.moduleInfo.Version = version
 	return b
 }
 
 func (b moduleInfoBuilder) WithChannel(channel string) moduleInfoBuilder {
-	b.moduleInfo.Module.Channel = channel
+	b.moduleInfo.Channel = channel
 	return b
 }
 

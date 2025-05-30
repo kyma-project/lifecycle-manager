@@ -53,14 +53,14 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
-			return ctrl.Result{Requeue: false}, nil
+			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, fmt.Errorf("MandatoryModuleController: %w", err)
 	}
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("skipping mandatory modules reconciliation for Kyma: " + kyma.Name)
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
 	mandatoryTemplates, err := templatelookup.GetMandatory(ctx, r.Client)

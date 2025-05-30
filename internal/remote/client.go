@@ -15,10 +15,10 @@ type ConfigAndClient struct {
 	cfg *rest.Config
 }
 
-func (c *ConfigAndClient) Config() *rest.Config {
-	return c.cfg
-}
-
 func NewClientWithConfig(clnt client.Client, cfg *rest.Config) *ConfigAndClient {
 	return &ConfigAndClient{Client: clnt, cfg: cfg}
+}
+
+func (c *ConfigAndClient) Config() *rest.Config {
+	return c.cfg
 }

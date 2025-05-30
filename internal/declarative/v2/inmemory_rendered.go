@@ -11,24 +11,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
-const (
-	ManifestFilePrefix = "manifest"
-)
+const ManifestFilePrefix = "manifest"
 
 type ManifestParser interface {
 	Parse(spec *Spec) (internal.ManifestResources, error)
 	EvictCache(spec *Spec)
-}
-
-func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
-	cache := ttlcache.New[string, internal.ManifestResources]()
-	go cache.Start()
-	return &InMemoryManifestCache{Cache: cache, TTL: ttl}
-}
-
-func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
-	key := generateCacheKey(spec)
-	c.Cache.Delete(key)
 }
 
 type InMemoryManifestCache struct {
@@ -36,12 +23,23 @@ type InMemoryManifestCache struct {
 	*ttlcache.Cache[string, internal.ManifestResources]
 }
 
+func NewInMemoryManifestCache(ttl time.Duration) *InMemoryManifestCache {
+	cache := ttlcache.New[string, internal.ManifestResources]()
+	go cache.Start()
+	return &InMemoryManifestCache{Cache: cache, TTL: ttl}
+}
+
+func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
+	key := generateCacheKey(spec)
+	c.Delete(key)
+}
+
 func (c *InMemoryManifestCache) Parse(spec *Spec,
 ) (internal.ManifestResources, error) {
 	key := generateCacheKey(spec)
 
 	var err error
-	item := c.Cache.Get(key)
+	item := c.Get(key)
 	var resources internal.ManifestResources
 	if item != nil {
 		resources = item.Value()
@@ -50,7 +48,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 		if err != nil {
 			return internal.ManifestResources{}, fmt.Errorf("failed to parse manifest objects: %w", err)
 		}
-		c.Cache.Set(key, resources, c.TTL)
+		c.Set(key, resources, c.TTL)
 	}
 	copied := &internal.ManifestResources{
 		Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),

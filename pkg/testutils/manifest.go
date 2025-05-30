@@ -389,7 +389,7 @@ func ManifestNoDeletionTimeStampSet(ctx context.Context,
 		return err
 	}
 
-	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !manifest.DeletionTimestamp.IsZero() {
 		return errManifestDeletionTimestampSet
 	}
 	return nil

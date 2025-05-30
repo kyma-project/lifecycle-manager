@@ -283,7 +283,7 @@ func SetKymaState(ctx context.Context, kyma *v1beta2.Kyma, clnt client.Client, s
 		ActiveChannel: "",
 		LastOperation: shared.LastOperation{LastUpdateTime: apimetav1.NewTime(time.Now())},
 	}
-	kyma.TypeMeta.SetGroupVersionKind(schema.GroupVersionKind{
+	kyma.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   v1beta2.GroupVersion.Group,
 		Version: v1beta2.GroupVersion.Version,
 		Kind:    string(shared.KymaKind),

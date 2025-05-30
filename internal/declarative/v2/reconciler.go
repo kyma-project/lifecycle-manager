@@ -42,22 +42,6 @@ const (
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
-func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
-	orphanDetectionClient orphan.DetectionRepository, specResolver SpecResolver, options ...Option,
-) *Reconciler {
-	reconciler := &Reconciler{}
-	reconciler.ManifestMetrics = metrics
-	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
-	reconciler.RequeueIntervals = requeueIntervals
-	reconciler.specResolver = specResolver
-	reconciler.manifestClient = manifestAPIClient
-	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
-	reconciler.orphanDetectionService = orphan.NewDetectionService(orphanDetectionClient)
-	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
-	return reconciler
-}
-
 type ManagedByLabelRemoval interface {
 	RemoveManagedByLabel(ctx context.Context,
 		manifest *v1beta2.Manifest,
@@ -87,6 +71,22 @@ type Reconciler struct {
 	orphanDetectionService     OrphanDetection
 }
 
+func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
+	orphanDetectionClient orphan.DetectionRepository, specResolver SpecResolver, options ...Option,
+) *Reconciler {
+	reconciler := &Reconciler{}
+	reconciler.ManifestMetrics = metrics
+	reconciler.MandatoryModuleMetrics = mandatoryModulesMetrics
+	reconciler.RequeueIntervals = requeueIntervals
+	reconciler.specResolver = specResolver
+	reconciler.manifestClient = manifestAPIClient
+	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
+	reconciler.orphanDetectionService = orphan.NewDetectionService(orphanDetectionClient)
+	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
+	return reconciler
+}
+
 //nolint:funlen,cyclop,gocyclo,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	startTime := time.Now()
@@ -95,7 +95,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	manifest := &v1beta2.Manifest{}
 	if err := r.Get(ctx, req.NamespacedName, manifest); err != nil {
 		if util.IsNotFound(err) {
-			logf.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
+			logf.FromContext(ctx).Info(req.String() + " namespace got deleted!")
 			return ctrl.Result{}, nil
 		}
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)
@@ -294,7 +294,7 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta
 		if ok {
 			logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
 				clientsCacheKey))
-			r.ClientCache.DeleteClient(clientsCacheKey)
+			r.DeleteClient(clientsCacheKey)
 		}
 	}
 }
@@ -307,7 +307,7 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 	var err error
 	var target, current ResourceList
 
-	converter := skrresources.NewResourceToInfoConverter(skrresources.ResourceInfoConverter(skrClient),
+	converter := skrresources.NewDefaultResourceToInfoConverter(skrresources.ResourceInfoConverter(skrClient),
 		apimetav1.NamespaceDefault)
 
 	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
@@ -382,7 +382,7 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 		}
 	}
 
-	targetResources, err := r.ManifestParser.Parse(spec)
+	targetResources, err := r.Parse(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +417,7 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1bet
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
-		r.ManifestParser.EvictCache(spec)
+		r.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 
