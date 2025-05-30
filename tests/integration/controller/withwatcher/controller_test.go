@@ -14,7 +14,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -131,7 +131,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
 			Namespace: kymaObjKey.Namespace,
-			Name:      watcher.SkrResourceName,
+			Name:      skrwebhookresources.SkrResourceName,
 		}, &apiappsv1.Deployment{})
 	}
 }
@@ -154,7 +154,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	webhookCfg := &admissionregistrationv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
 		Namespace: kymaObjKey.Namespace,
-		Name:      watcher.SkrResourceName,
+		Name:      skrwebhookresources.SkrResourceName,
 	}, webhookCfg)
 	return webhookCfg, err
 }
@@ -220,7 +220,7 @@ func verifyWebhookConfig(
 		return fmt.Errorf("%w: (expected=%v, got=%v)", ErrWatchLabelsMismatch,
 			watcherCR.Spec.LabelsToWatch, webhook.ObjectSelector.MatchLabels)
 	}
-	expectedResources := watcher.ResolveWebhookRuleResources(watcherCR.Spec.ResourceToWatch.Resource,
+	expectedResources := skrwebhookresources.ResolveWebhookRuleResources(watcherCR.Spec.ResourceToWatch.Resource,
 		watcherCR.Spec.Field)
 	if webhook.Rules[0].Resources[0] != expectedResources[0] {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrResourcesMismatch,

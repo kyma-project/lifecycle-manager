@@ -110,7 +110,8 @@ type Watcher struct {
 	Status WatcherStatus `json:"status,omitempty"`
 }
 
-func (watcher *Watcher) GetModuleName() string {
+// GetManagerName defines the component which manage Watcher CR's corresponding webhook.
+func (watcher *Watcher) GetManagerName() string {
 	if watcher.Labels == nil {
 		return ""
 	}

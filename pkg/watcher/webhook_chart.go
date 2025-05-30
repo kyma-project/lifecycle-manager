@@ -16,8 +16,6 @@ const (
 	defaultBufferSize = 2048
 )
 
-var ErrGatewayHostWronglyConfigured = errors.New("gateway should have configured exactly one server and one host")
-
 type resourceOperation func(ctx context.Context, clt client.Client, resource client.Object) error
 
 // runResourceOperationWithGroupedErrors loops through the resources and runs the passed operation
