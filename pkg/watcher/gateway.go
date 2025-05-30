@@ -8,11 +8,15 @@ import (
 	"strings"
 
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
-var errNoHostnameInGateway = errors.New("the gateway has no host specified")
+var (
+	ErrGatewayHostWronglyConfigured = errors.New("gateway should have configured exactly one server and one host")
+	ErrNoHostnameInGateway          = errors.New("the gateway has no host specified")
+)
 
 type GatewayConfig struct {
 	// IstioGatewayName represents the cluster resource name of the klm istio gateway
@@ -24,11 +28,9 @@ type GatewayConfig struct {
 	LocalGatewayPortOverwrite string
 }
 
-func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*KCPAddr, error) { // Get public KCP DNS name and port from the Gateway
-	kcpClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
-	if err != nil {
-		return nil, fmt.Errorf("can't create kcpClient: %w", err)
-	}
+func (g GatewayConfig) ResolveKcpAddr(kcpClient client.Client) (*skrwebhookresources.KCPAddr,
+	error,
+) { // Get public KCP DNS name and port from the Gateway
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -44,15 +46,17 @@ func (g GatewayConfig) ResolveKcpAddr(mgr ctrl.Manager) (*KCPAddr, error) { // G
 		return nil, ErrGatewayHostWronglyConfigured
 	}
 
-	var kcpAddr KCPAddr
+	var kcpAddr skrwebhookresources.KCPAddr
 	kcpAddr.Hostname = gateway.Spec.GetServers()[0].GetHosts()[0]
 	if len(strings.TrimSpace(kcpAddr.Hostname)) == 0 {
-		return nil, errNoHostnameInGateway
+		return nil, ErrNoHostnameInGateway
 	}
 	if g.LocalGatewayPortOverwrite != "" {
+		var err error
 		kcpAddr.Port, err = strconv.Atoi(g.LocalGatewayPortOverwrite)
 		if err != nil {
-			return nil, fmt.Errorf("invalid gateway port specified %s, must be a number (%w)", g.LocalGatewayPortOverwrite, err)
+			return nil, fmt.Errorf("invalid gateway port specified %s, must be a number (%w)",
+				g.LocalGatewayPortOverwrite, err)
 		}
 	} else {
 		kcpAddr.Port = int(gateway.Spec.GetServers()[0].GetPort().GetNumber())

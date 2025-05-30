@@ -117,6 +117,8 @@ linters:
           alias: kymarepository
         - pkg: k8s.io/api/networking/v1
           alias: apinetworkv1
+        - pkg: github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources
+          alias: skrwebhookresources
       no-unaliased: true
       no-extra-aliases: true
     ireturn:

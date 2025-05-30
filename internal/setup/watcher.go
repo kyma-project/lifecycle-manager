@@ -18,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 const bootstrapFailedExitCode = 1
@@ -31,7 +32,7 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 
 	certManager := setupCertManager(kcpClient, flagVar, setupLog)
 
-	resolvedKcpAddr := getResolvedKcpAddress(mgr, flagVar, setupLog)
+	resolvedKcpAddr := getResolvedKcpAddress(kcpClient, flagVar, setupLog)
 
 	watcherMetrics := metrics.NewWatcherMetrics()
 
@@ -58,17 +59,17 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 	return skrWebhookManifestManager
 }
 
-func getResolvedKcpAddress(mgr ctrl.Manager,
+func getResolvedKcpAddress(kcpClient client.Client,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
-) watcher.KCPAddr {
+) skrwebhookresources.KCPAddr {
 	gatewayConfig := watcher.GatewayConfig{
 		IstioGatewayName:          flagVar.IstioGatewayName,
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
 		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
 	}
 
-	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(kcpClient)
 	if err != nil || resolvedKcpAddr == nil {
 		setupLog.Error(err, "failed to resolve KCP address")
 		os.Exit(bootstrapFailedExitCode)
@@ -86,7 +87,7 @@ func setupCertManager(kcpClient client.Client,
 	secretClient := secret.NewCertificateSecretClient(kcpClient)
 
 	config := certificate.CertificateManagerConfig{
-		SkrServiceName:               watcher.SkrResourceName,
+		SkrServiceName:               skrwebhookresources.SkrResourceName,
 		SkrNamespace:                 flagVar.RemoteSyncNamespace,
 		CertificateNamespace:         flagVar.IstioNamespace,
 		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),

@@ -14,7 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
@@ -36,7 +36,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	InitEmptyKymaBeforeAll(kyma)
 	secretName := types.NamespacedName{
-		Name:      watcher.SkrTLSName,
+		Name:      skrwebhookresources.SkrTLSName,
 		Namespace: RemoteNamespace,
 	}
 
@@ -44,20 +44,20 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		It("When Runtime Watcher deployment is ready", func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, RemoteNamespace, skrClient).
+				WithArguments(skrwebhookresources.SkrResourceName, RemoteNamespace, skrClient).
 				Should(Succeed())
 
 			By("And Runtime Watcher deployment is deleted")
 			Eventually(deleteWatcherDeployment).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, RemoteNamespace, skrClient).
+				WithArguments(skrwebhookresources.SkrResourceName, RemoteNamespace, skrClient).
 				Should(Succeed())
 		})
 
 		It("Then Runtime Watcher deployment is ready again", func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, RemoteNamespace, skrClient).
+				WithArguments(skrwebhookresources.SkrResourceName, RemoteNamespace, skrClient).
 				Should(Succeed())
 		})
 

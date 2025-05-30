@@ -8,6 +8,33 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	CaCertKey        = "ca.crt"
+	TlsCertKey       = "tls.crt"
+	TlsPrivateKeyKey = "tls.key"
+)
+
+type CertificateSecretData struct {
+	TlsCert, TlsKey []byte
+}
+
+type GatewaySecretData struct {
+	CaCert []byte
+}
+
+func NewGatewaySecretData(secret *apicorev1.Secret) *GatewaySecretData {
+	return &GatewaySecretData{
+		CaCert: secret.Data[CaCertKey],
+	}
+}
+
+func NewCertificateSecretData(secret *apicorev1.Secret) *CertificateSecretData {
+	return &CertificateSecretData{
+		TlsCert: secret.Data[TlsCertKey],
+		TlsKey:  secret.Data[TlsPrivateKeyKey],
+	}
+}
+
 type kcpClient interface {
 	Get(ctx context.Context,
 		key client.ObjectKey,

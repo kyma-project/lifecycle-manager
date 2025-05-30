@@ -60,6 +60,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
@@ -196,7 +197,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	certificateManagerConfig := certificate.CertificateManagerConfig{
-		SkrServiceName:               watcher.SkrResourceName,
+		SkrServiceName:               skrwebhookresources.SkrResourceName,
 		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
 		CertificateNamespace:         flags.DefaultIstioNamespace,
 		AdditionalDNSNames:           []string{},
@@ -220,7 +221,7 @@ var _ = BeforeSuite(func() {
 		LocalGatewayPortOverwrite: "",
 	}
 
-	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
+	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr.GetClient())
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	Expect(err).ToNot(HaveOccurred())
@@ -247,7 +248,8 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

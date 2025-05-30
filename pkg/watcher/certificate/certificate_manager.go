@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 )
 
 var (
@@ -120,7 +121,8 @@ func (c *CertificateManager) RenewSkrCertificate(ctx context.Context, kymaName s
 		return fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
 
-	skrCertificateSecret, err := c.secretClient.Get(ctx, c.constructSkrCertificateName(kymaName), c.config.CertificateNamespace)
+	skrCertificateSecret, err := c.secretClient.Get(ctx, c.constructSkrCertificateName(kymaName),
+		c.config.CertificateNamespace)
 	if err != nil {
 		return fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
@@ -132,7 +134,8 @@ func (c *CertificateManager) RenewSkrCertificate(ctx context.Context, kymaName s
 	logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 		"kyma", kymaName)
 
-	if err = c.secretClient.Delete(ctx, c.constructSkrCertificateName(kymaName), c.config.CertificateNamespace); err != nil {
+	if err = c.secretClient.Delete(ctx, c.constructSkrCertificateName(kymaName),
+		c.config.CertificateNamespace); err != nil {
 		return fmt.Errorf("failed to delete SKR certificate secret: %w", err)
 	}
 
@@ -141,7 +144,8 @@ func (c *CertificateManager) RenewSkrCertificate(ctx context.Context, kymaName s
 
 // IsSkrCertificateRenewalOverdue checks if the SKR certificate renewal is overdue.
 func (c *CertificateManager) IsSkrCertificateRenewalOverdue(ctx context.Context, kymaName string) (bool, error) {
-	renewalTime, err := c.certClient.GetRenewalTime(ctx, c.constructSkrCertificateName(kymaName), c.config.CertificateNamespace)
+	renewalTime, err := c.certClient.GetRenewalTime(ctx, c.constructSkrCertificateName(kymaName),
+		c.config.CertificateNamespace)
 	if err != nil {
 		return false, fmt.Errorf("failed to get SKR certificate renewal time: %w", err)
 	}
@@ -163,6 +167,17 @@ func (c *CertificateManager) GetSkrCertificateSecret(ctx context.Context, kymaNa
 	return secret, nil
 }
 
+func (c *CertificateManager) GetSkrCertificateSecretData(ctx context.Context,
+	kymaName string,
+) (*secret.CertificateSecretData, error) {
+	skrCertSecret, err := c.GetSkrCertificateSecret(ctx, kymaName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
+	}
+
+	return secret.NewCertificateSecretData(skrCertSecret), nil
+}
+
 // GetGatewayCertificateSecret returns the gateway certificate secret.
 func (c *CertificateManager) GetGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
 	secret, err := c.secretClient.Get(ctx,
@@ -174,6 +189,15 @@ func (c *CertificateManager) GetGatewayCertificateSecret(ctx context.Context) (*
 	}
 
 	return secret, nil
+}
+
+func (c *CertificateManager) GetGatewayCertificateSecretData(ctx context.Context) (*secret.GatewaySecretData, error) {
+	gatewayCertSecret, err := c.GetGatewayCertificateSecret(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
+	}
+
+	return secret.NewGatewaySecretData(gatewayCertSecret), nil
 }
 
 // renewal is required if the gateway certficiate secret is newer than the SKR certificate secret.
