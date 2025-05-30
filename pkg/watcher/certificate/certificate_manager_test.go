@@ -16,6 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 )
 
 var (
@@ -71,7 +72,8 @@ func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
 	assert.Contains(t, certClientStub.createDNSNames, skrDomainName)
 	assert.Contains(t, certClientStub.createDNSNames, additionalDNSNames[0])
 	assert.Contains(t, certClientStub.createDNSNames, additionalDNSNames[1])
-	assert.Contains(t, certClientStub.createDNSNames, fmt.Sprintf("%s.%s.svc.cluster.local", skrServiceName, skrNamepsace))
+	assert.Contains(t, certClientStub.createDNSNames,
+		fmt.Sprintf("%s.%s.svc.cluster.local", skrServiceName, skrNamepsace))
 	assert.Contains(t, certClientStub.createDNSNames, fmt.Sprintf("%s.%s.svc", skrServiceName, skrNamepsace))
 }
 
@@ -605,7 +607,9 @@ func Test_CertificateManager_GetSkrCertificateSecret_Error(t *testing.T) {
 func Test_CertificateManager_GetSkrCertificateSecret_NotFound(t *testing.T) {
 	certClientStub := &certificateClientStub{}
 	secretClientStub := &certificateSecretClientStub{
-		getErrors: []error{apierrors.NewNotFound(apicorev1.Resource("secrets"), fmt.Sprintf(certNamingTemplate, kymaName))},
+		getErrors: []error{
+			apierrors.NewNotFound(apicorev1.Resource("secrets"), fmt.Sprintf(certNamingTemplate, kymaName)),
+		},
 	}
 	manager := certificate.NewCertificateManager(certClientStub,
 		secretClientStub,
@@ -687,7 +691,9 @@ type certificateClientStub struct {
 	getRenewalTimeErr    error
 }
 
-func (c *certificateClientStub) Create(ctx context.Context, name, namespace, commonName string, dnsNames []string) error {
+func (c *certificateClientStub) Create(ctx context.Context, name, namespace, commonName string,
+	dnsNames []string,
+) error {
 	c.createCalled = true
 	c.createName = name
 	c.createNamespace = namespace
@@ -741,4 +747,152 @@ func (c *certificateSecretClientStub) Delete(ctx context.Context, name, namespac
 	c.deleteName = name
 	c.deleteNamespace = namespace
 	return c.deleteErr
+}
+
+func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
+	caData := []byte("ca-data")
+	secretWithCA := &apicorev1.Secret{
+		Data: map[string][]byte{
+			"ca.crt": caData,
+		},
+	}
+	type fields struct {
+		certClient   certificate.CertificateClient
+		secretClient certificate.CertificateSecretClient
+		config       certificate.CertificateManagerConfig
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		want       *secret.GatewaySecretData
+		wantErr    assert.ErrorAssertionFunc
+		getErrors  []error
+		getSecrets []*apicorev1.Secret
+	}{
+		{
+			name: "success returns GatewaySecretData",
+			fields: fields{
+				certClient: &certificateClientStub{},
+				secretClient: &certificateSecretClientStub{
+					getSecrets: []*apicorev1.Secret{secretWithCA},
+				},
+				config: certificate.CertificateManagerConfig{
+					CertificateNamespace: certNamespace,
+					GatewaySecretName:    gatewaySecretName,
+				},
+			},
+			want: &secret.GatewaySecretData{
+				CaCert: caData,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "error from secret client",
+			fields: fields{
+				certClient: &certificateClientStub{},
+				secretClient: &certificateSecretClientStub{
+					getErrors: []error{assert.AnError},
+				},
+				config: certificate.CertificateManagerConfig{
+					CertificateNamespace: certNamespace,
+					GatewaySecretName:    gatewaySecretName,
+				},
+			},
+			want:    nil,
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := certificate.NewCertificateManager(tt.fields.certClient,
+				tt.fields.secretClient,
+				tt.fields.config)
+			got, err := c.GetGatewayCertificateSecretData(context.Background())
+			if !tt.wantErr(t, err) {
+				return
+			}
+			if tt.want != nil {
+				assert.Equal(t, tt.want.CaCert, got.CaCert)
+			} else {
+				assert.Nil(t, got)
+			}
+		})
+	}
+}
+
+func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
+	tlsData := []byte("tls-data")
+	keyData := []byte("key-data")
+	secretWithCert := &apicorev1.Secret{
+		Data: map[string][]byte{
+			"tls.crt": tlsData,
+			"tls.key": keyData,
+		},
+	}
+	type fields struct {
+		certClient   certificate.CertificateClient
+		secretClient certificate.CertificateSecretClient
+		config       certificate.CertificateManagerConfig
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		kymaName   string
+		want       *secret.CertificateSecretData
+		wantErr    assert.ErrorAssertionFunc
+		getErrors  []error
+		getSecrets []*apicorev1.Secret
+	}{
+		{
+			name: "success returns CertificateSecretData",
+			fields: fields{
+				certClient: &certificateClientStub{},
+				secretClient: &certificateSecretClientStub{
+					getSecrets: []*apicorev1.Secret{secretWithCert},
+				},
+				config: certificate.CertificateManagerConfig{
+					CertificateNamespace: certNamespace,
+				},
+			},
+			kymaName: kymaName,
+			want: &secret.CertificateSecretData{
+				TlsCert: tlsData,
+				TlsKey:  keyData,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "error from secret client",
+			fields: fields{
+				certClient: &certificateClientStub{},
+				secretClient: &certificateSecretClientStub{
+					getErrors: []error{assert.AnError},
+				},
+				config: certificate.CertificateManagerConfig{
+					CertificateNamespace: certNamespace,
+				},
+			},
+			kymaName: kymaName,
+			want:     nil,
+			wantErr:  assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := certificate.NewCertificateManager(
+				tt.fields.certClient,
+				tt.fields.secretClient,
+				tt.fields.config)
+			got, err := c.GetSkrCertificateSecretData(context.Background(), tt.kymaName)
+			if !tt.wantErr(t, err) {
+				return
+			}
+			if tt.want != nil {
+				assert.Equal(t, tt.want.TlsCert, got.TlsCert)
+				assert.Equal(t, tt.want.TlsKey, got.TlsKey)
+			} else {
+				assert.Nil(t, got)
+			}
+		})
+	}
 }

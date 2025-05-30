@@ -1,0 +1,64 @@
+package resources
+
+import (
+	"reflect"
+	"testing"
+
+	apicorev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
+)
+
+func TestBuildSKRSecret(t *testing.T) {
+	type args struct {
+		caCert   []byte
+		tlsCert  []byte
+		tlsKey   []byte
+		remoteNs string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *apicorev1.Secret
+	}{
+		{
+			name: "builds secret with correct fields",
+			args: args{
+				caCert:   []byte("ca"),
+				tlsCert:  []byte("cert"),
+				tlsKey:   []byte("key"),
+				remoteNs: "test-ns",
+			},
+			want: &apicorev1.Secret{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Secret",
+					APIVersion: apicorev1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      SkrTLSName,
+					Namespace: "test-ns",
+					Labels: map[string]string{
+						shared.ManagedBy: shared.ManagedByLabelValue,
+					},
+				},
+				Immutable: nil,
+				Data: map[string][]byte{
+					secret.CaCertKey:        []byte("ca"),
+					secret.TlsCertKey:       []byte("cert"),
+					secret.TlsPrivateKeyKey: []byte("key"),
+				},
+				Type: apicorev1.SecretTypeOpaque,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := BuildSKRSecret(tt.args.caCert, tt.args.tlsCert, tt.args.tlsKey,
+				tt.args.remoteNs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BuildSKRSecret() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

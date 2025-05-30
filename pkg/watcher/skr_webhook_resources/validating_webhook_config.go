@@ -27,9 +27,9 @@ func BuildValidatingWebhookConfigFromWatchers(caCert []byte, watchers []v1beta2.
 ) *admissionregistrationv1.ValidatingWebhookConfiguration {
 	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
-		moduleName := watcher.GetModuleName()
+		managerName := watcher.GetManagerName()
 		webhookName := fmt.Sprintf("%s.%s.%s", watcher.Namespace, watcher.Name, shared.OperatorGroup)
-		svcPath := "/validate/" + moduleName
+		svcPath := "/validate/" + managerName
 		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
 		sideEffects := admissionregistrationv1.SideEffectClassNoneOnDryRun
 		failurePolicy := admissionregistrationv1.Ignore
