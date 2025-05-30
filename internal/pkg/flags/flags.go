@@ -47,7 +47,6 @@ const (
 	DefaultIstioGatewayName                                             = "klm-watcher"
 	DefaultIstioGatewayNamespace                                        = "kcp-system"
 	DefaultIstioNamespace                                               = "istio-system"
-	DefaultCaCertName                                                   = "klm-watcher-serving"
 	DefaultSelfSignedCertIssuerNamespace                                = "istio-system"
 	DefaultSelfSignedCertDuration                         time.Duration = 90 * 24 * time.Hour
 	DefaultSelfSignedCertRenewBefore                      time.Duration = 60 * 24 * time.Hour
@@ -271,6 +270,7 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.MinMaintenanceWindowSize, "min-maintenance-window-size",
 		DefaultMinMaintenanceWindowSize,
 		"The minimum duration of maintenance window required for reconciling modules with downtime.")
+	flag.StringVar(&flagVar.OciRegistryCredSecretName, "oci-registry-cred-secret", "", "Allows to configure name of the Secret containing the OCI registry credential")
 	return flagVar
 }
 
@@ -346,6 +346,7 @@ type FlagVar struct {
 	IstioGatewaySecretRequeueSuccessInterval   time.Duration
 	IstioGatewaySecretRequeueErrInterval       time.Duration
 	MinMaintenanceWindowSize                   time.Duration
+	OciRegistryCredSecretName                  string
 }
 
 func (f FlagVar) Validate() error {
