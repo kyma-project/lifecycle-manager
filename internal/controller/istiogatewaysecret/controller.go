@@ -45,14 +45,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get istio gateway root secret: %w", err)
 	}
 	if rootSecret == nil {
-		return ctrl.Result{Requeue: true, RequeueAfter: r.intervals.Error}, ErrSecretNotFound
+		return ctrl.Result{RequeueAfter: r.intervals.Error}, ErrSecretNotFound
 	}
 
 	err = r.handler.ManageGatewaySecret(ctx, rootSecret)
 	if err != nil {
-		return ctrl.Result{Requeue: true, RequeueAfter: r.intervals.Error},
+		return ctrl.Result{RequeueAfter: r.intervals.Error},
 			fmt.Errorf("failed to manage gateway secret: %w", err)
 	}
 
-	return ctrl.Result{Requeue: true, RequeueAfter: r.intervals.Success}, nil
+	return ctrl.Result{RequeueAfter: r.intervals.Success}, nil
 }
