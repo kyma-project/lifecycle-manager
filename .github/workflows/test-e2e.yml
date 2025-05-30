@@ -99,7 +99,8 @@ jobs:
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
-
+      - name: Deploy external resources in SKR
+        uses: ./lifecycle-manager/.github/actions/deploy-external-resources-in-skr
       - name: Deploy lifecycle-manager
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:

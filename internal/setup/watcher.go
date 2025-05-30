@@ -7,6 +7,8 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,7 +34,7 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 
 	certManager := setupCertManager(kcpClient, flagVar, setupLog)
 
-	resolvedKcpAddr := getResolvedKcpAddress(kcpClient, flagVar, setupLog)
+	resolvedKcpAddr := getResolvedKcpAddress(mgr.GetConfig(), mgr.GetScheme(), flagVar, setupLog)
 
 	watcherMetrics := metrics.NewWatcherMetrics()
 
@@ -59,7 +61,7 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 	return skrWebhookManifestManager
 }
 
-func getResolvedKcpAddress(kcpClient client.Client,
+func getResolvedKcpAddress(config *rest.Config, scheme *runtime.Scheme,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) skrwebhookresources.KCPAddr {
@@ -68,7 +70,11 @@ func getResolvedKcpAddress(kcpClient client.Client,
 		IstioGatewayNamespace:     flagVar.IstioGatewayNamespace,
 		LocalGatewayPortOverwrite: flagVar.ListenerPortOverwrite,
 	}
-
+	kcpClient, err := client.New(config, client.Options{Scheme: scheme})
+	if err != nil {
+		setupLog.Error(err, "can't create kcpClient")
+		os.Exit(bootstrapFailedExitCode)
+	}
 	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(kcpClient)
 	if err != nil || resolvedKcpAddr == nil {
 		setupLog.Error(err, "failed to resolve KCP address")

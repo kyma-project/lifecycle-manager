@@ -8,6 +8,9 @@ inputs:
 runs:
   using: composite
   steps:
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp
     - name: Setup HTTPS server for the manifest file
       uses: ./lifecycle-manager/.github/actions/setup-https-server
       with:

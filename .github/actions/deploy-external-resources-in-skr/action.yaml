@@ -1,0 +1,14 @@
+name: Deploy external resources in SKR
+description: Deploy external resources in SKR
+runs:
+  using: composite
+  steps:
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-skr
+    - name: Deploy deny-all policy
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        kubectl create ns kyma-system
+        kubectl apply -f tests/e2e/external/deny-all-policy.yaml
