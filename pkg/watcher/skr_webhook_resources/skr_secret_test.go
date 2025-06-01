@@ -1,14 +1,15 @@
-package resources
+package resources_test
 
 import (
 	"reflect"
 	"testing"
 
 	apicorev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 func TestBuildSKRSecret(t *testing.T) {
@@ -32,12 +33,12 @@ func TestBuildSKRSecret(t *testing.T) {
 				remoteNs: "test-ns",
 			},
 			want: &apicorev1.Secret{
-				TypeMeta: metav1.TypeMeta{
+				TypeMeta: apimetav1.TypeMeta{
 					Kind:       "Secret",
 					APIVersion: apicorev1.SchemeGroupVersion.String(),
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      SkrTLSName,
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:      skrwebhookresources.SkrTLSName,
 					Namespace: "test-ns",
 					Labels: map[string]string{
 						shared.ManagedBy: shared.ManagedByLabelValue,
@@ -55,7 +56,7 @@ func TestBuildSKRSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildSKRSecret(tt.args.caCert, tt.args.tlsCert, tt.args.tlsKey,
+			if got := skrwebhookresources.BuildSKRSecret(tt.args.caCert, tt.args.tlsCert, tt.args.tlsKey,
 				tt.args.remoteNs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BuildSKRSecret() = %v, want %v", got, tt.want)
 			}

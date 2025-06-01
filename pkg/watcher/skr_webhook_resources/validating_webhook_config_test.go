@@ -1,22 +1,23 @@
-package resources
+package resources_test
 
 import (
 	"reflect"
 	"testing"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
-	ca := []byte("ca-cert")
+	caCert := []byte("ca-cert")
 	remoteNs := "skr-ns"
 	watcherManager := shared.OperatorName
 	watcher := v1beta2.Watcher{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "mod1",
 			Namespace: "skr-ns",
 			Labels: map[string]string{
@@ -35,12 +36,12 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 	}
 	svcPath := "/validate/" + watcherManager
 	want := &admissionregistrationv1.ValidatingWebhookConfiguration{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: apimetav1.TypeMeta{
 			Kind:       "ValidatingWebhookConfiguration",
 			APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      SkrResourceName,
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      skrwebhookresources.SkrResourceName,
 			Namespace: remoteNs,
 			Labels: map[string]string{
 				shared.ManagedBy: shared.ManagedByLabelValue,
@@ -49,12 +50,12 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 		Webhooks: []admissionregistrationv1.ValidatingWebhook{
 			{
 				Name:                    "skr-ns.mod1.operator.kyma-project.io",
-				ObjectSelector:          &metav1.LabelSelector{MatchLabels: map[string]string{"foo": "bar"}},
+				ObjectSelector:          &apimetav1.LabelSelector{MatchLabels: map[string]string{"foo": "bar"}},
 				AdmissionReviewVersions: []string{"v1"},
 				ClientConfig: admissionregistrationv1.WebhookClientConfig{
-					CABundle: ca,
+					CABundle: caCert,
 					Service: &admissionregistrationv1.ServiceReference{
-						Name:      SkrResourceName,
+						Name:      skrwebhookresources.SkrResourceName,
 						Namespace: remoteNs,
 						Path:      &svcPath,
 					},
@@ -90,23 +91,23 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 	}{
 		{
 			name:     "single watcher",
-			caCert:   ca,
+			caCert:   caCert,
 			watchers: []v1beta2.Watcher{watcher},
 			remoteNs: remoteNs,
 			want:     want,
 		},
 		{
 			name:     "no watchers returns empty webhooks",
-			caCert:   ca,
+			caCert:   caCert,
 			watchers: nil,
 			remoteNs: remoteNs,
 			want: &admissionregistrationv1.ValidatingWebhookConfiguration{
-				TypeMeta: metav1.TypeMeta{
+				TypeMeta: apimetav1.TypeMeta{
 					Kind:       "ValidatingWebhookConfiguration",
 					APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      SkrResourceName,
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:      skrwebhookresources.SkrResourceName,
 					Namespace: remoteNs,
 					Labels: map[string]string{
 						shared.ManagedBy: shared.ManagedByLabelValue,
@@ -119,7 +120,7 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BuildValidatingWebhookConfigFromWatchers(tt.caCert, tt.watchers, tt.remoteNs)
+			got := skrwebhookresources.BuildValidatingWebhookConfigFromWatchers(tt.caCert, tt.watchers, tt.remoteNs)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BuildValidatingWebhookConfigFromWatchers() = %v, want %v", got, tt.want)
 			}
@@ -155,7 +156,8 @@ func TestResolveWebhookRuleResources(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ResolveWebhookRuleResources(tt.resource, tt.fieldName); !reflect.DeepEqual(got, tt.want) {
+			if got := skrwebhookresources.ResolveWebhookRuleResources(tt.resource,
+				tt.fieldName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ResolveWebhookRuleResources() = %v, want %v", got, tt.want)
 			}
 		})

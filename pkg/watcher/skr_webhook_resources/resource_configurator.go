@@ -31,7 +31,7 @@ type ResourceConfigurator struct {
 
 type KCPAddr struct {
 	Hostname string
-	Port     int
+	Port     uint32
 }
 
 var (
@@ -51,7 +51,7 @@ const (
 func NewResourceConfigurator(remoteNs, skrWatcherImage, secretResVer string,
 	kcpAddress KCPAddr, cpuResLimit, memResLimit string,
 ) *ResourceConfigurator {
-	rc := &ResourceConfigurator{
+	configurator := &ResourceConfigurator{
 		remoteNs:        remoteNs,
 		skrWatcherImage: skrWatcherImage,
 		secretResVer:    secretResVer,
@@ -60,7 +60,7 @@ func NewResourceConfigurator(remoteNs, skrWatcherImage, secretResVer string,
 		memResLimit:     memResLimit,
 	}
 
-	rc.objectHandlers = map[string]ObjectHandler{
+	configurator.objectHandlers = map[string]ObjectHandler{
 		apiappsv1.SchemeGroupVersion.String() + "/Deployment": func(rc *ResourceConfigurator,
 			obj *unstructured.Unstructured,
 		) (client.Object, error) {
@@ -77,7 +77,7 @@ func NewResourceConfigurator(remoteNs, skrWatcherImage, secretResVer string,
 			return rc.ConfigureNetworkPolicies(obj)
 		},
 	}
-	return rc
+	return configurator
 }
 
 type ObjectHandler func(rc *ResourceConfigurator, obj *unstructured.Unstructured) (client.Object, error)
@@ -124,7 +124,8 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 
 	for i := range len(serverContainer.Env) {
 		if serverContainer.Env[i].Name == kcpAddressEnvName {
-			serverContainer.Env[i].Value = net.JoinHostPort(rc.kcpAddress.Hostname, strconv.Itoa(rc.kcpAddress.Port))
+			serverContainer.Env[i].Value = net.JoinHostPort(rc.kcpAddress.Hostname,
+				strconv.Itoa(int(rc.kcpAddress.Port)))
 		}
 	}
 
@@ -158,7 +159,7 @@ func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstr
 	}
 
 	if networkPolicy.GetObjectMeta().GetName() == ApiserverNetworkPolicyName {
-		kcpPortInt := intstr.FromInt32(int32(rc.kcpAddress.Port))
+		kcpPortInt := intstr.FromInt32(int32(rc.kcpAddress.Port)) //nolint:gosec // G115: this is not a security sensitive code, just a port number
 		networkProtocol := apicorev1.ProtocolTCP
 
 		egressRule := []apinetworkv1.NetworkPolicyEgressRule{

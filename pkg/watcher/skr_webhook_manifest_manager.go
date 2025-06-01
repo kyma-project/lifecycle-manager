@@ -253,7 +253,7 @@ func (m *SkrWebhookManifestManager) getGeneratedClientObjects(skrCertificateSecr
 func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Context, kymaName string,
 ) ([]client.Object, error) {
 	resources := make([]client.Object, 0)
-	rc, err := m.buildResourceConfigurator(ctx, kymaName)
+	configurator, err := m.buildResourceConfigurator(ctx, kymaName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build resource configurator: %w", err)
 	}
@@ -263,7 +263,7 @@ func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Cont
 			shared.ManagedBy: shared.ManagedByLabelValue,
 		}))
 
-		configuredResource, err := rc.ConfigureUnstructuredObject(resource)
+		configuredResource, err := configurator.ConfigureUnstructuredObject(resource)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure %s resource: %w", resource.GetKind(), err)
 		}

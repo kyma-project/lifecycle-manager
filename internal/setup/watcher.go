@@ -7,7 +7,7 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,7 +61,7 @@ func SetupSkrWebhookManager(mgr ctrl.Manager,
 	return skrWebhookManifestManager
 }
 
-func getResolvedKcpAddress(config *rest.Config, scheme *runtime.Scheme,
+func getResolvedKcpAddress(config *rest.Config, scheme *machineryruntime.Scheme,
 	flagVar *flags.FlagVar,
 	setupLog logr.Logger,
 ) skrwebhookresources.KCPAddr {

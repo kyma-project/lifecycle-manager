@@ -31,7 +31,6 @@ type GatewayConfig struct {
 func (g GatewayConfig) ResolveKcpAddr(kcpClient client.Client) (*skrwebhookresources.KCPAddr,
 	error,
 ) { // Get public KCP DNS name and port from the Gateway
-
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 	gateway := &istioclientapiv1beta1.Gateway{}
@@ -52,14 +51,14 @@ func (g GatewayConfig) ResolveKcpAddr(kcpClient client.Client) (*skrwebhookresou
 		return nil, ErrNoHostnameInGateway
 	}
 	if g.LocalGatewayPortOverwrite != "" {
-		var err error
-		kcpAddr.Port, err = strconv.Atoi(g.LocalGatewayPortOverwrite)
+		port, err := strconv.ParseInt(g.LocalGatewayPortOverwrite, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid gateway port specified %s, must be a number (%w)",
 				g.LocalGatewayPortOverwrite, err)
 		}
+		kcpAddr.Port = uint32(port) //nolint:gosec // G115: this is not a security sensitive code, just a port number
 	} else {
-		kcpAddr.Port = int(gateway.Spec.GetServers()[0].GetPort().GetNumber())
+		kcpAddr.Port = gateway.Spec.GetServers()[0].GetPort().GetNumber()
 	}
 
 	return &kcpAddr, nil

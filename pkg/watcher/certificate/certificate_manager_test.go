@@ -802,17 +802,17 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 			wantErr: assert.Error,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := certificate.NewCertificateManager(tt.fields.certClient,
-				tt.fields.secretClient,
-				tt.fields.config)
-			got, err := c.GetGatewayCertificateSecretData(context.Background())
-			if !tt.wantErr(t, err) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			c := certificate.NewCertificateManager(testCase.fields.certClient,
+				testCase.fields.secretClient,
+				testCase.fields.config)
+			got, err := c.GetGatewayCertificateSecretData(t.Context())
+			if !testCase.wantErr(t, err) {
 				return
 			}
-			if tt.want != nil {
-				assert.Equal(t, tt.want.CaCert, got.CaCert)
+			if testCase.want != nil {
+				assert.Equal(t, testCase.want.CaCert, got.CaCert)
 			} else {
 				assert.Nil(t, got)
 			}
@@ -877,19 +877,19 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 			wantErr:  assert.Error,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			c := certificate.NewCertificateManager(
-				tt.fields.certClient,
-				tt.fields.secretClient,
-				tt.fields.config)
-			got, err := c.GetSkrCertificateSecretData(context.Background(), tt.kymaName)
-			if !tt.wantErr(t, err) {
+				testCase.fields.certClient,
+				testCase.fields.secretClient,
+				testCase.fields.config)
+			got, err := c.GetSkrCertificateSecretData(t.Context(), testCase.kymaName)
+			if !testCase.wantErr(t, err) {
 				return
 			}
-			if tt.want != nil {
-				assert.Equal(t, tt.want.TlsCert, got.TlsCert)
-				assert.Equal(t, tt.want.TlsKey, got.TlsKey)
+			if testCase.want != nil {
+				assert.Equal(t, testCase.want.TlsCert, got.TlsCert)
+				assert.Equal(t, testCase.want.TlsKey, got.TlsKey)
 			} else {
 				assert.Nil(t, got)
 			}

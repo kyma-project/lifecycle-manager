@@ -65,28 +65,29 @@ func TestResourceConfigurator_ConfigureClusterRoleBinding(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rc := skrwebhookresources.NewResourceConfigurator(
-				tt.fields.remoteNs,
-				tt.fields.skrWatcherImage,
-				tt.fields.secretResVer,
-				tt.fields.kcpAddress,
-				tt.fields.cpuResLimit,
-				tt.fields.memResLimit,
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			configurator := skrwebhookresources.NewResourceConfigurator(
+				testCase.fields.remoteNs,
+				testCase.fields.skrWatcherImage,
+				testCase.fields.secretResVer,
+				testCase.fields.kcpAddress,
+				testCase.fields.cpuResLimit,
+				testCase.fields.memResLimit,
 			)
-			got, err := rc.ConfigureClusterRoleBinding(tt.obj)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ConfigureClusterRoleBinding() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := configurator.ConfigureClusterRoleBinding(testCase.obj)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("ConfigureClusterRoleBinding() error = %v, wantErr %v", err, testCase.wantErr)
 				return
 			}
-			if err == nil && got.Subjects[0].Namespace != tt.wantNs {
-				t.Errorf("Subject.Namespace = %v, want %v", got.Subjects[0].Namespace, tt.wantNs)
+			if err == nil && got.Subjects[0].Namespace != testCase.wantNs {
+				t.Errorf("Subject.Namespace = %v, want %v", got.Subjects[0].Namespace, testCase.wantNs)
 			}
 		})
 	}
 }
 
+//nolint:gocognit // test case is complex
 func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 	kcpAddr := skrwebhookresources.KCPAddr{Hostname: "test-host", Port: 8080}
 	cpuLimit := "100m"
@@ -136,7 +137,7 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 				},
 			}),
 			wantImage: watcherImage,
-			wantEnv:   net.JoinHostPort(kcpAddr.Hostname, strconv.Itoa(kcpAddr.Port)),
+			wantEnv:   net.JoinHostPort(kcpAddr.Hostname, strconv.Itoa(int(kcpAddr.Port))),
 			wantErr:   false,
 		},
 		{
@@ -181,33 +182,34 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rc := skrwebhookresources.NewResourceConfigurator(
-				tt.fields.remoteNs,
-				tt.fields.skrWatcherImage,
-				tt.fields.secretResVer,
-				tt.fields.kcpAddress,
-				tt.fields.cpuResLimit,
-				tt.fields.memResLimit,
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			configurator := skrwebhookresources.NewResourceConfigurator(
+				testCase.fields.remoteNs,
+				testCase.fields.skrWatcherImage,
+				testCase.fields.secretResVer,
+				testCase.fields.kcpAddress,
+				testCase.fields.cpuResLimit,
+				testCase.fields.memResLimit,
 			)
-			got, err := rc.ConfigureDeployment(tt.obj)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ConfigureDeployment() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := configurator.ConfigureDeployment(testCase.obj)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("ConfigureDeployment() error = %v, wantErr %v", err, testCase.wantErr)
 				return
 			}
+			//nolint:nestif // test case
 			if err == nil {
-				if got.Spec.Template.Spec.Containers[0].Image != tt.wantImage {
-					t.Errorf("Image = %v, want %v", got.Spec.Template.Spec.Containers[0].Image, tt.wantImage)
+				if got.Spec.Template.Spec.Containers[0].Image != testCase.wantImage {
+					t.Errorf("Image = %v, want %v", got.Spec.Template.Spec.Containers[0].Image, testCase.wantImage)
 				}
 				found := false
 				for _, env := range got.Spec.Template.Spec.Containers[0].Env {
-					if env.Name == "KCP_ADDR" && env.Value == tt.wantEnv {
+					if env.Name == "KCP_ADDR" && env.Value == testCase.wantEnv {
 						found = true
 					}
 				}
 				if !found {
-					t.Errorf("KCP_ADDR env not set correctly, want %v", tt.wantEnv)
+					t.Errorf("KCP_ADDR env not set correctly, want %v", testCase.wantEnv)
 				}
 				if got.Spec.Template.Labels[skrwebhookresources.PodRestartLabelKey] != secretResVer {
 					t.Errorf("PodRestartLabelKey = %v, want %v",
@@ -272,22 +274,22 @@ func TestResourceConfigurator_ConfigureNetworkPolicies(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rc := skrwebhookresources.NewResourceConfigurator(
-				tt.fields.remoteNs,
-				tt.fields.skrWatcherImage,
-				tt.fields.secretResVer,
-				tt.fields.kcpAddress,
-				tt.fields.cpuResLimit,
-				tt.fields.memResLimit)
-			got, err := rc.ConfigureNetworkPolicies(tt.obj)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ConfigureNetworkPolicies() error = %v, wantErr %v", err, tt.wantErr)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			configurator := skrwebhookresources.NewResourceConfigurator(
+				testCase.fields.remoteNs,
+				testCase.fields.skrWatcherImage,
+				testCase.fields.secretResVer,
+				testCase.fields.kcpAddress,
+				testCase.fields.cpuResLimit,
+				testCase.fields.memResLimit)
+			got, err := configurator.ConfigureNetworkPolicies(testCase.obj)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("ConfigureNetworkPolicies() error = %v, wantErr %v", err, testCase.wantErr)
 				return
 			}
-			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ConfigureNetworkPolicies() got = %v, want %v", got, tt.want)
+			if !testCase.wantErr && !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("ConfigureNetworkPolicies() got = %v, want %v", got, testCase.want)
 			}
 		})
 	}
