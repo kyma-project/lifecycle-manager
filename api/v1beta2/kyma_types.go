@@ -201,6 +201,7 @@ type ModuleStatus struct {
 	Manifest *TrackingObject `json:"manifest"`
 
 	// Resource contains information about the created module CR.
+	// +optional
 	Resource *TrackingObject `json:"resource"`
 
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.

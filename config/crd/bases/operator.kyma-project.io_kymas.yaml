@@ -441,7 +441,6 @@ spec:
                       type: string
                   required:
                   - name
-                  - resource
                   - state
                   type: object
                 type: array
@@ -859,7 +858,6 @@ spec:
                       type: string
                   required:
                   - name
-                  - resource
                   - state
                   type: object
                 type: array
