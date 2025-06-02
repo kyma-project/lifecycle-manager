@@ -33,5 +33,5 @@ type SomeRepository struct { }
 
 ## Consequence
 
-We apply consistent naming within the repository.
+We apply consistent naming within the project.
 This ADR may be extended with further naming guidelines.
