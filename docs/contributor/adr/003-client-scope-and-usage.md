@@ -32,7 +32,8 @@ The client will **only** be referenced in the Repository layer. All other layers
 These configuration options are compliant with the decision:
 
 A Service defines its dependency as `[Prefix]Repository`. The Repository implementation then uses controller-runtime's Client interfaces directly.
-```go 
+```go
+// package internal/service/...
 type SomeService struct {
     manifestRepository ManifestRepository
 }
@@ -43,13 +44,15 @@ type ManifestRepository interface {
 ```
 
 ```go
-type ManifestRepositoryImpl struct {
+// package internal/repository/...
+type ManifestRepository struct {
     readClient client.Reader
 }
 ```
 
 Another example, for more than only read:
 ```go
+// package internal/service/...
 type ManifestRepository interface {
     Get(name, namespace string) (*v1beta2.Manifest, error)
     Create(name, namespace string) error
@@ -58,7 +61,8 @@ type ManifestRepository interface {
 ```
 
 ```go
-type ManifestRepositoryImpl struct {
+// package internal/repository/...
+type ManifestRepository struct {
     kcpClient client.Client
 }
 ```
