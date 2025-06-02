@@ -28,7 +28,7 @@ type Service struct { } // => bar.Service
 type BazRepository interface { }
 
 // package internal/repository/baz
-type Repository struct { } // => bar.Repository
+type Repository struct { } // => baz.Repository
 ```
 
 ## Consequence
