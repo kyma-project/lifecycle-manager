@@ -53,7 +53,7 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
-			return ctrl.Result{Requeue: false}, nil
+			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, fmt.Errorf("MandatoryModuleController: %w", err)
 	}
