@@ -47,7 +47,6 @@ const (
 )
 
 var (
-	errExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
 	errExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
 	errPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
