@@ -98,7 +98,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if err = r.deleteOrphanedCertificate(ctx, req.Name); err != nil {
 				return ctrl.Result{}, err
 			}
-			return ctrl.Result{Requeue: false}, nil
+			return ctrl.Result{}, nil
 		}
 		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
 		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
@@ -382,7 +382,7 @@ func (r *Reconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (
 		return ctrl.Result{}, nil // no requeue of invalid state
 	}
 
-	return ctrl.Result{Requeue: false}, nil
+	return ctrl.Result{}, nil
 }
 
 func (r *Reconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {

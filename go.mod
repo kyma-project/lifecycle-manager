@@ -11,7 +11,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/cert-manager/cert-manager v1.17.2
 	github.com/gardener/cert-management v0.17.6
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-containerregistry v0.20.5
@@ -29,13 +29,13 @@ require (
 	golang.org/x/time v0.11.0
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
 	ocm.software/ocm v0.24.0
-	sigs.k8s.io/controller-runtime v0.20.4
+	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
-	istio.io/api v1.26.0
-	istio.io/client-go v1.26.0
+	istio.io/api v1.26.1
+	istio.io/client-go v1.26.1
 )
 
 require (
