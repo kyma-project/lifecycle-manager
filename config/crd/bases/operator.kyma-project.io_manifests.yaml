@@ -151,7 +151,6 @@ spec:
                 description: Version specifies current Resource version
                 type: string
             required:
-            - config
             - install
             - remote
             type: object
@@ -423,7 +422,6 @@ spec:
                 description: Version specifies current Resource version
                 type: string
             required:
-            - config
             - install
             - remote
             type: object

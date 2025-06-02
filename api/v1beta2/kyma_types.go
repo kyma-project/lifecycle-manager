@@ -56,7 +56,8 @@ type KymaSpec struct {
 	// Modules specifies the list of modules to be installed
 	// +listType=map
 	// +listMapKey=name
-	Modules []Module `json:"modules,omitempty"`
+	// +optional
+	Modules []Module `json:"modules"`
 }
 
 // Module defines the components to be installed.
@@ -138,20 +139,23 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 type KymaStatus struct {
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
-	State shared.State `json:"state,omitempty"`
+	// +optional
+	State shared.State `json:"state"`
 
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
 	// +listType=map
 	// +listMapKey=type
-	Conditions []apimetav1.Condition `json:"conditions,omitempty"`
+	// +optional
+	Conditions []apimetav1.Condition `json:"conditions"`
 
 	// Contains essential information about the current deployed module
-	Modules []ModuleStatus `json:"modules,omitempty"`
+	// +optional
+	Modules []ModuleStatus `json:"modules"`
 
 	// Active Channel
 	// +optional
-	ActiveChannel string `json:"activeChannel,omitempty"`
+	ActiveChannel string `json:"activeChannel"`
 
 	shared.LastOperation `json:"lastOperation,omitempty"`
 }
@@ -173,31 +177,36 @@ type ModuleStatus struct {
 	// FQDN is the fully qualified domain name of the module.
 	// In the ModuleTemplate it is located in .spec.descriptor.component.name of the ModuleTemplate
 	// FQDN is used to calculate Namespace and Name of the Manifest for tracking.
-	FQDN string `json:"fqdn,omitempty"`
+	// +optional
+	FQDN string `json:"fqdn"`
 
 	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.
-	Channel string `json:"channel,omitempty"`
+	// +optional
+	Channel string `json:"channel"`
 
 	// Channel tracks the active Version of the Module.
-	Version string `json:"version,omitempty"`
+	// +optional
+	Version string `json:"version"`
 
 	// Message is a human-readable message indicating details about the State.
-	Message string `json:"message,omitempty"`
+	// +optional
+	Message string `json:"message"`
 
 	// State of the Module in the currently tracked Generation
 	State shared.State `json:"state"`
 
 	// Manifest contains the Information of a related Manifest
-	Manifest *TrackingObject `json:"manifest,omitempty"`
+	// +optional
+	Manifest *TrackingObject `json:"manifest"`
 
 	// Resource contains information about the created module CR.
-	Resource *TrackingObject `json:"resource,omitempty"`
+	Resource *TrackingObject `json:"resource"`
 
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
 	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
-	Template *TrackingObject `json:"template,omitempty"`
+	Template *TrackingObject `json:"template"`
 }
 
 func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {

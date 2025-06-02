@@ -58,10 +58,10 @@ type ManifestSpec struct {
 
 	// Version specifies current Resource version
 	// +optional
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
 
 	// Config specifies OCI image configuration for Manifest
-	Config *ImageSpec `json:"config"`
+	Config *ImageSpec `json:"config,omitempty"`
 
 	// Install specifies a list of installations for Manifest
 	Install InstallInfo `json:"install"`
@@ -70,37 +70,31 @@ type ManifestSpec struct {
 	// +kubebuilder:validation:XEmbeddedResource
 	// +nullable
 	// Resource specifies a resource to be watched for state updates
-	// +optional
-	Resource *unstructured.Unstructured `json:"resource"`
+	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 }
 
 // ImageSpec defines OCI Image specifications.
 // +k8s:deepcopy-gen=true
 type ImageSpec struct {
 	// Repo defines the Image repo
-	// +optional
-	Repo string `json:"repo"`
+	Repo string `json:"repo,omitempty"`
 
 	// Name defines the Image name
-	// +optional
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 
 	// Ref is either a sha value, tag or version
-	// +optional
-	Ref string `json:"ref"`
+	Ref string `json:"ref,omitempty"`
 
 	// Type specifies the type of installation specification
 	// that could be provided as part of a custom resource.
 	// This time is used in codec to successfully decode from raw extensions.
 	// +kubebuilder:validation:Enum=helm-chart;oci-ref;"kustomize";""
-	// +optional
-	Type RefTypeMetadata `json:"type"`
+	Type RefTypeMetadata `json:"type,omitempty"`
 
 	// CredSecretSelector is an optional field, for OCI image saved in private registry,
 	// use it to indicate the secret which contains registry credentials,
 	// must exist in the namespace same as manifest
-	// +optional
-	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector"`
+	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 type RefTypeMetadata string

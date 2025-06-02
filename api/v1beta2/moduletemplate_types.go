@@ -134,7 +134,7 @@ type Manager struct {
 
 	// Namespace is the namespace of the manager. It is optional.
 	// +optional
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string `json:"namespace"`
 
 	// Name is the name of the manager.
 	Name string `json:"name"`
@@ -151,7 +151,8 @@ type ModuleInfo struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=name
-	Icons []ModuleIcon `json:"icons,omitempty"`
+	// +optional
+	Icons []ModuleIcon `json:"icons"`
 }
 
 type ModuleIcon struct {
