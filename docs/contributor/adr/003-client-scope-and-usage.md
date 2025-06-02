@@ -31,7 +31,7 @@ The client will **only** be referenced in the Repository layer. All other layers
 
 These configuration options are compliant with the decision:
 
-A Service defines its dependency as `[Prefix]Repository`. The Repository implementation then uses controller-runtime's Client interfaces directly.
+A Service defines a dependency as `[Prefix]Repository`. The Repository implementation then uses controller-runtime's Client interfaces directly.
 ```go
 // package internal/service/...
 type SomeService struct {
