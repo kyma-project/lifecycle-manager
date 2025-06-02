@@ -14,21 +14,21 @@ It is decided that the following naming patterns apply:
 
 ### Layered Architecture
 
-Major building blocks of the [layered architecture](004-layered-architecture.md) are *controllers*, *services* and *repositories*. It is decided that the types are suffixed accordingly. It is also explicitly decided to **NOT** use *Interface*  and *Impl*  suffixes.
+Major building blocks of the [layered architecture](004-layered-architecture.md) are *controllers*, *services* and *repositories*. It is decided that the types are suffixed accordingly. It is also explicitly decided to **NOT** use *Interface*  and *Impl*  suffixes. Further, the implementation types are not prefixed with the "context" as this is established by the package already.
 
 #### Do's
 
 ```go
 // package internal/controller/foo
-type FooController struct { }
+type Controller struct { } // => foo.Controller
 type BarService interface { }
 
 // package internal/service/bar
-type BarService struct { }
+type Service struct { } // => bar.Service
 type BazRepository interface { }
 
 // package internal/repository/baz
-type BazRepository struct { }
+type Repository struct { } // => bar.Repository
 ```
 
 ## Consequence
