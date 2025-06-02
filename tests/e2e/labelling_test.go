@@ -22,7 +22,6 @@ var (
 		{Name: "skr-webhook", Namespace: RemoteNamespace}:     apiappsv1.SchemeGroupVersion.WithKind("Deployment"),
 		{Name: "skr-webhook", Namespace: RemoteNamespace}:     admissionregistrationv1.SchemeGroupVersion.WithKind("ValidatingWebhookConfiguration"),
 		{Name: "skr-webhook-tls", Namespace: RemoteNamespace}: apicorev1.SchemeGroupVersion.WithKind("Secret"),
-		{Name: "skr-webhook-sa", Namespace: RemoteNamespace}:  apicorev1.SchemeGroupVersion.WithKind("ServiceAccount"),
 		{Name: RemoteNamespace, Namespace: ""}:                apicorev1.SchemeGroupVersion.WithKind("Namespace"),
 	}
 	globalAccountIDLabelValue = "dummy-global-account"
