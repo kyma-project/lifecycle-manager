@@ -19,16 +19,16 @@ Major building blocks of the [layered architecture](004-layered-architecture.md)
 #### Do's
 
 ```go
-// package internal/controller/something
-type SomeController struct { }
-type SomeService interface { }
+// package internal/controller/foo
+type FooController struct { }
+type BarService interface { }
 
-// package internal/service/something
-type SomeService struct { }
-type SomeRepository interface { }
+// package internal/service/bar
+type BarService struct { }
+type BazRepository interface { }
 
-// package internal/repository/something
-type SomeRepository struct { }
+// package internal/repository/baz
+type BazRepository struct { }
 ```
 
 ## Consequence
