@@ -1,73 +1,43 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: skr-webhook-sa
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kyma-reader
-rules:
-  - apiGroups:
-      - operator.kyma-project.io
-    resources:
-      - kymas
-    verbs:
-      - get
-      - watch
-      - list
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: read-kymas
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kyma-reader
-subjects:
-  - kind: ServiceAccount
-    name: skr-webhook-sa
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: skr-webhook
 spec:
-  ports:
-    - name: webhook
-      port: 443
-      targetPort: watcher-port
   selector:
     app: skr-webhook
+  ports:
+    - port: 443
+      targetPort: watcher-port
+      name: webhook
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: skr-webhook-metrics
 spec:
-  ports:
-    - name: http-metrics
-      port: 2112
-      targetPort: metrics-port
   selector:
     app: skr-webhook
+  ports:
+    - port: 2112
+      targetPort: metrics-port
+      name: http-metrics
 ---
 apiVersion: scheduling.k8s.io/v1
-description: This priority class is used for skr-webhook to ensure reconciliation, even with high workload.
-globalDefault: false
 kind: PriorityClass
 metadata:
   name: skr-webhook-priority
 value: 1000000000
+globalDefault: false
+description: "This priority class is used for skr-webhook to ensure reconciliation, even with high workload."
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: skr-webhook
   name: skr-webhook
   namespace: default
+  labels:
+    app: skr-webhook
 spec:
   replicas: 1
   selector:
@@ -81,7 +51,8 @@ spec:
         sidecar.istio.io/inject: "false"
     spec:
       containers:
-        - env:
+        - name: server
+          env:
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -91,40 +62,38 @@ spec:
             - name: METRICS_PORT
               value: "2112"
             - name: TLS_KEY
-              value: /app/etc/ssl/tls.key
+              value: "/app/etc/ssl/tls.key"
             - name: TLS_CERT
-              value: /app/etc/ssl/tls.crt
+              value: "/app/etc/ssl/tls.crt"
             - name: CA_CERT
-              value: /app/etc/ssl/ca.crt
+              value: "/app/etc/ssl/ca.crt"
             - name: TLS_CALLBACK
               value: "true"
             - name: KCP_CONTRACT
-              value: v1
+              value: "v1"
             - name: KCP_ADDR
-              value: kcp-base-url-invalid
-          image: europe-docker.pkg.dev/kyma-project/prod/runtime-watcher:latest
+              value: "kcp-base-url-invalid"
+          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher:latest" # this image will be dynamically replaced by flags
           imagePullPolicy: Always
-          name: server
+          volumeMounts:
+            - name: ssl
+              mountPath: /app/etc/ssl
+          resources:
+            requests:
+              memory: 20Mi
+              cpu: "0.01"
+            limits:
+              memory: 200Mi
+              cpu: "0.1"
           ports:
             - containerPort: 8443
               name: watcher-port
             - containerPort: 2112
               name: metrics-port
-          resources:
-            limits:
-              cpu: "0.1"
-              memory: 200Mi
-            requests:
-              cpu: "0.01"
-              memory: 20Mi
-          volumeMounts:
-            - mountPath: /app/etc/ssl
-              name: ssl
-      priorityClassName: skr-webhook-priority
-      serviceAccountName: skr-webhook-sa
       volumes:
         - name: ssl
           secret:
+            secretName: skr-webhook-tls
             items:
               - key: tls.key
                 path: tls.key
@@ -132,7 +101,7 @@ spec:
                 path: tls.crt
               - key: ca.crt
                 path: ca.crt
-            secretName: skr-webhook-tls
+      priorityClassName: skr-webhook-priority
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
