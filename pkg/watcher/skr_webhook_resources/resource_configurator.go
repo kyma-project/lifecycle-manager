@@ -43,9 +43,11 @@ var (
 )
 
 const (
-	PodRestartLabelKey         = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
-	kcpAddressEnvName          = "KCP_ADDR"
-	ApiserverNetworkPolicyName = "kyma-project.io--watcher-to-apiserver"
+	PodRestartLabelKey             = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
+	kcpAddressEnvName              = "KCP_ADDR"
+	ApiserverNetworkPolicyName     = "kyma-project.io--watcher-to-apiserver"
+	SeedToWatcherNetworkPolicyName = "kyma-project.io--seed-to-watcher"
+	WatcherToDNSNetworkPolicyName  = "kyma-project.io--watcher-to-dns"
 )
 
 func NewResourceConfigurator(remoteNs, skrWatcherImage, secretResVer string,

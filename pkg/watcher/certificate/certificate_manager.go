@@ -172,10 +172,10 @@ func (c *CertificateManager) GetSkrCertificateSecretData(ctx context.Context,
 ) (*secret.CertificateSecretData, error) {
 	skrCertSecret, err := c.GetSkrCertificateSecret(ctx, kymaName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
+		return nil, err
 	}
 
-	return secret.NewCertificateSecretData(skrCertSecret), nil
+	return secret.NewCertificateSecretData(skrCertSecret)
 }
 
 // GetGatewayCertificateSecret returns the gateway certificate secret.
@@ -194,10 +194,10 @@ func (c *CertificateManager) GetGatewayCertificateSecret(ctx context.Context) (*
 func (c *CertificateManager) GetGatewayCertificateSecretData(ctx context.Context) (*secret.GatewaySecretData, error) {
 	gatewayCertSecret, err := c.GetGatewayCertificateSecret(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
+		return nil, err
 	}
 
-	return secret.NewGatewaySecretData(gatewayCertSecret), nil
+	return secret.NewGatewaySecretData(gatewayCertSecret)
 }
 
 // renewal is required if the gateway certficiate secret is newer than the SKR certificate secret.

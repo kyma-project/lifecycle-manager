@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	watcherCrName = "klm-watcher"
+	watcherCrName            = "klm-watcher"
+	testDenyAllNetworkPolicy = "kyma-project.io--deny-all-ingress"
 )
 
 var errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
@@ -45,6 +46,24 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
 				WithArguments(skrwebhookresources.SkrResourceName, RemoteNamespace, skrClient).
+				Should(Succeed())
+
+			By("And Network Policy is created")
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, skrwebhookresources.ApiserverNetworkPolicyName, RemoteNamespace).
+				Should(Succeed())
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, skrwebhookresources.SeedToWatcherNetworkPolicyName, RemoteNamespace).
+				Should(Succeed())
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, skrwebhookresources.WatcherToDNSNetworkPolicyName, RemoteNamespace).
+				Should(Succeed())
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, testDenyAllNetworkPolicy, RemoteNamespace).
 				Should(Succeed())
 
 			By("And Runtime Watcher deployment is deleted")
