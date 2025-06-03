@@ -50,6 +50,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
+	"github.com/kyma-project/lifecycle-manager/internal/service/gateway"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -64,9 +66,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -213,14 +216,14 @@ var _ = BeforeSuite(func() {
 		secret.NewCertificateSecretClient(mgr.GetClient()),
 		certificateManagerConfig,
 	)
+	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	Expect(err).ToNot(HaveOccurred())
 
-	gatewayConfig := watcher.GatewayConfig{
-		IstioGatewayName:          gatewayName,
-		IstioGatewayNamespace:     ControlPlaneNamespace,
-		LocalGatewayPortOverwrite: "",
-	}
+	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 
-	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr.GetClient())
+	gatewayService := gateway.NewService(gatewayName, ControlPlaneNamespace, "", gatewayRepository)
+
+	resolvedKcpAddr, err := gatewayService.ResolveKcpAddr()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	Expect(err).ToNot(HaveOccurred())

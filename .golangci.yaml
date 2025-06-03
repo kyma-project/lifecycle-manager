@@ -216,6 +216,8 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - .*/mock_.*.go$
+      - .*/mock/.*.go$
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
