@@ -9,7 +9,6 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
-	apirbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -48,7 +47,6 @@ const (
 )
 
 var (
-	errExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
 	errExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
 	errPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
@@ -146,21 +144,6 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 
 var errConvertUnstruct = errors.New("failed to convert deployment to unstructured")
 
-func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
-) (*apirbacv1.ClusterRoleBinding, error) {
-	crb := &apirbacv1.ClusterRoleBinding{}
-	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, crb); err != nil {
-		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
-	}
-	if len(crb.Subjects) == 0 {
-		return nil, errExpectedSubjectsNotToBeEmpty
-	}
-	serviceAccountSubj := crb.Subjects[0]
-	serviceAccountSubj.Namespace = cfg.remoteNs
-	crb.Subjects[0] = serviceAccountSubj
-	return crb, nil
-}
-
 func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Unstructured,
 ) (*apiappsv1.Deployment, error) {
 	deployment := &apiappsv1.Deployment{}
@@ -242,9 +225,6 @@ func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstr
 ) (client.Object, error) {
 	if object.GetAPIVersion() == apiappsv1.SchemeGroupVersion.String() && object.GetKind() == "Deployment" {
 		return configureDeployment(cfg, object)
-	}
-	if object.GetAPIVersion() == apirbacv1.SchemeGroupVersion.String() && object.GetKind() == "ClusterRoleBinding" {
-		return configureClusterRoleBinding(cfg, object)
 	}
 	return object.DeepCopy(), nil
 }
