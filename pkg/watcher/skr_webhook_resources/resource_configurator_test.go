@@ -9,7 +9,6 @@ import (
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apinetworkv1 "k8s.io/api/networking/v1"
-	apirbacv1 "k8s.io/api/rbac/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -21,70 +20,6 @@ import (
 func toUnstructured(obj interface{}) *unstructured.Unstructured {
 	m, _ := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	return &unstructured.Unstructured{Object: m}
-}
-
-func TestResourceConfigurator_ConfigureClusterRoleBinding(t *testing.T) {
-	remoteNs := "test-ns"
-	tests := []struct {
-		name    string
-		fields  fields
-		obj     *unstructured.Unstructured
-		wantNs  string
-		wantErr bool
-	}{
-		{
-			name:   "sets subject namespace",
-			fields: fields{remoteNs: remoteNs},
-			obj: func() *unstructured.Unstructured {
-				crb := &apirbacv1.ClusterRoleBinding{
-					Subjects: []apirbacv1.Subject{
-						{Kind: "ServiceAccount", Name: "foo", Namespace: ""},
-					},
-				}
-				m, _ := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(crb)
-				return &unstructured.Unstructured{Object: m}
-			}(),
-			wantNs:  remoteNs,
-			wantErr: false,
-		},
-		{
-			name:   "error on empty subjects",
-			fields: fields{remoteNs: remoteNs},
-			obj: func() *unstructured.Unstructured {
-				crb := &apirbacv1.ClusterRoleBinding{}
-				m, _ := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(crb)
-				return &unstructured.Unstructured{Object: m}
-			}(),
-			wantErr: true,
-		},
-		{
-			name:    "error on invalid unstructured",
-			fields:  fields{remoteNs: remoteNs},
-			obj:     &unstructured.Unstructured{Object: map[string]interface{}{"kind": "NotAClusterRoleBinding"}},
-			wantErr: true,
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			configurator := skrwebhookresources.NewResourceConfigurator(
-				testCase.fields.remoteNs,
-				testCase.fields.skrWatcherImage,
-				testCase.fields.secretResVer,
-				testCase.fields.kcpAddress,
-				testCase.fields.cpuResLimit,
-				testCase.fields.memResLimit,
-			)
-			got, err := configurator.ConfigureClusterRoleBinding(testCase.obj)
-			if (err != nil) != testCase.wantErr {
-				t.Errorf("ConfigureClusterRoleBinding() error = %v, wantErr %v", err, testCase.wantErr)
-				return
-			}
-			if err == nil && got.Subjects[0].Namespace != testCase.wantNs {
-				t.Errorf("Subject.Namespace = %v, want %v", got.Subjects[0].Namespace, testCase.wantNs)
-			}
-		})
-	}
 }
 
 //nolint:gocognit // test case is complex
@@ -242,13 +177,13 @@ func TestResourceConfigurator_ConfigureNetworkPolicies(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "updates egress for ApiserverNetworkPolicyName",
+			name:   "updates egress for ApiServerNetworkPolicyName",
 			fields: fields{kcpAddress: kcpAddr},
 			obj: toUnstructured(&apinetworkv1.NetworkPolicy{
-				ObjectMeta: apimetav1.ObjectMeta{Name: skrwebhookresources.ApiserverNetworkPolicyName},
+				ObjectMeta: apimetav1.ObjectMeta{Name: skrwebhookresources.ApiServerNetworkPolicyName},
 			}),
 			want: &apinetworkv1.NetworkPolicy{
-				ObjectMeta: apimetav1.ObjectMeta{Name: skrwebhookresources.ApiserverNetworkPolicyName},
+				ObjectMeta: apimetav1.ObjectMeta{Name: skrwebhookresources.ApiServerNetworkPolicyName},
 				Spec: apinetworkv1.NetworkPolicySpec{
 					Egress: []apinetworkv1.NetworkPolicyEgressRule{
 						{

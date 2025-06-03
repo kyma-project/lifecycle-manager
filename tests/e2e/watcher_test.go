@@ -51,7 +51,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			By("And Network Policy is created")
 			Eventually(NetworkPolicyExists).
 				WithContext(ctx).
-				WithArguments(skrClient, skrwebhookresources.ApiserverNetworkPolicyName, RemoteNamespace).
+				WithArguments(skrClient, skrwebhookresources.ApiServerNetworkPolicyName, RemoteNamespace).
 				Should(Succeed())
 			Eventually(NetworkPolicyExists).
 				WithContext(ctx).

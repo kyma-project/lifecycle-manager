@@ -9,7 +9,6 @@ import (
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apinetworkv1 "k8s.io/api/networking/v1"
-	apirbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -35,7 +34,6 @@ type KCPAddr struct {
 }
 
 var (
-	errExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
 	errExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
 	errPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
@@ -45,7 +43,7 @@ var (
 const (
 	PodRestartLabelKey             = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
 	kcpAddressEnvName              = "KCP_ADDR"
-	ApiserverNetworkPolicyName     = "kyma-project.io--watcher-to-apiserver"
+	ApiServerNetworkPolicyName     = "kyma-project.io--watcher-to-apiserver"
 	SeedToWatcherNetworkPolicyName = "kyma-project.io--seed-to-watcher"
 	WatcherToDNSNetworkPolicyName  = "kyma-project.io--watcher-to-dns"
 )
@@ -68,11 +66,6 @@ func NewResourceConfigurator(remoteNs, skrWatcherImage, secretResVer string,
 		) (client.Object, error) {
 			return rc.ConfigureDeployment(obj)
 		},
-		apirbacv1.SchemeGroupVersion.String() + "/ClusterRoleBinding": func(rc *ResourceConfigurator,
-			obj *unstructured.Unstructured,
-		) (client.Object, error) {
-			return rc.ConfigureClusterRoleBinding(obj)
-		},
 		apinetworkv1.SchemeGroupVersion.String() + "/NetworkPolicy": func(rc *ResourceConfigurator,
 			obj *unstructured.Unstructured,
 		) (client.Object, error) {
@@ -90,21 +83,6 @@ func (rc *ResourceConfigurator) ConfigureUnstructuredObject(object *unstructured
 		return handler(rc, object)
 	}
 	return object.DeepCopy(), nil
-}
-
-func (rc *ResourceConfigurator) ConfigureClusterRoleBinding(resource *unstructured.Unstructured,
-) (*apirbacv1.ClusterRoleBinding, error) {
-	crb := &apirbacv1.ClusterRoleBinding{}
-	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, crb); err != nil {
-		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
-	}
-	if len(crb.Subjects) == 0 {
-		return nil, errExpectedSubjectsNotToBeEmpty
-	}
-	serviceAccountSubj := crb.Subjects[0]
-	serviceAccountSubj.Namespace = rc.remoteNs
-	crb.Subjects[0] = serviceAccountSubj
-	return crb, nil
 }
 
 func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructured,
@@ -160,7 +138,7 @@ func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstr
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 
-	if networkPolicy.GetObjectMeta().GetName() == ApiserverNetworkPolicyName {
+	if networkPolicy.GetObjectMeta().GetName() == ApiServerNetworkPolicyName {
 		kcpPortInt := intstr.FromInt32(int32(rc.kcpAddress.Port)) //nolint:gosec // G115: this is not a security sensitive code, just a port number
 		networkProtocol := apicorev1.ProtocolTCP
 

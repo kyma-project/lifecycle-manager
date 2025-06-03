@@ -87,8 +87,8 @@ var (
 )
 
 const (
-	istioSystemNs     = "istio-system"
-	gatewayName       = "klm-watcher"
+	istioSystemNs = "istio-system"
+	gatewayName   = "klm-watcher"
 )
 
 var (
