@@ -88,7 +88,6 @@ var (
 const (
 	istioSystemNs     = "istio-system"
 	gatewayName       = "klm-watcher"
-	caCertificateName = "klm-watcher-serving"
 )
 
 var (
