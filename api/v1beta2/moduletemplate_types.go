@@ -81,8 +81,7 @@ type ModuleTemplateSpec struct {
 	//
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:XEmbeddedResource
-	// +optional
-	Data *unstructured.Unstructured `json:"data"`
+	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
@@ -101,27 +100,25 @@ type ModuleTemplateSpec struct {
 	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	// CustomStateCheck is deprecated.
-	// +optional
-	CustomStateCheck []*CustomStateCheck `json:"customStateCheck"`
+	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 
 	// Resources is a list of additional resources of the module that can be fetched, e.g., the raw manifest.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
-	// +optional
-	Resources []Resource `json:"resources"`
+	Resources []Resource `json:"resources,omitempty"`
 
 	// Info contains metadata about the module.
 	// +optional
-	Info *ModuleInfo `json:"info"`
+	Info *ModuleInfo `json:"info,omitempty"`
 
 	// AssociatedResources is a list of module related resources that usually must be cleaned when uninstalling a module. Informational purpose only.
 	// +optional
-	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources"`
+	AssociatedResources []apimetav1.GroupVersionKind `json:"associatedResources,omitempty"`
 
 	// Manager contains information for identifying a module's resource that can be used as indicator for the installation readiness of the module. Typically, this is the manager Deployment of the module. In exceptional cases, it may also be another resource.
 	// +optional
-	Manager *Manager `json:"manager"`
+	Manager *Manager `json:"manager,omitempty"`
 
 	// RequiresDowntime indicates whether the module requires downtime in support of maintenance windows during module upgrades.
 	// +optional
@@ -134,7 +131,7 @@ type Manager struct {
 
 	// Namespace is the namespace of the manager. It is optional.
 	// +optional
-	Namespace string `json:"namespace"`
+	Namespace string `json:"namespace,omitempty"`
 
 	// Name is the name of the manager.
 	Name string `json:"name"`
@@ -151,8 +148,7 @@ type ModuleInfo struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=name
-	// +optional
-	Icons []ModuleIcon `json:"icons"`
+	Icons []ModuleIcon `json:"icons,omitempty"`
 }
 
 type ModuleIcon struct {

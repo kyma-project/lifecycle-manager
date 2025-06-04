@@ -51,13 +51,13 @@ type KymaSpec struct {
 
 	// SkipMaintenanceWindows indicates whether module upgrades that require downtime
 	// should bypass the defined Maintenance Windows and be applied immediately.
-	SkipMaintenanceWindows bool `json:"skipMaintenanceWindows,omitempty"`
+	// +optional
+	SkipMaintenanceWindows bool `json:"skipMaintenanceWindows"`
 
 	// Modules specifies the list of modules to be installed
 	// +listType=map
 	// +listMapKey=name
-	// +optional
-	Modules []Module `json:"modules"`
+	Modules []Module `json:"modules,omitempty"`
 }
 
 // Module defines the components to be installed.
@@ -71,16 +71,14 @@ type Module struct {
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
 	// together with Cache Configuration on the Operator responsible for the templated Modules to split
 	// workload.
-	// +optional
-	ControllerName string `json:"controller"`
+	ControllerName string `json:"controller,omitempty"`
 
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
-	// +optional
-	Channel string `json:"channel"`
+	Channel string `json:"channel,omitempty"`
 
 	// Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on this specific version.
@@ -92,16 +90,15 @@ type Module struct {
 
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
-	// +optional
-	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef"`
+	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef,omitempty"`
 
 	// +kubebuilder:default:=CreateAndDelete
-	// +optional
-	CustomResourcePolicy `json:"customResourcePolicy"`
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
 
 	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
 	// for the lifecycle of the module.
 	// +kubebuilder:default:=true
+	// +optional
 	Managed bool `json:"managed"`
 }
 
@@ -139,23 +136,20 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 type KymaStatus struct {
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
-	// +optional
-	State shared.State `json:"state"`
+	State shared.State `json:"state,omitempty"`
 
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
 	// +listType=map
 	// +listMapKey=type
-	// +optional
-	Conditions []apimetav1.Condition `json:"conditions"`
+	Conditions []apimetav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
-	// +optional
-	Modules []ModuleStatus `json:"modules"`
+	Modules []ModuleStatus `json:"modules,omitempty"`
 
 	// Active Channel
 	// +optional
-	ActiveChannel string `json:"activeChannel"`
+	ActiveChannel string `json:"activeChannel,omitempty"`
 
 	shared.LastOperation `json:"lastOperation,omitempty"`
 }
@@ -177,37 +171,31 @@ type ModuleStatus struct {
 	// FQDN is the fully qualified domain name of the module.
 	// In the ModuleTemplate it is located in .spec.descriptor.component.name of the ModuleTemplate
 	// FQDN is used to calculate Namespace and Name of the Manifest for tracking.
-	// +optional
-	FQDN string `json:"fqdn"`
+	FQDN string `json:"fqdn,omitempty"`
 
 	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.
-	// +optional
-	Channel string `json:"channel"`
+	Channel string `json:"channel,omitempty"`
 
 	// Channel tracks the active Version of the Module.
-	// +optional
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
 
 	// Message is a human-readable message indicating details about the State.
-	// +optional
-	Message string `json:"message"`
+	Message string `json:"message,omitempty"`
 
 	// State of the Module in the currently tracked Generation
 	State shared.State `json:"state"`
 
 	// Manifest contains the Information of a related Manifest
-	// +optional
-	Manifest *TrackingObject `json:"manifest"`
+	Manifest *TrackingObject `json:"manifest,omitempty"`
 
 	// Resource contains information about the created module CR.
-	// +optional
-	Resource *TrackingObject `json:"resource"`
+	Resource *TrackingObject `json:"resource,omitempty"`
 
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
 	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
-	Template *TrackingObject `json:"template"`
+	Template *TrackingObject `json:"template,omitempty"`
 }
 
 func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {
