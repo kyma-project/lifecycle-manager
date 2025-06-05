@@ -24,7 +24,7 @@ By default, without any labels configured on Kyma and ModuleTemplate CRs, a Modu
 For every synchronized ModuleTemplate CR, all related ModuleReleaseMetas CRs are synchronized as well.
 
 > [!Note]
-> The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the control-plane mode. Lifecycle Manager running in the single-cluster mode, doesn't require any CR synchronization.
+> The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the control-plane mode. Lifecycle Manager running in the single-cluster mode doesn't require any CR synchronization.
 
 > [!Note]
 > Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from remote clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Control Plane are not synchronized.
