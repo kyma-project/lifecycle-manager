@@ -20,10 +20,8 @@ const (
 	Signature           = OperatorGroup + Separator + "signature"
 	ModuleName          = OperatorGroup + Separator + "module-name"
 	IsMandatoryModule   = OperatorGroup + Separator + "mandatory-module"
-
-	//nolint:gosec // OCI registry credits label, no confidential content
-	OCIRegistryCredLabel = "oci-registry-cred"
-	OperatorName         = "lifecycle-manager"
+	
+	OperatorName = "lifecycle-manager"
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
 	WatchedByLabel      = OperatorGroup + Separator + "watched-by"

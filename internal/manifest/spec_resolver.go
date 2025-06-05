@@ -14,7 +14,7 @@ import (
 )
 
 type KeyChainLookup interface {
-	Get(ctx context.Context, imageSpec v1beta2.ImageSpec) (authn.Keychain, error)
+	Get(ctx context.Context) (authn.Keychain, error)
 }
 
 type PathExtractor interface {
@@ -46,7 +46,7 @@ func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) 
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
-	keyChain, err := s.keyChainLookup.Get(ctx, imageSpec)
+	keyChain, err := s.keyChainLookup.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}

@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -17,11 +15,10 @@ type LayerRepresentation interface {
 }
 
 type OCI struct {
-	Repo               string                   `json:"repo"`
-	Name               string                   `json:"name"`
-	Ref                string                   `json:"ref"`
-	Type               string                   `json:"type"`
-	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
+	Repo string `json:"repo"`
+	Name string `json:"name"`
+	Ref  string `json:"ref"`
+	Type string `json:"type"`
 }
 
 func (o *OCI) ToInstallRaw() ([]byte, error) {
@@ -52,10 +49,9 @@ func (l Layer) ConvertToImageSpec() (*v1beta2.ImageSpec, error) {
 		return nil, fmt.Errorf("%w: not an OCIImage", ErrLayerParsing)
 	}
 	return &v1beta2.ImageSpec{
-		Repo:               ociImage.Repo,
-		Name:               ociImage.Name,
-		Ref:                ociImage.Ref,
-		Type:               v1beta2.RefTypeMetadata(ociImage.Type),
-		CredSecretSelector: ociImage.CredSecretSelector,
+		Repo: ociImage.Repo,
+		Name: ociImage.Name,
+		Ref:  ociImage.Ref,
+		Type: v1beta2.RefTypeMetadata(ociImage.Type),
 	}, nil
 }
