@@ -98,7 +98,6 @@ type Module struct {
 	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
 	// for the lifecycle of the module.
 	// +kubebuilder:default:=true
-	// +optional
 	Managed bool `json:"managed"`
 }
 
