@@ -40,7 +40,6 @@ The Kyma CR serves as the main configuration file shared between KCP and SKR clu
 4. Users' modifications may include:
     - Adding or removing modules
     - Changing module versions
-    - Updating module configurations
 
 5. Lifecycle Manager monitors these changes by reading the Kyma CR in the SKR cluster, which contains the updated module list.
 
