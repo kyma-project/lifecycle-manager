@@ -4,9 +4,9 @@ This document explains how the Kyma Control Plane (KCP) cluster, where Lifecycle
 
 ## Module Catalog Synchronization
 
-The Module Catalog comprises all modules, represented by ModuleTemplate and related ModuleReleaseMeta custom resource (CRs), that are available for SAP BTP, Kyma runtime users. The Module Catalog portfolio may vary for different user groups.
+The Module Catalog comprises all modules, represented by ModuleTemplate and related ModuleReleaseMeta custom resources (CRs), that are available for SAP BTP, Kyma runtime users. The Module Catalog portfolio may vary for different user groups.
 
-Lifecycle Manager ensures the Module Catalog is correctly synchronized with users' runtimes. The synchronization mechanism is required to allow users to enable modules in their clusters. The mechanism is controlled by the set of labels that are configured on Kyma and ModuleTemplate CRs in the KCP. The labels are:
+Lifecycle Manager ensures the Module Catalog is correctly synchronized with users' runtimes. The synchronization mechanism allows users to enable modules in their clusters. The mechanism is controlled by the set of labels that are configured on Kyma and ModuleTemplate CRs in the KCP. The labels are:
 * `operator.kyma-project.io/internal`
 * `operator.kyma-project.io/beta`
 
