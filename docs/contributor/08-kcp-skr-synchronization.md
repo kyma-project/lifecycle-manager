@@ -25,7 +25,7 @@ By default, without any labels configured on Kyma and ModuleTemplate CRs, a Modu
 > [!Note]
 > Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from the SAP BTP, Kyma runtime clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Kyma Control Plane are not synchronized.
 
-For more information, see [the Kyma CR synchronization labels](./resources/01-kyma.md#operatorkyma-projectio-labels).
+For more information, see [`operator.kyma-project.io` Labels](./resources/01-kyma.md#operatorkyma-projectio-labels).
 
 ## Kyma CR Synchronization
 
