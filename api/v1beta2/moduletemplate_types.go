@@ -122,7 +122,7 @@ type ModuleTemplateSpec struct {
 
 	// RequiresDowntime indicates whether the module requires downtime in support of maintenance windows during module upgrades.
 	// +optional
-	RequiresDowntime bool `json:"requiresDowntime,omitempty"`
+	RequiresDowntime bool `json:"requiresDowntime"`
 }
 
 // Manager defines the structure for the manager field in ModuleTemplateSpec.
