@@ -22,12 +22,14 @@ If you want to provide new features for Lifecycle Manager, develop a module, or 
 * [Architecture](/docs/contributor/01-architecture.md)
 * [Controllers](/docs/contributor/02-controllers.md)
 * [Provide Credentials for Private OCI Registry Authentication](/docs/contributor/03-config-private-registry.md)
-* [Local Test Setup in the Control Plane Mode Using k3d](/docs/contributor/04-local-test-setup.md)
+* [Configure a Local Test Setup](/docs/contributor/04-local-test-setup.md)
+* [API Changelog](/docs/contributor/05-api-changelog.md)
 * [Resources](/docs/contributor/resources/README.md)
   * [Kyma](/docs/contributor/resources/01-kyma.md)
   * [Manifest](/docs/contributor/resources/02-manifest.md)
   * [ModuleTemplate](/docs/contributor/resources/03-moduletemplate.md)
   * [Watcher](/docs/contributor/resources/04-watcher.md)
+  * [ModuleReleaseMeta](/docs/contributor/resources/05-modulereleasemeta.md)
 
 ## Contributing
 
