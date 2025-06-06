@@ -20,8 +20,8 @@ packages:
   internal/pkg/resources: 91
   internal/remote: 29
   internal/repository/kyma: 100
-  internal/service/skrwebhook/chartreader: 78
-  internal/service/skrwebhook/gateway: 78
+  internal/service/skrwebhook/chartreader: 100
+  internal/service/skrwebhook/gateway: 94
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/manifest/orphan: 100
