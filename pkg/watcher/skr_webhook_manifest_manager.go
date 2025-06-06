@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
@@ -18,6 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -48,56 +47,36 @@ type CertificateManager interface {
 }
 
 type SkrWebhookManifestManager struct {
-	kcpClient          client.Client
-	skrContextFactory  remote.SkrContextProvider
-	config             SkrWebhookManagerConfig
-	kcpAddr            skrwebhookresources.KCPAddr
-	baseResources      []*unstructured.Unstructured
-	watcherMetrics     WatcherMetrics
-	certificateManager CertificateManager
+	kcpClient            client.Client
+	skrContextFactory    remote.SkrContextProvider
+	remoteSyncNamespace  string
+	kcpAddr              skrwebhookresources.KCPAddr
+	chartReaderService   *chartreader.Service
+	baseResources        []*unstructured.Unstructured
+	watcherMetrics       WatcherMetrics
+	certificateManager   CertificateManager
+	resourceConfigurator *skrwebhookresources.ResourceConfigurator
 }
 
-type SkrWebhookManagerConfig struct {
-	// SkrWatcherPath represents the path of the webhook resources
-	// to be installed on SKR clusters upon reconciling kyma CRs.
-	SkrWatcherPath         string
-	SkrWatcherImage        string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
-	RemoteSyncNamespace    string
-}
-
-const rawManifestFilePathTpl = "%s/resources.yaml"
-
-func NewSKRWebhookManifestManager(
-	kcpClient client.Client,
-	skrContextFactory remote.SkrContextProvider,
-	managerConfig SkrWebhookManagerConfig,
-	resolvedKcpAddr skrwebhookresources.KCPAddr,
-	certificateManager CertificateManager,
+func NewSKRWebhookManifestManager(kcpClient client.Client, skrContextFactory remote.SkrContextProvider,
+	remoteSyncNamespace string, resolvedKcpAddr skrwebhookresources.KCPAddr, chartReaderService *chartreader.Service,
+	certificateManager CertificateManager, resourceConfigurator *skrwebhookresources.ResourceConfigurator,
 	watcherMetrics *metrics.WatcherMetrics,
 ) (*SkrWebhookManifestManager, error) {
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
-	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SkrWatcherPath)
-	rawManifestFile, err := os.Open(manifestFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open manifest file path: %w", err)
-	}
-	defer closeFileAndLogErr(ctx, rawManifestFile, manifestFilePath)
-	baseResources, err := getRawManifestUnstructuredResources(rawManifestFile)
+	baseResources, err := chartReaderService.GetRawManifestUnstructuredResources()
 	if err != nil {
 		return nil, err
 	}
-
 	return &SkrWebhookManifestManager{
-		kcpClient:          kcpClient,
-		skrContextFactory:  skrContextFactory,
-		config:             managerConfig,
-		kcpAddr:            resolvedKcpAddr,
-		baseResources:      baseResources,
-		watcherMetrics:     watcherMetrics,
-		certificateManager: certificateManager,
+		kcpClient:            kcpClient,
+		skrContextFactory:    skrContextFactory,
+		remoteSyncNamespace:  remoteSyncNamespace,
+		kcpAddr:              resolvedKcpAddr,
+		chartReaderService:   chartReaderService,
+		baseResources:        baseResources,
+		watcherMetrics:       watcherMetrics,
+		certificateManager:   certificateManager,
+		resourceConfigurator: resourceConfigurator,
 	}, nil
 }
 
@@ -130,9 +109,9 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 	if err != nil {
 		return err
 	}
-	err = runResourceOperationWithGroupedErrors(ctx, skrContext.Client, resources,
+	err = m.chartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
-			resource.SetNamespace(m.config.RemoteSyncNamespace)
+			resource.SetNamespace(m.remoteSyncNamespace)
 			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 			if err != nil {
 				return fmt.Errorf("failed to patch resource %s: %w", resource.GetName(), err)
@@ -164,9 +143,9 @@ func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	genClientObjects := m.getGeneratedClientObjects(secret.CertificateSecretData{}, secret.GatewaySecretData{},
 		[]v1beta2.Watcher{})
 	skrClientObjects = append(skrClientObjects, genClientObjects...)
-	err = runResourceOperationWithGroupedErrors(ctx, skrContext.Client, skrClientObjects,
+	err = m.chartReaderService.RunResourceOperationWithGroupedErrors(ctx, skrContext.Client, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
-			resource.SetNamespace(m.config.RemoteSyncNamespace)
+			resource.SetNamespace(m.remoteSyncNamespace)
 			err = clt.Delete(ctx, resource)
 			if err != nil {
 				return fmt.Errorf("failed to delete resource %s: %w", resource.GetName(), err)
@@ -242,39 +221,17 @@ func (m *SkrWebhookManifestManager) getGeneratedClientObjects(skrCertificateSecr
 	var genClientObjects []client.Object
 
 	webhookConfig := skrwebhookresources.BuildValidatingWebhookConfigFromWatchers(gatewaySecretData.CaCert, watchers,
-		m.config.RemoteSyncNamespace)
+		m.remoteSyncNamespace)
 	genClientObjects = append(genClientObjects, webhookConfig)
 
 	skrSecret := skrwebhookresources.BuildSKRSecret(gatewaySecretData.CaCert, skrCertificateSecretData.TlsCert,
-		skrCertificateSecretData.TlsKey, m.config.RemoteSyncNamespace)
+		skrCertificateSecretData.TlsKey, m.remoteSyncNamespace)
 	return append(genClientObjects, skrSecret)
 }
 
 func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Context, kymaName string,
 ) ([]client.Object, error) {
 	resources := make([]client.Object, 0)
-	configurator, err := m.buildResourceConfigurator(ctx, kymaName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build resource configurator: %w", err)
-	}
-	for _, baseRes := range m.baseResources {
-		resource := baseRes.DeepCopy()
-		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
-			shared.ManagedBy: shared.ManagedByLabelValue,
-		}))
-
-		configuredResource, err := configurator.ConfigureUnstructuredObject(resource)
-		if err != nil {
-			return nil, fmt.Errorf("failed to configure %s resource: %w", resource.GetKind(), err)
-		}
-		resources = append(resources, configuredResource)
-	}
-	return resources, nil
-}
-
-func (m *SkrWebhookManifestManager) buildResourceConfigurator(ctx context.Context,
-	kymaName string,
-) (*skrwebhookresources.ResourceConfigurator, error) {
 	skrCertificateSecret, err := m.certificateManager.GetSkrCertificateSecret(ctx, kymaName)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -283,9 +240,22 @@ func (m *SkrWebhookManifestManager) buildResourceConfigurator(ctx context.Contex
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
-	return skrwebhookresources.NewResourceConfigurator(m.config.RemoteSyncNamespace, m.config.SkrWatcherImage,
-		skrCertificateSecret.ResourceVersion, m.kcpAddr, m.config.SkrWebhookCPULimits,
-		m.config.SkrWebhookMemoryLimits), nil
+	if err != nil {
+		return nil, fmt.Errorf("failed to build resource configurator: %w", err)
+	}
+	for _, baseRes := range m.baseResources {
+		resource := baseRes.DeepCopy()
+		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
+			shared.ManagedBy: shared.ManagedByLabelValue,
+		}))
+		m.resourceConfigurator.SetSecretResVer(skrCertificateSecret.ResourceVersion)
+		configuredResource, err := m.resourceConfigurator.ConfigureUnstructuredObject(resource)
+		if err != nil {
+			return nil, fmt.Errorf("failed to configure %s resource: %w", resource.GetKind(), err)
+		}
+		resources = append(resources, configuredResource)
+	}
+	return resources, nil
 }
 
 func (m *SkrWebhookManifestManager) getCertificateData(ctx context.Context,
@@ -327,12 +297,4 @@ func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watche
 	}
 
 	return watcherList.Items, nil
-}
-
-func closeFileAndLogErr(ctx context.Context, closer io.Closer, path string) {
-	logger := logf.FromContext(ctx)
-	err := closer.Close()
-	if err != nil {
-		logger.V(log.DebugLevel).Info("failed to close raw manifest file", "path", path)
-	}
 }

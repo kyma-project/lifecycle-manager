@@ -122,11 +122,11 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 			configurator := skrwebhookresources.NewResourceConfigurator(
 				testCase.fields.remoteNs,
 				testCase.fields.skrWatcherImage,
-				testCase.fields.secretResVer,
-				testCase.fields.kcpAddress,
 				testCase.fields.cpuResLimit,
 				testCase.fields.memResLimit,
+				testCase.fields.kcpAddress,
 			)
+			configurator.SetSecretResVer(testCase.fields.secretResVer)
 			got, err := configurator.ConfigureDeployment(testCase.obj)
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("ConfigureDeployment() error = %v, wantErr %v", err, testCase.wantErr)
@@ -214,10 +214,9 @@ func TestResourceConfigurator_ConfigureNetworkPolicies(t *testing.T) {
 			configurator := skrwebhookresources.NewResourceConfigurator(
 				testCase.fields.remoteNs,
 				testCase.fields.skrWatcherImage,
-				testCase.fields.secretResVer,
-				testCase.fields.kcpAddress,
 				testCase.fields.cpuResLimit,
-				testCase.fields.memResLimit)
+				testCase.fields.memResLimit,
+				testCase.fields.kcpAddress)
 			got, err := configurator.ConfigureNetworkPolicies(testCase.obj)
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("ConfigureNetworkPolicies() error = %v, wantErr %v", err, testCase.wantErr)

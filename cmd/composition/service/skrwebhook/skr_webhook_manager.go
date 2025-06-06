@@ -12,7 +12,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/internal/service/gateway"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/gateway"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
@@ -48,20 +49,21 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 
 	watcherMetrics := metrics.NewWatcherMetrics()
 
-	config := watcher.SkrWebhookManagerConfig{
-		SkrWatcherPath:         flagVar.WatcherResourcesPath,
-		SkrWatcherImage:        flagVar.GetWatcherImage(),
-		SkrWebhookCPULimits:    flagVar.WatcherResourceLimitsCPU,
-		SkrWebhookMemoryLimits: flagVar.WatcherResourceLimitsMemory,
-		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
-	}
+	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
+		flagVar.RemoteSyncNamespace, flagVar.GetWatcherImage(),
+		flagVar.WatcherResourceLimitsCPU,
+		flagVar.WatcherResourceLimitsMemory, *resolvedKcpAddr)
+
+	chartReaderService := chartreader.NewService(flagVar.WatcherResourcesPath)
 
 	return watcher.NewSKRWebhookManifestManager(
 		kcpClient,
 		skrContextFactory,
-		config,
+		flagVar.RemoteSyncNamespace,
 		*resolvedKcpAddr,
+		chartReaderService,
 		certManager,
+		resourceConfigurator,
 		watcherMetrics)
 }
 

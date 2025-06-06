@@ -37,7 +37,8 @@ var (
 	errExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
 	errPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
-	errConvertUnstruct = errors.New("failed to convert deployment to unstructured")
+	errConvertUnstruct         = errors.New("failed to convert deployment to unstructured")
+	errNoSecretResourceVersion = errors.New("secret resource version must not be empty")
 )
 
 const (
@@ -48,13 +49,12 @@ const (
 	WatcherToDNSNetworkPolicyName  = "kyma-project.io--watcher-to-dns"
 )
 
-func NewResourceConfigurator(remoteNs, skrWatcherImage, secretResVer string,
-	kcpAddress KCPAddr, cpuResLimit, memResLimit string,
+func NewResourceConfigurator(remoteNs, skrWatcherImage,
+	cpuResLimit, memResLimit string, kcpAddress KCPAddr,
 ) *ResourceConfigurator {
 	configurator := &ResourceConfigurator{
 		remoteNs:        remoteNs,
 		skrWatcherImage: skrWatcherImage,
-		secretResVer:    secretResVer,
 		kcpAddress:      kcpAddress,
 		cpuResLimit:     cpuResLimit,
 		memResLimit:     memResLimit,
@@ -73,6 +73,10 @@ func NewResourceConfigurator(remoteNs, skrWatcherImage, secretResVer string,
 		},
 	}
 	return configurator
+}
+
+func (rc *ResourceConfigurator) SetSecretResVer(secretResVer string) {
+	rc.secretResVer = secretResVer
 }
 
 type ObjectHandler func(rc *ResourceConfigurator, obj *unstructured.Unstructured) (client.Object, error)
@@ -96,6 +100,9 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 	}
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
 		return nil, errExpectedNonEmptyPodContainers
+	}
+	if rc.secretResVer == "" {
+		return nil, fmt.Errorf("secret resource version must not be empty: %w", errNoSecretResourceVersion)
 	}
 	deployment.Spec.Template.Labels[PodRestartLabelKey] = rc.secretResVer
 

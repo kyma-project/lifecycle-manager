@@ -36,8 +36,8 @@ type Service struct {
 func NewService(
 	istioGatewayName, istioGatewayNamespace, localGatewayPortOverwrite string,
 	gatewayRepository IstioGatewayRepository,
-) Service {
-	return Service{
+) *Service {
+	return &Service{
 		IstioGatewayName:          istioGatewayName,
 		IstioGatewayNamespace:     istioGatewayNamespace,
 		LocalGatewayPortOverwrite: localGatewayPortOverwrite,
@@ -45,7 +45,7 @@ func NewService(
 	}
 }
 
-func (s Service) ResolveKcpAddr() (*skrwebhookresources.KCPAddr,
+func (s *Service) ResolveKcpAddr() (*skrwebhookresources.KCPAddr,
 	error,
 ) { // Get public KCP DNS name and port from the Gateway
 	ctx, cancel := context.WithCancel(context.TODO())
@@ -59,11 +59,15 @@ func (s Service) ResolveKcpAddr() (*skrwebhookresources.KCPAddr,
 		return nil, ErrGatewayHostWronglyConfigured
 	}
 
-	var kcpAddr skrwebhookresources.KCPAddr
-	kcpAddr.Hostname = gateway.Spec.GetServers()[0].GetHosts()[0]
+	kcpAddr := &skrwebhookresources.KCPAddr{
+		Hostname: gateway.Spec.GetServers()[0].GetHosts()[0],
+		Port:     gateway.Spec.GetServers()[0].GetPort().GetNumber(),
+	}
+
 	if len(strings.TrimSpace(kcpAddr.Hostname)) == 0 {
 		return nil, ErrNoHostnameInGateway
 	}
+
 	if s.LocalGatewayPortOverwrite != "" {
 		port, err := strconv.ParseInt(s.LocalGatewayPortOverwrite, 10, 32)
 		if err != nil {
@@ -71,9 +75,6 @@ func (s Service) ResolveKcpAddr() (*skrwebhookresources.KCPAddr,
 				s.LocalGatewayPortOverwrite, err)
 		}
 		kcpAddr.Port = uint32(port) //nolint:gosec // G115: this is not a security sensitive code, just a port number
-	} else {
-		kcpAddr.Port = gateway.Spec.GetServers()[0].GetPort().GetNumber()
 	}
-
-	return &kcpAddr, nil
+	return kcpAddr, nil
 }
