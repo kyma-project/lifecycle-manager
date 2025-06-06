@@ -20,7 +20,7 @@ The following metrics are exposed:
 
 
 The metrics are grouped by the following labels:
-- `requeue_reason`: Indicates the reason for the requeue of the Lifecycle Manager [reconcilers](02-controllers.md#controllers). The reasons include if there is a specific error, or the reason for the synchronization between the KCP and SKR clusters.
+- `requeue_reason`: Indicates the reason for the Lifecycle Manager reconcilers' requeue. See [Controllers](02-controllers.md#controllers). The reasons describe a specific error and/or the reason for the synchronization between the KCP and SKR clusters.
 - `requeue_type`: Indicates whether the requeue is expected or not. The possible values are `intended` and `unexpected`.
 - `kyma_name`: The Kyma CR name.
 - `state`: The state of the module, Manifest or Kyma CRs. The possible values are `Error`, `Ready`, `Processing`, `Warning`, and `Deleting`.
