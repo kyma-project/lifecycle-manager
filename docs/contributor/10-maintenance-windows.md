@@ -1,7 +1,7 @@
 # Maintenance Windows
 
 Lifecycle Manager allows a module team to specify if a version of their module requires downtime during the version upgrade. This is specified using the **spec.requiresDowntime** field in the ModuleTemplate custom resource (CR).
-Also, the user has the possibility to opt-in to the usage of the maintenance windows by setting the `spec.skipMaintenanceWindows` to `false` in the Kyma CR.
+Additionally, an SAP BTP, Kyma runtime user can opt in to using maintenance windows by setting the **spec.skipMaintenanceWindow** field to `false` in the Kyma CR.
 
 If the `requiresDowntime` is set to `true` and the user opts-in to the usage of the maintenance window:
 - If the module version is available for upgrade and the maintenance window is active, then the Kyma module is upgraded to the new version.
