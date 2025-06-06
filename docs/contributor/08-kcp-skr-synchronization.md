@@ -6,8 +6,7 @@ This document explains how the Kyma Control Plane (KCP) cluster, where Lifecycle
 
 The Module Catalog comprises all modules, represented by ModuleTemplate and related ModuleReleaseMeta custom resource (CRs), that are available for SAP BTP, Kyma runtime users. The Module Catalog portfolio may vary for different user groups.
 
-Lifecycle Manager ensures the Module Catalog is correctly synchronized with users' runtimes. The synchronization mechanism is required to allow users to enable modules in their clusters. The mechanism is controlled by the set of labels that are configured on Kyma and ModuleTemplate CRs in the KCP. The labels are: 
-* `operator.kyma-project.io/sync`
+Lifecycle Manager ensures the Module Catalog is correctly synchronized with users' runtimes. The synchronization mechanism is required to allow users to enable modules in their clusters. The mechanism is controlled by the set of labels that are configured on Kyma and ModuleTemplate CRs in the KCP. The labels are:
 * `operator.kyma-project.io/internal`
 * `operator.kyma-project.io/beta`
 
@@ -18,9 +17,6 @@ The v1beta2 API introduces three groups of modules:
 * **Beta** modules that are synchronized per-cluster only if configured explicitly on the corresponding Kyma CR. To mark a ModuleTemplate CR as `beta`, use the `operator.kyma-project.io/beta` label and set it to `true`.
 
 By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with SAP BTP, Kyma runtime clusters. For every synchronized ModuleTemplate CR, all related ModuleReleaseMeta CRs are synchronized as well.
-
-> [!Note]
-> The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the control-plane mode. Lifecycle Manager running in the single-cluster mode doesn't require any CR synchronization.
 
 > [!Note]
 > Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from the SAP BTP, Kyma runtime clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Kyma Control Plane are not synchronized.
