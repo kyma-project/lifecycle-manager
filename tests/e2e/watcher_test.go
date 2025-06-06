@@ -8,6 +8,7 @@ import (
 	"time"
 
 	apiappsv1 "k8s.io/api/apps/v1"
+	apinetworkv1 "k8s.io/api/networking/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -95,11 +96,23 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		})
 
 		It("When deny-all network policy is applied", func() {
-			cmd := exec.Command("kubectl", "apply", "-f",
-				"./e2e/external/deny-all-policy.yaml")
-			_, err := cmd.CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-
+			networkPolicy := &apinetworkv1.NetworkPolicy{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:      testDenyAllNetworkPolicy,
+					Namespace: RemoteNamespace,
+				},
+				Spec: apinetworkv1.NetworkPolicySpec{
+					PodSelector: apimetav1.LabelSelector{},
+					PolicyTypes: []apinetworkv1.PolicyType{
+						apinetworkv1.PolicyTypeIngress,
+						apinetworkv1.PolicyTypeEgress,
+					},
+				},
+			}
+			Eventually(CreateNetworkPolicy).
+				WithContext(ctx).
+				WithArguments(skrClient, networkPolicy).
+				Should(Succeed())
 			Eventually(NetworkPolicyExists).
 				WithContext(ctx).
 				WithArguments(skrClient, testDenyAllNetworkPolicy, RemoteNamespace).

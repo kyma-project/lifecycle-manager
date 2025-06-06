@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apinetworkv1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -26,4 +27,11 @@ func GetNetworkPolicy(ctx context.Context, clnt client.Client, name, namespace s
 		return nil, fmt.Errorf("get networkpolicy: %w", err)
 	}
 	return resource, nil
+}
+
+func CreateNetworkPolicy(ctx context.Context, clnt client.Client, networkPolicy *apinetworkv1.NetworkPolicy) error {
+	if err := clnt.Create(ctx, networkPolicy); !apierrors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
 }
