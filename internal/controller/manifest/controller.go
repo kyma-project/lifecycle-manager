@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -22,7 +23,7 @@ func NewReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
 	}
 	extractor := img.NewPathExtractor()
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
-	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
+	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider(kcp.Client)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(

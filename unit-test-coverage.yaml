@@ -17,6 +17,7 @@ packages:
   internal/manifest/skrresources: 20
   internal/manifest/statecheck: 71
   internal/maintenancewindows: 87
+  internal/pkg/flags: 100
   internal/pkg/resources: 91
   internal/remote: 29
   internal/repository/kyma: 100
