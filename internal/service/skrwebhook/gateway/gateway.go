@@ -48,7 +48,7 @@ func NewService(
 func (s *Service) ResolveKcpAddr() (*skrwebhookresources.KCPAddr,
 	error,
 ) { // Get public KCP DNS name and port from the Gateway
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	gateway, err := s.gatewayRepository.Get(ctx, s.IstioGatewayName, s.IstioGatewayNamespace)
 	if err != nil {
