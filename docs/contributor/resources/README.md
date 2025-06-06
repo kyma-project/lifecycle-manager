@@ -8,7 +8,7 @@ The API of Lifecycle Manager is based on Kubernetes Custom Resource Definitions 
 * [Watcher CRD](04-watcher.md)
 * [ModuleReleaseMeta CRD](05-modulereleasemeta.md)
 
-For information about how the Module Catalog (ModuleTemplate CRs and related ModuleReleaseMetas CRs) and Kyma CR are synchronized between the Kyma Control Plane (KCP) and SAP Kyma Runtime (SKR) clusters, see the [KCP-SKR synchronization documentation](../08-kcp-skr-synchronization.md).
+For more information on how the Module Catalog and Kyma CR are synchronized between the Kyma Control Plane (KCP) and SAP BTP, Kyma runtime (SKR) clusters, see the [Synchronization Between Kyma Control Plane and SAP BTP, Kyma Runtime](../08-kcp-skr-synchronization.md).
 
 ## Stability
 
