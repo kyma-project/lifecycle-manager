@@ -1,4 +1,4 @@
-# Unmanaging modules
+# Unmanaging Modules
 
 Lifecycle Manager allows you to unmanage modules, which means that the module and its related resources remain deployed in the SKR cluster but are no longer managed by Lifecycle Manager.
 
