@@ -1,6 +1,6 @@
 # Unmanaging Modules
 
-Lifecycle Manager allows you to unmanage modules, which means that the module and its related resources remain deployed in the SKR cluster but are no longer managed by Lifecycle Manager.
+Lifecycle Manager allows you to unmanage modules, which means that the module and its related resources remain deployed in the SAP BTP, Kyma runtime (SKR) cluster but are no longer managed by Lifecycle Manager.
 
 To unmanage a module, set the **.spec.modules[].managed** field to `false` in the Kyma CR. The following changes are then triggered:
 
