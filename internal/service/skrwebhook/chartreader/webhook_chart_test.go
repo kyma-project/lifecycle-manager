@@ -61,7 +61,7 @@ func TestService_RunResourceOperationWithGroupedErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &chartreader.Service{}
-			err := s.RunResourceOperationWithGroupedErrors(context.Background(), &fakeClient{}, tt.resources, tt.op)
+			err := s.RunResourceOperationWithGroupedErrors(t.Context(), &fakeClient{}, tt.resources, tt.op)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "failed to run resource operation")
@@ -73,10 +73,7 @@ func TestService_RunResourceOperationWithGroupedErrors(t *testing.T) {
 }
 
 func TestService_GetRawManifestUnstructuredResources(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "manifestdir-*")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
+	tmpDir := t.TempDir()
 	defer os.RemoveAll(tmpDir)
 	manifestPath := tmpDir + "/resources.yaml"
 	content := `
@@ -90,7 +87,7 @@ kind: Secret
 metadata:
   name: test-secret
 `
-	if err := os.WriteFile(manifestPath, []byte(content), 0600); err != nil {
+	if err := os.WriteFile(manifestPath, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write manifest: %v", err)
 	}
 
@@ -115,8 +112,10 @@ metadata:
 		{
 			name: "invalid yaml",
 			dir: func() string {
-				d, _ := os.MkdirTemp("", "invaliddir-*")
-				os.WriteFile(d+"/resources.yaml", []byte("not: [valid"), 0600)
+				d := t.TempDir()
+				if err := os.WriteFile(d+"/resources.yaml", []byte("not: [valid"), 0o600); err != nil {
+					return ""
+				}
 				return d
 			}(),
 			want:    nil,

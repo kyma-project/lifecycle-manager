@@ -111,7 +111,7 @@ type Watcher struct {
 }
 
 // GetManagerName returns the name of the manager component responsible for handling webhook requests.
-// 
+//
 // This value is used in two places:
 // 1. In the SKR cluster, it is set as `clientConfig.service.path` in the ValidatingWebhookConfiguration,
 //    indicating which backend manager service should receive the webhook call.
