@@ -61,10 +61,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, skrwebhookresources.WatcherToDNSNetworkPolicyName, RemoteNamespace).
 				Should(Succeed())
-			Eventually(NetworkPolicyExists).
-				WithContext(ctx).
-				WithArguments(skrClient, testDenyAllNetworkPolicy, RemoteNamespace).
-				Should(Succeed())
 
 			By("And Runtime Watcher deployment is deleted")
 			Eventually(deleteWatcherDeployment).
@@ -95,6 +91,18 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Eventually(CertificateSecretExists).
 				WithContext(ctx).
 				WithArguments(secretName, skrClient).
+				Should(Succeed())
+		})
+
+		It("When deny-all network policy is applied", func() {
+			cmd := exec.Command("kubectl", "apply", "-f",
+				"./e2e/external/deny-all-policy.yaml")
+			_, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, testDenyAllNetworkPolicy, RemoteNamespace).
 				Should(Succeed())
 		})
 
