@@ -20,7 +20,7 @@ func NewHTTPRoute(watcher *v1beta2.Watcher) (*istioapiv1beta1.HTTPRoute, error) 
 			{
 				Uri: &istioapiv1beta1.StringMatch{
 					MatchType: &istioapiv1beta1.StringMatch_Prefix{
-						Prefix: fmt.Sprintf(prefixFormat, contractVersion, watcher.GetModuleName()),
+						Prefix: fmt.Sprintf(prefixFormat, contractVersion, watcher.GetManagerName()),
 					},
 				},
 			},
@@ -56,8 +56,8 @@ func validateArgumentsForNewHTTPRoute(watcher *v1beta2.Watcher) error {
 		return fmt.Errorf("watcher.Namespace must not be empty: %w", ErrInvalidArgument)
 	}
 
-	if watcher.GetModuleName() == "" {
-		return fmt.Errorf("unable to GetModuleName(): %w", ErrInvalidArgument)
+	if watcher.GetManagerName() == "" {
+		return fmt.Errorf("unable to GetManagerName(): %w", ErrInvalidArgument)
 	}
 
 	if watcher.Spec.ServiceInfo.Name == "" {
@@ -73,7 +73,8 @@ func validateArgumentsForNewHTTPRoute(watcher *v1beta2.Watcher) error {
 	}
 
 	if watcher.Spec.ServiceInfo.Port < minPort || watcher.Spec.ServiceInfo.Port > maxPort {
-		return fmt.Errorf("watcher.Spec.ServiceInfo.Port must be between %d and %d: %w", minPort, maxPort, ErrInvalidArgument)
+		return fmt.Errorf("watcher.Spec.ServiceInfo.Port must be between %d and %d: %w", minPort, maxPort,
+			ErrInvalidArgument)
 	}
 
 	return nil

@@ -17,6 +17,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 )
 
+const bootstrapFailedExitCode = 1
+
 func SetupCacheOptions(isKymaManaged bool,
 	istioNamespace string,
 	kcpNamespace string,

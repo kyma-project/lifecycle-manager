@@ -8,13 +8,14 @@ import (
 	"time"
 
 	apiappsv1 "k8s.io/api/apps/v1"
+	apinetworkv1 "k8s.io/api/networking/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
@@ -23,7 +24,8 @@ import (
 )
 
 const (
-	watcherCrName = "klm-watcher"
+	watcherCrName            = "klm-watcher"
+	testDenyAllNetworkPolicy = "kyma-project.io--deny-all-ingress"
 )
 
 var errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
@@ -36,7 +38,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	InitEmptyKymaBeforeAll(kyma)
 	secretName := types.NamespacedName{
-		Name:      watcher.SkrTLSName,
+		Name:      skrwebhookresources.SkrTLSName,
 		Namespace: RemoteNamespace,
 	}
 
@@ -44,20 +46,34 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		It("When Runtime Watcher deployment is ready", func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, RemoteNamespace, skrClient).
+				WithArguments(skrwebhookresources.SkrResourceName, RemoteNamespace, skrClient).
+				Should(Succeed())
+
+			By("And Network Policy is created")
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, skrwebhookresources.ApiServerNetworkPolicyName, RemoteNamespace).
+				Should(Succeed())
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, skrwebhookresources.SeedToWatcherNetworkPolicyName, RemoteNamespace).
+				Should(Succeed())
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, skrwebhookresources.WatcherToDNSNetworkPolicyName, RemoteNamespace).
 				Should(Succeed())
 
 			By("And Runtime Watcher deployment is deleted")
 			Eventually(deleteWatcherDeployment).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, RemoteNamespace, skrClient).
+				WithArguments(skrwebhookresources.SkrResourceName, RemoteNamespace, skrClient).
 				Should(Succeed())
 		})
 
 		It("Then Runtime Watcher deployment is ready again", func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
-				WithArguments(watcher.SkrResourceName, RemoteNamespace, skrClient).
+				WithArguments(skrwebhookresources.SkrResourceName, RemoteNamespace, skrClient).
 				Should(Succeed())
 		})
 
@@ -76,6 +92,30 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Eventually(CertificateSecretExists).
 				WithContext(ctx).
 				WithArguments(secretName, skrClient).
+				Should(Succeed())
+		})
+
+		It("When deny-all network policy is applied", func() {
+			networkPolicy := &apinetworkv1.NetworkPolicy{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:      testDenyAllNetworkPolicy,
+					Namespace: RemoteNamespace,
+				},
+				Spec: apinetworkv1.NetworkPolicySpec{
+					PodSelector: apimetav1.LabelSelector{},
+					PolicyTypes: []apinetworkv1.PolicyType{
+						apinetworkv1.PolicyTypeIngress,
+						apinetworkv1.PolicyTypeEgress,
+					},
+				},
+			}
+			Eventually(CreateNetworkPolicy).
+				WithContext(ctx).
+				WithArguments(skrClient, networkPolicy).
+				Should(Succeed())
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, testDenyAllNetworkPolicy, RemoteNamespace).
 				Should(Succeed())
 		})
 

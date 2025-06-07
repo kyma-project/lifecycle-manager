@@ -38,6 +38,7 @@ import (
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -46,6 +47,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
@@ -56,11 +58,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
+	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/maintenancewindows"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
@@ -152,6 +156,7 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 	}
 }
 
+//nolint:funlen // disable length check since the function is the composition root
 func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
 	logger logr.Logger,
 ) {
@@ -165,13 +170,31 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder)
+
+	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	if err != nil {
+		logger.Error(err, "can't create kcpClient")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
-		skrWebhookManager = setup.SetupSkrWebhookManager(mgr, skrContextProvider, flagVar, logger)
+		skrWebhookManager, err = skrwebhook.ComposeSkrWebhookManager(kcpClient, skrContextProvider,
+			gatewayRepository,
+			flagVar)
+		if err != nil {
+			logger.Error(err, "failed to setup SKR webhook manager")
+			os.Exit(bootstrapFailedExitCode)
+		}
 		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
-		err = istiogatewaysecret.SetupReconciler(mgr,
-			setup.SetupCertInterface(kcpClient, flagVar, logger),
+		var gatewaysecretclnt gatewaysecretclient.CertificateInterface
+		gatewaysecretclnt, err = setup.SetupCertInterface(kcpClient, flagVar)
+		if err != nil {
+			logger.Error(err, "failed to setup certificate client")
+			os.Exit(bootstrapFailedExitCode)
+		}
+		err = istiogatewaysecret.SetupReconciler(mgr, gatewaysecretclnt,
 			flagVar,
 			options)
 		if err != nil {

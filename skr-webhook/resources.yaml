@@ -102,3 +102,90 @@ spec:
               - key: ca.crt
                 path: ca.crt
       priorityClassName: skr-webhook-priority
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app: skr-webhook
+  name: kyma-project.io--seed-to-watcher
+  namespace: default
+spec:
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              gardener.cloud/purpose: kube-system
+          podSelector:
+            matchLabels:
+              app: vpn-shoot
+  podSelector:
+    matchLabels:
+      app: skr-webhook
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app: skr-webhook
+  name: kyma-project.io--watcher-to-apiserver
+  namespace: default
+spec:
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+  podSelector:
+    matchLabels:
+      app: skr-webhook
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app: skr-webhook
+  name: kyma-project.io--watcher-to-dns
+  namespace: default
+spec:
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: node-local-dns
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+    - ports:
+        - port: 8053
+          protocol: UDP
+        - port: 8053
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+  podSelector:
+    matchLabels:
+      app: skr-webhook
+  policyTypes:
+    - Egress

@@ -11,10 +11,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -72,7 +72,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			}
 
 			certificateManagerConfig := certificate.CertificateManagerConfig{
-				SkrServiceName:               watcher.SkrResourceName,
+				SkrServiceName:               skrwebhookresources.SkrResourceName,
 				SkrNamespace:                 test.namespace.Name,
 				CertificateNamespace:         test.namespace.Name,
 				AdditionalDNSNames:           []string{},
