@@ -11,6 +11,6 @@ Depending on the configuration, the following scenarios are possible:
    - If the module version is available for upgrade and the maintenance window is active, then the Kyma module is upgraded to the new version.
    - If the module version is available for upgrade and the maintenance window is not yet active, then the Kyma module is not upgraded and remains reconciled with the current version till the next maintenance window.
 
-2. The **requiresDowntime** field in the ModuleTemplate is set to `false` OR the user does not opt in to using maintenance windows, by setting the **spec.skipMaintenanceWindows** field to `false`. 
+2. The **requiresDowntime** field in the ModuleTemplate is set to `false` OR the user decides not to wait for a maintenance window to upgrade by setting the **spec.skipMaintenanceWindows** field to `false`. 
 
    Then, whenever the module version is available for upgrade, the Kyma module is immediately upgraded to the new version.
