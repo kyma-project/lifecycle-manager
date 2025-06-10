@@ -119,7 +119,6 @@ type Watcher struct {
 //    webhook request to the appropriate manager service.
 //
 // Consistency in this name ensures correct routing and handling of webhook validation logic.
-
 func (watcher *Watcher) GetManagerName() string {
 	if watcher.Labels == nil {
 		return ""
