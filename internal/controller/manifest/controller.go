@@ -13,22 +13,24 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
-func NewReconciler(mgr manager.Manager, requeueIntervals queue.RequeueIntervals,
-	manifestMetrics *metrics.ManifestMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	manifestClient declarativev2.ManifestAPIClient, orphanDetectionClient orphan.DetectionRepository,
+func NewReconciler(mgr manager.Manager,
+	requeueIntervals queue.RequeueIntervals,
+	manifestMetrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	manifestClient declarativev2.ManifestAPIClient,
+	orphanDetectionClient orphan.DetectionRepository,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	extractor := img.NewPathExtractor()
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider(kcp.Client)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient, orphanDetectionClient,
-		manifest.NewSpecResolver(keyChainLookup, extractor),
+		manifest.NewSpecResolver(keyChainLookup, img.NewPathExtractor()),
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
