@@ -42,7 +42,6 @@ type CertificateManager interface {
 	DeleteSkrCertificate(ctx context.Context, kymaName string) error
 	GetSkrCertificateSecret(ctx context.Context, kymaName string) (*apicorev1.Secret, error)
 	GetSkrCertificateSecretData(ctx context.Context, kymaName string) (*secret.CertificateSecretData, error)
-	GetGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error)
 	GetGatewayCertificateSecretData(ctx context.Context) (*secret.GatewaySecretData, error)
 }
 
@@ -240,9 +239,6 @@ func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Cont
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to build resource configurator: %w", err)
-	}
 	for _, baseRes := range m.baseResources {
 		resource := baseRes.DeepCopy()
 		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{

@@ -22,13 +22,13 @@ type IstioGatewayRepository interface {
 }
 
 type Service struct {
-	// IstioGatewayName represents the cluster resource name of the klm istio gateway
-	IstioGatewayName string
-	// IstioGatewayNamespace represents the cluster resource namespace of the klm istio gateway
-	IstioGatewayNamespace string
-	// LocalGatewayPortOverwrite indicates the port used to expose the KCP cluster locally in k3d
+	// istioGatewayName represents the cluster resource name of the klm istio gateway
+	istioGatewayName string
+	// istioGatewayNamespace represents the cluster resource namespace of the klm istio gateway
+	istioGatewayNamespace string
+	// localGatewayPortOverwrite indicates the port used to expose the KCP cluster locally in k3d
 	// for the watcher callbacks
-	LocalGatewayPortOverwrite string
+	localGatewayPortOverwrite string
 
 	gatewayRepository IstioGatewayRepository
 }
@@ -38,9 +38,9 @@ func NewService(
 	gatewayRepository IstioGatewayRepository,
 ) *Service {
 	return &Service{
-		IstioGatewayName:          istioGatewayName,
-		IstioGatewayNamespace:     istioGatewayNamespace,
-		LocalGatewayPortOverwrite: localGatewayPortOverwrite,
+		istioGatewayName:          istioGatewayName,
+		istioGatewayNamespace:     istioGatewayNamespace,
+		localGatewayPortOverwrite: localGatewayPortOverwrite,
 		gatewayRepository:         gatewayRepository,
 	}
 }
@@ -50,9 +50,9 @@ func (s *Service) ResolveKcpAddr() (*skrwebhookresources.KCPAddr,
 ) { // Get public KCP DNS name and port from the Gateway
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	gateway, err := s.gatewayRepository.Get(ctx, s.IstioGatewayName, s.IstioGatewayNamespace)
+	gateway, err := s.gatewayRepository.Get(ctx, s.istioGatewayName, s.istioGatewayNamespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get istio gateway %s: %w", s.IstioGatewayName, err)
+		return nil, fmt.Errorf("failed to get istio gateway %s: %w", s.istioGatewayName, err)
 	}
 
 	if len(gateway.Spec.GetServers()) != 1 || len(gateway.Spec.GetServers()[0].GetHosts()) != 1 {
@@ -68,11 +68,11 @@ func (s *Service) ResolveKcpAddr() (*skrwebhookresources.KCPAddr,
 		return nil, ErrNoHostnameInGateway
 	}
 
-	if s.LocalGatewayPortOverwrite != "" {
-		port, err := strconv.ParseInt(s.LocalGatewayPortOverwrite, 10, 32)
+	if s.localGatewayPortOverwrite != "" {
+		port, err := strconv.ParseInt(s.localGatewayPortOverwrite, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid gateway port specified %s, must be a number (%w)",
-				s.LocalGatewayPortOverwrite, err)
+				s.localGatewayPortOverwrite, err)
 		}
 		kcpAddr.Port = uint32(port) //nolint:gosec // G115: this is not a security sensitive code, just a port number
 	}
