@@ -7,7 +7,7 @@ Additionally, an SAP BTP, Kyma runtime user can opt in to using maintenance wind
 
 Depending on the configuration, the following scenarios are possible:
 
-1. The **requiresDowntime** field in the ModuleTemplate is set to `true` AND the user opts in to using maintenance windows by setting the **spec.skipMaintenanceWindows** field to `false`:
+1. The **requiresDowntime** field in the ModuleTemplate is set to `true` AND the user decides to use maintenance windows by setting the **spec.skipMaintenanceWindows** field to `false`:
    - If the module version is available for upgrade and the maintenance window is active, then the Kyma module is upgraded to the new version.
    - If the module version is available for upgrade and the maintenance window is not yet active, then the Kyma module is not upgraded and remains reconciled with the current version till the next maintenance window.
 
