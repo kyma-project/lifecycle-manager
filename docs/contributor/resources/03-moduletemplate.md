@@ -12,7 +12,7 @@ kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
 
 ## Configuration
 
-### **.spec.channel** (Deprecated)
+### **.spec.channel (Deprecated)**
 
 The `channel` field previously indicated the channel in which a ModuleTemplate CR was registered. It was used alongside the channel attributes of the Kyma CR to match a module with a specific channel.
 
@@ -33,7 +33,7 @@ the module was referenced by any Kyma CR asking for it in the `regular` channel.
 
 ### **.spec.data**
 
-The data that should be used for the initialization of a custom resource after the module has been installed. It is only used if the `customResourcePolicy` is set to `CreateAndDelete` and it is filled with a valid custom resource (that can be of any type available in the API-Server _after_  module initialization). If set to `Ignore` by the module specification of the Kyma CR, it is entirely ignored, even when filled.
+The data that should be used for the initialization of a custom resource after the module has been installed. It is only used if the `.spec.modules[].customResourcePolicy` in Kyma CR is set to `CreateAndDelete`. The data field must be filled with a valid custom resource (that can be of any type available in the API-Server _after_  module initialization). If set to `Ignore` by the module specification of the Kyma CR, it is entirely ignored, even when filled.
 
 A (partial) example could look like this:
 
@@ -61,7 +61,7 @@ If not specified, the **namespace** of the resource mentioned in **.spec.data** 
 
 The **info** field contains module metadata, including the repository URL, documentation link, and icons. For example:
 
-```
+```yaml
 spec:
   info:
     repository: https://github.com/example/repo
@@ -101,7 +101,7 @@ spec:
     kind: CustomResourceDefinition
     name: [module CRD name]
 ```
-### **.spec.customStateCheck**
+### **.spec.customStateCheck (Deprecated)**
 
 > **CAUTION:** This field was deprecated at the end of July 2024 and will be deleted in the next ModuleTemplate API version. As of the deletion day, you can define the custom state only in a module's custom resource.
 
