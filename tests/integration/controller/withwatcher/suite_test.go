@@ -50,9 +50,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/gateway"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -60,12 +63,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -86,8 +91,8 @@ var (
 )
 
 const (
-	istioSystemNs     = "istio-system"
-	gatewayName       = "klm-watcher"
+	istioSystemNs = "istio-system"
+	gatewayName   = "klm-watcher"
 )
 
 var (
@@ -181,13 +186,6 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(ctx, istioResource)).To(Succeed())
 	}
 
-	skrChartCfg := watcher.SkrWebhookManagerConfig{
-		SkrWatcherPath:         skrWatcherPath,
-		SkrWebhookMemoryLimits: "200Mi",
-		SkrWebhookCPULimits:    "1",
-		RemoteSyncNamespace:    flags.DefaultRemoteSyncNamespace,
-	}
-
 	certificateConfig := certificate.CertificateConfig{
 		Duration:    1 * time.Hour,
 		RenewBefore: 5 * time.Minute,
@@ -195,7 +193,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	certificateManagerConfig := certificate.CertificateManagerConfig{
-		SkrServiceName:               watcher.SkrResourceName,
+		SkrServiceName:               skrwebhookresources.SkrResourceName,
 		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
 		CertificateNamespace:         flags.DefaultIstioNamespace,
 		AdditionalDNSNames:           []string{},
@@ -212,25 +210,28 @@ var _ = BeforeSuite(func() {
 		secret.NewCertificateSecretClient(mgr.GetClient()),
 		certificateManagerConfig,
 	)
+	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	Expect(err).ToNot(HaveOccurred())
 
-	gatewayConfig := watcher.GatewayConfig{
-		IstioGatewayName:          gatewayName,
-		IstioGatewayNamespace:     ControlPlaneNamespace,
-		LocalGatewayPortOverwrite: "",
-	}
+	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
 
-	resolvedKcpAddr, err := gatewayConfig.ResolveKcpAddr(mgr)
+	gatewayService := gateway.NewService(gatewayName, ControlPlaneNamespace, "", gatewayRepository)
+
+	resolvedKcpAddr, err := gatewayService.ResolveKcpAddr()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	Expect(err).ToNot(HaveOccurred())
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
-		kcpClient,
-		testSkrContextFactory,
-		skrChartCfg,
-		resolvedKcpAddr,
-		certificateManager,
-		metrics.NewWatcherMetrics(),
-	)
+
+	chartReaderService := chartreader.NewService(skrWatcherPath)
+
+	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
+		flags.DefaultRemoteSyncNamespace, "dummyhost/fake-watcher-image:latest",
+		"200Mi",
+		"1", *resolvedKcpAddr)
+
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(kcpClient, testSkrContextFactory,
+		flags.DefaultRemoteSyncNamespace,
+		*resolvedKcpAddr, chartReaderService, certificateManager, resourceConfigurator, metrics.NewWatcherMetrics())
 	Expect(err).ToNot(HaveOccurred())
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
@@ -246,7 +247,8 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
