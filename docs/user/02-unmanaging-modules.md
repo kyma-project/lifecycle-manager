@@ -5,7 +5,7 @@ In some cases, for example, for testing, you may need to modify your module beyo
 To unmanage a module, set the **.spec.modules[].managed** field to `false` in the Kyma CR. The following changes are then triggered:
 
 * The module and all its related resources remain in the SKR cluster in the same state they were in when the module became unmanaged.
-* Lifecycle Manager stops reconciling the module and its resources.
+* The module and its resources stop being reconciled in the KCP cluster.
 * The `operator.kyma-project.io/managed-by=kyma` and `operator.kyma-project.io/watched-by=kyma` labels are removed from the module's resources. For example, this may be relevant if you use those labels as exclusion filters for custom monitoring using the Kyma Telemetry module.
 
 To verify that a module was successfully unmanaged, check that the field **.status.modules[].state** has the status `Unmanaged`. Once the state is `Unmanaged`, you can delete the module's entry from **.spec.modules[]** in the Kyma CR.  Nevertheless, the module and its related resources remain in the remote cluster.
