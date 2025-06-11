@@ -77,9 +77,11 @@ This status provides a reliable way to track the state of the Manifest CR and th
 
 * `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to disable reconciliation for a module. This will avoid all reconciliations for the Manifest CR. Note that this label is independent of the Kyma CR's skip reconciliation label. 
 
-### **Unused Fields**
+### **.spec.remote (Deprecated)**
 
-#### **.spec.remote**
+> **CAUTION:**
+> This field has been deprecated for a long time and is no longer functional. It will be removed in the next API version.
+
 
 This parameter was used to determine whether the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR. This is the default and only behaviour now.
 
@@ -99,7 +101,10 @@ spec:
 
 looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and value `kyma-sample`.
 
-#### **.spec.config**
+#### **.spec.config (Deprecated)**
+
+> **CAUTION:**
+> This field has been deprecated for a long time and is no longer functional. It will be removed in the next API version.
 
 The config reference used an image layer reference that contains configuration data that could be used to further
 influence any potential rendering process while the resources are processed by
