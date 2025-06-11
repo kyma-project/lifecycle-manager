@@ -33,7 +33,7 @@ the module was referenced by any Kyma CR asking for it in the `regular` channel.
 
 ### **.spec.data**
 
-The data that should be used for the initialization of a custom resource after the module has been installed. It is only used if the `.spec.modules[].customResourcePolicy` in Kyma CR is set to `CreateAndDelete`. The data field must be filled with a valid custom resource (that can be of any type available in the API-Server _after_  module initialization). If set to `Ignore` by the module specification of the Kyma CR, it is entirely ignored, even when filled.
+The data that should be used for the initialization of a custom resource after the module has been installed. It is only used if the `.spec.modules[].customResourcePolicy` in the Kyma CR is set to `CreateAndDelete`. The data field must be filled with a valid custom resource (that can be of any type available in the API-Server _after_  module initialization). If set to `Ignore` by the module specification of the Kyma CR, it is entirely ignored, even when filled.
 
 A (partial) example could look like this:
 

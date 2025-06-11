@@ -22,7 +22,7 @@ The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and
 
 ### **.spec.install**
 
-This contains the OCI resource specification for the module resources that will be deployed on the target cluster.
+This contains the OCI resource specification for the module resources that are deployed on the SKR cluster.
 
 The following example shows how the `raw-manifest` is defined in the Manifest CR:
 
@@ -66,10 +66,10 @@ The resource is the default data that should be initialized for the module and i
 
 The Manifest CR status is set based on the following logic, managed by the manifest reconciler:
 
-* If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the status of the Manifest CR is set to `Ready`.
-* While the manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
-* If the Deployment cannot start (for example, due to an `ImagePullBackOff` error) or if the application of the manifest fails, the status of the Manifest CR is set to `Error`.
-* If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleting`.
+* `Ready`: If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the status of the Manifest CR is set to `Ready`.
+* `Processing`: While the manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
+* `Error`: If the deployment cannot start, for example, due to an `ImagePullBackOff` error, or if the application of the manifest fails, the status of the Manifest CR is set to `Error`.
+* `Deleting`:  If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleting`.
 
 This status provides a reliable way to track the state of the Manifest CR and the associated module. It offers insights into the deployment process and any potential issues while being decoupled from the module's business logic.
 

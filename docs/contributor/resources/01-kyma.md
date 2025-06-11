@@ -117,9 +117,9 @@ The conditions represent individual elements of the reconciliation that can eith
 
 Currently, we maintain conditions for:
 
-* All modules (Manifest CRs) are in `Ready` state
+* All modules (Manifest CRs) that are in the `Ready` state
 * Module catalog (ModuleTemplate CR and ModuleReleaseMeta CR) synchronized to the remote cluster
-* Watcher is installed to the remote cluster
+* Watcher installed in the remote cluster
 
 We also calculate the **.status.state** readiness based on all the conditions available.
 
