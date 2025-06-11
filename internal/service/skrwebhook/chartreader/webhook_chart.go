@@ -1,10 +1,11 @@
-package watcher
+package chartreader
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -13,17 +14,27 @@ import (
 )
 
 const (
-	defaultBufferSize = 2048
+	defaultBufferSize      = 2048
+	rawManifestFilePathTpl = "%s/resources.yaml"
 )
 
-var ErrGatewayHostWronglyConfigured = errors.New("gateway should have configured exactly one server and one host")
+type Service struct {
+	manifestFilePath string
+}
 
-type resourceOperation func(ctx context.Context, clt client.Client, resource client.Object) error
+func NewService(skrWebhookResourcePath string) *Service {
+	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, skrWebhookResourcePath)
+	return &Service{
+		manifestFilePath: manifestFilePath,
+	}
+}
 
-// runResourceOperationWithGroupedErrors loops through the resources and runs the passed operation
+type ResourceOperation func(ctx context.Context, clt client.Client, resource client.Object) error
+
+// RunResourceOperationWithGroupedErrors loops through the resources and runs the passed operation
 // on each resource concurrently and groups their returned errors into one.
-func runResourceOperationWithGroupedErrors(ctx context.Context, skrClient client.Client,
-	resources []client.Object, operation resourceOperation,
+func (s *Service) RunResourceOperationWithGroupedErrors(ctx context.Context, skrClient client.Client,
+	resources []client.Object, operation ResourceOperation,
 ) error {
 	errGrp, grpCtx := errgroup.WithContext(ctx)
 	for idx := range resources {
@@ -38,7 +49,14 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, skrClient client
 	return nil
 }
 
-func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstructured.Unstructured, error) {
+func (s *Service) GetRawManifestUnstructuredResources() ([]*unstructured.Unstructured,
+	error,
+) {
+	rawManifestReader, err := os.Open(s.manifestFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open manifest file path: %w", err)
+	}
+	defer rawManifestReader.Close()
 	decoder := machineryaml.NewYAMLOrJSONDecoder(rawManifestReader, defaultBufferSize)
 	var resources []*unstructured.Unstructured
 	for {
