@@ -4,7 +4,7 @@ Lifecycle Manager allows you to unmanage modules, which means that the module an
 
 To unmanage a module, set the **.spec.modules[].managed** field to `false` in the Kyma CR. The following changes are then triggered:
 
-* The module and all its related resources remain in the remote cluster in the same state they were in when the module became unmanaged.
+* The module and all its related resources remain in the SKR cluster in the same state they were in when the module became unmanaged.
 * Lifecycle Manager stops reconciling the module and its resources.
 * The `operator.kyma-project.io/managed-by=kyma` and `operator.kyma-project.io/watched-by=kyma` labels are removed from the module's resources. For example, this may be relevant if you use those labels as exclusion filters for custom monitoring using the Kyma Telemetry module.
 
