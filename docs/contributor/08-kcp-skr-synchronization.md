@@ -13,8 +13,8 @@ Lifecycle Manager ensures the Module Catalog is correctly synchronized with user
 The v1beta2 API introduces three groups of modules:
 
 * **Default** modules that are synchronized by default.
-* **Internal** modules that are synchronized per-cluster only if configured explicitly on the corresponding Kyma CR. To mark a ModuleTemplate CR as `internal`, use the `operator.kyma-project.io/internal` label and set it to `true`.
-* **Beta** modules that are synchronized per-cluster only if configured explicitly on the corresponding Kyma CR. To mark a ModuleTemplate CR as `beta`, use the `operator.kyma-project.io/beta` label and set it to `true`.
+* **Internal** modules that are synchronized per cluster only if the corresponding Kyma CR has the `operator.kyma-project.io/internal` label. A ModuleTemplate CR is `internal` if the module team sets the `operator.kyma-project.io/internal` label to `true`.
+* **Beta** modules that are synchronized per cluster only if the corresponding Kyma CR contains the `operator.kyma-project.io/beta` label. A ModuleTemplate CR is `beta` if the module team sets the `operator.kyma-project.io/beta` label to `true`.
 
 By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with SAP BTP, Kyma runtime clusters. For every synchronized ModuleTemplate CR, all related ModuleReleaseMeta CRs are synchronized as well.
 
