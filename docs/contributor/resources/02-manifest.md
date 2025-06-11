@@ -101,7 +101,7 @@ spec:
 
 looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and value `kyma-sample`.
 
-#### **.spec.config (Deprecated)**
+### **.spec.config (Deprecated)**
 
 > **CAUTION:**
 > This field has been deprecated for a long time and is no longer functional. It will be removed in the next API version.
