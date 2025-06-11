@@ -5,11 +5,17 @@
 
 ## Overview
 
-Lifecycle Manager is an operator based on the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) framework. It extends Kubernetes API by providing multiple Custom Resource Definitions, which allow you to manage their resources through custom resources (CR). For more information, see [Lifecycle Manager Resources](./docs/contributor/resources/README.md).
+[Kyma](https://kyma-project.io/) is an opinionated set of Kubernetes-based modular building blocks that provides enterprise-grade capabilities for developing and running cloud-native applications. As an actively maintained open-source project supported by SAP, Kyma serves as the foundation for SAP BTP, Kyma runtime within the SAP Business Technology Platform (BTP).
 
-Lifecycle Manager manages the lifecycle of [Kyma Modules](https://help.sap.com/docs/btp/sap-business-technology-platform/kyma-modules) in a cluster. It was introduced along with the concept of Kyma [modularizaion](https://github.com/kyma-project/community/tree/main/concepts/modularization).
+The Kyma Lifecycle Manager (KLM) is a crucial component at the core of the managed Kyma runtime. Operating within the Kyma Control Plane (KCP) cluster, KLM manages the lifecycle of Kyma modules in the SAP BTP Kyma Runtime (SKR) clusters. These SKR clusters are hyperscaler clusters provisioned for users of the managed Kyma runtime.
 
-For more information on the Lifecycle Manager's workflow, see the [Architecture](docs/contributor/01-architecture.md) document.
+KLM's key responsibilities include:
+- Installing required Custom Resource Definitions (CRDs) for Kyma module deployment
+- Synchronizing the catalog of available Kyma modules to SKR clusters
+- Installing, updating, reconciling, and deleting Kyma module resources in SKR clusters
+- Watching SKR clusters for changes requested by the users
+
+KLM is built using the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) framework and extends the Kubernetes API through custom resource definitions. For detailed information about these resources, see [Lifecycle Manager Resources](./docs/contributor/resources/README.md).
 
 ## Usage
 
