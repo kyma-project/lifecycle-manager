@@ -1,6 +1,6 @@
 # Unmanaging Modules
 
-Lifecycle Manager allows you to unmanage modules, which means that the module and its related resources remain deployed in the SAP BTP, Kyma runtime (SKR) cluster but are no longer managed by Lifecycle Manager.
+In some cases, for example, for testing, you may need to modify your module beyond what is supported by its configuration. By default, when a module is in the managed state, Kyma Control Plane governs its Kubernetes resources, reverting any manual changes during the next reconciliation loop. To modify Kubernetes objects directly without them being reverted, you must set the module to the unmanaged state. In this state, reconciliation is disabled, ensuring your manual changes are preserved.
 
 To unmanage a module, set the **.spec.modules[].managed** field to `false` in the Kyma CR. The following changes are then triggered:
 
