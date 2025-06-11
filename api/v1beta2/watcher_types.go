@@ -110,7 +110,16 @@ type Watcher struct {
 	Status WatcherStatus `json:"status,omitempty"`
 }
 
-func (watcher *Watcher) GetModuleName() string {
+// GetManagerName returns the name of the manager component responsible for handling webhook requests.
+//
+// This value is used in two places:
+//  1. In the SKR cluster, it is set as `clientConfig.service.path` in the ValidatingWebhookConfiguration,
+//     indicating which backend manager service should receive the webhook call.
+//  2. In the KCP, it is used as `http.match.uri.prefix` in the VirtualService to route the incoming
+//     webhook request to the appropriate manager service.
+//
+// Consistency in this name ensures correct routing and handling of webhook validation logic.
+func (watcher *Watcher) GetManagerName() string {
 	if watcher.Labels == nil {
 		return ""
 	}
