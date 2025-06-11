@@ -7,10 +7,10 @@
 
 [Kyma](https://kyma-project.io/) is an opinionated set of Kubernetes-based modular building blocks that provides enterprise-grade capabilities for developing and running cloud-native applications. As an actively maintained open-source project supported by SAP, Kyma serves as the foundation for SAP BTP, Kyma runtime within the SAP Business Technology Platform (BTP).
 
-The Kyma Lifecycle Manager (KLM) is a crucial component at the core of the managed Kyma runtime. Operating within the Kyma Control Plane (KCP) cluster, KLM manages the lifecycle of Kyma modules in the SAP BTP Kyma Runtime (SKR) clusters. These SKR clusters are hyperscaler clusters provisioned for users of the managed Kyma runtime.
+The Kyma Lifecycle Manager (KLM) is a crucial component at the core of the managed Kyma runtime. Operating within the Kyma Control Plane (KCP) cluster, KLM manages the lifecycle of Kyma modules in the SAP BTP, Kyma Runtime (SKR) clusters. These SKR clusters are hyperscaler clusters provisioned for users of the managed Kyma runtime.
 
 KLM's key responsibilities include:
-- Installing required Custom Resource Definitions (CRDs) for Kyma module deployment
+- Installing Custom Resource Definitions (CRDs) required for Kyma module deployment
 - Synchronizing the catalog of available Kyma modules to SKR clusters
 - Installing, updating, reconciling, and deleting Kyma module resources in SKR clusters
 - Watching SKR clusters for changes requested by the users
