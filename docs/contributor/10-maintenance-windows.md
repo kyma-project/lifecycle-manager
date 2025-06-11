@@ -2,7 +2,7 @@
 
 Lifecycle Manager enables a module team to specify whether a version of their module requires downtime during the upgrade process. To configure a module version as requiring downtime, set the **spec.requiresDowntime** field in the ModuleTemplate custom resource (CR) to `true`.
 
-Additionally, an SAP BTP, Kyma runtime user can decide not to wait for a maintenance window and upgrade a module version as soon as it is available by setting the **spec.skipMaintenanceWindow** field to `true` in the Kyma CR.
+Additionally, an SAP BTP, Kyma runtime user can decide not to wait for a maintenance window and upgrade a module version as soon as it is available by setting the **spec.skipMaintenanceWindow** field to `true` in the Kyma CR. For more information, see [Skipping Maintenance Windows](../../user/[03-maintenance-windows.md).
 
 ## Scenarios
 
