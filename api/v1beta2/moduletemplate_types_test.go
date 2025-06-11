@@ -168,7 +168,7 @@ func Test_GetModuleName(t *testing.T) {
 		expectedName string
 	}{
 		{
-			name: "Test GetModuleName() by label",
+			name: "Test GetManagerName() by label",
 			m: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Labels: map[string]string{
@@ -180,7 +180,7 @@ func Test_GetModuleName(t *testing.T) {
 			expectedName: "labelled-module",
 		},
 		{
-			name: "Test GetModuleName() by spec.moduleName",
+			name: "Test GetManagerName() by spec.moduleName",
 			m: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Labels: map[string]string{},
@@ -192,7 +192,7 @@ func Test_GetModuleName(t *testing.T) {
 			expectedName: "spec-module",
 		},
 		{
-			name: "Test GetModuleName() spec.moduleName has priority over label",
+			name: "Test GetManagerName() spec.moduleName has priority over label",
 			m: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Labels: map[string]string{
