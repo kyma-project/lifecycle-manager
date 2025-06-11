@@ -28,7 +28,7 @@ require (
 	golang.org/x/sync v0.15.0
 	golang.org/x/time v0.12.0
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
-	ocm.software/ocm v0.24.0
+	ocm.software/ocm v0.24.1
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/yaml v1.4.0
 )
