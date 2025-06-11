@@ -18,5 +18,5 @@ Depending on the configuration, the following scenarios are possible:
    Then, whenever the module version is available for upgrade, the Kyma module is immediately upgraded to the new version.
 
 > [!Note]
-> The **requiresDowntime**  parameter also applies if the module was not installed before.
+> The **requiresDowntime**  parameter does not apply if the module was not installed before as there is no existing installation that breaks.
 
