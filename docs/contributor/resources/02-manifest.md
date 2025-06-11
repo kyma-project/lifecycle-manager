@@ -22,7 +22,7 @@ The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and
 
 ### **.spec.install**
 
-This contains the OCI resource specification for the module resources that are deployed on the SKR cluster.
+The **.spec.install** field contains the OCI resource specification for the module resources that are deployed on the SKR cluster.
 
 The following example shows how the `raw-manifest` is defined in the Manifest CR:
 
@@ -79,8 +79,8 @@ This status provides a reliable way to track the state of the Manifest CR and th
 
 ### **.spec.remote (Deprecated)**
 
-> **CAUTION:**
-> This field has been deprecated for a long time and is no longer functional. It will be removed in the next API version.
+> ![Warning]
+> This field was deprecated and is no longer functional. It will be removed in the next API version.
 
 
 This parameter was used to determine whether the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR. This is the default and only behaviour now.
@@ -103,8 +103,8 @@ looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and 
 
 ### **.spec.config (Deprecated)**
 
-> **CAUTION:**
-> This field has been deprecated for a long time and is no longer functional. It will be removed in the next API version.
+> [!Warning]
+> This field was deprecated and is no longer functional. It will be removed in the next API version.
 
 The config reference used an image layer reference that contains configuration data that could be used to further
 influence any potential rendering process while the resources are processed by
