@@ -87,7 +87,7 @@ spec:
 
 ### **.spec.modules[].managed**
 
-The **managed** field determines whether or not the Lifecycle Manager manages the module. By default, it is set to `true`. If you set it to `false`, you exclude a module from management by Lifecycle Manager.
+The **managed** field determines whether or not Lifecycle Manager manages a module. By default, the field is set to `true`. If you set it to `false`, you exclude a module from management by Lifecycle Manager.
 
 For more information on how to unmanage a module, see [Unmanaging modules](../../user/02-unmanaging-modules.md).
 
