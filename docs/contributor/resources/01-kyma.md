@@ -31,26 +31,26 @@ This means that a Kyma CR that has the following spec:
 
 ```yaml
 spec:
-  channel: alpha
+  channel: regular
   modules:
   - name: keda
   - name: serverless
 ```
 
-attempts to look up the Keda and Serverless modules in the `alpha` release channel.
+attempts to look up the Keda and Serverless modules in the `regular` release channel.
 
 However, if you specify channels using the **.spec.modules[].channel** attribute, the latter one is used instead.
 
 ```yaml
 spec:
-  channel: alpha
+  channel: regular
   modules:
   - name: keda
-    channel: regular
+    channel: fast
   - name: serverless
 ```
 
-In this case, `regular` is the relevant channel for Keda, but not for Serverless.
+In this case, `fast` is the relevant channel for Keda, but not for Serverless.
 
 ### **.spec.modules**
 
@@ -109,9 +109,9 @@ The conditions represent individual elements of the reconciliation that can eith
 
 Currently, we maintain conditions for:
 
-* Module (Manifest CR) synchronization
-* Module Catalog (ModuleTemplate CR and ModuleReleaseMeta CR) synchronization
-* Watcher Installation Consistency
+* All modules (Manifest CRs) that are in the `Ready` state
+* Module catalog (ModuleTemplate CR and ModuleReleaseMeta CR) synchronized to the remote cluster
+* Watcher installed in the remote cluster
 
 We also calculate the **.status.state** readiness based on all the conditions available.
 
@@ -125,7 +125,7 @@ kind: Kyma
 # ...
 status:
   modules:
-  - channel: alpha
+  - channel: regular
     fqdn: kyma.project.io/module/btp-operator
     manifest:
       apiVersion: operator.kyma-project.io/v1beta2
@@ -143,7 +143,7 @@ status:
         generation: 2
         name: moduletemplate-btp-operator
         namespace: kcp-system
-    version: v0.2.3
+    version: 1.2.10
 ```
 
 The above example shows that not only the module name is resolved to a unique `fqdn`, it also represents the active `channel`, `version` and `state` which is a direct tracking to the **.status.state** in the Manifest CR. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.
