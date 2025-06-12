@@ -54,7 +54,8 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 	} else {
 		kyma.Spec.Channel = v1beta2.DefaultChannel
 	}
-	if err := skrClient.Update(ctx, kyma); err != nil {
+	if err := skrClient.Update(ctx, kyma); err != nil && !strings.Contains(err.Error(),
+		"the object has been modified") {
 		fmt.Println("Error while updating Kyma CR: ", err)
 		return err
 	}
