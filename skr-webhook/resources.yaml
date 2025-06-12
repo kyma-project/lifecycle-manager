@@ -148,7 +148,7 @@ kind: NetworkPolicy
 metadata:
   labels:
     app: skr-webhook
-  name: kyma-project.io--metrics-to-skr-webhook
+  name: kyma-project.io--metrics-to-watcher
   namespace: default
 spec:
   ingress:
