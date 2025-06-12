@@ -155,6 +155,8 @@ spec:
     - ports:
         - port: 2112
           protocol: TCP
+    - from:
+        - {}  # allow from all sources
   podSelector:
     matchLabels:
       app: skr-webhook
