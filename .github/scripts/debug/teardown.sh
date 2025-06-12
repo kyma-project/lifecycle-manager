@@ -25,12 +25,12 @@ kubectl port-forward -n $NAMESPACE svc/$SERVICE_NAME $LOCAL_PORT:$REMOTE_PORT > 
 PF_PID=$!
 
 # Wait for port-forward to become available
-until curl -s http://localhost:$LOCAL_PORT/metrics > /dev/null; do
+until curl -s https://localhost:$LOCAL_PORT/metrics > /dev/null; do
   sleep 0.5
 done
 
 # Fetch and print metrics
-curl -s http://localhost:$LOCAL_PORT/metrics
+curl -s https://localhost:$LOCAL_PORT/metrics
 
 # Clean up port-forward
 kill $PF_PID
