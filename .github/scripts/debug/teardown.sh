@@ -9,12 +9,12 @@ kubectl describe pod -n kcp-system --selector=app.kubernetes.io/name=kcp-lifecyc
 echo "--- KLM LOGS ---"
 kubectl logs deploy/klm-controller-manager -n kcp-system --container manager
 
+set -e
+
 kubectl config use-context k3d-skr
 echo "--- SKR-WEBHOOK LOGS ---"
 kubectl logs deploy/skr-webhook -n kyma-system --container server
 echo "--- SKR-WEBHOOK METRICS ---"
-set -e
-
 SERVICE_NAME="skr-webhook-metrics"
 NAMESPACE="kyma-system"
 LOCAL_PORT=8080
