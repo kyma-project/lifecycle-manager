@@ -155,7 +155,7 @@ spec:
     - ports:
         - port: 2112
           protocol: TCP
-    - from:
+      from:
         - {} # Allow from all sources
   podSelector:
     matchLabels:
