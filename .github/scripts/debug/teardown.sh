@@ -23,15 +23,6 @@ NAMESPACE="kyma-system"
 LOCAL_PORT=8080
 REMOTE_PORT=2112
 
-# Start port-forward in background
-kubectl port-forward -n $NAMESPACE svc/$SERVICE_NAME $LOCAL_PORT:$REMOTE_PORT > /dev/null 2>&1 &
-PF_PID=$!
+kubectl port-forward -n $NAMESPACE svc/$SERVICE_NAME $LOCAL_PORT:$REMOTE_PORT & sleep 3
 
-sleep 3
-
-# Fetch and print metrics
-curl -s https://localhost:$LOCAL_PORT/metrics
-
-# Clean up port-forward
-kill $PF_PID
-wait $PF_PID 2>/dev/null || true
+curl -sk https://localhost:$LOCAL_PORT/metrics
