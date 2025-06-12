@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"fmt"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
@@ -53,8 +54,8 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 	} else {
 		kyma.Spec.Channel = v1beta2.DefaultChannel
 	}
-	if err := skrClient.Update(ctx, kyma); err != nil && !strings.Contains(err.Error(),
-		"the object has been modified") {
+	if err := skrClient.Update(ctx, kyma); err != nil {
+		fmt.Println("Error while updating Kyma CR: ", err)
 		return err
 	}
 
@@ -63,9 +64,11 @@ func triggerWatcherAndCheckDowntime(ctx context.Context, skrClient client.Client
 	// Checking that failed KCP error metrics is not increasing
 	count, err := GetWatcherFailedKcpTotalMetric(ctx)
 	if err != nil && !strings.Contains(err.Error(), "EOF") {
+		fmt.Print("Error while getting watcher failed KCP total metric: ", err)
 		return err
 	}
 	if count > 0 {
+		fmt.Printf("Watcher failed KCP total metric count is %d, expected 0\n", count)
 		return errors.New("watcher is experiencing downtime")
 	}
 	return nil
