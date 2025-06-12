@@ -51,8 +51,7 @@ type KymaSpec struct {
 
 	// SkipMaintenanceWindows indicates whether module upgrades that require downtime
 	// should bypass the defined Maintenance Windows and be applied immediately.
-	// +optional
-	SkipMaintenanceWindows bool `json:"skipMaintenanceWindows"`
+	SkipMaintenanceWindows bool `json:"skipMaintenanceWindows,omitempty"`
 
 	// Modules specifies the list of modules to be installed
 	// +listType=map

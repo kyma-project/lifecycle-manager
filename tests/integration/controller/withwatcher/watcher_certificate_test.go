@@ -12,7 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -28,7 +28,10 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createWatcherSecret(kymaObjKey)
-	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: flags.DefaultRemoteSyncNamespace}
+	skrTLSSecretObjKey := client.ObjectKey{
+		Name:      skrwebhookresources.SkrTLSName,
+		Namespace: flags.DefaultRemoteSyncNamespace,
+	}
 	gatewaySecret := createGatewaySecret()
 
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, gatewaySecret)
