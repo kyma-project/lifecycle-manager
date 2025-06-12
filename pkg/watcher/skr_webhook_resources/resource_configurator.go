@@ -47,6 +47,7 @@ const (
 	ApiServerNetworkPolicyName     = "kyma-project.io--watcher-to-apiserver"
 	SeedToWatcherNetworkPolicyName = "kyma-project.io--seed-to-watcher"
 	WatcherToDNSNetworkPolicyName  = "kyma-project.io--watcher-to-dns"
+	MetricsToWatcherPolicyName     = "kyma-project.io--metrics-to-watcher"
 )
 
 func NewResourceConfigurator(remoteNs, skrWatcherImage,
