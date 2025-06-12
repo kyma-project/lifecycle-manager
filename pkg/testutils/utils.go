@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -183,29 +182,15 @@ func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstruc
 }
 
 func PatchServiceToTypeLoadBalancer(ctx context.Context, clnt client.Client, serviceName, namespace string) error {
-	//if err := switchToSkrContext(); err != nil {
-	//	return fmt.Errorf("failed to switch context to k3d-skr: %w", err)
-	//}
-
 	service := &apicorev1.Service{}
 	if err := clnt.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, service); err != nil {
-		fmt.Println("Error getting service:", err)
 		return err
 	}
 
 	service.Spec.Type = apicorev1.ServiceTypeLoadBalancer
 	if err := clnt.Update(ctx, service); err != nil {
-		fmt.Println("Error updating service:", err)
 		return err
 	}
 
-	return nil
-}
-
-func switchToSkrContext() error {
-	cmd := exec.Command("kubectl", "config", "use-context", "k3d-skr")
-	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to switch context %w", err)
-	}
 	return nil
 }

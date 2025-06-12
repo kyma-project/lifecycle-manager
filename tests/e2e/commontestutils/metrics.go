@@ -170,7 +170,6 @@ func GetMandatoryModuleStateMetric(ctx context.Context, kymaName, moduleName, st
 
 func GetWatcherFailedKcpTotalMetric(ctx context.Context) (int, error) {
 	metricsBody, err := getSKRMetricsBody(ctx)
-	fmt.Println("Getting watcher failed KCP total metric from SKR metrics endpoint:", metricsBody)
 	if err != nil {
 		return 0, err
 	}
