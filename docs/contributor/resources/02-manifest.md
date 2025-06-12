@@ -18,14 +18,72 @@ The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and
 2. The Manifest CR channel differs from the Kyma CR's module status channel.
 3. The Manifest CR state differs from the Kyma CR's module status state.
 
->[!NOTE]
->The module status is not present in the Kyma CR for mandatory modules, hence their Manifest CR is updated using SSA in every reconcile loop.
-
 ## Configuration
 
-### **.spec.remote**
+### **.spec.install**
 
-This parameter determines whether the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR.
+The **.spec.install** field contains the OCI resource specification for the module resources that are deployed on the SKR cluster.
+
+The following example shows how the `raw-manifest` is defined in the Manifest CR:
+
+```yaml
+spec:
+  install:
+    name: raw-manifest
+    source:
+      name: kyma-project.io/module/btp-operator
+      ref: sha256:5e9436f2b6b90667415aec3809af73d4c884d8f275e21958433103188f661d4c
+      repo: europe-docker.pkg.dev/kyma-project/modules-internal/component-descriptors
+      type: oci-ref
+```
+
+This specification is mapped from the corresponding access layer in the ModuleTemplate CR descriptor:
+
+```yaml
+- access:
+    localReference: sha256:5e9436f2b6b90667415aec3809af73d4c884d8f275e21958433103188f661d4c
+    mediaType: application/octet-stream
+    referenceName: raw-manifest
+    type: localBlob
+  digest:
+    hashAlgorithm: SHA-256
+    normalisationAlgorithm: genericBlobDigest/v1
+    value: 5e9436f2b6b90667415aec3809af73d4c884d8f275e21958433103188f661d4c
+  name: raw-manifest
+  relation: local
+  type: yaml
+  version: 1.2.10
+```
+
+The `.spec.install` spec is resolved by the [SpecResolver](../../../internal/manifest/spec_resolver.go) which fetches the raw manifest from the OCI layer and resolves it to a path that can be used by the [declarative library](../../../internal/declarative/) and deployed to the target cluster.
+
+
+### **.spec.resource**
+
+The resource is the default data that should be initialized for the module and is directly copied from **.spec.data** of the ModuleTemplate CR after normalizing it with the **namespace** for the synchronized module.
+
+### **.status**
+
+The Manifest CR status is set based on the following logic, managed by the manifest reconciler:
+
+* `Ready`: If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the status of the Manifest CR is set to `Ready`.
+* `Processing`: While the manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
+* `Error`: If the deployment cannot start, for example, due to an `ImagePullBackOff` error, or if the application of the manifest fails, the status of the Manifest CR is set to `Error`.
+* `Deleting`:  If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleting`.
+
+This status provides a reliable way to track the state of the Manifest CR and the associated module. It offers insights into the deployment process and any potential issues while being decoupled from the module's business logic.
+
+### **.metadata.labels**
+
+* `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to disable reconciliation for a module. This will avoid all reconciliations for the Manifest CR. Note that this label is independent of the Kyma CR's skip reconciliation label. 
+
+### **.spec.remote (Deprecated)**
+
+> ![Warning]
+> This field was deprecated and is no longer functional. It will be removed in the next API version.
+
+
+This parameter was used to determine whether the given module should be installed in a remote cluster. If it should, then in the KCP cluster, it attempts to search for a Secret having the same `operator.kyma-project.io/kyma-name` label and value as in the Manifest CR. This is the default and only behaviour now.
 
 Thus a Manifest CR like
 
@@ -43,15 +101,20 @@ spec:
 
 looks for a Secret with the same `operator.kyma-project.io/kyma-name` label and value `kyma-sample`.
 
-### **.spec.config**
+### **.spec.config (Deprecated)**
 
-The config reference uses an image layer reference that contains configuration data that can be used to further
+> [!Warning]
+> This field was deprecated and is no longer functional. It will be removed in the next API version.
+
+The config reference used an image layer reference that contains configuration data that could be used to further
 influence any potential rendering process while the resources are processed by
-the [declarative library](../../../internal/declarative/). It is resolved through a
+the [declarative library](../../../internal/declarative/). It was resolved through a
 translation of the ModuleTemplate CR to the Manifest CR during
 the [resolution of the modules](../../../internal/manifest/parser/template_to_module.go) in the Kyma CR control loop.
 
-There can be at most one config layer, and it is referenced by the **name** `config` with **type** `yaml` as `localOciBlob` or `OCIBlob`:
+Now, only raw manifests are supported, and the config layer is no longer used.
+
+There could have been at most one config layer, and it was referenced by the **name** `config` with **type** `yaml` as `localOciBlob` or `OCIBlob`:
 
 ```yaml
 spec:
@@ -73,52 +136,3 @@ spec:
         type: yaml
         version: 0.0.1-6cd5086
 ```
-
-### **.spec.install**
-
-The installation layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../../../internal/declarative/).
-
-It is mapped from an access type layer in the descriptor:
-
-```yaml
-- access:
-    digest: sha256:8f926a08ca246707beb9c902e6df7e8c3e89d2e75ff4732f8f00c424ba8456bf
-    type: localOciBlob
-  name: keda
-  relation: local
-  type: helm-chart
-  version: 0.0.1-6cd5086
-```
-
-will be translated into a Manifest Layer:
-
-```yaml
-install:
-   name: keda
-   source:
-      name: kyma-project.io/module/keda
-      ref: sha256:8f926a08ca246707beb9c902e6df7e8c3e89d2e75ff4732f8f00c424ba8456bf
-      repo: europe-docker.pkg.dev/kyma-project/prod/unsigned/component-descriptors
-      type: oci-ref
-```
-
-The [internal spec resolver](../../../internal/manifest/spec_resolver.go) uses this layer to resolve the correct specification style and renderer type from the data layer.
-
-### **.spec.resource**
-
-The resource is the default data that should be initialized for the module and is directly copied from **.spec.data** of the ModuleTemplate CR after normalizing it with the **namespace** for the synchronized module.
-
-### **.status**
-
-The Manifest CR status is set based on the following logic, managed by the manifest reconciler:
-
-* If the module defined in the Manifest CR is successfully applied and the deployed module is up and running, the status of the Manifest CR is set to `Ready`.
-* While the manifest is being applied and the Deployment is still starting, the status of the Manifest CR is set to `Processing`.
-* If the Deployment cannot start (for example, due to an `ImagePullBackOff` error) or if the application of the manifest fails, the status of the Manifest CR is set to `Error`.
-* If the Manifest CR is marked for deletion, the status of the Manifest CR is set to `Deleting`.
-
-This status provides a reliable way to track the state of the Manifest CR and the associated module. It offers insights into the deployment process and any potential issues while being decoupled from the module's business logic.
-
-### **.metadata.labels**
-
-* `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to disable reconciliation for a module. This will avoid all reconciliations for the Manifest CR.

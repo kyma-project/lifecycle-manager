@@ -1,12 +1,12 @@
 module github.com/kyma-project/lifecycle-manager/api
 
-go 1.24.3
+go 1.24.4
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/stretchr/testify v1.10.0
 	k8s.io/apimachinery v0.33.1
-	sigs.k8s.io/controller-runtime v0.20.4
+	sigs.k8s.io/controller-runtime v0.21.0
 )
 
 require github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect

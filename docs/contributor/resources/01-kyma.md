@@ -31,26 +31,26 @@ This means that a Kyma CR that has the following spec:
 
 ```yaml
 spec:
-  channel: alpha
+  channel: regular
   modules:
   - name: keda
   - name: serverless
 ```
 
-attempts to look up the Keda and Serverless modules in the `alpha` release channel.
+attempts to look up the Keda and Serverless modules in the `regular` release channel.
 
 However, if you specify channels using the **.spec.modules[].channel** attribute, the latter one is used instead.
 
 ```yaml
 spec:
-  channel: alpha
+  channel: regular
   modules:
   - name: keda
-    channel: regular
+    channel: fast
   - name: serverless
 ```
 
-In this case, `regular` is the relevant channel for Keda, but not for Serverless.
+In this case, `fast` is the relevant channel for Keda, but not for Serverless.
 
 ### **.spec.modules**
 
@@ -87,17 +87,9 @@ spec:
 
 ### **.spec.modules[].managed**
 
-The **managed** field determines whether or not the Lifecycle Manager manages the module. By default, it is set to `true`. If you set it to `false`, you exclude a module from management by Lifecycle Manager and trigger the following changes:
-* The module and all its related resources remain in the remote cluster in the same state they were in when the module became unmanaged. 
-* Lifecycle Manager stops reconciling the module and its resources. 
-* The `operator.kyma-project.io/managed-by=kyma` and `operator.kyma-project.io/watched-by=kyma` labels are removed from the module's resources. For example, this may be relevant if you use those labels as exclusion filters for custom monitoring using the Kyma Telemetry module.
+The **managed** field determines whether or not Lifecycle Manager manages a module. By default, the field is set to `true`. If you set it to `false`, you exclude a module from management by Lifecycle Manager.
 
-To verify that a module was successfully unmanaged, check that the field **.status.modules[].state** has the status `Unmanaged`. Once the state is `Unmanaged`, you can delete the module's entry from **.spec.modules[]** in the Kyma CR.  Nevertheless, the module and its related resources remain in the remote cluster.
-
-> **CAUTION:**
-> When you switch values of **.spec.modules[].managed**, you MUST wait for the new state to be reflected in **.status.modules[].state** before you remove the module's entry from **.spec.modules[]**. If the entry is removed before the current state is reflected properly in **.status.modules[].state**, it may lead to unpredictable behavior that is hard to recover from.
-
-When the **.spec.modules[].managed** field is set back to `true`, Lifecycle Manager starts the module management again. The existing module resources in the remote cluster may be overwritten if the desired state has changed in the meantime, for example, if the module's version within the used channel was updated.
+For more information on how to unmanage a module, see [Setting Your Module to the Unmanaged and Managed State](../../user/02-unmanaging-modules.md).
 
 ### **.spec.modules[].customResourcePolicy**
 
@@ -117,9 +109,9 @@ The conditions represent individual elements of the reconciliation that can eith
 
 Currently, we maintain conditions for:
 
-* Module (Manifest CR) synchronization
-* Module Catalog (ModuleTemplate CR and ModuleReleaseMeta CR) synchronization
-* Watcher Installation Consistency
+* All modules (Manifest CRs) that are in the `Ready` state
+* Module catalog (ModuleTemplate CR and ModuleReleaseMeta CR) synchronized to the remote cluster
+* Watcher installed in the remote cluster
 
 We also calculate the **.status.state** readiness based on all the conditions available.
 
@@ -133,7 +125,7 @@ kind: Kyma
 # ...
 status:
   modules:
-  - channel: alpha
+  - channel: regular
     fqdn: kyma.project.io/module/btp-operator
     manifest:
       apiVersion: operator.kyma-project.io/v1beta2
@@ -151,7 +143,7 @@ status:
         generation: 2
         name: moduletemplate-btp-operator
         namespace: kcp-system
-    version: v0.2.3
+    version: 1.2.10
 ```
 
 The above example shows that not only the module name is resolved to a unique `fqdn`, it also represents the active `channel`, `version` and `state` which is a direct tracking to the **.status.state** in the Manifest CR. The Kyma CR `Ready` state can only be achieved if all tracked modules are `Ready` themselves.

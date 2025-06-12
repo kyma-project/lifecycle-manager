@@ -21,7 +21,8 @@ packages:
   internal/pkg/resources: 91
   internal/remote: 29
   internal/repository/kyma: 100
-  internal/service/kyma/status/modules: 78
+  internal/service/skrwebhook/chartreader: 100
+  internal/service/skrwebhook/gateway: 94
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/manifest/orphan: 100
@@ -29,6 +30,7 @@ packages:
   pkg/module/sync: 10
   pkg/templatelookup: 88
   pkg/templatelookup/moduletemplateinfolookup: 98
+  pkg/watcher/skr_webhook_resources: 82
   pkg/watcher/certificate: 100
   pkg/watcher/certificate/certmanager: 100
   pkg/watcher/certificate/gardener: 98
