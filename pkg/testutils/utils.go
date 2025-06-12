@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"os/exec"
 )
 
 const (
@@ -183,10 +183,8 @@ func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstruc
 }
 
 func PatchServiceToTypeLoadBalancer(ctx context.Context, clnt client.Client, serviceName, namespace string) error {
-	// For debugging
-	cmd := exec.Command("kubectl", "config", "use-context", "k3d-skr")
-	if _, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to switch context %w", err)
+	if err := switchToSkrContext(); err != nil {
+		return fmt.Errorf("failed to switch context to k3d-skr: %w", err)
 	}
 
 	service := &apicorev1.Service{}
@@ -199,5 +197,13 @@ func PatchServiceToTypeLoadBalancer(ctx context.Context, clnt client.Client, ser
 		return err
 	}
 
+	return nil
+}
+
+func switchToSkrContext() error {
+	cmd := exec.Command("kubectl", "config", "use-context", "k3d-skr")
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to switch context %w", err)
+	}
 	return nil
 }
