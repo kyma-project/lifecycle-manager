@@ -1,6 +1,6 @@
 # Lifecycle Manager Components
 
-The following table shows the Kubernetes components that need to exist in the Control-Plane Cluster to have the Lifecycle Manager up and running.
+To run, Lifecycle Manager requires a set of Kubernetes components that must exist in the Kyma Control Plane (KCP) cluster. The following table lists and describes all the building blocks, specifying the namespace where each resides.
 
 | Kind                       | Name                                          | Namespace      | Description                                                                                            |
 |----------------------------|-----------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------|
