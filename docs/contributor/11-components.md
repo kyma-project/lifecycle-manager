@@ -43,9 +43,5 @@ To enable the Watcher component, it requires the following resources:
 | `Service`                  | `klm-controller-manager-events`               | `kcp-system`   | Exposes controller events.                                                                             |
 | `Gateway`                  | `klm-watcher `                                | `kcp-system`   | Istio gateway that exposes the watcher endpoint over HTTPS for secure communication with SKR clusters. |
 
-The Kubernetes resource of type `Service` with the name of `klm-webhook-service` should be deployed in the `kcp-system` namespace if you want to have webhooks enabled for the Lifecycle Manager.
-
-
-
-
+To enable webhooks for Lifecycle Manager, the Kubernetes resource of type `Service` with the name of `klm-webhook-service` must be deployed in the `kcp-system` namespace.
 
