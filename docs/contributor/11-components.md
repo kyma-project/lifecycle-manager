@@ -21,7 +21,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `RoleBinding`              | `klm-controller-manager-certmanager`          | `istio-system` | Binds cert-manager role to service account.                                                            |
 | `Service`                  | `klm-controller-manager-events`               | `kcp-system`   | Exposes controller events.                                                                             |
 | `Service`                  | `klm-controller-manager-metrics`              | `kcp-system`   | Exposes controller metrics.                                                                            |
-| `Service`                  | `klm-webhook-service`                         | `kcp-system`   | Exposes controller webhook.                                                                            |
+| `Service`                  | `klm-webhook-service`                         | `kcp-system`   | Exposes the controller webhook.                                                                            |
 | `ConfigMap`                | `klm-dashboard-overview`                      | `kcp-system`   | Grafana dashboard config for overview panel.                                                           |
 | `ConfigMap`                | `klm-dashboard-watcher`                       | `kcp-system`   | Grafana dashboard config for watcher view.                                                             |
 | `ConfigMap`                | `klm-dashboard-mandatory-modules`             | `kcp-system`   | Grafana dashboard config for the mandatory modules view.                                                   |
