@@ -14,7 +14,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `ClusterRole`              | `klm-controller-manager-crds`                 | Cluster-wide   | Grants permissions to manage CRDs.                                                                     |
 | `ClusterRoleBinding`       | `klm-controller-manager-crds`                 | Cluster-wide   | Binds a CRD's role to its service account.                                                                |
 | `Role`                     | `klm-controller-manager-leader-election`      | `kcp-system`   | Grants permission for a leader election.                                                                 |
-| `RoleBinding`              | `klm-controller-manager-leader-election`      | `kcp-system`   | Binds leader election role to service account.                                                         |
+| `RoleBinding`              | `klm-controller-manager-leader-election`      | `kcp-system`   | Binds the leader election role to a service account.                                                         |
 | `Role`                     | `klm-controller-manager`                      | `kcp-system`   | Role for accessing runtime resources.                                                                  |
 | `RoleBinding`              | `klm-controller-manager`                      | `kcp-system`   | Binds manager role to service account.                                                                 |
 | `Role`                     | `klm-controller-manager-certmanager`          | `istio-system` | Role for cert-manager integration.                                                                     |
