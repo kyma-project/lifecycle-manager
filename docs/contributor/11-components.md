@@ -31,7 +31,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `Issuer`                   | `klm-watcher-root`                            | `istio-system` | Issues the self-signed watcher certificates.                                                           |
 | `Issuer`                   | `klm-controller-manager-selfsigned`           | `kcp-system`   | Issues the webhook serving certificates.                                                               |
 | `Gateway`                  | `klm-watcher `                                | `kcp-system`   | Istio gateway that exposes the watcher endpoint over HTTPS for secure communication with SKR clusters. |
-| `Watcher`                  | `klm-watcher`                                 | `kcp-system`   | Watches the changes done to remote Kyma custom resource.                                               |
+| `Watcher`                  | `klm-watcher`                                 | `kcp-system`   | Watches the changes done to the remote Kyma custom resource.                                               |
 | `Authorization Policy`     | `klm-controller-manager`                      | `kcp-system`   | Policy to allow access to metrics and webhooks.                                                        |
 
 
