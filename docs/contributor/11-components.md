@@ -12,7 +12,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `Deployment`               | `klm-controller-manager`                      | `kcp-system`   | Main controller logic for managing all Kyma resources.                                                 |
 | `ServiceAccount`           | `klm-controller-manager`                      | `kcp-system`   | Main controller's service account.                                                                     |
 | `ClusterRole`              | `klm-controller-manager-crds`                 | Cluster-wide   | Grants permissions to manage CRDs.                                                                     |
-| `ClusterRoleBinding`       | `klm-controller-manager-crds`                 | Cluster-wide   | Binds crds role to its service account.                                                                |
+| `ClusterRoleBinding`       | `klm-controller-manager-crds`                 | Cluster-wide   | Binds a CRD's role to its service account.                                                                |
 | `Role`                     | `klm-controller-manager-leader-election`      | `kcp-system`   | Grants permission for leader election.                                                                 |
 | `RoleBinding`              | `klm-controller-manager-leader-election`      | `kcp-system`   | Binds leader election role to service account.                                                         |
 | `Role`                     | `klm-controller-manager`                      | `kcp-system`   | Role for accessing runtime resources.                                                                  |
