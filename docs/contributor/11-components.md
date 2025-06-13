@@ -19,20 +19,32 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `RoleBinding`              | `klm-controller-manager`                      | `kcp-system`   | Binds manager role to service account.                                                                 |
 | `Role`                     | `klm-controller-manager-certmanager`          | `istio-system` | Role for cert-manager integration.                                                                     |
 | `RoleBinding`              | `klm-controller-manager-certmanager`          | `istio-system` | Binds cert-manager role to service account.                                                            |
-| `Service`                  | `klm-controller-manager-events`               | `kcp-system`   | Exposes controller events.                                                                             |
 | `Service`                  | `klm-controller-manager-metrics`              | `kcp-system`   | Exposes controller metrics.                                                                            |
-| `Service`                  | `klm-webhook-service`                         | `kcp-system`   | Exposes controller webhook.                                                                            |
-| `ConfigMap`                | `klm-dashboard-overview`                      | `kcp-system`   | Grafana dashboard config for overview panel.                                                           |
-| `ConfigMap`                | `klm-dashboard-watcher`                       | `kcp-system`   | Grafana dashboard config for watcher view.                                                             |
-| `ConfigMap`                | `klm-dashboard-mandatory-modules`             | `kcp-system`   | Grafana dashboard config for mandatory modules view.                                                   |
-| `ConfigMap`                | `klm-dashboard-status`                        | `kcp-system`   | Grafana dashboard config for modules status view.                                                      |
 | `Certificate`              | `klm-watcher-serving`                         | `istio-system` | Self-signed watcher certificate.                                                                       |
 | `Certificate`              | `klm-controller-manager-webhook-serving`      | `kcp-system`   | Lifecycle manager webhook certificate.                                                                 |
 | `Issuer`                   | `klm-watcher-root`                            | `istio-system` | Issues the self-signed watcher certificates.                                                           |
 | `Issuer`                   | `klm-controller-manager-selfsigned`           | `kcp-system`   | Issues the webhook serving certificates.                                                               |
-| `Gateway`                  | `klm-watcher `                                | `kcp-system`   | Istio gateway that exposes the watcher endpoint over HTTPS for secure communication with SKR clusters. |
-| `Watcher`                  | `klm-watcher`                                 | `kcp-system`   | Watches the changes done to remote Kyma custom resource.                                               |
 | `Authorization Policy`     | `klm-controller-manager`                      | `kcp-system`   | Policy to allow access to metrics and webhooks.                                                        |
+
+The following `Config Maps` need to be deployed in order to have the metrics exposed on Grafana dashboard:
+
+| Kind                       | Name                                          | Namespace      | Description                                                                                            |
+|----------------------------|-----------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------|
+| `ConfigMap`                | `klm-dashboard-overview`                      | `kcp-system`   | Grafana dashboard config for overview panel.                                                           |
+| `ConfigMap`                | `klm-dashboard-watcher`                       | `kcp-system`   | Grafana dashboard config for watcher view.                                                             |
+| `ConfigMap`                | `klm-dashboard-mandatory-modules`             | `kcp-system`   | Grafana dashboard config for mandatory modules view.                                                   |
+| `ConfigMap`                | `klm-dashboard-status`                        | `kcp-system`   | Grafana dashboard config for modules status view.                                                      |
+
+The following resources are required if the watcher component is to be enabled:
+
+| Kind                       | Name                                          | Namespace      | Description                                                                                            |
+|----------------------------|-----------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------|
+| `Watcher`                  | `klm-watcher`                                 | `kcp-system`   | Watches the changes done to remote Kyma custom resource.                                               |
+| `Service`                  | `klm-controller-manager-events`               | `kcp-system`   | Exposes controller events.                                                                             |
+| `Gateway`                  | `klm-watcher `                                | `kcp-system`   | Istio gateway that exposes the watcher endpoint over HTTPS for secure communication with SKR clusters. |
+
+The Kubernetes resource of type `Service` with the name of `klm-webhook-service` should be deployed in the `kcp-system` namespace if you want to have webhooks enabled for the Lifecycle Manager.
+
 
 
 
