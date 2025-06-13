@@ -27,7 +27,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `ConfigMap`                | `klm-dashboard-mandatory-modules`             | `kcp-system`   | Grafana dashboard config for the mandatory modules view.                                                   |
 | `ConfigMap`                | `klm-dashboard-status`                        | `kcp-system`   | Grafana dashboard config for modules status view.                                                      |
 | `Certificate`              | `klm-watcher-serving`                         | `istio-system` | Self-signed watcher certificate.                                                                       |
-| `Certificate`              | `klm-controller-manager-webhook-serving`      | `kcp-system`   | Lifecycle manager webhook certificate.                                                                 |
+| `Certificate`              | `klm-controller-manager-webhook-serving`      | `kcp-system`   | Lifecycle Manager webhook certificate.                                                                 |
 | `Issuer`                   | `klm-watcher-root`                            | `istio-system` | Issues the self-signed watcher certificates.                                                           |
 | `Issuer`                   | `klm-controller-manager-selfsigned`           | `kcp-system`   | Issues the webhook serving certificates.                                                               |
 | `Gateway`                  | `klm-watcher `                                | `kcp-system`   | Istio gateway that exposes the watcher endpoint over HTTPS for secure communication with SKR clusters. |
