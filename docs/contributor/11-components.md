@@ -35,7 +35,7 @@ Additionally, deploy the following `Config Maps to expose metrics on a Grafana d
 | `ConfigMap`                | `klm-dashboard-mandatory-modules`             | `kcp-system`   | Grafana dashboard config for mandatory modules view.                                                   |
 | `ConfigMap`                | `klm-dashboard-status`                        | `kcp-system`   | Grafana dashboard config for modules status view.                                                      |
 
-The following resources are required if the watcher component is to be enabled:
+To enable the Watcher component, it requires the following resources:
 
 | Kind                       | Name                                          | Namespace      | Description                                                                                            |
 |----------------------------|-----------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------|
