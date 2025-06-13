@@ -8,7 +8,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `CustomResourceDefinition` | `manifests.operator.kyma-project.io`          | Cluster-wide   | CRD for module deployment and image configurations.                                                    |
 | `CustomResourceDefinition` | `moduletemplates.operator.kyma-project.io`    | Cluster-wide   | CRD for defining module image and resources.                                                           |
 | `CustomResourceDefinition` | `modulereleasemetas.operator.kyma-project.io` | Cluster-wide   | CRD for mapping module versions to corresponding channels.                                             |
-| `CustomResourceDefinition` | `watchers.operator.kyma-project.io`           | Cluster-wide   | CRD for watching changes on specified resources in the SKR clusters.                                   |
+| `CustomResourceDefinition` | `watchers.operator.kyma-project.io`           | Cluster-wide   | CRD for watching changes on specified resources in the SAP BTP, Kyma runtime (SKR) clusters.                                   |
 | `Deployment`               | `klm-controller-manager`                      | `kcp-system`   | Main controller logic for managing all Kyma resources.                                                 |
 | `ServiceAccount`           | `klm-controller-manager`                      | `kcp-system`   | Main controller's service account.                                                                     |
 | `ClusterRole`              | `klm-controller-manager-crds`                 | Cluster-wide   | Grants permissions to manage CRDs.                                                                     |
