@@ -1,174 +1,97 @@
-# Configure a Local Test Setup
+# Configure a Local Test Setup (VS Code & GoLand)
 
-## Context
+## Overview
 
-This tutorial shows how to configure a fully working e2e test setup including the following components:
-
-* Lifecycle Manager
-* Runtime Watcher on a remote cluster
-* `template-operator` on a remote cluster as an example
-
-This setup is deployed with the following security features enabled:
-
-* Strict mTLS connection between Kyma Control Plane (KCP) and SKR clusters
-* SAN Pinning (SAN of client TLS certificate needs to match the DNS annotation of a corresponding Kyma CR)
+This guide explains how to quickly provision and manage a local end-to-end test environment using Visual Studio Code or GoLand. The project provides ready-to-use scripts and IDE launch configurations for a seamless developer experience.
 
 ## Prerequisites
 
-Install the following tooling in the versions defined in [`versions.yaml`](../../versions.yaml):
-
 - [Docker](https://www.docker.com/)
 - [Go](https://go.dev/)
-- [golangci-lint](https://golangci-lint.run/)
-- [istioctl](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl/)
-- [k3d](https://k3d.io/stable/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- [kustomize](https://kustomize.io/)
-- [modulectl](https://github.com/kyma-project/modulectl)
-- [yq](https://github.com/mikefarah/yq/tree/master)
+- [k3d](https://k3d.io/stable/)
+- [yq](https://github.com/mikefarah/yq)
+- [VS Code](https://code.visualstudio.com/) or [GoLand](https://www.jetbrains.com/go/)
 
-## Procedure
+> **Tip:** All required tool versions are listed in [`versions.yaml`](../../versions.yaml).
 
-Follow the steps using scripts from the project root.
+## Using Visual Studio Code
 
-### 1. Create Test Clusters
+1. **Open the Project in VS Code**
 
-Create local test clusters for SKR and KCP.
+   Open the project root folder in VS Code.
 
-```sh
-K8S_VERSION=$(yq e '.k8s' ./versions.yaml)
-CERT_MANAGER_VERSION=$(yq e '.certManager' ./versions.yaml)
-./scripts/tests/create_test_clusters.sh --k8s-version $K8S_VERSION --cert-manager-version $CERT_MANAGER_VERSION
-```
+2. **Explore Predefined Tasks**
 
-### 2. Install the Custom Resource Definitions
+   - Press `Cmd+Shift+P` and type `Tasks: Run Task`. 
+   - You will see tasks like `Create New Test Clusters`, `Install CRDs`, `Deploy Lifecycle Manager`, etc., as defined in `.vscode/tasks.json`.
 
-Install the [Lifecycle Manager CRDs](./resources/README.md) in the KCP cluster.
+3. **Provision a Dual Cluster Test Infrastructure**
 
-```sh
-./scripts/tests/install_crds.sh
-```
+   To set up a ready-to-use dual cluster environment (KCP and SKR) with KLM and the template-operator module, run the following tasks in order:
 
-### 3. Deploy Lifecycle Manager
+    - **Create New Test Clusters**  
+      Provisions fresh KCP and SKR clusters with the specified Kubernetes and cert-manager versions.
 
-You can deploy Lifecycle Manager either from the registry or local sources. Choose one of the below options:
+    - **Deploy KLM from sources**  
+      Installs the Lifecycle Manager (KLM) and its dependencies into the KCP cluster from local sources.
 
-1. Deploy a built image from the registry, for example, the `latest` image from the `prod` registry.
+    - **Deploy template-operator**  
+      Deploys the selected `ModuleTemplate` manifest, which includes the template-operator module, into the KCP cluster.
 
+    - **Deploy kyma**  
+      Installs the Kyma custom resource into the SKR cluster, connecting it to the KCP cluster.
 
-    ```sh
-    REGISTRY=prod
-    TAG=latest
-    ./scripts/tests/deploy_klm_from_registry.sh --image-registry $REGISTRY --image-tag $TAG
-    ```
-
-1. Build a new image from the local sources, push it to the local KCP registry, and deploy it.
+   After these steps, your environment will have KLM and all required components in KCP (with context `k3d-kcp`), and a ModuleTemplate with the template-operator ready for local testing, as well as the SKR with context `k3d-skr`.
 
 
-    ```sh
-    ./scripts/tests/deploy_klm_from_sources.sh
-    ```
+## Using GoLand
 
-### 4. Deploy a Kyma CR
+1. **Open the Project in GoLand**
 
-```sh
-SKR_HOST=host.k3d.internal
-./scripts/tests/deploy_kyma.sh $SKR_HOST
-```
+   Open the project root folder in GoLand.
 
-### 5. Verify If the Kyma CR Becomes Ready
+2. **Use Run/Debug Configurations**
 
-1. Verify if the Kyma CR is in the `Ready` state in KCP. It takes roughly 1–2 minutes.
+   - GoLand automatically detects configurations from the `.run` directory.
+   - Open the Run/Debug Configurations dialog and select a configuration (e.g., `Create Test Clusters`, `Install CRDs`).
 
-    ```sh
-    kubectl config use-context k3d-kcp
-    kubectl get kyma/kyma-sample -n kcp-system
-    ```
+3. **Run or Debug**
 
+   - Click the Run or Debug button to execute the selected configuration.
+   - The configuration will run the associated script or Go test.
 
-1. Verify if the Kyma CR is in the `Ready` state in SKR. It takes roughly 1-2 minutes.
+## Common Tasks
 
-    ```sh
-    kubectl config use-context k3d-skr
-    kubectl get kyma/default -n kyma-system
-    ```
+| Task                        | VS Code Task Name            | GoLand Run Config Name      | Script Executed                                 |
+|-----------------------------|-----------------------------|----------------------------|-------------------------------------------------|
+| Create New Test Clusters    | Create New Test Clusters    | Create Test Clusters        | `./scripts/tests/create_test_clusters.sh`        |
+| Ensure Test Clusters        | Ensure Test Clusters        | Ensure Test Clusters        | `./scripts/tests/create_test_clusters.sh`        |
+| Delete Test Clusters        | Delete Test Clusters        | Delete Test Clusters        | `./scripts/tests/clusters_cleanup.sh`            |
+| Deploy KLM from sources     | Deploy KLM from sources     | Deploy KLM from sources     | `./scripts/tests/deploy_klm_from_sources.sh`     |
+| Deploy KLM from registry    | Deploy KLM from registry    | Deploy KLM from registry    | `./scripts/tests/deploy_klm_from_registry.sh`    |
+| Deploy template-operator    | Deploy template-operator    | Deploy template-operator    | `kubectl apply -f ./tests/e2e/moduletemplate/...`|
+| Deploy kyma                 | Deploy kyma                 | Deploy kyma                 | `./scripts/tests/deploy_kyma.sh`                 |
+| Un-Deploy kyma              | Un-Deploy kyma              | Un-Deploy kyma              | `./scripts/tests/undeploy_kyma.sh`               |
+| E2E Tests                   | E2E Tests                   | E2E Tests                   | `./scripts/tests/e2e.sh`                         |
+| Install CRDs                | Install CRDs                | Install CRDs                | `./scripts/tests/install_crds.sh`                |
 
-### 6. [OPTIONAL] Deploy the template-operator Module
+## Task Inputs
 
-Build the template-operator module from the local sources, push it to the local KCP registry, and deploy it.
+Some tasks prompt for input, such as:
+- Kubernetes version (`k8sVersion`)
+- cert-manager version (`certManagerVersion`)
+- E2E test target (`e2eTestTarget`)
+- Template-operator manifest (`templateOperatorVersion`)
+- KLM image registry/tag (`klmImageRegistry`, `klmImageTag`)
+- SKR host (`skrHost`)
 
-  ```sh
-  cd <template-operator-repository>
+These are automatically handled by VS Code when running the tasks.
 
-  make build-manifests
-  modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure 
+## Tips
 
-  kubectl config use-context k3d-kcp
-  # repository URL is localhost:5111 on the host machine but must be k3d-kcp-registry.localhost:5000 within the cluster
-  yq e '.spec.descriptor.component.repositoryContexts[0].baseUrl = "k3d-kcp-registry.localhost:5000"' ./template.yaml | kubectl apply -f -
+- All scripts are located in the `scripts/tests` directory.
+- For advanced debugging, use breakpoints and the integrated terminal in your IDE.
+- For troubleshooting, check the output panel or terminal for script logs.
 
-  MT_VERSION=$(yq e '.spec.version' ./template.yaml)
-  cd <lifecycle-manager-repository>
-  ./scripts/tests/deploy_modulereleasemeta.sh template-operator regular:$MT_VERSION
-  ```
-
-### 7. [OPTIONAL] Add the template-operator Module to the Kyma CR and Verify If It Becomes Ready
-
-1. Add the template-operator module to the Kyma CR spec.
-
-    ```sh
-    kubectl config use-context k3d-skr
-    kubectl get kyma/default -n kyma-system -o yaml | yq e '.spec.modules[0]={"name": "template-operator"}' | kubectl apply -f -
-    ```
-
-1. Verify if the module becomes `Ready`. It takes roughly 1–2 minutes.
-
-    ```sh
-    kubectl config use-context k3d-skr
-    kubectl get kyma/default -n kyma-system -o wide
-    ```
-
-1. Remove the module from the Kyma CR spec.
-
-    ```sh
-    kubectl config use-context k3d-skr
-    kubectl get kyma/default -n kyma-system -o yaml | yq e 'del(.spec.modules[0])' | kubectl apply -f -
-    ```
-
-### 8. [OPTIONAL] Verify Conditions
-
-Check the conditions of the Kyma CR in the KCP cluster.
-
-- `SKRWebhook` to determine if the webhook has been installed to the SKR
-- `ModuleCatalog` to determine if the ModuleTemplate CRs and ModuleReleaseMeta CRs haven been synced to the SKR cluster
-- `Modules` to determine if the added modules are `Ready`
-
-```sh
-kubectl config use-context k3d-kcp
-kubectl get kyma/kyma-sample -n kcp-system -o yaml | yq e '.status.conditions'
-```
-
-### 9. [OPTIONAL] Verify If Watcher Events Reach KCP
-
-1. Flick the channel to trigger an event.
-
-    ```sh
-    kubectl config use-context k3d-skr
-    kubectl get kyma/default -n kyma-system -o yaml | yq e '.spec.channel="regular"' | kubectl apply -f -
-    kubectl get kyma/default -n kyma-system -o yaml | yq e '.spec.channel="fast"' | kubectl apply -f -
-    ```
-
-1. Verify if Lifecycle Manger received the event in KCP.
-
-    ```sh
-    kubectl config use-context k3d-kcp
-    kubectl logs deploy/klm-controller-manager -n kcp-system | grep "event received from SKR"
-    ```
-
-### 10. [OPTIONAL] Delete the Local Test Clusters
-
-Remove the local SKR and KCP test clusters.
-
-```shell
-k3d cluster rm kcp skr
-```
+This setup allows you to provision, test, and clean up your local environment with a single click or command, using your preferred IDE.
