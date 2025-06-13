@@ -1,6 +1,6 @@
 # Operator's Documentation Index
 
-This table of contents lists all Lifecycle Manager documents relevant for operators.
+This table of contents lists all Lifecycle Manager documents relevant to operators.
 
 * [Lifecycle Manager](../../README.md)
   * Lifecycle Manager Components
