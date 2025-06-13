@@ -1,5 +1,7 @@
 # Operator's Documentation Index
 
+This table of contents lists all Lifecycle Manager documents relevant for operators.
+
 * [Lifecycle Manager](../../README.md)
   * Lifecycle Manager Components
   * [Lifecycle Manager Resources](../contributor/resources/README.md)
@@ -11,6 +13,9 @@
   * [Architecture](../contributor/01-architecture.md)
   * [Controllers](../contributor/02-controllers.md)
   * [API Changelog](../contributor/05-api-changelog.md)
-  * [Synchronization Between Kyma Control Plane and SAP BTP, Kyma Runtime](../contributor/08-kcp-skr-synchronization.md)
   * [Lifecycle Manager Metrics](../contributor/09-metrics.md)
-  * [Maintenance Windows](../contributor/10-maintenance-window.md)
+  * Features
+    * [Synchronization Between Kyma Control Plane and SAP BTP, Kyma Runtime](../contributor/08-kcp-skr-synchronization.md)
+    * [Setting Your Module to the Unmanaged and Managed State](../user/02-unmanaging-modules.md)
+    * [Maintenance Windows](../contributor/10-maintenance-windows.md)
+    * [Skipping Maintenance Windows](../user/03-skipping-maintenance-windows.md)
