@@ -4,7 +4,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 
 | Kind                       | Name                                          | Namespace      | Description                                                                                            |
 |----------------------------|-----------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------|
-| `CustomResourceDefinition` | `kymas.operator.kyma-project.io`              | Cluster-wide   | CRD for managing Kyma custom resources.                                                                |
+| `CustomResourceDefinition` | `kymas.operator.kyma-project.io`              | Cluster-wide   | Custom Resource Definition (CRD) for managing Kyma custom resources.                                                                |
 | `CustomResourceDefinition` | `manifests.operator.kyma-project.io`          | Cluster-wide   | CRD for module deployment and image configurations.                                                    |
 | `CustomResourceDefinition` | `moduletemplates.operator.kyma-project.io`    | Cluster-wide   | CRD for defining module image and resources.                                                           |
 | `CustomResourceDefinition` | `modulereleasemetas.operator.kyma-project.io` | Cluster-wide   | CRD for mapping module versions to corresponding channels.                                             |
