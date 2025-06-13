@@ -26,7 +26,7 @@ To run, Lifecycle Manager requires a set of Kubernetes components that must exis
 | `Issuer`                   | `klm-controller-manager-selfsigned`           | `kcp-system`   | Issues the webhook serving certificates.                                                               |
 | `Authorization Policy`     | `klm-controller-manager`                      | `kcp-system`   | Policy to allow access to metrics and webhooks.                                                        |
 
-The following `Config Maps` need to be deployed in order to have the metrics exposed on Grafana dashboard:
+Additionally, deploy the following `Config Maps to expose metrics on a Grafana dashboard:
 
 | Kind                       | Name                                          | Namespace      | Description                                                                                            |
 |----------------------------|-----------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------|
