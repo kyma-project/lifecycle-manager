@@ -17,12 +17,3 @@ echo "--- SKR-WEBHOOK POD ---"
 kubectl get pods -l app=skr-webhook -n kyma-system -o wide
 echo "--- SKR-WEBHOOK LOGS ---"
 kubectl logs deploy/skr-webhook -n kyma-system --container server
-echo "--- SKR-WEBHOOK METRICS ---"
-SERVICE_NAME="skr-webhook-metrics"
-NAMESPACE="kyma-system"
-LOCAL_PORT=8080
-REMOTE_PORT=2112
-
-kubectl port-forward -n $NAMESPACE svc/$SERVICE_NAME $LOCAL_PORT:$REMOTE_PORT & sleep 3
-
-curl -sk https://localhost:$LOCAL_PORT/metrics
