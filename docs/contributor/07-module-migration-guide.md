@@ -265,7 +265,7 @@ The migration strategy involves replicating the current state with the new metad
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
-### Bumping a version upgrade
+### Performing a version upgrade
 
 > [!Note]
 > Again, first target the `dev` landscape. Once it is performed and verified for `dev`, it can be performed for `stage` and eventually `prod`.
@@ -285,7 +285,7 @@ The migration strategy involves replicating the current state with the new metad
    Following the example, submit the `modules/telemetry/module-releases.yaml` file:
 
    ```yaml
-   targetLandscapes: [dev]
+   targetLandscapes: [dev] # <= only targeting dev again
    channels:
      - channel: regular
        version: 1.34.0 # <= this version is bumped
@@ -307,7 +307,7 @@ The migration strategy involves replicating the current state with the new metad
 
    In case of failure, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 2. of Replicating the current state and 2. of Bumping a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 2. of Replicating the current state and 2. of Performing a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
@@ -339,7 +339,7 @@ The migration strategy involves replicating the current state with the new metad
 
    In case of failure, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 5. of Replicating the current state and 5. of Bumping a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 5. of Replicating the current state and 5. of Performing a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
@@ -371,7 +371,7 @@ The migration strategy involves replicating the current state with the new metad
 
    In case of failure, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 8. of Replicating the current state and 8. of Bumping a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 8. of Replicating the current state and 8. of Performing a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
