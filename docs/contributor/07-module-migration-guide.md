@@ -44,7 +44,8 @@ The migration strategy involves replicating the current state with the new metad
    Create a `/module-manifests/modules/<module-name>/module-releases.yaml` that replicates the existing channel mapping. Target the `dev` landscape only. For example:
 
    ```yaml
-   targetLandscapes: [dev]
+   targetLandscapes:
+     - dev
    channels:
      - channel: regular
        version: 1.32.0
@@ -118,7 +119,9 @@ The migration strategy involves replicating the current state with the new metad
    To do so, create a PR to `/kyma/kyma-modules` adding the `stage` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
    ```yaml
-   targetLandscapes: [dev, stage] # <= stage landscape added
+   targetLandscapes:
+     - dev
+     - stage # <= stage landscape added
    channels:
      - channel: regular
        version: 1.32.0
@@ -195,7 +198,10 @@ The migration strategy involves replicating the current state with the new metad
    To do so, create a PR to `/kyma/kyma-modules` adding the `prod` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
    ```yaml
-   targetLandscapes: [dev, stage, prod] # <= prod landscape added
+   targetLandscapes:
+     - dev
+     - stage
+     - prod # <= prod landscape added
    channels:
      - channel: regular
        version: 1.32.0
@@ -285,7 +291,8 @@ The migration strategy involves replicating the current state with the new metad
    Following the example, submit the `modules/telemetry/module-releases.yaml` file:
 
    ```yaml
-   targetLandscapes: [dev] # <= only targeting dev again
+   targetLandscapes:
+     - dev # <= only targeting dev again
    channels:
      - channel: regular
        version: 1.34.0 # <= this version is bumped
@@ -319,7 +326,9 @@ The migration strategy involves replicating the current state with the new metad
    To do so, create a PR to `/kyma/kyma-modules` adding the `stage` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
    ```yaml
-   targetLandscapes: [dev, stage] # <= stage landscape added
+   targetLandscapes:
+     - dev
+     - stage # <= stage landscape added
    channels:
      - channel: regular
        version: 1.34.0
@@ -351,7 +360,10 @@ The migration strategy involves replicating the current state with the new metad
    To do so, create a PR to `/kyma/kyma-modules` adding the `prod` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
    ```yaml
-   targetLandscapes: [dev, stage, prod] # <= prod landscape added
+   targetLandscapes:
+     - dev
+     - stage
+     - prod # <= prod landscape added
    channels:
      - channel: regular
        version: 1.34.0
