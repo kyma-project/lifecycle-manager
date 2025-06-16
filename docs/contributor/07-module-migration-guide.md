@@ -12,7 +12,7 @@ The migration strategy involves replicating the current state with the new metad
 ### Replicating the current state
 
 > [!Note]
-> First, the migration is preformed for the `dev` landscape, see `targetLandscapes` field in point 2. Once it is performed and verified for `dev`, it can be performed for `stage` and eventually `prod`.
+> First, the migration is performed for the `dev` landscape, see `targetLandscapes` field in point 2. Once it is performed and verified for `dev`, it can be performed for `stage` and eventually `prod`.
 
 1. Submit the existing versions using the NEW approach.
 
