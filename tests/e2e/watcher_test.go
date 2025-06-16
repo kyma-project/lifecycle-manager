@@ -62,6 +62,10 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrClient, skrwebhookresources.WatcherToDNSNetworkPolicyName, RemoteNamespace).
 				Should(Succeed())
+			Eventually(NetworkPolicyExists).
+				WithContext(ctx).
+				WithArguments(skrClient, skrwebhookresources.MetricsToWatcherPolicyName, RemoteNamespace).
+				Should(Succeed())
 
 			By("And Runtime Watcher deployment is deleted")
 			Eventually(deleteWatcherDeployment).
