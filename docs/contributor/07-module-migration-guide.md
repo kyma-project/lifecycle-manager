@@ -33,7 +33,7 @@ As you see in the `targetLandscapes` field in the following steps, first, you pe
 > [!Note]
 > For more information on the necessary changes in the `module-config.yaml` file, see [Migrating from Kyma CLI to `modulectl`](https://github.com/kyma-project/modulectl/blob/main/docs/contributor/migration-guide.md#2-module-configuration-module-configyaml-differences).
 
-   After you submit all the versions, the following ModuleTemplate custom resources (CRs) appear in the `/kyma/kyma-modules` repository:
+   After submitting all the versions, you see the following ModuleTemplate custom resources (CRs) in the `/kyma/kyma-modules` repository:
 
    - `/telemetry/moduletemplate-telemetry-1.32.0.yaml`
    - `/telemetry/moduletemplate-telemetry-1.34.0.yaml`
@@ -108,7 +108,7 @@ As you see in the `targetLandscapes` field in the following steps, first, you pe
 
    If the migration failed, you can revert the setup to the old approach.
 
-   To roll back, open a PR to `/kyma/kyma-modules` reverting the submission to the dev landscape. ArgoCD then undeploys the new module metadata, and KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submission to the `dev` landscape. ArgoCD then undeploys the new module metadata, and KLM falls back to the old module metadata.
 
 After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
@@ -259,7 +259,7 @@ After rollback, you can still use the old submission pipeline to submit new vers
 
    As the new module metadata takes precedence, the reconciliation of the module already happens based on the new metadata. Because all versions and channel mappings are the same, no update is performed and all installations of the module stay in the same state as before.
 
-   The functionality can further be verified by enabling the module in a test SKR which will install it from scratch using the new metadata.
+   If you want to verify the functionality further, enable the module in a test SKR, which installs it from scratch using the new metadata.
 
 10. In case of failure, roll back the new module metadata.
 
@@ -283,7 +283,7 @@ Also for version updates, first target the `dev` landscape. When the update is p
 
 2. Submit the updated channel mapping with the **new** approach.
 
-   After preparing the old metadata to rollback in case of failure, you can continue with the actual version update using the new metadata. Target the `dev` landscpae only.
+   After preparing the old metadata to rollback in case of failure, you can continue with the actual version update using the new metadata. Target the `dev` landscape only.
 
    Following the example, submit the `modules/telemetry/module-releases.yaml` file:
 
@@ -343,7 +343,7 @@ After rollback, you can still use the old submission pipeline to submit new vers
 
    ArgoCD picks up this change and deploys the new ModuleReleaseMeta to the `stage` landscape. KLM is now picking up the version change and updating all modules using the `regular` channel to version `1.34.0`.
 
-7.  In case of failure, roll back the new metadata.
+7. In case of failure, roll back the new metadata.
 
    If the version update failed, you can revert the setup to the old approach.
 
@@ -382,9 +382,9 @@ After rollback, you can still use the old submission pipeline to submit new vers
 
 10. In case of failure, roll back the new metadata.
 
-   In case of failure, you can revert the setup to the old approach.
+    If the update failed, you can revert the setup to the old approach.
 
-   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Update](#performing-a-version-update).
+    To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Update](#performing-a-version-update).
 
 > [!WARNING]
 > It is important to revert completely removing the entire new metadata from KCP. Otherwise, KLM cannot fall back to the old module metadata.
@@ -401,7 +401,7 @@ After rollback, you can still use the old submission pipeline to submit new vers
 
    ArgoCD picks up this change and removes the ModuleTemplates from all KCP landscapes. Verify that those are gone.
 
-### Continuing
+### Module Updates After Migration
 
 1. Continue using the **new** approach to provide new module versions and update the mapping of channels.
 
@@ -409,4 +409,4 @@ After rollback, you can still use the old submission pipeline to submit new vers
 
 2. Delete unused versions.
 
-   After all installations of a module version have been updated to a newer version, remove the unused ModuleTemplates following the [Deleting a Module Version](./06-module-migration-concept.md#4-deleting-a-module-version) process.
+   After all installations of a module version have been updated to a newer version, remove the unused ModuleTemplates. For details, see [Deleting a Module Version](./06-module-migration-concept.md#4-deleting-a-module-version).
