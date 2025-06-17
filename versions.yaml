@@ -7,7 +7,8 @@ go: "1.24.3"
 golangciLint: "2.1.6"
 istio: "1.24.1"
 k3d: "5.8.3"
-k8s: "1.32.2"
+k8s: "1.32.2" # kubernetes version used in e2e tests
+envtest_k8s: "1.32.0" # kubernetes version used in integration tests
 kubectl: "1.31.3"
 kustomize: "5.4.3"
 modulectl: "1.1.8"
