@@ -124,7 +124,7 @@ type mockKeyChainLookup struct {
 	mockError error
 }
 
-func (m *mockKeyChainLookup) Get(_ context.Context, _ v1beta2.ImageSpec) (authn.Keychain, error) {
+func (m *mockKeyChainLookup) Get(_ context.Context) (authn.Keychain, error) {
 	return nil, m.mockError
 }
 

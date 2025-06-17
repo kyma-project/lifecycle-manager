@@ -109,7 +109,8 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 func getOCIRef(
 	repo *genericocireg.RepositorySpec,
 	descriptor *compdesc.ComponentDescriptor,
-	accessSpec *localblob.AccessSpec) (*OCI, error) {
+	accessSpec *localblob.AccessSpec,
+) (*OCI, error) {
 	layerRef := OCI{}
 	if accessSpec.MediaType == mime.MIME_TAR {
 		layerRef.Type = string(v1beta2.OciDirType)

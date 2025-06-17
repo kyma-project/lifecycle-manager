@@ -17,12 +17,13 @@ package manifest_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -148,8 +149,8 @@ var _ = BeforeSuite(func() {
 
 	kcpClient = mgr.GetClient()
 
-	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
-	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider(kcp.Client)
+	// kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
+	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider()
 	extractor := img.NewPathExtractor()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)

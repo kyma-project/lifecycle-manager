@@ -2,17 +2,20 @@ package keychainprovider
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
 	"github.com/google/go-containerregistry/pkg/authn/kubernetes"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1/google"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
+
+var ErrNoAuthSecretFound = errors.New("no private oci registry auth secret found")
 
 type FromSecretKeychainProvider struct {
 	kcpClient  client.Client
@@ -23,9 +26,14 @@ func NewFromSecretKeyChainProvider(kcpClient client.Client, secretName types.Nam
 	return &FromSecretKeychainProvider{kcpClient: kcpClient, secretName: secretName}
 }
 
-func (a *FromSecretKeychainProvider) Get(ctx context.Context, imageSpec v1beta2.ImageSpec) (authn.Keychain, error) {
+func (a *FromSecretKeychainProvider) Get(ctx context.Context) (authn.Keychain, error) {
 	credSecret := apicorev1.Secret{}
 	err := a.kcpClient.Get(ctx, a.secretName, &credSecret)
+
+	if util.IsNotFound(err) {
+		return nil, fmt.Errorf("%w: %s", ErrNoAuthSecretFound, a.secretName.String())
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get oci cred secret: %w", err)
 	}

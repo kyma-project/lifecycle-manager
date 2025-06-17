@@ -20,7 +20,7 @@ const (
 	Signature           = OperatorGroup + Separator + "signature"
 	ModuleName          = OperatorGroup + Separator + "module-name"
 	IsMandatoryModule   = OperatorGroup + Separator + "mandatory-module"
-	
+
 	OperatorName = "lifecycle-manager"
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.

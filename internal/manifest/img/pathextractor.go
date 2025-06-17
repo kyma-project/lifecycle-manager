@@ -19,7 +19,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
 var (

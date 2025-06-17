@@ -1,12 +1,12 @@
 package manifest
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
@@ -25,7 +25,9 @@ func NewReconciler(mgr manager.Manager,
 		Config: mgr.GetConfig(),
 	}
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
-	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider(kcp.Client)
+
+	// TODO: Create according to flag
+	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider()
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
