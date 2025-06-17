@@ -1,6 +1,6 @@
 # New Module Submission and Promotion Process: Migration Guide
 
-To ensure a smooth transition, the submission pipeline, Lifecycle Manager (KLM) and Busola support **both** the old and new metadata formats. If both are present, KLM and Busola use the new format. If no new metadata format is provided, it falls back to the old channel-based metadata.
+To ensure a smooth transition, the submission pipeline, Lifecycle Manager (KLM), and Busola support **both** the old and new metadata formats. If both are present, KLM and Busola use the new format. If no new metadata format is provided, it falls back to the old channel-based metadata.
 
 > [!Note]
 > The discriminator for KLM und Busola is the presence of the ModuleReleaseMeta resource. If it is provided, KLM and Busola work exclusively on the new metdata. Old channel-based metadata is ignored. Therefore, make sure to migrate all existing channels to the new metadata.
@@ -9,10 +9,9 @@ The migration strategy involves replicating the current state with the new metad
 
 ## Migration Procedure
 
-### Replicating the current state
+### Replicating the Current State
 
-> [!Note]
-> First, the migration is performed for the `dev` landscape, see `targetLandscapes` field in point 2. Once it is performed and verified for `dev`, it can be performed for `stage` and eventually `prod`.
+As you see in the `targetLandscapes` field in the following steps, first, you perform the migration for the `dev` landscape. Once it is performed and verified for `dev`, you can perform it for `stage` and eventually `prod`.
 
 1. Submit the existing versions using the NEW approach.
 
@@ -30,16 +29,18 @@ The migration strategy involves replicating the current state with the new metad
    - `/modules/telemetry/1.34.0-experimental/module-config.yaml`
    - `/modules/telemetry/1.35.0-rc1/module-config.yaml`
 
-   **For more information on the necessary changes in the `module-config.yaml` file, see [Migrating from Kyma CLI to `modulectl`](https://github.com/kyma-project/modulectl/blob/main/docs/contributor/migration-guide.md#2-module-configuration-module-configyaml-differences)**.
 
-   Once you submit all the versions, the following ModuleTemplate custom resources (CRs) appear in the `/kyma/kyma-modules` repository:
+> [!Note]
+> For more information on the necessary changes in the `module-config.yaml` file, see [Migrating from Kyma CLI to `modulectl`](https://github.com/kyma-project/modulectl/blob/main/docs/contributor/migration-guide.md#2-module-configuration-module-configyaml-differences).
+
+   After you submit all the versions, the following ModuleTemplate custom resources (CRs) appear in the `/kyma/kyma-modules` repository:
 
    - `/telemetry/moduletemplate-telemetry-1.32.0.yaml`
    - `/telemetry/moduletemplate-telemetry-1.34.0.yaml`
    - `/telemetry/moduletemplate-telemetry-1.34.0-experimental.yaml`
    - `/telemetry/moduletemplate-telemetry-1.35.0-rc1.yaml`
 
-2. Submit the existing channel mapping using the NEW approach.
+2. Submit the existing channel mapping using the **new** approach.
 
    Create a `/module-manifests/modules/<module-name>/module-releases.yaml` that replicates the existing channel mapping. Target the `dev` landscape only. For example:
 
@@ -57,7 +58,7 @@ The migration strategy involves replicating the current state with the new metad
        version: 1.35.0-rc1
    ```
 
-   Once you submit the channel mapping, the dev-landscape-specific ModuleReleaseMeta CR is created and the dev-lanscape-specific kustomization is updated accordingly in `/kyma/kyma-modules`.
+   After you submit the channel mapping, the dev-landscape-specific ModuleReleaseMeta CR is created, and the dev-landscape-specific kustomization is updated accordingly in `/kyma/kyma-modules`.
 
    - `/telemetry`
      - `/moduletemplate-telemetry-1.32.0.yaml`
@@ -82,9 +83,9 @@ The migration strategy involves replicating the current state with the new metad
 
 3. Verify in `dev` KCP.
 
-   ArgoCD picks up and deploys the changes from step 2. The `dev` landscape has the same channel-version mapping of the module described in OLD and NEW metadata.
+   ArgoCD picks up and deploys the changes from the previous step. The `dev` landscape has the same channel-version mapping of the module described in **old** and **new** metadata.
 
-   Following the Telemetry module example, the following resources exist in KCP:
+   For the Telemetry module example, the following resources exist in KCP:
 
    **Old ModuleTemplates**
    - ModuleTemplate `kyma-system/telemetry-regular` pointing to `1.32.0`
@@ -99,24 +100,24 @@ The migration strategy involves replicating the current state with the new metad
    - ModuleTemplate `kyma-system/telemetry-1.35.0-rc1`
    - ModuleReleaseMeta `kyma-system/telemetry`
 
-   As the new module metadata takes precedence, the reconciliation of the module already happens based on the new metadata. Since all versions and channel mappings are the same, no update is performed and all modules stay in the same state as before.
+   As the new module metadata take precedence, the reconciliation of the module already happens based on the new metadata. And because all versions and channel mappings are the same, no update is performed and all existing installations of the module stay in the same state as before.
 
-   The functionality can further be verified by enabling the module in a test SKR which will install it from scratch using the new metadata.
+   If you want to verify the functionality further, enable the module in a test SKR, which installs it from scratch using the new metadata.
 
-4. [OPTIONAL] Roll back the new module metadata.
+4. In case of failure, roll back the new module metadata.
 
-   In case of failure, the setup can be reverted to the old approach.
+   If the migration failed, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 2. ArgoCD then undeploys the new module metadata and KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submission to the dev landscape. ArgoCD then undeploys the new module metadata, and KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
-5. Promote to `stage` landscape
+5. Promote to `stage` landscape.
    
-   Once verified on `dev`, promote the new metadata to `stage`.
+   After you verified on `dev`, promote the new metadata to `stage`.
 
-   To do so, create a PR to `/kyma/kyma-modules` adding the `stage` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
+   To do so, create a PR to `/kyma/kyma-modules` and add the `stage` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
    ```yaml
    targetLandscapes:
@@ -133,7 +134,7 @@ The migration strategy involves replicating the current state with the new metad
        version: 1.35.0-rc1
    ```
 
-   Once you submit the promotion, the stage-landscape-specific ModuleReleaseMeta CR is created and the stage-lanscape-specific kustomization is updated accordingly in `/kyma/kyma-modules`.
+   After you submit the promotion, the stage-landscape-specific ModuleReleaseMeta CR is created, and the stage-landscape-specific kustomization is updated accordingly in `/kyma/kyma-modules`.
 
    - `/telemetry`
      - `/moduletemplate-telemetry-1.32.0.yaml`
@@ -163,9 +164,9 @@ The migration strategy involves replicating the current state with the new metad
 
 6. Verify in `stage` KCP.
 
-   ArgoCD picks up and deploys the changes from step 5. The `stage` landscape has the same channel-version mapping of the module described in OLD and NEW metadata.
+   ArgoCD picks up and deploys the changes from the previous step. The `stage` landscape has the same channel-version mapping of the module described in **old** and **new** metadata.
 
-   Following the Telemetry module example, the following resources exist in KCP:
+   For the Telemetry module example, the following resources exist in KCP:
 
    **Old ModuleTemplates**
    - ModuleTemplate `kyma-system/telemetry-regular` pointing to `1.32.0`
@@ -178,22 +179,22 @@ The migration strategy involves replicating the current state with the new metad
    - ModuleTemplate `kyma-system/telemetry-1.34.0-experimental`
    - ModuleReleaseMeta `kyma-system/telemetry`
 
-   As the new module metadata takes precedence, the reconciliation of the module already happens based on the new metadata. Since all versions and channel mappings are the same, no update is performed and all modules stay in the same state as before.
+   As the new module metadata takes precedence, the reconciliation of the module already happens based on the new metadata. Because all versions and channel mappings are the same, no update is performed and all installations of the module stay in the same state as before.
 
-   The functionality can further be verified by enabling the module in a test SKR which will install it from scratch using the new metadata.
+   If you want to verify the functionality further, enable the module in a test SKR, which installs it from scratch using the new metadata.
 
-7. [OPTIONAL] Roll back the new module metadata.
+7. In case of failure, roll back the new module metadata.
 
-   In case of failure, the setup can be reverted to the old approach.
+   If the migration failed, you can revert the setup to the old approach.
 
    To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 5. ArgoCD then undeploys the new module metadata and KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
-8. Promote to `prod` landscape
+8. Promote to `prod` landscape.
    
-   Once verified on `stage`, promote the new metadata to `prod`.
+   After you verified on `stage`, promote the new metadata to `prod`.
 
    To do so, create a PR to `/kyma/kyma-modules` adding the `prod` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
@@ -213,7 +214,7 @@ The migration strategy involves replicating the current state with the new metad
        version: 1.35.0-rc1
    ```
 
-   Once you submit the promotion, the stage-landscape-specific ModuleReleaseMeta CR is created and the stage-lanscape-specific kustomization is updated accordingly in `/kyma/kyma-modules`.
+   After you submit the promotion, the stage-landscape-specific ModuleReleaseMeta CR is created, and the stage-landscape-specific kustomization is updated accordingly in `/kyma/kyma-modules`.
 
    - `/telemetry`
      - `/moduletemplate-telemetry-1.32.0.yaml`
@@ -245,7 +246,7 @@ The migration strategy involves replicating the current state with the new metad
 
 9. Verify in `prod` KCP.
 
-   ArgoCD picks up and deploys the changes from step 8. The `prod` landscape has the same channel-version mapping of the module described in OLD and NEW metadata.
+   ArgoCD picks up and deploys the changes from the previous step. The `prod` landscape has the same channel-version mapping of the module described in **old** and **new** metadata.
 
    Following the Telemetry module example, the following resources exist in KCP:
 
@@ -258,23 +259,22 @@ The migration strategy involves replicating the current state with the new metad
    - ModuleTemplate `kyma-system/telemetry-1.34.0`
    - ModuleReleaseMeta `kyma-system/telemetry`
 
-   As the new module metadata takes precedence, the reconciliation of the module already happens based on the new metadata. Since all versions and channel mappings are the same, no update is performed and all modules stay in the same state as before.
+   As the new module metadata takes precedence, the reconciliation of the module already happens based on the new metadata. Because all versions and channel mappings are the same, no update is performed and all installations of the module stay in the same state as before.
 
    The functionality can further be verified by enabling the module in a test SKR which will install it from scratch using the new metadata.
 
-10. [OPTIONAL] Roll back the new module metadata.
+10. In case of failure, roll back the new module metadata.
 
-   In case of failure, the setup can be reverted to the old approach.
+    If the migration failed, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 8. ArgoCD then undeploys the new module metadata and KLM falls back to the old module metadata.
+    To roll back, open a PR to `/kyma/kyma-modules` reverting the submission entirely. ArgoCD then undeploys the new module metadata, and KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
-### Performing a version upgrade
+### Performing a Version Upgrade
 
-> [!Note]
-> Again, first target the `dev` landscape. Once it is performed and verified for `dev`, it can be performed for `stage` and eventually `prod`.
+Also for version upgrades, first target the `dev` landscape. When the upgrade is performed and verified for `dev`, you can perform it for `stage` and eventually `prod`.
 
 1. Submit a version upgrade using the old format.
 
@@ -282,9 +282,9 @@ The migration strategy involves replicating the current state with the new metad
 
    - `/modules/telemetry/regular/module-config.yaml` pointing to `1.34.0` (before `1.32.0`)
 
-   Since the new metadata exists, KLM continues to use it. The old metadata is ignored but remains available for rollback.
+   Because the new metadata exists, KLM continues to use it. The old metadata is ignored but remains available for rollback.
 
-2. Submit the updated channel mapping with the NEW approach.
+2. Submit the updated channel mapping with the **new** approach.
 
    After preparing the old metadata to rollback in case of failure, you can continue with the actual version update using the new metadata. Target the `dev` landscpae only.
 
@@ -304,24 +304,25 @@ The migration strategy involves replicating the current state with the new metad
        version: 1.35.0-rc1
    ```
 
-   Once you submit the mapping, the resources in `/kyma/kyma-modules` are the same as the resources from step 2. above, except the `regular` channel pointing to version `1.34.0` in the `dev` ModuleReleaseMeta CR. The ModuleReleaseMeta CRs for the other landscapes should remain untouched.
+   After you submit the mapping, the resources in `/kyma/kyma-modules` are the same as in the [Replicating the Current State](#replicating-the-current-state) scenario , except that the `regular` channel points to version `1.34.0` in the `dev` ModuleReleaseMeta CR. The ModuleReleaseMeta CRs for the other landscapes should remain untouched.
 
 3. Verify if the module is updated in KCP.
 
    ArgoCD picks up this change and deploys the new ModuleReleaseMeta to the `dev` landscape. KLM is now picking up the version change and updating all modules using the `regular` channel to version `1.34.0`.
 
-4. [OPTIONAL] Roll back the new metadata.
+4. In case of failure, roll back the new metadata.
 
-   In case of failure, you can revert the setup to the old approach.
+   If the version upgrade failed, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 2. of Replicating the current state and 2. of Performing a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions entirely from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade]. 
+   It is important to revert completely removing the entire new metadata from KCP, so that KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
 5. Promote to `stage` landscape
 
-   Once verified on `dev`, promote the new metadata to `stage`.
+   After you verified on `dev`, promote the new metadata to `stage`.
 
    To do so, create a PR to `/kyma/kyma-modules` adding the `stage` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
@@ -344,18 +345,18 @@ The migration strategy involves replicating the current state with the new metad
 
    ArgoCD picks up this change and deploys the new ModuleReleaseMeta to the `stage` landscape. KLM is now picking up the version change and updating all modules using the `regular` channel to version `1.34.0`.
 
-7. [OPTIONAL] Roll back the new metadata.
+7.  In case of failure, roll back the new metadata.
 
-   In case of failure, you can revert the setup to the old approach.
+   If the version upgrade failed, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 5. of Replicating the current state and 5. of Performing a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions entirely from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade]. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
-8. Promote to `prod` landscape
+8. Promote to `prod` landscape.
 
-   Once verified on `stage`, promote the new metadata to `prod`.
+   After you verified on `stage`, promote the new metadata to `prod`.
 
    To do so, create a PR to `/kyma/kyma-modules` adding the `prod` landscape to the `targetLandscapes` in `/module-manifests/modules/<module-name>/module-releases.yaml`. For example:
 
@@ -379,31 +380,31 @@ The migration strategy involves replicating the current state with the new metad
 
    ArgoCD picks up this change and deploys the new ModuleReleaseMeta to the `prod` landscape. KLM is now picking up the version change and updating all modules using the `regular` channel to version `1.34.0`.
 
-10. [OPTIONAL] Roll back the new metadata.
+10. In case of failure, roll back the new metadata.
 
    In case of failure, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submissions from steps 8. of Replicating the current state and 8. of Performing a version upgrade. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions entirely from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade]. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
 
-### Cleaning up
+### Cleaning Up
 
 1. Delete all old metadata files related to the module.
 
    To do so, submit a PR deleting the old channel-based ModuleTemplates of the module.
 
-2. Verify on KCP
+2. Verify on KCP.
 
-   ArgoCD picks up this change and removed the ModuleTemplates from all KCP landscapes. Verify that those are gone.
+   ArgoCD picks up this change and removes the ModuleTemplates from all KCP landscapes. Verify that those are gone.
 
 ### Continuing
 
-1. Continue to use the NEW approach to provide new module versions and update the mapping of channels.
+1. Continue using the **new** approach to provide new module versions and update the mapping of channels.
 
-   Submit new module versions and release them via the [new processes](./06-module-migration-concept.md).
+   Submit new module versions and release them with the [new processes](./06-module-migration-concept.md).
 
 2. Delete unused versions.
 
-   Once all installations of a module version have been updated to a newer version, remove the unused ModuleTemplates following the [Deleting a Module Version](./06-module-migration-concept.md#4-deleting-a-module-version) process.
+   After all installations of a module version have been updated to a newer version, remove the unused ModuleTemplates following the [Deleting a Module Version](./06-module-migration-concept.md#4-deleting-a-module-version) process.
