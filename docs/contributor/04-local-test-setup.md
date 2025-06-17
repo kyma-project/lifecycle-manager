@@ -2,10 +2,11 @@
 
 ## Overview
 
-This guide explains how to quickly provision and manage a local end-to-end test environment using Visual Studio Code or GoLand. The project provides ready-to-use scripts and IDE launch configurations for a seamless developer experience.
+Learn how to quickly provision and manage a local end-to-end test environment using Visual Studio Code or GoLand. You get ready-to-use scripts and IDE launch configurations for a seamless developer experience.
 
 ## Prerequisites
 
+You have installed the following tools (for the required versions, see [`versions.yaml`](../../versions.yaml)):
 - [Docker](https://www.docker.com/)
 - [Go](https://go.dev/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
@@ -13,7 +14,6 @@ This guide explains how to quickly provision and manage a local end-to-end test 
 - [yq](https://github.com/mikefarah/yq)
 - [VS Code](https://code.visualstudio.com/) or [GoLand](https://www.jetbrains.com/go/)
 
-> **Tip:** All required tool versions are listed in [`versions.yaml`](../../versions.yaml).
 
 ## Using Visual Studio Code
 
@@ -21,28 +21,28 @@ This guide explains how to quickly provision and manage a local end-to-end test 
 
    Open the project root folder in VS Code.
 
-2. **Explore Predefined Tasks**
+2. **Use Predefined Tasks**
 
-   - Press `Cmd+Shift+P` and type `Tasks: Run Task`. 
-   - You will see tasks like `Create New Test Clusters`, `Install CRDs`, `Deploy Lifecycle Manager`, etc., as defined in `.vscode/tasks.json`.
+   - To access the predefined tasks as defined in `.vscode/tasks.json`, press `Cmd+Shift+P` and type `Tasks: Run Task`. 
+   - You see tasks like `Create New Test Clusters`, `Install CRDs`, and `Deploy Lifecycle Manager`.
 
 3. **Provision a Dual Cluster Test Infrastructure**
 
-   To set up a ready-to-use dual cluster environment (KCP and SKR) with KLM and the template-operator module, run the following tasks in order:
+   To set up a dual cluster environment (KCP and SKR) with KLM and the template-operator module, run the following tasks in order:
 
-    - **Create New Test Clusters**  
+    1. **Create New Test Clusters**  
       Provisions fresh KCP and SKR clusters with the specified Kubernetes and cert-manager versions.
 
-    - **Deploy KLM from sources**  
+    1. **Deploy KLM from sources**  
       Installs the Lifecycle Manager (KLM) and its dependencies into the KCP cluster from local sources.
 
-    - **Deploy template-operator**  
+    1. **Deploy template-operator**  
       Deploys the selected `ModuleTemplate` manifest, which includes the template-operator module, into the KCP cluster.
 
-    - **Deploy kyma**  
+    1. **Deploy kyma**  
       Installs the Kyma custom resource into the SKR cluster, connecting it to the KCP cluster.
 
-   After these steps, your environment will have KLM and all required components in KCP (with context `k3d-kcp`), and a ModuleTemplate with the template-operator ready for local testing, as well as the SKR with context `k3d-skr`.
+   After running these predefined tasks, your environment has KLM and all required components in KCP (with context `k3d-kcp`), and a ModuleTemplate with the template-operator ready for local testing, as well as the SKR with context `k3d-skr`.
 
 
 ## Using GoLand
@@ -54,12 +54,12 @@ This guide explains how to quickly provision and manage a local end-to-end test 
 2. **Use Run/Debug Configurations**
 
    - GoLand automatically detects configurations from the `.run` directory.
-   - Open the Run/Debug Configurations dialog and select a configuration (e.g., `Create Test Clusters`, `Install CRDs`).
+   - Open the Run/Debug Configurations dialog and select a configuration (such as `Create Test Clusters` or `Install CRDs`).
 
 3. **Run or Debug**
 
-   - Click the Run or Debug button to execute the selected configuration.
-   - The configuration will run the associated script or Go test.
+   - To execute the selected configuration, choose **Run or Debug** .
+   - The configuration runs the associated script or Go test.
 
 ## Common Tasks
 
@@ -94,4 +94,4 @@ These are automatically handled by VS Code when running the tasks.
 - For advanced debugging, use breakpoints and the integrated terminal in your IDE.
 - For troubleshooting, check the output panel or terminal for script logs.
 
-This setup allows you to provision, test, and clean up your local environment with a single click or command, using your preferred IDE.
+With this setup, you can provision, test, and clean up your local environment with a single click or command, using your preferred IDE.
