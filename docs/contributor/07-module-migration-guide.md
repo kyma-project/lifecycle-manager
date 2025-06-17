@@ -187,7 +187,7 @@ As you see in the `targetLandscapes` field in the following steps, first, you pe
 
    If the migration failed, you can revert the setup to the old approach.
 
-   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission from 5. ArgoCD then undeploys the new module metadata and KLM falls back to the old module metadata.
+   To do so, a PR can be opened to `/kyma/kyma-modules` reverting the submission to the stage landscape. ArgoCD then undeploys the new module metadata and KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
@@ -267,7 +267,7 @@ As you see in the `targetLandscapes` field in the following steps, first, you pe
 
     If the migration failed, you can revert the setup to the old approach.
 
-    To roll back, open a PR to `/kyma/kyma-modules` reverting the submission entirely. ArgoCD then undeploys the new module metadata, and KLM falls back to the old module metadata.
+    To roll back, open a PR to `/kyma/kyma-modules` reverting the submission to the prod landscape. ArgoCD then undeploys the new module metadata, and KLM falls back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
@@ -314,8 +314,8 @@ Also for version upgrades, first target the `dev` landscape. When the upgrade is
 
    If the version upgrade failed, you can revert the setup to the old approach.
 
-   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions entirely from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade]. 
-   It is important to revert completely removing the entire new metadata from KCP, so that KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade]. 
+   It is important to revert completely removing the entire new metadata from KCP. Otherwise, KLM cannot fall back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
@@ -349,7 +349,8 @@ Also for version upgrades, first target the `dev` landscape. When the upgrade is
 
    If the version upgrade failed, you can revert the setup to the old approach.
 
-   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions entirely from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade]. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade].
+   It is important to revert completely removing the entire new metadata from KCP. Otherwise, KLM cannot fall back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
@@ -384,7 +385,8 @@ Also for version upgrades, first target the `dev` landscape. When the upgrade is
 
    In case of failure, you can revert the setup to the old approach.
 
-   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions entirely from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade]. It is important to revert completely removing the entire new metadata from KCP so that KLM falls back to the old module metadata.
+   To roll back, open a PR to `/kyma/kyma-modules` reverting the submissions from **both** [Replicating the Current State](#replicating-the-current-state) and [Performing a Version Upgrade].
+   It is important to revert completely removing the entire new metadata from KCP. Otherwise, KLM cannot fall back to the old module metadata.
 
 > [!Note]
 > After rollback, you can still use the old submission pipeline to submit new versions of the module while you're working on a fix.
