@@ -1,4 +1,4 @@
-package manifest
+package spec
 
 import (
 	"context"
@@ -21,13 +21,13 @@ type PathExtractor interface {
 	GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec, keyChain authn.Keychain) (string, error)
 }
 
-type SpecResolver struct {
+type Resolver struct {
 	keyChainLookup        KeyChainLookup
 	manifestPathExtractor PathExtractor
 }
 
-func NewSpecResolver(kcLookup KeyChainLookup, extractor PathExtractor) *SpecResolver {
-	return &SpecResolver{
+func NewResolver(kcLookup KeyChainLookup, extractor PathExtractor) *Resolver {
+	return &Resolver{
 		keyChainLookup:        kcLookup,
 		manifestPathExtractor: extractor,
 	}
@@ -35,7 +35,7 @@ func NewSpecResolver(kcLookup KeyChainLookup, extractor PathExtractor) *SpecReso
 
 var ErrRenderModeInvalid = errors.New("render mode is invalid")
 
-func (s *SpecResolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*declarativev2.Spec, error) {
+func (s *Resolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*declarativev2.Spec, error) {
 	var imageSpec v1beta2.ImageSpec
 	if err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)

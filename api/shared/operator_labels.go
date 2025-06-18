@@ -17,7 +17,6 @@ const (
 	WardenLabel         = "namespaces.warden.kyma-project.io/validate"
 	EnabledValue        = "enabled"
 	KymaName            = OperatorGroup + Separator + "kyma-name"
-	Signature           = OperatorGroup + Separator + "signature"
 	ModuleName          = OperatorGroup + Separator + "module-name"
 	IsMandatoryModule   = OperatorGroup + Separator + "mandatory-module"
 
@@ -30,12 +29,12 @@ const (
 	PurposeLabel = OperatorGroup + Separator + "purpose"
 	CertManager  = "klm-watcher-cert-manager"
 	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
-	SkipReconcileLabel     = OperatorGroup + Separator + "skip-reconciliation"
-	UnmanagedKyma          = "unmanaged-kyma"
-	DefaultRemoteKymaName  = "default"
-	DefaultRemoteNamespace = "kyma-system"
-	InternalLabel          = OperatorGroup + Separator + "internal"
-	BetaLabel              = OperatorGroup + Separator + "beta"
+	SkipReconcileLabel    = OperatorGroup + Separator + "skip-reconciliation"
+	UnmanagedKyma         = "unmanaged-kyma"
+	DefaultRemoteKymaName = "default"
+
+	InternalLabel = OperatorGroup + Separator + "internal"
+	BetaLabel     = OperatorGroup + Separator + "beta"
 
 	GlobalAccountIDLabel = KymaGroup + Separator + "global-account-id"
 	SubAccountIDLabel    = KymaGroup + Separator + "subaccount-id"

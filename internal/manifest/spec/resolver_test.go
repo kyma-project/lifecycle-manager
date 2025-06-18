@@ -1,4 +1,4 @@
-package manifest_test
+package spec_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 )
 
 const (
@@ -48,10 +48,7 @@ spec:
 func Test_GetSpec(t *testing.T) {
 	t.Run("should return a Spec with the correct fields", func(t *testing.T) {
 		// given
-		mockKeyChainLookup := &mockKeyChainLookup{}
-		mockPathExtractor := &mockPathExtractor{}
-
-		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		specResolver := spec.NewResolver(&mockKeyChainLookup{}, &mockPathExtractor{})
 
 		// when
 		mft := v1beta2.Manifest{}
@@ -73,9 +70,7 @@ func Test_GetSpec(t *testing.T) {
 
 	t.Run("should return an error with incorrect render mode", func(t *testing.T) {
 		// given
-		mockKeyChainLookup := &mockKeyChainLookup{}
-		mockPathExtractor := &mockPathExtractor{}
-		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		specResolver := spec.NewResolver(&mockKeyChainLookup{}, &mockPathExtractor{})
 
 		invalidManifest := strings.ReplaceAll(testManifest, "type: oci-ref", "type: invalid-ref")
 
@@ -85,15 +80,14 @@ func Test_GetSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = specResolver.GetSpec(t.Context(), &mft)
-		require.ErrorIs(t, err, manifest.ErrRenderModeInvalid)
+		require.ErrorIs(t, err, spec.ErrRenderModeInvalid)
 		require.ErrorContains(t, err, "could not determine render mode for")
 	})
 
 	t.Run("should return an error when keyChainLookup fails", func(t *testing.T) {
 		// given
-		mockKeyChainLookup := &mockKeyChainLookup{mockError: errors.New("unexpected")}
-		mockPathExtractor := &mockPathExtractor{}
-		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		errorKeychainLookup := &mockKeyChainLookup{mockError: errors.New("unexpected")}
+		specResolver := spec.NewResolver(errorKeychainLookup, &mockPathExtractor{})
 
 		// when
 		mft := v1beta2.Manifest{}
@@ -106,9 +100,8 @@ func Test_GetSpec(t *testing.T) {
 
 	t.Run("should return an error when pathExtractor fails", func(t *testing.T) {
 		// given
-		mockKeyChainLookup := &mockKeyChainLookup{}
-		mockPathExtractor := &mockPathExtractor{mockError: errors.New("unexpected")}
-		specResolver := manifest.NewSpecResolver(mockKeyChainLookup, mockPathExtractor)
+		errorPathExtractor := &mockPathExtractor{mockError: errors.New("unexpected")}
+		specResolver := spec.NewResolver(&mockKeyChainLookup{}, errorPathExtractor)
 
 		// when
 		mft := v1beta2.Manifest{}

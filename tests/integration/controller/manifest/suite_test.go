@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -161,7 +163,7 @@ var _ = BeforeSuite(func() {
 		Error:   1 * time.Second,
 		Warning: 1 * time.Second,
 	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifestClient, orphanDetectionClient, manifest.NewSpecResolver(keyChainLookup, extractor),
+		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
