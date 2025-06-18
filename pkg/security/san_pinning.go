@@ -103,13 +103,15 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 		return nil, errHeaderMissing
 	}
 
+	xfccVal := xfccValues[0]
+
 	// Limit the length of the data (prevent resource exhaustion attack)
-	if len(xfccValues[0]) > limit32KiB {
+	if len(xfccVal) > limit32KiB {
 		return nil, errHeaderValueTooLong
 	}
 
 	// Extract raw certificate from the first header value
-	cert := getCertTokenFromXFCCHeader(xfccValues[0])
+	cert := getCertTokenFromXFCCHeader(xfccVal)
 	if cert == "" {
 		return nil, errEmptyCert
 	}
