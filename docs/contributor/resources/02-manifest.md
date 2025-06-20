@@ -55,7 +55,7 @@ This specification is mapped from the corresponding access layer in the ModuleTe
   version: 1.2.10
 ```
 
-The `.spec.install` spec is resolved by the [SpecResolver](../../../internal/manifest/spec_resolver.go) which fetches the raw manifest from the OCI layer and resolves it to a path that can be used by the [declarative library](../../../internal/declarative/) and deployed to the target cluster.
+The `.spec.install` spec is resolved by the [SpecResolver](../../../internal/manifest/spec/resolver.go) which fetches the raw manifest from the OCI layer and resolves it to a path that can be used by the [declarative library](../../../internal/declarative/) and deployed to the target cluster.
 
 
 ### **.spec.resource**
