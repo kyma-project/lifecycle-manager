@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"ocm.software/ocm/api/ocm"
@@ -105,6 +107,21 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			Interval).Should(Succeed())
 	})
 })
+
+func expectManifestSpecDataEquals(kymaName, kymaNamespace, value string) func() error {
+	return func() error {
+		createdKyma, err := GetKyma(ctx, kcpClient, kymaName, kymaNamespace)
+		if err != nil {
+			return err
+		}
+		for _, module := range createdKyma.Spec.Modules {
+			if KCPModuleExistWithOverwrites(createdKyma, module) != value {
+				return ErrSpecDataMismatch
+			}
+		}
+		return nil
+	}
+}
 
 var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	kyma := NewTestKyma("kyma")
@@ -425,6 +442,13 @@ func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(ma
 
 		return nil
 	}
+}
+
+func extractInstallImageSpec(installInfo v1beta2.InstallInfo) *v1beta2.ImageSpec {
+	var installImageSpec *v1beta2.ImageSpec
+	err := machineryaml.Unmarshal(installInfo.Source.Raw, &installImageSpec)
+	Expect(err).ToNot(HaveOccurred())
+	return installImageSpec
 }
 
 func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,

@@ -26,7 +26,6 @@ func Test_LabelHasExternalDependencies(t *testing.T) {
 	assert.Equal(t, "operator.kyma-project.io/kyma-name", shared.KymaName)
 	assert.Equal(t, "operator.kyma-project.io/channel", shared.ChannelLabel)
 	assert.Equal(t, "operator.kyma-project.io/managed-by", shared.ManagedBy)
-	assert.Equal(t, "oci-registry-cred", shared.OCIRegistryCredLabel)
 	assert.Equal(t, "istio-injection", shared.IstioInjectionLabel)
 	assert.Equal(t, "namespaces.warden.kyma-project.io/validate", shared.WardenLabel)
 }
