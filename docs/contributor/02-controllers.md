@@ -46,7 +46,7 @@ it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandato
 ## Manifest Controller
 
 [Manifest controller](../../internal/controller/manifest/controller.go) deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
-Since it mainly is a delegation to the [declarative reconciliation library](../../internal/declarative/) with certain [internal implementation additions](../../internal/manifest/README.md), please look at the respective documentation for these parts to understand them more.
+Since it mainly is a delegation to the [declarative reconciliation library](../../internal/declarative/) with certain internal implementation additions.
 
 ## Purge Controller
 
