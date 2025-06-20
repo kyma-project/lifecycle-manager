@@ -2,8 +2,7 @@ extends: default
 ignore: |
   lifecycle-manager/config/crd/bases/
   lifecycle-manager/config/samples/tests/crds/
-  config/crd/bases/
-  config/samples/tests/crds/
+  lifecycle-manager/config/samples/component-integration-installed/crd/
 #Rules config: https://yamllint.readthedocs.io/en/stable/rules.html
 rules:
   line-length:
