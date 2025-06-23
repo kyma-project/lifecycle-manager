@@ -448,7 +448,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	}
 }
 
-// nolint:ireturn // constructor functions can return interfaces
+//nolint:ireturn // constructor functions can return interfaces
 func keychainLookupFromFlag(mgr ctrl.Manager, flagVar *flags.FlagVar) spec.KeyChainLookup {
 	if flagVar.OciRegistryCredSecretName != "" {
 		return keychainprovider.NewFromSecretKeyChainProvider(mgr.GetClient(),
