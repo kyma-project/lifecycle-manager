@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/kubernetes"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"github.com/google/go-containerregistry/pkg/v1/google"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/v1/google"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var ErrNoAuthSecretFound = errors.New("no private oci registry auth secret found")

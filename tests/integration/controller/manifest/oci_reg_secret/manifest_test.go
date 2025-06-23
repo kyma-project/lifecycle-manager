@@ -1,4 +1,4 @@
-package oci_reg_secret
+package oci_reg_secret_test
 
 import (
 	"os"
