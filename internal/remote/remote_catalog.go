@@ -42,7 +42,8 @@ type moduleReleaseMetaSyncAPI interface {
 type moduleTemplateSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI
 
 // moduleReleaseMetaSyncAPIFactory is a function that creates moduleReleaseMetaSyncAPI instances.
-type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI
+type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client,
+	settings *Settings) moduleReleaseMetaSyncAPI
 
 func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
 	remoteSyncNamespace string,
@@ -57,11 +58,13 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 }
 
 func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
-	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI {
+	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client,
+		settings *Settings) moduleTemplateSyncAPI {
 		return newModuleTemplateSyncer(kcpClient, skrClient, settings)
 	}
 
-	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI {
+	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client,
+		settings *Settings) moduleReleaseMetaSyncAPI {
 		return newModuleReleaseMetaSyncer(kcpClient, skrClient, settings)
 	}
 
@@ -82,7 +85,7 @@ func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kym
 		return err
 	}
 
-	moduleTemplates, err := c.GetModuleTemplatesToSync(ctx, moduleReleaseMetas)
+	moduleTemplates, err := c.GetModuleTemplatesToSync(ctx, moduleReleaseMetas, kyma)
 	if err != nil {
 		return err
 	}
@@ -151,13 +154,14 @@ func IsAllowedModuleReleaseMeta(moduleReleaseMeta v1beta2.ModuleReleaseMeta, kym
 func (c *RemoteCatalog) GetModuleTemplatesToSync(
 	ctx context.Context,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
+	kyma *v1beta2.Kyma,
 ) ([]v1beta2.ModuleTemplate, error) {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
 	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
 		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
-	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas), nil
+	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas, kyma), nil
 }
 
 // FilterAllowedModuleTemplates filters out ModuleTemplates that are not allowed.
@@ -166,6 +170,7 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 func FilterAllowedModuleTemplates(
 	moduleTemplates []v1beta2.ModuleTemplate,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
+	kyma *v1beta2.Kyma,
 ) []v1beta2.ModuleTemplate {
 	moduleTemplatesToSync := map[string]bool{}
 	for _, moduleReleaseMeta := range moduleReleaseMetas {
@@ -176,11 +181,12 @@ func FilterAllowedModuleTemplates(
 
 	filteredModuleTemplates := []v1beta2.ModuleTemplate{}
 	for _, moduleTemplate := range moduleTemplates {
-		if moduleTemplate.IsMandatory() {
+		if !moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
 			continue
 		}
 
-		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName, moduleTemplate.Spec.Version)]; found {
+		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName,
+			moduleTemplate.Spec.Version)]; found {
 			filteredModuleTemplates = append(filteredModuleTemplates, moduleTemplate)
 		}
 	}
