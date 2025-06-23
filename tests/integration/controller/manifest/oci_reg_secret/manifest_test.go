@@ -1,13 +1,12 @@
 package oci_reg_secret
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
-
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,7 +29,7 @@ var _ = Describe(
 				Expect(os.RemoveAll(filepath.Join(os.TempDir(), mainOciTempDir))).To(Succeed())
 			},
 		)
-		
+
 		It("Manifest should be in Error state with no auth secret found error message", func() {
 			manifestWithInstall, kyma := NewTestManifestWithParentKyma("private-oci-registry")
 

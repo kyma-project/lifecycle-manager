@@ -1,9 +1,10 @@
 package manifest_test
 
 import (
-	"ocm.software/ocm/api/utils/mime"
 	"os"
 	"path/filepath"
+
+	"ocm.software/ocm/api/utils/mime"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
