@@ -80,25 +80,30 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 }
 
 func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
-	moduleReleaseMetas, err := c.GetModuleReleaseMetasToSync(ctx, kyma)
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
+		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
+	}
+
+	filteredModuleReleaseMetas, err := c.GetModuleReleaseMetasToSync(ctx, kyma, moduleTemplateList)
 	if err != nil {
 		return err
 	}
 
-	moduleTemplates, err := c.GetModuleTemplatesToSync(ctx, moduleReleaseMetas, kyma)
+	filteredModuleTemplates, err := c.GetModuleTemplatesToSync(filteredModuleReleaseMetas, kyma, moduleTemplateList)
 	if err != nil {
 		return err
 	}
 
 	// https://github.com/kyma-project/lifecycle-manager/issues/2096
 	// Remove this block after the migration to the new ModuleTemplate format is completed.
-	oldModuleTemplate, err := c.GetOldModuleTemplatesToSync(ctx, kyma)
+	filteredOldModuleTemplate, err := c.GetOldModuleTemplatesToSync(kyma, moduleTemplateList)
 	if err != nil {
 		return err
 	}
-	moduleTemplates = append(moduleTemplates, oldModuleTemplate...)
+	filteredModuleTemplates = append(filteredModuleTemplates, filteredOldModuleTemplate...)
 
-	return c.sync(ctx, kyma.GetNamespacedName(), moduleTemplates, moduleReleaseMetas)
+	return c.sync(ctx, kyma.GetNamespacedName(), filteredModuleTemplates, filteredModuleReleaseMetas)
 }
 
 func (c *RemoteCatalog) Delete(
@@ -119,6 +124,7 @@ func (c *RemoteCatalog) Delete(
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
+	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleReleaseMeta, error) {
 	moduleReleaseMetaList := &v1beta2.ModuleReleaseMetaList{}
 	if err := c.kcpClient.List(ctx, moduleReleaseMetaList); err != nil {
@@ -152,15 +158,10 @@ func IsAllowedModuleReleaseMeta(moduleReleaseMeta v1beta2.ModuleReleaseMeta, kym
 // A ModuleTemplate is synced if it is not mandatory and does not have sync disabled, and if
 // it is referenced by a ModuleReleaseMeta that is synced.
 func (c *RemoteCatalog) GetModuleTemplatesToSync(
-	ctx context.Context,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
 	kyma *v1beta2.Kyma,
+	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleTemplate, error) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
-		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
-	}
-
 	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas, kyma), nil
 }
 
@@ -197,14 +198,9 @@ func FilterAllowedModuleTemplates(
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
-	ctx context.Context,
 	kyma *v1beta2.Kyma,
+	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleTemplate, error) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
-		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
-	}
-
 	moduleTemplates := []v1beta2.ModuleTemplate{}
 	for _, moduleTemplate := range moduleTemplateList.Items {
 		if moduleTemplate.Spec.Channel == "" {
