@@ -14,8 +14,7 @@ The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to d
 * **.spec.modules[].channel** - defines a release channel other than the default channel (**.spec.channel**) for a given module that is to be installed in the cluster.
 * **.spec.modules** - specifies modules that should be added to the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
 Additionally, you can add a specific channel if **.spec.channel** should not be used.
-On top of that, you can specify a **controller**, which serves as a Multi-Tenant Enabler.
-It can be used to only listen to ModuleTemplate CRs provided under the same controller name. Last but not least, it includes a **customResourcePolicy** which can be used for specifying default behavior when initializing modules in a cluster.
+Last but not least, it includes a **customResourcePolicy** which can be used for specifying default behavior when initializing modules in a cluster.
 
 ## Configuration
 
