@@ -395,10 +395,6 @@ func ManifestNoDeletionTimeStampSet(ctx context.Context,
 	return nil
 }
 
-const (
-	OCIRegistryCredLabelKeyForTest = shared.OperatorGroup + shared.Separator + "oci-registry-cred"
-)
-
 type mockLayer struct {
 	filePath string
 }
