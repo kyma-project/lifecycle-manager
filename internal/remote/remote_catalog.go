@@ -120,7 +120,7 @@ func (c *RemoteCatalog) Delete(
 }
 
 // GetModuleReleaseMetasToSync returns a list of ModuleReleaseMetas that should be synced to the SKR.
-// A ModuleReleaseMeta that is Beta or Internal is synced only if the Kyma is also Beta or Internal.
+// A ModuleReleaseMeta is synced if it has at least one channel-version pair whose ModuleTemplate is allowed to be synced.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
@@ -132,26 +132,36 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	}
 
 	moduleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
+
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
-		if IsAllowedModuleReleaseMeta(moduleReleaseMeta, kyma) {
-			moduleReleaseMetas = append(moduleReleaseMetas, moduleReleaseMeta)
+		mrm := moduleReleaseMeta
+		mrm.Spec.Channels = []v1beta2.ChannelVersionAssignment{}
+		// Only add channel-version pairs which have allowed ModuleTemplates to be synced
+		for _, channel := range moduleReleaseMeta.Spec.Channels {
+			if IsAllowedModuleVersion(kyma, moduleTemplateList, moduleReleaseMeta.Spec.ModuleName, channel.Version) {
+				mrm.Spec.Channels = append(mrm.Spec.Channels, channel)
+			}
+		}
+
+		if len(mrm.Spec.Channels) > 0 {
+			moduleReleaseMetas = append(moduleReleaseMetas, mrm)
 		}
 	}
 
 	return moduleReleaseMetas, nil
 }
 
-// IsAllowedModuleReleaseMeta determines whether the given ModuleReleaseMeta is allowed for the given Kyma.
-// If the ModuleReleaseMeta is Beta, it is allowed only if the Kyma is also Beta.
-// If the ModuleReleaseMeta is Internal, it is allowed only if the Kyma is also Internal.
-func IsAllowedModuleReleaseMeta(moduleReleaseMeta v1beta2.ModuleReleaseMeta, kyma *v1beta2.Kyma) bool {
-	if moduleReleaseMeta.IsBeta() && !kyma.IsBeta() {
-		return false
+func IsAllowedModuleVersion(kyma *v1beta2.Kyma, moduleTemplateList *v1beta2.ModuleTemplateList,
+	moduleName, version string) bool {
+	for _, moduleTemplate := range moduleTemplateList.Items {
+		if moduleTemplate.Spec.Version == version && moduleTemplate.Spec.ModuleName == moduleName {
+			if moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
+				return true
+			}
+		}
 	}
-	if moduleReleaseMeta.IsInternal() && !kyma.IsInternal() {
-		return false
-	}
-	return true
+
+	return false
 }
 
 // GetModuleTemplatesToSync returns a list of ModuleTemplates that should be synced to the SKR.
