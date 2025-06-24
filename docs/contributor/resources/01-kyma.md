@@ -190,3 +190,12 @@ The most important labels include, but are not limited to:
 * `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
 * `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
 * `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules are also synchronized with the remote cluster. The default value is `false`.
+
+## Annotations
+
+Annotations present are:
+
+* `skr-domain`: the domain of the SKR.
+* `kyma-[kcp|skr]-crd-generation`: the generation of the Kyma CRD in KCP and SKR. Used to determine if the CRD must be updated on the SKR.
+* `modulereleasemeta-[kcp|skr]-crd-generation`: the generation of the ModuleReleaseMeta CRD in KCP and SKR. Used to determine if the CRD must be updated on the SKR.
+* `moduletemplate-[kcp|skr]-crd-generation`: the generation of the ModuleTemplate CRD in KCP and SKR. Used to determine if the CRD must be updated on the SKR.
