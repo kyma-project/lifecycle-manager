@@ -183,7 +183,7 @@ Various overarching features can be enabled/disabled or provided as hints to the
 
 The most important labels include, but are not limited to:
 
-* `operator.kyma-project.io/kyma-name`: An identifier that can be set on a Secret to identify correct cluster access kubeconfigs to be used during reconciliation.
+* `operator.kyma-project.io/kyma-name`: The `runtime-id` of the Kyma.
 * `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to completely disable reconciliation for a Kyma CR. Can also be used on the Manifest CR to disable a specific module. This will avoid all reconciliations for the entire Kyma or Manifest CRs. Note that even though reconciliation for the Kyma CR might be disabled, the Manifest CR in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
 * `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
 * `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
