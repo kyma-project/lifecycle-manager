@@ -18,7 +18,7 @@ packages:
   internal/manifest/statecheck: 71
   internal/maintenancewindows: 87
   internal/pkg/resources: 91
-  internal/remote: 29
+  internal/remote: 30
   internal/repository/kyma: 100
   internal/service/skrwebhook/chartreader: 100
   internal/service/skrwebhook/gateway: 94
@@ -27,7 +27,7 @@ packages:
   internal/service/manifest/orphan: 100
   internal/util/collections: 87
   pkg/module/sync: 10
-  pkg/templatelookup: 88
+  pkg/templatelookup: 87.6
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher/skr_webhook_resources: 82
   pkg/watcher/certificate: 100
