@@ -38,8 +38,15 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaNonInternalMRM_ForNonBetaNon
 	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
 
 	require.NoError(t, err)
-	require.Len(t, mrms, 1)
-	assert.Equal(t, "regular-module", mrms[0].Spec.ModuleName)
+	require.Len(t, mrms, 4)
+	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
+	assert.Len(t, mrms[0].Spec.Channels, 1)
+	assert.Equal(t, "internal-beta-module", mrms[1].Spec.ModuleName)
+	assert.Len(t, mrms[1].Spec.Channels, 1)
+	assert.Equal(t, "internal-module", mrms[2].Spec.ModuleName)
+	assert.Len(t, mrms[2].Spec.Channels, 1)
+	assert.Equal(t, "regular-module", mrms[3].Spec.ModuleName)
+	assert.Len(t, mrms[3].Spec.Channels, 3)
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonInternalKyma(t *testing.T) {
@@ -52,9 +59,17 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonIntern
 	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
 
 	require.NoError(t, err)
-	require.Len(t, mrms, 2)
+	require.Len(t, mrms, 5)
 	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
-	assert.Equal(t, "regular-module", mrms[1].Spec.ModuleName)
+	assert.Len(t, mrms[0].Spec.Channels, 2)
+	assert.Equal(t, "beta-only-module", mrms[1].Spec.ModuleName)
+	assert.Len(t, mrms[1].Spec.Channels, 1)
+	assert.Equal(t, "internal-beta-module", mrms[2].Spec.ModuleName)
+	assert.Len(t, mrms[2].Spec.Channels, 1)
+	assert.Equal(t, "internal-module", mrms[3].Spec.ModuleName)
+	assert.Len(t, mrms[3].Spec.Channels, 1)
+	assert.Equal(t, "regular-module", mrms[4].Spec.ModuleName)
+	assert.Len(t, mrms[4].Spec.Channels, 3)
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaInternalKyma(t *testing.T) {
@@ -67,9 +82,17 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaIntern
 	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
 
 	require.NoError(t, err)
-	require.Len(t, mrms, 2)
-	assert.Equal(t, "internal-module", mrms[0].Spec.ModuleName)
-	assert.Equal(t, "regular-module", mrms[1].Spec.ModuleName)
+	require.Len(t, mrms, 5)
+	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
+	assert.Len(t, mrms[0].Spec.Channels, 1)
+	assert.Equal(t, "internal-beta-module", mrms[1].Spec.ModuleName)
+	assert.Len(t, mrms[1].Spec.Channels, 1)
+	assert.Equal(t, "internal-module", mrms[2].Spec.ModuleName)
+	assert.Len(t, mrms[2].Spec.Channels, 2)
+	assert.Equal(t, "internal-only-module", mrms[3].Spec.ModuleName)
+	assert.Len(t, mrms[3].Spec.Channels, 1)
+	assert.Equal(t, "regular-module", mrms[4].Spec.ModuleName)
+	assert.Len(t, mrms[4].Spec.Channels, 3)
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma(t *testing.T) {
@@ -82,11 +105,19 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma
 	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
 
 	require.NoError(t, err)
-	require.Len(t, mrms, 4)
+	require.Len(t, mrms, 6)
 	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
-	assert.Equal(t, "internal-beta-module", mrms[1].Spec.ModuleName)
-	assert.Equal(t, "internal-module", mrms[2].Spec.ModuleName)
-	assert.Equal(t, "regular-module", mrms[3].Spec.ModuleName)
+	assert.Len(t, mrms[0].Spec.Channels, 2)
+	assert.Equal(t, "beta-only-module", mrms[1].Spec.ModuleName)
+	assert.Len(t, mrms[1].Spec.Channels, 1)
+	assert.Equal(t, "internal-beta-module", mrms[2].Spec.ModuleName)
+	assert.Len(t, mrms[2].Spec.Channels, 2)
+	assert.Equal(t, "internal-module", mrms[3].Spec.ModuleName)
+	assert.Len(t, mrms[3].Spec.Channels, 2)
+	assert.Equal(t, "internal-only-module", mrms[4].Spec.ModuleName)
+	assert.Len(t, mrms[4].Spec.Channels, 1)
+	assert.Equal(t, "regular-module", mrms[5].Spec.ModuleName)
+	assert.Len(t, mrms[5].Spec.Channels, 3)
 }
 
 func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
@@ -184,7 +215,7 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 			build(),
 	}, kyma)
 
-	require.Len(t, mts, 0)
+	require.Len(t, mts, 1)
 }
 
 func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaNonInternalKyma(t *testing.T) {
@@ -248,13 +279,82 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonManda
 	assert.Equal(t, "old-module-regular", filteredMts[3].Name)
 }
 
+func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_NoBetaInternalModule(t *testing.T) {
+	kyma := newKymaBuilder().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "regular-module", "1.0.0")
+	require.True(t, isAllowed)
+}
+
+func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_BetaModule(t *testing.T) {
+	kyma := newKymaBuilder().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "beta-module", "1.0.0")
+	require.False(t, isAllowed)
+}
+
+func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_InternalModule(t *testing.T) {
+	kyma := newKymaBuilder().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "internal-module", "1.0.0")
+	require.False(t, isAllowed)
+}
+
+func Test_IsAllowedModuleVersion_ForBetaKyma_InternalModule(t *testing.T) {
+	kyma := newKymaBuilder().withBetaEnabled().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "internal-module", "1.0.0")
+	require.False(t, isAllowed)
+}
+
+func Test_IsAllowedModuleVersion_ForBetaKyma_BetaModule(t *testing.T) {
+	kyma := newKymaBuilder().withBetaEnabled().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "beta-module", "1.0.0")
+	require.True(t, isAllowed)
+}
+
+func Test_IsAllowedModuleVersion_ForInternalKyma_BetaModule(t *testing.T) {
+	kyma := newKymaBuilder().withInternalEnabled().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "beta-module", "1.0.0")
+	require.False(t, isAllowed)
+}
+
+func Test_IsAllowedModuleVersion_ForInternalKyma_InternalModule(t *testing.T) {
+	kyma := newKymaBuilder().withInternalEnabled().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "internal-module", "1.0.0")
+	require.True(t, isAllowed)
+}
+
 func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
 	mrm1 := newModuleReleaseMetaBuilder().
 		withName("regular-module").
 		withChannelVersion("regular", "1.0.0").
 		withChannelVersion("fast", "2.0.0").
 		withChannelVersion("sync-disabled", "3.0.0").
-		withChannelVersion("mandatory", "4.0.0").
 		build()
 	mrm2 := newModuleReleaseMetaBuilder().
 		withName("beta-module").
@@ -271,6 +371,14 @@ func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
 		withChannelVersion("regular", "1.0.0").
 		withChannelVersion("fast", "2.0.0").
 		build()
+	mrm5 := newModuleReleaseMetaBuilder().
+		withName("beta-only-module").
+		withChannelVersion("regular", "1.0.0").
+		build()
+	mrm6 := newModuleReleaseMetaBuilder().
+		withName("internal-only-module").
+		withChannelVersion("regular", "1.0.0").
+		build()
 
 	mrms := v1beta2.ModuleReleaseMetaList{
 		Items: []v1beta2.ModuleReleaseMeta{
@@ -278,6 +386,8 @@ func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
 			*mrm2,
 			*mrm3,
 			*mrm4,
+			*mrm5,
+			*mrm6,
 		},
 	}
 
@@ -332,13 +442,11 @@ func moduleTemplates() v1beta2.ModuleTemplateList {
 		withName("internal-module-2.0.0").
 		withModuleName("internal-module").
 		withVersion("2.0.0").
-		withInternalEnabled().
 		build()
 	mt10 := newModuleTemplateBuilder().
 		withName("beta-module-2.0.0").
 		withModuleName("beta-module").
 		withVersion("2.0.0").
-		withBetaEnabled().
 		build()
 	mt11 := newModuleTemplateBuilder().
 		withName("internal-beta-module-1.0.0").
@@ -351,37 +459,47 @@ func moduleTemplates() v1beta2.ModuleTemplateList {
 		withName("internal-beta-module-2.0.0").
 		withModuleName("internal-beta-module").
 		withVersion("2.0.0").
-		withBetaEnabled().
+		build()
+	mt13 := newModuleTemplateBuilder().
+		withName("internal-only-module-1.0.0").
+		withModuleName("internal-only-module").
+		withVersion("1.0.0").
 		withInternalEnabled().
+		build()
+	mt14 := newModuleTemplateBuilder().
+		withName("beta-only-module-1.0.0").
+		withModuleName("beta-only-module").
+		withVersion("1.0.0").
+		withBetaEnabled().
 		build()
 
 	// https://github.com/kyma-project/lifecycle-manager/issues/2096
 	// Remove these after the migration to the new ModuleTemplate format is completed.
-	mt13 := newModuleTemplateBuilder().
+	mt15 := newModuleTemplateBuilder().
 		withName("old-module-regular").
 		withChannel("regular").
 		build()
-	mt14 := newModuleTemplateBuilder().
+	mt16 := newModuleTemplateBuilder().
 		withName("old-beta-module-regular").
 		withChannel("regular").
 		withBetaEnabled().
 		build()
-	mt15 := newModuleTemplateBuilder().
+	mt17 := newModuleTemplateBuilder().
 		withName("old-internal-module-fast").
 		withChannel("fast").
 		withInternalEnabled().
 		build()
-	mt16 := newModuleTemplateBuilder().
+	mt18 := newModuleTemplateBuilder().
 		withName("old-internal-beta-module-fast").
 		withChannel("fast").
 		withBetaEnabled().
 		withInternalEnabled().
 		build()
-	mt17 := newModuleTemplateBuilder().
+	mt19 := newModuleTemplateBuilder().
 		withName("old-sync-disabled-module-experimental").
 		withChannel("experimental").
 		build()
-	mt18 := newModuleTemplateBuilder().
+	mt20 := newModuleTemplateBuilder().
 		withName("old-mandatory-module").
 		withChannel("regular").
 		withMandatoryEnabled().
@@ -407,6 +525,8 @@ func moduleTemplates() v1beta2.ModuleTemplateList {
 			*mt16,
 			*mt17,
 			*mt18,
+			*mt19,
+			*mt20,
 		},
 	}
 

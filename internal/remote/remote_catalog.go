@@ -154,7 +154,7 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 func IsAllowedModuleVersion(kyma *v1beta2.Kyma, moduleTemplateList *v1beta2.ModuleTemplateList,
 	moduleName, version string) bool {
 	for _, moduleTemplate := range moduleTemplateList.Items {
-		if moduleTemplate.Spec.Version == version && moduleTemplate.Spec.ModuleName == moduleName {
+		if formatModuleName(moduleName, version) == moduleTemplate.Name {
 			if moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
 				return true
 			}
