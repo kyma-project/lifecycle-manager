@@ -59,12 +59,14 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 
 func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
 	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client,
-		settings *Settings) moduleTemplateSyncAPI {
+		settings *Settings,
+	) moduleTemplateSyncAPI {
 		return newModuleTemplateSyncer(kcpClient, skrClient, settings)
 	}
 
 	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client,
-		settings *Settings) moduleReleaseMetaSyncAPI {
+		settings *Settings,
+	) moduleReleaseMetaSyncAPI {
 		return newModuleReleaseMetaSyncer(kcpClient, skrClient, settings)
 	}
 
@@ -152,7 +154,8 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 }
 
 func IsAllowedModuleVersion(kyma *v1beta2.Kyma, moduleTemplateList *v1beta2.ModuleTemplateList,
-	moduleName, version string) bool {
+	moduleName, version string,
+) bool {
 	for _, moduleTemplate := range moduleTemplateList.Items {
 		if formatModuleName(moduleName, version) == moduleTemplate.Name {
 			if moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {

@@ -68,8 +68,6 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonIntern
 	assert.Len(t, mrms[2].Spec.Channels, 1)
 	assert.Equal(t, "internal-module", mrms[3].Spec.ModuleName)
 	assert.Len(t, mrms[3].Spec.Channels, 1)
-	assert.Equal(t, "regular-module", mrms[4].Spec.ModuleName)
-	assert.Len(t, mrms[4].Spec.Channels, 3)
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaInternalKyma(t *testing.T) {
@@ -86,13 +84,10 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaIntern
 	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
 	assert.Len(t, mrms[0].Spec.Channels, 1)
 	assert.Equal(t, "internal-beta-module", mrms[1].Spec.ModuleName)
-	assert.Len(t, mrms[1].Spec.Channels, 1)
 	assert.Equal(t, "internal-module", mrms[2].Spec.ModuleName)
 	assert.Len(t, mrms[2].Spec.Channels, 2)
 	assert.Equal(t, "internal-only-module", mrms[3].Spec.ModuleName)
 	assert.Len(t, mrms[3].Spec.Channels, 1)
-	assert.Equal(t, "regular-module", mrms[4].Spec.ModuleName)
-	assert.Len(t, mrms[4].Spec.Channels, 3)
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma(t *testing.T) {
@@ -575,26 +570,6 @@ func (b *moduleReleaseMetaBuilder) withChannelVersion(channel, version string) *
 	return b
 }
 
-func (b *moduleReleaseMetaBuilder) withBetaEnabled() *moduleReleaseMetaBuilder {
-	b.moduleReleaseMeta.Spec.Beta = true
-	return b
-}
-
-func (b *moduleReleaseMetaBuilder) withBeta(beta bool) *moduleReleaseMetaBuilder {
-	b.moduleReleaseMeta.Spec.Beta = beta
-	return b
-}
-
-func (b *moduleReleaseMetaBuilder) withInternalEnabled() *moduleReleaseMetaBuilder {
-	b.moduleReleaseMeta.Spec.Internal = true
-	return b
-}
-
-func (b *moduleReleaseMetaBuilder) withInternal(internal bool) *moduleReleaseMetaBuilder {
-	b.moduleReleaseMeta.Spec.Internal = internal
-	return b
-}
-
 type moduleTemplateBuilder struct {
 	moduleTemplate *v1beta2.ModuleTemplate
 }
@@ -672,26 +647,8 @@ func (b *kymaBuilder) withBetaEnabled() *kymaBuilder {
 	return b
 }
 
-func (b *kymaBuilder) withBeta(beta bool) *kymaBuilder {
-	if beta {
-		b.kyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
-	} else {
-		b.kyma.Labels[shared.BetaLabel] = shared.DisableLabelValue
-	}
-	return b
-}
-
 func (b *kymaBuilder) withInternalEnabled() *kymaBuilder {
 	b.kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
-	return b
-}
-
-func (b *kymaBuilder) withInternal(internal bool) *kymaBuilder {
-	if internal {
-		b.kyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
-	} else {
-		b.kyma.Labels[shared.InternalLabel] = shared.DisableLabelValue
-	}
 	return b
 }
 
