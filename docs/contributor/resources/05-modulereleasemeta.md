@@ -10,6 +10,10 @@ To get the latest CRD in the YAML format, run the following command:
 kubectl get crd modulereleasemetas.operator.kyma-project.io -o yaml
 ```
 
+> [!Note]
+> The ModuleReleaseMeta CR lives in both Kyma Control Plane (KCP) and SAP Kyma Runtime (SKR) clusters.
+> Lifecycle-Manager synchronizes the ModuleReleaseMeta from KCP to the applicable SKRs.
+
 ## Configuration
 
 ### **.spec.moduleName**

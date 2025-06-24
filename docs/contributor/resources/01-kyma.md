@@ -16,6 +16,12 @@ The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to d
 Additionally, you can add a specific channel if **.spec.channel** should not be used.
 Last but not least, it includes a **customResourcePolicy** which can be used for specifying default behavior when initializing modules in a cluster.
 
+> [!Note]
+> The Kyma CR lives in both Kyma Control Plane (KCP) and SAP Kyma Runtime (SKR) clusters.
+> Lifecycle-Manager synchronizes the `.state` from KCP to SKR.
+> The `.spec` is only synchronized when creating the SKR resource from the KCP one.
+> From then on, it is NOT synchronized anylonger and Lifecycle-Manager directly determines the desired state from the SKR resource.
+
 ## Configuration
 
 ### **.spec.skipMaintenanceWindows**

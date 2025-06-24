@@ -22,11 +22,6 @@ Kyma Controller uses the ModuleReleaseMeta CR to fetch the correct ModuleTemplat
 
 If a ModuleReleaseMeta CR for a particular module doesn't exist, Kyma Controller lists all the ModuleTemplates in the Control Plane and then filters them using the **.spec.channel** parameter in the Kyma CR.
 
-
-### Remote Synchronization
-
-The Kyma CR in Kyma Control Plane shows the initial specification and the current status. To install a module, Lifecycle Manager uses the specification from the remote cluster Kyma CR.
-
 ### Requeuing the Kyma CR
 
 The `Kyma` CR is requeued at set intervals using specific flags from Lifecycle Manager. The requeuing ensures that the Kyma CR is periodically reprocessed, allowing the controller to detect and apply any changes that may have occurred during that time. Additionally, several watch mechanisms are implemented, enabling the controller to requeue Kyma CRs when certain events occur.
