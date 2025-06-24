@@ -7,7 +7,6 @@ packages:
   internal/gatewaysecret/cabundle: 100
   internal/gatewaysecret/legacy: 100
   internal/istio: 63
-  internal/manifest: 15
   internal/manifest/filemutex: 100
   internal/manifest/finalizer: 17
   internal/manifest/img: 65
