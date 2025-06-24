@@ -59,32 +59,42 @@ In this case, `fast` is the relevant channel for Keda, but not for Serverless.
 
 ### **.spec.modules**
 
-The module list is used to define the desired set of all modules. This is mainly derived from the **.spec.modules[].name** attribute which is resolved in one of 3 ways.
+The module list is used to define the desired set of all modules to be added to the SKR. To add a module, it must be added using the name of the module. The name of the module is defined as **.spec.moduleName** in both the ModuleReleaseMeta and the ModuleTemplate CRs.
 
-Let's take a look at this simplified ModuleTemplate CR:
+Let's take a look at this simplified example:
 
 ```yaml
 apiVersion: operator.kyma-project.io/v1beta2
 kind: ModuleTemplate
 metadata:
-  name: moduletemplate-sample
-  namespace: default
-  labels:
-    "operator.kyma-project.io/module-name": "module-name-from-label"
+  name: example-module-1.0.0
 spec:
-  channel: regular
+  version: 1.0.0
   data: {}
   descriptor:
     component:
-      name: kyma-project.io/module/sample
+      name: kyma-project.io/module/example-module
 ```
 
-The module mentioned above can *only* be referenced using the label value of `operator.kyma-project.io/module-name`:
+```yaml
+apiVersion: operator.kyma-project.io/v1beta2
+kind: ModuleReleaseMeta
+metadata:
+  name: example-module
+spec:
+  channels:
+  - channel: regular
+    version: 1.0.0
+  moduleName: example-module
+
+```
+
+The module mentioned above can be enabled using its **.spec.moduleName** `example-module`:
 ```yaml
 spec:
   channel: regular
   modules:
-  - name: module-name-from-label
+  - name: example-module
 ```
 
 > **CAUTION:**
