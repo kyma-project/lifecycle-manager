@@ -192,4 +192,3 @@ runs:
       shell: bash
       run: |
         kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
-    
