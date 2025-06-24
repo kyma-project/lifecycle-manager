@@ -136,3 +136,22 @@ spec:
         type: yaml
         version: 0.0.1-6cd5086
 ```
+
+## `operator.kyma-project.io` Labels
+
+* `operator.kyma-project.io/channel`: A boolean value. Indicates whether the module is mandatory and will be installed to all remote clusters.
+* `operator.kyma-project.io/controller-name`: Indicator that the manifest controller of Lifecycle-Manager is manging the manifest.
+* `operator.kyma-project.io/kyma-name`: The `runtime-id` of the Kyma.
+* `operator.kyma-project.io/managed-by`: Indicator that Lifecycle-Manager is managing the Manifest.
+* `operator.kyma-project.io/module-name`: The name of the module.
+
+## Annotations
+
+* `operator.kyma-project.io/fqdn`: The fully-qualified domain name of the module.
+* `sync-oci-ref`: Ref of the OCM install resource that is currently installed to the SKR. 
+
+## Finalizer
+
+* `declarative.kyma-project.io/finalizer`: Finalizer set by Lifecycle Manager to deal with the cleanup of the manifest.
+* `label-removal-finalizer`: Finalizer set by Lifecycle Manager to deal with removing managed-by labels from resources synced to the SKR upon unmanaging the module.
+* `resource.kyma-project.io/finalizer`: Finalizer set by Lifecycle Manager to deal with the cleanup of the resources synced to the SKR upon uninstalling the module.
