@@ -168,3 +168,18 @@ The list is purely informational and does not introduce functional changes to th
 ### **.spec.requiresDowntime**
 
 The `requiresDowntime` field indicates whether the module requires downtime to support maintenance windows during module upgrades. It is optional and defaults to `false`, meaning the module version upgrades don't require downtime.
+
+## `operator.kyma-project.io` Labels
+
+* `operator.kyma-project.io/mandatory-module`: A boolean value. Indicates whether the module is mandatory and will be installed to all remote clusters.
+* `operator.kyma-project.io/module-name`: The name of the module.
+* `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
+* `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules, are also synchronized with the remote cluster. The default value is `false`.
+
+## `operator.kyma-project.io` Annotations
+
+* `operator.kyma-project.io/is-cluster-scoped`: A boolean value. Indicates whether the module configured is a namespaced or cluster-sopced resource.
+
+## `operator.kyma-project.io` Finalizer
+
+* `operator.kyma-project.io/mandatory-module`: Finalizer set by Lifecycle Manager to deal with the cleanup of the mandatory module.
