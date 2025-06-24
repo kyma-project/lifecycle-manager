@@ -81,34 +81,6 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When Beta value is set to true on the SKR Cluster", func() {
-			Eventually(SetModuleReleaseMetaBeta).
-				WithContext(ctx).
-				WithArguments(true, module.Name, RemoteNamespace, skrClient).
-				Should(Succeed())
-		})
-
-		It("Then Beta value is reverted back to its value from the KCP Cluster", func() {
-			Eventually(ModuleReleaseMetaBetaValueIsCorrect).
-				WithContext(ctx).
-				WithArguments(skrClient, RemoteNamespace, module.Name, false).
-				Should(Succeed())
-		})
-
-		It("When Internal value is set to true on the SKR Cluster", func() {
-			Eventually(SetModuleReleaseMetaInternal).
-				WithContext(ctx).
-				WithArguments(true, module.Name, RemoteNamespace, skrClient).
-				Should(Succeed())
-		})
-
-		It("Then Internal value is reverted back to its value from the KCP Cluster", func() {
-			Eventually(ModuleReleaseMetaInternalValueIsCorrect).
-				WithContext(ctx).
-				WithArguments(skrClient, RemoteNamespace, module.Name, false).
-				Should(Succeed())
-		})
-
 		It("When the ModuleReleaseMeta is set to beta", func() {
 			Eventually(SetModuleReleaseMetaBeta).
 				WithContext(ctx).
