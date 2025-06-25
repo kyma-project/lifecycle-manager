@@ -79,6 +79,7 @@ func ModuleReleaseMetaContainsCorrectChannelVersion(ctx context.Context,
 	}
 
 	for _, ch := range mrm.Spec.Channels {
+		fmt.Println("Checking channel:", ch.Channel, "with version:", ch.Version)
 		if ch.Channel == channel {
 			if ch.Version == version {
 				return nil

@@ -87,7 +87,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Succeed())
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
-				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v2Version, skrClient).
+				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v1Version, skrClient).
 				Should(Equal(ErrNotFound))
 
 			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
