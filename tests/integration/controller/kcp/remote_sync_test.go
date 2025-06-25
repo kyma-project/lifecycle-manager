@@ -312,7 +312,6 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		{
 			Name:    moduleInKCP.Name,
 			Channel: moduleInKCP.Channel,
-			Version: moduleInKCP.Version,
 		},
 	}
 	skrKyma := NewSKRKyma()
