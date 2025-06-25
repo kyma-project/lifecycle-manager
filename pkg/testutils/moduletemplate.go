@@ -115,7 +115,8 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 }
 
 func SetModuleTemplateBetaLabel(ctx context.Context, clnt client.Client, module v1beta2.Module,
-	kyma *v1beta2.Kyma, betaValue bool) error {
+	kyma *v1beta2.Kyma, betaValue bool,
+) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get module template: %w", err)
@@ -139,7 +140,8 @@ func SetModuleTemplateBetaLabel(ctx context.Context, clnt client.Client, module 
 }
 
 func SetModuleTemplateInternalLabel(ctx context.Context, clnt client.Client, module v1beta2.Module,
-	kyma *v1beta2.Kyma, internalValue bool) error {
+	kyma *v1beta2.Kyma, internalValue bool,
+) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get module template: %w", err)

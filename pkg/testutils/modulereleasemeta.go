@@ -12,9 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
-)
+var ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
 
 func UpdateChannelVersionInModuleReleaseMeta(ctx context.Context, clnt client.Client,
 	moduleName, namespace, channel, version string,
