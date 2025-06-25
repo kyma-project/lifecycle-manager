@@ -30,10 +30,10 @@ var _ = Describe("ModuleReleaseMeta Not Allowed Installation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When the ModuleReleaseMeta is set to beta", func() {
-			Eventually(SetModuleReleaseMetaBeta).
+		It("When ModuleTemplate is marked as beta", func() {
+			Eventually(SetModuleTemplateBetaLabel).
 				WithContext(ctx).
-				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				WithArguments(kcpClient, module, kyma, true).
 				Should(Succeed())
 		})
 
@@ -50,10 +50,10 @@ var _ = Describe("ModuleReleaseMeta Not Allowed Installation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When the beta is removed from ModuleReleaseMeta", func() {
-			Eventually(SetModuleReleaseMetaBeta).
+		It("When the beta label is removed from ModuleTemplate", func() {
+			Eventually(SetModuleTemplateBetaLabel).
 				WithContext(ctx).
-				WithArguments(false, module.Name, ControlPlaneNamespace, kcpClient).
+				WithArguments(kcpClient, module, kyma, false).
 				Should(Succeed())
 
 			By("Then the module is in ready state")
@@ -63,10 +63,10 @@ var _ = Describe("ModuleReleaseMeta Not Allowed Installation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When the ModuleReleaseMeta is set to internal", func() {
-			Eventually(SetModuleReleaseMetaInternal).
+		It("When ModuleTemplate is marked as internal", func() {
+			Eventually(SetModuleTemplateInternalLabel).
 				WithContext(ctx).
-				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				WithArguments(kcpClient, module, kyma, true).
 				Should(Succeed())
 
 			By("Then the module is in error state")

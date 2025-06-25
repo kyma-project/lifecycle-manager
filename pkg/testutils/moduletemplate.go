@@ -114,6 +114,54 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	return nil
 }
 
+func SetModuleTemplateBetaLabel(ctx context.Context, clnt client.Client, module v1beta2.Module,
+	kyma *v1beta2.Kyma, betaValue bool) error {
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	if err != nil {
+		return fmt.Errorf("failed to get module template: %w", err)
+	}
+
+	if moduleTemplate.Labels == nil {
+		moduleTemplate.Labels = make(map[string]string)
+	}
+
+	if betaValue {
+		moduleTemplate.Labels[shared.BetaLabel] = shared.EnableLabelValue
+	} else {
+		moduleTemplate.Labels[shared.BetaLabel] = shared.DisableLabelValue
+	}
+
+	if err := clnt.Update(ctx, moduleTemplate); err != nil {
+		return fmt.Errorf("failed to update module template: %w", err)
+	}
+
+	return nil
+}
+
+func SetModuleTemplateInternalLabel(ctx context.Context, clnt client.Client, module v1beta2.Module,
+	kyma *v1beta2.Kyma, internalValue bool) error {
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	if err != nil {
+		return fmt.Errorf("failed to get module template: %w", err)
+	}
+
+	if moduleTemplate.Labels == nil {
+		moduleTemplate.Labels = make(map[string]string)
+	}
+
+	if internalValue {
+		moduleTemplate.Labels[shared.InternalLabel] = shared.EnableLabelValue
+	} else {
+		moduleTemplate.Labels[shared.InternalLabel] = shared.DisableLabelValue
+	}
+
+	if err := clnt.Update(ctx, moduleTemplate); err != nil {
+		return fmt.Errorf("failed to update module template: %w", err)
+	}
+
+	return nil
+}
+
 func MandatoryModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Client, moduleName, key, value string,
 ) error {
 	mandatoryModuleTemplates, err := templatelookup.GetMandatory(ctx, clnt)
