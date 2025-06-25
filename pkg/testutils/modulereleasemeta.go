@@ -77,7 +77,7 @@ func ModuleReleaseMetaContainsCorrectChannelVersion(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("failed to fetch modulereleasemeta, %w", err)
 	}
-
+	fmt.Println("Channels:", mrm.Spec.Channels)
 	for _, ch := range mrm.Spec.Channels {
 		fmt.Println("Checking channel:", ch.Channel, "with version:", ch.Version)
 		if ch.Channel == channel {

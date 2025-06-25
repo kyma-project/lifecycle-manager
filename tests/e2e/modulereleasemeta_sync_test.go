@@ -81,6 +81,10 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Succeed())
 
 			By("Then the ModuleReleaseMeta still exists in the SKR Cluster but only with fast channel mapped with v2")
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Succeed())
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, "fast", v2Version, skrClient).
