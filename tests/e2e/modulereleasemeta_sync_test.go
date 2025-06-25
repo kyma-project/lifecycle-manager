@@ -92,7 +92,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v1Version, skrClient).
-				Should(Equal(ErrNotFound))
+				Should(Equal(ErrNotExpectedChannelVersion))
 
 			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
@@ -163,7 +163,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v2Version, skrClient).
-				Should(Equal(ErrNotFound))
+				Should(Equal(ErrNotExpectedChannelVersion))
 
 			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
