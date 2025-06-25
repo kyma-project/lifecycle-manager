@@ -30,7 +30,7 @@ var _ = Describe("Module installation", func() {
 			kymaName := "installation-test-kyma-" + random.Name()
 			moduleName := "installation-test-module-" + random.Name()
 
-			Eventually(configureKCPKyma, Timeout, Interval).WithArguments(kymaName, moduleName, kymaBeta,
+			Eventually(configureKCPKyma, Timeout, Interval).WithArguments(kymaName, kymaBeta,
 				kymaInternal).Should(Succeed())
 			Eventually(configureKCPModuleTemplates, Timeout, Interval).WithArguments(moduleName, moduleBeta,
 				moduleInternal).Should(Succeed())
@@ -92,7 +92,7 @@ var _ = Describe("Module installation", func() {
 			true, false, true, true, true))
 })
 
-func configureKCPKyma(kymaName, moduleName string, beta, internal bool) error {
+func configureKCPKyma(kymaName string, beta, internal bool) error {
 	kyma := builder.NewKymaBuilder().
 		WithName(kymaName).
 		WithNamespace(ControlPlaneNamespace).
