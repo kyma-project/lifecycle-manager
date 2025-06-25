@@ -108,10 +108,10 @@ func ValidateTemplateMode(template ModuleTemplateInfo,
 		return template
 	}
 
-	return validateTemplateModeWithoutModuleReleaseMeta(template, kyma)
+	return validateTemplateMode(template, kyma)
 }
 
-func validateTemplateModeWithoutModuleReleaseMeta(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
+func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
 	if template.IsInternal() && !kyma.IsInternal() {
 		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
 		return template
