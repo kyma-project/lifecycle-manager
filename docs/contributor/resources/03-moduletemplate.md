@@ -13,6 +13,7 @@ kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
 > [!Note]
 > The ModuleTemplate CR lives in both Kyma Control Plane (KCP) and SAP Kyma Runtime (SKR) clusters.
 > Lifecycle-Manager synchronizes the ModuleTemplates from KCP to the applicable SKRs.
+> See [Module Catalog Synchronization](../08-kcp-skr-synchronization.md#module-catalog-synchronization) for more details.
 
 ## Configuration
 

@@ -21,7 +21,7 @@ Last but not least, it includes a **customResourcePolicy** which can be used for
 > Lifecycle-Manager synchronizes the `.state` from KCP to SKR.
 > The `.spec` is only synchronized when creating the SKR resource from the KCP one.
 > From then on, it is NOT synchronized anylonger and Lifecycle-Manager directly determines the desired state from the SKR resource.
-> See [Kyma CR Synchronization](../08-kcp-skr-synchronization.md) for more details.
+> See [Kyma CR Synchronization](../08-kcp-skr-synchronization.md#kyma-cr-synchronization) for more details.
 
 ## Configuration
 
