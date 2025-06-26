@@ -116,7 +116,7 @@ This allows users to be fully flexible in regard to when and how to initialize t
 
 The **state** attribute is a simple representation of the state of the entire Kyma CR installation. It is defined as an aggregated status that is either `Ready`, `Processing`, `Warning`, `Error`, or `Deleting`, based on the status of all Manifest CRs on top of the validity/integrity of the synchronization to a remote cluster if enabled.
 
-- `Ready`: Indicates that the Kyma installation is ready. This includes all modules (Manifest CRs) being Ready, the Kyma CR being synced, and the Watcher being installed.
+- `Ready`: Indicates that the Kyma installation is ready. This includes the Kyma CR and module catalog being synced, all modules (Manifest CRs) being Ready, and the Watcher being installed.
 - `Processing`: Indicates that the Kyma installation is processing. It may be processing the installation or uninstallation of a module (Manifest CR), the synchronization of the Kyma CR, or the installation of the Watcher.
 - `Warning`: Indicates that the Kyma installation waiting for a situation to be resolved. For example when a finalizer blocks the uninstallation of a module. Typically, a long-running Warning state has to be resolved by the user.
 - `Error`: Indicates a technical problem that must be resolved. For example, when Lifecycle-Manager is unable to connect to the SKR. Typically, a long-running Error state has to be resolved by technical support.
