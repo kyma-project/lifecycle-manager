@@ -70,6 +70,7 @@ kind: ModuleTemplate
 metadata:
   name: example-module-1.0.0
 spec:
+  moduleName: example-module
   version: 1.0.0
   data: {}
   descriptor:
