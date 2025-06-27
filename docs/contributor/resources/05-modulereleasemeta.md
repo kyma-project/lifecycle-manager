@@ -11,8 +11,8 @@ kubectl get crd modulereleasemetas.operator.kyma-project.io -o yaml
 ```
 
 > [!Note]
-> The ModuleReleaseMeta CR lives in both Kyma Control Plane (KCP) and SAP Kyma Runtime (SKR) clusters.
-> Lifecycle-Manager synchronizes the ModuleReleaseMeta from KCP to the applicable SKRs.
+> The ModuleReleaseMeta CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
+> Lifecycle Manager synchronizes the ModuleReleaseMeta from KCP to the applicable Kyma runtime instances.
 
 ## Configuration
 

@@ -11,8 +11,8 @@ kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
 ```
 
 > [!Note]
-> The ModuleTemplate CR lives in both Kyma Control Plane (KCP) and SAP Kyma Runtime (SKR) clusters.
-> Lifecycle-Manager synchronizes the ModuleTemplates from KCP to the applicable SKRs.
+> The ModuleTemplate CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
+> Lifecycle Manager synchronizes the ModuleTemplates from KCP to the applicable Kyma runtime instances.
 > See [Module Catalog Synchronization](../08-kcp-skr-synchronization.md#module-catalog-synchronization) for more details.
 
 ## Configuration
@@ -172,15 +172,15 @@ The `requiresDowntime` field indicates whether the module requires downtime to s
 
 ## `operator.kyma-project.io` Labels
 
-* `operator.kyma-project.io/mandatory-module`: A boolean value. Indicates whether the module is mandatory and will be installed to all remote clusters.
-* `operator.kyma-project.io/module-name`: The name of the module.
+* `operator.kyma-project.io/mandatory-module`: A boolean value. Indicates whether the module is mandatory and must be installed in all remote clusters.
+* `operator.kyma-project.io/module-name`: The module's name.
 * `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
 * `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules, are also synchronized with the remote cluster. The default value is `false`.
 
-## `operator.kyma-project.io` Annotations
+## `operator.kyma-project.io` Annotation
 
-* `operator.kyma-project.io/is-cluster-scoped`: A boolean value. Indicates whether the module configured is a namespaced or cluster-sopced resource.
+* `operator.kyma-project.io/is-cluster-scoped`: A boolean value. Indicates whether the module configured is a namespace-scoped or cluster-scoped resource.
 
 ## `operator.kyma-project.io` Finalizer
 
-* `operator.kyma-project.io/mandatory-module`: Finalizer set by Lifecycle Manager to deal with the cleanup of the mandatory module.
+* `operator.kyma-project.io/mandatory-module`: A finalizer set by Lifecycle Manager to handle the mandatory module's cleanup.

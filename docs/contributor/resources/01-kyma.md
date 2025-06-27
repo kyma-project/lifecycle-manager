@@ -17,7 +17,7 @@ Additionally, you can add a specific channel if **.spec.channel** should not be 
 Last but not least, it includes a **customResourcePolicy** which can be used for specifying default behavior when initializing modules in a cluster.
 
 > [!Note]
-> The Kyma CR lives in both Kyma Control Plane (KCP) and SAP Kyma Runtime (SKR) clusters.
+> The Kyma CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
 > Lifecycle-Manager synchronizes the `.state` from KCP to SKR.
 > The `.spec` is only synchronized when creating the SKR resource from the KCP one.
 > From then on, it is NOT synchronized anylonger and Lifecycle-Manager directly determines the desired state from the SKR resource.
@@ -60,7 +60,7 @@ In this case, `fast` is the relevant channel for Keda, but not for Serverless.
 
 ### **.spec.modules**
 
-The module list is used to define the desired set of all modules to be added to the SKR. To add a module, it must be added using the name of the module. The name of the module is defined as **.spec.moduleName** in both the ModuleReleaseMeta and the ModuleTemplate CRs.
+The module list defines the desired set of all modules to be added to the Kyma runtime instance. A module must be added using its name. The module's name is defined as **.spec.moduleName** in both the ModuleReleaseMeta and the ModuleTemplate CRs.
 
 Let's take a look at this simplified example:
 
@@ -90,7 +90,7 @@ spec:
 
 ```
 
-The module mentioned above can be enabled using its **.spec.moduleName** `example-module`:
+The module mentioned above can be enabled by adding the `example-module` name to the **spec.modules.name** field of Kyma CR:
 ```yaml
 spec:
   channel: regular
@@ -117,10 +117,10 @@ This allows users to be fully flexible in regard to when and how to initialize t
 
 The **state** attribute is a simple representation of the state of the entire Kyma CR installation. It is defined as an aggregated status that is either `Ready`, `Processing`, `Warning`, `Error`, or `Deleting`, based on the status of all Manifest CRs on top of the validity/integrity of the synchronization to a remote cluster if enabled.
 
-- `Ready`: Indicates that the Kyma installation is ready. This includes the Kyma CR and module catalog being synced, all modules (Manifest CRs) being Ready, and the Watcher being installed.
-- `Processing`: Indicates that the Kyma installation is processing. It may be processing the installation or uninstallation of a module (Manifest CR), the synchronization of the Kyma CR, or the installation of the Watcher.
-- `Warning`: Indicates that the Kyma installation waiting for a situation to be resolved. For example when a finalizer blocks the uninstallation of a module. Typically, a long-running Warning state has to be resolved by the user.
-- `Error`: Indicates a technical problem that must be resolved. For example, when Lifecycle-Manager is unable to connect to the SKR. Typically, a long-running Error state has to be resolved by technical support.
+- `Ready`: Indicates that the Kyma installation is ready. This means that the Kyma CR and module catalog are synced, all modules (Manifest CRs) are ready, and Watcher is installed.
+- `Processing`: Indicates that the Kyma installation is processing. During this state, one of the following actions is being processed: the installation or uninstallation of a module (Manifest CR), the synchronization of the Kyma CR, or the installation of Watcher.
+- `Warning`: Indicates that the Kyma installation is waiting for a situation to be resolved. For example, a finalizer blocks the uninstallation of a module. Typically, the user must resolve a long-running `Warning` state.
+- `Error`: Indicates a technical problem that must be resolved. For example, when Lifecycle Manager is unable to connect to a Kyma runtime instance. Typically, technical support must resolve a long-running `Error` state.
 - `Deleting`: Indicates that the Kyma installation is being deleted.
 
 The **state** is always reported based on the last reconciliation loop of the [Kyma controller](../../../internal/controller/kyma/controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
@@ -184,7 +184,7 @@ Various overarching features can be enabled/disabled or provided as hints to the
 
 The most important labels include, but are not limited to:
 
-* `operator.kyma-project.io/kyma-name`: The `runtime-id` of the Kyma.
+* `operator.kyma-project.io/kyma-name`: The `runtime-id` of the Kyma runtime instance.
 * `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to completely disable reconciliation for a Kyma CR. Can also be used on the Manifest CR to disable a specific module. This will avoid all reconciliations for the entire Kyma or Manifest CRs. Note that even though reconciliation for the Kyma CR might be disabled, the Manifest CR in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
 * `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
 * `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
@@ -192,15 +192,13 @@ The most important labels include, but are not limited to:
 
 ## Annotations
 
-Annotations present are:
-
-* `skr-domain`: the domain of the SKR.
-* `kyma-[kcp|skr]-crd-generation`: the generation of the Kyma CRD in KCP and SKR. Used to determine if the CRD must be updated on the SKR.
-* `modulereleasemeta-[kcp|skr]-crd-generation`: the generation of the ModuleReleaseMeta CRD in KCP and SKR. Used to determine if the CRD must be updated on the SKR.
-* `moduletemplate-[kcp|skr]-crd-generation`: the generation of the ModuleTemplate CRD in KCP and SKR. Used to determine if the CRD must be updated on the SKR.
+* `skr-domain`: The domain of the Kyma runtime instance.
+* `kyma-[kcp|skr]-crd-generation`: The generation of the Kyma CRD in both KCP and the Kyma runtime instance. Used to determine if the CRD must be updated in the Kyma runtime instance.
+* `modulereleasemeta-[kcp|skr]-crd-generation`: The generation of the ModuleReleaseMeta CRD in both KCP and the Kyma runtime instance. Used to determine if the CRD must be updated in the Kyma runtime instance.
+* `moduletemplate-[kcp|skr]-crd-generation`: The generation of the ModuleTemplate CRD in both KCP and the Kyma runtime instance. Used to determine if the CRD must be updated in the Kyma runtime instance.
 
 ## `operator.kyma-project.io` Finalizers
 
-* `operator.kyma-project.io/Kyma`: finalizer set by Lifecycle Manager to deal with the Kyma CR cleanup.
-* `operator.kyma-project.io/purge-finalizer`: finalizer set by Lifecycle Manager to deal with purge of SKR resources when the Kyma CR is deleted.
-* `operator.kyma-project.io/runtime-monitoring-finalizer`: finalizer set by Runtime-Monitoring.
+* `operator.kyma-project.io/Kyma`: A finalizer set by Lifecycle Manager to handle the Kyma CR cleanup.
+* `operator.kyma-project.io/purge-finalizer`: A finalizer set by Lifecycle Manager to handle the purge of Kyma runtime's resources when the Kyma CR is deleted.
+* `operator.kyma-project.io/runtime-monitoring-finalizer`: A finalizer set by Runtime Monitoring.
