@@ -136,17 +136,18 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	moduleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
 
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
-		mrm := moduleReleaseMeta
-		mrm.Spec.Channels = []v1beta2.ChannelVersionAssignment{}
+		allowedChannels := []v1beta2.ChannelVersionAssignment{}
 		// Only add channel-version pairs which have allowed ModuleTemplates to be synced
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
 			if IsAllowedModuleVersion(kyma, moduleTemplateList, moduleReleaseMeta.Spec.ModuleName, channel.Version) {
-				mrm.Spec.Channels = append(mrm.Spec.Channels, channel)
+				allowedChannels = append(allowedChannels, channel)
 			}
 		}
 
-		if len(mrm.Spec.Channels) > 0 {
-			moduleReleaseMetas = append(moduleReleaseMetas, mrm)
+		if len(allowedChannels) > 0 {
+			allowedModuleReleaseMeta := moduleReleaseMeta
+			allowedModuleReleaseMeta.Spec.Channels = allowedChannels
+			moduleReleaseMetas = append(moduleReleaseMetas, allowedModuleReleaseMeta)
 		}
 	}
 
