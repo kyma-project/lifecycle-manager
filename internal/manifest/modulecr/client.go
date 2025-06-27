@@ -118,7 +118,8 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 }
 
 func (c *Client) GetAllModuleCRs(ctx context.Context, manifest *v1beta2.Manifest) ([]unstructured.Unstructured,
-	error) {
+	error,
+) {
 	if manifest.Spec.Resource == nil {
 		return nil, nil
 	}
