@@ -66,6 +66,7 @@ jobs:
           - rbac-privileges
           - ocm-compatible-module-template
           - labelling
+          - oci-reg-cred-secret
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

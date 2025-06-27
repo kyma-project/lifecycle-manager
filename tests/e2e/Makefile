@@ -148,6 +148,9 @@ misconfigured-kyma-secret:
 rbac-privileges:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "RBAC Privileges"
 
+oci-reg-cred-secret:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "OCI Registry Credentials Secret"
+
 ocm-compatible-module-template:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "OCM Format Module Template"
 

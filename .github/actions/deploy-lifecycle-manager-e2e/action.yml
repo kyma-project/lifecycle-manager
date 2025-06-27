@@ -162,6 +162,19 @@ runs:
         cat legacy-secret-rotation.yaml
         kustomize edit add patch --path legacy-secret-rotation.yaml --kind Deployment
         popd
+    - name: Use private OCI registry credentials
+      if: ${{matrix.e2e-test == 'oci-reg-cred-secret'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --oci-registry-cred-secret=my-private-oci-reg-creds" >> private-oci-patch.yaml
+        cat private-oci-patch.yaml
+        kustomize edit add patch --path private-oci-patch.yaml --kind Deployment
+        popd
     - name: Create and use maintenance window policy
       if: ${{matrix.e2e-test == 'maintenance-windows' ||
         matrix.e2e-test == 'maintenance-windows-initial-installation' ||
