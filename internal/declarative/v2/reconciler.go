@@ -189,7 +189,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
+		if err := modulecr.NewClient(skrClient).RemoveDefaultModuleCR(ctx, r.Client, manifest); err != nil {
 			if errors.Is(err, finalizer.ErrRequeueRequired) {
 				r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 				return ctrl.Result{Requeue: true}, nil
@@ -271,6 +271,25 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 	return r.finishReconcile(ctx, manifest, requeueReason, manifestStatus, originalErr)
 }
 
+func (r *Reconciler) ensureAllModuleCRsAreDeleted(ctx context.Context, manifest *v1beta2.Manifest) error {
+	if manifest.Spec.Resource == nil { // This will not work the Ignore CRP
+		return nil
+	}
+	resourceCR, err := modulecr.NewClient(r.Client).GetDefaultCR(ctx, manifest)
+	if err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to get resource CR: %w", err)
+	}
+
+	if resourceCR != nil {
+		return fmt.Errorf("module CR %s/%s already exists", resourceCR.GetNamespace(), resourceCR.GetName())
+	}
+	return nil
+
+}
+
 func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
 	kymaName, err := manifest.GetKymaName()
 	if err != nil {
@@ -329,7 +348,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	if err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest); err != nil {
+	if err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -373,7 +392,7 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		deleted, err := modulecr.NewClient(skrClient).CheckCRDeletion(ctx, manifest)
+		deleted, err := modulecr.NewClient(skrClient).CheckDefaultCRDeletion(ctx, manifest)
 		if err != nil {
 			return nil, err
 		}

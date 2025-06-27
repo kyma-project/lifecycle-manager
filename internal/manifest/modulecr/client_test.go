@@ -55,11 +55,11 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 	manifest.SetDeletionTimestamp(&deletionTimestamp)
 
 	// And deleting the resource CR
-	err = skrClient.RemoveModuleCR(t.Context(), kcpClient, manifest)
+	err = skrClient.RemoveDefaultModuleCR(t.Context(), kcpClient, manifest)
 	require.NoError(t, err)
 
 	// And in second deletion attempt, the resource should not be found and the finalizer should be removed
-	err = skrClient.RemoveModuleCR(t.Context(), kcpClient, manifest)
+	err = skrClient.RemoveDefaultModuleCR(t.Context(), kcpClient, manifest)
 	require.ErrorIs(t, err, finalizer.ErrRequeueRequired)
 
 	// Then the resource CR should be deleted
@@ -68,7 +68,8 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 	require.True(t, apierrors.IsNotFound(err))
 
 	// Then the finalizer should be removed
-	err = kcpClient.Get(t.Context(), client.ObjectKey{Name: manifest.GetName(), Namespace: manifest.GetNamespace()}, manifest)
+	err = kcpClient.Get(t.Context(), client.ObjectKey{Name: manifest.GetName(), Namespace: manifest.GetNamespace()},
+		manifest)
 	require.NoError(t, err)
 	assert.NotContains(t, manifest.GetFinalizers(), finalizer.CustomResourceManagerFinalizer)
 }
@@ -97,7 +98,7 @@ func TestClient_SyncModuleCR(t *testing.T) {
 	manifest.Spec.Resource = &moduleCR
 
 	// When syncing the module CR
-	err = skrClient.SyncModuleCR(t.Context(), manifest)
+	err = skrClient.SyncDefaultModuleCR(t.Context(), manifest)
 	require.NoError(t, err)
 
 	// Then the resource CR should be created
@@ -115,9 +116,10 @@ func TestClient_SyncModuleCR(t *testing.T) {
 	require.NoError(t, err)
 
 	// And syncing again, it should recreate the resource
-	err = skrClient.SyncModuleCR(t.Context(), manifest)
+	err = skrClient.SyncDefaultModuleCR(t.Context(), manifest)
 	require.NoError(t, err)
 
-	err = skrClient.Get(t.Context(), client.ObjectKey{Name: moduleName, Namespace: shared.DefaultRemoteNamespace}, resource)
+	err = skrClient.Get(t.Context(), client.ObjectKey{Name: moduleName, Namespace: shared.DefaultRemoteNamespace},
+		resource)
 	require.NoError(t, err)
 }

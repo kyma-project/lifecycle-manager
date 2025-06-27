@@ -77,7 +77,7 @@ func removeFromDefaultCR(ctx context.Context,
 		return nil
 	}
 
-	defaultCR, err := modulecr.NewClient(skrClient).GetCR(ctx, manifest)
+	defaultCR, err := modulecr.NewClient(skrClient).GetDefaultCR(ctx, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to get default CR, %w", err)
 	}
