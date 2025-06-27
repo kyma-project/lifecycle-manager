@@ -59,7 +59,7 @@ func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
 func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
 	error,
 ) {
-	if manifestCR.Spec.Resource == nil || manifestCR.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.DisableLabelValue {
+	if manifestCR.Spec.Resource == nil || manifestCR.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return true, nil
 	}
 
