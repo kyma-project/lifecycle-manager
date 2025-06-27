@@ -10,6 +10,11 @@ To get the latest CRD in the YAML format, run the following command:
 kubectl get crd moduletemplates.operator.kyma-project.io -o yaml
 ```
 
+> [!Note]
+> The ModuleTemplate CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
+> Lifecycle Manager synchronizes the ModuleTemplates from KCP to the applicable Kyma runtime instances.
+> See [Module Catalog Synchronization](../08-kcp-skr-synchronization.md#module-catalog-synchronization) for more details.
+
 ## Configuration
 
 ### **.spec.channel (Deprecated)**
@@ -152,6 +157,10 @@ By default, it will most likely be easiest to use [modulectl](https://github.com
 The `mandatory` field indicates whether the module is installed in all runtime clusters without any interaction from the user.
 Mandatory modules do not appear in the Kyma CR `.status` and `.spec.modules`, furthermore they have the same configuration across all runtime clusters.
 
+### **.spec.moduleName**
+
+The name of the module. Used to refer to this module when adding the module to the **.spec.modules** list of the [Kyma CR](./01-kyma.md).
+
 ### **.spec.resources**
 
 The `resources` field is a list of additional resources of the module that can be fetched. As of now, the primary expected use case is for module teams to add a link to the raw manifest of the module.
@@ -164,3 +173,18 @@ The list is purely informational and does not introduce functional changes to th
 ### **.spec.requiresDowntime**
 
 The `requiresDowntime` field indicates whether the module requires downtime to support maintenance windows during module upgrades. It is optional and defaults to `false`, meaning the module version upgrades don't require downtime.
+
+## `operator.kyma-project.io` Labels
+
+* `operator.kyma-project.io/mandatory-module`: A boolean value. Indicates whether the module is mandatory and must be installed in all remote clusters.
+* `operator.kyma-project.io/module-name`: The module's name.
+* `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
+* `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules, are also synchronized with the remote cluster. The default value is `false`.
+
+## `operator.kyma-project.io` Annotation
+
+* `operator.kyma-project.io/is-cluster-scoped`: A boolean value. Indicates whether the module configured is a namespace-scoped or cluster-scoped resource.
+
+## `operator.kyma-project.io` Finalizer
+
+* `operator.kyma-project.io/mandatory-module`: A finalizer set by Lifecycle Manager to handle the mandatory module's cleanup.
