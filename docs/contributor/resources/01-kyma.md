@@ -18,9 +18,9 @@ Last but not least, it includes a **customResourcePolicy** which can be used for
 
 > [!Note]
 > The Kyma CR is applied in both Kyma Control Plane (KCP) and SAP BTP, Kyma runtime clusters.
-> Lifecycle-Manager synchronizes the `.state` from KCP to SKR.
-> The `.spec` is only synchronized when creating the SKR resource from the KCP one.
-> From then on, it is NOT synchronized anylonger and Lifecycle-Manager directly determines the desired state from the SKR resource.
+> Lifecycle-Manager synchronizes the `.state` from KCP to Kyma runtime.
+> The `.spec` is only synchronized when creating the Kyma runtime resource from the KCP one.
+> From then on, it is NOT synchronized anylonger and Lifecycle-Manager directly determines the desired state from the Kyma runtime resource.
 > See [Kyma CR Synchronization](../08-kcp-skr-synchronization.md#kyma-cr-synchronization) for more details.
 
 ## Configuration

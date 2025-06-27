@@ -22,7 +22,7 @@ The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and
 
 ### **.spec.install**
 
-The **.spec.install** field contains the OCI resource specification for the module resources that are deployed on the SKR cluster.
+The **.spec.install** field contains the OCI resource specification for the module resources that are deployed on the Kyma runtime cluster.
 
 The following example shows how the `raw-manifest` is defined in the Manifest CR:
 
