@@ -75,11 +75,17 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
+		moduleTemplateName := module.Name
+		if module.Version != "" {
+			moduleTemplateName = fmt.Sprintf("%s-%s", module.Name, module.Version)
+		}
+
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
 			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
-			WithOCM(compdescv2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).
+			WithName(moduleTemplateName).Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
