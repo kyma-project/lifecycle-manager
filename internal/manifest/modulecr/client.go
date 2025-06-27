@@ -33,7 +33,7 @@ func NewClient(client client.Client) *Client {
 func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
 	error,
 ) {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return nil, ErrNoResourceDefined
 	}
 
@@ -59,7 +59,7 @@ func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
 func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
 	error,
 ) {
-	if manifestCR.Spec.Resource == nil {
+	if manifestCR.Spec.Resource == nil || manifestCR.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.DisableLabelValue {
 		return true, nil
 	}
 
@@ -96,7 +96,7 @@ func (c *Client) RemoveDefaultModuleCR(ctx context.Context, kcp client.Client, m
 // SyncDefaultModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
 func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return nil
 	}
 
@@ -117,8 +117,27 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 	return nil
 }
 
-func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
+func (c *Client) GetAllModuleCRs(ctx context.Context, manifest *v1beta2.Manifest) ([]unstructured.Unstructured,
+	error) {
 	if manifest.Spec.Resource == nil {
+		return nil, nil
+	}
+
+	resource := manifest.Spec.Resource.DeepCopy()
+	resourceList := &unstructured.UnstructuredList{}
+	resourceList.SetGroupVersionKind(resource.GroupVersionKind())
+
+	if err := c.List(ctx, resourceList, &client.ListOptions{
+		Namespace: resource.GetNamespace(),
+	}); err != nil && util.IsNotFound(err) {
+		return nil, fmt.Errorf("failed to list resources: %w", err)
+	}
+
+	return resourceList.Items, nil
+}
+
+func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return false, nil
 	}
 

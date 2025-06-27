@@ -259,7 +259,14 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 	if errors.Is(originalErr, common.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
 		finalizerRemoved = finalizer.RemoveAllFinalizers(manifest)
 	} else {
-		finalizerRemoved = finalizer.RemoveRequiredFinalizers(manifest)
+		allModuleCRsRemoved, err := r.ensureAllModuleCRsAreDeleted(ctx, manifest)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		if allModuleCRsRemoved {
+			finalizerRemoved = finalizer.RemoveRequiredFinalizers(manifest)
+		}
 	}
 	if finalizerRemoved {
 		return r.updateManifest(ctx, manifest, requeueReason)
@@ -271,23 +278,13 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 	return r.finishReconcile(ctx, manifest, requeueReason, manifestStatus, originalErr)
 }
 
-func (r *Reconciler) ensureAllModuleCRsAreDeleted(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil { // This will not work the Ignore CRP
-		return nil
-	}
-	resourceCR, err := modulecr.NewClient(r.Client).GetDefaultCR(ctx, manifest)
+func (r *Reconciler) ensureAllModuleCRsAreDeleted(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
+	moduleCRs, err := modulecr.NewClient(r.Client).GetAllModuleCRs(ctx, manifest)
 	if err != nil {
-		if util.IsNotFound(err) {
-			return nil
-		}
-		return fmt.Errorf("failed to get resource CR: %w", err)
+		return false, fmt.Errorf("failed to get all module CRs: %w", err)
 	}
 
-	if resourceCR != nil {
-		return fmt.Errorf("module CR %s/%s already exists", resourceCR.GetNamespace(), resourceCR.GetName())
-	}
-	return nil
-
+	return len(moduleCRs) == 0, nil
 }
 
 func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {

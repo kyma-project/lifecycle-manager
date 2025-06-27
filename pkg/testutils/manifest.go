@@ -237,7 +237,7 @@ func GetManifestResource(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	if moduleInCluster.Spec.Resource == nil {
+	if moduleInCluster.Spec.Resource == nil || moduleInCluster.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.DisableLabelValue {
 		return nil, ErrManifestResourceIsNil
 	}
 

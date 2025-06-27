@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -51,7 +52,7 @@ func FinalizersUpdateRequired(manifest *v1beta2.Manifest) bool {
 }
 
 func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return nil
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
@@ -76,7 +77,7 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 }
 
 func RemoveCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return nil
 	}
 	onCluster := manifest.DeepCopy()
