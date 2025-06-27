@@ -148,16 +148,19 @@ func (p *Parser) newManifestFromTemplate(
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
+	if manifest.Annotations == nil {
+		manifest.Annotations = make(map[string]string)
+	}
 
 	switch module.CustomResourcePolicy {
 	case v1beta2.CustomResourcePolicyIgnore:
-		manifest.Spec.Resource = nil
+		manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] = shared.EnableLabelValue
 	case v1beta2.CustomResourcePolicyCreateAndDelete:
-		fallthrough
-	default:
-		if template.Spec.Data != nil {
-			manifest.Spec.Resource = template.Spec.Data.DeepCopy()
-		}
+		manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] = shared.DisableLabelValue
+	}
+
+	if template.Spec.Data != nil {
+		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
 	}
 
 	var layers img.Layers

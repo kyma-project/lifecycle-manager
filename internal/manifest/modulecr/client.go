@@ -30,10 +30,10 @@ func NewClient(client client.Client) *Client {
 	}
 }
 
-func (c *Client) GetCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
+func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
 	error,
 ) {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return nil, ErrNoResourceDefined
 	}
 
@@ -56,14 +56,14 @@ func (c *Client) GetCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstru
 	return resourceCR, nil
 }
 
-func (c *Client) CheckCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
+func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
 	error,
 ) {
-	if manifestCR.Spec.Resource == nil {
+	if manifestCR.Spec.Resource == nil || manifestCR.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return true, nil
 	}
 
-	resourceCR, err := c.GetCR(ctx, manifestCR)
+	resourceCR, err := c.GetDefaultCR(ctx, manifestCR)
 	if err != nil {
 		if util.IsNotFound(err) {
 			return true, nil
@@ -74,11 +74,11 @@ func (c *Client) CheckCRDeletion(ctx context.Context, manifestCR *v1beta2.Manife
 	return resourceCR == nil, nil
 }
 
-// RemoveModuleCR deletes the module CR if available in the cluster.
+// RemoveDefaultModuleCR deletes the default module CR if available in the cluster.
 // It uses DeletePropagationBackground to delete module CR.
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
 // and we consider the CR removal successful.
-func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
+func (c *Client) RemoveDefaultModuleCR(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
 	crDeleted, err := c.deleteCR(ctx, manifest)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithErr(err))
@@ -93,10 +93,10 @@ func (c *Client) RemoveModuleCR(ctx context.Context, kcp client.Client, manifest
 	return nil
 }
 
-// SyncModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
+// SyncDefaultModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
-func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil {
+func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Manifest) error {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return nil
 	}
 
@@ -117,8 +117,28 @@ func (c *Client) SyncModuleCR(ctx context.Context, manifest *v1beta2.Manifest) e
 	return nil
 }
 
-func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
+func (c *Client) GetAllModuleCRs(ctx context.Context, manifest *v1beta2.Manifest) ([]unstructured.Unstructured,
+	error,
+) {
 	if manifest.Spec.Resource == nil {
+		return nil, nil
+	}
+
+	resource := manifest.Spec.Resource.DeepCopy()
+	resourceList := &unstructured.UnstructuredList{}
+	resourceList.SetGroupVersionKind(resource.GroupVersionKind())
+
+	if err := c.List(ctx, resourceList, &client.ListOptions{
+		Namespace: resource.GetNamespace(),
+	}); err != nil && !util.IsNotFound(err) {
+		return nil, fmt.Errorf("failed to list resources: %w", err)
+	}
+
+	return resourceList.Items, nil
+}
+
+func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
+	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
 		return false, nil
 	}
 

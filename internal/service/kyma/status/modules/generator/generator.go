@@ -79,7 +79,7 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 		},
 	}
 
-	if manifest.Spec.Resource != nil {
+	if manifest.Spec.Resource != nil && manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.DisableLabelValue {
 		moduleCRAPIVersion, moduleCRKind := manifest.Spec.Resource.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		moduleStatus.Resource = &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
