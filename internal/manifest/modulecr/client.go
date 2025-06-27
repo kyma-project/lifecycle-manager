@@ -130,7 +130,7 @@ func (c *Client) GetAllModuleCRs(ctx context.Context, manifest *v1beta2.Manifest
 
 	if err := c.List(ctx, resourceList, &client.ListOptions{
 		Namespace: resource.GetNamespace(),
-	}); err != nil && util.IsNotFound(err) {
+	}); err != nil && !util.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
 
