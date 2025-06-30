@@ -21,7 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-func TestClient_RemoveModuleCR(t *testing.T) {
+func TestClient_RemoveDefaultModuleCR(t *testing.T) {
 	// Given a manifest CR with finalizer and a resource CR deployed in the cluster
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
@@ -74,7 +74,7 @@ func TestClient_RemoveModuleCR(t *testing.T) {
 	assert.NotContains(t, manifest.GetFinalizers(), finalizer.CustomResourceManagerFinalizer)
 }
 
-func TestClient_SyncModuleCR(t *testing.T) {
+func TestClient_SyncDefaultModuleCR(t *testing.T) {
 	// Given a manifest CR with a resource CR
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
@@ -122,4 +122,52 @@ func TestClient_SyncModuleCR(t *testing.T) {
 	err = skrClient.Get(t.Context(), client.ObjectKey{Name: moduleName, Namespace: shared.DefaultRemoteNamespace},
 		resource)
 	require.NoError(t, err)
+}
+
+func TestClient_GetAllModuleCRs(t *testing.T) {
+	// Given a manifest CR and two resource CRs deployed in the cluster
+	scheme := machineryruntime.NewScheme()
+	err := v1beta2.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	skrClient := modulecr.NewClient(kcpClient)
+
+	manifest := testutils.NewTestManifest("test-manifest")
+	moduleCR := unstructured.Unstructured{}
+	moduleCR.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Group:   templatev1alpha1.GroupVersion.Group,
+			Version: templatev1alpha1.GroupVersion.Version,
+			Kind:    string(templatev1alpha1.SampleKind),
+		},
+	)
+	const moduleName = "test-resource"
+	moduleCR.SetName(moduleName)
+	moduleCR.SetNamespace(shared.DefaultRemoteNamespace)
+	manifest.Spec.Resource = &moduleCR
+	err = kcpClient.Create(t.Context(), manifest.Spec.Resource)
+	require.NoError(t, err)
+
+	err = kcpClient.Create(t.Context(), manifest)
+	require.NoError(t, err)
+
+	const moduleName2 = "test-resource-2"
+	moduleCR2 := unstructured.Unstructured{}
+	moduleCR2.SetName(moduleName2)
+	moduleCR2.SetNamespace(shared.DefaultRemoteNamespace)
+	moduleCR2.SetGroupVersionKind(moduleCR.GroupVersionKind())
+	err = skrClient.Create(t.Context(), &moduleCR2)
+	require.NoError(t, err)
+
+	// When Getting all Module CRs
+	moduleCRs, err := skrClient.GetAllModuleCRs(t.Context(), manifest)
+	require.NoError(t, err)
+	require.Len(t, moduleCRs, 2)
+
+	// Then the two resource CRs should be returned
+	assert.Equal(t, moduleCRs[0].GetName(), moduleCR.GetName())
+	assert.Equal(t, moduleCRs[0].GetNamespace(), moduleCR.GetNamespace())
+	assert.Equal(t, moduleCRs[1].GetName(), moduleCR2.GetName())
+	assert.Equal(t, moduleCRs[1].GetNamespace(), moduleCR2.GetNamespace())
 }
