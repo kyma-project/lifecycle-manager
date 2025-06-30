@@ -33,7 +33,7 @@ func NewClient(client client.Client) *Client {
 func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (*unstructured.Unstructured,
 	error,
 ) {
-	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
+	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return nil, ErrNoResourceDefined
 	}
 
@@ -59,7 +59,7 @@ func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
 func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
 	error,
 ) {
-	if manifestCR.Spec.Resource == nil || manifestCR.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
+	if manifestCR.Spec.Resource == nil || manifestCR.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return true, nil
 	}
 
@@ -96,7 +96,7 @@ func (c *Client) RemoveDefaultModuleCR(ctx context.Context, kcp client.Client, m
 // SyncDefaultModuleCR sync the manifest default custom resource status in the cluster, if not available it created the resource.
 // It is used to provide the controller with default data in the Runtime.
 func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
+	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return nil
 	}
 
@@ -138,7 +138,7 @@ func (c *Client) GetAllModuleCRs(ctx context.Context, manifest *v1beta2.Manifest
 }
 
 func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
-	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
+	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return false, nil
 	}
 

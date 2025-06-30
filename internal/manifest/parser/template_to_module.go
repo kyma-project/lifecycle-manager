@@ -152,13 +152,7 @@ func (p *Parser) newManifestFromTemplate(
 		manifest.Annotations = make(map[string]string)
 	}
 
-	switch module.CustomResourcePolicy {
-	case v1beta2.CustomResourcePolicyIgnore:
-		manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] = shared.EnableLabelValue
-	case v1beta2.CustomResourcePolicyCreateAndDelete:
-		manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] = shared.DisableLabelValue
-	}
-
+	manifest.Spec.CustomResourcePolicy = module.CustomResourcePolicy
 	if template.Spec.Data != nil {
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
 	}

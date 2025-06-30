@@ -73,7 +73,7 @@ func removeFromDefaultCR(ctx context.Context,
 	manifest *v1beta2.Manifest,
 	skrClient client.Client,
 ) error {
-	if manifest.Spec.Resource == nil || manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] == shared.EnableLabelValue {
+	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return nil
 	}
 

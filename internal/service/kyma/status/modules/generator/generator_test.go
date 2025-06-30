@@ -137,7 +137,7 @@ func TestGenerateModuleStatus_WhenCalledWithManifestResource_CreatesTrackingObje
 	module := createModule()
 	module.Manifest = createManifestWithResource()
 	module.Manifest.Annotations = make(map[string]string)
-	module.Manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] = shared.DisableLabelValue
+	module.Manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
 	result, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
@@ -158,7 +158,7 @@ func TestGenerateModuleStatus_WhenCalledWithIsClusterScopedAnnotation_RemovesRes
 	module.TemplateInfo.ModuleTemplate = createClusterScopedModuleTemplate()
 	module.Manifest = createManifestWithResource()
 	module.Manifest.Annotations = make(map[string]string)
-	module.Manifest.Annotations[shared.IsIgnoreCustomResourcePolicy] = shared.DisableLabelValue
+	module.Manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
 	result, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
