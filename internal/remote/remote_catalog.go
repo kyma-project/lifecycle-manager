@@ -42,7 +42,8 @@ type moduleReleaseMetaSyncAPI interface {
 type moduleTemplateSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI
 
 // moduleReleaseMetaSyncAPIFactory is a function that creates moduleReleaseMetaSyncAPI instances.
-type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI
+type moduleReleaseMetaSyncAPIFactory func(kcpClient, skrClient client.Client,
+	settings *Settings) moduleReleaseMetaSyncAPI
 
 func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrContextProvider,
 	remoteSyncNamespace string,
@@ -57,11 +58,15 @@ func NewRemoteCatalogFromKyma(kcpClient client.Client, skrContextFactory SkrCont
 }
 
 func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvider, settings Settings) *RemoteCatalog {
-	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncAPI {
+	var moduleTemplateSyncerAPIFactoryFn moduleTemplateSyncAPIFactory = func(kcpClient, skrClient client.Client,
+		settings *Settings,
+	) moduleTemplateSyncAPI {
 		return newModuleTemplateSyncer(kcpClient, skrClient, settings)
 	}
 
-	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncAPI {
+	var moduleReleaseMetaSyncerAPIFactoryFn moduleReleaseMetaSyncAPIFactory = func(kcpClient, skrClient client.Client,
+		settings *Settings,
+	) moduleReleaseMetaSyncAPI {
 		return newModuleReleaseMetaSyncer(kcpClient, skrClient, settings)
 	}
 
@@ -77,25 +82,30 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 }
 
 func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
-	moduleReleaseMetas, err := c.GetModuleReleaseMetasToSync(ctx, kyma)
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
+		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
+	}
+
+	filteredModuleReleaseMetas, err := c.GetModuleReleaseMetasToSync(ctx, kyma, moduleTemplateList)
 	if err != nil {
 		return err
 	}
 
-	moduleTemplates, err := c.GetModuleTemplatesToSync(ctx, moduleReleaseMetas)
+	filteredModuleTemplates, err := c.GetModuleTemplatesToSync(filteredModuleReleaseMetas, kyma, moduleTemplateList)
 	if err != nil {
 		return err
 	}
 
 	// https://github.com/kyma-project/lifecycle-manager/issues/2096
 	// Remove this block after the migration to the new ModuleTemplate format is completed.
-	oldModuleTemplate, err := c.GetOldModuleTemplatesToSync(ctx, kyma)
+	filteredOldModuleTemplate, err := c.GetOldModuleTemplatesToSync(kyma, moduleTemplateList)
 	if err != nil {
 		return err
 	}
-	moduleTemplates = append(moduleTemplates, oldModuleTemplate...)
+	filteredModuleTemplates = append(filteredModuleTemplates, filteredOldModuleTemplate...)
 
-	return c.sync(ctx, kyma.GetNamespacedName(), moduleTemplates, moduleReleaseMetas)
+	return c.sync(ctx, kyma.GetNamespacedName(), filteredModuleTemplates, filteredModuleReleaseMetas)
 }
 
 func (c *RemoteCatalog) Delete(
@@ -112,10 +122,11 @@ func (c *RemoteCatalog) Delete(
 }
 
 // GetModuleReleaseMetasToSync returns a list of ModuleReleaseMetas that should be synced to the SKR.
-// A ModuleReleaseMeta that is Beta or Internal is synced only if the Kyma is also Beta or Internal.
+// A ModuleReleaseMeta is synced if it has at least one channel-version pair whose ModuleTemplate is allowed to be synced.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
+	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleReleaseMeta, error) {
 	moduleReleaseMetaList := &v1beta2.ModuleReleaseMetaList{}
 	if err := c.kcpClient.List(ctx, moduleReleaseMetaList); err != nil {
@@ -123,41 +134,49 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	}
 
 	moduleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
+
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
-		if IsAllowedModuleReleaseMeta(moduleReleaseMeta, kyma) {
-			moduleReleaseMetas = append(moduleReleaseMetas, moduleReleaseMeta)
+		allowedChannels := []v1beta2.ChannelVersionAssignment{}
+		// Only add channel-version pairs which have allowed ModuleTemplates to be synced
+		for _, channel := range moduleReleaseMeta.Spec.Channels {
+			if IsAllowedModuleVersion(kyma, moduleTemplateList, moduleReleaseMeta.Spec.ModuleName, channel.Version) {
+				allowedChannels = append(allowedChannels, channel)
+			}
+		}
+
+		if len(allowedChannels) > 0 {
+			allowedModuleReleaseMeta := moduleReleaseMeta
+			allowedModuleReleaseMeta.Spec.Channels = allowedChannels
+			moduleReleaseMetas = append(moduleReleaseMetas, allowedModuleReleaseMeta)
 		}
 	}
 
 	return moduleReleaseMetas, nil
 }
 
-// IsAllowedModuleReleaseMeta determines whether the given ModuleReleaseMeta is allowed for the given Kyma.
-// If the ModuleReleaseMeta is Beta, it is allowed only if the Kyma is also Beta.
-// If the ModuleReleaseMeta is Internal, it is allowed only if the Kyma is also Internal.
-func IsAllowedModuleReleaseMeta(moduleReleaseMeta v1beta2.ModuleReleaseMeta, kyma *v1beta2.Kyma) bool {
-	if moduleReleaseMeta.IsBeta() && !kyma.IsBeta() {
-		return false
+func IsAllowedModuleVersion(kyma *v1beta2.Kyma, moduleTemplateList *v1beta2.ModuleTemplateList,
+	moduleName, version string,
+) bool {
+	for _, moduleTemplate := range moduleTemplateList.Items {
+		if formatModuleName(moduleName, version) == moduleTemplate.Name {
+			if moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
+				return true
+			}
+		}
 	}
-	if moduleReleaseMeta.IsInternal() && !kyma.IsInternal() {
-		return false
-	}
-	return true
+
+	return false
 }
 
 // GetModuleTemplatesToSync returns a list of ModuleTemplates that should be synced to the SKR.
 // A ModuleTemplate is synced if it is not mandatory and does not have sync disabled, and if
 // it is referenced by a ModuleReleaseMeta that is synced.
 func (c *RemoteCatalog) GetModuleTemplatesToSync(
-	ctx context.Context,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
+	kyma *v1beta2.Kyma,
+	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleTemplate, error) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
-		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
-	}
-
-	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas), nil
+	return FilterAllowedModuleTemplates(moduleTemplateList.Items, moduleReleaseMetas, kyma), nil
 }
 
 // FilterAllowedModuleTemplates filters out ModuleTemplates that are not allowed.
@@ -166,6 +185,7 @@ func (c *RemoteCatalog) GetModuleTemplatesToSync(
 func FilterAllowedModuleTemplates(
 	moduleTemplates []v1beta2.ModuleTemplate,
 	moduleReleaseMetas []v1beta2.ModuleReleaseMeta,
+	kyma *v1beta2.Kyma,
 ) []v1beta2.ModuleTemplate {
 	moduleTemplatesToSync := map[string]bool{}
 	for _, moduleReleaseMeta := range moduleReleaseMetas {
@@ -176,11 +196,12 @@ func FilterAllowedModuleTemplates(
 
 	filteredModuleTemplates := []v1beta2.ModuleTemplate{}
 	for _, moduleTemplate := range moduleTemplates {
-		if moduleTemplate.IsMandatory() {
+		if !moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
 			continue
 		}
 
-		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName, moduleTemplate.Spec.Version)]; found {
+		if _, found := moduleTemplatesToSync[formatModuleName(moduleTemplate.Spec.ModuleName,
+			moduleTemplate.Spec.Version)]; found {
 			filteredModuleTemplates = append(filteredModuleTemplates, moduleTemplate)
 		}
 	}
@@ -191,14 +212,9 @@ func FilterAllowedModuleTemplates(
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
-	ctx context.Context,
 	kyma *v1beta2.Kyma,
+	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleTemplate, error) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
-		return nil, fmt.Errorf("failed to list ModuleTemplates: %w", err)
-	}
-
 	moduleTemplates := []v1beta2.ModuleTemplate{}
 	for _, moduleTemplate := range moduleTemplateList.Items {
 		if moduleTemplate.Spec.Channel == "" {

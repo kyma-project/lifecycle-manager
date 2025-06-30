@@ -135,6 +135,30 @@ func (m ModuleTemplateBuilder) WithRequiresDowntime(value bool) ModuleTemplateBu
 	return m
 }
 
+func (m ModuleTemplateBuilder) WithInternal(value bool) ModuleTemplateBuilder {
+	if m.moduleTemplate.Labels == nil {
+		m.moduleTemplate.Labels = make(map[string]string)
+	}
+
+	if value {
+		m.moduleTemplate.Labels[shared.InternalLabel] = shared.EnableLabelValue
+	}
+
+	return m
+}
+
+func (m ModuleTemplateBuilder) WithBeta(value bool) ModuleTemplateBuilder {
+	if m.moduleTemplate.Labels == nil {
+		m.moduleTemplate.Labels = make(map[string]string)
+	}
+
+	if value {
+		m.moduleTemplate.Labels[shared.BetaLabel] = shared.EnableLabelValue
+	}
+
+	return m
+}
+
 func (m ModuleTemplateBuilder) Build() *v1beta2.ModuleTemplate {
 	return m.moduleTemplate
 }

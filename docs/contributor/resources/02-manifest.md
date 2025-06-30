@@ -22,7 +22,7 @@ The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and
 
 ### **.spec.install**
 
-The **.spec.install** field contains the OCI resource specification for the module resources that are deployed on the SKR cluster.
+The **.spec.install** field contains the OCI resource specification for the module resources that are deployed on the Kyma runtime cluster.
 
 The following example shows how the `raw-manifest` is defined in the Manifest CR:
 
@@ -136,3 +136,22 @@ spec:
         type: yaml
         version: 0.0.1-6cd5086
 ```
+
+## `operator.kyma-project.io` Labels
+
+* `operator.kyma-project.io/channel`: A boolean value. Indicates whether the module is mandatory and must be installed in all remote clusters.
+* `operator.kyma-project.io/controller-name`: An indicator that the manifest controller of Lifecycle Manager is managing the manifest.
+* `operator.kyma-project.io/kyma-name`: The `runtime-id` of the Kyma runtime instance.
+* `operator.kyma-project.io/managed-by`: An indicator that Lifecycle Manager is managing the Manifest.
+* `operator.kyma-project.io/module-name`: The module's name.
+
+## Annotations
+
+* `operator.kyma-project.io/fqdn`: The fully-qualified domain name of the module.
+* `sync-oci-ref`: A reference to the OCM installation resource that is installed in the Kyma runtime instance. 
+
+## Finalizers
+
+* `declarative.kyma-project.io/finalizer`: A finalizer set by Lifecycle Manager to handle the manifest's cleanup.
+* `label-removal-finalizer`: A finalizer set by Lifecycle Manager to handle removing managed-by labels from resources synced to the Kyma runtime instance upon unmanaging the module.
+* `resource.kyma-project.io/finalizer`: A finalizer set by Lifecycle Manager to handle the cleanup of the resources synced to the Kyma runtime instance upon uninstalling the module.

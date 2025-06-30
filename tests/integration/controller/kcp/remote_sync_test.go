@@ -302,13 +302,18 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
-	moduleInKCP := NewTestModule("module-inkcp", v1beta2.DefaultChannel)
+	moduleInKCP := NewTestModuleWithChannelVersion("module-inkcp", v1beta2.DefaultChannel, "0.1.0")
 	moduleReleaseMetaInKCP := builder.NewModuleReleaseMetaBuilder().
 		WithName("modulereleasemeta-inkcp").
 		WithModuleName("module-inkcp").
 		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, "0.1.0").
 		Build()
-	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
+	kyma.Spec.Modules = []v1beta2.Module{
+		{
+			Name:    moduleInKCP.Name,
+			Channel: moduleInKCP.Channel,
+		},
+	}
 	skrKyma := NewSKRKyma()
 	var skrClient client.Client
 	var err error

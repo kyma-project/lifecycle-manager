@@ -12,11 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var (
-	ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
-	ErrBetaValueNotCorrect       = errors.New("beta value not correct")
-	ErrInternalValueNotCorrect   = errors.New("internal value not correct")
-)
+var ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
 
 func UpdateChannelVersionInModuleReleaseMeta(ctx context.Context, clnt client.Client,
 	moduleName, namespace, channel, version string,
@@ -62,38 +58,6 @@ func GetModuleReleaseMeta(ctx context.Context, moduleName, namespace string,
 		return nil, fmt.Errorf("get kyma: %w", err)
 	}
 	return mrm, nil
-}
-
-func SetModuleReleaseMetaBeta(ctx context.Context, beta bool, moduleName, namespace string, clnt client.Client) error {
-	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
-	if err != nil {
-		return fmt.Errorf("failed to fetch modulereleasemeta, %w", err)
-	}
-
-	mrm.Spec.Beta = beta
-
-	if err := clnt.Update(ctx, mrm); err != nil {
-		return fmt.Errorf("failed to update modulereleasemeta, %w", err)
-	}
-
-	return nil
-}
-
-func SetModuleReleaseMetaInternal(ctx context.Context, internal bool, moduleName, namespace string,
-	clnt client.Client,
-) error {
-	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
-	if err != nil {
-		return fmt.Errorf("failed to fetch modulereleasemeta, %w", err)
-	}
-
-	mrm.Spec.Internal = internal
-
-	if err := clnt.Update(ctx, mrm); err != nil {
-		return fmt.Errorf("failed to update modulereleasemeta, %w", err)
-	}
-
-	return nil
 }
 
 func ModuleReleaseMetaExists(ctx context.Context, moduleName, namespace string, clnt client.Client) error {
@@ -151,35 +115,5 @@ func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client clien
 	if err := client.Update(ctx, meta); err != nil {
 		return err
 	}
-	return nil
-}
-
-func ModuleReleaseMetaBetaValueIsCorrect(ctx context.Context, client client.Client, namespace, name string,
-	expectedValue bool,
-) error {
-	meta := &v1beta2.ModuleReleaseMeta{}
-	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
-		return err
-	}
-
-	if meta.IsBeta() != expectedValue {
-		return ErrBetaValueNotCorrect
-	}
-
-	return nil
-}
-
-func ModuleReleaseMetaInternalValueIsCorrect(ctx context.Context, client client.Client, namespace, name string,
-	expectedValue bool,
-) error {
-	meta := &v1beta2.ModuleReleaseMeta{}
-	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
-		return err
-	}
-
-	if meta.IsInternal() != expectedValue {
-		return ErrInternalValueNotCorrect
-	}
-
 	return nil
 }

@@ -68,51 +68,44 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v1Version, skrClient).
 				Should(Succeed())
-
-			By("And the ModuleReleaseMeta has the correct beta and internal values on the SKR Cluster")
-			Eventually(ModuleReleaseMetaBetaValueIsCorrect).
-				WithContext(ctx).
-				WithArguments(skrClient, RemoteNamespace, module.Name, false).
-				Should(Succeed())
-
-			Eventually(ModuleReleaseMetaInternalValueIsCorrect).
-				WithContext(ctx).
-				WithArguments(skrClient, RemoteNamespace, module.Name, false).
-				Should(Succeed())
 		})
 
-		It("When Beta value is set to true on the SKR Cluster", func() {
-			Eventually(SetModuleReleaseMetaBeta).
+		It("When the Template Operator v1 ModuleTemplate is set to beta", func() {
+			Eventually(SetModuleTemplateBetaLabel).
 				WithContext(ctx).
-				WithArguments(true, module.Name, RemoteNamespace, skrClient).
+				WithArguments(kcpClient, module, kyma, true).
 				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
+
+			By("Then the ModuleReleaseMeta still exists in the SKR Cluster but only with fast channel mapped with v2")
+			Eventually(ModuleReleaseMetaExists).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, skrClient).
+				Should(Succeed())
+			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, "fast", v2Version, skrClient).
+				Should(Succeed())
+			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v1Version, skrClient).
+				Should(Equal(ErrNotExpectedChannelVersion))
+
+			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(skrClient, module, skrKyma).
+				Should(Equal(ErrNotFound))
 		})
 
-		It("Then Beta value is reverted back to its value from the KCP Cluster", func() {
-			Eventually(ModuleReleaseMetaBetaValueIsCorrect).
+		It("When the Template Operator v2 ModuleTemplate is set to beta", func() {
+			module.Channel = "fast"
+			Eventually(SetModuleTemplateBetaLabel).
 				WithContext(ctx).
-				WithArguments(skrClient, RemoteNamespace, module.Name, false).
-				Should(Succeed())
-		})
-
-		It("When Internal value is set to true on the SKR Cluster", func() {
-			Eventually(SetModuleReleaseMetaInternal).
-				WithContext(ctx).
-				WithArguments(true, module.Name, RemoteNamespace, skrClient).
-				Should(Succeed())
-		})
-
-		It("Then Internal value is reverted back to its value from the KCP Cluster", func() {
-			Eventually(ModuleReleaseMetaInternalValueIsCorrect).
-				WithContext(ctx).
-				WithArguments(skrClient, RemoteNamespace, module.Name, false).
-				Should(Succeed())
-		})
-
-		It("When the ModuleReleaseMeta is set to beta", func() {
-			Eventually(SetModuleReleaseMetaBeta).
-				WithContext(ctx).
-				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				WithArguments(kcpClient, module, kyma, true).
 				Should(Succeed())
 			Eventually(ImmediatelyRequeueKyma).
 				WithContext(ctx).
@@ -125,11 +118,12 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(module.Name, RemoteNamespace, skrClient).
 				Should(Equal(ErrNotFound))
 
-			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			By("And the Template Operator v2 ModuleTemplate no longer exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(skrClient, module, skrKyma).
 				Should(Equal(ErrNotFound))
+			module.Channel = v1beta2.DefaultChannel
 		})
 
 		It("When the Kyma is set to beta", func() {
@@ -151,10 +145,38 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When the ModuleReleaseMeta is set to internal", func() {
-			Eventually(SetModuleReleaseMetaInternal).
+		It("When the Template Operator v1 ModuleTemplate is set to internal", func() {
+			Eventually(SetModuleTemplateInternalLabel).
 				WithContext(ctx).
-				WithArguments(true, module.Name, ControlPlaneNamespace, kcpClient).
+				WithArguments(kcpClient, module, kyma, true).
+				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
+
+			By("Then the ModuleReleaseMeta still exists in the SKR Cluster but only with fast channel mapped with v2")
+			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, "fast", v2Version, skrClient).
+				Should(Succeed())
+			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
+				WithContext(ctx).
+				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v2Version, skrClient).
+				Should(Equal(ErrNotExpectedChannelVersion))
+
+			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			Eventually(ModuleTemplateExists).
+				WithContext(ctx).
+				WithArguments(skrClient, module, skrKyma).
+				Should(Equal(ErrNotFound))
+		})
+
+		It("When the Template Operator v2 ModuleTemplate is set to internal", func() {
+			module.Channel = "fast"
+			Eventually(SetModuleTemplateInternalLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, module, kyma, true).
 				Should(Succeed())
 			Eventually(ImmediatelyRequeueKyma).
 				WithContext(ctx).
@@ -167,11 +189,12 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(module.Name, RemoteNamespace, skrClient).
 				Should(Equal(ErrNotFound))
 
-			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			By("And the Template Operator v2 ModuleTemplate no longer exists in the SKR Cluster")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(skrClient, module, skrKyma).
 				Should(Equal(ErrNotFound))
+			module.Channel = v1beta2.DefaultChannel
 		})
 
 		It("When the Kyma is set to internal", func() {
@@ -193,7 +216,21 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When Template Operator v1 ModuleTemplate is removed from the KCP Cluster", func() {
+		It("the Template Operator v1 ModuleTemplate beta and internal values are set to false", func() {
+			Eventually(SetModuleTemplateInternalLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, module, kyma, false).
+				Should(Succeed())
+			Eventually(SetModuleTemplateBetaLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, module, kyma, false).
+				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
+
+			By("And Template Operator v1 ModuleTemplate is removed from the KCP Cluster")
 			Eventually(DeleteModuleTemplate).
 				WithContext(ctx).
 				WithArguments(kcpClient, module, kyma).
@@ -212,11 +249,24 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				Should(Equal(ErrNotFound))
 		})
 
-		It("When Template Operator v2 ModuleTemplate is applied in the KCP Cluster", func() {
-			By("And ModuleReleaseMeta is updated with the correct channel-version")
+		It("When ModuleReleaseMeta is updated with the v2 version mapped to regular channel", func() {
 			Eventually(UpdateChannelVersionInModuleReleaseMeta).
 				WithContext(ctx).
 				WithArguments(kcpClient, module.Name, ControlPlaneNamespace, v1beta2.DefaultChannel, v2Version).
+				Should(Succeed())
+			Eventually(ImmediatelyRequeueKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
+				Should(Succeed())
+
+			By("And the Template Operator v2 ModuleTemplate beta and internal values are set to false")
+			Eventually(SetModuleTemplateInternalLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, module, kyma, false).
+				Should(Succeed())
+			Eventually(SetModuleTemplateBetaLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, module, kyma, false).
 				Should(Succeed())
 			Eventually(ImmediatelyRequeueKyma).
 				WithContext(ctx).
