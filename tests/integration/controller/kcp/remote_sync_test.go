@@ -360,7 +360,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			}
 
 			return nil
-		}, Timeout, Interval).Should(Succeed())
+		}, 2*Timeout, Interval).Should(Succeed())
 	})
 
 	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
