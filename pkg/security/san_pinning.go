@@ -186,11 +186,9 @@ func getCertTokenFromXFCCHeader(headerValue string) string {
 	}
 
 	tokenWithCert := headerValue[certStartIdx+len(certificateKey):]
-
-	// Limit how far we look for the end of the cert
-	const maxCertLength = 16 * 1024 // e.g., 16KB cert cap
-	if len(tokenWithCert) > maxCertLength {
-		tokenWithCert = tokenWithCert[:maxCertLength]
+	// limit the lookup for the end of the cert
+	if len(tokenWithCert) > limit16KiB {
+		tokenWithCert = tokenWithCert[:limit16KiB]
 	}
 
 	// we shouldn't have "," here, but it's safer to add it anyway
