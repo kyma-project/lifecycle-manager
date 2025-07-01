@@ -533,7 +533,8 @@ func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifes
 }
 
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
-	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error) (ctrl.Result, error) {
+	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
+) (ctrl.Result, error) {
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
 	}
