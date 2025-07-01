@@ -26,28 +26,28 @@ If a ModuleReleaseMeta CR for a particular module doesn't exist, Kyma Controller
 
 The `Kyma` CR is requeued at set intervals using specific flags from Lifecycle Manager. The requeuing ensures that the Kyma CR is periodically reprocessed, allowing the controller to detect and apply any changes that may have occurred during that time. Additionally, several watch mechanisms are implemented, enabling the controller to requeue Kyma CRs when certain events occur.
 
-These watch mechanisms monitor Kyma, Secret, Manifest, and ModuleReleaseMeta CRs, ensuring that the relevant Kyma CRs are requeued whenever these CRs are created, updated, or deleted. Additionally, the watch mechanism for ModuleReleaseMeta CRs has a [dedicated implementation](../../internal/watch/modulereleasemeta_change.go), which ensures that all Kyma CRs using a module in a channel affected by the ModuleReleaseMeta CR are requeued as needed.
+These watch mechanisms monitor Kyma, Secret, Manifest, and ModuleReleaseMeta CRs, ensuring that the relevant Kyma CRs are requeued whenever these CRs are created, updated, or deleted. Additionally, the watch mechanism for ModuleReleaseMeta CRs has a dedicated implementation, which ensures that all Kyma CRs using a module in a channel affected by the ModuleReleaseMeta CR are requeued as needed.
 
 ## Mandatory Modules Controllers
 
 Lifecycle Manager uses two Mandatory Modules Controllers:
 
-* [Mandatory modules installation controller](../../internal/controller/mandatorymodule/installation_controller.go) deals with the reconciliation of mandatory modules
-* [Mandatory modules deletion controller](../../internal/controller/mandatorymodule/deletion_controller.go) deals with the deletion of mandatory modules
+* Mandatory modules installation controller deals with the reconciliation of mandatory modules
+* Mandatory modules deletion controller deals with the deletion of mandatory modules
 
-Since the channel concept does not apply to mandatory modules, the Mandatory Modules Installation Controller fetches all the Mandatory ModuleTemplate CRs with the 'operator.kyma-project.io/mandatory-module' label. If multiple ModuleTemplates exist for the same mandatory module, the Controller fetches the ModuleTemplate with the highest version. It then translates the ModuleTemplate CR for the mandatory module to a [Manifest CR](../../api/v1beta2/manifest_types.go) with an OwnerReference to the Kyma CR. Similarly to the [Kyma Controller](../../internal/controller/kyma/controller.go),
+Since the channel concept does not apply to mandatory modules, the Mandatory Modules Installation Controller fetches all the Mandatory ModuleTemplate CRs with the 'operator.kyma-project.io/mandatory-module' label. If multiple ModuleTemplates exist for the same mandatory module, the Controller fetches the ModuleTemplate with the highest version. It then translates the ModuleTemplate CR for the mandatory module to a [Manifest CR](./resources/02-manifest.md) with an OwnerReference to the Kyma CR. Similarly to the Kyma Controller,
 it propagates changes from the ModuleTemplate CR to the Manifest CR. The mandatory ModuleTemplate CR is not synchronized to the remote cluster and the module status does not appear in the Kyma CR status. If a mandatory module needs to be removed from all clusters, the corresponding ModuleTemplate CR needs to be deleted. The Mandatory Module Deletion Controller picks this event up and marks all associated Manifest CRs for deletion. To ensure that the ModuleTemplate CR is not removed immediately, the controller adds a finalizer to the ModuleTemplate CR. Once all associated Manifest CRs are deleted, the finalizer is removed and the ModuleTemplate CR is deleted.
 
 ## Manifest Controller
 
-[Manifest controller](../../internal/controller/manifest/controller.go) deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
-Since it mainly is a delegation to the [declarative reconciliation library](../../internal/declarative/) with certain [internal implementation additions](../../internal/manifest/README.md), please look at the respective documentation for these parts to understand them more.
+Manifest controller deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
+Since it mainly is a delegation to the declarative reconciliation library with certain [internal implementation additions](../../internal/manifest/README.md), please look at the respective documentation for these parts to understand them more.
 
 ## Purge Controller
 
-[Purge controller](../../internal/controller/purge/controller.go) is responsible for handling the forced cleanup of deployed resources in a remote cluster when its Kyma CR is marked for deletion.
+Purge controller is responsible for handling the forced cleanup of deployed resources in a remote cluster when its Kyma CR is marked for deletion.
 Suppose a Kyma CR has been marked for deletion for longer than the grace period (default is 5 minutes). In that case, the controller resolves the remote client for the cluster, retrieves all relevant CRs deployed on the cluster, and removes finalizers, allowing the resources to be garbage collected. This ensures that all associated resources are properly purged, maintaining the integrity and cleanliness of the cluster.
 
 ## Watcher Controller
 
-[Watcher controller](../../internal/controller/watcher/controller.go) deals with the changes of VirtualService rules derived from the [Watcher CR](../../api/v1beta2/watcher_types.go). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime. Simply put, it is a small component initialized to propagate changes from the runtime (remote) clusters back to the Kyma Control Plane (KCP), for it to react to the changes accordingly, ensuring the integrity of the affected Manifest CRs.
+Watcher controller deals with the changes of VirtualService rules derived from the [Watcher CR](./resources/04-watcher.md). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime. Simply put, it is a small component initialized to propagate changes from the runtime (remote) clusters back to the Kyma Control Plane (KCP), for it to react to the changes accordingly, ensuring the integrity of the affected Manifest CRs.
