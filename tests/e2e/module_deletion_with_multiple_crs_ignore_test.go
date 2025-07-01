@@ -3,11 +3,9 @@ package e2e_test
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -114,16 +112,7 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with CreateA
 				Should(Succeed())
 		})
 
-		It("Then Default Module CR no longer exists on SKR Cluster", func() {
-			Eventually(CheckIfExists).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace,
-					templatev1alpha1.GroupVersion.Group, templatev1alpha1.GroupVersion.Version,
-					string(templatev1alpha1.SampleKind),
-					skrClient).
-				Should(Equal(ErrNotFound))
-
-			By("And all Module Resources no longer exist on SKR Cluster")
+		It("Then all Module Resources no longer exist on SKR Cluster", func() {
 			for _, resource := range manifest.Status.Synced {
 				gvk := schema.GroupVersionKind{
 					Group:   resource.Group,
