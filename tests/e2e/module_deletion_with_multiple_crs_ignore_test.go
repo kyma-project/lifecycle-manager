@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy", Ordered, func() {
+var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore Policy", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	module.CustomResourcePolicy = v1beta2.CustomResourcePolicyIgnore
