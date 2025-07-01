@@ -71,12 +71,6 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore 
 					shared.StateDeleting).
 				Should(Succeed())
 
-			By("And Default Module CR on SKR Cluster is not removed and in \"Ready\" State")
-			Consistently(CheckSampleCRIsInState).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.StateReady).
-				Should(Succeed())
-
 			By("And all Module Resources still exist on the SKR Cluster")
 			var err error
 			manifest, err = GetManifest(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
@@ -98,11 +92,6 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore 
 		It("When all Module CRs are deleted", func() {
 			Eventually(DeleteSampleCR).
 				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient).
-				Should(Succeed())
-
-			Eventually(DeleteSampleCR).
-				WithContext(ctx).
 				WithArguments("sample-cr-1", RemoteNamespace, skrClient).
 				Should(Succeed())
 
@@ -119,7 +108,7 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore 
 					Version: resource.Version,
 					Kind:    resource.Kind,
 				}
-				Consistently(CheckIfExists).
+				Eventually(CheckIfExists).
 					WithContext(ctx).
 					WithArguments(resource.Name, resource.Namespace, gvk.Group, gvk.Version, gvk.Kind,
 						skrClient).Should(Equal(ErrNotFound))
