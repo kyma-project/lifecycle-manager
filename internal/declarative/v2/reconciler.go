@@ -259,14 +259,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 	if errors.Is(originalErr, common.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
 		finalizerRemoved = finalizer.RemoveAllFinalizers(manifest)
 	} else {
-		allModuleCRsRemoved, err := r.ensureAllModuleCRsAreDeleted(ctx, manifest)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if allModuleCRsRemoved {
-			finalizerRemoved = finalizer.RemoveRequiredFinalizers(manifest)
-		}
+		finalizerRemoved = finalizer.RemoveRequiredFinalizers(manifest)
 	}
 	if finalizerRemoved {
 		return r.updateManifest(ctx, manifest, requeueReason)
@@ -276,15 +269,6 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 			WithOperation(fmt.Sprintf("waiting as other finalizers are present: %s", manifest.GetFinalizers())))
 	}
 	return r.finishReconcile(ctx, manifest, requeueReason, manifestStatus, originalErr)
-}
-
-func (r *Reconciler) ensureAllModuleCRsAreDeleted(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {
-	moduleCRs, err := modulecr.NewClient(r.Client).GetAllModuleCRs(ctx, manifest)
-	if err != nil {
-		return false, fmt.Errorf("failed to get all module CRs: %w", err)
-	}
-
-	return len(moduleCRs) == 0, nil
 }
 
 func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
@@ -327,7 +311,12 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 		apimetav1.NamespaceDefault)
 
 	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
-		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		if errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion) {
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
+				WithOperation("waiting for module crs deletion"))
+		} else {
+			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		}
 		return nil, nil, err
 	}
 
@@ -389,11 +378,16 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		deleted, err := modulecr.NewClient(skrClient).CheckDefaultCRDeletion(ctx, manifest)
+		moduleCRsdeleted, err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest)
 		if err != nil {
 			return nil, err
 		}
-		if deleted {
+
+		defaultCRDeleted, err := modulecr.NewClient(skrClient).CheckDefaultCRDeletion(ctx, manifest)
+		if err != nil {
+			return nil, err
+		}
+		if moduleCRsdeleted && defaultCRDeleted {
 			return ResourceList{}, nil
 		}
 	}
@@ -541,6 +535,7 @@ func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifes
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
+
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
 	}

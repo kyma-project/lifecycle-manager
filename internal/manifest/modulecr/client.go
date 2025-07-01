@@ -18,7 +18,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var ErrNoResourceDefined = errors.New("no resource defined in the manifest")
+var (
+	ErrNoResourceDefined           = errors.New("no resource defined in the manifest")
+	ErrWaitingForModuleCRsDeletion = errors.New("waiting for module CRs deletion")
+)
 
 type Client struct {
 	client.Client
@@ -74,6 +77,24 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 	return resourceCR == nil, nil
 }
 
+func (c *Client) CheckModuleCRsDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
+	error,
+) {
+	moduleCRs, err := c.GetAllModuleCRsExcludingDefaultCR(ctx, manifestCR)
+	if err != nil {
+		if util.IsNotFound(err) {
+			return true, nil
+		}
+		return false, fmt.Errorf("failed to fetch module CRs, %w", err)
+	}
+
+	if len(moduleCRs) == 0 {
+		return true, nil
+	}
+
+	return false, ErrWaitingForModuleCRsDeletion
+}
+
 // RemoveDefaultModuleCR deletes the default module CR if available in the cluster.
 // It uses DeletePropagationBackground to delete module CR.
 // Only if module CR is not found (indicated by NotFound error), it continues to remove Manifest finalizer,
@@ -117,7 +138,8 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 	return nil
 }
 
-func (c *Client) GetAllModuleCRs(ctx context.Context, manifest *v1beta2.Manifest) ([]unstructured.Unstructured,
+func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
+	manifest *v1beta2.Manifest) ([]unstructured.Unstructured,
 	error,
 ) {
 	if manifest.Spec.Resource == nil {
@@ -127,14 +149,25 @@ func (c *Client) GetAllModuleCRs(ctx context.Context, manifest *v1beta2.Manifest
 	resource := manifest.Spec.Resource.DeepCopy()
 	resourceList := &unstructured.UnstructuredList{}
 	resourceList.SetGroupVersionKind(resource.GroupVersionKind())
-
 	if err := c.List(ctx, resourceList, &client.ListOptions{
 		Namespace: resource.GetNamespace(),
 	}); err != nil && !util.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
 
-	return resourceList.Items, nil
+	// If the CustomResourcePolicy is Ignore, we return all module CRs including the default CR
+	if manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
+		return resourceList.Items, nil
+	}
+
+	var withoutDefaultCR []unstructured.Unstructured
+	for _, item := range resourceList.Items {
+		if item.GetName() != resource.GetName() {
+			withoutDefaultCR = append(withoutDefaultCR, item)
+		}
+	}
+
+	return withoutDefaultCR, nil
 }
 
 func (c *Client) deleteCR(ctx context.Context, manifest *v1beta2.Manifest) (bool, error) {

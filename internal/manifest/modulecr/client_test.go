@@ -124,7 +124,7 @@ func TestClient_SyncDefaultModuleCR(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestClient_GetAllModuleCRs(t *testing.T) {
+func TestClient_GetAllModuleCRsExcludingDefaultCR(t *testing.T) {
 	// Given a manifest CR and two resource CRs deployed in the cluster
 	scheme := machineryruntime.NewScheme()
 	err := v1beta2.AddToScheme(scheme)
@@ -161,7 +161,7 @@ func TestClient_GetAllModuleCRs(t *testing.T) {
 	require.NoError(t, err)
 
 	// When Getting all Module CRs
-	moduleCRs, err := skrClient.GetAllModuleCRs(t.Context(), manifest)
+	moduleCRs, err := skrClient.GetAllModuleCRsExcludingDefaultCR(t.Context(), manifest)
 	require.NoError(t, err)
 	require.Len(t, moduleCRs, 2)
 
