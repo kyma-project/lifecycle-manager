@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.24.4-alpine as builder
+FROM --platform=$BUILDPLATFORM golang:1.24.4-alpine AS builder
 
 WORKDIR /lifecycle-manager
 # Copy the Go Modules manifests
@@ -22,8 +22,10 @@ RUN go mod download
 # Build
 # TAG_default_tag comes from image builder: https://github.com/kyma-project/test-infra/tree/main/cmd/image-builder
 ARG TAG_default_tag=from_dockerfile
+ARG TARGETOS
+ARG TARGETARCH
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X 'main.buildVersion=${TAG_default_tag}'" -a -o manager cmd/main.go
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-X 'main.buildVersion=${TAG_default_tag}'" -a -o manager cmd/main.go
 
 
 # Use distroless as minimal base image to package the manager binary
