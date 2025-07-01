@@ -180,3 +180,9 @@ maintenance-windows-skip:
 
 watcher-zero-downtime:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Watcher Zero Downtime"
+
+module-deletion-with-multiple-crs-create-and-delete-policy:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
+
+module-deletion-with-multiple-crs-ignore-policy:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"

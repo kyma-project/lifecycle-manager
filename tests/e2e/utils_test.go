@@ -228,6 +228,36 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 		expectedState)
 }
 
+func CreateSampleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	sampleCR := &templatev1alpha1.Sample{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       string(templatev1alpha1.SampleKind),
+			APIVersion: templatev1alpha1.GroupVersion.String(),
+		},
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	return clnt.Create(ctx, sampleCR)
+}
+
+func DeleteSampleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	sampleCR := &templatev1alpha1.Sample{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       string(templatev1alpha1.SampleKind),
+			APIVersion: templatev1alpha1.GroupVersion.String(),
+		},
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	return clnt.Delete(ctx, sampleCR)
+}
+
 func CheckSampleCRHasExpectedLabel(ctx context.Context, name, namespace string, clnt client.Client,
 	labelKey, labelValue string,
 ) error {
