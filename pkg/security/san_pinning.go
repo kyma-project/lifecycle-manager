@@ -24,6 +24,7 @@ const (
 	certificateKey = "Cert="
 	shootDomainKey = "skr-domain"
 	limit32KiB     = 32 * 1024
+	limit16KiB     = 16 * 1024
 	limitSANValues = 100
 )
 
@@ -172,20 +173,30 @@ func (e AnnotationMissingError) Error() string {
 	return fmt.Sprintf("KymaCR '%s' does not have annotation `%s`", e.KymaCR, e.Annotation)
 }
 
-// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists. Otherwise an empty string is returned.
-func getCertTokenFromXFCCHeader(hVal string) string {
-	certStartIdx := strings.Index(hVal, certificateKey)
-	if certStartIdx >= 0 {
-		tokenWithCert := hVal[(certStartIdx + len(certificateKey)):]
-		// we shouldn't have "," here but it's safer to add it anyway
-		certEndIdx := strings.IndexAny(tokenWithCert, ";,")
-		if certEndIdx == -1 {
-			// no suffix, the entire token is the cert value
-			return tokenWithCert
-		}
-
-		// there's some data after the cert value, return just the cert part
-		return tokenWithCert[:certEndIdx]
+// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header if it exists, otherwise an empty string is returned.
+func getCertTokenFromXFCCHeader(headerValue string) string {
+	// extra check in case caller missed it
+	if len(headerValue) > limit32KiB {
+		return ""
 	}
-	return ""
+	certStartIdx := strings.Index(headerValue, certificateKey)
+	// prevent multiple certificate injection attempts
+	if certStartIdx <= -1 {
+		return ""
+	}
+
+	tokenWithCert := headerValue[certStartIdx+len(certificateKey):]
+
+	// Limit how far we look for the end of the cert
+	const maxCertLength = 16 * 1024 // e.g., 16KB cert cap
+	if len(tokenWithCert) > maxCertLength {
+		tokenWithCert = tokenWithCert[:maxCertLength]
+	}
+
+	// we shouldn't have "," here, but it's safer to add it anyway
+	certEndIdx := strings.IndexAny(tokenWithCert, ";,")
+	if certEndIdx == -1 {
+		return tokenWithCert
+	}
+	return tokenWithCert[:certEndIdx]
 }
