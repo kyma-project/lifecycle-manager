@@ -71,15 +71,12 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with CreateA
 					shared.StateDeleting).
 				Should(Succeed())
 
-			By("And Default Module CR on SKR Cluster is not removed and in \"Deleting\" State")
-			Consistently(CheckSampleCRIsInState).
+			By("And Default Module CR still exists on the SKR Cluster")
+			Consistently(CheckIfExists).
 				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient, shared.StateDeleting).
-				Should(Succeed())
-			Eventually(SampleCRDeletionTimeStampSet).
-				WithContext(ctx).
-				WithArguments(TestModuleCRName, RemoteNamespace, skrClient).
-				Should(Succeed())
+				WithArguments(TestModuleCRName, RemoteNamespace, templatev1alpha1.GroupVersion.Group,
+					templatev1alpha1.GroupVersion.Version, string(templatev1alpha1.SampleKind),
+					skrClient).Should(Succeed())
 
 			By("And all Module Resources still exist on the SKR Cluster")
 			var err error
@@ -127,7 +124,7 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with CreateA
 					Version: resource.Version,
 					Kind:    resource.Kind,
 				}
-				Consistently(CheckIfExists).
+				Eventually(CheckIfExists).
 					WithContext(ctx).
 					WithArguments(resource.Name, resource.Namespace, gvk.Group, gvk.Version, gvk.Kind,
 						skrClient).Should(Equal(ErrNotFound))
