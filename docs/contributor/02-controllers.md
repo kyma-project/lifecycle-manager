@@ -51,3 +51,7 @@ Suppose a Kyma CR has been marked for deletion for longer than the grace period 
 ## Watcher Controller
 
 Watcher controller deals with the changes of VirtualService rules derived from the [Watcher CR](./resources/04-watcher.md). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime. Simply put, it is a small component initialized to propagate changes from the runtime (remote) clusters back to the Kyma Control Plane (KCP), for it to react to the changes accordingly, ensuring the integrity of the affected Manifest CRs.
+
+## Istio Gateway Secret Controller
+
+Istio Gateway Secret controller manages the certificate secret used by the Istio gateway. Its main responsibility is to bundle previous and new self-signed watcher CA certificates during rotation, so that Kyma runtimes, whose certificates have not been signed by the new CA certificate, can also authenticate with the gateway. This ensures zero downtime of the watch mechanism.

@@ -35,6 +35,7 @@ Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest, and
 * [Mandatory Modules controller](02-controllers.md#mandatory-modules-controllers) - reconciles the mandatory ModuleTemplate CRs that have the `operator.kyma-project.io/mandatory-module` label, selecting the highest version if duplicates exist. It translates the ModuleTemplate CRs to Manifest CRs linked to the Kyma CR, ensuring changes propagate. For removal, a deletion controller marks the related Manifest CRs, removes finalizers, and deletes the ModuleTemplate CR.
 * [Purge controller](./02-controllers.md#purge-controller) - reconciles the Kyma CRs that are marked for deletion longer than the grace period, which means purging all the resources deployed by Lifecycle Manager in the target SKR cluster.
 * [Watcher controller](./02-controllers.md#watcher-controller) - reconciles the Watcher CR which means creating Istio Virtual Service resources in KCP when a Watcher CR is created and removing the same resources when the Watcher CR is deleted. This is done to configure the routing of the messages that come from the watcher agent, installed on each Kyma runtime, and go to a listener agent deployed in KCP.
+* [Istio Gateway Secret controller](./02-controllers.md#istio-gateway-secret-controller) - reconciles the Istio gateway certificate secret.
 
 For more details about Lifecycle Manager controllers, read the [Controllers](./02-controllers.md) document.
 
