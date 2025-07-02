@@ -129,7 +129,7 @@ spec:
 
 In this example, when the module's CR is in the green health state, the corresponding Kyma CR will transition to the `Ready` state. Similarly, when the module's CR is in the red health state, the related Kyma CR will transition to the `Error` state.
 
-The valid mappedState values are defined in the [Kyma CR API](https://github.com/kyma-project/lifecycle-manager/blob/main/api/v1beta2/kyma_types.go#L225-L245).
+The valid mappedState values are defined in the Kyma CR API.
 
 Furthermore, this field supports complex mappings. For instance, if multiple states are needed to determine the `Ready` state, users can define the following customStateCheck:
 
