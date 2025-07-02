@@ -54,4 +54,4 @@ Watcher controller deals with the changes of VirtualService rules derived from t
 
 ## Istio Gateway Secret Controller
 
-Istio Gateway Secret controller is managing the certificate secret used by the istio gateway. Its main responsibility is to bundle previous and new self-signed watcher CA certificates during rotation, so that Kyma runtimes, whose certificates have not been signed by the new CA certificate, can also authenticate with the gateway. This ensures zero downtime of the watch mechanism.
+Istio Gateway Secret controller manages the certificate secret used by the Istio gateway. Its main responsibility is to bundle previous and new self-signed watcher CA certificates during rotation, so that Kyma runtimes, whose certificates have not been signed by the new CA certificate, can also authenticate with the gateway. This ensures zero downtime of the watch mechanism.
