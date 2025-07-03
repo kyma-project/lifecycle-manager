@@ -77,22 +77,20 @@ func (c *Client) CheckDefaultCRDeletion(ctx context.Context, manifestCR *v1beta2
 	return resourceCR == nil, nil
 }
 
-func (c *Client) CheckModuleCRsDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) (bool,
-	error,
-) {
+func (c *Client) CheckModuleCRsDeletion(ctx context.Context, manifestCR *v1beta2.Manifest) error {
 	moduleCRs, err := c.GetAllModuleCRsExcludingDefaultCR(ctx, manifestCR)
 	if err != nil {
 		if util.IsNotFound(err) {
-			return true, nil
+			return nil
 		}
-		return false, fmt.Errorf("failed to fetch module CRs, %w", err)
+		return fmt.Errorf("failed to fetch module CRs, %w", err)
 	}
 
 	if len(moduleCRs) == 0 {
-		return true, nil
+		return nil
 	}
 
-	return false, ErrWaitingForModuleCRsDeletion
+	return ErrWaitingForModuleCRsDeletion
 }
 
 // RemoveDefaultModuleCR deletes the default module CR if available in the cluster.

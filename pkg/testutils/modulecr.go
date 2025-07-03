@@ -13,6 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -45,6 +46,32 @@ func NewTestModuleCR(namespace string) *unstructured.Unstructured {
 	return builder.NewModuleCRBuilder().
 		WithName(TestModuleCRName).
 		WithNamespace(namespace).Build()
+}
+
+func CreateModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	sampleCR := &unstructured.Unstructured{}
+	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   templatev1alpha1.GroupVersion.Group,
+		Version: templatev1alpha1.GroupVersion.Version,
+		Kind:    string(templatev1alpha1.SampleKind),
+	})
+	sampleCR.SetName(name)
+	sampleCR.SetNamespace(namespace)
+
+	return clnt.Create(ctx, sampleCR)
+}
+
+func DeleteModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	sampleCR := &unstructured.Unstructured{}
+	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   templatev1alpha1.GroupVersion.Group,
+		Version: templatev1alpha1.GroupVersion.Version,
+		Kind:    string(templatev1alpha1.SampleKind),
+	})
+	sampleCR.SetName(name)
+	sampleCR.SetNamespace(namespace)
+
+	return clnt.Delete(ctx, sampleCR)
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {

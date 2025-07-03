@@ -41,12 +41,12 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore 
 		})
 
 		It("When two Module CRs are created on SKR Cluster", func() {
-			Eventually(CreateSampleCR).
+			Eventually(CreateModuleCR).
 				WithContext(ctx).
 				WithArguments("sample-cr-1", RemoteNamespace, skrClient).
 				Should(Succeed())
 
-			Eventually(CreateSampleCR).
+			Eventually(CreateModuleCR).
 				WithContext(ctx).
 				WithArguments("sample-cr-2", RemoteNamespace, skrClient).
 				Should(Succeed())
@@ -90,12 +90,12 @@ var _ = Describe("Blocking Module Deletion With Multiple Module CRs with Ignore 
 		})
 
 		It("When all Module CRs are deleted", func() {
-			Eventually(DeleteSampleCR).
+			Eventually(DeleteModuleCR).
 				WithContext(ctx).
 				WithArguments("sample-cr-1", RemoteNamespace, skrClient).
 				Should(Succeed())
 
-			Eventually(DeleteSampleCR).
+			Eventually(DeleteModuleCR).
 				WithContext(ctx).
 				WithArguments("sample-cr-2", RemoteNamespace, skrClient).
 				Should(Succeed())

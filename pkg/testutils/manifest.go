@@ -237,7 +237,7 @@ func GetManifestResource(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	if moduleInCluster.Spec.Resource == nil || moduleInCluster.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
+	if moduleInCluster.Spec.Resource == nil {
 		return nil, ErrManifestResourceIsNil
 	}
 

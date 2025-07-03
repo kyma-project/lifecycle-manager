@@ -378,8 +378,7 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		moduleCRsdeleted, err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest)
-		if err != nil {
+		if err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest); err != nil {
 			return nil, err
 		}
 
@@ -387,7 +386,7 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 		if err != nil {
 			return nil, err
 		}
-		if moduleCRsdeleted && defaultCRDeleted {
+		if defaultCRDeleted {
 			return ResourceList{}, nil
 		}
 	}

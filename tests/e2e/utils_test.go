@@ -228,32 +228,6 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 		expectedState)
 }
 
-func CreateSampleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
-	sampleCR := &unstructured.Unstructured{}
-	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   templatev1alpha1.GroupVersion.Group,
-		Version: templatev1alpha1.GroupVersion.Version,
-		Kind:    string(templatev1alpha1.SampleKind),
-	})
-	sampleCR.SetName(name)
-	sampleCR.SetNamespace(namespace)
-
-	return clnt.Create(ctx, sampleCR)
-}
-
-func DeleteSampleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
-	sampleCR := &unstructured.Unstructured{}
-	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   templatev1alpha1.GroupVersion.Group,
-		Version: templatev1alpha1.GroupVersion.Version,
-		Kind:    string(templatev1alpha1.SampleKind),
-	})
-	sampleCR.SetName(name)
-	sampleCR.SetNamespace(namespace)
-
-	return clnt.Delete(ctx, sampleCR)
-}
-
 func CheckSampleCRHasExpectedLabel(ctx context.Context, name, namespace string, clnt client.Client,
 	labelKey, labelValue string,
 ) error {
