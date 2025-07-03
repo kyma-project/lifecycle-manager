@@ -51,7 +51,7 @@ func FinalizersUpdateRequired(manifest *v1beta2.Manifest) bool {
 }
 
 func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return nil
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
@@ -76,7 +76,7 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 }
 
 func RemoveCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2.Manifest) error {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return nil
 	}
 	onCluster := manifest.DeepCopy()

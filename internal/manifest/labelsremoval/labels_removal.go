@@ -73,11 +73,11 @@ func removeFromDefaultCR(ctx context.Context,
 	manifest *v1beta2.Manifest,
 	skrClient client.Client,
 ) error {
-	if manifest.Spec.Resource == nil {
+	if manifest.Spec.Resource == nil || manifest.Spec.CustomResourcePolicy == v1beta2.CustomResourcePolicyIgnore {
 		return nil
 	}
 
-	defaultCR, err := modulecr.NewClient(skrClient).GetCR(ctx, manifest)
+	defaultCR, err := modulecr.NewClient(skrClient).GetDefaultCR(ctx, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to get default CR, %w", err)
 	}

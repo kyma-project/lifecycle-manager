@@ -136,6 +136,8 @@ func TestGenerateModuleStatus_WhenCalledWithTemplateAndManifest_CreatesMinimalMo
 func TestGenerateModuleStatus_WhenCalledWithManifestResource_CreatesTrackingObjectForResource(t *testing.T) {
 	module := createModule()
 	module.Manifest = createManifestWithResource()
+	module.Manifest.Annotations = make(map[string]string)
+	module.Manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
 	result, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})
@@ -155,6 +157,8 @@ func TestGenerateModuleStatus_WhenCalledWithIsClusterScopedAnnotation_RemovesRes
 	module := createModule()
 	module.TemplateInfo.ModuleTemplate = createClusterScopedModuleTemplate()
 	module.Manifest = createManifestWithResource()
+	module.Manifest.Annotations = make(map[string]string)
+	module.Manifest.Spec.CustomResourcePolicy = v1beta2.CustomResourcePolicyCreateAndDelete
 
 	statusGenerator := generator.NewModuleStatusGenerator(noOpGenerateFromError)
 	result, err := statusGenerator.GenerateModuleStatus(module, &v1beta2.ModuleStatus{})

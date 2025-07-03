@@ -71,6 +71,9 @@ type ManifestSpec struct {
 	// +nullable
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
+
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
 }
 
 // ImageSpec defines OCI Image specifications.

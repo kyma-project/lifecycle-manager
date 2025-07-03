@@ -303,9 +303,11 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
 	moduleInKCP := NewTestModuleWithChannelVersion("module-inkcp", v1beta2.DefaultChannel, "0.1.0")
+	moduleTemplateName := fmt.Sprintf("%s-%s", moduleInKCP.Name, "0.1.0")
+
 	moduleReleaseMetaInKCP := builder.NewModuleReleaseMetaBuilder().
 		WithName("modulereleasemeta-inkcp").
-		WithModuleName("module-inkcp").
+		WithModuleName(moduleInKCP.Name).
 		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, "0.1.0").
 		Build()
 	kyma.Spec.Modules = []v1beta2.Module{
@@ -317,8 +319,20 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	skrKyma := NewSKRKyma()
 	var skrClient client.Client
 	var err error
-	registerControlPlaneLifecycleForKyma(kyma)
 	BeforeAll(func() {
+		template := builder.NewModuleTemplateBuilder().
+			WithNamespace(ControlPlaneNamespace).
+			WithModuleName(moduleInKCP.Name).
+			WithChannel(moduleInKCP.Channel).
+			WithOCM(compdescv2.SchemaVersion).
+			WithName(moduleTemplateName).Build()
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err
@@ -327,6 +341,12 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, moduleReleaseMetaInKCP).Should(Succeed())
+	})
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
+		DeleteModuleTemplates(ctx, kcpClient, kyma)
 	})
 
 	injectedAnnotations := []string{
