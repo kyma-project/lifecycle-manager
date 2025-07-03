@@ -7,7 +7,6 @@ import (
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -49,29 +48,19 @@ func NewTestModuleCR(namespace string) *unstructured.Unstructured {
 }
 
 func CreateModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
-	sampleCR := &unstructured.Unstructured{}
-	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   templatev1alpha1.GroupVersion.Group,
-		Version: templatev1alpha1.GroupVersion.Version,
-		Kind:    string(templatev1alpha1.SampleKind),
-	})
-	sampleCR.SetName(name)
-	sampleCR.SetNamespace(namespace)
+	moduleCR := builder.NewModuleCRBuilder().
+		WithName(name).
+		WithNamespace(namespace).Build()
 
-	return clnt.Create(ctx, sampleCR)
+	return clnt.Create(ctx, moduleCR)
 }
 
 func DeleteModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
-	sampleCR := &unstructured.Unstructured{}
-	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   templatev1alpha1.GroupVersion.Group,
-		Version: templatev1alpha1.GroupVersion.Version,
-		Kind:    string(templatev1alpha1.SampleKind),
-	})
-	sampleCR.SetName(name)
-	sampleCR.SetNamespace(namespace)
+	moduleCR := builder.NewModuleCRBuilder().
+		WithName(name).
+		WithNamespace(namespace).Build()
 
-	return clnt.Delete(ctx, sampleCR)
+	return clnt.Delete(ctx, moduleCR)
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
