@@ -47,6 +47,22 @@ func NewTestModuleCR(namespace string) *unstructured.Unstructured {
 		WithNamespace(namespace).Build()
 }
 
+func CreateModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	moduleCR := builder.NewModuleCRBuilder().
+		WithName(name).
+		WithNamespace(namespace).Build()
+
+	return clnt.Create(ctx, moduleCR)
+}
+
+func DeleteModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	moduleCR := builder.NewModuleCRBuilder().
+		WithName(name).
+		WithNamespace(namespace).Build()
+
+	return clnt.Delete(ctx, moduleCR)
+}
+
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
 	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, templatev1alpha1.GroupVersion.Version,
 		string(templatev1alpha1.SampleKind), name, namespace, clnt)

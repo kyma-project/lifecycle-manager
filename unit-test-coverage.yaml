@@ -13,7 +13,7 @@ packages:
   internal/manifest/img: 65
   internal/manifest/labelsremoval: 100
   internal/manifest/manifestclient: 5
-  internal/manifest/modulecr: 47
+  internal/manifest/modulecr: 50
   internal/manifest/skrresources: 20
   internal/manifest/statecheck: 71
   internal/maintenancewindows: 87
