@@ -12,7 +12,7 @@ kubectl get crd manifests.operator.kyma-project.io -o yaml
 
 ## Patching
 
-The [Runner](../../../pkg/module/sync/runner.go) is responsible for creating and updating Manifest CRs using Server Side Apply (SSA). An update is only performed when one of the following conditions is met:
+Responsible for creating and updating Manifest CRs is the so-called Runner. It is using Server Side Apply (SSA) where an update is only performed when one of the following conditions is met:
 
 1. The Manifest CR version differs from the Kyma CR's module status version.
 2. The Manifest CR channel differs from the Kyma CR's module status channel.
@@ -55,8 +55,7 @@ This specification is mapped from the corresponding access layer in the ModuleTe
   version: 1.2.10
 ```
 
-The `.spec.install` spec is resolved by the [SpecResolver](../../../internal/manifest/spec/resolver.go) which fetches the raw manifest from the OCI layer and resolves it to a path that can be used by the [declarative library](../../../internal/declarative/) and deployed to the target cluster.
-
+Lifecycle Manager fetches the raw manifest from the OCI layer and resolves it into the module's resources that are deployed to the Kyma runtime cluster.
 
 ### **.spec.resource**
 

@@ -189,7 +189,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := modulecr.NewClient(skrClient).RemoveModuleCR(ctx, r.Client, manifest); err != nil {
+		if err := modulecr.NewClient(skrClient).RemoveDefaultModuleCR(ctx, r.Client, manifest); err != nil {
 			if errors.Is(err, finalizer.ErrRequeueRequired) {
 				r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 				return ctrl.Result{Requeue: true}, nil
@@ -311,7 +311,12 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 		apimetav1.NamespaceDefault)
 
 	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
-		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		if errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion) {
+			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
+				WithOperation("waiting for module crs deletion"))
+		} else {
+			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		}
 		return nil, nil, err
 	}
 
@@ -329,7 +334,7 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	if err := modulecr.NewClient(skrClient).SyncModuleCR(ctx, manifest); err != nil {
+	if err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -373,11 +378,15 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		deleted, err := modulecr.NewClient(skrClient).CheckCRDeletion(ctx, manifest)
+		if err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest); err != nil {
+			return nil, err
+		}
+
+		defaultCRDeleted, err := modulecr.NewClient(skrClient).CheckDefaultCRDeletion(ctx, manifest)
 		if err != nil {
 			return nil, err
 		}
-		if deleted {
+		if defaultCRDeleted {
 			return ResourceList{}, nil
 		}
 	}

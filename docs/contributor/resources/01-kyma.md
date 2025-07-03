@@ -8,7 +8,7 @@ To get the latest CRD in the YAML format, run the following command:
 kubectl get crd kymas.operator.kyma-project.io -o yaml
 ```
 
-The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) is used to declare the desired state of a cluster. **.spec.channel**, **.spec.modules[].channel**, and **.spec.modules** are the basic fields that are used together to define the cluster state.
+The Kyma custom resource (CR) is used to declare the desired state of a cluster. **.spec.channel**, **.spec.modules[].channel**, and **.spec.modules** are the basic fields that are used together to define the cluster state.
 
 * **.spec.channel** - defines a release channel that should be used by default for all modules that are to be installed in the cluster.
 * **.spec.modules[].channel** - defines a release channel other than the default channel (**.spec.channel**) for a given module that is to be installed in the cluster.
