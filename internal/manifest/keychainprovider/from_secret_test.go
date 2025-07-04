@@ -3,6 +3,8 @@ package keychainprovider_test
 import (
 	"context"
 	"errors"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,6 +42,23 @@ func TestGetWhenClientReturnsOtherErrorReturnsFailedToGetError(t *testing.T) {
 	require.Error(t, err)
 	require.NotErrorIs(t, err, keychainprovider.ErrNoAuthSecretFound)
 	require.ErrorContains(t, err, "failed to get oci cred secret")
+}
+
+func TestGetWhenClientReturnsSecretReturnsKeychain(t *testing.T) {
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      "test-secret",
+			Namespace: "test-namespace",
+		},
+	}
+	kcpClient := fake.NewClientBuilder().WithObjects(secret).Build()
+
+	sut := keychainprovider.NewFromSecretKeyChainProvider(kcpClient, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace})
+
+	keychain, err := sut.Get(t.Context())
+
+	assert.NotEmpty(t, keychain)
+	require.NoError(t, err)
 }
 
 var otherErrorFunc = func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
