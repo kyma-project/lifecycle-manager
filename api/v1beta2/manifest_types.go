@@ -74,6 +74,9 @@ type ManifestSpec struct {
 
 	// +kubebuilder:default:=CreateAndDelete
 	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
+	// +optional
+	LocalizedImages []string `json:"localizedImages,omitempty"`
 }
 
 // ImageSpec defines OCI Image specifications.
