@@ -14,8 +14,8 @@ This document provides a list of flags that can be set to control some specific 
 
 ## Reconciliation Requeue Intervals
 
-| Flag                                                 | Type     | Default Value | Description                                                                                             |
-|------------------------------------------------------|----------|---------------|---------------------------------------------------------------------------------------------------------|
+| Flag                                                 | Type     | Default Value | Description                                                                                                    |
+|------------------------------------------------------|----------|---------------|----------------------------------------------------------------------------------------------------------------|
 | `kyma-requeue-success-interval`                      | duration | 30s           | Duration after which a Kyma CR in the Ready state is enqueued for reconciliation                               |
 | `kyma-requeue-error-interval`                        | duration | 2s            | Duration after which a Kyma CR in the Error state is enqueued for reconciliation                               |
 | `kyma-requeue-warning-interval`                      | duration | 30s           | Duration after which a Kyma CR in the Warning state is enqueued for reconciliation                             |
@@ -25,12 +25,12 @@ This document provides a list of flags that can be set to control some specific 
 | `manifest-requeue-error-interval`                    | duration | 2s            | Duration after which a Manifest CR in the Error state is enqueued for reconciliation                           |
 | `manifest-requeue-warning-interval`                  | duration | 30s           | Duration after which a Manifest CR in the Warning state is enqueued for reconciliation                         |
 | `manifest-requeue-busy-interval`                     | duration | 5s            | Duration after which a Manifest CR in the Processing state is enqueued for reconciliation                      |
-| `manifest-requeue-jitter-probability`                | float    | 0.02          | Percentage probability that jitter is applied to the requeue interval                                   |
-| `manifest-requeue-jitter-percentage`                 | float    | 0.02          | Percentage range for the jitter applied to the requeue interval e.g. 0.1 means +/- 10% of the interval  |
+| `manifest-requeue-jitter-probability`                | float    | 0.02          | Percentage probability that jitter is applied to the requeue interval                                          |
+| `manifest-requeue-jitter-percentage`                 | float    | 0.02          | Percentage range for the jitter applied to the requeue interval e.g. 0.1 means +/- 10% of the interval         |
 | `mandatory-module-deletion-requeue-success-interval` | duration | 30s           | Duration after which a Kyma CR in the Ready state is enqueued for mandatory module deletion reconciliation     |
 | `watcher-requeue-success-interval`                   | duration | 30s           | Duration after which a Watcher CR in the Ready state is enqueued for reconciliation                            |
-| `istio-gateway-secret-requeue-success-interval`      | duration | 5m            | Duration after which the Istio Gateway Secret is enqueued after successful reconciliation               |
-| `istio-gateway-secret-requeue-error-interval`        | duration | 2s            | Duration after which the Istio Gateway Secret is enqueued after unsuccessful reconciliation             |
+| `istio-gateway-secret-requeue-success-interval`      | duration | 5m            | Duration after which the Istio Gateway Secret is enqueued after successful reconciliation                      |
+| `istio-gateway-secret-requeue-error-interval`        | duration | 2s            | Duration after which the Istio Gateway Secret is enqueued after unsuccessful reconciliation                    |
 
 ## Controllers Configuration
 
@@ -51,25 +51,25 @@ This document provides a list of flags that can be set to control some specific 
 
 ## Certificates Configuration
 
-| Flag                                               | Type     | Default Value          | Description                                                                                                          |
-|----------------------------------------------------|----------|------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `cert-management`                                  | string   | cert-manager.io/v1     | Certificate management system to use. Accepted values: `cert-manager.io/v1`, `gateway.cert.gardener.cloud/v1alpha1`      |
-| `self-signed-cert-duration`                        | duration | 90*24h                 | Duration of self-signed certificate. Minimum: 1h                                                                     |
-| `self-signed-cert-renew-before`                    | duration | 60*24h                 | Duration before the currently issued self-signed certificate's expiry when cert-manager should renew the certificate |
-| `self-signed-cert-renew-buffer`                    | duration | 24h                    | Duration to wait before confirming self-signed certificate are not renewed                                                  |
-| `self-signed-cert-key-size`                        | int      | 4096                   | Key size for the self-signed certificate                                                                             |
-| `self-signed-cert-issuer-name`                     | string   | klm-watcher-selfsigned | Issuer name for the self-signed certificate                                                                          |
-| `self-signed-cert-naming-template`                 | string   | %s-webhook-tls         | Naming template for the self-signed certificate. Should contain one '%s' placeholder for the Kyma name               |
-| `self-signed-cert-issuer-namespace`                | string   | istio-system           | Namespace of the Issuer for self-signed certificates                                                                 |
+| Flag                                | Type     | Default Value          | Description                                                                                                          |
+|-------------------------------------|----------|------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `cert-management`                   | string   | cert-manager.io/v1     | Certificate management system to use. Accepted values: `cert-manager.io/v1`, `gateway.cert.gardener.cloud/v1alpha1`  |
+| `self-signed-cert-duration`         | duration | 90*24h                 | Duration of self-signed certificate. Minimum: 1h                                                                     |
+| `self-signed-cert-renew-before`     | duration | 60*24h                 | Duration before the currently issued self-signed certificate's expiry when cert-manager should renew the certificate |
+| `self-signed-cert-renew-buffer`     | duration | 24h                    | Duration to wait before confirming self-signed certificate are not renewed                                           |
+| `self-signed-cert-key-size`         | int      | 4096                   | Key size for the self-signed certificate                                                                             |
+| `self-signed-cert-issuer-name`      | string   | klm-watcher-selfsigned | Issuer name for the self-signed certificate                                                                          |
+| `self-signed-cert-naming-template`  | string   | %s-webhook-tls         | Naming template for the self-signed certificate. Should contain one `%s` placeholder for the Kyma name               |
+| `self-signed-cert-issuer-namespace` | string   | istio-system           | Namespace of the Issuer for self-signed certificates                                                                 |
 
 ## Istio Gateway Configuration
 
 | Flag                                               | Type     | Default Value | Description                                                                                                  |
 |----------------------------------------------------|----------|---------------|--------------------------------------------------------------------------------------------------------------|
 | `istio-gateway-cert-switch-before-expiration-time` | duration | 24h           | Duration before the expiration of the current CA certificate when the Gateway certificate should be switched |
-| `istio-namespace`                                  | string   | istio-system  | Namespace for Istio resources in a cluster                                                                      |
-| `istio-gateway-name`                               | string   | klm-watcher   | Name of the Istio Gateway resource in a cluster                                                                    |
-| `istio-gateway-namespace`                          | string   | kcp-system    | Namespace for the Istio Gateway resource in a cluster                                                           |
+| `istio-namespace`                                  | string   | istio-system  | Namespace for Istio resources in a cluster                                                                   |
+| `istio-gateway-name`                               | string   | klm-watcher   | Name of the Istio Gateway resource in a cluster                                                              |
+| `istio-gateway-namespace`                          | string   | kcp-system    | Namespace for the Istio Gateway resource in a cluster                                                        |
 | `legacy-strategy-for-istio-gateway-secret`         | bool     | false         | Use the legacy strategy (with downtime) for the Istio Gateway Secret                                         |
 
 ## Metrics and Health Configuration
@@ -104,7 +104,7 @@ This document provides a list of flags that can be set to control some specific 
 
 | Flag                             | Type     | Default Value | Description                                                                                                                     |
 |----------------------------------|----------|---------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `leader-elect`                   | bool     | false         | Enable leader election for controller manager. Enabling it ensures there is only one active controller manager            |
+| `leader-elect`                   | bool     | false         | Enable leader election for controller manager. Enabling it ensures there is only one active controller manager                  |
 | `leader-election-lease-duration` | duration | 180s          | Duration configured for the 'LeaseDuration' option of the controller-runtime library used to run the controller manager process |
 | `leader-election-renew-deadline` | duration | 120s          | Duration configured for the 'RenewDeadline' option of the controller-runtime library used to run the controller manager process |
 | `leader-election-retry-period`   | duration | 3s            | Duration configured for the 'RetryPeriod' option of the controller-runtime library used to run the controller manager process   |
@@ -120,11 +120,11 @@ This document provides a list of flags that can be set to control some specific 
 
 ## Miscellaneous Configuration
 
-| Flag                          | Type     | Default Value                                                        | Description                                                                                                                                                                    |
-|-------------------------------|----------|----------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `min-maintenance-window-size` | duration | 20m                                                                  | Minimum duration of maintenance window required for reconciling modules with downtime                                                                                          |
+| Flag                          | Type     | Default Value                                                        | Description                                                                                                                                                                  |
+|-------------------------------|----------|----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `min-maintenance-window-size` | duration | 20m                                                                  | Minimum duration of maintenance window required for reconciling modules with downtime                                                                                        |
 | `drop-crd-stored-version-map` | string   | Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1 | API versions to be dropped from the storage version. The input format must be a comma-separated list of API versions, where each API version is in the `kind:version` format |
-| `is-kyma-managed`             | bool     | false                                                                | Use managed Kyma mode                                                                                                                                                          |
-| `sync-namespace`              | string   | kyma-system                                                          | Namespace for syncing remote Kyma and module catalog                                                                                                                           |
-| `enable-webhooks`             | bool     | false                                                                | Enable Validation/Conversion Webhooks                                                                                                                                          |
-| `log-level`                   | int      | 0                                                                    | Log level. Enter negative values to increase verbosity (e.g. 9)                                                                                                                |
+| `is-kyma-managed`             | bool     | false                                                                | Use managed Kyma mode                                                                                                                                                        |
+| `sync-namespace`              | string   | kyma-system                                                          | Namespace for syncing remote Kyma and module catalog                                                                                                                         |
+| `enable-webhooks`             | bool     | false                                                                | Enable Validation/Conversion Webhooks                                                                                                                                        |
+| `log-level`                   | int      | 0                                                                    | Log level. Enter negative values to increase verbosity (e.g. 9)                                                                                                              |
