@@ -1,6 +1,6 @@
 # Lifecycle Manager Flags
 
-There are some flags that can be set to control some aspects of the lifecycle manager. They are set as arguments to the Lifecycle Manager Deployment. Below are the flags that can be set:
+This document provides a list of flags that can be set to control some specific aspects of Lifecycle Manager. The flags are set as arguments to the Lifecycle Manager Deployment. You can find the flags in the respective tables:
 
 ## Concurrent Reconciliation Values
 
