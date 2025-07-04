@@ -104,7 +104,7 @@ This document provides a list of flags that can be set to control some specific 
 
 | Flag                             | Type     | Default Value | Description                                                                                                                     |
 |----------------------------------|----------|---------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `leader-elect`                   | bool     | false         | Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager            |
+| `leader-elect`                   | bool     | false         | Enable leader election for controller manager. Enabling it ensures there is only one active controller manager            |
 | `leader-election-lease-duration` | duration | 180s          | Duration configured for the 'LeaseDuration' option of the controller-runtime library used to run the controller manager process |
 | `leader-election-renew-deadline` | duration | 120s          | Duration configured for the 'RenewDeadline' option of the controller-runtime library used to run the controller manager process |
 | `leader-election-retry-period`   | duration | 3s            | Duration configured for the 'RetryPeriod' option of the controller-runtime library used to run the controller manager process   |
