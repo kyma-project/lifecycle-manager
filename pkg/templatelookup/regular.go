@@ -147,8 +147,6 @@ func markInvalidSkewUpdate(ctx context.Context, moduleTemplateInfo *ModuleTempla
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
-	checkLog.Info("outdated ModuleTemplate: channel skew")
-
 	versionInTemplate, err := semver.NewVersion(templateVersion)
 	if err != nil {
 		msg := "could not handle channel skew as descriptor from template contains invalid version"
