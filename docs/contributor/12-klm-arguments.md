@@ -67,7 +67,7 @@ This document provides a list of flags that can be set to control some specific 
 | Flag                                               | Type     | Default Value | Description                                                                                                  |
 |----------------------------------------------------|----------|---------------|--------------------------------------------------------------------------------------------------------------|
 | `istio-gateway-cert-switch-before-expiration-time` | duration | 24h           | Duration before the expiration of the current CA certificate when the Gateway certificate should be switched |
-| `istio-namespace`                                  | string   | istio-system  | Namespace of Istio resources in cluster                                                                      |
+| `istio-namespace`                                  | string   | istio-system  | Namespace for Istio resources in a cluster                                                                      |
 | `istio-gateway-name`                               | string   | klm-watcher   | Name of Istio Gateway resource in cluster                                                                    |
 | `istio-gateway-namespace`                          | string   | kcp-system    | Namespace of the Istio Gateway resource in cluster                                                           |
 | `legacy-strategy-for-istio-gateway-secret`         | bool     | false         | Use the legacy strategy (with downtime) for the Istio Gateway Secret                                         |
