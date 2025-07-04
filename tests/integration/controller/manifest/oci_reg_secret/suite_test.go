@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package custom_resource_check_test
+package oci_reg_secret_test
 
 import (
 	"context"
@@ -23,9 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
-
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
+	"k8s.io/apimachinery/pkg/types"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -49,8 +47,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
@@ -121,13 +120,6 @@ var _ = BeforeSuite(func() {
 	if !found {
 		metricsBindAddress = ":0"
 	}
-	cacheOpts := setup.SetupCacheOptions(false,
-		"istio-system",
-		ControlPlaneNamespace,
-		certmanagerv1.SchemeGroupVersion.String(),
-		logr)
-	syncPeriod := 2 * time.Second
-	cacheOpts.SyncPeriod = &syncPeriod
 
 	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
@@ -135,11 +127,13 @@ var _ = BeforeSuite(func() {
 				BindAddress: metricsBindAddress,
 			},
 			Scheme: k8sclientscheme.Scheme,
-			Cache:  cacheOpts,
+			Cache: setup.SetupCacheOptions(false,
+				"istio-system",
+				ControlPlaneNamespace,
+				certmanagerv1.SchemeGroupVersion.String(),
+				logr),
 		},
 	)
-
-	mgr.GetControllerOptions()
 	Expect(err).ToNot(HaveOccurred())
 
 	authUser, err := testEnv.AddUser(
@@ -151,26 +145,30 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
-	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider()
-	statefulChecker := statecheck.NewStatefulSetStateCheck()
-	deploymentChecker := statecheck.NewDeploymentStateCheck()
+	nonExistingSecretName := types.NamespacedName{Namespace: "kcp-system", Name: "non-existing-secret"}
+	keyChainLookup := keychainprovider.NewFromSecretKeyChainProvider(kcpClient, nonExistingSecretName)
 	extractor := img.NewPathExtractor()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
 	orphanDetectionClient := kymarepository.NewClient(kcpClient)
-	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
-		Success: 1 * time.Second,
-		Busy:    1 * time.Second,
-		Error:   1 * time.Second,
-		Warning: 1 * time.Second,
-	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
+	reconciler = declarativev2.NewFromManager(mgr,
+		queue.RequeueIntervals{
+			Success: 1 * time.Second,
+			Busy:    1 * time.Second,
+			Error:   1 * time.Second,
+			Warning: 1 * time.Second,
+		},
+		metrics.NewManifestMetrics(metrics.NewSharedMetrics()),
+		metrics.NewMandatoryModulesMetrics(),
+		manifestClient,
+		orphanDetectionClient,
+		spec.NewResolver(keyChainLookup, extractor),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 			},
-		), manifest.WithClientCacheKey(),
-		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)))
+		), manifest.WithClientCacheKey(), declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()),
+	)
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
@@ -185,6 +183,7 @@ var _ = BeforeSuite(func() {
 			},
 		).Complete(reconciler)
 	Expect(err).ToNot(HaveOccurred())
+
 	Eventually(CreateNamespace, Timeout, Interval).
 		WithContext(ctx).
 		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())

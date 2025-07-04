@@ -280,6 +280,7 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.MinMaintenanceWindowSize, "min-maintenance-window-size",
 		DefaultMinMaintenanceWindowSize,
 		"Minimum duration of maintenance window required for reconciling modules with downtime.")
+	flag.StringVar(&flagVar.OciRegistryCredSecretName, "oci-registry-cred-secret", "", "Allows to configure name of the Secret containing the OCI registry credential")
 	return flagVar
 }
 
@@ -355,6 +356,7 @@ type FlagVar struct {
 	IstioGatewaySecretRequeueSuccessInterval   time.Duration
 	IstioGatewaySecretRequeueErrInterval       time.Duration
 	MinMaintenanceWindowSize                   time.Duration
+	OciRegistryCredSecretName                  string
 }
 
 func (f FlagVar) Validate() error {

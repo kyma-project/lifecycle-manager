@@ -45,7 +45,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
@@ -146,9 +148,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
-
-	kcp := &declarativev2.ClusterInfo{Config: cfg, Client: kcpClient}
-	keyChainLookup := manifest.NewKeyChainProvider(kcp.Client)
+	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider()
 	extractor := img.NewPathExtractor()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
@@ -159,7 +159,7 @@ var _ = BeforeSuite(func() {
 		Error:   1 * time.Second,
 		Warning: 1 * time.Second,
 	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifestClient, orphanDetectionClient, manifest.NewSpecResolver(keyChainLookup, extractor),
+		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
 		declarativev2.WithRemoteTargetCluster(
 			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
 				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil

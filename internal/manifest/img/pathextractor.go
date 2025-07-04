@@ -19,7 +19,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
 var (
@@ -38,9 +37,7 @@ func NewPathExtractor() *PathExtractor {
 	return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
 }
 
-func (p PathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec,
-	keyChain authn.Keychain,
-) (string, error) {
+func (p PathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec, keyChain authn.Keychain) (string, error) {
 	switch imageSpec.Type {
 	case v1beta2.OciRefType:
 		return p.GetPathForFetchedLayer(ctx, imageSpec, keyChain, string(v1beta2.RawManifestLayer)+".yaml")
@@ -84,14 +81,13 @@ func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 		return manifestPath, nil
 	}
 
-	// pull image layer
-	layer, err := pullLayer(ctx, imageRef, keyChain)
+	imgLayer, err := pullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return "", err
 	}
 
 	// copy uncompressed manifest to install path
-	blobReadCloser, err := layer.Uncompressed()
+	blobReadCloser, err := imgLayer.Uncompressed()
 	if err != nil {
 		return "", fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
 	}
@@ -174,7 +170,7 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 }
 
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
-	noSchemeImageRef := ocmextensions.NoSchemeURL(imageRef)
+	noSchemeImageRef := noSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
 	if err != nil {
 		return nil, fmt.Errorf("invalid imageRef: %w", err)
@@ -187,6 +183,7 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (c
 		}
 		return imgLayer, nil
 	}
+
 	imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
@@ -206,4 +203,9 @@ func sanitizeArchivePath(dir, path string) (string, error) {
 	}
 
 	return "", fmt.Errorf("%w: %s", ErrTaintedArchive, path)
+}
+
+func noSchemeURL(url string) string {
+	regex := regexp.MustCompile(`^https?://`)
+	return regex.ReplaceAllString(url, "")
 }

@@ -130,17 +130,6 @@ func (m ModuleTemplateBuilder) WithOCM(schemaVersion compdesc.SchemaVersion) Mod
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithOCMPrivateRepo() ModuleTemplateBuilder {
-	if m.moduleTemplate.Labels == nil {
-		m.moduleTemplate.Labels = make(map[string]string)
-	}
-	var moduleTemplate v1beta2.ModuleTemplate
-	template := "v1beta2_kcp-module-cred-label.yaml"
-	readComponentDescriptorFromYaml(template, &moduleTemplate)
-	m.moduleTemplate.Spec.Descriptor = moduleTemplate.Spec.Descriptor
-	return m
-}
-
 func (m ModuleTemplateBuilder) WithRequiresDowntime(value bool) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.RequiresDowntime = value
 	return m

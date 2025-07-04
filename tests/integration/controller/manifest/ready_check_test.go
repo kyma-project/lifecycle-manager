@@ -51,8 +51,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 
 		manifestName := testManifest.GetName()
 		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
-			manifestFilePath,
-			false)
+			manifestFilePath)
 		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
