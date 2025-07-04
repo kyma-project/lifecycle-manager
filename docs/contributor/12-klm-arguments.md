@@ -16,15 +16,15 @@ This document provides a list of flags that can be set to control some specific 
 
 | Flag                                                 | Type     | Default Value | Description                                                                                             |
 |------------------------------------------------------|----------|---------------|---------------------------------------------------------------------------------------------------------|
-| `kyma-requeue-success-interval`                      | duration | 30s           | Duration after which a Kyma in Ready state is enqueued for reconciliation                               |
-| `kyma-requeue-error-interval`                        | duration | 2s            | Duration after which a Kyma in Error state is enqueued for reconciliation                               |
-| `kyma-requeue-warning-interval`                      | duration | 30s           | Duration after which a Kyma in Warning state is enqueued for reconciliation                             |
-| `kyma-requeue-busy-interval`                         | duration | 5s            | Duration after which a Kyma in Processing state is enqueued for reconciliation                          |
-| `mandatory-module-requeue-success-interval`          | duration | 30s           | Duration after which a Kyma in Ready state is enqueued for mandatory module installation reconciliation |
-| `manifest-requeue-success-interval`                  | duration | 30s           | Duration after which a Manifest in Ready state is enqueued for reconciliation                           |
-| `manifest-requeue-error-interval`                    | duration | 2s            | Duration after which a Manifest in Error state is enqueued for reconciliation                           |
-| `manifest-requeue-warning-interval`                  | duration | 30s           | Duration after which a Manifest in Warning state is enqueued for reconciliation                         |
-| `manifest-requeue-busy-interval`                     | duration | 5s            | Duration after which a Manifest in Processing state is enqueued for reconciliation                      |
+| `kyma-requeue-success-interval`                      | duration | 30s           | Duration after which a Kyma CR in the Ready state is enqueued for reconciliation                               |
+| `kyma-requeue-error-interval`                        | duration | 2s            | Duration after which a Kyma CR in the Error state is enqueued for reconciliation                               |
+| `kyma-requeue-warning-interval`                      | duration | 30s           | Duration after which a Kyma CR in the Warning state is enqueued for reconciliation                             |
+| `kyma-requeue-busy-interval`                         | duration | 5s            | Duration after which a Kyma CR in the Processing state is enqueued for reconciliation                          |
+| `mandatory-module-requeue-success-interval`          | duration | 30s           | Duration after which a Kyma CR in the Ready state is enqueued for mandatory module installation reconciliation |
+| `manifest-requeue-success-interval`                  | duration | 30s           | Duration after which a Manifest CR in the Ready state is enqueued for reconciliation                           |
+| `manifest-requeue-error-interval`                    | duration | 2s            | Duration after which a Manifest CR in the Error state is enqueued for reconciliation                           |
+| `manifest-requeue-warning-interval`                  | duration | 30s           | Duration after which a Manifest CR in the Warning state is enqueued for reconciliation                         |
+| `manifest-requeue-busy-interval`                     | duration | 5s            | Duration after which a Manifest CR in the Processing state is enqueued for reconciliation                      |
 | `manifest-requeue-jitter-probability`                | float    | 0.02          | Percentage probability that jitter is applied to the requeue interval                                   |
 | `manifest-requeue-jitter-percentage`                 | float    | 0.02          | Percentage range for the jitter applied to the requeue interval e.g. 0.1 means +/- 10% of the interval  |
 | `mandatory-module-deletion-requeue-success-interval` | duration | 30s           | Duration after which a Kyma in Ready state is enqueued for mandatory module deletion reconciliation     |
