@@ -8,7 +8,6 @@ import (
 
 	"ocm.software/ocm/api/ocm"
 	"ocm.software/ocm/api/ocm/compdesc"
-	ocmmetav1 "ocm.software/ocm/api/ocm/compdesc/meta/v1"
 	"ocm.software/ocm/api/ocm/cpi"
 	"ocm.software/ocm/api/ocm/extensions/accessmethods/localblob"
 	"ocm.software/ocm/api/ocm/extensions/accessmethods/localociblob"
@@ -17,10 +16,8 @@ import (
 	"ocm.software/ocm/api/utils/mime"
 	"ocm.software/ocm/api/utils/runtime"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"
@@ -78,7 +75,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 			if !ok {
 				return nil, common.ErrTypeAssert
 			}
-			layerRef, err := getOCIRef(repo, descriptor, accessSpec, resource.Labels)
+			layerRef, err := getOCIRef(repo, descriptor, accessSpec)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
@@ -113,7 +110,6 @@ func getOCIRef(
 	repo *genericocireg.RepositorySpec,
 	descriptor *compdesc.ComponentDescriptor,
 	accessSpec *localblob.AccessSpec,
-	labels ocmmetav1.Labels,
 ) (*OCI, error) {
 	layerRef := OCI{}
 	if accessSpec.MediaType == mime.MIME_TAR {
@@ -128,13 +124,6 @@ func getOCIRef(
 		layerRef.Ref = descriptor.GetVersion()
 	} else {
 		layerRef.Ref = accessSpec.LocalReference
-	}
-	if registryCredValue, found := labels.Get(shared.OCIRegistryCredLabel); found {
-		credSecretSelector, err := ocmextensions.GenerateLabelSelector(registryCredValue)
-		if err != nil {
-			return nil, err
-		}
-		layerRef.CredSecretSelector = credSecretSelector
 	}
 
 	switch repo.ComponentNameMapping {

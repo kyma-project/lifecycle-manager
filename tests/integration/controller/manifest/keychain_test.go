@@ -6,16 +6,21 @@ import (
 
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+)
+
+const (
+	ociSecretName      = "private-oci-registry-cred" //nolint: gosec // test secret
+	ociSecretNamespace = "kcp-system"                //nolint: gosec // test secret
+	repo               = "test.registry.io"
 )
 
 var _ = Describe(
@@ -23,15 +28,13 @@ var _ = Describe(
 		It(
 			"should fetch authnKeyChain from secret correctly", FlakeAttempts(5), func() {
 				By("install secret")
-				const CredSecretLabelValue = "test-operator"
-				Eventually(installCredSecret(kcpClient, CredSecretLabelValue), standardTimeout,
-					standardInterval).Should(Succeed())
-				const repo = "test.registry.io"
-				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
-					"digest", CredSecretLabelValue)
-				keychain, err := ocmextensions.GetAuthnKeychain(ctx,
-					imageSpecWithCredSelect.CredSecretSelector, kcpClient)
+				Eventually(installCredSecret(kcpClient), standardTimeout, standardInterval).Should(Succeed())
+
+				keyChainLookup := keychainprovider.NewFromSecretKeyChainProvider(kcpClient,
+					types.NamespacedName{Name: ociSecretName, Namespace: ociSecretNamespace})
+				keychain, err := keyChainLookup.Get(ctx)
 				Expect(err).ToNot(HaveOccurred())
+
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)
 				Expect(err).ToNot(HaveOccurred())
@@ -43,17 +46,6 @@ var _ = Describe(
 		)
 	},
 )
-
-func CreateOCIImageSpecWithCredSelect(name, repo, digest, secretLabelValue string) v1beta2.ImageSpec {
-	imageSpec := v1beta2.ImageSpec{
-		Name:               name,
-		Repo:               repo,
-		Type:               "oci-ref",
-		Ref:                digest,
-		CredSecretSelector: CredSecretLabelSelector(secretLabelValue),
-	}
-	return imageSpec
-}
 
 type TestRegistry struct {
 	target   string
@@ -68,7 +60,7 @@ func (d TestRegistry) RegistryStr() string {
 	return d.registry
 }
 
-func installCredSecret(clnt client.Client, secretLabelValue string) func() error {
+func installCredSecret(clnt client.Client) func() error {
 	return func() error {
 		secret := &apicorev1.Secret{}
 		secretFile, err := os.ReadFile(filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples",
@@ -76,7 +68,8 @@ func installCredSecret(clnt client.Client, secretLabelValue string) func() error
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
-		secret.Labels[OCIRegistryCredLabelKeyForTest] = secretLabelValue
+		Expect(secret.Name).To(Equal(ociSecretName))
+		Expect(secret.Namespace).To(Equal(ociSecretNamespace))
 		err = clnt.Create(ctx, secret)
 		if apierrors.IsAlreadyExists(err) {
 			return nil

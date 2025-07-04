@@ -93,11 +93,6 @@ type ImageSpec struct {
 	// This time is used in codec to successfully decode from raw extensions.
 	// +kubebuilder:validation:Enum=helm-chart;oci-ref;"kustomize";""
 	Type RefTypeMetadata `json:"type,omitempty"`
-
-	// CredSecretSelector is an optional field, for OCI image saved in private registry,
-	// use it to indicate the secret which contains registry credentials,
-	// must exist in the namespace same as manifest
-	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 type RefTypeMetadata string
