@@ -395,10 +395,6 @@ func ManifestNoDeletionTimeStampSet(ctx context.Context,
 	return nil
 }
 
-const (
-	OCIRegistryCredLabelKeyForTest = shared.OperatorGroup + shared.Separator + "oci-registry-cred"
-)
-
 type mockLayer struct {
 	filePath string
 }
@@ -464,16 +460,13 @@ func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerNam
 	return nil
 }
 
-func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredSecretSelector bool) (v1beta2.ImageSpec,
+func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string) (v1beta2.ImageSpec,
 	error,
 ) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: "oci-ref",
-	}
-	if enableCredSecretSelector {
-		imageSpec.CredSecretSelector = CredSecretLabelSelector("test-secret-label")
 	}
 	layer, err := CreateImageSpecLayer(manifestFilePath)
 	if err != nil {
@@ -487,16 +480,13 @@ func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string, enableCredS
 	return imageSpec, nil
 }
 
-func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string, enableCredSecretSelector bool) (v1beta2.ImageSpec,
+func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string) (v1beta2.ImageSpec,
 	error,
 ) {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: v1beta2.OciDirType,
-	}
-	if enableCredSecretSelector {
-		imageSpec.CredSecretSelector = CredSecretLabelSelector("test-secret-label")
 	}
 	layer, err := CreateImageSpecLayer(manifestTarPath)
 	if err != nil {
@@ -514,8 +504,7 @@ func WithInvalidInstallImageSpec(ctx context.Context, clnt client.Client,
 	enableResource bool, manifestFilePath string,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		invalidImageSpec, err := CreateOCIImageSpecFromFile("invalid-image-spec", "domain.invalid", manifestFilePath,
-			false)
+		invalidImageSpec, err := CreateOCIImageSpecFromFile("invalid-image-spec", "domain.invalid", manifestFilePath)
 		if err != nil {
 			return err
 		}
@@ -529,10 +518,10 @@ func WithInvalidInstallImageSpec(ctx context.Context, clnt client.Client,
 
 func WithValidInstallImageSpecFromFile(ctx context.Context, clnt client.Client,
 	name, manifestFilePath, serverURL string,
-	enableResource, enableCredSecretSelector bool,
+	enableResource bool,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		validImageSpec, err := CreateOCIImageSpecFromFile(name, serverURL, manifestFilePath, enableCredSecretSelector)
+		validImageSpec, err := CreateOCIImageSpecFromFile(name, serverURL, manifestFilePath)
 		if err != nil {
 			return err
 		}
@@ -548,7 +537,7 @@ func WithValidInstallImageSpecFromTar(ctx context.Context, clnt client.Client, n
 	enableResource, enableCredSecretSelector bool,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		validImageSpec, err := CreateOCIImageSpecFromTar(name, serverURL, manifestTarPath, enableCredSecretSelector)
+		validImageSpec, err := CreateOCIImageSpecFromTar(name, serverURL, manifestTarPath)
 		if err != nil {
 			return err
 		}
@@ -693,12 +682,6 @@ func DeleteManifestAndVerify(ctx context.Context, clnt client.Client, manifest *
 			return fmt.Errorf("failed to fetch manifest %w", err)
 		}
 		return nil
-	}
-}
-
-func CredSecretLabelSelector(labelValue string) *apimetav1.LabelSelector {
-	return &apimetav1.LabelSelector{
-		MatchLabels: map[string]string{OCIRegistryCredLabelKeyForTest: labelValue},
 	}
 }
 

@@ -16,56 +16,29 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
 
 ## Procedure
 
-### Prepare a docker-registry Secret Manifest
 
-1. Create a docker-registry Secret manifest. Run:
+1. Create a Docker Registry Secret resource definition:
 
    ```sh
    kubectl create secret docker-registry [secret name] --docker-server=[your oci registry host] --docker-username=[username] --docker-password=[password/token]  --dry-run=client -oyaml > registry_cred_secret.yaml
    ```
 
-2. Add the following labels to the Secret so that it can be configured later in the ModuleTemplate custom resource (CR) as a label selector.
-
+2. Adapt the Deployment of Lifecycle Manager (KLM). Use the flag `--oci-registry-cred-secret` together with the value of your Secret name to ensure that the private OCI registry is used. For example, if your Secret is named `my-private-oci-reg-creds`, your Lifecycle Manager Deployment must contain the following container argument:
    ```yaml
-   apiVersion: v1
-   kind: Secret
+   apiVersion: apps/v1
+   kind: Deployment
    metadata:
-      labels:
-        "operator.kyma-project.io/managed-by": "lifecycle-manager"
-        "operator.kyma-project.io/oci-registry-cred": "test-operator"
+     name: klm-controller-manager
+     namespace: kcp-system
+   spec:
+     template:
+       containers:
+       - args:
+         - oci-registry-cred-secret=my-private-oci-reg-creds
    ```
 
-   > **NOTE:** The `"operator.kyma-project.io/managed-by": "lifecycle-manager"` label is mandatory for the Lifecycle Manager runtime controller to know which resources to cache.
-
-3. Deploy the Secret on the same cluster where the ModuleTemplate CR is to be located. For example, if the ModuleTemplate CR is on the SKR cluster, then the Secret should be deployed to the SKR. Otherwise, it should be deployed to the KCP cluster.
-
-### Generate a ModuleTemplate CR with the `oci-registry-cred` Label
-
-The `oci-registry-cred` label in a ModuleTemplate CR allows Lifecycle Manager to parse the Secret label selector and propagate it to the Manifest CR so that Lifecycle Manager knows which credentials Secret to look up.
-
-To support the ModuleTemplate CR with the `oci-registry-cred` label, use modulectl with the `registry-cred-selector` flag for creating a module command.
-
-For example, you can run the following command to push your module image and generate a ModuleTemplate CR with the `oci-registry-cred` label:
+3. Deploy the Secret in the same cluster where KLM is deployed. Usually, it is the `kcp-system` namespace in the KCP cluster.
 
    ```sh
-   kyma alpha create module --module-config-file [module config file] --registry [private oci registry] -c [access credential with write permission] --registry-cred-selector=operator.kyma-project.io/oci-registry-cred=test-operator
+   kubectl apply -f registry_cred_secret.yaml -n kcp-system
    ```
-
-Verify in each **descriptor.component.resources** layer, if it contains the `oci-registry-cred` label.
-
-   ```yaml
-   descriptor:
-    component:
-      resources:
-      - access:
-          digest: sha256:bc2a16d9b01b4809f8123e9402e2c6e6be2ef815975ad4131282ceb33af4d5a5
-          type: localOciBlob
-        labels:
-        - name: oci-registry-cred
-          value:
-            operator.kyma-project.io/oci-registry-cred: test-operator
-   ```
-
-### Result
-
-With this ModuleTemplate CR, Lifecycle Manager should access a private OCI registry without any authentication problems.
