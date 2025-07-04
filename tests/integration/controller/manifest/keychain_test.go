@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	ociSecretName      = "private-oci-registry-cred"
-	ociSecretNamespace = "kcp-system"
+	ociSecretName      = "private-oci-registry-cred" //nolint: gosec // test secret
+	ociSecretNamespace = "kcp-system"                //nolint: gosec // test secret
+	repo               = "test.registry.io"
 )
 
 var _ = Describe(
@@ -28,10 +29,12 @@ var _ = Describe(
 			"should fetch authnKeyChain from secret correctly", FlakeAttempts(5), func() {
 				By("install secret")
 				Eventually(installCredSecret(kcpClient), standardTimeout, standardInterval).Should(Succeed())
-				const repo = "test.registry.io"
-				keyChainLookup := keychainprovider.NewFromSecretKeyChainProvider(kcpClient, types.NamespacedName{Name: ociSecretName, Namespace: ociSecretNamespace})
+
+				keyChainLookup := keychainprovider.NewFromSecretKeyChainProvider(kcpClient,
+					types.NamespacedName{Name: ociSecretName, Namespace: ociSecretNamespace})
 				keychain, err := keyChainLookup.Get(ctx)
 				Expect(err).ToNot(HaveOccurred())
+
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)
 				Expect(err).ToNot(HaveOccurred())
