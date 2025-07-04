@@ -4,6 +4,7 @@ This table of contents lists all Lifecycle Manager documents relevant to operato
 
 * [Lifecycle Manager](../../README.md)
   * [Lifecycle Manager Components](../contributor/11-components.md)
+  * [Lifecycle Manager Arguments](../contributor/12-klm-arguments.md)
   * [Lifecycle Manager Resources](../contributor/resources/README.md)
     * [Kyma](../contributor/resources/01-kyma.md)
     * [Manifest](../contributor/resources/02-manifest.md)
