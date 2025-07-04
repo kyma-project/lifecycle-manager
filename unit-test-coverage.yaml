@@ -10,7 +10,7 @@ packages:
   internal/manifest/filemutex: 100
   internal/manifest/finalizer: 17
   internal/manifest/img: 65
-  internal/manifest/keychainprovider: 60
+  internal/manifest/keychainprovider: 76
   internal/manifest/labelsremoval: 100
   internal/manifest/manifestclient: 5
   internal/manifest/modulecr: 50
