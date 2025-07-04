@@ -56,7 +56,7 @@ This document provides a list of flags that can be set to control some specific 
 | `cert-management`                                  | string   | cert-manager.io/v1     | Certificate management system to use. Accepted values: `cert-manager.io/v1`, `gateway.cert.gardener.cloud/v1alpha1`      |
 | `self-signed-cert-duration`                        | duration | 90*24h                 | Duration of self-signed certificate. Minimum: 1h                                                                     |
 | `self-signed-cert-renew-before`                    | duration | 60*24h                 | Duration before the currently issued self-signed certificate's expiry when cert-manager should renew the certificate |
-| `self-signed-cert-renew-buffer`                    | duration | 24h                    | Duration to wait before confirm self-signed certificate not renewed                                                  |
+| `self-signed-cert-renew-buffer`                    | duration | 24h                    | Duration to wait before confirming self-signed certificate are not renewed                                                  |
 | `self-signed-cert-key-size`                        | int      | 4096                   | Key size for the self-signed certificate                                                                             |
 | `self-signed-cert-issuer-name`                     | string   | klm-watcher-selfsigned | Issuer name for the self-signed certificate                                                                          |
 | `self-signed-cert-naming-template`                 | string   | %s-webhook-tls         | Naming template for the self-signed certificate. Should contain one '%s' placeholder for the Kyma name               |
