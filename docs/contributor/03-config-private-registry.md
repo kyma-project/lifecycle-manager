@@ -16,7 +16,6 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
 
 ## Procedure
 
-### Prepare a Docker Registry Secret
 
 1. Create a Docker Registry Secret resource definition:
 
@@ -24,7 +23,7 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
    kubectl create secret docker-registry [secret name] --docker-server=[your oci registry host] --docker-username=[username] --docker-password=[password/token]  --dry-run=client -oyaml > registry_cred_secret.yaml
    ```
 
-2. Adapt the Deployment of lifecycle-manager (KLM). Use the flag `--oci-registry-cred-secret` together with the value of your Secret name, to ensure that the private OCI registry is used. For example, if your Secret is named `my-private-oci-reg-creds`, your lifecycle-manager Deployment should contain the following container argument:
+2. Adapt the Deployment of Lifecycle Manager (KLM). Use the flag `--oci-registry-cred-secret` together with the value of your Secret name to ensure that the private OCI registry is used. For example, if your Secret is named `my-private-oci-reg-creds`, your Lifecycle Manager Deployment must contain the following container argument:
    ```yaml
    apiVersion: apps/v1
    kind: Deployment
@@ -38,7 +37,7 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
          - oci-registry-cred-secret=my-private-oci-reg-creds
    ```
 
-3. Deploy the Secret on the same cluster where KLM is deployed, so it should usually be deployed to the `kcp-system` namespace on the KCP cluster:s
+3. Deploy the Secret in the same cluster where KLM is deployed. Usually, it is the `kcp-system` namespace in the KCP cluster.
 
    ```sh
    kubectl apply -f registry_cred_secret.yaml -n kcp-system
