@@ -6,9 +6,9 @@ This document provides a list of flags that can be set to control some specific 
 
 | Flag                                                   | Type | Default Value | Description                                                                             |
 |--------------------------------------------------------|------|---------------|-----------------------------------------------------------------------------------------|
-| `max-concurrent-kyma-reconciles`                       | int  | 1             | Maximum number of concurrent Kyma reconciles which can be run                           |
-| `max-concurrent-manifest-reconciles`                   | int  | 1             | Maximum number of concurrent Manifest reconciles which can be run                       |
-| `max-concurrent-watcher-reconciles`                    | int  | 1             | Maximum number of concurrent Watcher reconciles which can be run                        |
+| `max-concurrent-kyma-reconciles`                       | int  | 1             | Maximum number of concurrent Kyma CR reconciles which can be run                        |
+| `max-concurrent-manifest-reconciles`                   | int  | 1             | Maximum number of concurrent Manifest CR  reconciles which can be run                   |
+| `max-concurrent-watcher-reconciles`                    | int  | 1             | Maximum number of concurrent Watcher CR  reconciles which can be run                    |
 | `max-concurrent-mandatory-modules-reconciles`          | int  | 1             | Maximum number of concurrent Mandatory Modules installation reconciles which can be run |
 | `max-concurrent-mandatory-modules-deletion-reconciles` | int  | 1             | Maximum number of concurrent Mandatory Modules deletion reconciles which can be run     |
 
