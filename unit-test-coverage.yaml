@@ -27,7 +27,7 @@ packages:
   internal/service/manifest/orphan: 100
   internal/util/collections: 87
   pkg/module/sync: 10
-  pkg/templatelookup: 87.6
+  pkg/templatelookup: 87
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher/skr_webhook_resources: 82
   pkg/watcher/certificate: 100
