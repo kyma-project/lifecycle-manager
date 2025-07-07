@@ -44,16 +44,16 @@ This document provides a list of flags that can be set to control some specific 
 
 ## Kubernetes Client Configuration
 
-| Flag               | Type | Default Value | Description                                                                                                                                                          |
-|--------------------|------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `k8s-client-qps`   | int  | 300           | Maximum queries per second (QPS) limit for the Kubernetes client. Controls how many requests can be made to the Kubernetes API server per second in the steady state |
-| `k8s-client-burst` | int  | 600           | Maximum burst size for throttling Kubernetes API requests. Allows temporarily exceeding the QPS limit when there are sudden spikes in request volume                 |
+| Flag               | Type  | Default Value | Description                                                                                                                                                          |
+|--------------------|-------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `k8s-client-qps`   | float | 300           | Maximum queries per second (QPS) limit for the Kubernetes client. Controls how many requests can be made to the Kubernetes API server per second in the steady state |
+| `k8s-client-burst` | int   | 600           | Maximum burst size for throttling Kubernetes API requests. Allows temporarily exceeding the QPS limit when there are sudden spikes in request volume                 |
 
 ## Certificates Configuration
 
 | Flag                                | Type     | Default Value          | Description                                                                                                          |
 |-------------------------------------|----------|------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `cert-management`                   | string   | cert-manager.io/v1     | Certificate management system to use. Accepted values: `cert-manager.io/v1`, `gateway.cert.gardener.cloud/v1alpha1`  |
+| `cert-management`                   | string   | cert-manager.io/v1     | Certificate management system to use. Accepted values: `cert-manager.io/v1`, `cert.gardener.cloud/v1alpha1`          |
 | `self-signed-cert-duration`         | duration | 90*24h                 | Duration of self-signed certificate. Minimum: 1h                                                                     |
 | `self-signed-cert-renew-before`     | duration | 60*24h                 | Duration before the currently issued self-signed certificate's expiry when cert-manager should renew the certificate |
 | `self-signed-cert-renew-buffer`     | duration | 24h                    | Duration to wait before confirming self-signed certificate are not renewed                                           |
