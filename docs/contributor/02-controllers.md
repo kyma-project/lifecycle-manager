@@ -1,4 +1,4 @@
-# Controllers
+# Lifecycle Manager Controllers
 
 This document describes the controllers used by Lifecycle Manager.
 
