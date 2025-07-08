@@ -29,7 +29,8 @@ func NewDetectionService(repository DetectionRepository) *DetectionService {
 }
 
 func (s *DetectionService) DetectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if shouldSkipCheck(manifest) {
+	if manifest.GetDeletionTimestamp() != nil {
+		// If the manifest is being deleted, we don't check for orphaned status (as it should be eventually deleted)
 		return nil
 	}
 
@@ -38,25 +39,14 @@ func (s *DetectionService) DetectOrphanedManifest(ctx context.Context, manifest 
 		return fmt.Errorf("error during orphaned manifest detection for manifest %s: %w", manifest.Name, err)
 	}
 
-	if !isManifestReferencedInKymaStatus(kyma, manifest.Name) {
+	if !isManifestReferencedInKymaStatus(kyma, manifest.Name) && !manifest.IsMandatoryModule() {
+		// Mandatory modules are not listed in Kyma status, so we skip the check for them
 		if !isManifestRecentlyCreated(manifest.GetCreationTimestamp().Time) {
 			return fmt.Errorf("%w: manifest is not referenced in Kyma status", ErrOrphanedManifest)
 		}
 	}
 
 	return nil
-}
-
-func shouldSkipCheck(manifest *v1beta2.Manifest) bool {
-	if manifest.IsMandatoryModule() {
-		// Mandatory modules are not refereced by any Kyma object so cannot be orphaned
-		return true
-	}
-	if manifest.GetDeletionTimestamp() != nil {
-		// If the manifest is being deleted, we don't check for orphaned status (as it should be eventually deleted)
-		return true
-	}
-	return false
 }
 
 func (s *DetectionService) getParentKyma(ctx context.Context, manifest *v1beta2.Manifest) (*v1beta2.Kyma, error) {
