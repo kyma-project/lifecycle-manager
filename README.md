@@ -10,10 +10,11 @@
 The Kyma Lifecycle Manager (KLM) is a crucial component at the core of the managed Kyma runtime. Operating within the Kyma Control Plane (KCP) cluster, KLM manages the lifecycle of Kyma modules in the SAP BTP, Kyma Runtime (SKR) clusters. These SKR clusters are hyperscaler clusters provisioned for users of the managed Kyma runtime.
 
 KLM's key responsibilities include:
-- Installing Custom Resource Definitions (CRDs) required for Kyma module deployment
-- Synchronizing the catalog of available Kyma modules to SKR clusters
-- Installing, updating, reconciling, and deleting Kyma module resources in SKR clusters
-- Watching SKR clusters for changes requested by the users
+
+* Installing Custom Resource Definitions (CRDs) required for Kyma module deployment
+* Synchronizing the catalog of available Kyma modules to SKR clusters
+* Installing, updating, reconciling, and deleting Kyma module resources in SKR clusters
+* Watching SKR clusters for changes requested by the users
 
 KLM is built using the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) framework and extends the Kubernetes API through custom resource definitions. For detailed information about these resources, see [Lifecycle Manager Resources](./docs/contributor/resources/README.md).
 
@@ -26,16 +27,23 @@ If you are a Kyma end user, see the [user documentation](./docs/user/README.md).
 If you want to provide new features for Lifecycle Manager, develop a module, or are part of the SRE team, visit the [contributor](/docs/contributor/) folder. You will find the following documents:
 
 * [Architecture](/docs/contributor/01-architecture.md)
-* [Controllers](/docs/contributor/02-controllers.md)
+* [Lifecycle Manager Controllers](/docs/contributor/02-controllers.md)
 * [Provide Credentials for Private OCI Registry Authentication](/docs/contributor/03-config-private-registry.md)
-* [Configure a Local Test Setup](/docs/contributor/04-local-test-setup.md)
+* [Configure a Local Test Setup (VS Code & GoLand)](/docs/contributor/04-local-test-setup.md)
 * [API Changelog](/docs/contributor/05-api-changelog.md)
-* [Resources](/docs/contributor/resources/README.md)
+* [Lifecycle Manager Resources](/docs/contributor/resources/README.md)
   * [Kyma](/docs/contributor/resources/01-kyma.md)
   * [Manifest](/docs/contributor/resources/02-manifest.md)
   * [ModuleTemplate](/docs/contributor/resources/03-moduletemplate.md)
   * [Watcher](/docs/contributor/resources/04-watcher.md)
   * [ModuleReleaseMeta](/docs/contributor/resources/05-modulereleasemeta.md)
+* [New Module Submission and Promotion Concept](/docs/contributor/06-module-migration-concept.md)
+* [New Module Submission and Promotion Process: Migration Guide](/docs/contributor/07-module-migration-guide.md)
+* [Synchronization Between Kyma Control Plane and SAP BTP, Kyma Runtime](/docs/contributor/08-kcp-skr-synchronization.md)
+* [Lifecycle Manager Metrics](/docs/contributor/09-metrics.md)
+* [Maintenance Windows](/docs/contributor/10-maintenance-windows.md)
+* [Lifecycle Manager Components](/docs/contributor/11-components.md)
+* [Lifecycle Manager Flags](/docs/contributor/12-klm-arguments.md)
 
 ## Contributing
 
