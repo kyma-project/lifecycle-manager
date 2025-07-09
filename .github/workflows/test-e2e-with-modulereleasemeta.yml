@@ -75,6 +75,7 @@ jobs:
           - watcher-zero-downtime
           - module-deletion-with-multiple-crs-create-and-delete-policy
           - module-deletion-with-multiple-crs-ignore-policy
+          - oci-reg-cred-secret
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
