@@ -74,7 +74,7 @@ runs:
       if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
       shell: bash
       run: |
-        modulectl create --config-file ./module-config.yaml --registry http://k3d-private-oci-reg::5001 --registry-credentials myuser:mypass --insecure
+        modulectl create --config-file ./module-config.yaml --registry http://k3d-private-oci-reg:5001 --registry-credentials myuser:mypass --insecure
         kubectl get crds
         kubectl apply -f template.yaml
     - name: Create and apply ModuleReleaseMeta from the latest release
