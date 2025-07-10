@@ -35,4 +35,4 @@ runs:
         --docker-username=myuser \
         --docker-password=mypass \
         --docker-email=dummy@example.com \
-        -n kcp-system 
+        -n kcp-system
