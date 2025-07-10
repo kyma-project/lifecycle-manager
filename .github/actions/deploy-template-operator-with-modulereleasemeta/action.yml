@@ -94,7 +94,7 @@ runs:
         matrix.e2e-test == 'labelling' ||
         matrix.e2e-test == 'module-deletion-with-multiple-crs-ignore-policy' ||
         matrix.e2e-test == 'module-deletion-with-multiple-crs-create-and-delete-policy' ||
-        matrix.e2e-test == 'oci-reg-cred-secret' 
+        matrix.e2e-test == 'oci-reg-cred-secret'
         }}
       shell: bash
       run: |
