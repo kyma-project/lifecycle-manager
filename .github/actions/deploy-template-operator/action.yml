@@ -81,9 +81,9 @@ runs:
         popd
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
-        version: 1.0.1
+        version: 1.0.3
         security: sec-scanners-config.yaml
-        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.3/default-sample-cr.yaml
         manifest: https://localhost:8080/template-operator.yaml
         repository: https://github.com/kyma-project/template-operator
         documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
@@ -113,9 +113,9 @@ runs:
         popd
         make build-statefulset-manifests
         echo "name: kyma-project.io/module/template-operator
-        version: 1.0.1
+        version: 1.0.3
         security: sec-scanners-config.yaml
-        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.3/default-sample-cr.yaml
         manifest: https://localhost:8080/template-operator.yaml
         repository: https://github.com/kyma-project/template-operator
         documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
@@ -137,7 +137,7 @@ runs:
         version: 1.1.1
         manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
-        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.1/default-sample-cr.yaml
+        defaultCR: https://github.com/kyma-project/template-operator/releases/download/1.0.3/default-sample-cr.yaml
         repository: https://github.com/kyma-project/template-operator
         documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
         icons:
@@ -188,7 +188,7 @@ runs:
       run: |
         make build-manifests
         echo "name: kyma-project.io/module/template-operator
-        version: 1.0.0
+        version: 1.0.3
         manifest: https://localhost:8080/template-operator.yaml
         security: sec-scanners-config.yaml
         repository: https://github.com/kyma-project/template-operator
