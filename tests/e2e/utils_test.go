@@ -41,7 +41,7 @@ const (
 	ConsistentDuration      = 20 * time.Second
 	interval                = 500 * time.Millisecond
 	moduleCRFinalizer       = "cr-finalizer"
-	ModuleVersionToBeUsed   = "1.0.1"
+	ModuleVersionToBeUsed   = "1.0.3"
 	NewerVersion            = "2.4.2-e2e-test"
 	MisconfiguredModuleName = "template-operator-misconfigured"
 )
