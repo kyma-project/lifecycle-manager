@@ -25,7 +25,7 @@ runs:
     - name: connect-to-k3d-network
       shell: bash
       run: |
-          docker network connect k3d-kcp private-registry
+          docker network connect k3d-kcp private-oci-reg
 
     - name: create-and-apply-secret
       shell: bash
