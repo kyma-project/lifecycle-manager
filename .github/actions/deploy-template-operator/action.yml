@@ -143,6 +143,7 @@ runs:
         icons:
         - name: module-icon
           link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png" >> misconfigured-module-config.yaml
+        yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:1.1.1"]' -i sec-scanners-config.yaml
     - name: Create Template Operator Module with Deployment, with non-working image and apply
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
