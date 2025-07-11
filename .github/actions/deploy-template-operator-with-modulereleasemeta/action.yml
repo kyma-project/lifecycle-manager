@@ -25,7 +25,8 @@ runs:
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics' &&
-        matrix.e2e-test != 'watcher-zero-downtime'
+        matrix.e2e-test != 'watcher-zero-downtime' &&
+        matrix.e2e-test != 'oci-reg-cred-secret'
         }}
       shell: bash
       run: |
@@ -37,7 +38,8 @@ runs:
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics' &&
-        matrix.e2e-test != 'watcher-zero-downtime'
+        matrix.e2e-test != 'watcher-zero-downtime' &&
+        matrix.e2e-test != 'oci-reg-cred-secret'
         }}
       shell: bash
       run: |
@@ -48,7 +50,8 @@ runs:
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
         matrix.e2e-test != 'mandatory-module-metrics' &&
-        matrix.e2e-test != 'watcher-zero-downtime'
+        matrix.e2e-test != 'watcher-zero-downtime' &&
+        matrix.e2e-test != 'oci-reg-cred-secret'
         }}
       shell: bash
       run: |
@@ -66,6 +69,15 @@ runs:
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
+    - name: Create and apply Template Operator ModuleTemplate in private registry
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
+      shell: bash
+      run: |
+        modulectl create --config-file ./module-config.yaml --registry http://k3d-private-oci-reg.localhost:5001 --registry-credentials myuser:mypass --insecure
+        sed -i 's/k3d-private-oci-reg.localhost:5001/private-oci-reg.localhost:5000/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
     - name: Create and apply ModuleReleaseMeta from the latest release
       working-directory: template-operator
       if: ${{ matrix.e2e-test == 'kyma-metrics' ||
@@ -82,7 +94,8 @@ runs:
         matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' ||
         matrix.e2e-test == 'labelling' ||
         matrix.e2e-test == 'module-deletion-with-multiple-crs-ignore-policy' ||
-        matrix.e2e-test == 'module-deletion-with-multiple-crs-create-and-delete-policy'
+        matrix.e2e-test == 'module-deletion-with-multiple-crs-create-and-delete-policy' ||
+        matrix.e2e-test == 'oci-reg-cred-secret'
         }}
       shell: bash
       run: |
