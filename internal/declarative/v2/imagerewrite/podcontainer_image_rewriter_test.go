@@ -28,7 +28,7 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		containerImgRewriter := imagerewrite.PodContainerImageRewriter{}
 
-		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainer)
+		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainerWithEnvs)
 		require.NoError(t, err, "Failed to parse test deployment to unstructured")
 		unmodifiedYAML := mustYAML(deploymentResource) // Store the original YAML for comparison later
 		containerResource := getFirstContainer(t, deploymentResource)
@@ -62,7 +62,7 @@ func TestPodContainerImageRewriter(t *testing.T) {
 		require.NoError(t, err, "Failed to create target images from provided image references")
 		containerImgRewriter := imagerewrite.PodContainerImageRewriter{}
 
-		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainer)
+		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainerWithEnvs)
 		require.NoError(t, err, "Failed to parse test deployment to unstructured")
 		unmodifiedYAML := mustYAML(deploymentResource) // Store the original YAML for comparison later
 		containerResource := getFirstContainer(t, deploymentResource)
@@ -91,7 +91,7 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		containerImgRewriter := imagerewrite.PodContainerImageRewriter{}
 
-		deploymentResource, err := parseToUnstructured(testDeploymentNoEnvContainer)
+		deploymentResource, err := parseToUnstructured(testDeploymentNoEnvsContainer)
 		require.NoError(t, err, "Failed to parse test deployment to unstructured")
 		unmodifiedYAML := mustYAML(deploymentResource) // Store the original YAML for comparison later
 		containerResource := getFirstContainer(t, deploymentResource)
