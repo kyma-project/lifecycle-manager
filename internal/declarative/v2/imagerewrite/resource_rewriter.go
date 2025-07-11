@@ -50,6 +50,24 @@ func (r *ResourceRewriter) ReplaceImages(deploymentOrSimilar *unstructured.Unstr
 		return fmt.Errorf("failed to rewrite pod containers: %w", err)
 	}
 
+	podInitContainersGetter := func() ([]*unstructured.Unstructured, error) {
+		containers, err := getPodInitContainers(deploymentOrSimilar)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get pod init containers: %w", err)
+		}
+		return containers, nil
+	}
+	podInitContainersSetter := func(containers []*unstructured.Unstructured) error {
+		if err := setPodInitContainers(deploymentOrSimilar, containers); err != nil {
+			return fmt.Errorf("failed to set pod init containers: %w", err)
+		}
+		return nil
+	}
+	err = r.rewriteContainers(podInitContainersGetter, podInitContainersSetter, targetImages)
+	if err != nil {
+		return fmt.Errorf("failed to rewrite pod init containers: %w", err)
+	}
+
 	return nil
 }
 
@@ -63,6 +81,9 @@ func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGette
 	if err != nil {
 		return err
 	}
+	if len(containers) == 0 {
+		return nil // No containers to rewrite, nothing to do.
+	}
 	for cIdx, container := range containers {
 		for _, rewriter := range r.rewriters {
 			if err := rewriter.Rewrite(targetImages, container); err != nil {
@@ -70,7 +91,6 @@ func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGette
 			}
 		}
 	}
-
 	if err := containersSetter(containers); err != nil {
 		return err
 	}
@@ -81,13 +101,37 @@ func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGette
 // It returns a slice of unstructured.Unstructured representing the Pod containers.
 // deploymentOrSimilar is expected to be a Deployment, StatefulSet, or similar resource that contains a Pod template.
 func getPodContainers(deploymentOrSimilar *unstructured.Unstructured) ([]*unstructured.Unstructured, error) {
-	containers, found, err := unstructured.NestedSlice(deploymentOrSimilar.Object, "spec", "template", "spec", "containers")
+	return getContainersGeneric(func() ([]any, bool, error) {
+		return unstructured.NestedSlice(deploymentOrSimilar.Object, "spec", "template", "spec", "containers")
+	})
+}
+
+func getPodInitContainers(deploymentOrSimilar *unstructured.Unstructured) ([]*unstructured.Unstructured, error) {
+	return getContainersGeneric(func() ([]any, bool, error) {
+		return unstructured.NestedSlice(deploymentOrSimilar.Object, "spec", "template", "spec", "initContainers")
+	})
+}
+
+func setPodContainers(deploymentOrSimilar *unstructured.Unstructured, containers []*unstructured.Unstructured) error {
+	return setContainersGeneric(containers, func(containerObjects []any) error {
+		return unstructured.SetNestedSlice(deploymentOrSimilar.Object, containerObjects, "spec", "template", "spec", "containers")
+	})
+}
+
+func setPodInitContainers(deploymentOrSimilar *unstructured.Unstructured, containers []*unstructured.Unstructured) error {
+	return setContainersGeneric(containers, func(containerObjects []any) error {
+		return unstructured.SetNestedSlice(deploymentOrSimilar.Object, containerObjects, "spec", "template", "spec", "initContainers")
+	})
+}
+
+func getContainersGeneric(getNestedSliceFn func() ([]any, bool, error)) ([]*unstructured.Unstructured, error) {
+	containers, found, err := getNestedSliceFn()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get containers: %w", err)
 	}
 
 	if !found || len(containers) == 0 {
-		return nil, nil // No containers found
+		return nil, nil // No containers found: It's normal case for initContainers. For "standard" containers, it should not happen but we don't have to error out here - it's the API Server job to prevent this.
 	}
 
 	containerResources := make([]*unstructured.Unstructured, len(containers))
@@ -101,15 +145,15 @@ func getPodContainers(deploymentOrSimilar *unstructured.Unstructured) ([]*unstru
 	return containerResources, nil
 }
 
-func setPodContainers(deploymentOrSimilar *unstructured.Unstructured, containers []*unstructured.Unstructured) error {
+func setContainersGeneric(containers []*unstructured.Unstructured, setNestedSliceFn func([]any) error) error {
+	if len(containers) == 0 {
+		return nil // No containers to set, nothing to do.
+	}
+
 	containerObjects := make([]any, len(containers))
 	for i, container := range containers {
 		containerObjects[i] = container.Object
 	}
 
-	err := unstructured.SetNestedSlice(deploymentOrSimilar.Object, containerObjects, "spec", "template", "spec", "containers")
-	if err != nil {
-		return fmt.Errorf("failed to set pod containers: %w", err)
-	}
-	return nil
+	return setNestedSliceFn(containerObjects)
 }
