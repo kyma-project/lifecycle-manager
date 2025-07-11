@@ -24,7 +24,7 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 
 		containerEnvsRewriter := imagerewrite.PodContainerEnvsRewriter{}
 
-		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainer)
+		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainerWithEnvs)
 		require.NoError(t, err, "Failed to parse test deployment to unstructured")
 		unmodifiedYAML := mustYAML(deploymentResource) // Store the original YAML for comparison later
 		containerResource := getFirstContainer(t, deploymentResource)
@@ -62,7 +62,7 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 
 		containerEnvsRewriter := imagerewrite.PodContainerEnvsRewriter{}
 
-		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainer)
+		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainerWithEnvs)
 		require.NoError(t, err, "Failed to parse test deployment to unstructured")
 		unmodifiedYAML := mustYAML(deploymentResource) // Store the original YAML for comparison later
 		containerResource := getFirstContainer(t, deploymentResource)
@@ -91,7 +91,7 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 
 		containerEnvsRewriter := imagerewrite.PodContainerEnvsRewriter{}
 
-		deploymentResource, err := parseToUnstructured(testDeploymentNoEnvContainer)
+		deploymentResource, err := parseToUnstructured(testDeploymentNoEnvsContainer)
 		require.NoError(t, err, "Failed to parse test deployment to unstructured")
 		unmodifiedYAML := mustYAML(deploymentResource) // Store the original YAML for comparison later
 		containerResource := getFirstContainer(t, deploymentResource)
