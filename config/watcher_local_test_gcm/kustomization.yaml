@@ -88,6 +88,12 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --self-signed-cert-duration=1441h
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --legacy-strategy-for-istio-gateway-secret=true
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --istio-gateway-secret-requeue-success-interval=5s
   - target:
       kind: ConfigMap
       name: dashboard-(overview|status|watcher|mandatory-modules)

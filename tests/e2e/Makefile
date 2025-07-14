@@ -139,6 +139,9 @@ module-install-by-version:
 legacy-istio-gateway-secret-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation"
 
+legacy-istio-gateway-secret-rotation-gcm:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation With GCM"
+
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
 

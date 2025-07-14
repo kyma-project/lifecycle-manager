@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"os"
 	"path/filepath"
 	"testing"
@@ -89,6 +90,7 @@ var _ = BeforeSuite(func() {
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(gcertv1alpha1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	SetDefaultEventuallyPollingInterval(interval)
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
 	SetDefaultConsistentlyDuration(ConsistentDuration)
