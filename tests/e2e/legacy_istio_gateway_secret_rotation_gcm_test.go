@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Legacy Istio Gateway Secret Rotation With Cert-Manager", Ordered, func() {
+var _ = Describe("Legacy Istio Gateway Secret Rotation With GCM", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -24,7 +24,11 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation With Cert-Manager", Order
 				Namespace: IstioNamespace,
 			}
 
-			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
+			By("When CA Certificate is rotated")
+			Expect(RotateCAManuallyWithGCM(ctx, kcpClient)).
+				To(Succeed())
+
+			By("Then Istio Gateway Secret is synced to Root CA Secret")
 			Eventually(IstioGatewaySecretIsSyncedToRootCA, 4*time.Minute).
 				WithContext(ctx).
 				WithArguments(namespacedRootCASecretName, kcpClient).
@@ -36,7 +40,11 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation With Cert-Manager", Order
 			lastModifiedAtTime, err := GetLastModifiedTimeFromAnnotation(gwSecret)
 			Expect(err).To(Succeed())
 
-			By("And LastModifiedAt timestamp is updated")
+			By("When CA Certificate is rotated again")
+			Expect(RotateCAManuallyWithGCM(ctx, kcpClient)).
+				To(Succeed())
+
+			By("Then LastModifiedAt timestamp is updated")
 			Eventually(GatewaySecretCreationTimeIsUpdated, 4*time.Minute).
 				WithContext(ctx).
 				WithArguments(lastModifiedAtTime, kcpClient).
