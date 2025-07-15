@@ -8,6 +8,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -153,4 +154,36 @@ func GetLastModifiedTimeFromAnnotation(secret *apicorev1.Secret) (time.Time, err
 		}
 	}
 	return time.Time{}, errors.New("getting lastModifiedAt time failed")
+}
+
+// TriggerGardenerCertificateRenewal manually triggers certificate renewal by adding the force-renew annotation
+func TriggerGardenerCertificateRenewal(ctx context.Context, certificateName types.NamespacedName, k8sClient client.Client) error {
+	certificate := &gcertv1alpha1.Certificate{}
+	err := k8sClient.Get(ctx, certificateName, certificate)
+	if err != nil {
+		return fmt.Errorf("failed to get certificate %w", err)
+	}
+
+	// Add or update the force-renew annotation with current timestamp
+	if certificate.Annotations == nil {
+		certificate.Annotations = make(map[string]string)
+	}
+	certificate.Annotations["cert.gardener.cloud/force-renew"] = time.Now().Format(time.RFC3339)
+
+	err = k8sClient.Update(ctx, certificate)
+	if err != nil {
+		return fmt.Errorf("failed to update certificate with force-renew annotation: %w", err)
+	}
+
+	return nil
+}
+
+// GetGardenerCertificate retrieves a Gardener certificate
+func GetGardenerCertificate(ctx context.Context, namespacedCertName types.NamespacedName, k8sClient client.Client) (*gcertv1alpha1.Certificate, error) {
+	certificate := &gcertv1alpha1.Certificate{}
+	if err := k8sClient.Get(ctx, namespacedCertName, certificate); err != nil {
+		return nil, fmt.Errorf("failed to get gardener certificate %w", err)
+	}
+
+	return certificate, nil
 }

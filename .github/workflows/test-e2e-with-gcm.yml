@@ -42,8 +42,8 @@ jobs:
       matrix:
         e2e-test:
           - watcher-enqueue
-          #- legacy-istio-gateway-secret-rotation
-          #- self-signed-certificate-rotation
+          - legacy-istio-gateway-secret-rotation
+          - self-signed-certificate-rotation
           - modulereleasemeta-watch-trigger
 
     runs-on: ubuntu-latest

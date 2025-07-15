@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -27,15 +28,26 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {
+				if os.Getenv("E2E_USE_GARDENER_CERT_MANAGER") == "1" {
+					_, err := GetGardenerCertificate(ctx, certName, kcpClient)
+					return err
+				}
 				_, err := GetCACertificate(ctx, certName, kcpClient)
 				return err
 			}).Should(Succeed())
 		})
 		It("Then disable cert manager operator to prevent certificate auto renewed", func() {
-			Eventually(StopDeployment).
-				WithContext(ctx).
-				WithArguments(kcpClient, "cert-manager", "cert-manager").
-				Should(Succeed())
+			if os.Getenv("E2E_USE_GARDENER_CERT_MANAGER") == "1" {
+				Eventually(StopDeployment).
+					WithContext(ctx).
+					WithArguments(kcpClient, "cert-controller-manager", "default").
+					Should(Succeed())
+			} else {
+				Eventually(StopDeployment).
+					WithContext(ctx).
+					WithArguments(kcpClient, "cert-manager", "cert-manager").
+					Should(Succeed())
+			}
 		})
 		It(fmt.Sprintf("Then %s metric increased to 1", metrics.MetricSelfSignedCertNotRenew), func() {
 			Eventually(GetSelfSignedCertNotRenewMetricsGauge).
@@ -45,10 +57,17 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				Should(Equal(1))
 		})
 		It("Then enable cert manager operator to renew certificate", func() {
-			Eventually(EnableDeployment).
-				WithContext(ctx).
-				WithArguments(kcpClient, "cert-manager", "cert-manager").
-				Should(Succeed())
+			if os.Getenv("E2E_USE_GARDENER_CERT_MANAGER") == "1" {
+				Eventually(EnableDeployment).
+					WithContext(ctx).
+					WithArguments(kcpClient, "cert-controller-manager", "default").
+					Should(Succeed())
+			} else {
+				Eventually(EnableDeployment).
+					WithContext(ctx).
+					WithArguments(kcpClient, "cert-manager", "cert-manager").
+					Should(Succeed())
+			}
 		})
 		It(fmt.Sprintf("Then %s metric deleted", metrics.MetricSelfSignedCertNotRenew), func() {
 			Eventually(GetSelfSignedCertNotRenewMetricsGauge).

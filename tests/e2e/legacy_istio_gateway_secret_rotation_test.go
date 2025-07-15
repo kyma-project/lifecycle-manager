@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -24,8 +25,8 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation", Ordered, func() {
 				Namespace: IstioNamespace,
 			}
 
-			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
-			Eventually(IstioGatewaySecretIsSyncedToRootCA, 4*time.Minute).
+			// First ensure the initial certificate and secret are synced
+			Eventually(IstioGatewaySecretIsSyncedToRootCA, 2*time.Minute).
 				WithContext(ctx).
 				WithArguments(namespacedRootCASecretName, kcpClient).
 				Should(Succeed())
@@ -35,6 +36,18 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			lastModifiedAtTime, err := GetLastModifiedTimeFromAnnotation(gwSecret)
 			Expect(err).To(Succeed())
+
+			// Check if we're using Gardener cert-manager and trigger manual renewal
+			if os.Getenv("E2E_USE_GARDENER_CERT_MANAGER") == "1" {
+				By("And manually triggering certificate renewal for Gardener cert-manager")
+				certificateName := types.NamespacedName{
+					Name:      "watcher-serving",
+					Namespace: IstioNamespace,
+				}
+				
+				// Trigger manual renewal
+				Expect(TriggerGardenerCertificateRenewal(ctx, certificateName, kcpClient)).To(Succeed())
+			}
 
 			By("And LastModifiedAt timestamp is updated")
 			Eventually(GatewaySecretCreationTimeIsUpdated, 4*time.Minute).
