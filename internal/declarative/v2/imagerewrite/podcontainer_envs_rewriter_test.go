@@ -40,14 +40,12 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 		rewrittenYAML := mustYAML(deploymentResource)
 		expectedLines := asLines(unmodifiedYAML)
 		actualLines := asLines(rewrittenYAML)
-		diffPos := diffLines(expectedLines, actualLines)
 
-		assert.Len(t, diffPos, 2, "Expected 2 lines to be changed in the rewritten YAML")
-		assert.Contains(t, expectedLines[diffPos[0]-1], "value: localhost:5000/foo-image:1.2.3", "Expected image to be rewritten")
-		assert.Contains(t, actualLines[diffPos[0]-1], "value: private-registry.com/prod/foo-image:1.2.3", "Actual rewritten image")
-
-		assert.Contains(t, expectedLines[diffPos[1]-1], "value: example.com/myrepo/bar-image:4.5.6", "Expected image to be rewritten")
-		assert.Contains(t, actualLines[diffPos[1]-1], "value: private-registry.com/stage/bar-image:4.5.6", "Actual rewritten image")
+		cp := newChangesComparator(t, expectedLines, actualLines)
+		cp.verify(
+			valueOf("the first env var in the container").shouldChangeFrom("localhost:5000/foo-image:1.2.3").to("private-registry.com/prod/foo-image:1.2.3"),
+			valueOf("the second env var in the container").shouldChangeFrom("example.com/myrepo/bar-image:4.5.6").to("private-registry.com/stage/bar-image:4.5.6"),
+		)
 	})
 
 	t.Run("RewriteSingleContainerEnvsWithNoMatchingImages", func(t *testing.T) {
