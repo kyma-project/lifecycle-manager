@@ -1,4 +1,4 @@
-name: Setup private Registry
+name: Setup private registry
 description: Creates and configures a private registry.
 runs:
   using: composite

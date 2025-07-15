@@ -30,6 +30,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
@@ -45,6 +46,7 @@ var (
 	errManifestVersionIsIncorrect                     = errors.New("manifest version is incorrect")
 	errManifestConditionNotExists                     = errors.New("manifest condition does not exist")
 	errManifestNotFound                               = errors.New("manifest does not exist")
+	errManifestInstallRepoNotCorrect                  = errors.New("manifest install image spec repo is not correct")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -344,6 +346,30 @@ func CheckManifestIsInState(
 	if manifest.Status.State != expectedState {
 		return fmt.Errorf("%w: expect %s, but in %s",
 			errManifestNotInExpectedState, expectedState, manifest.Status.State)
+	}
+	return nil
+}
+
+func CheckManifestHasCorrectInstallRepo(
+	ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
+	expectedRepoName string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	var installImageSpec *v1beta2.ImageSpec
+	if err = machineryaml.Unmarshal(manifest.Spec.Install.Source.Raw, &installImageSpec); err != nil {
+		return fmt.Errorf("error unmarshalling install image spec: %w", err)
+	}
+
+	fmt.Println("Install Image Spec.Repo:", installImageSpec.Repo)
+	if strings.Contains(installImageSpec.Repo, expectedRepoName) {
+		return fmt.Errorf("%w: expect %s, but found %s",
+			errManifestInstallRepoNotCorrect, expectedRepoName, installImageSpec.Repo)
 	}
 	return nil
 }

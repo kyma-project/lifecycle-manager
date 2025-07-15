@@ -39,6 +39,19 @@ var _ = Describe("OCI Registry Credentials Secret", Ordered, func() {
 					shared.StateReady).
 				Should(Succeed())
 
+			By("And Manifest CR spec.install.source.repo is the private registry")
+			Eventually(CheckManifestHasCorrectInstallRepo).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					"private-oci-reg.localhost").
+				Should(Succeed())
+
+			By("And private registry secret exists in the KCP Cluster")
+			Eventually(CheckIfExists).
+				WithContext(ctx).
+				WithArguments("private-oci-reg-creds", ControlPlaneNamespace, "", "v1", "Secret", kcpClient).
+				Should(Succeed())
+
 			By("And Module CR exists in the SKR Cluster")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
