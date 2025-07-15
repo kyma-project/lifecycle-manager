@@ -23,6 +23,7 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -30,7 +31,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
@@ -366,8 +366,7 @@ func CheckManifestHasCorrectInstallRepo(
 		return fmt.Errorf("error unmarshalling install image spec: %w", err)
 	}
 
-	fmt.Println("Install Image Spec.Repo:", installImageSpec.Repo)
-	if strings.Contains(installImageSpec.Repo, expectedRepoName) {
+	if !strings.Contains(installImageSpec.Repo, expectedRepoName) {
 		return fmt.Errorf("%w: expect %s, but found %s",
 			errManifestInstallRepoNotCorrect, expectedRepoName, installImageSpec.Repo)
 	}
