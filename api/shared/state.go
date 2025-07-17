@@ -34,6 +34,14 @@ func (state State) IsSupportedState() bool {
 		state == StateWarning
 }
 
-func AllStates() []State {
+func AllKymaStates() []State {
 	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
+}
+
+func AllMandatoryModuleStates() []State {
+	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
+}
+
+func AllModuleStates() []State {
+	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning, StateUnmanaged}
 }

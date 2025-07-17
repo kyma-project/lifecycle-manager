@@ -163,7 +163,7 @@ func FetchLifecycleManagerMetrics() ([]*prometheusclient.Metric, error) {
 }
 
 func (k *KymaMetrics) setKymaStateGauge(newState shared.State, kymaName, shootID, instanceID string) {
-	states := shared.AllStates()
+	states := shared.AllKymaStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
 		k.KymaStateGauge.With(prometheus.Labels{
@@ -176,7 +176,7 @@ func (k *KymaMetrics) setKymaStateGauge(newState shared.State, kymaName, shootID
 }
 
 func (k *KymaMetrics) setModuleStateGauge(newState shared.State, moduleName, kymaName, shootID, instanceID string) {
-	states := shared.AllStates()
+	states := shared.AllModuleStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
 		k.moduleStateGauge.With(prometheus.Labels{

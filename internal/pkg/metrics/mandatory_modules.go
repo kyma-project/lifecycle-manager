@@ -38,7 +38,7 @@ func (m *MandatoryModulesMetrics) RecordMandatoryTemplatesCount(count int) {
 }
 
 func (m *MandatoryModulesMetrics) RecordMandatoryModuleState(kymaName, moduleName string, newState shared.State) {
-	states := shared.AllStates()
+	states := shared.AllMandatoryModuleStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
 		m.moduleStateGauge.With(prometheus.Labels{
