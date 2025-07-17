@@ -26,6 +26,7 @@ func DefaultOptions() *Options {
 			ManagedByOwnedBy,
 			KymaComponentTransform,
 			DisclaimerTransform,
+			DockerImageLocalizationTransform,
 		),
 		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
