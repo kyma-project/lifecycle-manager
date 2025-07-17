@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -23,6 +24,9 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation With GCM", Ordered, func(
 				Name:      "klm-watcher",
 				Namespace: IstioNamespace,
 			}
+
+			By("Then run with Gardener Cert Manager")
+			Expect(os.Getenv("E2E_USE_GARDENER_CERT_MANAGER")).To(Equal("1"))
 
 			By("When CA Certificate is rotated")
 			Expect(RotateCAManuallyWithGCM(ctx, kcpClient)).
