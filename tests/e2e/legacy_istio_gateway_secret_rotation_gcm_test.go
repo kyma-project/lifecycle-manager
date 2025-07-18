@@ -25,7 +25,7 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation With GCM", Ordered, func(
 				Namespace: IstioNamespace,
 			}
 
-			By("Then run with Gardener Cert Manager")
+			By("And Lifecycle Manager is running with Gardener Cert Manager")
 			Expect(os.Getenv("E2E_USE_GARDENER_CERT_MANAGER")).To(Equal("1"))
 
 			By("When CA Certificate is rotated")
