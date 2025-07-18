@@ -9,4 +9,4 @@ KLM's key responsibilities include:
 * Installing, updating, reconciling, and deleting Kyma module resources in SKR clusters
 * Watching SKR clusters for changes requested by the users
 
-KLM is built using the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) framework and extends the Kubernetes API through custom resource definitions. For detailed information about these resources, see [Lifecycle Manager Resources](./docs/contributor/resources/README.md).
+KLM is built using the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) framework and extends the Kubernetes API through custom resource definitions. For detailed information about these resources, see [Lifecycle Manager Resources](./contributor/resources/README.md).
