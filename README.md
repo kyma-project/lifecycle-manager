@@ -5,26 +5,17 @@
 
 ## Overview
 
-[Kyma](https://kyma-project.io/) is an opinionated set of Kubernetes-based modular building blocks that provides enterprise-grade capabilities for developing and running cloud-native applications. As an actively maintained open-source project supported by SAP, Kyma serves as the foundation for SAP BTP, Kyma runtime within the SAP Business Technology Platform (BTP).
+[Kyma](https://kyma-project.io/) is an opinionated set of Kubernetes-based modular building blocks that provides enterprise-grade capabilities for developing and running cloud-native applications. As an actively maintained open-source project supported and managed by SAP, Kyma serves as the foundation for SAP BTP, Kyma runtime within the SAP Business Technology Platform (BTP).
 
-The Kyma Lifecycle Manager (KLM) is a crucial component at the core of the managed Kyma runtime. Operating within the Kyma Control Plane (KCP) cluster, KLM manages the lifecycle of Kyma modules in the SAP BTP, Kyma Runtime (SKR) clusters. These SKR clusters are hyperscaler clusters provisioned for users of the managed Kyma runtime.
-
-KLM's key responsibilities include:
-
-* Installing Custom Resource Definitions (CRDs) required for Kyma module deployment
-* Synchronizing the catalog of available Kyma modules to SKR clusters
-* Installing, updating, reconciling, and deleting Kyma module resources in SKR clusters
-* Watching SKR clusters for changes requested by the users
-
-KLM is built using the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) framework and extends the Kubernetes API through custom resource definitions. For detailed information about these resources, see [Lifecycle Manager Resources](./docs/contributor/resources/README.md).
+Kyma Lifecycle Manager (KLM) is a crucial component at the core of SAP BTP, Kyma runtime. For more information, see [Lifecycle Manager](/docs/README.md) in the `/docs` directory.
 
 ## Usage
 
-If you are a Kyma end user, see the [user documentation](./docs/user/README.md).
+If you are a Kyma end user, see the [user documentation](/docs/user/README.md).
 
 ## Development
 
-If you want to provide new features for Lifecycle Manager, develop a module, or are part of the SRE team, visit the [contributor](/docs/contributor/) folder. You will find the following documents:
+If you want to provide new features for Lifecycle Manager, develop a module, or are part of the SRE team, visit the [contributor](/docs/contributor/) and the [operator](/docs/operator/operator-index.md) folders. You will find the following documents:
 
 * [Architecture](/docs/contributor/01-architecture.md)
 * [Lifecycle Manager Controllers](/docs/contributor/02-controllers.md)
@@ -55,4 +46,4 @@ See the [Code of Conduct](CODE_OF_CONDUCT.md) document.
 
 ## Licensing
 
-See the [license](./LICENSE) file.
+See the [license](LICENSE) file.
