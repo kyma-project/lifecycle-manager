@@ -22,7 +22,7 @@ If you want to provide new features for Lifecycle Manager, develop a module, or 
 * [Provide Credentials for Private OCI Registry Authentication](/docs/contributor/03-config-private-registry.md)
 * [Configure a Local Test Setup (VS Code & GoLand)](/docs/contributor/04-local-test-setup.md)
 * [API Changelog](/docs/contributor/05-api-changelog.md)
-* [Lifecycle Manager Resources](/docs/contributor/resources/README.md)
+* [Lifecycle Manager Resources](./docs/contributor/resources/README.md)
   * [Kyma](/docs/contributor/resources/01-kyma.md)
   * [Manifest](/docs/contributor/resources/02-manifest.md)
   * [ModuleTemplate](/docs/contributor/resources/03-moduletemplate.md)
