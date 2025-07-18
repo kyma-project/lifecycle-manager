@@ -25,7 +25,7 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation With Cert-Manager", Order
 				Namespace: IstioNamespace,
 			}
 
-			By("Then run without Gardener Cert Manager")
+			By("And Lifecycle Manager is running without Gardener Cert Manager")
 			Expect(os.Getenv("E2E_USE_GARDENER_CERT_MANAGER")).To(BeEmpty())
 
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
