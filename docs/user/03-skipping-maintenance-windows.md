@@ -6,4 +6,4 @@ In SAP BTP, Kyma runtime, modules' major upgrades happen rarely, in a bigger mai
 
 ## Procedure
 
-Set the **spec.skipMaintenanceWindow** field to `true` in the Kyma CR. 
+Set the **spec.skipMaintenanceWindow** field to `true` in the Kyma CR.
