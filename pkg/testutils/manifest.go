@@ -38,6 +38,8 @@ var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 var (
 	ErrManifestResourceIsNil                          = errors.New("manifest spec.resource is nil")
 	ErrManifestsExist                                 = errors.New("cluster contains manifest CRs")
+	ErrManifestNotContainLabelKey                     = errors.New("manifest does not contain expected label key")
+	ErrManifestNotContainLabelValue                   = errors.New("manifest does not contain expected label value")
 	errManifestNotInExpectedState                     = errors.New("manifest CR not in expected state")
 	errManifestDeletionTimestampSet                   = errors.New("manifest CR has set DeletionTimeStamp")
 	errManifestNotInKymaStatus                        = errors.New("manifest is not tracked by kyma.status")
@@ -172,6 +174,28 @@ func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt cli
 		}
 	}
 	return fmt.Errorf("manifest with annotation `%s: %s` does not exist", annotationKey, annotationValue)
+}
+
+func ManifestContainExpectedLabel(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName, labelKey, labelValue string) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	if manifest.Labels == nil {
+		return ErrManifestNotContainLabelKey
+	}
+
+	if _, exists := manifest.Labels[labelKey]; !exists {
+		return ErrManifestNotContainLabelKey
+	}
+
+	if manifest.Labels[labelKey] != labelValue {
+		return ErrManifestNotContainLabelValue
+	}
+
+	return nil
 }
 
 func ManifestExists(
