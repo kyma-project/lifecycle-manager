@@ -68,7 +68,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), "template-operator",
 					"operator.kyma-project.io/channel", "").
 				Should(Equal(ErrManifestNotContainLabelKey))
-
 		})
 
 		It("When the mandatory Manifest is labelled to skip reconciliation", func() {

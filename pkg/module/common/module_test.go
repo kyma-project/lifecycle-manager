@@ -74,7 +74,6 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithNonMandatoryModule_ChannelLabe
 
 	resultLabels := module.Manifest.GetLabels()
 	assert.Equal(t, "regular", resultLabels["operator.kyma-project.io/channel"])
-
 }
 
 func TestApplyDefaultMetaToManifest_WhenCalled_SetsManagedByLabel(t *testing.T) {

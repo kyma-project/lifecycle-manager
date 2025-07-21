@@ -177,7 +177,8 @@ func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt cli
 }
 
 func ManifestContainExpectedLabel(ctx context.Context, clnt client.Client,
-	kymaName, kymaNamespace, moduleName, labelKey, labelValue string) error {
+	kymaName, kymaNamespace, moduleName, labelKey, labelValue string,
+) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
 		return err
