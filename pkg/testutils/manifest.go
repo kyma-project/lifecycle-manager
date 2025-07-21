@@ -184,6 +184,7 @@ func ManifestContainExpectedLabel(ctx context.Context, clnt client.Client,
 		return err
 	}
 
+	fmt.Println("Manifest labels:", manifest.Labels)
 	if manifest.Labels == nil {
 		return ErrManifestNotContainLabelKey
 	}
