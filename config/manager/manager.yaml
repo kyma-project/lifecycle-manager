@@ -24,6 +24,8 @@ spec:
           args:
             - --leader-elect
           image: controller:latest
+          environment:
+            - GODEBUG=fips140=only
           ports:
             - containerPort: 8082
               name: listener
