@@ -145,6 +145,11 @@ var _ = Describe("Unmanaging Kyma Module", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+			By("And count of Kyma Module Metric in \"Unmanaged\" State is 0")
+			Eventually(GetModuleStateMetricCount).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), module.Name, shared.StateUnmanaged).
+				Should(Equal(0))
 		})
 
 		It("When Kyma Module is unmanaged again", func() {
