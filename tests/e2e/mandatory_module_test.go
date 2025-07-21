@@ -63,10 +63,9 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			})
 
 			By("And the mandatory module manifest does not contain the operator.kyma-project.io/channel label")
-			Eventually(ManifestContainExpectedLabel).
+			Eventually(MandatoryModuleManifestContainsExpectedLabel).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), "template-operator",
-					"operator.kyma-project.io/channel", "").
+				WithArguments(kcpClient, "template-operator", "operator.kyma-project.io/channel", "").
 				Should(Equal(ErrManifestNotContainLabelKey))
 		})
 
