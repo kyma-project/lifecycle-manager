@@ -8,13 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-const (
-	minSegmentsInImageReference = 2 // At least <host>/<image>:<tag>
-)
-
 var (
 	ErrInvalidImageReference               = errors.New("invalid docker image reference")
 	ErrMissingSlashInImageReference        = fmt.Errorf("%w: missing '/'", ErrInvalidImageReference)
+	ErrMissingColonInImageReference        = fmt.Errorf("%w: missing ':'", ErrInvalidImageReference)
 	ErrFindingImageInPodContainer          = errors.New("error finding image in pod container")
 	ErrFindingEnvVarsInPodContainer        = errors.New("error finding env vars in pod container")
 	ErrUnexpectedEnvVarType                = errors.New("unexpected environment variable type")
@@ -23,39 +20,55 @@ var (
 )
 
 // NameAndTag represents the docker image name and tag in the format <image>:<tag>.
-type NameAndTag = string
+type NameAndTag string
 
-// TargetImage represents a docker image reference that should be used instead of an original one embedded in a K8s manifest.
+// DockerImageReference represents a docker image reference used in rewriting mechanism.
 //
-//	The overall format of a reference is <host[:port][/path]>/<image>:<tag>
-type TargetImage struct {
+//	The overall format of a reference is: <host[:port][/path]>/<image>:<tag>[@<digest>]
+type DockerImageReference struct {
 	HostAndPath string
 	NameAndTag
+	Digest string
 }
 
-func (t *TargetImage) From(imageRef string) error {
+func NewDockerImageReference(val string) (*DockerImageReference, error) {
+	res := &DockerImageReference{}
+
 	// split on last forward slash to separate host and path from image and tag
-	lastSep := strings.LastIndex(imageRef, "/")
+	lastSep := strings.LastIndex(val, "/")
 	if lastSep == -1 {
-		return fmt.Errorf("parsing %q: %w", imageRef, ErrMissingSlashInImageReference)
+		return nil, fmt.Errorf("parsing %q: %w", val, ErrMissingSlashInImageReference)
 	}
-	t.HostAndPath = imageRef[:lastSep]
-	t.NameAndTag = imageRef[lastSep+1:]
+	res.HostAndPath = val[:lastSep]
+	nameAndTagAndDigest := val[lastSep+1:]
+	mayHaveDigest := strings.Split(nameAndTagAndDigest, "@")
 
-	return nil
+	if !strings.Contains(mayHaveDigest[0], ":") {
+		return nil, fmt.Errorf("parsing %q: %w", val, ErrMissingColonInImageReference)
+	}
+	res.NameAndTag = NameAndTag(mayHaveDigest[0]) // The first part is always the name and tag
+
+	if len(mayHaveDigest) > 1 {
+		res.Digest = mayHaveDigest[1] // The second part is the digest, if present
+	}
+
+	return res, nil
 }
 
-func (t TargetImage) String() string {
+func (t *DockerImageReference) Matches(otherNameAndTag NameAndTag) bool {
+	return t.NameAndTag == otherNameAndTag
+}
+
+func (t *DockerImageReference) String() string {
+	if len(t.Digest) > 0 {
+		return fmt.Sprintf("%s/%s@%s", t.HostAndPath, t.NameAndTag, t.Digest)
+	}
 	return fmt.Sprintf("%s/%s", t.HostAndPath, t.NameAndTag)
-}
-
-func (t TargetImage) Matches(imageRef string) bool {
-	return strings.HasSuffix(imageRef, t.NameAndTag)
 }
 
 type PodContainerImageRewriter struct{}
 
-func (r *PodContainerImageRewriter) Rewrite(targetImages []TargetImage, podContainer *unstructured.Unstructured) error {
+func (r *PodContainerImageRewriter) Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error {
 	existingImageValue, found, err := unstructured.NestedString(podContainer.Object, "image")
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFindingImageInPodContainer, err.Error())
@@ -64,10 +77,15 @@ func (r *PodContainerImageRewriter) Rewrite(targetImages []TargetImage, podConta
 		return fmt.Errorf("%w: not found", ErrFindingImageInPodContainer)
 	}
 
-	for _, replacement := range targetImages {
-		// We know that existingImageValue is a docker image reference, so we only have the verify if the <name>:<tag> matches.
-		if replacement.Matches(existingImageValue) {
-			if err := unstructured.SetNestedField(podContainer.Object, replacement.String(), "image"); err != nil {
+	existingImage, err := NewDockerImageReference(existingImageValue)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidImageReference, err.Error())
+	}
+
+	for _, targetImage := range targetImages {
+		// We know that existingImage is a docker image reference, so we only have the verify if the <name>:<tag> matches.
+		if targetImage.Matches(existingImage.NameAndTag) {
+			if err := unstructured.SetNestedField(podContainer.Object, targetImage.String(), "image"); err != nil {
 				return fmt.Errorf("%w: %v", ErrFailedToSetNewImageInPodContainer, err.Error())
 			}
 			break
@@ -80,7 +98,7 @@ func (r *PodContainerImageRewriter) Rewrite(targetImages []TargetImage, podConta
 // PodContainerEnvsRewriter is a rewriter that rewrites container env vars in a Kubernetes manifest.
 type PodContainerEnvsRewriter struct{}
 
-func (r *PodContainerEnvsRewriter) Rewrite(targetImages []TargetImage, podContainer *unstructured.Unstructured) error {
+func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error {
 	// Note: NestedSlice returns a COPY
 	envEntries, found, err := unstructured.NestedSlice(podContainer.Object, "env")
 	if err != nil {
@@ -101,17 +119,17 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []TargetImage, podContai
 		}
 
 		existingEnvValue, found := envVar["value"]
-		existingEnvValueStr, ok := existingEnvValue.(string)
+		envVarValueStr, ok := existingEnvValue.(string)
 		if !ok {
 			return fmt.Errorf("%w: invalid type for value: %T (expected a string)", ErrUnexpectedEnvVarType, existingEnvValue)
 		}
 		if !found {
 			continue // No value to rewrite
 		}
-		for _, replacement := range targetImages {
+		for _, targetImage := range targetImages {
 			// Check if the existing environment variable value is an image reference suitable for the replacement.
-			if isSuitableForReplacement(existingEnvValueStr, replacement.NameAndTag) {
-				envVar["value"] = replacement.String() // Set the new image reference
+			if isSuitableForReplacement(envVarValueStr, targetImage.NameAndTag) {
+				envVar["value"] = targetImage.String() // Set the new image reference
 				break
 			}
 		}
@@ -124,32 +142,31 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []TargetImage, podContai
 	return nil
 }
 
-// isSuitableForReplacement checks if the given imageReference:
-//   - is a docker image reference (simple heuristics)
-//   - matches the provided nameAndTag
-func isSuitableForReplacement(imageReference string, nameAndTag NameAndTag) bool {
-	if !strings.HasSuffix(imageReference, nameAndTag) {
-		return false // If it doesn't have the expected suffix, it certainly doesn't match
-	}
-	// We know it has the suffix, let's verify some invariants relevant for image references
-	parts := strings.Split(imageReference, "/")
-	if len(parts) < minSegmentsInImageReference {
-		return false // Not enough parts to be a valid image reference: <host+port>/<path>/<image>:<tag>
-	}
-	// Check if the first part is a DNS name with at least one dot or refers to "localhost"
-	if !strings.Contains(parts[0], ".") && !strings.Contains(parts[0], "localhost") {
-		return false
+// isSuitableForReplacement checks if the given value of an environment variable:
+//   - is a docker image reference (simple heuristics),
+//   - matches the provided targetRef (has the same <name>:<tag>).
+func isSuitableForReplacement(envVarValue string, targetNameAndTag NameAndTag) bool {
+	if !strings.Contains(envVarValue, string(targetNameAndTag)) {
+		return false // The envVarValue does not contain the targetRef.NameAndTag so it is not suitable for replacement.
 	}
 
-	return true
+	// The envVarValue contains the targetRef.NameAndTag substring (e.g: "myimage:1.2.3"), so it may be a Docker image referenence suitable for replacement.
+	trySourceRef, err := NewDockerImageReference(envVarValue)
+	if err != nil {
+		return false // Not a valid Docker image reference, not suitable for replacement.
+	}
+
+	return trySourceRef.Matches(targetNameAndTag)
 }
 
-func AsTargetImages(localizedImages []string) ([]TargetImage, error) {
-	targetImages := make([]TargetImage, len(localizedImages))
-	for i, img := range localizedImages {
-		if err := targetImages[i].From(img); err != nil {
+func AsImageReferences(vals []string) ([]*DockerImageReference, error) {
+	res := make([]*DockerImageReference, 0, len(vals))
+	for _, img := range vals {
+		newRef, err := NewDockerImageReference(img)
+		if err != nil {
 			return nil, err
 		}
+		res = append(res, newRef)
 	}
-	return targetImages, nil
+	return res, nil
 }

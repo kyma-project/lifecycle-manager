@@ -15,7 +15,7 @@ func TestPodContainerImageRewriter(t *testing.T) {
 	t.Run("RewriteSingleContainerImagesWithoutEnvs", func(t *testing.T) {
 		t.Parallel()
 		// given
-		targetImages, err := imagerewrite.AsTargetImages(reorder(13, []string{
+		targetImages, err := imagerewrite.AsImageReferences(reorder(13, []string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/prod/foo-image:1.2.3",
@@ -50,7 +50,7 @@ func TestPodContainerImageRewriter(t *testing.T) {
 	t.Run("RewriteSingleContainerWithEnvs", func(t *testing.T) {
 		t.Parallel()
 		// given
-		targetImages, err := imagerewrite.AsTargetImages(reorder(17, []string{
+		targetImages, err := imagerewrite.AsImageReferences(reorder(17, []string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/prod/foo-image:1.2.3",
@@ -86,7 +86,7 @@ func TestPodContainerImageRewriter(t *testing.T) {
 	t.Run("RewriteSingleContainerImagesWithNoMatchingImages", func(t *testing.T) {
 		t.Parallel()
 		// given
-		targetImagesThatDoNotMatch, err := imagerewrite.AsTargetImages(reorder(37, []string{
+		targetImagesThatDoNotMatch, err := imagerewrite.AsImageReferences(reorder(37, []string{
 			"private-registry.com/prod/template-operator:1.0.4",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/prod/foo-image:3.2.1",
