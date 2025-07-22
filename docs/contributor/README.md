@@ -1,7 +1,5 @@
 # Lifecycle Manager Contributor Documentation
 
-This folder contains the developer-related documentation that helps explain, work with, and test the source code. See the full list of the contributor's topics:
-
 * [Architecture](01-architecture.md)
 * [Lifecycle Manager Controllers](02-controllers.md)
 * [Provide Credentials for Private OCI Registry Authentication](03-config-private-registry.md)

@@ -11,11 +11,11 @@ Kyma Lifecycle Manager (KLM) is a crucial component at the core of SAP BTP, Kyma
 
 ## Read More
 
-For more information, see [Lifecycle Manager](/docs/README.md) description in the `/docs` directory, and the respective subfolders.
+For more information, see the [Lifecycle Manager](/docs/README.md) documentation in the `/docs` directory, and the respective subfolders.
 
-* To learn more about the SAP BTP, Kyma runtime end-user features, read the [`user`](/docs/user/README.md) directory.
-* For developer-related details, go to the [`contributor`](/docs/contributor/README.md) directory.
-* To learn about all the documents aimed at Lifecycle Manager operators, see the [`operator`](/docs/operator/README.md) folder.
+* If you're an end user of SAP BTP, Kyma runtime, go to the [`user`](/docs/user/README.md) directory.
+* If you're a developer interested in the module's code, go to the [`contributor`](/docs/contributor/README.md) directory.
+* If you're a Lifecycle Manager operator, go to the [`operator`](/docs/operator/README.md) directory.
 
 ## Contributing
 

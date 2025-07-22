@@ -1,7 +1,5 @@
 # Lifecycle Manager Operator Documentation
 
-This table of contents lists all Lifecycle Manager documents relevant to operators, for example, the Kyma SRE team or the restricted market teams.
-
 > [!NOTE]
 > The documentation topics are shared between operators and contributors. Some of the described features are also part of the user documentation.
 

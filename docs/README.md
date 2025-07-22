@@ -1,8 +1,8 @@
 # Lifecycle Manager
 
-Kyma Lifecycle Manager (KLM) is a crucial component at the core of the managed Kyma runtime, called SAP BTP, Kyma runtime. Operating within the Kyma Control Plane (KCP) cluster, KLM manages the lifecycle of Kyma modules in SAP BTP, Kyma runtime (SKR) clusters. These SKR clusters are hyperscaler clusters provisioned for users of the managed Kyma runtime.
+Kyma Lifecycle Manager (KLM) is a core component of the managed offering SAP BTP, Kyma runtime ("SKR"). Operating within the Kyma Control Plane (KCP) cluster, KLM manages the lifecycle of Kyma modules in SKR clusters. These SKR clusters are hyperscaler clusters provisioned for SKR users.
 
-KLM's key responsibilities include:
+KLM takes care of the following tasks:
 
 * Installing Custom Resource Definitions (CRDs) required for Kyma module deployment
 * Synchronizing the catalog of available Kyma modules to SKR clusters
@@ -13,6 +13,6 @@ KLM is built using the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuil
 
 ## Next Steps
 
-* To learn more about the SAP BTP, Kyma runtime end-user features, read the [`user`](/docs/user/README.md) directory.
-* For developer-related details, go to the [`contributor`](/docs/contributor/README.md) directory.
-* To learn about all the documents aimed at Lifecycle Manager operators, see the [`operator`](/docs/operator/README.md) folder.
+* If you're an end user of SAP BTP, Kyma runtime, go to the [`user`](/docs/user/README.md) directory.
+* If you're a developer interested in the module's code, go to the [`contributor`](/docs/contributor/README.md) directory.
+* If you're a Lifecycle Manager operator, go to the [`operator`](/docs/operator/README.md) directory.
