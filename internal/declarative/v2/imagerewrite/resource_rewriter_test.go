@@ -19,7 +19,7 @@ func TestResourceRewriter(t *testing.T) {
 	t.Run("SingleContainerRewriteAll", func(t *testing.T) {
 		t.Parallel()
 		// given
-		localizedImages, err := imagerewrite.AsTargetImages([]string{
+		localizedImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/prod/foo-image:1.2.3",
@@ -52,7 +52,7 @@ func TestResourceRewriter(t *testing.T) {
 	t.Run("SingleContainerWithoutEnvsRewriteAll", func(t *testing.T) {
 		t.Parallel()
 		// given
-		localizedImages, err := imagerewrite.AsTargetImages([]string{
+		localizedImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/prod/foo-image:1.2.3",
@@ -83,7 +83,7 @@ func TestResourceRewriter(t *testing.T) {
 	t.Run("SingleContainerRewriteSome", func(t *testing.T) {
 		t.Parallel()
 		// given
-		localizedImages, err := imagerewrite.AsTargetImages([]string{
+		localizedImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/prod/bar-image:4.5.6",
@@ -114,7 +114,7 @@ func TestResourceRewriter(t *testing.T) {
 	t.Run("DoubleContainerRewriteSome", func(t *testing.T) {
 		t.Parallel()
 		// given
-		localizedImages, err := imagerewrite.AsTargetImages([]string{
+		localizedImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/dev/bar-image:4.5.6",
@@ -149,7 +149,7 @@ func TestResourceRewriter(t *testing.T) {
 	t.Run("InitContainerRewriteAll", func(t *testing.T) {
 		t.Parallel()
 		// given
-		localizedImages, err := imagerewrite.AsTargetImages([]string{
+		localizedImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/stage/other-operator:1.2.3",
 			"private-registry.com/prod/foo-image:1.2.3",
@@ -187,7 +187,7 @@ func TestResourceRewriter(t *testing.T) {
 	t.Run("DeploymentTwoContainersWithInitContainerRewriteAll", func(t *testing.T) {
 		t.Parallel()
 		// given
-		localizedImages, err := imagerewrite.AsTargetImages(reorder(59, []string{
+		localizedImages, err := imagerewrite.AsImageReferences(reorder(59, []string{
 			"localhost:5123/foo-image:1.2.3",
 			"private-registry.com/first/container/bar-image:4.5.6",
 			"private-registry.com:123/first/container/template-operator:1.0.3",

@@ -44,7 +44,7 @@ func DockerImageLocalizationTransform(_ context.Context, obj Object, resources [
 		return nil // No images to rewrite
 	}
 
-	localizedImages, err := imagerewrite.AsTargetImages(manifest.Spec.LocalizedImages)
+	localizedImages, err := imagerewrite.AsImageReferences(manifest.Spec.LocalizedImages)
 	if err != nil {
 		return fmt.Errorf("failed to parse localized images: %w", err)
 	}

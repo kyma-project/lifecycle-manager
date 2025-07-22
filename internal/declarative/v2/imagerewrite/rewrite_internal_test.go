@@ -16,7 +16,7 @@ func TestIsLikelyImageReference(t *testing.T) {
 		// given
 		imageRef := "example.com/myapp/myimage:1.2.3"
 		// when
-		isImage := isSuitableForReplacement(imageRef, "myimage:1.2.3")
+		isImage := isSuitableForReplacement(imageRef, NameAndTag("myimage:1.2.3"))
 		// then
 		assert.True(t, isImage, "Expected %s to be a valid image reference", imageRef)
 	})

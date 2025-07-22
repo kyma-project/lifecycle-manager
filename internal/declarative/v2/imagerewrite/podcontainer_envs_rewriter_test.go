@@ -15,7 +15,7 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 	t.Run("RewriteSingleContainerEnvsHappyPath", func(t *testing.T) {
 		t.Parallel()
 		// given
-		targetImages, err := imagerewrite.AsTargetImages([]string{
+		targetImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/prod/foo-image:1.2.3",
 			"private-registry.com/stage/bar-image:4.5.6",
@@ -51,7 +51,7 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 	t.Run("RewriteSingleContainerEnvsWithNoMatchingImages", func(t *testing.T) {
 		t.Parallel()
 		// given
-		targetImages, err := imagerewrite.AsTargetImages([]string{
+		targetImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/prod/foo-image:10.20.30",
 			"private-registry.com/stage/bar-image:6.5.4",
@@ -80,7 +80,7 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 	t.Run("RewriteSingleContainerWithoutEnvs", func(t *testing.T) {
 		t.Parallel()
 		// given
-		targetImages, err := imagerewrite.AsTargetImages([]string{
+		targetImages, err := imagerewrite.AsImageReferences([]string{
 			"private-registry.com/prod/template-operator:1.0.3",
 			"private-registry.com/prod/foo-image:10.20.30",
 			"private-registry.com/stage/bar-image:6.5.4",

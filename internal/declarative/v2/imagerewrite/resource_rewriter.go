@@ -11,7 +11,7 @@ var ErrInvalidContainerType = errors.New("invalid container type, expected map[s
 
 // ImageRewriter is an object that rewrites images in-place in some specific section of a Kubernetes Pod container.
 type ImageRewriter interface {
-	Rewrite(targetImages []TargetImage, podContainer *unstructured.Unstructured) error
+	Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error
 }
 
 // ResourceRewriter rewrites the host and path of the images in the kubernetes resources based on the localized images specified in the manifest.
@@ -30,7 +30,7 @@ func (r *ResourceRewriter) WithRewriters(rewriters ...ImageRewriter) *ResourceRe
 
 // ReplaceImages replaces images in the given Kubernetes resource with the target images.
 // It expects the resource to have a Pod template (e.g., Deployment, StatefulSet).
-func (r *ResourceRewriter) ReplaceImages(deploymentOrSimilar *unstructured.Unstructured, targetImages []TargetImage) error {
+func (r *ResourceRewriter) ReplaceImages(deploymentOrSimilar *unstructured.Unstructured, targetImages []*DockerImageReference) error {
 	podContainersGetter := func() ([]*unstructured.Unstructured, error) {
 		containers, err := getPodContainers(deploymentOrSimilar)
 		if err != nil {
@@ -76,7 +76,7 @@ type (
 	podContainersSetterFn func([]*unstructured.Unstructured) error
 )
 
-func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGetterFn, containersSetter podContainersSetterFn, targetImages []TargetImage) error {
+func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGetterFn, containersSetter podContainersSetterFn, targetImages []*DockerImageReference) error {
 	containers, err := containersGetter()
 	if err != nil {
 		return err
