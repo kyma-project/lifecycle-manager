@@ -42,6 +42,13 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+
+			By("And the Manifest contains the operator.kyma-project.io/channel label set to regular")
+			Eventually(ManifestContainsExpectedLabel).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					"operator.kyma-project.io/channel", "regular").
+				Should(Succeed())
 		})
 
 		It("When the Manifest is labelled to skip reconciliation", func() {

@@ -54,15 +54,26 @@ func TestApplyDefaultMetaToManifest_WhenCalledWithControllerName_SetsControllerN
 	assert.Equal(t, "some-controller", resultLabels["operator.kyma-project.io/controller-name"])
 }
 
-func TestApplyDefaultMetaToManifest_WhenCalledWithChannel_SetsChannelLabel(t *testing.T) {
+func TestApplyDefaultMetaToManifest_WhenCalledWithMandatoryModule_NoChannelLabelIsSet(t *testing.T) {
 	module := createModule()
-	module.TemplateInfo.Spec.Channel = "some-channel"
+	module.TemplateInfo.Spec.Mandatory = true
 	kyma := &v1beta2.Kyma{}
 
 	module.ApplyDefaultMetaToManifest(kyma)
 
 	resultLabels := module.Manifest.GetLabels()
-	assert.Equal(t, "some-channel", resultLabels["operator.kyma-project.io/channel"])
+	assert.NotContains(t, resultLabels, "operator.kyma-project.io/channel")
+}
+
+func TestApplyDefaultMetaToManifest_WhenCalledWithNonMandatoryModule_ChannelLabelIsSet(t *testing.T) {
+	module := createModule()
+	module.TemplateInfo.DesiredChannel = "regular"
+	kyma := &v1beta2.Kyma{}
+
+	module.ApplyDefaultMetaToManifest(kyma)
+
+	resultLabels := module.Manifest.GetLabels()
+	assert.Equal(t, "regular", resultLabels["operator.kyma-project.io/channel"])
 }
 
 func TestApplyDefaultMetaToManifest_WhenCalled_SetsManagedByLabel(t *testing.T) {
