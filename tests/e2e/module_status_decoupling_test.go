@@ -7,11 +7,11 @@ import (
 
 	apicorev1 "k8s.io/api/core/v1"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 
@@ -151,33 +151,6 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 		checkModuleStatus(moduleWrongConfig, moduleCR, kyma, shared.StateError)
 
 		It("When Kyma Module is disabled", func() {
-			switch resourceKind {
-			case DeploymentKind:
-				deployment, err := GetDeployment(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get Deployment")
-				ser, err := json.MarshalIndent(deployment, "=>", "  ")
-				Expect(err).ToNot(HaveOccurred(), "Failed to marshal Deployment")
-				GinkgoWriter.Printf("Deployment: %v", string(ser))
-			case StatefulSetKind:
-				statefulset, err := GetStatefulSet(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get StatefulSet")
-				ser, err := json.MarshalIndent(statefulset, "=>", "  ")
-				Expect(err).ToNot(HaveOccurred(), "Failed to marshal StatefulSet")
-				GinkgoWriter.Printf("StatefulSet: %v", string(ser))
-			}
-
-			podList := &apicorev1.PodList{}
-			err := skrClient.List(ctx, podList, &client.ListOptions{Namespace: TestModuleResourceNamespace});
-			Expect(err).ToNot(HaveOccurred(), "Failed to list pods in TestModuleResourceNamespace")
-
-			GinkgoWriter.Printf("========================================")
-			for i := range podList.Items {
-				pod := podList.Items[i]
-				ser, err := json.MarshalIndent(pod, "=>", "  ")
-				Expect(err).ToNot(HaveOccurred(), "Failed to marshal Pod")
-				GinkgoWriter.Printf("Pod: %v", string(ser))
-			}
-
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, moduleWrongConfig.Name).
