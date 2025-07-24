@@ -6,7 +6,7 @@ metadata:
   labels:
     "operator.kyma-project.io/module-name": "template-operator"
   annotations:
-    "operator.kyma-project.io/is-cluster-scoped": "false" 
+    "operator.kyma-project.io/is-cluster-scoped": "false"
 spec:
   moduleName: template-operator
   version: 1.0.3
@@ -16,8 +16,8 @@ spec:
     repository: https://github.com/kyma-project/template-operator
     documentation: https://github.com/kyma-project/template-operator/blob/main/README.md
     icons:
-    - name: module-icon
-      link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png
+      - name: module-icon
+        link: https://github.com/kyma-project/template-operator/blob/main/docs/assets/logo.png
   data:
     apiVersion: operator.kyma-project.io/v1alpha1
     kind: Sample
@@ -26,14 +26,14 @@ spec:
     spec:
       resourceFilePath: ./module-data/yaml
   manager:
-    name: template-operator-controller-manager      
+    name: template-operator-controller-manager
     namespace: template-operator-system
     group: apps
     version: v1
     kind: Deployment
   descriptor:
     component:
-      componentReferences: []
+      componentReferences: [ ]
       labels:
         - name: security.kyma-project.io/scan
           value: enabled
@@ -166,5 +166,5 @@ spec:
       schemaVersion: v2
 
   resources:
-  - name: rawManifest
-    link: https://github.com/kyma-project/template-operator/releases/download/1.0.3/template-operator.yaml
+    - name: rawManifest
+      link: https://github.com/kyma-project/template-operator/releases/download/1.0.3/template-operator.yaml
