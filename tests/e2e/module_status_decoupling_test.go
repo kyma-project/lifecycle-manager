@@ -2,16 +2,12 @@ package e2e_test
 
 import (
 	"context"
-	"encoding/json"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	apicorev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 
