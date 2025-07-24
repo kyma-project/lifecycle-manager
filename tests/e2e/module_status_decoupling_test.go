@@ -152,15 +152,15 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 			case DeploymentKind:
 				deployment, err := GetDeployment(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get Deployment")
-				ser, err := json.MarshalIndent(deployment.Status, "=>", "  ")
-				Expect(err).ToNot(HaveOccurred(), "Failed to marshal Deployment status")
-				GinkgoWriter.Printf("Deployment status: %v", string(ser))
+				ser, err := json.MarshalIndent(deployment, "=>", "  ")
+				Expect(err).ToNot(HaveOccurred(), "Failed to marshal Deployment")
+				GinkgoWriter.Printf("Deployment: %v", string(ser))
 			case StatefulSetKind:
 				statefulset, err := GetStatefulSet(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get StatefulSet")
-				ser, err := json.MarshalIndent(statefulset.Status, "=>", "  ")
-				Expect(err).ToNot(HaveOccurred(), "Failed to marshal StatefulSet status")
-				GinkgoWriter.Printf("StatefulSet status: %v", string(ser))
+				ser, err := json.MarshalIndent(statefulset, "=>", "  ")
+				Expect(err).ToNot(HaveOccurred(), "Failed to marshal StatefulSet")
+				GinkgoWriter.Printf("StatefulSet: %v", string(ser))
 			}
 
 			Eventually(DisableModule).
