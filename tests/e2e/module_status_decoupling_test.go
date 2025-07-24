@@ -2,7 +2,7 @@ package e2e_test
 
 import (
 	"context"
-
+	"encoding/json"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -145,7 +145,23 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				Should(Succeed())
 		})
 
+
 		checkModuleStatus(moduleWrongConfig, moduleCR, kyma, shared.StateError)
+
+		switch resourceKind {
+		case DeploymentKind:
+			deployment, err := GetDeployment(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get Deployment")
+			ser, err := json.MarshalIndent(deployment.Status, "=>", "  ")
+			Expect(err).ToNot(HaveOccurred(), "Failed to marshal Deployment status")
+			GinkgoWriter.Printf("Deployment status: %v", string(ser))
+		case StatefulSetKind:
+			statefulset, err := GetStatefulSet(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get StatefulSet")
+			ser, err := json.MarshalIndent(statefulset.Status, "=>", "  ")
+			Expect(err).ToNot(HaveOccurred(), "Failed to marshal StatefulSet status")
+			GinkgoWriter.Printf("StatefulSet status: %v", string(ser))
+		}
 
 		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
