@@ -22,7 +22,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
-var ErrConvertingToOCIAccessSpec = errors.New("error converting resource.AccessSpec to *ociartifact.AccessSpec")
+var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.AccessSpec to *ociartifact.AccessSpec")
 
 type Parser struct {
 	client.Client
