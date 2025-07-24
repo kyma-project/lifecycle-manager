@@ -16,7 +16,7 @@ func TestIsLikelyImageReference(t *testing.T) {
 		// given
 		imageRef := "example.com/myapp/myimage:1.2.3"
 		// when
-		isImage := isSuitableForReplacement(imageRef, NameAndTag("myimage:1.2.3"))
+		isImage := isImageRefForReplacement(imageRef, NameAndTag("myimage:1.2.3"))
 		// then
 		assert.True(t, isImage, "Expected %s to be a valid image reference", imageRef)
 	})
@@ -25,7 +25,7 @@ func TestIsLikelyImageReference(t *testing.T) {
 		// given
 		imageRef := "localhost:5000/myimage:1.2.3"
 		// when
-		isImage := isSuitableForReplacement(imageRef, "myimage:1.2.3")
+		isImage := isImageRefForReplacement(imageRef, "myimage:1.2.3")
 		// then
 		assert.True(t, isImage, "Expected %s to be a valid image reference", imageRef)
 	})
@@ -34,7 +34,7 @@ func TestIsLikelyImageReference(t *testing.T) {
 		// given
 		imageRef := "example.com:6789/myimage:1.2.3"
 		// when
-		isImage := isSuitableForReplacement(imageRef, "myimage:1.2.3")
+		isImage := isImageRefForReplacement(imageRef, "myimage:1.2.3")
 		// then
 		assert.True(t, isImage, "Expected %s to be a valid image reference", imageRef)
 	})
@@ -43,7 +43,7 @@ func TestIsLikelyImageReference(t *testing.T) {
 		// given
 		imageRef := "example.com/myapp/myimage:1.2.3"
 		// when
-		isImage := isSuitableForReplacement(imageRef, "myimage:4.3.2")
+		isImage := isImageRefForReplacement(imageRef, "myimage:4.3.2")
 		// then
 		assert.False(t, isImage, "Expected %s to be a valid image reference", imageRef)
 	})

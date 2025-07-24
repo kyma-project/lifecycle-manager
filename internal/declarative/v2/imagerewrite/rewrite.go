@@ -55,15 +55,15 @@ func NewDockerImageReference(val string) (*DockerImageReference, error) {
 	return res, nil
 }
 
-func (t *DockerImageReference) Matches(otherNameAndTag NameAndTag) bool {
-	return t.NameAndTag == otherNameAndTag
+func (ir *DockerImageReference) Matches(otherNameAndTag NameAndTag) bool {
+	return ir.NameAndTag == otherNameAndTag
 }
 
-func (t *DockerImageReference) String() string {
-	if len(t.Digest) > 0 {
-		return fmt.Sprintf("%s/%s@%s", t.HostAndPath, t.NameAndTag, t.Digest)
+func (ir *DockerImageReference) String() string {
+	if len(ir.Digest) > 0 {
+		return fmt.Sprintf("%s/%s@%s", ir.HostAndPath, ir.NameAndTag, ir.Digest)
 	}
-	return fmt.Sprintf("%s/%s", t.HostAndPath, t.NameAndTag)
+	return fmt.Sprintf("%s/%s", ir.HostAndPath, ir.NameAndTag)
 }
 
 type PodContainerImageRewriter struct{}
@@ -128,7 +128,7 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 		}
 		for _, targetImage := range targetImages {
 			// Check if the existing environment variable value is an image reference suitable for the replacement.
-			if isSuitableForReplacement(envVarValueStr, targetImage.NameAndTag) {
+			if isImageRefForReplacement(envVarValueStr, targetImage.NameAndTag) {
 				envVar["value"] = targetImage.String() // Set the new image reference
 				break
 			}
@@ -142,10 +142,10 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 	return nil
 }
 
-// isSuitableForReplacement checks if the given value of an environment variable:
+// isImageRefForReplacement checks if the given value of an environment variable:
 //   - is a docker image reference (simple heuristics),
-//   - matches the provided targetRef (has the same <name>:<tag>).
-func isSuitableForReplacement(envVarValue string, targetNameAndTag NameAndTag) bool {
+//   - matches the provided targetRef (has the same <name>:<tag>), which means it is suitable for replacement.
+func isImageRefForReplacement(envVarValue string, targetNameAndTag NameAndTag) bool {
 	if !strings.Contains(envVarValue, string(targetNameAndTag)) {
 		return false // The envVarValue does not contain the targetRef.NameAndTag so it is not suitable for replacement.
 	}
