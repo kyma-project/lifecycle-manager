@@ -3,14 +3,14 @@ package setup
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 )
 
 //nolint:ireturn // chosen implementation shall be abstracted

@@ -3,6 +3,7 @@ package secret_test
 import (
 	"context"
 	"errors"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 )
 
 var (

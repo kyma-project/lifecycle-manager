@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -12,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
 )
 
 var (

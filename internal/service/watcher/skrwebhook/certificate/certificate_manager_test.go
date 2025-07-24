@@ -3,6 +3,8 @@ package certificate_test
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"testing"
 	"time"
 
@@ -15,8 +17,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
 )
 
 var (

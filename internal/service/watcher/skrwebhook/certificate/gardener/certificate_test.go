@@ -3,6 +3,8 @@ package gardener_test
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
 	"math"
 	"testing"
 	"time"
@@ -14,8 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 )
 
 var rsaKeyAlgorithm = gcertv1alpha1.RSAKeyAlgorithm

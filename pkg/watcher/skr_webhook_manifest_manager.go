@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
@@ -20,8 +22,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 var ErrSkrCertificateNotReady = errors.New("SKR certificate not ready")
@@ -49,17 +49,17 @@ type SkrWebhookManifestManager struct {
 	kcpClient            client.Client
 	skrContextFactory    remote.SkrContextProvider
 	remoteSyncNamespace  string
-	kcpAddr              skrwebhookresources.KCPAddr
+	kcpAddr              resources.KCPAddr
 	chartReaderService   *chartreader.Service
 	baseResources        []*unstructured.Unstructured
 	watcherMetrics       WatcherMetrics
 	certificateManager   CertificateManager
-	resourceConfigurator *skrwebhookresources.ResourceConfigurator
+	resourceConfigurator *resources.ResourceConfigurator
 }
 
 func NewSKRWebhookManifestManager(kcpClient client.Client, skrContextFactory remote.SkrContextProvider,
-	remoteSyncNamespace string, resolvedKcpAddr skrwebhookresources.KCPAddr, chartReaderService *chartreader.Service,
-	certificateManager CertificateManager, resourceConfigurator *skrwebhookresources.ResourceConfigurator,
+	remoteSyncNamespace string, resolvedKcpAddr resources.KCPAddr, chartReaderService *chartreader.Service,
+	certificateManager CertificateManager, resourceConfigurator *resources.ResourceConfigurator,
 	watcherMetrics *metrics.WatcherMetrics,
 ) (*SkrWebhookManifestManager, error) {
 	baseResources, err := chartReaderService.GetRawManifestUnstructuredResources()
@@ -219,11 +219,11 @@ func (m *SkrWebhookManifestManager) getGeneratedClientObjects(skrCertificateSecr
 ) []client.Object {
 	var genClientObjects []client.Object
 
-	webhookConfig := skrwebhookresources.BuildValidatingWebhookConfigFromWatchers(gatewaySecretData.CaCert, watchers,
+	webhookConfig := resources.BuildValidatingWebhookConfigFromWatchers(gatewaySecretData.CaCert, watchers,
 		m.remoteSyncNamespace)
 	genClientObjects = append(genClientObjects, webhookConfig)
 
-	skrSecret := skrwebhookresources.BuildSKRSecret(gatewaySecretData.CaCert, skrCertificateSecretData.TlsCert,
+	skrSecret := resources.BuildSKRSecret(gatewaySecretData.CaCert, skrCertificateSecretData.TlsCert,
 		skrCertificateSecretData.TlsKey, m.remoteSyncNamespace)
 	return append(genClientObjects, skrSecret)
 }

@@ -17,8 +17,12 @@ package withwatcher_test
 
 import (
 	"context"
+	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,10 +64,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
@@ -186,14 +186,14 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(ctx, istioResource)).To(Succeed())
 	}
 
-	certificateConfig := certificate.CertificateConfig{
+	certificateConfig := certificate2.CertificateConfig{
 		Duration:    1 * time.Hour,
 		RenewBefore: 5 * time.Minute,
 		KeySize:     flags.DefaultSelfSignedCertKeySize,
 	}
 
-	certificateManagerConfig := certificate.CertificateManagerConfig{
-		SkrServiceName:               skrwebhookresources.SkrResourceName,
+	certificateManagerConfig := certificate2.CertificateManagerConfig{
+		SkrServiceName:               resources.SkrResourceName,
 		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
 		CertificateNamespace:         flags.DefaultIstioNamespace,
 		AdditionalDNSNames:           []string{},
@@ -202,7 +202,7 @@ var _ = BeforeSuite(func() {
 		SkrCertificateNamingTemplate: "%s-webhook-tls",
 	}
 
-	certificateManager := certificate.NewCertificateManager(
+	certificateManager := certificate2.NewCertificateManager(
 		certmanager.NewCertificateClient(mgr.GetClient(),
 			"test-issuer",
 			certificateConfig,
@@ -224,7 +224,7 @@ var _ = BeforeSuite(func() {
 
 	chartReaderService := chartreader.NewService(skrWatcherPath)
 
-	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
+	resourceConfigurator := resources.NewResourceConfigurator(
 		flags.DefaultRemoteSyncNamespace, "dummyhost/fake-watcher-image:latest",
 		"200Mi",
 		"1", *resolvedKcpAddr)

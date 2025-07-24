@@ -1,6 +1,8 @@
 package resources_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"reflect"
 	"testing"
 
@@ -8,8 +10,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 func TestBuildSKRSecret(t *testing.T) {

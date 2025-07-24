@@ -1,6 +1,8 @@
 package setup
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
 	"os"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -13,8 +15,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
 )
 
 const bootstrapFailedExitCode = 1

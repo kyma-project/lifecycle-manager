@@ -2,8 +2,13 @@ package skrwebhook
 
 import (
 	"errors"
+	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"strings"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -15,11 +20,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 var (
@@ -49,7 +49,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 
 	watcherMetrics := metrics.NewWatcherMetrics()
 
-	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
+	resourceConfigurator := resources.NewResourceConfigurator(
 		flagVar.RemoteSyncNamespace, flagVar.GetWatcherImage(),
 		flagVar.WatcherResourceLimitsCPU,
 		flagVar.WatcherResourceLimitsMemory, *resolvedKcpAddr)
@@ -67,15 +67,15 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 		watcherMetrics)
 }
 
-func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.CertificateManager, error) {
+func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate2.CertificateManager, error) {
 	certClient, err := setupCertClient(kcpClient, flagVar)
 	if err != nil {
 		return nil, err
 	}
 	secretClient := secret.NewCertificateSecretClient(kcpClient)
 
-	config := certificate.CertificateManagerConfig{
-		SkrServiceName:               skrwebhookresources.SkrResourceName,
+	config := certificate2.CertificateManagerConfig{
+		SkrServiceName:               resources.SkrResourceName,
 		SkrNamespace:                 flagVar.RemoteSyncNamespace,
 		CertificateNamespace:         flagVar.IstioNamespace,
 		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),
@@ -84,15 +84,15 @@ func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certifi
 		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
 	}
 
-	return certificate.NewCertificateManager(
+	return certificate2.NewCertificateManager(
 		certClient,
 		secretClient,
 		config,
 	), nil
 }
 
-func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate.CertificateClient, error) {
-	certificateConfig := certificate.CertificateConfig{
+func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertificateClient, error) {
+	certificateConfig := certificate2.CertificateConfig{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,

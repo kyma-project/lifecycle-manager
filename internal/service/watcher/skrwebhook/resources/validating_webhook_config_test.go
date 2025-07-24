@@ -1,6 +1,7 @@
 package resources_test
 
 import (
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"reflect"
 	"testing"
 
@@ -9,7 +10,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
