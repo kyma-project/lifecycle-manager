@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -35,7 +36,7 @@ func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.
 }
 
 // DockerImageLocalizationTransform rewrites Docker images in the provided resources according to the Spec.LocalizedImages field in the Manifest object.
-func DockerImageLocalizationTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func DockerImageLocalizationTransform(ctx context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return fmt.Errorf("%T: %w", obj, ErrInvalidManifestType)
@@ -58,7 +59,8 @@ func DockerImageLocalizationTransform(_ context.Context, obj Object, resources [
 	for _, resource := range resources {
 		if resource.GetKind() == "Deployment" || resource.GetKind() == "StatefulSet" {
 			if err = rewriter.ReplaceImages(resource, localizedImages); err != nil {
-				return fmt.Errorf("failed to rewrite images in resource %s/%s: %w", resource.GetNamespace(), resource.GetName(), err)
+				// return fmt.Errorf("failed to rewrite images in resource %s/%s: %w", resource.GetNamespace(), resource.GetName(), err)
+				logf.FromContext(ctx).Info("error: %v" + err.Error())
 			}
 		}
 	}
