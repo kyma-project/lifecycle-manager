@@ -10,7 +10,7 @@ import (
 
 var (
 	ErrInvalidImageReference               = errors.New("invalid docker image reference")
-	ErrMissingSlashInImageReference        = fmt.Errorf("%w: missing '/'", ErrInvalidImageReference)
+	ErrMissingSlashInImageReference        = fmt.Errorf("%w: missing '/' separator between registry host and image name", ErrInvalidImageReference)
 	ErrMissingColonInImageReference        = fmt.Errorf("%w: missing ':' separator between image name and tag", ErrInvalidImageReference)
 	ErrFindingImageInPodContainer          = errors.New("error finding image in pod container")
 	ErrFindingEnvVarsInPodContainer        = errors.New("error finding env vars in pod container")
