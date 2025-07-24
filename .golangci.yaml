@@ -183,6 +183,7 @@ linters:
       - linters:
           - err113
           - fatcontext
+          - forcetypeassert
           - funlen
           - gochecknoglobals
           - goconst

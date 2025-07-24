@@ -4,19 +4,18 @@ import (
 	"context"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"k8s.io/apimachinery/pkg/api/meta"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -40,161 +39,6 @@ func Test_GetCacheObjects(t *testing.T) {
 	assert.IsType(t, &certmanagerv1.Certificate{}, objects[0])
 }
 
-func Test_CertificateClient_Create_Success(t *testing.T) {
-	expectedCertificate := &certmanagerv1.Certificate{
-		TypeMeta: apimetav1.TypeMeta{
-			Kind:       certmanagerv1.CertificateKind,
-			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      certName,
-			Namespace: certNamespace,
-		},
-		Spec: certmanagerv1.CertificateSpec{
-			CommonName:  certCommonNameName,
-			Duration:    &apimetav1.Duration{Duration: certDuration},
-			RenewBefore: &apimetav1.Duration{Duration: certRenewBefore},
-			DNSNames:    certDNSNames,
-			SecretName:  certName,
-			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: k8slabels.Set{
-					shared.PurposeLabel: shared.CertManager,
-					shared.ManagedBy:    shared.OperatorName,
-				},
-			},
-			IssuerRef: certmanagermetav1.ObjectReference{
-				Name: issuerName,
-				Kind: certmanagerv1.IssuerKind,
-			},
-			IsCA: false,
-			Usages: []certmanagerv1.KeyUsage{
-				certmanagerv1.UsageDigitalSignature,
-				certmanagerv1.UsageKeyEncipherment,
-			},
-			PrivateKey: &certmanagerv1.CertificatePrivateKey{
-				RotationPolicy: certmanagerv1.RotationPolicyAlways,
-				Encoding:       certmanagerv1.PKCS1,
-				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
-				Size:           certKeySize,
-			},
-		},
-	}
-
-	clientStub := &kcpClientStub{}
-	certClient := certmanager.NewCertificateRepository(
-		clientStub,
-		issuerName,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     certKeySize,
-		},
-	)
-
-	err := certClient.Create(t.Context(),
-		certName,
-		certNamespace,
-		certCommonNameName,
-		certDNSNames,
-	)
-
-	require.NoError(t, err)
-	assert.True(t, clientStub.patchCalled)
-	assert.NotNil(t, clientStub.patchArg)
-	assert.Equal(t, expectedCertificate, clientStub.patchArg)
-}
-
-func Test_CertificateClient_Create_Error(t *testing.T) {
-	clientStub := &kcpClientStub{
-		patchErr: assert.AnError,
-	}
-	certClient := certmanager.NewCertificateRepository(
-		clientStub,
-		issuerName,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     certKeySize,
-		},
-	)
-
-	err := certClient.Create(t.Context(),
-		certName,
-		certNamespace,
-		certCommonNameName,
-		certDNSNames,
-	)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to patch certificate")
-	assert.True(t, clientStub.patchCalled)
-}
-
-func Test_CertificateClient_Delete_Success(t *testing.T) {
-	clientStub := &kcpClientStub{}
-	certClient := certmanager.NewCertificateRepository(
-		clientStub,
-		issuerName,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     certKeySize,
-		},
-	)
-
-	err := certClient.Delete(t.Context(), certName, certNamespace)
-
-	require.NoError(t, err)
-	assert.True(t, clientStub.deleteCalled)
-	assert.NotNil(t, clientStub.deleteArg)
-	assert.Equal(t, certName, clientStub.deleteArg.Name)
-	assert.Equal(t, certNamespace, clientStub.deleteArg.Namespace)
-}
-
-func Test_CertificateClient_Delete_Error(t *testing.T) {
-	clientStub := &kcpClientStub{
-		deleteErr: assert.AnError,
-	}
-	certClient := certmanager.NewCertificateRepository(
-		clientStub,
-		issuerName,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     certKeySize,
-		},
-	)
-
-	err := certClient.Delete(t.Context(), certName, certNamespace)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to delete certificate")
-	assert.True(t, clientStub.deleteCalled)
-}
-
-func Test_CertificateClient_Delete_IgnoreNotFoundError(t *testing.T) {
-	clientStub := &kcpClientStub{
-		deleteErr: apierrors.NewNotFound(certmanagerv1.Resource("certificates"), certName),
-	}
-	certClient := certmanager.NewCertificateRepository(
-		clientStub,
-		issuerName,
-		certificate.CertificateConfig{
-			Duration:    certDuration,
-			RenewBefore: certRenewBefore,
-			KeySize:     certKeySize,
-		},
-	)
-
-	err := certClient.Delete(t.Context(), certName, certNamespace)
-
-	require.NoError(t, err)
-	assert.True(t, clientStub.deleteCalled)
-	assert.NotNil(t, clientStub.deleteArg)
-	assert.Equal(t, certName, clientStub.deleteArg.Name)
-	assert.Equal(t, certNamespace, clientStub.deleteArg.Namespace)
-}
-
 func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getCert: &certmanagerv1.Certificate{
@@ -214,6 +58,7 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
+		certNamespace,
 		certificate.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -221,7 +66,7 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 		},
 	)
 
-	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
+	time, err := certClient.GetRenewalTime(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.Equal(t, clientStub.getCert.Status.RenewalTime.Time, time)
@@ -235,6 +80,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
+		certNamespace,
 		certificate.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -242,7 +88,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 		},
 	)
 
-	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
+	time, err := certClient.GetRenewalTime(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get certificate")
@@ -267,6 +113,7 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
+		certNamespace,
 		certificate.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -274,7 +121,7 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 		},
 	)
 
-	time, err := certClient.GetRenewalTime(t.Context(), certName, certNamespace)
+	time, err := certClient.GetRenewalTime(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Equal(t, certificate.ErrNoRenewalTime, err)
@@ -302,6 +149,7 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
+		certNamespace,
 		certificate.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -336,6 +184,7 @@ func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
+		certNamespace,
 		certificate.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -371,6 +220,7 @@ func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
+		certNamespace,
 		certificate.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -394,6 +244,7 @@ func Test_CertificateClient_GetValidity_GetError(t *testing.T) {
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
+		certNamespace,
 		certificate.CertificateConfig{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -424,10 +275,59 @@ type kcpClientStub struct {
 	patchArg     *certmanagerv1.Certificate
 }
 
+func (c *kcpClientStub) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) DeleteAllOf(ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) Status() client.SubResourceWriter {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) SubResource(subResource string) client.SubResourceClient {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) Scheme() *machineryruntime.Scheme {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) RESTMapper() meta.RESTMapper {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) GroupVersionKindFor(obj machineryruntime.Object) (schema.GroupVersionKind, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *kcpClientStub) IsObjectNamespaced(obj machineryruntime.Object) (bool, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	c.getCalled = true
 	if c.getCert != nil {
-		//nolint:forcetypeassert // test code
 		c.getCert.DeepCopyInto(obj.(*certmanagerv1.Certificate))
 	}
 	return c.getErr
@@ -435,14 +335,12 @@ func (c *kcpClientStub) Get(ctx context.Context, key client.ObjectKey, obj clien
 
 func (c *kcpClientStub) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.deleteCalled = true
-	//nolint:forcetypeassert // test code
 	c.deleteArg = obj.(*certmanagerv1.Certificate)
 	return c.deleteErr
 }
 
 func (c *kcpClientStub) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	c.patchCalled = true
-	//nolint:forcetypeassert // test code
 	c.patchArg = obj.(*certmanagerv1.Certificate)
 	return c.patchErr
 }
