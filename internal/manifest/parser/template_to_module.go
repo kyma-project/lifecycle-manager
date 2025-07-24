@@ -196,7 +196,7 @@ func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
 		access := resource.GetAccess()
 		ocmAccessSpec, err := ocm.DefaultContext().AccessSpecForSpec(access)
 		if err != nil {
-			logf.Log.Error(fmt.Errorf("failed to create ocm spec for access: %w", err), 
+			logf.Log.Error(fmt.Errorf("failed to create ocm spec for access: %w", err),
 				"getLocalizedImagesFromDescriptor", "resourceName", resource.Name, "accessType", access.GetType())
 			continue
 		}

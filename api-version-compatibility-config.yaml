@@ -28,3 +28,7 @@ operator.kyma-project.io_moduletemplates.yaml:
       - .spec.properties.info
       - .spec.properties.manager
       - .spec.properties.associatedResources
+operator.kyma-project.io_manifests.yaml:
+  exclusions:
+    v1beta2:
+      - .spec.properties.localizedImages
