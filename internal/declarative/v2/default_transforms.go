@@ -34,6 +34,7 @@ func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.
 	return nil
 }
 
+// DockerImageLocalizationTransform rewrites Docker images in the provided resources according to the Spec.LocalizedImages field in the Manifest object.
 func DockerImageLocalizationTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
