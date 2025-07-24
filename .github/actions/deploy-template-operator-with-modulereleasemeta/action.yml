@@ -96,6 +96,7 @@ runs:
         matrix.e2e-test == 'module-deletion-with-multiple-crs-ignore-policy' ||
         matrix.e2e-test == 'module-deletion-with-multiple-crs-create-and-delete-policy' ||
         matrix.e2e-test == 'oci-reg-cred-secret'
+        matrix.e2e-test == 'module-transferred-to-another-oci-registry'
         }}
       shell: bash
       run: |
@@ -196,3 +197,9 @@ runs:
         # Create ModuleTemplate with name <modulename>-<channel>
         sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
+    - name: Apply ModuleTemplate for the template-operator Module transferred to another public OCI registry (uses manually created ModuleTemplate)
+      working-directory: lifecycle-manager
+      if: ${{ matrix.e2e-test == 'module-transferred-to-another-oci-registry' }}
+      shell: bash
+      run: |
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_transferred.yaml
