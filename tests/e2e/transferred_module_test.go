@@ -15,7 +15,7 @@ import (
 // This test verifies that a module transferred to another OCI Registry installs properly on an SKR cluster and:
 // - The Manifest CR is created with the correct localization metadata (Spec.LocalizedImages contains a list of images to be re-written)
 // - The Docker image references in K8s objects embedded in the raw-manifest are updated (re-written) according to the localizedImages configured in the Manifest CR
-// The test uses manually created Template-Operator module, which was, also manually, transferred to the "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market" registry.
+// The test uses manually created Template-Operator module, which was also manually transferred to the "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market" registry.
 // The original docker image references (embedded in the module's raw-manifest) are pointing to the "europe-docker.pkg.dev/kyma-project/prod/" registry.
 var _ = Describe("Module Transferred to Another OCI Registry", Ordered, func() {
 	const (
