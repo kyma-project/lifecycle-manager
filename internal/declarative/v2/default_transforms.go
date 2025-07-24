@@ -9,7 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2/imagerewrite"
+	"github.com/kyma-project/lifecycle-manager/internal/imagerewrite"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 )
 

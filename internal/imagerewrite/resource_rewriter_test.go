@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2/imagerewrite"
+	"github.com/kyma-project/lifecycle-manager/internal/imagerewrite"
 )
 
 func TestResourceRewriter(t *testing.T) {
