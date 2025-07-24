@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2/imagerewrite"
+	"github.com/kyma-project/lifecycle-manager/internal/imagerewrite"
 )
 
 // testDeploymentNoEnvsContainer is a deployment with a single container that has no environment variables set.
