@@ -17,6 +17,8 @@ package withwatcher_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
 	"os"
 	"path/filepath"
 	"testing"
@@ -54,8 +56,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/gateway"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"

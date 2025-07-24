@@ -3,13 +3,13 @@ package gateway_test
 import (
 	"context"
 	"errors"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"istio.io/api/networking/v1alpha3"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/gateway"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
