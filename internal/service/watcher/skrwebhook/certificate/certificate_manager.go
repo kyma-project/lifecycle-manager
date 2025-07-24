@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -20,22 +20,17 @@ var (
 	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
 )
 
-type CertificateClient interface {
+type CertificateRepository interface {
 	Create(
 		ctx context.Context,
 		name string,
-		namespace string,
 		commonName string,
 		dnsNames []string,
 	) error
 	Delete(ctx context.Context,
 		name string,
-		namespace string,
 	) error
-	GetRenewalTime(ctx context.Context,
-		name string,
-		namespace string,
-	) (time.Time, error)
+	GetRenewalTime(ctx context.Context, name string) (time.Time, error)
 }
 
 type CertificateSecretClient interface {
@@ -62,12 +57,12 @@ type CertificateManagerConfig struct {
 }
 
 type CertificateManager struct {
-	certClient   CertificateClient
+	certClient   CertificateRepository
 	secretClient CertificateSecretClient
 	config       CertificateManagerConfig
 }
 
-func NewCertificateManager(certClient CertificateClient,
+func NewCertificateManager(certClient CertificateRepository,
 	secretClient CertificateSecretClient,
 	config CertificateManagerConfig,
 ) *CertificateManager {
@@ -88,7 +83,6 @@ func (c *CertificateManager) CreateSkrCertificate(ctx context.Context, kyma *v1b
 
 	if err = c.certClient.Create(ctx,
 		c.constructSkrCertificateName(kyma.Name),
-		c.config.CertificateNamespace,
 		kyma.GetRuntimeID(),
 		dnsNames,
 	); err != nil {
@@ -100,7 +94,7 @@ func (c *CertificateManager) CreateSkrCertificate(ctx context.Context, kyma *v1b
 
 // DeleteSkrCertificate deletes the SKR certificate including its certificate secret.
 func (c *CertificateManager) DeleteSkrCertificate(ctx context.Context, kymaName string) error {
-	err := c.certClient.Delete(ctx, c.constructSkrCertificateName(kymaName), c.config.CertificateNamespace)
+	err := c.certClient.Delete(ctx, c.constructSkrCertificateName(kymaName))
 	if err != nil {
 		return fmt.Errorf("failed to delete SKR certificate: %w", err)
 	}
@@ -113,7 +107,7 @@ func (c *CertificateManager) DeleteSkrCertificate(ctx context.Context, kymaName 
 	return nil
 }
 
-// RenewSKRCertificate checks if the gateway certificate secret has been rotated. If so, it renews
+// RenewSkrCertificate checks if the gateway certificate secret has been rotated. If so, it renews
 // the SKR certificate by removing its certificate secret which will trigger a new certificate to be issued.
 func (c *CertificateManager) RenewSkrCertificate(ctx context.Context, kymaName string) error {
 	gatewaySecret, err := c.secretClient.Get(ctx, c.config.GatewaySecretName, c.config.CertificateNamespace)
@@ -144,8 +138,7 @@ func (c *CertificateManager) RenewSkrCertificate(ctx context.Context, kymaName s
 
 // IsSkrCertificateRenewalOverdue checks if the SKR certificate renewal is overdue.
 func (c *CertificateManager) IsSkrCertificateRenewalOverdue(ctx context.Context, kymaName string) (bool, error) {
-	renewalTime, err := c.certClient.GetRenewalTime(ctx, c.constructSkrCertificateName(kymaName),
-		c.config.CertificateNamespace)
+	renewalTime, err := c.certClient.GetRenewalTime(ctx, c.constructSkrCertificateName(kymaName))
 	if err != nil {
 		return false, fmt.Errorf("failed to get SKR certificate renewal time: %w", err)
 	}
@@ -156,7 +149,7 @@ func (c *CertificateManager) IsSkrCertificateRenewalOverdue(ctx context.Context,
 // GetSkrCertificateSecret returns the SKR certificate secret.
 // If the secret does not exist, it returns the ErrSkrCertificateNotReady error.
 func (c *CertificateManager) GetSkrCertificateSecret(ctx context.Context, kymaName string) (*apicorev1.Secret, error) {
-	secret, err := c.secretClient.Get(ctx,
+	skrCertSecret, err := c.secretClient.Get(ctx,
 		c.constructSkrCertificateName(kymaName),
 		c.config.CertificateNamespace,
 	)
@@ -164,7 +157,7 @@ func (c *CertificateManager) GetSkrCertificateSecret(ctx context.Context, kymaNa
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
-	return secret, nil
+	return skrCertSecret, nil
 }
 
 func (c *CertificateManager) GetSkrCertificateSecretData(ctx context.Context,
@@ -180,7 +173,7 @@ func (c *CertificateManager) GetSkrCertificateSecretData(ctx context.Context,
 
 // GetGatewayCertificateSecret returns the gateway certificate secret.
 func (c *CertificateManager) GetGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
-	secret, err := c.secretClient.Get(ctx,
+	gatewayCertSecret, err := c.secretClient.Get(ctx,
 		c.config.GatewaySecretName,
 		c.config.CertificateNamespace,
 	)
@@ -188,7 +181,7 @@ func (c *CertificateManager) GetGatewayCertificateSecret(ctx context.Context) (*
 		return nil, fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
 
-	return secret, nil
+	return gatewayCertSecret, nil
 }
 
 func (c *CertificateManager) GetGatewayCertificateSecretData(ctx context.Context) (*secret.GatewaySecretData, error) {

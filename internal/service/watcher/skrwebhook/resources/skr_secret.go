@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

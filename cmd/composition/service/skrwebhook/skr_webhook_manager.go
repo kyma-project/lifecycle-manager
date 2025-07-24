@@ -2,10 +2,10 @@ package skrwebhook
 
 import (
 	"errors"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gardener"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
@@ -91,7 +91,7 @@ func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certifi
 	), nil
 }
 
-func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertificateClient, error) {
+func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertificateRepository, error) {
 	certificateConfig := certificate2.CertificateConfig{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
@@ -100,7 +100,7 @@ func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certifica
 
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		return certmanager.NewCertificateClient(kcpClient,
+		return certmanager.NewCertificateRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			certificateConfig,
 		), nil

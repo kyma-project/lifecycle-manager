@@ -3,9 +3,9 @@ package setup
 import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gardener"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common"
@@ -24,7 +24,7 @@ func SetupCertInterface(kcpClient client.Client, flagVar *flags.FlagVar) (gatewa
 	}
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		return certmanager.NewCertificateClient(kcpClient,
+		return certmanager.NewCertificateRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			certificateConfig,
 		), nil

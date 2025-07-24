@@ -3,8 +3,8 @@ package gardener_test
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gardener"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
 	"math"
 	"testing"
 	"time"

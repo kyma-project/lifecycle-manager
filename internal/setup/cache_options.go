@@ -1,8 +1,8 @@
 package setup
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/gardener"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gardener"
 	"os"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"

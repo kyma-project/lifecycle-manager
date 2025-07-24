@@ -3,7 +3,7 @@ package secret_test
 import (
 	"context"
 	"errors"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

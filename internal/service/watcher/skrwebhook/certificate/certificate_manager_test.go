@@ -3,8 +3,8 @@ package certificate_test
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"testing"
 	"time"
 
@@ -757,7 +757,7 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 		},
 	}
 	type fields struct {
-		certClient   certificate.CertificateClient
+		certClient   certificate.CertificateRepository
 		secretClient certificate.CertificateSecretClient
 		config       certificate.CertificateManagerConfig
 	}
@@ -830,7 +830,7 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 		},
 	}
 	type fields struct {
-		certClient   certificate.CertificateClient
+		certClient   certificate.CertificateRepository
 		secretClient certificate.CertificateSecretClient
 		config       certificate.CertificateManagerConfig
 	}

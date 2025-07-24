@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -13,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 )
 
 var (
@@ -27,43 +27,24 @@ func GetCacheObjects() []client.Object {
 	}
 }
 
-type kcpClient interface {
-	Get(ctx context.Context,
-		key client.ObjectKey,
-		obj client.Object,
-		opts ...client.GetOption,
-	) error
-	Delete(ctx context.Context,
-		obj client.Object,
-		opts ...client.DeleteOption,
-	) error
-	Patch(ctx context.Context,
-		obj client.Object,
-		patch client.Patch,
-		opts ...client.PatchOption,
-	) error
-}
-
-type CertificateClient struct {
-	kcpClient  kcpClient
+type CertificateRepository struct {
+	kcpClient  client.Client
 	issuerName string
+	namespace  string
 	config     certificate.CertificateConfig
 }
 
-func NewCertificateClient(kcpClient kcpClient,
-	issuerName string,
-	config certificate.CertificateConfig,
-) *CertificateClient {
-	return &CertificateClient{
+func NewCertificateRepository(kcpClient client.Client, issuerName string, namespace string, config certificate.CertificateConfig) *CertificateRepository {
+	return &CertificateRepository{
 		kcpClient,
 		issuerName,
+		namespace,
 		config,
 	}
 }
 
-func (c *CertificateClient) Create(ctx context.Context,
+func (c *CertificateRepository) Create(ctx context.Context,
 	name string,
-	namespace string,
 	commonName string,
 	dnsNames []string,
 ) error {
@@ -74,7 +55,7 @@ func (c *CertificateClient) Create(ctx context.Context,
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: c.namespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
 			CommonName:  commonName,
@@ -117,26 +98,20 @@ func (c *CertificateClient) Create(ctx context.Context,
 	return nil
 }
 
-func (c *CertificateClient) Delete(ctx context.Context,
-	name string,
-	namespace string,
-) error {
+func (c *CertificateRepository) Delete(ctx context.Context, name string) error {
 	cert := &certmanagerv1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(namespace)
+	cert.SetNamespace(c.namespace)
 
 	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, namespace, err)
+		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, c.namespace, err)
 	}
 
 	return nil
 }
 
-func (c *CertificateClient) GetRenewalTime(ctx context.Context,
-	name string,
-	namespace string,
-) (time.Time, error) {
-	cert, err := c.getCertificate(ctx, name, namespace)
+func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
+	cert, err := c.getCertificate(ctx, name, c.namespace)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -148,7 +123,7 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 	return cert.Status.RenewalTime.Time, nil
 }
 
-func (c *CertificateClient) GetValidity(ctx context.Context,
+func (c *CertificateRepository) GetValidity(ctx context.Context,
 	name string,
 	namespace string,
 ) (time.Time, time.Time, error) {
@@ -168,7 +143,7 @@ func (c *CertificateClient) GetValidity(ctx context.Context,
 	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
 }
 
-func (c *CertificateClient) getCertificate(ctx context.Context,
+func (c *CertificateRepository) getCertificate(ctx context.Context,
 	name string,
 	namespace string,
 ) (*certmanagerv1.Certificate, error) {

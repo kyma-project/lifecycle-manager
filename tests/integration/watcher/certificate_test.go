@@ -1,9 +1,9 @@
 package watcher_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"time"
 
@@ -81,7 +81,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			}
 
 			certificateManager := certificate2.NewCertificateManager(
-				certmanager.NewCertificateClient(controlPlaneClient,
+				certmanager.NewCertificateRepository(controlPlaneClient,
 					"klm-watcher-selfsigned",
 					certificateConfig,
 				),

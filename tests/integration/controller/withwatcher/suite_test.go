@@ -17,9 +17,9 @@ package withwatcher_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
@@ -203,7 +203,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	certificateManager := certificate2.NewCertificateManager(
-		certmanager.NewCertificateClient(mgr.GetClient(),
+		certmanager.NewCertificateRepository(mgr.GetClient(),
 			"test-issuer",
 			certificateConfig,
 		),

@@ -1,7 +1,7 @@
 package resources_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"reflect"
 	"testing"
