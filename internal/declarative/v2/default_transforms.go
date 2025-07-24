@@ -59,8 +59,7 @@ func DockerImageLocalizationTransform(ctx context.Context, obj Object, resources
 	for _, resource := range resources {
 		if resource.GetKind() == "Deployment" || resource.GetKind() == "StatefulSet" {
 			if err = rewriter.ReplaceImages(resource, localizedImages); err != nil {
-				// return fmt.Errorf("failed to rewrite images in resource %s/%s: %w", resource.GetNamespace(), resource.GetName(), err)
-				logf.FromContext(ctx).Info("error: %v" + err.Error())
+				return fmt.Errorf("failed to rewrite images in resource %s/%s: %w", resource.GetNamespace(), resource.GetName(), err)
 			}
 		}
 	}
