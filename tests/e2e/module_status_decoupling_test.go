@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	apicorev1 "k8s.io/api/core/v1"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -161,6 +164,18 @@ func RunModuleStatusDecouplingTest(resourceKind ResourceKind) {
 				ser, err := json.MarshalIndent(statefulset, "=>", "  ")
 				Expect(err).ToNot(HaveOccurred(), "Failed to marshal StatefulSet")
 				GinkgoWriter.Printf("StatefulSet: %v", string(ser))
+			}
+
+			podList := &apicorev1.PodList{}
+			err := skrClient.List(ctx, podList, &client.ListOptions{Namespace: TestModuleResourceNamespace});
+			Expect(err).ToNot(HaveOccurred(), "Failed to list pods in TestModuleResourceNamespace")
+
+			GinkgoWriter.Printf("========================================")
+			for i := range podList.Items {
+				pod := podList.Items[i]
+				ser, err := json.MarshalIndent(pod, "=>", "  ")
+				Expect(err).ToNot(HaveOccurred(), "Failed to marshal Pod")
+				GinkgoWriter.Printf("Pod: %v", string(ser))
 			}
 
 			Eventually(DisableModule).
