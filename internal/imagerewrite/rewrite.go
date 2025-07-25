@@ -19,7 +19,7 @@ var (
 	ErrFailedToSetNewEnvListInPodContainer = errors.New("failed to set new env list in pod container")
 )
 
-// NameAndTag represents the docker image name and tag in the format <image>:<tag>.
+// NameAndTag represents the Docker image name and tag in the format <image>:<tag>.
 type NameAndTag string
 
 // DockerImageReference represents a docker image reference used in rewriting mechanism.
