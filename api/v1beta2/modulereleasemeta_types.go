@@ -33,11 +33,13 @@ type ModuleReleaseMetaSpec struct {
 	Channels []ChannelVersionAssignment `json:"channels"`
 
 	// Beta indicates if the module is in beta state. Beta modules are only available for beta Kymas.
+	// Deprecated: This field is deprecated and will be removed in the upcoming API version.
 	// +optional
 	// +kubebuilder:default:=false
 	Beta bool `json:"beta"`
 
 	// Internal indicates if the module is internal. Internal modules are only available for internal Kymas.
+	// Deprecated: This field is deprecated and will be removed in the upcoming API version.
 	// +optional
 	// +kubebuilder:default:=false
 	Internal bool `json:"internal"`
