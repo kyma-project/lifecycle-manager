@@ -142,9 +142,7 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 	return nil
 }
 
-// isImageRefForReplacement checks if the given value of an environment variable:
-//   - is a docker image reference (simple heuristics),
-//   - matches the provided targetRef (has the same <name>:<tag>), which means it is suitable for replacement.
+// isImageRefForReplacement checks if the environment variable value is a Docker image reference suitable for replacement with the target image.
 func isImageRefForReplacement(envVarValue string, targetNameAndTag NameAndTag) bool {
 	if !strings.Contains(envVarValue, string(targetNameAndTag)) {
 		return false // The envVarValue does not contain the targetRef.NameAndTag so it is not suitable for replacement.
