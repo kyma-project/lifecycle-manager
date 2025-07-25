@@ -141,7 +141,7 @@ func filterManifestsByFQDNAndVersion(manifests []v1beta2.Manifest,
 ) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
-		if manifest.Annotations[shared.FQDN] == fqdn && manifest.Spec.Version == moduleVersion {
+		if manifest.Annotations != nil && manifest.Annotations[shared.FQDN] == fqdn && manifest.Spec.Version == moduleVersion {
 			filteredManifests = append(filteredManifests, manifest)
 		}
 	}
