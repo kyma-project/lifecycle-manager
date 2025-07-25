@@ -19,6 +19,10 @@ var (
 	ErrFailedToSetNewEnvListInPodContainer = errors.New("failed to set new env list in pod container")
 )
 
+func IsSupportedKind(kind string) bool {
+	return kind == "Deployment" || kind == "StatefulSet"
+}
+
 // NameAndTag represents the Docker image name and tag in the format <image>:<tag>.
 type NameAndTag string
 
