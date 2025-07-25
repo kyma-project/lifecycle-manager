@@ -101,6 +101,28 @@ const testDeploymentTwoContainersWithInitContainer = testDeploymentTwoContainers
         imagePullPolicy: Always
 `
 
+const testCronJob = `
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+`
+
 // changesComparator is used to make comparison between original and rewritten object in a YAML format easier. It compares YAMLs line-by-line, assuming that the overall structure is identical.
 type changesComparator struct {
 	t              *testing.T

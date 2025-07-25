@@ -16,6 +16,21 @@ func TestResourceRewriter(t *testing.T) {
 		&imagerewrite.PodContainerEnvsRewriter{},
 	)
 
+	t.Run("UnsupportedKind", func(t *testing.T) {
+		t.Parallel()
+		// given
+		cronJobResource, err := parseToUnstructured(testCronJob)
+		require.NoError(t, err, "Failed to parse test ConfigMap to unstructured")
+		unmodifiedYAML := mustYAML(cronJobResource) // Store the original YAML for comparison later
+		// when
+		err = resourceRewriter.ReplaceImages(cronJobResource, nil)
+		// then
+		require.NoError(t, err, "Unexpected error when re-writing unsupported resource kind")
+		rewrittenYAML := mustYAML(cronJobResource)
+
+		require.Equal(t, unmodifiedYAML, rewrittenYAML, "ConfigMap should not be modified") //nolint: testifylint // I want to test for equality, not for equivalence
+	})
+
 	t.Run("SingleContainerRewriteAll", func(t *testing.T) {
 		t.Parallel()
 		// given

@@ -29,8 +29,13 @@ func (r *ResourceRewriter) WithRewriters(rewriters ...ImageRewriter) *ResourceRe
 }
 
 // ReplaceImages replaces images in the given Kubernetes resource with the target images.
-// It expects the resource to have a Pod template (e.g., Deployment, StatefulSet).
-func (r *ResourceRewriter) ReplaceImages(deploymentOrSimilar *unstructured.Unstructured, targetImages []*DockerImageReference) error {
+// It supports only Deployment and StatefulSet kinds, it ignores any unsupported resources.
+func (r *ResourceRewriter) ReplaceImages(resource *unstructured.Unstructured, targetImages []*DockerImageReference) error {
+	if !IsSupportedKind(resource.GetKind()) {
+		return nil
+	}
+
+	deploymentOrSimilar := resource
 	podContainersGetter := func() ([]*unstructured.Unstructured, error) {
 		containers, err := getPodContainers(deploymentOrSimilar)
 		if err != nil {
