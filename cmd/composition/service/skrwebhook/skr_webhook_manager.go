@@ -2,13 +2,6 @@ package skrwebhook
 
 import (
 	"errors"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gardener"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
-	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"strings"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -19,6 +12,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
+	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
@@ -72,19 +72,17 @@ func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certifi
 	if err != nil {
 		return nil, err
 	}
-	secretClient := secret.NewCertificateSecretClient(kcpClient)
+	secretClient := secret.NewCertificateSecretRepository(kcpClient, flagVar.IstioNamespace)
 
 	config := certificate2.Config{
-		SkrServiceName:               resources.SkrResourceName,
-		SkrNamespace:                 flagVar.RemoteSyncNamespace,
-		CertificateNamespace:         flagVar.IstioNamespace,
-		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),
-		GatewaySecretName:            shared.GatewaySecretName,
-		RenewBuffer:                  flagVar.SelfSignedCertRenewBuffer,
-		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
+		SkrServiceName:     resources.SkrResourceName,
+		SkrNamespace:       flagVar.RemoteSyncNamespace,
+		AdditionalDNSNames: strings.Split(flagVar.AdditionalDNSNames, ","),
+		GatewaySecretName:  shared.GatewaySecretName,
+		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	return certificate2.NewCertificateManager(
+	return certificate2.NewSKRCertService(
 		certClient,
 		secretClient,
 		config,
@@ -105,7 +103,7 @@ func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certifica
 			certificateConfig,
 		), nil
 	case gcertv1alpha1.SchemeGroupVersion.String():
-		return gardener.NewCertificateClient(kcpClient,
+		return gcm.NewCertificateClient(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			flagVar.SelfSignedCertIssuerNamespace,
 			certificateConfig,

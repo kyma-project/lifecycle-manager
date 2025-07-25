@@ -1,9 +1,9 @@
-package gardener_test
+package gcm_test
 
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gardener"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 	"math"
 	"testing"
@@ -33,14 +33,14 @@ var (
 )
 
 func Test_GetCacheObjects(t *testing.T) {
-	objects := gardener.GetCacheObjects()
+	objects := gcm.GetCacheObjects()
 	require.Len(t, objects, 1)
 	assert.IsType(t, &gcertv1alpha1.Certificate{}, objects[0])
 }
 
 func Test_CertificateClient_New_Error(t *testing.T) {
 	invalidKeySize := math.MaxInt32 + 1
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		&kcpClientStub{},
 		issuerName,
 		issuerNamespace,
@@ -51,7 +51,7 @@ func Test_CertificateClient_New_Error(t *testing.T) {
 		},
 	)
 	require.Error(t, err)
-	require.ErrorIs(t, err, gardener.ErrKeySizeOutOfRange)
+	require.ErrorIs(t, err, gcm.ErrKeySizeOutOfRange)
 	assert.Nil(t, certClient)
 }
 
@@ -83,7 +83,7 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	}
 
 	clientStub := &kcpClientStub{}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -112,7 +112,7 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		patchErr: assert.AnError,
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -138,7 +138,7 @@ func Test_CertificateClient_Create_Error(t *testing.T) {
 
 func Test_CertificateClient_Delete_Success(t *testing.T) {
 	clientStub := &kcpClientStub{}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -163,7 +163,7 @@ func Test_CertificateClient_Delete_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		deleteErr: assert.AnError,
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -201,7 +201,7 @@ func Test_CertificateClient_GetRenewalTime_Success(t *testing.T) {
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -225,7 +225,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	clientStub := &kcpClientStub{
 		getErr: assert.AnError,
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -259,7 +259,7 @@ func Test_CertificateClient_GetRenewalTime_Error_NoExpirationDate(t *testing.T) 
 			Status: gcertv1alpha1.CertificateStatus{},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -296,7 +296,7 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -337,7 +337,7 @@ func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
 		getErr: assert.AnError,
 	}
 
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -373,7 +373,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -388,7 +388,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, gardener.ErrCertificateStatusNotContainMessage)
+	require.ErrorIs(t, err, gcm.ErrCertificateStatusNotContainMessage)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 	assert.True(t, clientStub.getCalled)
@@ -403,7 +403,7 @@ func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.Error(t, err)
-	require.ErrorIs(t, err, gardener.ErrInputStringNotContainValidDates)
+	require.ErrorIs(t, err, gcm.ErrInputStringNotContainValidDates)
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
 }
@@ -485,7 +485,7 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-func getCertClientWithStatusMessage(message string) (*gardener.CertificateClient, error) {
+func getCertClientWithStatusMessage(message string) (*gcm.CertificateClient, error) {
 	clientStub := &kcpClientStub{
 		getCert: &gcertv1alpha1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -501,7 +501,7 @@ func getCertClientWithStatusMessage(message string) (*gardener.CertificateClient
 			},
 		},
 	}
-	certClient, err := gardener.NewCertificateClient(
+	certClient, err := gcm.NewCertificateClient(
 		clientStub,
 		issuerName,
 		issuerNamespace,

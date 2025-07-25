@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret/data"
 	"time"
 
 	apicorev1 "k8s.io/api/core/v1"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -27,17 +27,16 @@ type CertRepository interface {
 }
 
 type SecretRepository interface {
-	Get(ctx context.Context, name string, namespace string) (*apicorev1.Secret, error)
-	Delete(ctx context.Context, name string, namespace string) error
+	Get(ctx context.Context, name string) (*apicorev1.Secret, error)
+	Delete(ctx context.Context, name string) error
 }
 
 type Config struct {
-	SkrServiceName       string
-	SkrNamespace         string
-	CertificateNamespace string
-	AdditionalDNSNames   []string
-	GatewaySecretName    string
-	RenewBuffer          time.Duration
+	SkrServiceName     string
+	SkrNamespace       string
+	AdditionalDNSNames []string
+	GatewaySecretName  string
+	RenewBuffer        time.Duration
 }
 
 type SKRCertService struct {
@@ -46,7 +45,7 @@ type SKRCertService struct {
 	config     Config
 }
 
-func NewCertificateManager(certRepo CertRepository, secretClient SecretRepository, config Config) *SKRCertService {
+func NewSKRCertService(certRepo CertRepository, secretClient SecretRepository, config Config) *SKRCertService {
 	return &SKRCertService{
 		certRepo:   certRepo,
 		secretRepo: secretClient,
@@ -78,7 +77,7 @@ func (c *SKRCertService) DeleteSkrCertificate(ctx context.Context, kymaName stri
 		return fmt.Errorf("failed to delete SKR certificate: %w", err)
 	}
 
-	err = c.secretRepo.Delete(ctx, constructSkrCertificateName(kymaName), c.config.CertificateNamespace)
+	err = c.secretRepo.Delete(ctx, constructSkrCertificateName(kymaName))
 	if err != nil {
 		return fmt.Errorf("failed to delete SKR certificate secret: %w", err)
 	}
@@ -89,13 +88,12 @@ func (c *SKRCertService) DeleteSkrCertificate(ctx context.Context, kymaName stri
 // RenewSkrCertificate checks if the gateway certificate secret has been rotated. If so, it renews
 // the SKR certificate by removing its certificate secret which will trigger a new certificate to be issued.
 func (c *SKRCertService) RenewSkrCertificate(ctx context.Context, kymaName string) error {
-	gatewaySecret, err := c.secretRepo.Get(ctx, c.config.GatewaySecretName, c.config.CertificateNamespace)
+	gatewaySecret, err := c.secretRepo.Get(ctx, c.config.GatewaySecretName)
 	if err != nil {
 		return fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
 
-	skrCertificateSecret, err := c.secretRepo.Get(ctx, constructSkrCertificateName(kymaName),
-		c.config.CertificateNamespace)
+	skrCertificateSecret, err := c.secretRepo.Get(ctx, constructSkrCertificateName(kymaName))
 	if err != nil {
 		return fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
@@ -107,8 +105,7 @@ func (c *SKRCertService) RenewSkrCertificate(ctx context.Context, kymaName strin
 	logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 		"kyma", kymaName)
 
-	if err = c.secretRepo.Delete(ctx, constructSkrCertificateName(kymaName),
-		c.config.CertificateNamespace); err != nil {
+	if err = c.secretRepo.Delete(ctx, constructSkrCertificateName(kymaName)); err != nil {
 		return fmt.Errorf("failed to delete SKR certificate secret: %w", err)
 	}
 
@@ -128,10 +125,7 @@ func (c *SKRCertService) IsSkrCertificateRenewalOverdue(ctx context.Context, kym
 // GetSkrCertificateSecret returns the SKR certificate secret.
 // If the secret does not exist, it returns the ErrSkrCertificateNotReady error.
 func (c *SKRCertService) GetSkrCertificateSecret(ctx context.Context, kymaName string) (*apicorev1.Secret, error) {
-	skrCertSecret, err := c.secretRepo.Get(ctx,
-		constructSkrCertificateName(kymaName),
-		c.config.CertificateNamespace,
-	)
+	skrCertSecret, err := c.secretRepo.Get(ctx, constructSkrCertificateName(kymaName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
@@ -141,21 +135,18 @@ func (c *SKRCertService) GetSkrCertificateSecret(ctx context.Context, kymaName s
 
 func (c *SKRCertService) GetSkrCertificateSecretData(ctx context.Context,
 	kymaName string,
-) (*secret.CertificateSecretData, error) {
+) (*data.CertificateSecretData, error) {
 	skrCertSecret, err := c.GetSkrCertificateSecret(ctx, kymaName)
 	if err != nil {
 		return nil, err
 	}
 
-	return secret.NewCertificateSecretData(skrCertSecret)
+	return data.NewCertificateSecretData(skrCertSecret)
 }
 
 // GetGatewayCertificateSecret returns the gateway certificate secret.
 func (c *SKRCertService) GetGatewayCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
-	gatewayCertSecret, err := c.secretRepo.Get(ctx,
-		c.config.GatewaySecretName,
-		c.config.CertificateNamespace,
-	)
+	gatewayCertSecret, err := c.secretRepo.Get(ctx, c.config.GatewaySecretName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get gateway certificate secret: %w", err)
 	}
@@ -163,13 +154,13 @@ func (c *SKRCertService) GetGatewayCertificateSecret(ctx context.Context) (*apic
 	return gatewayCertSecret, nil
 }
 
-func (c *SKRCertService) GetGatewayCertificateSecretData(ctx context.Context) (*secret.GatewaySecretData, error) {
+func (c *SKRCertService) GetGatewayCertificateSecretData(ctx context.Context) (*data.GatewaySecretData, error) {
 	gatewayCertSecret, err := c.GetGatewayCertificateSecret(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return secret.NewGatewaySecretData(gatewayCertSecret)
+	return data.NewGatewaySecretData(gatewayCertSecret)
 }
 
 // renewal is required if the gateway certificate secret is newer than the SKR certificate secret.

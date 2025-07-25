@@ -1,4 +1,4 @@
-package gardener
+package gcm
 
 import (
 	"context"

@@ -202,12 +202,12 @@ var _ = BeforeSuite(func() {
 		SkrCertificateNamingTemplate: "%s-webhook-tls",
 	}
 
-	certificateManager := certificate2.NewCertificateManager(
+	certificateManager := certificate2.NewSKRCertService(
 		certmanager.NewCertificateRepository(mgr.GetClient(),
 			"test-issuer",
 			certificateConfig,
 		),
-		secret.NewCertificateSecretClient(mgr.GetClient()),
+		secret.NewCertificateSecretRepository(mgr.GetClient()),
 		certificateManagerConfig,
 	)
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})

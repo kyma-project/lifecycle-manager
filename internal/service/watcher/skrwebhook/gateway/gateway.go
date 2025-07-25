@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"strconv"
 	"strings"
 
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 )
 
 var (
@@ -21,6 +22,7 @@ type IstioGatewayRepository interface {
 }
 
 type Service struct {
+	gatewayRepository IstioGatewayRepository
 	// istioGatewayName represents the cluster resource name of the klm istio gateway
 	istioGatewayName string
 	// istioGatewayNamespace represents the cluster resource namespace of the klm istio gateway
@@ -28,8 +30,6 @@ type Service struct {
 	// localGatewayPortOverwrite indicates the port used to expose the KCP cluster locally in k3d
 	// for the watcher callbacks
 	localGatewayPortOverwrite string
-
-	gatewayRepository IstioGatewayRepository
 }
 
 func NewService(

@@ -80,12 +80,12 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				SkrCertificateNamingTemplate: "%s-webhook-tls",
 			}
 
-			certificateManager := certificate2.NewCertificateManager(
+			certificateManager := certificate2.NewSKRCertService(
 				certmanager.NewCertificateRepository(controlPlaneClient,
 					"klm-watcher-selfsigned",
 					certificateConfig,
 				),
-				secret.NewCertificateSecretClient(controlPlaneClient),
+				secret.NewCertificateSecretRepository(controlPlaneClient),
 				certificateManagerConfig,
 			)
 
