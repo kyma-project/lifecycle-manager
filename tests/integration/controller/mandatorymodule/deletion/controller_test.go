@@ -86,6 +86,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		WithOCM(compdescv2.SchemaVersion).
 		WithLabel(shared.IsMandatoryModule, shared.EnableLabelValue).Build()
 	mandatoryManifest := NewTestManifest("mandatory-module")
+	mandatoryManifest.Spec.Version = "1.1.1-e2e-test"
 	mandatoryManifest.Labels[shared.IsMandatoryModule] = "true"
 
 	BeforeAll(func() {
