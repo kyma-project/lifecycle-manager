@@ -22,7 +22,7 @@ var (
 // NameAndTag represents the Docker image name and tag in the format <image>:<tag>.
 type NameAndTag string
 
-// DockerImageReference represents a docker image reference used in rewriting mechanism.
+// DockerImageReference represents a Docker image reference used in the rewriting mechanism.
 //
 //	The overall format of a reference is: <host[:port][/path]>/<image>:<tag>[@<digest>]
 type DockerImageReference struct {
