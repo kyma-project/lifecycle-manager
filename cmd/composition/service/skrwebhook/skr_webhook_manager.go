@@ -67,14 +67,14 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 		watcherMetrics)
 }
 
-func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate2.CertificateManager, error) {
+func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate2.SKRCertService, error) {
 	certClient, err := setupCertClient(kcpClient, flagVar)
 	if err != nil {
 		return nil, err
 	}
 	secretClient := secret.NewCertificateSecretClient(kcpClient)
 
-	config := certificate2.CertificateManagerConfig{
+	config := certificate2.Config{
 		SkrServiceName:               resources.SkrResourceName,
 		SkrNamespace:                 flagVar.RemoteSyncNamespace,
 		CertificateNamespace:         flagVar.IstioNamespace,
@@ -91,7 +91,7 @@ func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certifi
 	), nil
 }
 
-func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertificateRepository, error) {
+func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertRepository, error) {
 	certificateConfig := certificate2.CertificateConfig{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,

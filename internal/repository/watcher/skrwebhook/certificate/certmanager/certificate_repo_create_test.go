@@ -1,20 +1,23 @@
 package certmanager_test
 
 import (
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"context"
 	"testing"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 )
 
-func Test_CertificateClient_Create_Success(t *testing.T) {
+func TestCreate_WhenCalledAndClientSucceeds_Returns(t *testing.T) {
 	expectedCertificate := &certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,
@@ -53,15 +56,9 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 			},
 		},
 	}
-
-	fClient := newFakeClient(&certmanagerv1.Certificate{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      certName,
-			Namespace: certNamespace,
-		}})
-
+	clientStub := &patchClientStub{}
 	certClient := certmanager.NewCertificateRepository(
-		fClient,
+		clientStub,
 		issuerName,
 		certNamespace,
 		certificate.CertificateConfig{
@@ -78,43 +75,46 @@ func Test_CertificateClient_Create_Success(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-
-	cert := &certmanagerv1.Certificate{}
-
-	err = fClient.Get(t.Context(), client.ObjectKey{Name: certName, Namespace: certNamespace}, cert)
-
-	require.NoError(t, err)
-	require.Equal(t, expectedCertificate.TypeMeta, cert.TypeMeta)
+	assert.True(t, clientStub.called)
+	assert.NotNil(t, clientStub.calledArg)
+	assert.Equal(t, expectedCertificate, clientStub.calledArg)
 }
 
-//func Test_CertificateClient_Create_Error(t *testing.T) {
-//	clientStub := &kcpClientStub{
-//		patchErr: assert.AnError,
-//	}
-//	certClient := certmanager.NewCertificateRepository(
-//		clientStub,
-//		issuerName,
-//		certNamespace,
-//		certificate.CertificateConfig{
-//			Duration:    certDuration,
-//			RenewBefore: certRenewBefore,
-//			KeySize:     certKeySize,
-//		},
-//	)
-//
-//	err := certClient.Create(t.Context(),
-//		certName,
-//		certCommonNameName,
-//		certDNSNames,
-//	)
-//
-//	require.Error(t, err)
-//
-//	assert.Contains(t, err.Error(), "failed to patch certificate")
-//	assert.True(t, clientStub.patchCalled)
-//}
+func TestCreate_WhenCalledAndClientReturnsError_ReturnsError(t *testing.T) {
+	clientStub := &patchClientStub{
+		err: assert.AnError,
+	}
+	certClient := certmanager.NewCertificateRepository(
+		clientStub,
+		issuerName,
+		certNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
+	)
 
-type clientStub struct {
+	err := certClient.Create(t.Context(),
+		certName,
+		certCommonNameName,
+		certDNSNames,
+	)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to patch certificate")
+	assert.True(t, clientStub.called)
+}
+
+type patchClientStub struct {
 	client.Client
-	actualfield *certmanagerv1.Certificate
+	called    bool
+	calledArg *certmanagerv1.Certificate
+	err       error
+}
+
+func (c *patchClientStub) Patch(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
+	c.called = true
+	c.calledArg = obj.(*certmanagerv1.Certificate)
+	return c.err
 }

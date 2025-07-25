@@ -22,7 +22,8 @@ const bootstrapFailedExitCode = 1
 func SetupCacheOptions(isKymaManaged bool,
 	istioNamespace string,
 	kcpNamespace string,
-	certificateManagement string, setupLog logr.Logger,
+	certificateManagement string,
+	setupLog logr.Logger,
 ) cache.Options {
 	if isKymaManaged {
 		options := &KcpCacheOptions{

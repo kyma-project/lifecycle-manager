@@ -70,7 +70,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				KeySize:     flags.DefaultSelfSignedCertKeySize,
 			}
 
-			certificateManagerConfig := certificate2.CertificateManagerConfig{
+			certificateManagerConfig := certificate2.Config{
 				SkrServiceName:               skrwebhookresources.SkrResourceName,
 				SkrNamespace:                 test.namespace.Name,
 				CertificateNamespace:         test.namespace.Name,

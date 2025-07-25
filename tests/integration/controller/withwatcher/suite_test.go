@@ -192,7 +192,7 @@ var _ = BeforeSuite(func() {
 		KeySize:     flags.DefaultSelfSignedCertKeySize,
 	}
 
-	certificateManagerConfig := certificate2.CertificateManagerConfig{
+	certificateManagerConfig := certificate2.Config{
 		SkrServiceName:               resources.SkrResourceName,
 		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
 		CertificateNamespace:         flags.DefaultIstioNamespace,

@@ -2,92 +2,94 @@ package certmanager_test
 
 import (
 	"context"
-	"errors"
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/stretchr/testify/assert"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"testing"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/stretchr/testify/require"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/stretchr/testify/require"
 )
 
-func TestDelete_WhenCalledWithUnknownName_IgnoresNotFoundError(t *testing.T) {
-	certRepo := certmanager.NewCertificateRepository(
-		newFakeClient(&certmanagerv1.Certificate{}),
-		"",
-		"some-namespace",
-		certificate.CertificateConfig{},
-	)
-
-	err := certRepo.Delete(t.Context(), certName)
-
-	require.NoError(t, err)
-}
-
-func TestDelete_WhenCalledAndClientReturnsAnyOtherError_ReturnsError(t *testing.T) {
-	someError := errors.New("some other error")
-	fakeClient := newErrorReturningFakeClient(someError)
-	certRepo := certmanager.NewCertificateRepository(
-		fakeClient,
-		"",
-		"",
-		certificate.CertificateConfig{},
-	)
-
-	err := certRepo.Delete(context.Background(), certName)
-
-	require.ErrorIs(t, err, someError)
-}
-
-func TestDelete_WhenCalledWithExistingCertName_ReturnsNoError(t *testing.T) {
-	const (
-		certName      = "test-cert"
-		certNamespace = "test-namespace"
-	)
-	cert := &certmanagerv1.Certificate{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      certName,
-			Namespace: certNamespace,
-		},
-	}
-	certRepo := certmanager.NewCertificateRepository(
-		newFakeClient(cert),
-		"",
+func TestDelete_WhenCalledAndClientCallSucceeds_Returns(t *testing.T) {
+	clientStub := &deleteClientStub{}
+	certClient := certmanager.NewCertificateRepository(
+		clientStub,
+		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{},
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
 	)
 
-	err := certRepo.Delete(context.Background(), certName)
+	err := certClient.Delete(t.Context(), certName)
 
 	require.NoError(t, err)
+	assert.True(t, clientStub.called)
+	assert.NotNil(t, clientStub.calledArg)
+	assert.Equal(t, certName, clientStub.calledArg.Name)
+	assert.Equal(t, certNamespace, clientStub.calledArg.Namespace)
 }
 
-func newFakeClient(objs ...runtime.Object) client.Client {
-	scheme := runtime.NewScheme()
-	_ = certmanagerv1.AddToScheme(scheme)
-	return fake.NewClientBuilder().
-		WithScheme(scheme).
-		WithRuntimeObjects(objs...).
-		Build()
+func TestDelete_WhenCalledAndClientReturnsNotFoundError_IgnoresItAndReturns(t *testing.T) {
+	clientStub := &deleteClientStub{
+		err: apierrors.NewNotFound(certmanagerv1.Resource("certificates"), certName),
+	}
+	certClient := certmanager.NewCertificateRepository(
+		clientStub,
+		issuerName,
+		certNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
+	)
+
+	err := certClient.Delete(t.Context(), certName)
+
+	require.NoError(t, err)
+	assert.True(t, clientStub.called)
+	assert.NotNil(t, clientStub.calledArg)
+	assert.Equal(t, certName, clientStub.calledArg.Name)
+	assert.Equal(t, certNamespace, clientStub.calledArg.Namespace)
 }
 
-func newErrorReturningFakeClient(err error) client.Client {
-	scheme := runtime.NewScheme()
-	_ = certmanagerv1.AddToScheme(scheme)
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(scheme).
-		WithInterceptorFuncs(interceptor.Funcs{
-			Delete: func(ctx context.Context, client client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
-				return err
-			},
-		}).
-		Build()
+func TestDelete_WhenCalledAndClientReturnsOtherError_ReturnsError(t *testing.T) {
+	clientStub := &deleteClientStub{
+		err: assert.AnError,
+	}
+	certClient := certmanager.NewCertificateRepository(
+		clientStub,
+		issuerName,
+		certNamespace,
+		certificate.CertificateConfig{
+			Duration:    certDuration,
+			RenewBefore: certRenewBefore,
+			KeySize:     certKeySize,
+		},
+	)
 
-	return fakeClient
+	err := certClient.Delete(t.Context(), certName)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to delete certificate")
+	assert.True(t, clientStub.called)
+}
+
+type deleteClientStub struct {
+	client.Client
+	called    bool
+	calledArg *certmanagerv1.Certificate
+	err       error
+}
+
+func (c *deleteClientStub) Delete(_ context.Context, obj client.Object, _ ...client.DeleteOption) error {
+	c.called = true
+	c.calledArg = obj.(*certmanagerv1.Certificate)
+	return c.err
 }
