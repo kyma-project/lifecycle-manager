@@ -7,17 +7,22 @@ import (
 	"fmt"
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"ocm.software/ocm/api/ocm"
+	"ocm.software/ocm/api/ocm/extensions/accessmethods/ociartifact"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
+
+var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.AccessSpec to *ociartifact.AccessSpec")
 
 type Parser struct {
 	client.Client
@@ -176,7 +181,38 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not translate custom state check: %w", err)
 	}
 	manifest.Spec.Version = descriptor.Version
+	if localizedImages := getLocalizedImagesFromDescriptor(descriptor); len(localizedImages) > 0 {
+		manifest.Spec.LocalizedImages = localizedImages
+	}
 	return manifest, nil
+}
+
+func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
+	if descriptor == nil || descriptor.ComponentDescriptor == nil {
+		return nil
+	}
+	localizedImages := make([]string, 0)
+	for _, resource := range descriptor.Resources {
+		access := resource.GetAccess()
+		ocmAccessSpec, err := ocm.DefaultContext().AccessSpecForSpec(access)
+		if err != nil {
+			logf.Log.Error(fmt.Errorf("failed to create ocm spec for access: %w", err),
+				"getLocalizedImagesFromDescriptor", "resourceName", resource.Name, "accessType", access.GetType())
+			continue
+		}
+
+		if access.GetType() == ociartifact.Type {
+			ociAccessSpec, ok := ocmAccessSpec.(*ociartifact.AccessSpec)
+			if !ok {
+				logf.Log.Error(fmt.Errorf("%w: actual type: %T", ErrConvertingToOCIAccessSpec, access), "getLocalizedImagesFromDescriptor")
+				continue
+			}
+			if len(ociAccessSpec.ImageReference) > 0 {
+				localizedImages = append(localizedImages, ociAccessSpec.ImageReference)
+			}
+		}
+	}
+	return localizedImages
 }
 
 func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1beta2.CustomStateCheck) error {
