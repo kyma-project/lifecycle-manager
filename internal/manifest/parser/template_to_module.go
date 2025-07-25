@@ -204,7 +204,6 @@ func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
 		if access.GetType() == ociartifact.Type {
 			ociAccessSpec, ok := ocmAccessSpec.(*ociartifact.AccessSpec)
 			if !ok {
-				// msg: error converting resource.AccessSpec to *ociartifact.AccessSpec
 				logf.Log.Error(fmt.Errorf("%w: actual type: %T", ErrConvertingToOCIAccessSpec, access), "getLocalizedImagesFromDescriptor")
 				continue
 			}
