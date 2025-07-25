@@ -1,6 +1,10 @@
 package watcher_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
+	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -11,11 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -65,13 +64,13 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 
-			certificateConfig := certificate.CertificateConfig{
+			certificateConfig := certificate2.CertificateConfig{
 				Duration:    1 * time.Hour,
 				RenewBefore: 5 * time.Minute,
 				KeySize:     flags.DefaultSelfSignedCertKeySize,
 			}
 
-			certificateManagerConfig := certificate.CertificateManagerConfig{
+			certificateManagerConfig := certificate2.Config{
 				SkrServiceName:               skrwebhookresources.SkrResourceName,
 				SkrNamespace:                 test.namespace.Name,
 				CertificateNamespace:         test.namespace.Name,
@@ -81,12 +80,12 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				SkrCertificateNamingTemplate: "%s-webhook-tls",
 			}
 
-			certificateManager := certificate.NewCertificateManager(
-				certmanager.NewCertificateClient(controlPlaneClient,
+			certificateManager := certificate2.NewSKRCertService(
+				certmanager.NewCertificateRepository(controlPlaneClient,
 					"klm-watcher-selfsigned",
 					certificateConfig,
 				),
-				secret.NewCertificateSecretClient(controlPlaneClient),
+				secret.NewCertificateSecretRepository(controlPlaneClient),
 				certificateManagerConfig,
 			)
 

@@ -53,7 +53,6 @@ const (
 	DefaultSelfSignedCertificateRenewBuffer                             = 24 * time.Hour
 	DefaultSelfSignedCertKeySize                                        = 4096
 	DefaultSelfSignedCertificateIssuerName                              = "klm-watcher-selfsigned"
-	DefaultSelfSignedCertificateNamingTemplate                          = "%s-webhook-tls"
 	DefaultIstioGatewayCertSwitchBeforeExpirationTime                   = 24 * time.Hour
 	DefaultIstioGatewaySecretRequeueSuccessInterval                     = 5 * time.Minute
 	DefaultIstioGatewaySecretRequeueErrInterval                         = 2 * time.Second

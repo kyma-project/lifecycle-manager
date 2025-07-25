@@ -12,14 +12,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/gateway"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
+	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 var (
@@ -49,7 +49,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 
 	watcherMetrics := metrics.NewWatcherMetrics()
 
-	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
+	resourceConfigurator := resources.NewResourceConfigurator(
 		flagVar.RemoteSyncNamespace, flagVar.GetWatcherImage(),
 		flagVar.WatcherResourceLimitsCPU,
 		flagVar.WatcherResourceLimitsMemory, *resolvedKcpAddr)
@@ -67,32 +67,30 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 		watcherMetrics)
 }
 
-func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.CertificateManager, error) {
+func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate2.SKRCertService, error) {
 	certClient, err := setupCertClient(kcpClient, flagVar)
 	if err != nil {
 		return nil, err
 	}
-	secretClient := secret.NewCertificateSecretClient(kcpClient)
+	secretClient := secret.NewCertificateSecretRepository(kcpClient, flagVar.IstioNamespace)
 
-	config := certificate.CertificateManagerConfig{
-		SkrServiceName:               skrwebhookresources.SkrResourceName,
-		SkrNamespace:                 flagVar.RemoteSyncNamespace,
-		CertificateNamespace:         flagVar.IstioNamespace,
-		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),
-		GatewaySecretName:            shared.GatewaySecretName,
-		RenewBuffer:                  flagVar.SelfSignedCertRenewBuffer,
-		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
+	config := certificate2.Config{
+		SkrServiceName:     resources.SkrResourceName,
+		SkrNamespace:       flagVar.RemoteSyncNamespace,
+		AdditionalDNSNames: strings.Split(flagVar.AdditionalDNSNames, ","),
+		GatewaySecretName:  shared.GatewaySecretName,
+		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	return certificate.NewCertificateManager(
+	return certificate2.NewSKRCertService(
 		certClient,
 		secretClient,
 		config,
 	), nil
 }
 
-func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate.CertificateClient, error) {
-	certificateConfig := certificate.CertificateConfig{
+func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertRepository, error) {
+	certificateConfig := certificate2.CertificateConfig{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,
@@ -100,12 +98,12 @@ func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certifica
 
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		return certmanager.NewCertificateClient(kcpClient,
+		return certmanager.NewCertificateRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			certificateConfig,
 		), nil
 	case gcertv1alpha1.SchemeGroupVersion.String():
-		return gardener.NewCertificateClient(kcpClient,
+		return gcm.NewCertificateClient(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			flagVar.SelfSignedCertIssuerNamespace,
 			certificateConfig,
