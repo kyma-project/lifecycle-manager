@@ -46,6 +46,8 @@ jobs:
       name: lifecycle-manager
       dockerfile: Dockerfile
       context: .
+      platforms: |
+        linux/amd64
       # tags are additional tags that will be added to the image on top of the default ones
       # default tags are documented here: https://github.com/kyma-project/test-infra/tree/main/cmd/image-builder#default-tags
       tags: ${{ needs.get-custom-tags.outputs.tags }}
