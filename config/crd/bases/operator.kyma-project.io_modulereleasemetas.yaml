@@ -47,8 +47,9 @@ spec:
             properties:
               beta:
                 default: false
-                description: Beta indicates if the module is in beta state. Beta modules
-                  are only available for beta Kymas.
+                description: |-
+                  Beta indicates if the module is in beta state. Beta modules are only available for beta Kymas.
+                  Deprecated: This field is deprecated and will be removed in the upcoming API version.
                 type: boolean
               channels:
                 description: Channels is the list of module channels with their corresponding
@@ -77,8 +78,9 @@ spec:
                 x-kubernetes-list-type: map
               internal:
                 default: false
-                description: Internal indicates if the module is internal. Internal
-                  modules are only available for internal Kymas.
+                description: |-
+                  Internal indicates if the module is internal. Internal modules are only available for internal Kymas.
+                  Deprecated: This field is deprecated and will be removed in the upcoming API version.
                 type: boolean
               moduleName:
                 description: ModuleName is the name of the Module.
