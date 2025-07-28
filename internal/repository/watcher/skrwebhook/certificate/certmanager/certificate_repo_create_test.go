@@ -14,10 +14,10 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
 )
 
-func TestCreate_WhenCalledAndClientSucceeds_Returns(t *testing.T) {
+func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 	expectedCertificate := &certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,
@@ -61,7 +61,7 @@ func TestCreate_WhenCalledAndClientSucceeds_Returns(t *testing.T) {
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -76,11 +76,11 @@ func TestCreate_WhenCalledAndClientSucceeds_Returns(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)
-	assert.NotNil(t, clientStub.calledArg)
-	assert.Equal(t, expectedCertificate, clientStub.calledArg)
+	assert.NotNil(t, clientStub.object)
+	assert.Equal(t, expectedCertificate, clientStub.object)
 }
 
-func TestCreate_WhenCalledAndClientReturnsError_ReturnsError(t *testing.T) {
+func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &patchClientStub{
 		err: assert.AnError,
 	}
@@ -88,7 +88,7 @@ func TestCreate_WhenCalledAndClientReturnsError_ReturnsError(t *testing.T) {
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -101,20 +101,19 @@ func TestCreate_WhenCalledAndClientReturnsError_ReturnsError(t *testing.T) {
 		certDNSNames,
 	)
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to patch certificate")
+	require.ErrorIs(t, err, assert.AnError)
 	assert.True(t, clientStub.called)
 }
 
 type patchClientStub struct {
 	client.Client
-	called    bool
-	calledArg *certmanagerv1.Certificate
-	err       error
+	called bool
+	object *certmanagerv1.Certificate
+	err    error
 }
 
 func (c *patchClientStub) Patch(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
 	c.called = true
-	c.calledArg = obj.(*certmanagerv1.Certificate)
+	c.object = obj.(*certmanagerv1.Certificate)
 	return c.err
 }

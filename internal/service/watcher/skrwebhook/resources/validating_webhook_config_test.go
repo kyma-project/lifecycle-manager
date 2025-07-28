@@ -1,9 +1,10 @@
 package resources_test
 
 import (
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"reflect"
 	"testing"
+
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

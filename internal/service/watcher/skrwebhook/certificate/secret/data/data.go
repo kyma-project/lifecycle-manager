@@ -3,7 +3,7 @@ package data
 import (
 	"errors"
 	"fmt"
-	
+
 	apicorev1 "k8s.io/api/core/v1"
 )
 

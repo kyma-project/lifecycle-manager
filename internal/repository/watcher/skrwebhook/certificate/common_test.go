@@ -1,12 +1,12 @@
 package certificate_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 )
 
 func Test_GetCertificateLabels(t *testing.T) {

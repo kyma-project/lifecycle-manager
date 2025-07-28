@@ -2,7 +2,6 @@ package secret_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 )
 
-func TestGet_WhenCalledAndClientCallSucceeds_ReturnsSecret(t *testing.T) {
+func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {
 	clientStub := &getClientStub{
 		object: &apicorev1.Secret{
 			ObjectMeta: apimetav1.ObjectMeta{
@@ -34,17 +33,16 @@ func TestGet_WhenCalledAndClientCallSucceeds_ReturnsSecret(t *testing.T) {
 	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateSecretClient_Get_Error(t *testing.T) {
+func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
-		err: errors.New("failed to get secret"),
+		err: assert.AnError,
 	}
 	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
 
 	result, err := secretClient.Get(t.Context(), secretName)
 
-	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to get secret")
+	require.ErrorIs(t, err, assert.AnError)
 	assert.True(t, clientStub.called)
 }
 

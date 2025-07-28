@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"os/exec"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 
 	apiappsv1 "k8s.io/api/apps/v1"
 	apinetworkv1 "k8s.io/api/networking/v1"

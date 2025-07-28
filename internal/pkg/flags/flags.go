@@ -239,9 +239,6 @@ func DefineFlagVar() *FlagVar {
 		"Key size for the self-signed certificate.")
 	flag.StringVar(&flagVar.SelfSignedCertificateIssuerName, "self-signed-cert-issuer-name",
 		DefaultSelfSignedCertificateIssuerName, "Issuer name for the self-signed certificate.")
-	flag.StringVar(&flagVar.SelfSignedCertificateNamingTemplate, "self-signed-cert-naming-template",
-		DefaultSelfSignedCertificateNamingTemplate,
-		"Naming template for the self-signed certificate. Should contain one '%s' placeholder for the Kyma name.")
 	flag.DurationVar(&flagVar.IstioGatewayCertSwitchBeforeExpirationTime,
 		"istio-gateway-cert-switch-before-expiration-time", DefaultIstioGatewayCertSwitchBeforeExpirationTime,
 		"Duration before the expiration of the current CA certificate when the Gateway certificate should be switched.")
@@ -339,7 +336,6 @@ type FlagVar struct {
 	SelfSignedCertKeySize                      int
 	SelfSignedCertIssuerNamespace              string
 	SelfSignedCertificateIssuerName            string
-	SelfSignedCertificateNamingTemplate        string
 	UseLegacyStrategyForIstioGatewaySecret     bool
 	DropCrdStoredVersionMap                    string
 	WatcherImageTag                            string

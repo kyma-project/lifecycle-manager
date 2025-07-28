@@ -2,14 +2,15 @@ package certmanager_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,7 @@ func TestDelete_WhenCalledAndClientCallSucceeds_Returns(t *testing.T) {
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -43,7 +44,7 @@ func TestDelete_WhenCalledAndClientReturnsNotFoundError_IgnoresItAndReturns(t *t
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -67,7 +68,7 @@ func TestDelete_WhenCalledAndClientReturnsOtherError_ReturnsError(t *testing.T) 
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,

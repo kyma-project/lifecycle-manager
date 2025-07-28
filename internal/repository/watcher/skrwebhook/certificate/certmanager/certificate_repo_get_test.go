@@ -12,12 +12,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/error"
 )
 
-func TestGetRenewalTime_WhenCalledAndClientSucceeds_ReturnsRenewalTime(t *testing.T) {
+func TestGetRenewalTime_ClientSucceeds_ReturnsRenewalTime(t *testing.T) {
 	clientStub := &getClientStub{
-		getCert: &certmanagerv1.Certificate{
+		object: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
 				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
@@ -35,7 +36,7 @@ func TestGetRenewalTime_WhenCalledAndClientSucceeds_ReturnsRenewalTime(t *testin
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -45,19 +46,19 @@ func TestGetRenewalTime_WhenCalledAndClientSucceeds_ReturnsRenewalTime(t *testin
 	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
 
 	require.NoError(t, err)
-	assert.Equal(t, clientStub.getCert.Status.RenewalTime.Time, renewalTime)
-	assert.True(t, clientStub.getCalled)
+	assert.Equal(t, clientStub.object.Status.RenewalTime.Time, renewalTime)
+	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
+func TestGetRenewalTime_ClientReturnsError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
-		getErr: assert.AnError,
+		err: assert.AnError,
 	}
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -69,12 +70,12 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get certificate")
 	assert.True(t, renewalTime.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
+func TestGetRenewalTime_CertificateContainsNoRenewalTime_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
-		getCert: &certmanagerv1.Certificate{
+		object: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
 				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
@@ -90,7 +91,7 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -100,14 +101,14 @@ func Test_CertificateClient_GetRenewalTime_NoRenewalTime(t *testing.T) {
 	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
 
 	require.Error(t, err)
-	assert.Equal(t, certificate.ErrNoRenewalTime, err)
+	assert.Equal(t, certerror.ErrNoRenewalTime, err)
 	assert.True(t, renewalTime.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateClient_GetValidity_Success(t *testing.T) {
+func TestGetValidity_ClientCallSucceeds_Returns(t *testing.T) {
 	clientStub := &getClientStub{
-		getCert: &certmanagerv1.Certificate{
+		object: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
 				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
@@ -126,7 +127,7 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -136,14 +137,14 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
 	require.NoError(t, err)
-	assert.Equal(t, clientStub.getCert.Status.NotBefore.Time, notBefore)
-	assert.Equal(t, clientStub.getCert.Status.NotAfter.Time, notAfter)
-	assert.True(t, clientStub.getCalled)
+	assert.Equal(t, clientStub.object.Status.NotBefore.Time, notBefore)
+	assert.Equal(t, clientStub.object.Status.NotAfter.Time, notAfter)
+	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
+func TestGetValidity_CertificateContainsNoNotBefore_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
-		getCert: &certmanagerv1.Certificate{
+		object: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
 				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
@@ -161,7 +162,7 @@ func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -170,16 +171,15 @@ func Test_CertificateClient_GetValidity_NoNotBefore(t *testing.T) {
 
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
-	require.Error(t, err)
-	assert.Equal(t, certmanager.ErrNoNotBefore, err)
+	require.ErrorIs(t, err, certmanager.ErrNoNotBefore)
 	assert.True(t, notBefore.IsZero())
 	assert.True(t, notAfter.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
+func TestGetValidity_CertificateContainsNoNotAfter_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
-		getCert: &certmanagerv1.Certificate{
+		object: &certmanagerv1.Certificate{
 			TypeMeta: apimetav1.TypeMeta{
 				Kind:       certmanagerv1.CertificateKind,
 				APIVersion: certmanagerv1.SchemeGroupVersion.String(),
@@ -197,7 +197,7 @@ func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -206,22 +206,21 @@ func Test_CertificateClient_GetValidity_NoNotAfter(t *testing.T) {
 
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
-	require.Error(t, err)
-	assert.Equal(t, certmanager.ErrNoNotAfter, err)
+	require.ErrorIs(t, err, certmanager.ErrNoNotAfter)
 	assert.True(t, notBefore.IsZero())
 	assert.True(t, notAfter.IsZero())
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateClient_GetValidity_GetError(t *testing.T) {
+func TestGetValidity_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
-		getErr: assert.AnError,
+		err: assert.AnError,
 	}
 	certClient := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		certNamespace,
-		certificate.CertificateConfig{
+		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
@@ -230,24 +229,24 @@ func Test_CertificateClient_GetValidity_GetError(t *testing.T) {
 
 	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
 
-	require.Error(t, err)
+	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to get certificate")
 	assert.Zero(t, notBefore)
 	assert.Zero(t, notAfter)
-	assert.True(t, clientStub.getCalled)
+	assert.True(t, clientStub.called)
 }
 
 type getClientStub struct {
 	client.Client
-	getCert   *certmanagerv1.Certificate
-	getCalled bool
-	getErr    error
+	object *certmanagerv1.Certificate
+	called bool
+	err    error
 }
 
 func (c *getClientStub) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
-	c.getCalled = true
-	if c.getCert != nil {
-		c.getCert.DeepCopyInto(obj.(*certmanagerv1.Certificate))
+	c.called = true
+	if c.object != nil {
+		c.object.DeepCopyInto(obj.(*certmanagerv1.Certificate))
 	}
-	return c.getErr
+	return c.err
 }

@@ -2,7 +2,6 @@ package certificate
 
 import (
 	"errors"
-	"time"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 
@@ -11,15 +10,7 @@ import (
 
 var ErrNoRenewalTime = errors.New("no renewal time set for certificate")
 
-// CertificateConfig contains the configuration for the certificate.
-// It is agnostic of the actual certiticate manager implementation.
-type CertificateConfig struct {
-	Duration    time.Duration
-	RenewBefore time.Duration
-	KeySize     int
-}
-
-// GetCertificateLabels returns the labels that are added to the certificate.
+// GetCertificateLabels returns purpose and managed-by labels.
 func GetCertificateLabels() k8slabels.Set {
 	return k8slabels.Set{
 		shared.PurposeLabel: shared.CertManager,

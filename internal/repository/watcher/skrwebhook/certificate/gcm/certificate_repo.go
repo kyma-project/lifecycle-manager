@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 	"math"
 	"regexp"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,13 +54,13 @@ type CertificateClient struct {
 	kcpClient       kcpClient
 	issuerName      string
 	issuerNamespace string
-	config          certificate.CertificateConfig
+	config          certificate.CertValues
 }
 
 func NewCertificateClient(kcpClient kcpClient,
 	issuerName string,
 	issuerNamespace string,
-	config certificate.CertificateConfig,
+	config certificate.CertValues,
 ) (*CertificateClient, error) {
 	if config.KeySize > math.MaxInt32 || config.KeySize < math.MinInt32 {
 		return nil, ErrKeySizeOutOfRange

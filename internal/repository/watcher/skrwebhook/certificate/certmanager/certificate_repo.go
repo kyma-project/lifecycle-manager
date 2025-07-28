@@ -12,7 +12,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	certconfig "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
 )
 
 var (
@@ -28,26 +29,22 @@ func GetCacheObjects() []client.Object {
 }
 
 type CertificateRepository struct {
-	kcpClient  client.Client
-	issuerName string
-	namespace  string
-	config     certificate.CertificateConfig
+	kcpClient    client.Client
+	issuerName   string
+	namespace    string
+	configValues config.CertificateValues
 }
 
-func NewCertificateRepository(kcpClient client.Client, issuerName string, namespace string, config certificate.CertificateConfig) *CertificateRepository {
+func NewCertificateRepository(kcpClient client.Client, issuerName, namespace string, certValues config.CertificateValues) *CertificateRepository {
 	return &CertificateRepository{
 		kcpClient,
 		issuerName,
 		namespace,
-		config,
+		certValues,
 	}
 }
 
-func (c *CertificateRepository) Create(ctx context.Context,
-	name string,
-	commonName string,
-	dnsNames []string,
-) error {
+func (c *CertificateRepository) Create(ctx context.Context, name string, commonName string, dnsNames []string) error {
 	cert := &certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,
@@ -59,12 +56,12 @@ func (c *CertificateRepository) Create(ctx context.Context,
 		},
 		Spec: certmanagerv1.CertificateSpec{
 			CommonName:  commonName,
-			Duration:    &apimetav1.Duration{Duration: c.config.Duration},
-			RenewBefore: &apimetav1.Duration{Duration: c.config.RenewBefore},
+			Duration:    &apimetav1.Duration{Duration: c.configValues.Duration},
+			RenewBefore: &apimetav1.Duration{Duration: c.configValues.RenewBefore},
 			DNSNames:    dnsNames,
 			SecretName:  name,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: certificate.GetCertificateLabels(),
+				Labels: certconfig.GetCertificateLabels(),
 			},
 			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: c.issuerName,
@@ -79,7 +76,7 @@ func (c *CertificateRepository) Create(ctx context.Context,
 				RotationPolicy: certmanagerv1.RotationPolicyAlways,
 				Encoding:       certmanagerv1.PKCS1,
 				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
-				Size:           c.config.KeySize,
+				Size:           c.configValues.KeySize,
 			},
 		},
 	}
@@ -117,7 +114,7 @@ func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string)
 	}
 
 	if cert.Status.RenewalTime == nil || cert.Status.RenewalTime.Time.IsZero() {
-		return time.Time{}, certificate.ErrNoRenewalTime
+		return time.Time{}, certconfig.ErrNoRenewalTime
 	}
 
 	return cert.Status.RenewalTime.Time, nil

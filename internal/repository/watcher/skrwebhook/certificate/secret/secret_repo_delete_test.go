@@ -2,7 +2,6 @@ package secret_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 )
 
-func Test_CertificateSecretClient_Delete_Success(t *testing.T) {
+func TestDelete_ClientCallSucceeds_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{}
 	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
 
@@ -27,20 +26,19 @@ func Test_CertificateSecretClient_Delete_Success(t *testing.T) {
 	assert.Equal(t, namespace, clientStub.calledWith.Namespace)
 }
 
-func Test_CertificateSecretClient_Delete_Error(t *testing.T) {
+func TestDelete_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &deleteClientStub{
-		err: errors.New("failed to delete secret"),
+		err: assert.AnError,
 	}
 	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
 
 	err := secretClient.Delete(t.Context(), secretName)
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to delete secret")
+	require.ErrorIs(t, err, assert.AnError)
 	assert.True(t, clientStub.called)
 }
 
-func Test_CertificateSecretClient_Delete_IgnoreNotFoundError(t *testing.T) {
+func TestDelete_ClientReturnsNotFoundError_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), secretName),
 	}

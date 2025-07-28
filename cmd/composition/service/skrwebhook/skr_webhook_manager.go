@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	certconfig "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
@@ -90,7 +91,7 @@ func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certifi
 }
 
 func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertRepository, error) {
-	certificateConfig := certificate2.CertificateConfig{
+	certificateConfig := certconfig.CertValues{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,
