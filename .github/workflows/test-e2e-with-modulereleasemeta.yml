@@ -76,6 +76,7 @@ jobs:
           - module-deletion-with-multiple-crs-create-and-delete-policy
           - module-deletion-with-multiple-crs-ignore-policy
           - oci-reg-cred-secret
+          - module-transferred-to-another-oci-registry
 
     runs-on: ubuntu-latest
     timeout-minutes: 20

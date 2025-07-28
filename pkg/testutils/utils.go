@@ -194,3 +194,15 @@ func PatchServiceToTypeLoadBalancer(ctx context.Context, clnt client.Client, ser
 
 	return nil
 }
+
+// ToStringList is a mapping function takes a slice of any type and a conversion function, and returns a slice of strings.
+func ToStringList[T any](list []T, toString func(T) string) []string {
+	if len(list) == 0 {
+		return []string{}
+	}
+	result := make([]string, len(list))
+	for i, item := range list {
+		result[i] = toString(item)
+	}
+	return result
+}
