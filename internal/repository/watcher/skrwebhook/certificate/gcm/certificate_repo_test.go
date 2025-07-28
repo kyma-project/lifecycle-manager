@@ -35,8 +35,24 @@ func Test_GetCacheObjects(t *testing.T) {
 	assert.IsType(t, &gcertv1alpha1.Certificate{}, objects[0])
 }
 
-func TestNew_KeySize_Error(t *testing.T) {
+func TestNew_MaxIntKeySize_Error(t *testing.T) {
 	invalidKeySize := math.MaxInt32 + 1
+
+	certClient, err := gcm.NewCertificateRepository(
+		nil,
+		issuerName,
+		issuerNamespace,
+		config.CertificateValues{
+			KeySize: invalidKeySize,
+		},
+	)
+
+	require.ErrorIs(t, err, gcm.ErrGCMRepoConfigKeySizeOutOfRange)
+	assert.Nil(t, certClient)
+}
+
+func TestNew_MinIntKeySize_Error(t *testing.T) {
+	invalidKeySize := math.MinInt32 - 1
 
 	certClient, err := gcm.NewCertificateRepository(
 		nil,
