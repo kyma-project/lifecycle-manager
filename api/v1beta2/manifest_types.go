@@ -99,6 +99,11 @@ type ImageSpec struct {
 	// This time is used in codec to successfully decode from raw extensions.
 	// +kubebuilder:validation:Enum=helm-chart;oci-ref;"kustomize";""
 	Type RefTypeMetadata `json:"type,omitempty"`
+
+	// +kubebuilder:validation:Deprecated=true
+	// +kubebuilder:validation:Optional
+	// Deprecated: Field will be removed soon.
+	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 type RefTypeMetadata string

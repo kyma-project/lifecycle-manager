@@ -53,10 +53,7 @@ spec:
                 description: Config specifies OCI image configuration for Manifest
                 properties:
                   credSecretSelector:
-                    description: |-
-                      CredSecretSelector is an optional field, for OCI image saved in private registry,
-                      use it to indicate the secret which contains registry credentials,
-                      must exist in the namespace same as manifest
+                    description: 'Deprecated: Field will be removed soon.'
                     properties:
                       matchExpressions:
                         description: matchExpressions is a list of label selector
@@ -146,6 +143,14 @@ spec:
                 - name
                 - source
                 type: object
+              localizedImages:
+                description: |-
+                  LocalizedImages specifies a list of docker image references valid for the environment where the Manifest is installed.
+                  The list entries are corresponding to the images actually used in the K8s resources of the Kyma module.
+                  If provided, when the Kyma Module is installed in the target cluster, the "localized" image reference is used instead of the original one.
+                items:
+                  type: string
+                type: array
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster
@@ -323,10 +328,7 @@ spec:
                 description: Config specifies OCI image configuration for Manifest
                 properties:
                   credSecretSelector:
-                    description: |-
-                      CredSecretSelector is an optional field, for OCI image saved in private registry,
-                      use it to indicate the secret which contains registry credentials,
-                      must exist in the namespace same as manifest
+                    description: 'Deprecated: Field will be removed soon.'
                     properties:
                       matchExpressions:
                         description: matchExpressions is a list of label selector
