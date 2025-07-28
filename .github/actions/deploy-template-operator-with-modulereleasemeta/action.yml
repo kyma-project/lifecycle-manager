@@ -95,7 +95,8 @@ runs:
         matrix.e2e-test == 'labelling' ||
         matrix.e2e-test == 'module-deletion-with-multiple-crs-ignore-policy' ||
         matrix.e2e-test == 'module-deletion-with-multiple-crs-create-and-delete-policy' ||
-        matrix.e2e-test == 'oci-reg-cred-secret'
+        matrix.e2e-test == 'oci-reg-cred-secret' ||
+        matrix.e2e-test == 'module-transferred-to-another-oci-registry'
         }}
       shell: bash
       run: |
@@ -155,7 +156,7 @@ runs:
 
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
         make build-manifests
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:001"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
     - name: Create ModuleTemplate and MetaReleaseMeta for Module Status test with StatefulSet
@@ -171,7 +172,7 @@ runs:
 
         # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
         make build-statefulset-manifests
-        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working-path"' -i template-operator.yaml
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:002"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
     - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
@@ -196,3 +197,9 @@ runs:
         # Create ModuleTemplate with name <modulename>-<channel>
         sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
         kubectl apply -f template.yaml
+    - name: Apply ModuleTemplate for the template-operator Module transferred to another public OCI registry (uses manually created ModuleTemplate)
+      working-directory: lifecycle-manager
+      if: ${{ matrix.e2e-test == 'module-transferred-to-another-oci-registry' }}
+      shell: bash
+      run: |
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_transferred.yaml
