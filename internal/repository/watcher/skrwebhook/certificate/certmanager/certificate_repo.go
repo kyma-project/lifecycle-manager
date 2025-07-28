@@ -39,7 +39,7 @@ func NewCertificateRepository(kcpClient client.Client, issuerName, namespace str
 	}
 }
 
-func (c *CertificateRepository) Create(ctx context.Context, name string, commonName string, dnsNames []string) error {
+func (c *CertificateRepository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
 	cert := &certmanagerv1.Certificate{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,

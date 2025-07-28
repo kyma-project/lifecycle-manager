@@ -2,7 +2,7 @@ package config
 
 import "time"
 
-// CertificateValues contains the configuration for the certificates the repositories will create.
+// CertificateValues contains the configuration for the certificates the repository implementations will create.
 type CertificateValues struct {
 	Namespace   string
 	Duration    time.Duration

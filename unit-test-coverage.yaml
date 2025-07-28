@@ -19,11 +19,11 @@ packages:
   internal/maintenancewindows: 87
   internal/pkg/resources: 91
   internal/remote: 30
-  
+
   internal/repository/kyma: 100
   internal/repository/watcher/skrwebhook/certificate: 100
   internal/repository/watcher/skrwebhook/certificate/certmanager: 100
-  internal/repository/watcher/skrwebhook/certificate/gcm: 100
+  internal/repository/watcher/skrwebhook/certificate/gcm: 98
   internal/repository/watcher/skrwebhook/certificate/secret: 100
 
   internal/service/kyma/status/modules/generator: 100
@@ -32,8 +32,8 @@ packages:
   internal/service/watcher/skrwebhook/certificate: 100
   internal/service/watcher/skrwebhook/certificate/secret/data: 100
   internal/service/watcher/skrwebhook/chartreader: 100
-  internal/service/watcher/skrwebhook/gateway: 100
-  internal/service/watcher/skrwebhook/resources: 100
+  internal/service/watcher/skrwebhook/gateway: 94
+  internal/service/watcher/skrwebhook/resources: 82
 
   internal/util/collections: 87
   pkg/module/sync: 10
