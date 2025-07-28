@@ -40,6 +40,7 @@ var (
 	ErrManifestsExist                                 = errors.New("cluster contains manifest CRs")
 	ErrManifestNotContainLabelKey                     = errors.New("manifest does not contain expected label key")
 	ErrManifestNotContainLabelValue                   = errors.New("manifest does not contain expected label value")
+	ErrManifestNotFound                               = errors.New("manifest does not exist")
 	errManifestNotInExpectedState                     = errors.New("manifest CR not in expected state")
 	errManifestDeletionTimestampSet                   = errors.New("manifest CR has set DeletionTimeStamp")
 	errManifestNotInKymaStatus                        = errors.New("manifest is not tracked by kyma.status")
@@ -47,7 +48,6 @@ var (
 	errManifestOperationNotContainMessage             = errors.New("manifest last operation does  not contain expected message")
 	errManifestVersionIsIncorrect                     = errors.New("manifest version is incorrect")
 	errManifestConditionNotExists                     = errors.New("manifest condition does not exist")
-	errManifestNotFound                               = errors.New("manifest does not exist")
 	errManifestInstallRepoNotCorrect                  = errors.New("manifest install image spec repo is not correct")
 )
 
@@ -326,7 +326,7 @@ func MandatoryModuleManifestExistWithCorrectVersion(ctx context.Context, clnt cl
 	}
 
 	if !manifestFound {
-		return errManifestNotFound
+		return ErrManifestNotFound
 	}
 	return nil
 }
@@ -351,7 +351,7 @@ func MandatoryModuleManifestContainsExpectedLabel(ctx context.Context, clnt clie
 		}
 	}
 
-	return errManifestNotFound
+	return ErrManifestNotFound
 }
 
 func SkipLabelExistsInManifest(ctx context.Context,

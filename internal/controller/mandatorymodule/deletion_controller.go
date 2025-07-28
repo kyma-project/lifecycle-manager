@@ -121,7 +121,7 @@ func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
 
-	filtered := filterManifestsByAnnotation(manifests.Items, shared.FQDN, descriptor.GetName())
+	filtered := filterManifestsByFQDNAndVersion(manifests.Items, descriptor.GetName(), descriptor.GetVersion())
 
 	return filtered, nil
 }
@@ -136,12 +136,16 @@ func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1
 	return nil
 }
 
-func filterManifestsByAnnotation(manifests []v1beta2.Manifest,
-	annotationKey, annotationValue string,
+func filterManifestsByFQDNAndVersion(manifests []v1beta2.Manifest,
+	fqdn, moduleVersion string,
 ) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
-		if manifest.Annotations[annotationKey] == annotationValue {
+		if manifest.Annotations == nil {
+			continue
+		}
+
+		if manifest.Annotations[shared.FQDN] == fqdn && manifest.Spec.Version == moduleVersion {
 			filteredManifests = append(filteredManifests, manifest)
 		}
 	}

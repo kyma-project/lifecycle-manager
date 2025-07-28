@@ -153,7 +153,7 @@ runs:
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/image
-          value: non-working-path" >> image_patch.yaml
+          value: non-working/path:003" >> image_patch.yaml
         cat image_patch.yaml
         kustomize edit add patch --path image_patch.yaml --kind Deployment
         popd
@@ -172,7 +172,7 @@ runs:
         echo \
         "- op: replace
           path: /spec/template/spec/containers/0/image
-          value: non-working-path" >> image_patch.yaml
+          value: non-working/path:004" >> image_patch.yaml
         cat image_patch.yaml
         kustomize edit add patch --path image_patch.yaml --kind StatefulSet
         popd
