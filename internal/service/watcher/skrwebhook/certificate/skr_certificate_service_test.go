@@ -6,9 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
@@ -17,18 +14,19 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret/data"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 var (
-	certNamingTemplate = "%s-something"
-
-	kymaName           = random.Name()
-	certNamespace      = random.Name()
-	gatewaySecretName  = random.Name()
-	skrServiceName     = random.Name()
-	skrNamepsace       = random.Name()
-	additionalDNSNames = []string{
+	kymaName               = random.Name()
+	expectedCertNameSuffix = "%s-webhook-tls"
+	certNamespace          = random.Name()
+	gatewaySecretName      = random.Name()
+	skrServiceName         = random.Name()
+	skrNamespace           = random.Name()
+	additionalDNSNames     = []string{
 		random.Name(),
 		random.Name(),
 	}
@@ -39,16 +37,14 @@ var (
 )
 
 func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			AdditionalDNSNames:           additionalDNSNames,
-			SkrCertificateNamingTemplate: certNamingTemplate,
-			SkrServiceName:               skrServiceName,
-			SkrNamespace:                 skrNamepsace,
+			AdditionalDNSNames: additionalDNSNames,
+			SkrServiceName:     skrServiceName,
+			SkrNamespace:       skrNamespace,
 		})
 
 	kyma := &v1beta2.Kyma{
@@ -68,26 +64,24 @@ func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, certClientStub.createCalled)
 	assert.Equal(t, runtimeID, certClientStub.createCommonName)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), certClientStub.createName)
-	assert.Equal(t, certNamespace, certClientStub.createNamespace)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), certClientStub.createName)
 	assert.Contains(t, certClientStub.createDNSNames, skrDomainName)
 	assert.Contains(t, certClientStub.createDNSNames, additionalDNSNames[0])
 	assert.Contains(t, certClientStub.createDNSNames, additionalDNSNames[1])
 	assert.Contains(t, certClientStub.createDNSNames,
-		fmt.Sprintf("%s.%s.svc.cluster.local", skrServiceName, skrNamepsace))
-	assert.Contains(t, certClientStub.createDNSNames, fmt.Sprintf("%s.%s.svc", skrServiceName, skrNamepsace))
+		fmt.Sprintf("%s.%s.svc.cluster.local", skrServiceName, skrNamespace))
+	assert.Contains(t, certClientStub.createDNSNames, fmt.Sprintf("%s.%s.svc", skrServiceName, skrNamespace))
 }
 
 func Test_CertificateManager_CreateSkrCertificate_Error(t *testing.T) {
-	certClientStub := &certificateClientStub{
+	certClientStub := &certRepositoryStub{
 		createErr: assert.AnError,
 	}
 	secretClientStub := &certificateSecretClientStub{}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			AdditionalDNSNames:   additionalDNSNames,
+			AdditionalDNSNames: additionalDNSNames,
 		})
 
 	kyma := &v1beta2.Kyma{
@@ -107,13 +101,12 @@ func Test_CertificateManager_CreateSkrCertificate_Error(t *testing.T) {
 }
 
 func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationMissing(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			AdditionalDNSNames:   additionalDNSNames,
+			AdditionalDNSNames: additionalDNSNames,
 		})
 
 	kyma := &v1beta2.Kyma{
@@ -131,13 +124,12 @@ func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationMissing(t *
 }
 
 func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationEmpty(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			AdditionalDNSNames:   additionalDNSNames,
+			AdditionalDNSNames: additionalDNSNames,
 		})
 
 	kyma := &v1beta2.Kyma{
@@ -158,36 +150,29 @@ func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationEmpty(t *te
 }
 
 func Test_CertificateManager_DeleteSkrCertificate_Success(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
-		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			SkrCertificateNamingTemplate: certNamingTemplate,
-		})
+		certificate.Config{})
 
 	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, certClientStub.deleteCalled)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), certClientStub.deleteName)
-	assert.Equal(t, certNamespace, certClientStub.deleteNamespace)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), certClientStub.deleteName)
 	assert.True(t, secretClientStub.deleteCalled)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), secretClientStub.deleteName)
-	assert.Equal(t, certNamespace, secretClientStub.deleteNamespace)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), secretClientStub.deleteName)
 }
 
 func Test_CertificateManager_DeleteSkrCertificate_Error_OnCertificate(t *testing.T) {
-	certClientStub := &certificateClientStub{
+	certClientStub := &certRepositoryStub{
 		deleteErr: assert.AnError,
 	}
 	secretClientStub := &certificateSecretClientStub{}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
-		certificate.Config{
-			CertificateNamespace: certNamespace,
-		})
+		certificate.Config{})
 
 	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
 
@@ -198,15 +183,13 @@ func Test_CertificateManager_DeleteSkrCertificate_Error_OnCertificate(t *testing
 }
 
 func Test_CertificateManager_DeleteSkrCertificate_Error_OnSecret(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		deleteErr: assert.AnError,
 	}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
-		certificate.Config{
-			CertificateNamespace: certNamespace,
-		})
+		certificate.Config{})
 
 	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
 
@@ -217,7 +200,7 @@ func Test_CertificateManager_DeleteSkrCertificate_Error_OnSecret(t *testing.T) {
 }
 
 func Test_CertificateManager_RenewSkrCertificate_Renew(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified now
@@ -233,7 +216,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew(t *testing.T) {
 			// skr secret, created a minute ago
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
+					Name:      fmt.Sprintf(expectedCertNameSuffix, kymaName),
 					Namespace: certNamespace,
 					CreationTimestamp: apimetav1.Time{
 						Time: time.Now().Add(-time.Minute),
@@ -245,9 +228,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew(t *testing.T) {
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			GatewaySecretName:            gatewaySecretName,
-			SkrCertificateNamingTemplate: certNamingTemplate,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	err := manager.RenewSkrCertificate(t.Context(), kymaName)
@@ -255,12 +236,11 @@ func Test_CertificateManager_RenewSkrCertificate_Renew(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, secretClientStub.getCalled)
 	assert.True(t, secretClientStub.deleteCalled)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), secretClientStub.deleteName)
-	assert.Equal(t, certNamespace, secretClientStub.deleteNamespace)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), secretClientStub.deleteName)
 }
 
 func Test_CertificateManager_RenewSkrCertificate_NoRenew(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified a minute ago
@@ -276,7 +256,7 @@ func Test_CertificateManager_RenewSkrCertificate_NoRenew(t *testing.T) {
 			// skr secret, created now
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
+					Name:      fmt.Sprintf(expectedCertNameSuffix, kymaName),
 					Namespace: certNamespace,
 					CreationTimestamp: apimetav1.Time{
 						Time: time.Now(),
@@ -288,9 +268,7 @@ func Test_CertificateManager_RenewSkrCertificate_NoRenew(t *testing.T) {
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			GatewaySecretName:            gatewaySecretName,
-			SkrCertificateNamingTemplate: certNamingTemplate,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	err := manager.RenewSkrCertificate(t.Context(), kymaName)
@@ -301,7 +279,7 @@ func Test_CertificateManager_RenewSkrCertificate_NoRenew(t *testing.T) {
 }
 
 func Test_CertificateManager_RenewSkrCertificate_Renew_NoLastModified(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, no last modified
@@ -315,7 +293,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_NoLastModified(t *testing
 			// skr secret, created a minute ago
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
+					Name:      fmt.Sprintf(expectedCertNameSuffix, kymaName),
 					Namespace: certNamespace,
 					CreationTimestamp: apimetav1.Time{
 						Time: time.Now().Add(-time.Minute),
@@ -327,9 +305,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_NoLastModified(t *testing
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			GatewaySecretName:            gatewaySecretName,
-			SkrCertificateNamingTemplate: certNamingTemplate,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	err := manager.RenewSkrCertificate(t.Context(), kymaName)
@@ -337,12 +313,11 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_NoLastModified(t *testing
 	require.NoError(t, err)
 	assert.True(t, secretClientStub.getCalled)
 	assert.True(t, secretClientStub.deleteCalled)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), secretClientStub.deleteName)
-	assert.Equal(t, certNamespace, secretClientStub.deleteNamespace)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), secretClientStub.deleteName)
 }
 
 func Test_CertificateManager_RenewSkrCertificate_Renew_InvalidLastModified(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, no last modified
@@ -358,7 +333,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_InvalidLastModified(t *te
 			// skr secret, created a minute ago
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
+					Name:      fmt.Sprintf(expectedCertNameSuffix, kymaName),
 					Namespace: certNamespace,
 					CreationTimestamp: apimetav1.Time{
 						Time: time.Now().Add(-time.Minute),
@@ -370,9 +345,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_InvalidLastModified(t *te
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			GatewaySecretName:            gatewaySecretName,
-			SkrCertificateNamingTemplate: certNamingTemplate,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	err := manager.RenewSkrCertificate(t.Context(), kymaName)
@@ -380,12 +353,11 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_InvalidLastModified(t *te
 	require.NoError(t, err)
 	assert.True(t, secretClientStub.getCalled)
 	assert.True(t, secretClientStub.deleteCalled)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), secretClientStub.deleteName)
-	assert.Equal(t, certNamespace, secretClientStub.deleteNamespace)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), secretClientStub.deleteName)
 }
 
 func Test_CertificateManager_RenewSkrCertificate_Error_GatewaySecret(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// no gateway secret
@@ -393,7 +365,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_GatewaySecret(t *testing.
 			// skr secret, created a minute ago
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
+					Name:      fmt.Sprintf(expectedCertNameSuffix, kymaName),
 					Namespace: certNamespace,
 					CreationTimestamp: apimetav1.Time{
 						Time: time.Now().Add(-time.Minute),
@@ -406,9 +378,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_GatewaySecret(t *testing.
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			GatewaySecretName:            gatewaySecretName,
-			SkrCertificateNamingTemplate: certNamingTemplate,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	err := manager.RenewSkrCertificate(t.Context(), kymaName)
@@ -420,7 +390,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_GatewaySecret(t *testing.
 }
 
 func Test_CertificateManager_RenewSkrCertificate_Error_SkrSecret(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified now
@@ -441,9 +411,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_SkrSecret(t *testing.T) {
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			GatewaySecretName:            gatewaySecretName,
-			SkrCertificateNamingTemplate: certNamingTemplate,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	err := manager.RenewSkrCertificate(t.Context(), kymaName)
@@ -455,7 +423,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_SkrSecret(t *testing.T) {
 }
 
 func Test_CertificateManager_RenewSkrCertificate_Error_Delete(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			// gateway secret, modified now
@@ -471,7 +439,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_Delete(t *testing.T) {
 			// skr secret, created a minute ago
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
+					Name:      fmt.Sprintf(expectedCertNameSuffix, kymaName),
 					Namespace: certNamespace,
 					CreationTimestamp: apimetav1.Time{
 						Time: time.Now().Add(-time.Minute),
@@ -484,9 +452,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_Delete(t *testing.T) {
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace:         certNamespace,
-			GatewaySecretName:            gatewaySecretName,
-			SkrCertificateNamingTemplate: certNamingTemplate,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	err := manager.RenewSkrCertificate(t.Context(), kymaName)
@@ -495,12 +461,11 @@ func Test_CertificateManager_RenewSkrCertificate_Error_Delete(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to delete SKR certificate secret:")
 	assert.True(t, secretClientStub.getCalled)
 	assert.True(t, secretClientStub.deleteCalled)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), secretClientStub.deleteName)
-	assert.Equal(t, certNamespace, secretClientStub.deleteNamespace)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), secretClientStub.deleteName)
 }
 
 func Test_CertificateManager_IsSkrCertificateRenewalOverdue(t *testing.T) {
-	certClientStub := &certificateClientStub{
+	certClientStub := &certRepositoryStub{
 		// renewal time is one second out of buffer
 		renewalTime: time.Now().Add(-renewBuffer - time.Second),
 	}
@@ -508,8 +473,7 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue(t *testing.T) {
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			RenewBuffer:          renewBuffer,
+			RenewBuffer: renewBuffer,
 		})
 
 	overdue, err := manager.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
@@ -520,7 +484,7 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue(t *testing.T) {
 }
 
 func Test_CertificateManager_IsSkrCertificateRenewalOverdue_NotOverdue(t *testing.T) {
-	certClientStub := &certificateClientStub{
+	certClientStub := &certRepositoryStub{
 		// renewal time is one second within buffer
 		renewalTime: time.Now().Add(-renewBuffer + time.Second),
 	}
@@ -528,8 +492,7 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue_NotOverdue(t *testin
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			RenewBuffer:          renewBuffer,
+			RenewBuffer: renewBuffer,
 		})
 
 	overdue, err := manager.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
@@ -540,15 +503,14 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue_NotOverdue(t *testin
 }
 
 func Test_CertificateManager_IsSkrCertificateRenewalOverdue_Error(t *testing.T) {
-	certClientStub := &certificateClientStub{
+	certClientStub := &certRepositoryStub{
 		getRenewalTimeErr: assert.AnError,
 	}
 	secretClientStub := &certificateSecretClientStub{}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			RenewBuffer:          renewBuffer,
+			RenewBuffer: renewBuffer,
 		})
 
 	overdue, err := manager.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
@@ -560,12 +522,12 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue_Error(t *testing.T) 
 }
 
 func Test_CertificateManager_GetSkrCertificateSecret(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      fmt.Sprintf(certNamingTemplate, kymaName),
+					Name:      fmt.Sprintf(expectedCertNameSuffix, kymaName),
 					Namespace: certNamespace,
 				},
 			},
@@ -573,29 +535,25 @@ func Test_CertificateManager_GetSkrCertificateSecret(t *testing.T) {
 	}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
-		certificate.Config{
-			CertificateNamespace: certNamespace,
-		})
+		certificate.Config{})
 
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.True(t, secretClientStub.getCalled)
-	assert.Equal(t, fmt.Sprintf(certNamingTemplate, kymaName), result.Name)
+	assert.Equal(t, fmt.Sprintf(expectedCertNameSuffix, kymaName), result.Name)
 	assert.Equal(t, certNamespace, result.Namespace)
 }
 
 func Test_CertificateManager_GetSkrCertificateSecret_Error(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getErrors: []error{assert.AnError},
 	}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
-		certificate.Config{
-			CertificateNamespace: certNamespace,
-		})
+		certificate.Config{})
 
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
@@ -606,17 +564,15 @@ func Test_CertificateManager_GetSkrCertificateSecret_Error(t *testing.T) {
 }
 
 func Test_CertificateManager_GetSkrCertificateSecret_NotFound(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getErrors: []error{
-			apierrors.NewNotFound(apicorev1.Resource("secrets"), fmt.Sprintf(certNamingTemplate, kymaName)),
+			apierrors.NewNotFound(apicorev1.Resource("secrets"), fmt.Sprintf(expectedCertNameSuffix, kymaName)),
 		},
 	}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
-		certificate.Config{
-			CertificateNamespace: certNamespace,
-		})
+		certificate.Config{})
 
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
@@ -627,7 +583,7 @@ func Test_CertificateManager_GetSkrCertificateSecret_NotFound(t *testing.T) {
 }
 
 func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getSecrets: []*apicorev1.Secret{
 			{
@@ -641,8 +597,7 @@ func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			GatewaySecretName:    gatewaySecretName,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	result, err := manager.GetGatewayCertificateSecret(t.Context())
@@ -655,15 +610,14 @@ func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
 }
 
 func Test_CertificateManager_GetGatewayCertificateSecret_Error(t *testing.T) {
-	certClientStub := &certificateClientStub{}
+	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{
 		getErrors: []error{assert.AnError},
 	}
 	manager := certificate.NewSKRCertService(certClientStub,
 		secretClientStub,
 		certificate.Config{
-			CertificateNamespace: certNamespace,
-			GatewaySecretName:    gatewaySecretName,
+			GatewaySecretName: gatewaySecretName,
 		})
 
 	result, err := manager.GetGatewayCertificateSecret(t.Context())
@@ -676,56 +630,51 @@ func Test_CertificateManager_GetGatewayCertificateSecret_Error(t *testing.T) {
 
 // Test stubs
 
-type certificateClientStub struct {
+type certRepositoryStub struct {
 	createCalled         bool
 	createErr            error
 	createName           string
-	createNamespace      string
 	createCommonName     string
 	createDNSNames       []string
 	deleteCalled         bool
 	deleteErr            error
 	deleteName           string
-	deleteNamespace      string
 	getRenewalTimeCalled bool
 	renewalTime          time.Time
 	getRenewalTimeErr    error
 }
 
-func (c *certificateClientStub) Create(ctx context.Context, name, namespace, commonName string,
+func (c *certRepositoryStub) Create(_ context.Context, name, commonName string,
 	dnsNames []string,
 ) error {
 	c.createCalled = true
 	c.createName = name
-	c.createNamespace = namespace
 	c.createCommonName = commonName
 	c.createDNSNames = dnsNames
 	return c.createErr
 }
 
-func (c *certificateClientStub) Delete(ctx context.Context, name, namespace string) error {
+func (c *certRepositoryStub) Delete(_ context.Context, name string) error {
 	c.deleteCalled = true
 	c.deleteName = name
-	c.deleteNamespace = namespace
 	return c.deleteErr
 }
 
-func (c *certificateClientStub) GetRenewalTime(ctx context.Context, name, namespace string) (time.Time, error) {
+func (c *certRepositoryStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
 	c.getRenewalTimeCalled = true
 	return c.renewalTime, c.getRenewalTimeErr
 }
 
 type certificateSecretClientStub struct {
-	getCalled       bool
-	getErrors       []error
-	getSecrets      []*apicorev1.Secret
-	deleteCalled    bool
-	deleteName      string
-	deleteNamespace string
-	deleteErr       error
+	getCalled    bool
+	getErrors    []error
+	getSecrets   []*apicorev1.Secret
+	deleteCalled bool
+	deleteName   string
+	deleteErr    error
 }
 
-func (c *certificateSecretClientStub) Get(ctx context.Context, name string) (*apicorev1.Secret, error) {
+func (c *certificateSecretClientStub) Get(_ context.Context, _ string) (*apicorev1.Secret, error) {
 	c.getCalled = true
 
 	var secret *apicorev1.Secret
@@ -743,10 +692,9 @@ func (c *certificateSecretClientStub) Get(ctx context.Context, name string) (*ap
 	return secret, err
 }
 
-func (c *certificateSecretClientStub) Delete(ctx context.Context, name string) error {
+func (c *certificateSecretClientStub) Delete(_ context.Context, name string) error {
 	c.deleteCalled = true
 	c.deleteName = name
-	c.deleteNamespace = namespace
 	return c.deleteErr
 }
 
@@ -765,7 +713,7 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 	tests := []struct {
 		name       string
 		fields     fields
-		want       *secret.GatewaySecretData
+		want       *data.GatewaySecretData
 		wantErr    assert.ErrorAssertionFunc
 		getErrors  []error
 		getSecrets []*apicorev1.Secret
@@ -773,16 +721,15 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 		{
 			name: "success returns GatewaySecretData",
 			fields: fields{
-				certClient: &certificateClientStub{},
+				certClient: &certRepositoryStub{},
 				secretClient: &certificateSecretClientStub{
 					getSecrets: []*apicorev1.Secret{secretWithCA},
 				},
 				config: certificate.Config{
-					CertificateNamespace: certNamespace,
-					GatewaySecretName:    gatewaySecretName,
+					GatewaySecretName: gatewaySecretName,
 				},
 			},
-			want: &secret.GatewaySecretData{
+			want: &data.GatewaySecretData{
 				CaCert: caData,
 			},
 			wantErr: assert.NoError,
@@ -790,13 +737,12 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 		{
 			name: "error from secret client",
 			fields: fields{
-				certClient: &certificateClientStub{},
+				certClient: &certRepositoryStub{},
 				secretClient: &certificateSecretClientStub{
 					getErrors: []error{assert.AnError},
 				},
 				config: certificate.Config{
-					CertificateNamespace: certNamespace,
-					GatewaySecretName:    gatewaySecretName,
+					GatewaySecretName: gatewaySecretName,
 				},
 			},
 			want:    nil,
@@ -839,7 +785,7 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 		name       string
 		fields     fields
 		kymaName   string
-		want       *secret.CertificateSecretData
+		want       *data.CertificateSecretData
 		wantErr    assert.ErrorAssertionFunc
 		getErrors  []error
 		getSecrets []*apicorev1.Secret
@@ -847,16 +793,16 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 		{
 			name: "success returns CertificateSecretData",
 			fields: fields{
-				certClient: &certificateClientStub{},
+				certClient: &certRepositoryStub{},
 				secretClient: &certificateSecretClientStub{
 					getSecrets: []*apicorev1.Secret{secretWithCert},
 				},
 				config: certificate.Config{
-					CertificateNamespace: certNamespace,
+					// CertificateNamespace: certNamespace,
 				},
 			},
 			kymaName: kymaName,
-			want: &secret.CertificateSecretData{
+			want: &data.CertificateSecretData{
 				TlsCert: tlsData,
 				TlsKey:  keyData,
 			},
@@ -865,12 +811,12 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 		{
 			name: "error from secret client",
 			fields: fields{
-				certClient: &certificateClientStub{},
+				certClient: &certRepositoryStub{},
 				secretClient: &certificateSecretClientStub{
 					getErrors: []error{assert.AnError},
 				},
 				config: certificate.Config{
-					CertificateNamespace: certNamespace,
+					// CertificateNamespace: certNamespace,
 				},
 			},
 			kymaName: kymaName,

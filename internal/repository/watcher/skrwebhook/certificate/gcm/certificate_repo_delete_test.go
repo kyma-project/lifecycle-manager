@@ -52,7 +52,7 @@ func TestDelete_ClientReturnsAnError_ReturnsError(t *testing.T) {
 			Namespace:   certNamespace,
 		},
 	)
-	require.NoError(t, err, assert.AnError)
+	require.NoError(t, err)
 
 	err = certClient.Delete(t.Context(), certName)
 

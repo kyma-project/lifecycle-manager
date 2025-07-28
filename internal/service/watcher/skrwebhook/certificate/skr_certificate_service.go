@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret/data"
-
 	apicorev1 "k8s.io/api/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret/data"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -212,5 +211,5 @@ func (c *SKRCertService) constructDNSNames(kyma *v1beta2.Kyma) ([]string, error)
 }
 
 func constructSkrCertificateName(kymaName string) string {
-	return fmt.Sprintf("%s-webhook-tls", kymaName)
+	return kymaName + "-webhook-tls"
 }

@@ -22,7 +22,7 @@ const (
 var errInvalidGatewaySecret = errors.New("invalid gateway secret")
 
 type CertificateInterface interface {
-	GetValidity(ctx context.Context, name string, namespace string) (time.Time, time.Time, error)
+	GetValidity(ctx context.Context, name string) (time.Time, time.Time, error)
 }
 
 type GatewaySecretRotationClient struct {
@@ -38,7 +38,7 @@ func NewGatewaySecretRotationClient(config *rest.Config, certificateInterface Ce
 }
 
 func (c *GatewaySecretRotationClient) GetWatcherServingCertValidity(ctx context.Context) (time.Time, time.Time, error) {
-	notBefore, notAfter, err := c.certificateInterface.GetValidity(ctx, kcpCACertName, shared.IstioNamespace)
+	notBefore, notAfter, err := c.certificateInterface.GetValidity(ctx, kcpCACertName)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to get watcher serving cert validity: %w", err)
 	}

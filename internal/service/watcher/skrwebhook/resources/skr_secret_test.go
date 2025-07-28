@@ -4,13 +4,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
-
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate/secret/data"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 )
 
 func TestBuildSKRSecret(t *testing.T) {
@@ -47,9 +46,9 @@ func TestBuildSKRSecret(t *testing.T) {
 				},
 				Immutable: nil,
 				Data: map[string][]byte{
-					secret.CaCertKey:        []byte("ca"),
-					secret.TlsCertKey:       []byte("cert"),
-					secret.TlsPrivateKeyKey: []byte("key"),
+					data.CaCertKey:        []byte("ca"),
+					data.TlsCertKey:       []byte("cert"),
+					data.TlsPrivateKeyKey: []byte("key"),
 				},
 				Type: apicorev1.SecretTypeOpaque,
 			},

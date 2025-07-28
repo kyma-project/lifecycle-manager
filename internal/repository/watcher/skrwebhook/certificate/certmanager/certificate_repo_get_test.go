@@ -13,7 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
-	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/error"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/errors"
 )
 
 func TestGetRenewalTime_ClientSucceeds_ReturnsRenewalTime(t *testing.T) {
@@ -134,7 +134,7 @@ func TestGetValidity_ClientCallSucceeds_Returns(t *testing.T) {
 		},
 	)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.Equal(t, clientStub.object.Status.NotBefore.Time, notBefore)
@@ -169,9 +169,9 @@ func TestGetValidity_CertificateContainsNoNotBefore_ReturnsError(t *testing.T) {
 		},
 	)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
 
-	require.ErrorIs(t, err, certmanager.ErrNoNotBefore)
+	require.ErrorIs(t, err, certerror.ErrNoNotBefore)
 	assert.True(t, notBefore.IsZero())
 	assert.True(t, notAfter.IsZero())
 	assert.True(t, clientStub.called)
@@ -204,9 +204,9 @@ func TestGetValidity_CertificateContainsNoNotAfter_ReturnsError(t *testing.T) {
 		},
 	)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
 
-	require.ErrorIs(t, err, certmanager.ErrNoNotAfter)
+	require.ErrorIs(t, err, certerror.ErrNoNotAfter)
 	assert.True(t, notBefore.IsZero())
 	assert.True(t, notAfter.IsZero())
 	assert.True(t, clientStub.called)
@@ -224,10 +224,11 @@ func TestGetValidity_ClientReturnsAnError_ReturnsError(t *testing.T) {
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName, certNamespace)
+	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to get certificate")

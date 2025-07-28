@@ -4,13 +4,12 @@ import (
 	"reflect"
 	"testing"
 
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
-
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 )
 
 func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {

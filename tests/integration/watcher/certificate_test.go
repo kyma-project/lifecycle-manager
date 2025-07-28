@@ -3,11 +3,6 @@ package watcher_test
 import (
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
-	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +10,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -65,28 +66,27 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 
-			certificateConfig := certificate2.CertificateConfig{
+			certificateConfig := config.CertificateValues{
 				Duration:    1 * time.Hour,
 				RenewBefore: 5 * time.Minute,
 				KeySize:     flags.DefaultSelfSignedCertKeySize,
 			}
 
-			certificateManagerConfig := certificate2.Config{
-				SkrServiceName:               skrwebhookresources.SkrResourceName,
-				SkrNamespace:                 test.namespace.Name,
-				CertificateNamespace:         test.namespace.Name,
-				AdditionalDNSNames:           []string{},
-				GatewaySecretName:            shared.GatewaySecretName,
-				RenewBuffer:                  flags.DefaultSelfSignedCertificateRenewBuffer,
-				SkrCertificateNamingTemplate: "%s-webhook-tls",
+			certificateManagerConfig := certificate.Config{
+				SkrServiceName:     skrwebhookresources.SkrResourceName,
+				SkrNamespace:       test.namespace.Name,
+				AdditionalDNSNames: []string{},
+				GatewaySecretName:  shared.GatewaySecretName,
+				RenewBuffer:        flags.DefaultSelfSignedCertificateRenewBuffer,
 			}
 
-			certificateManager := certificate2.NewSKRCertService(
+			certificateManager := certificate.NewSKRCertService(
 				certmanager.NewCertificateRepository(controlPlaneClient,
 					"klm-watcher-selfsigned",
+					test.namespace.Name,
 					certificateConfig,
 				),
-				secret.NewCertificateSecretRepository(controlPlaneClient),
+				secret.NewCertificateSecretRepository(controlPlaneClient, test.namespace.Name),
 				certificateManagerConfig,
 			)
 

@@ -11,9 +11,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
-	certconfig "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
-	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/error"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/errors"
 )
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
@@ -56,7 +56,7 @@ func (c *CertificateRepository) Create(ctx context.Context, name string, commonN
 			DNSNames:    dnsNames,
 			SecretName:  name,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: certconfig.GetCertificateLabels(),
+				Labels: certificate.GetCertificateLabels(),
 			},
 			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: c.issuerName,
@@ -109,17 +109,14 @@ func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string)
 	}
 
 	if cert.Status.RenewalTime == nil || cert.Status.RenewalTime.Time.IsZero() {
-		return time.Time{}, certconfig.ErrNoRenewalTime
+		return time.Time{}, certificate.ErrNoRenewalTime
 	}
 
 	return cert.Status.RenewalTime.Time, nil
 }
 
-func (c *CertificateRepository) GetValidity(ctx context.Context,
-	name string,
-	namespace string,
-) (time.Time, time.Time, error) {
-	cert, err := c.getCertificate(ctx, name, namespace)
+func (c *CertificateRepository) GetValidity(ctx context.Context, name string) (time.Time, time.Time, error) {
+	cert, err := c.getCertificate(ctx, name, c.namespace)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
@@ -135,10 +132,7 @@ func (c *CertificateRepository) GetValidity(ctx context.Context,
 	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
 }
 
-func (c *CertificateRepository) getCertificate(ctx context.Context,
-	name string,
-	namespace string,
-) (*certmanagerv1.Certificate, error) {
+func (c *CertificateRepository) getCertificate(ctx context.Context, name, namespace string) (*certmanagerv1.Certificate, error) {
 	cert := &certmanagerv1.Certificate{}
 	cert.SetName(name)
 	cert.SetNamespace(namespace)

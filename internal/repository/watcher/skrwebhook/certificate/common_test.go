@@ -3,9 +3,9 @@ package certificate_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 )
 

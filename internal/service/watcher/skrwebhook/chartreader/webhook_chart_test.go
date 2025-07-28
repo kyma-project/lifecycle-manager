@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
-
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
 )
 
 type fakeClient struct {

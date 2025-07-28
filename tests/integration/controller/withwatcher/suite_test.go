@@ -22,13 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
-	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
@@ -58,9 +51,16 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -187,28 +187,28 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(ctx, istioResource)).To(Succeed())
 	}
 
-	certificateConfig := certificate2.CertificateConfig{
+	certificateConfig := config.CertificateValues{
 		Duration:    1 * time.Hour,
 		RenewBefore: 5 * time.Minute,
 		KeySize:     flags.DefaultSelfSignedCertKeySize,
+		Namespace:   flags.DefaultIstioNamespace,
 	}
 
-	certificateManagerConfig := certificate2.Config{
-		SkrServiceName:               resources.SkrResourceName,
-		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
-		CertificateNamespace:         flags.DefaultIstioNamespace,
-		AdditionalDNSNames:           []string{},
-		GatewaySecretName:            shared.GatewaySecretName,
-		RenewBuffer:                  flags.DefaultSelfSignedCertificateRenewBuffer,
-		SkrCertificateNamingTemplate: "%s-webhook-tls",
+	certificateManagerConfig := certificate.Config{
+		SkrServiceName:     skrwebhookresources.SkrResourceName,
+		SkrNamespace:       flags.DefaultRemoteSyncNamespace,
+		AdditionalDNSNames: []string{},
+		GatewaySecretName:  shared.GatewaySecretName,
+		RenewBuffer:        flags.DefaultSelfSignedCertificateRenewBuffer,
 	}
 
-	certificateManager := certificate2.NewSKRCertService(
+	certificateManager := certificate.NewSKRCertService(
 		certmanager.NewCertificateRepository(mgr.GetClient(),
 			"test-issuer",
+			flags.DefaultIstioNamespace,
 			certificateConfig,
 		),
-		secret.NewCertificateSecretRepository(mgr.GetClient()),
+		secret.NewCertificateSecretRepository(mgr.GetClient(), flags.DefaultIstioNamespace),
 		certificateManagerConfig,
 	)
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
@@ -225,7 +225,7 @@ var _ = BeforeSuite(func() {
 
 	chartReaderService := chartreader.NewService(skrWatcherPath)
 
-	resourceConfigurator := resources.NewResourceConfigurator(
+	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
 		flags.DefaultRemoteSyncNamespace, "dummyhost/fake-watcher-image:latest",
 		"200Mi",
 		"1", *resolvedKcpAddr)

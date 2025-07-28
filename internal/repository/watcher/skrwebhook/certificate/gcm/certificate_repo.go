@@ -15,7 +15,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
-	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/error"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/errors"
 )
 
 var (
@@ -62,13 +62,9 @@ func NewCertificateRepository(kcpClient client.Client,
 	}, nil
 }
 
-func (c *CertificateRepository) Create(ctx context.Context,
-	name string,
-	commonName string,
-	dnsNames []string,
-) error {
+func (r *CertificateRepository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
 	//nolint:gosec // save as of the guard clause in constructor
-	keySize := gcertv1alpha1.PrivateKeySize(int32(c.certConfig.KeySize))
+	keySize := gcertv1alpha1.PrivateKeySize(int32(r.certConfig.KeySize))
 	rsaKeyAlgorithm := gcertv1alpha1.RSAKeyAlgorithm
 
 	cert := &gcertv1alpha1.Certificate{
@@ -78,17 +74,17 @@ func (c *CertificateRepository) Create(ctx context.Context,
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.certConfig.Namespace,
+			Namespace: r.certConfig.Namespace,
 		},
 		Spec: gcertv1alpha1.CertificateSpec{
 			CommonName:   &commonName,
-			Duration:     &apimetav1.Duration{Duration: c.certConfig.Duration},
+			Duration:     &apimetav1.Duration{Duration: r.certConfig.Duration},
 			DNSNames:     dnsNames,
 			SecretName:   &name,
 			SecretLabels: certificate.GetCertificateLabels(),
 			IssuerRef: &gcertv1alpha1.IssuerRef{
-				Name:      c.issuerName,
-				Namespace: c.issuerNamespace,
+				Name:      r.issuerName,
+				Namespace: r.issuerNamespace,
 			},
 			PrivateKey: &gcertv1alpha1.CertificatePrivateKey{
 				Algorithm: &rsaKeyAlgorithm,
@@ -98,7 +94,7 @@ func (c *CertificateRepository) Create(ctx context.Context,
 	}
 
 	// Patch instead of Create + IgnoreAlreadyExists for cases where we change the config of certificates, e.g. duration
-	err := c.kcpClient.Patch(ctx,
+	err := r.kcpClient.Patch(ctx,
 		cert,
 		client.Apply,
 		client.ForceOwnership,
@@ -111,26 +107,26 @@ func (c *CertificateRepository) Create(ctx context.Context,
 	return nil
 }
 
-func (c *CertificateRepository) Delete(ctx context.Context, name string) error {
+func (r *CertificateRepository) Delete(ctx context.Context, name string) error {
 	cert := &gcertv1alpha1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(c.certConfig.Namespace)
+	cert.SetNamespace(r.certConfig.Namespace)
 
-	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, c.certConfig.Namespace, err)
+	if err := r.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
 	return nil
 }
 
 // GetRenewalTime returns the expiration date of the certificate minus the renewal time.
-func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
+func (r *CertificateRepository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
 	cert := &gcertv1alpha1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(c.certConfig.Namespace)
+	cert.SetNamespace(r.certConfig.Namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, c.certConfig.Namespace, err)
+	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
 	if cert.Status.ExpirationDate == nil {
@@ -143,16 +139,16 @@ func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string)
 			*cert.Status.ExpirationDate, err)
 	}
 
-	return expirationDate.Add(-c.certConfig.RenewBefore), nil
+	return expirationDate.Add(-r.certConfig.RenewBefore), nil
 }
 
-func (c *CertificateRepository) GetValidity(ctx context.Context, name string) (time.Time, time.Time, error) {
+func (r *CertificateRepository) GetValidity(ctx context.Context, name string) (time.Time, time.Time, error) {
 	cert := &gcertv1alpha1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(c.certConfig.Namespace)
+	cert.SetNamespace(r.certConfig.Namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, c.certConfig.Namespace, err)
+	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
 	if cert.Status.Message == nil {
