@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,11 +14,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	certconfig "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
-	certificate2 "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
@@ -28,8 +29,10 @@ var (
 	errCertClientNotSupported = errors.New("certificate client not supported, please check the certificate management configuration")
 )
 
-func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.SkrContextProvider,
-	repository gateway.IstioGatewayRepository, flagVar *flags.FlagVar,
+func ComposeSkrWebhookManager(kcpClient client.Client,
+	skrContextProvider remote.SkrContextProvider,
+	repository gateway.IstioGatewayRepository,
+	flagVar *flags.FlagVar,
 ) (*watcher.SkrWebhookManifestManager, error) {
 	certManager, err := setupCertManager(kcpClient, flagVar)
 	if err != nil {
@@ -59,7 +62,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 
 	return watcher.NewSKRWebhookManifestManager(
 		kcpClient,
-		skrContextFactory,
+		skrContextProvider,
 		flagVar.RemoteSyncNamespace,
 		*resolvedKcpAddr,
 		chartReaderService,
@@ -68,14 +71,14 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 		watcherMetrics)
 }
 
-func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate2.SKRCertService, error) {
+func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.SKRCertService, error) {
 	certClient, err := setupCertClient(kcpClient, flagVar)
 	if err != nil {
 		return nil, err
 	}
 	secretClient := secret.NewCertificateSecretRepository(kcpClient, flagVar.IstioNamespace)
 
-	config := certificate2.Config{
+	config := certificate.Config{
 		SkrServiceName:     resources.SkrResourceName,
 		SkrNamespace:       flagVar.RemoteSyncNamespace,
 		AdditionalDNSNames: strings.Split(flagVar.AdditionalDNSNames, ","),
@@ -83,15 +86,15 @@ func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certifi
 		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	return certificate2.NewSKRCertService(
+	return certificate.NewSKRCertService(
 		certClient,
 		secretClient,
 		config,
 	), nil
 }
 
-func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate2.CertRepository, error) {
-	certificateConfig := certconfig.CertValues{
+func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate.CertRepository, error) {
+	certificateConfig := config.CertificateValues{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,
@@ -101,10 +104,11 @@ func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certifica
 	case certmanagerv1.SchemeGroupVersion.String():
 		return certmanager.NewCertificateRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
+			flagVar.IstioNamespace,
 			certificateConfig,
 		), nil
 	case gcertv1alpha1.SchemeGroupVersion.String():
-		return gcm.NewCertificateClient(kcpClient,
+		return gcm.NewCertificateRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			flagVar.SelfSignedCertIssuerNamespace,
 			certificateConfig,

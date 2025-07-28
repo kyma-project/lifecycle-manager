@@ -29,7 +29,7 @@ func SetupCertInterface(kcpClient client.Client, flagVar *flags.FlagVar) (gatewa
 			certificateConfig,
 		), nil
 	case gcertv1alpha1.SchemeGroupVersion.String():
-		return gcm.NewCertificateClient(kcpClient,
+		return gcm.NewCertificateRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			flagVar.SelfSignedCertIssuerNamespace,
 			certificateConfig,

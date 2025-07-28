@@ -8,17 +8,18 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
-
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/error"
 )
 
 var (
-	ErrKeySizeOutOfRange                  = errors.New("KeySize is out of range for int32")
+	ErrGCMRepoConfigKeySizeOutOfRange     = errors.New("KeySize is out of range for int32")
 	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
 	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
 	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`)
@@ -33,55 +34,41 @@ func GetCacheObjects() []client.Object {
 	}
 }
 
-type kcpClient interface {
-	Get(ctx context.Context,
-		key client.ObjectKey,
-		obj client.Object,
-		opts ...client.GetOption,
-	) error
-	Delete(ctx context.Context,
-		obj client.Object,
-		opts ...client.DeleteOption,
-	) error
-	Patch(ctx context.Context,
-		obj client.Object,
-		patch client.Patch,
-		opts ...client.PatchOption,
-	) error
-}
-
-type CertificateClient struct {
-	kcpClient       kcpClient
+type CertificateRepository struct {
+	kcpClient       client.Client
 	issuerName      string
 	issuerNamespace string
-	config          certificate.CertValues
+	certConfig      config.CertificateValues
 }
 
-func NewCertificateClient(kcpClient kcpClient,
+func NewCertificateRepository(kcpClient client.Client,
 	issuerName string,
 	issuerNamespace string,
-	config certificate.CertValues,
-) (*CertificateClient, error) {
-	if config.KeySize > math.MaxInt32 || config.KeySize < math.MinInt32 {
-		return nil, ErrKeySizeOutOfRange
+	certConfig config.CertificateValues,
+) (*CertificateRepository, error) {
+	if certConfig.KeySize > math.MaxInt32 || certConfig.KeySize < math.MinInt32 {
+		return nil, ErrGCMRepoConfigKeySizeOutOfRange
 	}
 
-	return &CertificateClient{
+	if certConfig.Namespace == "" {
+		return nil, certerror.ErrCertRepoConfigNamespace
+	}
+
+	return &CertificateRepository{
 		kcpClient,
 		issuerName,
 		issuerNamespace,
-		config,
+		certConfig,
 	}, nil
 }
 
-func (c *CertificateClient) Create(ctx context.Context,
+func (c *CertificateRepository) Create(ctx context.Context,
 	name string,
-	namespace string,
 	commonName string,
 	dnsNames []string,
 ) error {
 	//nolint:gosec // save as of the guard clause in constructor
-	keySize := gcertv1alpha1.PrivateKeySize(int32(c.config.KeySize))
+	keySize := gcertv1alpha1.PrivateKeySize(int32(c.certConfig.KeySize))
 	rsaKeyAlgorithm := gcertv1alpha1.RSAKeyAlgorithm
 
 	cert := &gcertv1alpha1.Certificate{
@@ -91,11 +78,11 @@ func (c *CertificateClient) Create(ctx context.Context,
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: c.certConfig.Namespace,
 		},
 		Spec: gcertv1alpha1.CertificateSpec{
 			CommonName:   &commonName,
-			Duration:     &apimetav1.Duration{Duration: c.config.Duration},
+			Duration:     &apimetav1.Duration{Duration: c.certConfig.Duration},
 			DNSNames:     dnsNames,
 			SecretName:   &name,
 			SecretLabels: certificate.GetCertificateLabels(),
@@ -124,32 +111,26 @@ func (c *CertificateClient) Create(ctx context.Context,
 	return nil
 }
 
-func (c *CertificateClient) Delete(ctx context.Context,
-	name string,
-	namespace string,
-) error {
+func (c *CertificateRepository) Delete(ctx context.Context, name string) error {
 	cert := &gcertv1alpha1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(namespace)
+	cert.SetNamespace(c.certConfig.Namespace)
 
 	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, namespace, err)
+		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, c.certConfig.Namespace, err)
 	}
 
 	return nil
 }
 
 // GetRenewalTime returns the expiration date of the certificate minus the renewal time.
-func (c *CertificateClient) GetRenewalTime(ctx context.Context,
-	name string,
-	namespace string,
-) (time.Time, error) {
+func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
 	cert := &gcertv1alpha1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(namespace)
+	cert.SetNamespace(c.certConfig.Namespace)
 
 	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
+		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, c.certConfig.Namespace, err)
 	}
 
 	if cert.Status.ExpirationDate == nil {
@@ -162,19 +143,16 @@ func (c *CertificateClient) GetRenewalTime(ctx context.Context,
 			*cert.Status.ExpirationDate, err)
 	}
 
-	return expirationDate.Add(-c.config.RenewBefore), nil
+	return expirationDate.Add(-c.certConfig.RenewBefore), nil
 }
 
-func (c *CertificateClient) GetValidity(ctx context.Context,
-	name string,
-	namespace string,
-) (time.Time, time.Time, error) {
+func (c *CertificateRepository) GetValidity(ctx context.Context, name string) (time.Time, time.Time, error) {
 	cert := &gcertv1alpha1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(namespace)
+	cert.SetNamespace(c.certConfig.Namespace)
 
 	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
+		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, c.certConfig.Namespace, err)
 	}
 
 	if cert.Status.Message == nil {

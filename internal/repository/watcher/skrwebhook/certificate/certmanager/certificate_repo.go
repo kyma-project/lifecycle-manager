@@ -2,7 +2,6 @@ package certmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -14,11 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/common/fieldowners"
 	certconfig "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
-)
-
-var (
-	ErrNoNotBefore = errors.New("notBefore not found")
-	ErrNoNotAfter  = errors.New("notAfter not found")
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/error"
 )
 
 // GetCacheObjects returns a list of objects that need to be cached for this client.
@@ -130,11 +125,11 @@ func (c *CertificateRepository) GetValidity(ctx context.Context,
 	}
 
 	if cert.Status.NotBefore == nil {
-		return time.Time{}, time.Time{}, ErrNoNotBefore
+		return time.Time{}, time.Time{}, certerror.ErrNoNotBefore
 	}
 
 	if cert.Status.NotAfter == nil {
-		return time.Time{}, time.Time{}, ErrNoNotAfter
+		return time.Time{}, time.Time{}, certerror.ErrNoNotAfter
 	}
 
 	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
