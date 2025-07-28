@@ -53,7 +53,8 @@ spec:
                 description: Config specifies OCI image configuration for Manifest
                 properties:
                   credSecretSelector:
-                    description: 'Deprecated: Field will be removed soon.'
+                    description: 'Deprecated: Field will be removed soon and is not
+                      supported anymore.'
                     properties:
                       matchExpressions:
                         description: matchExpressions is a list of label selector
@@ -320,7 +321,8 @@ spec:
                 description: Config specifies OCI image configuration for Manifest
                 properties:
                   credSecretSelector:
-                    description: 'Deprecated: Field will be removed soon.'
+                    description: 'Deprecated: Field will be removed soon and is not
+                      supported anymore.'
                     properties:
                       matchExpressions:
                         description: matchExpressions is a list of label selector

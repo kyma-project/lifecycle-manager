@@ -100,9 +100,7 @@ type ImageSpec struct {
 	// +kubebuilder:validation:Enum=helm-chart;oci-ref;"kustomize";""
 	Type RefTypeMetadata `json:"type,omitempty"`
 
-	// +kubebuilder:validation:Deprecated=true
-	// +kubebuilder:validation:Optional
-	// Deprecated: Field will be removed soon.
+	// Deprecated: Field will be removed soon and is not supported anymore.
 	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
