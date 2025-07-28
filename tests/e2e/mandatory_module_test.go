@@ -206,7 +206,27 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			})
 		})
 
-		It("When the mandatory ModuleTemplates are removed", func() {
+		It("When the mandatory ModuleTemplate with old version is deleted", func() {
+			Eventually(DeleteCR).
+				WithContext(ctx).
+				WithArguments(kcpClient,
+					&v1beta2.ModuleTemplate{
+						ObjectMeta: apimetav1.ObjectMeta{
+							Name:      "template-operator-1.1.0-smoke-test",
+							Namespace: ControlPlaneNamespace,
+						},
+					}).
+				Should(Succeed())
+		})
+
+		It("Then the mandatory module Manifest remains with the new version in the KCP cluster", func() {
+			Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+				WithContext(ctx).
+				WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+				Should(Succeed())
+		})
+
+		It("When the mandatory ModuleTemplate with new version is deleted", func() {
 			Eventually(DeleteCR).
 				WithContext(ctx).
 				WithArguments(kcpClient,
@@ -249,6 +269,12 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())
+			})
+			By("And the mandatory module manifest is not present in the KCP cluster", func() {
+				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+					Should(Equal(ErrManifestNotFound))
 			})
 		})
 	})
