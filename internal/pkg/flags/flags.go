@@ -217,7 +217,7 @@ func DefineFlagVar() *FlagVar {
 		"Enable verification of incoming listener request by comparing SAN with SKR domain in Kyma CR.")
 	flag.IntVar(
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
-		"Log level. Enter negative values to increase verbosity (e.g. 9)",
+		"Log level. Enter negative or positive values to increase verbosity. 0 has the lowest verbosity.",
 	)
 	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enable Purge controller.")
