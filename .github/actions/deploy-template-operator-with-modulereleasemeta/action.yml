@@ -158,9 +158,14 @@ runs:
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:001"' -i template-operator.yaml
         yq eval '(. | select(.kind == "Deployment") | .spec.progressDeadlineSeconds) = 60' -i template-operator.yaml
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].imagePullPolicy) = "Always"' -i template-operator.yaml
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].livenessProbe) = {"httpGet":{"path":"/healthz","port":8081},"initialDelaySeconds":5,"periodSeconds":5,"failureThreshold":1}' -i template-operator.yaml
-        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].readinessProbe) = {"httpGet":{"path":"/readyz","port":8081},"initialDelaySeconds":5,"periodSeconds":5,"failureThreshold":1}' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].livenessProbe) = {
+          "httpGet": {"path": "/healthz", "port": 8081},
+          "initialDelaySeconds": 5, "periodSeconds": 5, "failureThreshold": 1
+        }' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].readinessProbe) = {
+          "httpGet": {"path": "/readyz", "port": 8081},
+          "initialDelaySeconds": 5, "periodSeconds": 5, "failureThreshold": 1
+        }' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
     - name: Create ModuleTemplate and ModuleReleaseMeta for Module Status test with StatefulSet
