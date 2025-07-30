@@ -157,6 +157,9 @@ runs:
         # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:001"' -i template-operator.yaml
+        # Set imagePullPolicy to Always
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].imagePullPolicy) = "Always"' -i template-operator.yaml
+        
         ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
         ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
     - name: Create ModuleTemplate and MetaReleaseMeta for Module Status test with StatefulSet
