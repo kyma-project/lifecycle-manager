@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
-	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 )
 
 func TestGetRenewalTime_ClientSucceeds_ReturnsRenewalTime(t *testing.T) {
@@ -32,7 +32,7 @@ func TestGetRenewalTime_ClientSucceeds_ReturnsRenewalTime(t *testing.T) {
 			},
 		},
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -55,7 +55,7 @@ func TestGetRenewalTime_ClientReturnsError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -89,7 +89,7 @@ func TestGetRenewalTime_CertificateContainsNoRenewalTime_ReturnsError(t *testing
 			Status: certmanagerv1.CertificateStatus{},
 		},
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -126,7 +126,7 @@ func TestGetValidity_ClientCallSucceeds_Returns(t *testing.T) {
 			},
 		},
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -162,7 +162,7 @@ func TestGetValidity_CertificateContainsNoNotBefore_ReturnsError(t *testing.T) {
 			},
 		},
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -198,7 +198,7 @@ func TestGetValidity_CertificateContainsNoNotAfter_ReturnsError(t *testing.T) {
 			},
 		},
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -222,7 +222,7 @@ func TestGetValidity_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{

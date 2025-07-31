@@ -10,13 +10,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 )
 
 func TestDelete_WhenCalledAndClientCallSucceeds_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -41,7 +41,7 @@ func TestDelete_WhenCalledAndClientReturnsNotFoundError_IgnoresItAndReturns(t *t
 	clientStub := &deleteClientStub{
 		err: apierrors.NewNotFound(certmanagerv1.Resource("certificates"), certName),
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{
@@ -66,7 +66,7 @@ func TestDelete_WhenCalledAndClientReturnsOtherError_ReturnsError(t *testing.T) 
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	certificateRepository, err := certificate.NewRepository(
+	certificateRepository, err := certmanagercertificate.NewRepository(
 		clientStub,
 		issuerName,
 		config.CertificateValues{

@@ -3,10 +3,10 @@ package data_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/secret/data"
-
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/secret/data"
 )
 
 func TestNewGatewaySecretData(t *testing.T) {

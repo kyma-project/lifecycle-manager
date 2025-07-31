@@ -157,7 +157,7 @@ func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...c
 }
 
 // Status implements client.StatusClient.
-func (p *ProxyClient) Status() client.StatusWriter { //nolint:ireturn // we do not own the interface
+func (p *ProxyClient) Status() client.StatusWriter { //nolint:ireturn // interface needs to be implemented
 	return p.baseClient.Status()
 }
 

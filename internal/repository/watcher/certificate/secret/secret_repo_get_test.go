@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
 )
 
 func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {

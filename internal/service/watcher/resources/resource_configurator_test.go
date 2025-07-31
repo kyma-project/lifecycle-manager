@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	
+
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 )
 
