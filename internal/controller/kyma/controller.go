@@ -62,7 +62,6 @@ const (
 
 type SKRWebhookManager interface {
 	Reconcile(ctx context.Context, kyma *v1beta2.Kyma) error
-	EnsureDeploymentReady(ctx context.Context, kyma *v1beta2.Kyma) error
 	Remove(ctx context.Context, kyma *v1beta2.Kyma) error
 	RemoveSkrCertificate(ctx context.Context, kymaName string) error
 }
@@ -432,7 +431,8 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 				}
 				return err
 			}
-			if err := r.SKRWebhookManager.EnsureDeploymentReady(ctx, kyma); err != nil {
+			skrClient, _ := r.SkrContextFactory.Get(client.ObjectKeyFromObject(kyma))
+			if err := watcher.AssertDeploymentReady(ctx, skrClient); err != nil {
 				kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 			} else {
 				kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionTrue)

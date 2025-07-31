@@ -131,28 +131,6 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 	return nil
 }
 
-func (m *SkrWebhookManifestManager) EnsureDeploymentReady(ctx context.Context, kyma *v1beta2.Kyma) error {
-	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
-	if err != nil {
-		return fmt.Errorf("failed to get skrContext: %w", err)
-	}
-
-	deployment := apiappsv1.Deployment{}
-	deploymentKey := client.ObjectKey{
-		Name:      skrWebhookDeploymentName,
-		Namespace: skrWebhookNamespace,
-	}
-	if err := skrContext.Get(ctx, deploymentKey, &deployment); err != nil {
-		return fmt.Errorf("failed to get skr-webhook deployment: %w", err)
-	}
-	if deployment.Status.ReadyReplicas == 0 {
-		return fmt.Errorf("%w: deployment %s/%s has no ready replicas", ErrSkrWebhookDeploymentNotReady,
-			deployment.Namespace, deployment.Name)
-	}
-
-	return nil
-}
-
 // Remove removes all resources of the watch mechanism.
 func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
@@ -321,4 +299,21 @@ func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watche
 	}
 
 	return watcherList.Items, nil
+}
+
+func AssertDeploymentReady(ctx context.Context, skrClient client.Reader) error {
+	deployment := apiappsv1.Deployment{}
+	deploymentKey := client.ObjectKey{
+		Name:      skrWebhookDeploymentName,
+		Namespace: skrWebhookNamespace,
+	}
+	if err := skrClient.Get(ctx, deploymentKey, &deployment); err != nil {
+		return fmt.Errorf("failed to get skr-webhook deployment: %w", err)
+	}
+	if deployment.Status.ReadyReplicas == 0 {
+		return fmt.Errorf("%w: deployment %s/%s has no ready replicas", ErrSkrWebhookDeploymentNotReady,
+			deployment.Namespace, deployment.Name)
+	}
+
+	return nil
 }
