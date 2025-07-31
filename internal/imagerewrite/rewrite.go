@@ -75,10 +75,12 @@ type PodContainerImageRewriter struct{}
 func (r *PodContainerImageRewriter) Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error {
 	existingImageValue, found, err := unstructured.NestedString(podContainer.Object, "image")
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFindingImageInPodContainer, err.Error())
+		return fmt.Errorf("%w: not found", ErrFindingImageInPodContainer)
 	}
 	if !found {
-		return fmt.Errorf("%w: not found", ErrFindingImageInPodContainer)
+		// No image found in the pod container, nothing to rewrite
+		// Note: For some reasons the image attribute is marked as optional in the k8s sources: k8s.io/api@v0.33.3/core/v1/types.go, line 2764
+		return nil
 	}
 
 	existingImage, err := NewDockerImageReference(existingImageValue)
@@ -124,11 +126,11 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 
 		existingEnvValue, found := envVar["value"]
 		envVarValueStr, ok := existingEnvValue.(string)
-		if !ok {
-			return fmt.Errorf("%w: invalid type for value: %T (expected a string)", ErrUnexpectedEnvVarType, existingEnvValue)
-		}
 		if !found {
 			continue // No value to rewrite
+		}
+		if !ok {
+			return fmt.Errorf("%w: invalid type for value: %T (expected a string)", ErrUnexpectedEnvVarType, existingEnvValue)
 		}
 		for _, targetImage := range targetImages {
 			// Check if the existing environment variable value is an image reference suitable for the replacement.
