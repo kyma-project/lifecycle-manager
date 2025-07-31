@@ -12,19 +12,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-type mockClient struct {
-	getFunc  func(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
-	listFunc func(context.Context, client.ObjectList, ...client.ListOption) error
-}
-
-func (m *mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-	return m.getFunc(ctx, key, obj, opts...)
-}
-
-func (m *mockClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-	return m.listFunc(ctx, list, opts...)
-}
-
 func TestAssertDeploymentReady_ReturnsNoError_WhenDeploymentReady(t *testing.T) {
 	readyDeployment := &apiappsv1.Deployment{
 		Status: apiappsv1.DeploymentStatus{
@@ -59,17 +46,33 @@ func TestAssertDeploymentReady_ReturnsError_WhenDeploymentNotReady(t *testing.T)
 
 	err := watcher.AssertDeploymentReady(ctx, mockClnt)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "has no ready replicas")
+	require.ErrorIs(t, err, watcher.ErrSkrWebhookDeploymentNotReady)
 }
 
 func TestAssertDeploymentReady_ReturnsError_WhenClientReturnsError(t *testing.T) {
+	unexpectedError := errors.New("unexpected error")
 	notFoundFunc := func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-		return errors.New("deployment not found")
+		return unexpectedError
 	}
 	mockClnt := &mockClient{getFunc: notFoundFunc}
 	ctx := t.Context()
 
 	err := watcher.AssertDeploymentReady(ctx, mockClnt)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "deployment not found")
+	require.ErrorIs(t, err, unexpectedError)
+}
+
+// Stub for tests
+
+type mockClient struct {
+	getFunc  func(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
+	listFunc func(context.Context, client.ObjectList, ...client.ListOption) error
+}
+
+func (m *mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	return m.getFunc(ctx, key, obj, opts...)
+}
+
+func (m *mockClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	return m.listFunc(ctx, list, opts...)
 }
