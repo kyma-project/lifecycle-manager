@@ -5,12 +5,12 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
-	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 

@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"

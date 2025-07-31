@@ -7,13 +7,14 @@ import (
 	"time"
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
-	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 )
 
 func TestGetRenewalTime_ClientCallSucceedsAndRenewalTimeParsing_Success(t *testing.T) {

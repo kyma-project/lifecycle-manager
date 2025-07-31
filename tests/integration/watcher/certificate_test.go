@@ -16,6 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
