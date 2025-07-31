@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiappsv1 "k8s.io/api/apps/v1"

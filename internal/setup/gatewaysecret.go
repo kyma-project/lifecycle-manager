@@ -9,9 +9,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/common"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 )
 
 //nolint:ireturn // chosen implementation shall be abstracted
@@ -26,13 +26,12 @@ func SetupCertInterface(kcpClient client.Client, flagVar *flags.FlagVar) (gatewa
 	}
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		return certmanager.NewCertificateRepository(kcpClient,
+		return certmanagercertificate.NewRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
-			shared.IstioNamespace,
 			certificateConfig,
-		), nil
+		)
 	case gcertv1alpha1.SchemeGroupVersion.String():
-		return gcm.NewCertificateRepository(kcpClient,
+		return gcmcertificate.NewRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			flagVar.SelfSignedCertIssuerNamespace,
 			certificateConfig,

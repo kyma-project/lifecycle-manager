@@ -13,8 +13,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 )
 
 const bootstrapFailedExitCode = 1
@@ -115,8 +115,8 @@ func (c *KcpCacheOptions) GetCacheOptions() cache.Options {
 
 func getCertManagementCacheObjects(certificateManagement string, setupLog logr.Logger) []client.Object {
 	cacheObjects, ok := map[string][]client.Object{
-		certmanagerv1.SchemeGroupVersion.String(): certmanager.GetCacheObjects(),
-		gcertv1alpha1.SchemeGroupVersion.String(): gcm.GetCacheObjects(),
+		certmanagerv1.SchemeGroupVersion.String(): certmanagercertificate.GetCacheObjects(),
+		gcertv1alpha1.SchemeGroupVersion.String(): gcmcertificate.GetCacheObjects(),
 	}[certificateManagement]
 
 	if !ok {

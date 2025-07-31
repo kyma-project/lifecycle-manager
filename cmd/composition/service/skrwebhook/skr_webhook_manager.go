@@ -2,6 +2,7 @@ package skrwebhook
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -12,14 +13,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/gcm"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/secret"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/certificate"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/gateway"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/skrwebhook/resources"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
@@ -70,7 +71,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 		watcherMetrics)
 }
 
-func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.SKRCertService, error) {
+func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.Service, error) {
 	certificateConfig := config.CertificateValues{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
@@ -78,26 +79,26 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		Namespace:   flagVar.IstioNamespace,
 	}
 
-	var certRepoImpl certificate.CertRepository
+	var certRepoImpl certificate.CertificateRepository
 	var err error
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		certRepoImpl, err = certmanager.NewCertificateRepository(kcpClient,
+		certRepoImpl, err = certmanagercertificate.NewRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			certificateConfig)
 	case gcertv1alpha1.SchemeGroupVersion.String():
-		certRepoImpl, err = gcm.NewCertificateRepository(kcpClient,
+		certRepoImpl, err = gcmcertificate.NewRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			flagVar.SelfSignedCertIssuerNamespace,
 			certificateConfig)
-		if err != nil {
-			return nil, err
-		}
 	default:
 		return nil, errCertReposImplementationNotSupported
 	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create certificate repository: %w", err)
+	}
 
-	config := certificate.Config{
+	certServiceConfig := certificate.Config{
 		SkrServiceName:     skrwebhookresources.SkrResourceName,
 		SkrNamespace:       flagVar.RemoteSyncNamespace,
 		AdditionalDNSNames: strings.Split(flagVar.AdditionalDNSNames, ","),
@@ -105,9 +106,9 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	return certificate.NewSKRCertService(
+	return certificate.NewService(
 		certRepoImpl,
-		secret.NewCertificateSecretRepository(kcpClient, flagVar.IstioNamespace),
-		config,
+		secret.NewRepository(kcpClient, flagVar.IstioNamespace),
+		certServiceConfig,
 	), nil
 }
