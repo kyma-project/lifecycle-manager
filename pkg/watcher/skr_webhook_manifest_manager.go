@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -24,10 +25,15 @@ import (
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
-var ErrSkrCertificateNotReady = errors.New("SKR certificate not ready")
+var (
+	ErrSkrCertificateNotReady       = errors.New("SKR certificate not ready")
+	ErrSkrWebhookDeploymentNotReady = errors.New("SKR webhook deployment not ready")
+)
 
 const (
-	skrChartFieldOwner = client.FieldOwner(shared.OperatorName)
+	skrChartFieldOwner       = client.FieldOwner(shared.OperatorName)
+	skrWebhookDeploymentName = "skr-webhook"
+	skrWebhookNamespace      = "default"
 )
 
 type WatcherMetrics interface {
@@ -122,6 +128,28 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 	}
 	logger.V(log.DebugLevel).Info("successfully installed webhook resources",
 		"kyma", kymaObjKey.String())
+	return nil
+}
+
+func (m *SkrWebhookManifestManager) EnsureDeploymentReady(ctx context.Context, kyma *v1beta2.Kyma) error {
+	skrContext, err := m.skrContextFactory.Get(kyma.GetNamespacedName())
+	if err != nil {
+		return fmt.Errorf("failed to get skrContext: %w", err)
+	}
+
+	deployment := apiappsv1.Deployment{}
+	deploymentKey := client.ObjectKey{
+		Name:      skrWebhookDeploymentName,
+		Namespace: skrWebhookNamespace,
+	}
+	if err := skrContext.Get(ctx, deploymentKey, &deployment); err != nil {
+		return fmt.Errorf("failed to get skr-webhook deployment: %w", err)
+	}
+	if deployment.Status.ReadyReplicas == 0 {
+		return fmt.Errorf("%w: deployment %s/%s has no ready replicas", ErrSkrWebhookDeploymentNotReady,
+			deployment.Namespace, deployment.Name)
+	}
+
 	return nil
 }
 
