@@ -45,10 +45,10 @@ type SKRCertService struct {
 	config     Config
 }
 
-func NewSKRCertService(certRepo CertRepository, secretClient SecretRepository, config Config) *SKRCertService {
+func NewSKRCertService(certRepo CertRepository, secretRepo SecretRepository, config Config) *SKRCertService {
 	return &SKRCertService{
 		certRepo:   certRepo,
-		secretRepo: secretClient,
+		secretRepo: secretRepo,
 		config:     config,
 	}
 }

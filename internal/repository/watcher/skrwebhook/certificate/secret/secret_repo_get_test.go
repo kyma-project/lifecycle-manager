@@ -22,9 +22,9 @@ func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {
 			},
 		},
 	}
-	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
+	secretRepository := secret.NewCertificateSecretRepository(clientStub, namespace)
 
-	result, err := secretClient.Get(t.Context(), secretName)
+	result, err := secretRepository.Get(t.Context(), secretName)
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -37,9 +37,9 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
+	secretRepository := secret.NewCertificateSecretRepository(clientStub, namespace)
 
-	result, err := secretClient.Get(t.Context(), secretName)
+	result, err := secretRepository.Get(t.Context(), secretName)
 
 	assert.Nil(t, result)
 	require.ErrorIs(t, err, assert.AnError)

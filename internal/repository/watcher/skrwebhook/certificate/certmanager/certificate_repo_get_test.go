@@ -32,18 +32,19 @@ func TestGetRenewalTime_ClientSucceeds_ReturnsRenewalTime(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.Equal(t, clientStub.object.Status.RenewalTime.Time, renewalTime)
@@ -54,18 +55,19 @@ func TestGetRenewalTime_ClientReturnsError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get certificate")
@@ -87,18 +89,19 @@ func TestGetRenewalTime_CertificateContainsNoRenewalTime_ReturnsError(t *testing
 			Status: certmanagerv1.CertificateStatus{},
 		},
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Equal(t, certerror.ErrNoRenewalTime, err)
@@ -123,18 +126,19 @@ func TestGetValidity_ClientCallSucceeds_Returns(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.Equal(t, clientStub.object.Status.NotBefore.Time, notBefore)
@@ -158,18 +162,19 @@ func TestGetValidity_CertificateContainsNoNotBefore_ReturnsError(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.ErrorIs(t, err, certerror.ErrNoNotBefore)
 	assert.True(t, notBefore.IsZero())
@@ -193,18 +198,19 @@ func TestGetValidity_CertificateContainsNoNotAfter_ReturnsError(t *testing.T) {
 			},
 		},
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.ErrorIs(t, err, certerror.ErrNoNotAfter)
 	assert.True(t, notBefore.IsZero())
@@ -216,10 +222,9 @@ func TestGetValidity_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
@@ -227,8 +232,9 @@ func TestGetValidity_ClientReturnsAnError_ReturnsError(t *testing.T) {
 			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to get certificate")

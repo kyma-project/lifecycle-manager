@@ -24,19 +24,21 @@ func GetCacheObjects() []client.Object {
 }
 
 type CertificateRepository struct {
-	kcpClient    client.Client
-	issuerName   string
-	namespace    string
-	configValues config.CertificateValues
+	kcpClient  client.Client
+	issuerName string
+	certConfig config.CertificateValues
 }
 
-func NewCertificateRepository(kcpClient client.Client, issuerName, namespace string, certValues config.CertificateValues) *CertificateRepository {
+func NewCertificateRepository(kcpClient client.Client, issuerName string, certConfig config.CertificateValues) (*CertificateRepository, error) {
+	if certConfig.Namespace == "" {
+		return nil, certerror.ErrCertRepoConfigNamespace
+	}
+
 	return &CertificateRepository{
 		kcpClient,
 		issuerName,
-		namespace,
-		certValues,
-	}
+		certConfig,
+	}, nil
 }
 
 func (c *CertificateRepository) Create(ctx context.Context, name, commonName string, dnsNames []string) error {
@@ -47,12 +49,12 @@ func (c *CertificateRepository) Create(ctx context.Context, name, commonName str
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.namespace,
+			Namespace: c.certConfig.Namespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
 			CommonName:  commonName,
-			Duration:    &apimetav1.Duration{Duration: c.configValues.Duration},
-			RenewBefore: &apimetav1.Duration{Duration: c.configValues.RenewBefore},
+			Duration:    &apimetav1.Duration{Duration: c.certConfig.Duration},
+			RenewBefore: &apimetav1.Duration{Duration: c.certConfig.RenewBefore},
 			DNSNames:    dnsNames,
 			SecretName:  name,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
@@ -71,7 +73,7 @@ func (c *CertificateRepository) Create(ctx context.Context, name, commonName str
 				RotationPolicy: certmanagerv1.RotationPolicyAlways,
 				Encoding:       certmanagerv1.PKCS1,
 				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
-				Size:           c.configValues.KeySize,
+				Size:           c.certConfig.KeySize,
 			},
 		},
 	}
@@ -93,17 +95,17 @@ func (c *CertificateRepository) Create(ctx context.Context, name, commonName str
 func (c *CertificateRepository) Delete(ctx context.Context, name string) error {
 	cert := &certmanagerv1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(c.namespace)
+	cert.SetNamespace(c.certConfig.Namespace)
 
 	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, c.namespace, err)
+		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, c.certConfig.Namespace, err)
 	}
 
 	return nil
 }
 
 func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string) (time.Time, error) {
-	cert, err := c.getCertificate(ctx, name, c.namespace)
+	cert, err := c.getCertificate(ctx, name)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -116,7 +118,7 @@ func (c *CertificateRepository) GetRenewalTime(ctx context.Context, name string)
 }
 
 func (c *CertificateRepository) GetValidity(ctx context.Context, name string) (time.Time, time.Time, error) {
-	cert, err := c.getCertificate(ctx, name, c.namespace)
+	cert, err := c.getCertificate(ctx, name)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
@@ -132,13 +134,13 @@ func (c *CertificateRepository) GetValidity(ctx context.Context, name string) (t
 	return cert.Status.NotBefore.Time, cert.Status.NotAfter.Time, nil
 }
 
-func (c *CertificateRepository) getCertificate(ctx context.Context, name, namespace string) (*certmanagerv1.Certificate, error) {
+func (c *CertificateRepository) getCertificate(ctx context.Context, name string) (*certmanagerv1.Certificate, error) {
 	cert := &certmanagerv1.Certificate{}
 	cert.SetName(name)
-	cert.SetNamespace(namespace)
+	cert.SetNamespace(c.certConfig.Namespace)
 
 	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
-		return nil, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
+		return nil, fmt.Errorf("failed to get certificate %s-%s: %w", name, c.certConfig.Namespace, err)
 	}
 
 	return cert, nil

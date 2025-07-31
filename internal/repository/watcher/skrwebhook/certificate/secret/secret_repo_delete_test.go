@@ -15,9 +15,9 @@ import (
 
 func TestDelete_ClientCallSucceeds_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{}
-	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
+	secretRepository := secret.NewCertificateSecretRepository(clientStub, namespace)
 
-	err := secretClient.Delete(t.Context(), secretName)
+	err := secretRepository.Delete(t.Context(), secretName)
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)
@@ -30,9 +30,9 @@ func TestDelete_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
+	secretRepository := secret.NewCertificateSecretRepository(clientStub, namespace)
 
-	err := secretClient.Delete(t.Context(), secretName)
+	err := secretRepository.Delete(t.Context(), secretName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.True(t, clientStub.called)
@@ -42,9 +42,9 @@ func TestDelete_ClientReturnsNotFoundError_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: apierrors.NewNotFound(apicorev1.Resource("secrets"), secretName),
 	}
-	secretClient := secret.NewCertificateSecretRepository(clientStub, namespace)
+	secretRepository := secret.NewCertificateSecretRepository(clientStub, namespace)
 
-	err := secretClient.Delete(t.Context(), secretName)
+	err := secretRepository.Delete(t.Context(), secretName)
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)

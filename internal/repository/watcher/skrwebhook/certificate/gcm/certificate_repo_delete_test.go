@@ -15,7 +15,7 @@ import (
 
 func TestDelete_ClientCallSucceeds_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -28,7 +28,7 @@ func TestDelete_ClientCallSucceeds_Returns(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = certClient.Delete(t.Context(), certName)
+	err = certificateRepository.Delete(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)
@@ -41,7 +41,7 @@ func TestDelete_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -54,7 +54,7 @@ func TestDelete_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = certClient.Delete(t.Context(), certName)
+	err = certificateRepository.Delete(t.Context(), certName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to delete certificate")

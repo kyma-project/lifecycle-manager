@@ -24,8 +24,8 @@ import (
 )
 
 var (
-	errUnresolvedKcpAddress   = errors.New("failed to resolve KCP address, please check the gateway configuration")
-	errCertClientNotSupported = errors.New("certificate client not supported, please check the certificate management configuration")
+	errUnresolvedKcpAddress                = errors.New("failed to resolve KCP address, please check the gateway configuration")
+	errCertReposImplementationNotSupported = errors.New("certificate client not supported, please check the certificate management configuration")
 )
 
 func ComposeSkrWebhookManager(kcpClient client.Client,
@@ -75,16 +75,15 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,
-		Namespace:   flagVar.RemoteSyncNamespace,
+		Namespace:   flagVar.IstioNamespace,
 	}
 
 	var certRepoImpl certificate.CertRepository
 	var err error
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		certRepoImpl = certmanager.NewCertificateRepository(kcpClient,
+		certRepoImpl, err = certmanager.NewCertificateRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
-			flagVar.IstioNamespace,
 			certificateConfig)
 	case gcertv1alpha1.SchemeGroupVersion.String():
 		certRepoImpl, err = gcm.NewCertificateRepository(kcpClient,
@@ -95,7 +94,7 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 			return nil, err
 		}
 	default:
-		return nil, errCertClientNotSupported
+		return nil, errCertReposImplementationNotSupported
 	}
 
 	config := certificate.Config{

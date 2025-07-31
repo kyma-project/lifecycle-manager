@@ -36,7 +36,7 @@ func TestGetRenewalTime_ClientCallSucceedsAndRenewalTimeParsing_Success(t *testi
 			},
 		},
 	}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -49,7 +49,7 @@ func TestGetRenewalTime_ClientCallSucceedsAndRenewalTimeParsing_Success(t *testi
 	)
 	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.NoError(t, err)
 	// compare as strings as renewalTime lost some ticks during string conversion and parsing
@@ -61,7 +61,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -74,7 +74,7 @@ func Test_CertificateClient_GetRenewalTime_Error(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to get certificate")
@@ -96,7 +96,7 @@ func Test_CertificateClient_GetRenewalTime_Error_NoExpirationDate(t *testing.T) 
 			Status: gcertv1alpha1.CertificateStatus{},
 		},
 	}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -109,7 +109,7 @@ func Test_CertificateClient_GetRenewalTime_Error_NoExpirationDate(t *testing.T) 
 	)
 	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.ErrorIs(t, err, certificate.ErrNoRenewalTime)
 	assert.Contains(t, err.Error(), "no expiration date")
@@ -133,7 +133,7 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 			},
 		},
 	}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -146,7 +146,7 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 	)
 	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse certificate's expiration date")
@@ -160,10 +160,10 @@ func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to %v",
 		expectedNotBefore, expectedNotAfter)
 
-	certClient, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedNotBefore, notBefore)
@@ -175,7 +175,7 @@ func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
 		err: assert.AnError,
 	}
 
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -188,7 +188,7 @@ func Test_CertificateClient_GetValidity_GetCertificateError(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	renewalTime, err := certClient.GetRenewalTime(t.Context(), certName)
+	renewalTime, err := certificateRepository.GetRenewalTime(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get certificate")
@@ -212,7 +212,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 			},
 		},
 	}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -225,7 +225,7 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, gcm.ErrCertificateStatusNotContainMessage)
@@ -237,10 +237,10 @@ func Test_CertificateClient_GetValidity_NilMessageError(t *testing.T) {
 func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 	certificateStateMessage := "certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid"
 
-	certClient, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, gcm.ErrInputStringNotContainValidDates)
@@ -253,10 +253,10 @@ func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) 
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from 2025-04-24 13:60:60.148938 +0000 UTC to %v",
 		expectedNotAfter)
 
-	certClient, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse notBefore date")
@@ -269,10 +269,10 @@ func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to 2025-04-24 13:60:60.148938 +0000 UTC",
 		expectedNotBefore)
 
-	certClient, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
+	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
 
-	notBefore, notAfter, err := certClient.GetValidity(t.Context(), certName)
+	notBefore, notAfter, err := certificateRepository.GetValidity(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse notAfter date")

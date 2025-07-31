@@ -57,18 +57,19 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 		},
 	}
 	clientStub := &patchClientStub{}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	err := certClient.Create(t.Context(),
+	err = certificateRepository.Create(t.Context(),
 		certName,
 		certCommonNameName,
 		certDNSNames,
@@ -84,18 +85,20 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &patchClientStub{
 		err: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
 
-	err := certClient.Create(t.Context(),
+	require.NoError(t, err)
+
+	err = certificateRepository.Create(t.Context(),
 		certName,
 		certCommonNameName,
 		certDNSNames,

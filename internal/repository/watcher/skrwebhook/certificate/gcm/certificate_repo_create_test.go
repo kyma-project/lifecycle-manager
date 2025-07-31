@@ -43,7 +43,7 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 	}
 
 	clientStub := &patchClientStub{}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -56,7 +56,7 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = certClient.Create(t.Context(),
+	err = certificateRepository.Create(t.Context(),
 		certName,
 		certCommonName,
 		certDNSNames,
@@ -72,7 +72,7 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &patchClientStub{
 		err: assert.AnError,
 	}
-	certClient, err := gcm.NewCertificateRepository(
+	certificateRepository, err := gcm.NewCertificateRepository(
 		clientStub,
 		issuerName,
 		issuerNamespace,
@@ -85,7 +85,7 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = certClient.Create(t.Context(),
+	err = certificateRepository.Create(t.Context(),
 		certName,
 		certCommonName,
 		certDNSNames,

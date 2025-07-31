@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/config"
+	certerror "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/skrwebhook/certificate/errors"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
@@ -30,4 +32,15 @@ func Test_GetCacheObjects(t *testing.T) {
 	objects := certmanager.GetCacheObjects()
 	require.Len(t, objects, 1)
 	assert.IsType(t, &certmanagerv1.Certificate{}, objects[0])
+}
+
+func TestNew_Namespace_Error(t *testing.T) {
+	certClient, err := certmanager.NewCertificateRepository(
+		nil,
+		issuerName,
+		config.CertificateValues{},
+	)
+
+	require.ErrorIs(t, err, certerror.ErrCertRepoConfigNamespace)
+	assert.Nil(t, certClient)
 }

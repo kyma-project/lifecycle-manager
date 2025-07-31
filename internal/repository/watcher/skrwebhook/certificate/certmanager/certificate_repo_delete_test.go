@@ -16,18 +16,19 @@ import (
 
 func TestDelete_WhenCalledAndClientCallSucceeds_Returns(t *testing.T) {
 	clientStub := &deleteClientStub{}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	err := certClient.Delete(t.Context(), certName)
+	err = certificateRepository.Delete(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)
@@ -40,18 +41,19 @@ func TestDelete_WhenCalledAndClientReturnsNotFoundError_IgnoresItAndReturns(t *t
 	clientStub := &deleteClientStub{
 		err: apierrors.NewNotFound(certmanagerv1.Resource("certificates"), certName),
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	err := certClient.Delete(t.Context(), certName)
+	err = certificateRepository.Delete(t.Context(), certName)
 
 	require.NoError(t, err)
 	assert.True(t, clientStub.called)
@@ -64,18 +66,19 @@ func TestDelete_WhenCalledAndClientReturnsOtherError_ReturnsError(t *testing.T) 
 	clientStub := &deleteClientStub{
 		err: assert.AnError,
 	}
-	certClient := certmanager.NewCertificateRepository(
+	certificateRepository, err := certmanager.NewCertificateRepository(
 		clientStub,
 		issuerName,
-		certNamespace,
 		config.CertificateValues{
 			Duration:    certDuration,
 			RenewBefore: certRenewBefore,
 			KeySize:     certKeySize,
+			Namespace:   certNamespace,
 		},
 	)
+	require.NoError(t, err)
 
-	err := certClient.Delete(t.Context(), certName)
+	err = certificateRepository.Delete(t.Context(), certName)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to delete certificate")
