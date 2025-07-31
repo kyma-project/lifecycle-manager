@@ -126,7 +126,7 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 
 		existingEnvValue, found := envVar["value"]
 		if !found {
-			continue // No value to rewrite
+			continue // No `value` attribute (may use `valueFrom`), skip this environment variable
 		}
 
 		envVarValueStr, ok := existingEnvValue.(string)
