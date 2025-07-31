@@ -24,7 +24,10 @@ func TestAssertDeploymentReady_ReturnsNoError_WhenDeploymentReady(t *testing.T) 
 		*deployment = *readyDeployment
 		return nil
 	}
-	mockClnt := &mockClient{getFunc: getFunc}
+	listFunc := func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+		return nil
+	}
+	mockClnt := &mockClient{getFunc: getFunc, listFunc: listFunc}
 	ctx := t.Context()
 
 	err := watcher.AssertDeploymentReady(ctx, mockClnt)
@@ -42,7 +45,10 @@ func TestAssertDeploymentReady_ReturnsError_WhenDeploymentNotReady(t *testing.T)
 		*deployment = *notReadyDeployment
 		return nil
 	}
-	mockClnt := &mockClient{getFunc: getFunc}
+	listFunc := func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+		return nil
+	}
+	mockClnt := &mockClient{getFunc: getFunc, listFunc: listFunc}
 	ctx := t.Context()
 
 	err := watcher.AssertDeploymentReady(ctx, mockClnt)
@@ -55,7 +61,10 @@ func TestAssertDeploymentReady_ReturnsError_WhenClientReturnsError(t *testing.T)
 	notFoundFunc := func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 		return unexpectedError
 	}
-	mockClnt := &mockClient{getFunc: notFoundFunc}
+	listFunc := func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+		return nil
+	}
+	mockClnt := &mockClient{getFunc: notFoundFunc, listFunc: listFunc}
 	ctx := t.Context()
 
 	err := watcher.AssertDeploymentReady(ctx, mockClnt)
