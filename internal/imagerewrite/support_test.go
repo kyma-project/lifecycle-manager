@@ -49,6 +49,10 @@ const testDeploymentSingleContainerWithEnvs = testDeploymentNoEnvsContainer + `
           value: localhost:5000/foo-image:1.2.3
         - name: BAR
           value: example.com/myrepo/bar-image:4.5.6
+        - name: TEST_NAMESPACE_A
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
 `
 
 // testDeploymentTwoContainers is a deployment with two containers, both having environment variables set.
@@ -61,6 +65,10 @@ const testDeploymentTwoContainers = testDeploymentSingleContainerWithEnvs + `
           value: europe-docker.pkg.dev/second-container/env/qux-image:1.2.3
         - name: BAZ
           value: example.com/second-container/baz-image:4.5.6
+        - name: TEST_NAMESPACE_B
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         image: example.com/second-container/operator-image:7.8.9
         command:
         - /manager
@@ -81,6 +89,10 @@ const testDeploymentWithInitContainer = testDeploymentSingleContainerWithEnvs + 
           value: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3
         - name: BAZ
           value: example.com/myrepo/baz-image:4.5.6
+        - name: TEST_NAMESPACE_C
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         imagePullPolicy: Always
 `
 
@@ -94,11 +106,43 @@ const testDeploymentTwoContainersWithInitContainer = testDeploymentTwoContainers
         args:
         - --arg1=value1
         env:
+        - name: TEST_NAMESPACE_D
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: DB_CONTAINER
           value: example.com/sql/db-image:0.3.1
         - name: MQ_CONTAINER
           value: example.com/message/queue-impl:1.3.0
         imagePullPolicy: Always
+`
+
+// testDeploymentSingleContainerNoImage is a deployment with a single container that has no "image" attribute.
+const testDeploymentSingleContainerNoImage = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: template-operator-controller-manager
+  namespace: template-operator-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: template-operator.kyma-project.io
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        app.kubernetes.io/component: template-operator.kyma-project.io
+        thisShouldntBeChanged: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3
+    spec:
+      containers:
+      - name: manager
+        args:
+        - --leader-elect
+        imagePullPolicy: Always
+        command:
+        - /manager
 `
 
 const testCronJob = `

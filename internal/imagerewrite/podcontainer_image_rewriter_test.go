@@ -110,4 +110,32 @@ func TestPodContainerImageRewriter(t *testing.T) {
 		rewrittenYAML := mustYAML(deploymentResource)
 		assert.Equal(t, unmodifiedYAML, rewrittenYAML, "Expected no changes in the rewritten YAML") //nolint: testifylint // I want to test for equality, not for equivalence
 	})
+
+	t.Run("RewriteSingleContainerWithoutImageAttribute", func(t *testing.T) {
+		t.Parallel()
+		// given
+		targetImages, _ := imagerewrite.AsImageReferences(reorder(37, []string{
+			"private-registry.com/prod/template-operator:1.0.4",
+			"private-registry.com/stage/other-operator:1.2.3",
+			"private-registry.com/prod/foo-image:3.2.1",
+		}))
+
+		containerImgRewriter := imagerewrite.PodContainerImageRewriter{}
+
+		deploymentResource, err := parseToUnstructured(testDeploymentSingleContainerNoImage)
+		require.NoError(t, err, "Failed to parse test deployment to unstructured")
+		unmodifiedYAML := mustYAML(deploymentResource) // Store the original YAML for comparison later
+		containerResource := getFirstContainer(t, deploymentResource)
+		require.NoError(t, err, "Failed to get first container from deployment resource")
+
+		// when
+		err = containerImgRewriter.Rewrite(targetImages, containerResource)
+		require.NoError(t, err, "Failed to rewrite container images")
+		err = setFirstContainer(t, deploymentResource, containerResource)
+		require.NoError(t, err, "Failed to set first container in deployment resource")
+
+		// then
+		rewrittenYAML := mustYAML(deploymentResource)
+		assert.Equal(t, unmodifiedYAML, rewrittenYAML, "Expected no changes in the rewritten YAML") //nolint: testifylint // I want to test for equality, not for equivalence
+	})
 }
