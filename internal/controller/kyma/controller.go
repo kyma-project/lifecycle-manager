@@ -432,11 +432,15 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 				return err
 			}
 			skrClient, _ := r.SkrContextFactory.Get(client.ObjectKeyFromObject(kyma))
-			if err := watcher.AssertDeploymentReady(ctx, skrClient); err != nil {
+			err := watcher.AssertDeploymentReady(ctx, skrClient)
+			if err != nil {
 				kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
-			} else {
-				kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionTrue)
+				if errors.Is(err, watcher.ErrSkrWebhookDeploymentInBackoff) {
+					return err
+				}
+				return nil
 			}
+			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionTrue)
 			return nil
 		})
 	}

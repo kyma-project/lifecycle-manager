@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -60,6 +61,47 @@ func TestAssertDeploymentReady_ReturnsError_WhenClientReturnsError(t *testing.T)
 	err := watcher.AssertDeploymentReady(ctx, mockClnt)
 	require.Error(t, err)
 	require.ErrorIs(t, err, unexpectedError)
+}
+
+func TestAssertDeploymentReady_ReturnsError_WhenDeploymentInBackoff(t *testing.T) {
+	deployment := &apiappsv1.Deployment{
+		Status: apiappsv1.DeploymentStatus{
+			ReadyReplicas: 0,
+		},
+	}
+	podList := &apicorev1.PodList{
+		Items: []apicorev1.Pod{{
+			Status: apicorev1.PodStatus{
+				ContainerStatuses: []apicorev1.ContainerStatus{{
+					State: apicorev1.ContainerState{
+						Waiting: &apicorev1.ContainerStateWaiting{
+							Reason: "CrashLoopBackOff",
+						},
+					},
+				}},
+			},
+		}},
+	}
+	getFunc := func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+		deploymentObj, ok := obj.(*apiappsv1.Deployment)
+		if ok {
+			*deploymentObj = *deployment
+		}
+		return nil
+	}
+	listFunc := func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+		podListObj, ok := list.(*apicorev1.PodList)
+		if ok {
+			*podListObj = *podList
+		}
+		return nil
+	}
+	mockClnt := &mockClient{getFunc: getFunc, listFunc: listFunc}
+	ctx := t.Context()
+
+	err := watcher.AssertDeploymentReady(ctx, mockClnt)
+	require.Error(t, err)
+	require.ErrorIs(t, err, watcher.ErrSkrWebhookDeploymentInBackoff)
 }
 
 // Stub for tests
