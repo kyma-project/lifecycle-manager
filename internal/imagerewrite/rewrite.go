@@ -75,7 +75,7 @@ type PodContainerImageRewriter struct{}
 func (r *PodContainerImageRewriter) Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error {
 	existingImageValue, found, err := unstructured.NestedString(podContainer.Object, "image")
 	if err != nil {
-		return fmt.Errorf("%w: not found", ErrFindingImageInPodContainer)
+		return fmt.Errorf("%w: %v", ErrFindingImageInPodContainer, err.Error())
 	}
 	if !found {
 		// No image found in the pod container, nothing to rewrite
