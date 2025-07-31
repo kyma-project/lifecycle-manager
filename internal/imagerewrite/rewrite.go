@@ -125,10 +125,11 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 		}
 
 		existingEnvValue, found := envVar["value"]
-		envVarValueStr, ok := existingEnvValue.(string)
 		if !found {
 			continue // No value to rewrite
 		}
+
+		envVarValueStr, ok := existingEnvValue.(string)
 		if !ok {
 			return fmt.Errorf("%w: invalid type for value: %T (expected a string)", ErrUnexpectedEnvVarType, existingEnvValue)
 		}
