@@ -30,6 +30,7 @@ packages:
   pkg/module/sync: 10
   pkg/templatelookup: 87
   pkg/templatelookup/moduletemplateinfolookup: 98
+  pkg/watcher: 5
   pkg/watcher/skr_webhook_resources: 82
   pkg/watcher/certificate: 100
   pkg/watcher/certificate/certmanager: 100
