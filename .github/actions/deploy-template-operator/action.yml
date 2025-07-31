@@ -156,6 +156,30 @@ runs:
           value: non-working/path:003" >> image_patch.yaml
         cat image_patch.yaml
         kustomize edit add patch --path image_patch.yaml --kind Deployment
+        echo \
+        "- op: replace
+          path: /spec/progressDeadlineSeconds
+          value: 60
+        - op: replace
+          path: /spec/template/spec/containers/0/livenessProbe
+          value:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
+        - op: replace
+          path: /spec/template/spec/containers/0/readinessProbe
+          value:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1">> probe_patch.yaml
+        cat probe_patch.yaml
+        kustomize edit add patch --path probe_patch.yaml --kind Deployment
         popd
         make build-manifests
         modulectl create --config-file ./misconfigured-module-config.yaml --registry http://localhost:5111 --insecure
