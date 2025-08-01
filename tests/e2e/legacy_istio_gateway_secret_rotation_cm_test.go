@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -12,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Legacy Istio Gateway Secret Rotation", Ordered, func() {
+var _ = Describe("Legacy Istio Gateway Secret Rotation With Cert-Manager", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -23,6 +24,9 @@ var _ = Describe("Legacy Istio Gateway Secret Rotation", Ordered, func() {
 				Name:      "klm-watcher",
 				Namespace: IstioNamespace,
 			}
+
+			By("And Lifecycle Manager is running without Gardener Cert Manager")
+			Expect(os.Getenv("E2E_USE_GARDENER_CERT_MANAGER")).To(BeEmpty())
 
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
 			Eventually(IstioGatewaySecretIsSyncedToRootCA, 4*time.Minute).
