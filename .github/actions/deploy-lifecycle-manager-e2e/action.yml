@@ -157,7 +157,7 @@ runs:
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --oci-registry-cred-secret=my-private-oci-reg-creds" >> private-oci-patch.yaml
+          value: --oci-registry-cred-secret=private-oci-reg-creds" >> private-oci-patch.yaml
         cat private-oci-patch.yaml
         kustomize edit add patch --path private-oci-patch.yaml --kind Deployment
         popd

@@ -2,6 +2,7 @@ package skrwebhook
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -12,25 +13,28 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/gateway"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/gardener"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 )
 
 var (
-	errUnresolvedKcpAddress   = errors.New("failed to resolve KCP address, please check the gateway configuration")
-	errCertClientNotSupported = errors.New("certificate client not supported, please check the certificate management configuration")
+	errUnresolvedKcpAddress                = errors.New("failed to resolve KCP address, please check the gateway configuration")
+	errCertReposImplementationNotSupported = errors.New("certificate client not supported, please check the certificate management configuration")
 )
 
-func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.SkrContextProvider,
-	repository gateway.IstioGatewayRepository, flagVar *flags.FlagVar,
+func ComposeSkrWebhookManager(kcpClient client.Client,
+	skrContextProvider remote.SkrContextProvider,
+	repository gateway.IstioGatewayRepository,
+	flagVar *flags.FlagVar,
 ) (*watcher.SkrWebhookManifestManager, error) {
-	certManager, err := setupCertManager(kcpClient, flagVar)
+	skrCertService, err := setupSKRCertService(kcpClient, flagVar)
 	if err != nil {
 		return nil, err
 	}
@@ -58,59 +62,53 @@ func ComposeSkrWebhookManager(kcpClient client.Client, skrContextFactory remote.
 
 	return watcher.NewSKRWebhookManifestManager(
 		kcpClient,
-		skrContextFactory,
+		skrContextProvider,
 		flagVar.RemoteSyncNamespace,
 		*resolvedKcpAddr,
 		chartReaderService,
-		certManager,
+		skrCertService,
 		resourceConfigurator,
 		watcherMetrics)
 }
 
-func setupCertManager(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.CertificateManager, error) {
-	certClient, err := setupCertClient(kcpClient, flagVar)
-	if err != nil {
-		return nil, err
-	}
-	secretClient := secret.NewCertificateSecretClient(kcpClient)
-
-	config := certificate.CertificateManagerConfig{
-		SkrServiceName:               skrwebhookresources.SkrResourceName,
-		SkrNamespace:                 flagVar.RemoteSyncNamespace,
-		CertificateNamespace:         flagVar.IstioNamespace,
-		AdditionalDNSNames:           strings.Split(flagVar.AdditionalDNSNames, ","),
-		GatewaySecretName:            shared.GatewaySecretName,
-		RenewBuffer:                  flagVar.SelfSignedCertRenewBuffer,
-		SkrCertificateNamingTemplate: flagVar.SelfSignedCertificateNamingTemplate,
-	}
-
-	return certificate.NewCertificateManager(
-		certClient,
-		secretClient,
-		config,
-	), nil
-}
-
-func setupCertClient(kcpClient client.Client, flagVar *flags.FlagVar) (certificate.CertificateClient, error) {
-	certificateConfig := certificate.CertificateConfig{
+func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*certificate.Service, error) {
+	certificateConfig := config.CertificateValues{
 		Duration:    flagVar.SelfSignedCertDuration,
 		RenewBefore: flagVar.SelfSignedCertRenewBefore,
 		KeySize:     flagVar.SelfSignedCertKeySize,
+		Namespace:   flagVar.IstioNamespace,
 	}
 
+	var certRepoImpl certificate.CertificateRepository
+	var err error
 	switch flagVar.CertificateManagement {
 	case certmanagerv1.SchemeGroupVersion.String():
-		return certmanager.NewCertificateClient(kcpClient,
+		certRepoImpl, err = certmanagercertificate.NewRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
-			certificateConfig,
-		), nil
+			certificateConfig)
 	case gcertv1alpha1.SchemeGroupVersion.String():
-		return gardener.NewCertificateClient(kcpClient,
+		certRepoImpl, err = gcmcertificate.NewRepository(kcpClient,
 			flagVar.SelfSignedCertificateIssuerName,
 			flagVar.SelfSignedCertIssuerNamespace,
-			certificateConfig,
-		)
+			certificateConfig)
 	default:
-		return nil, errCertClientNotSupported
+		return nil, errCertReposImplementationNotSupported
 	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create certificate repository: %w", err)
+	}
+
+	certServiceConfig := certificate.Config{
+		SkrServiceName:     skrwebhookresources.SkrResourceName,
+		SkrNamespace:       flagVar.RemoteSyncNamespace,
+		AdditionalDNSNames: strings.Split(flagVar.AdditionalDNSNames, ","),
+		GatewaySecretName:  shared.GatewaySecretName,
+		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
+	}
+
+	return certificate.NewService(
+		certRepoImpl,
+		secret.NewRepository(kcpClient, flagVar.IstioNamespace),
+		certServiceConfig,
+	), nil
 }

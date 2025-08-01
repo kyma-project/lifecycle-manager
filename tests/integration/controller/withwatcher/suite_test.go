@@ -51,19 +51,20 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/chartreader"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrwebhook/gateway"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
@@ -186,28 +187,28 @@ var _ = BeforeSuite(func() {
 		Expect(k8sClient.Create(ctx, istioResource)).To(Succeed())
 	}
 
-	certificateConfig := certificate.CertificateConfig{
+	certificateConfig := config.CertificateValues{
 		Duration:    1 * time.Hour,
 		RenewBefore: 5 * time.Minute,
 		KeySize:     flags.DefaultSelfSignedCertKeySize,
+		Namespace:   flags.DefaultIstioNamespace,
 	}
 
-	certificateManagerConfig := certificate.CertificateManagerConfig{
-		SkrServiceName:               skrwebhookresources.SkrResourceName,
-		SkrNamespace:                 flags.DefaultRemoteSyncNamespace,
-		CertificateNamespace:         flags.DefaultIstioNamespace,
-		AdditionalDNSNames:           []string{},
-		GatewaySecretName:            shared.GatewaySecretName,
-		RenewBuffer:                  flags.DefaultSelfSignedCertificateRenewBuffer,
-		SkrCertificateNamingTemplate: "%s-webhook-tls",
+	certificateManagerConfig := certificate.Config{
+		SkrServiceName:     skrwebhookresources.SkrResourceName,
+		SkrNamespace:       flags.DefaultRemoteSyncNamespace,
+		AdditionalDNSNames: []string{},
+		GatewaySecretName:  shared.GatewaySecretName,
+		RenewBuffer:        flags.DefaultSelfSignedCertificateRenewBuffer,
 	}
-
-	certificateManager := certificate.NewCertificateManager(
-		certmanager.NewCertificateClient(mgr.GetClient(),
-			"test-issuer",
-			certificateConfig,
-		),
-		secret.NewCertificateSecretClient(mgr.GetClient()),
+	certRepo, err := certmanagercertificate.NewRepository(mgr.GetClient(),
+		"test-issuer",
+		certificateConfig,
+	)
+	Expect(err).ToNot(HaveOccurred())
+	certificateService := certificate.NewService(
+		certRepo,
+		secret.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace),
 		certificateManagerConfig,
 	)
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
@@ -231,7 +232,7 @@ var _ = BeforeSuite(func() {
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(kcpClient, testSkrContextFactory,
 		flags.DefaultRemoteSyncNamespace,
-		*resolvedKcpAddr, chartReaderService, certificateManager, resourceConfigurator, metrics.NewWatcherMetrics())
+		*resolvedKcpAddr, chartReaderService, certificateService, resourceConfigurator, metrics.NewWatcherMetrics())
 	Expect(err).ToNot(HaveOccurred())
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}

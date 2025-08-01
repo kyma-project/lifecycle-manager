@@ -75,6 +75,7 @@ jobs:
           - watcher-zero-downtime
           - module-deletion-with-multiple-crs-create-and-delete-policy
           - module-deletion-with-multiple-crs-ignore-policy
+          - oci-reg-cred-secret
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -105,6 +106,11 @@ jobs:
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
+
+      - name: Setup private registry
+        if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
+        uses: ./lifecycle-manager/.github/actions/setup-private-registry
+
       - name: Deploy lifecycle-manager
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:

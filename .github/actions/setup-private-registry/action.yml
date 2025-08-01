@@ -1,0 +1,38 @@
+name: Setup private registry
+description: Creates and configures a private registry.
+runs:
+  using: composite
+  steps:
+    - name: generate-credentials
+      shell: bash
+      run: |
+        mkdir -p ~/registry-auth
+        docker run --rm httpd:2.4-alpine htpasswd -Bbn myuser mypass > ~/registry-auth/htpasswd
+
+    - name: run-auth-registry
+      shell: bash
+      run: |
+        docker run -d \
+        --restart=always \
+        -p [::]:5001:5000 \
+        --name private-oci-reg.localhost \
+        -v ~/registry-auth:/auth \
+        -e "REGISTRY_AUTH=htpasswd" \
+        -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+        -e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
+        registry:2
+
+    - name: connect-to-k3d-network
+      shell: bash
+      run: |
+          docker network connect k3d-kcp private-oci-reg.localhost
+
+    - name: create-and-apply-secret
+      shell: bash
+      run: |
+        kubectl create secret docker-registry private-oci-reg-creds \
+        --docker-server=http://private-oci-reg.localhost:5000 \
+        --docker-username=myuser \
+        --docker-password=mypass \
+        --docker-email=dummy@example.com \
+        -n kcp-system
