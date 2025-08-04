@@ -106,9 +106,5 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	return certificate.NewService(
-		certRepoImpl,
-		secret.NewRepository(kcpClient, flagVar.IstioNamespace),
-		certServiceConfig,
-	), nil
+	return certificate.NewService(nil, certRepoImpl, secret.NewRepository(kcpClient, flagVar.IstioNamespace), certServiceConfig), nil
 }
