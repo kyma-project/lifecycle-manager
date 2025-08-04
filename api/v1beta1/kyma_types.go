@@ -80,7 +80,7 @@ type KymaSpec struct {
 	SkipMaintenanceWindows bool `json:"skipMaintenanceWindows,omitempty"`
 
 	// Modules specifies the list of modules to be installed
-	Modules []v1beta2.Module `json:"modules,omitempty"`
+	Modules []Module `json:"modules,omitempty"`
 
 	// Active Synchronization Settings
 	// +optional
@@ -95,6 +95,64 @@ type KymaList struct {
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []Kyma `json:"items"`
 }
+
+// Module defines the components to be installed.
+type Module struct {
+	// Name is a unique identifier of the module.
+	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
+	//
+	// Name can only be the ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
+	Name string `json:"name"`
+
+	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
+	// together with Cache Configuration on the Operator responsible for the templated Modules to split
+	// workload.
+	ControllerName string `json:"controller,omitempty"`
+
+	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
+	// ModuleTemplate based on the new resolved resources.
+	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:MaxLength:=32
+	// +kubebuilder:validation:MinLength:=3
+	Channel string `json:"channel,omitempty"`
+
+	// Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
+	// ModuleTemplate based on this specific version.
+	// The Version and Channel are mutually exclusive options.
+	// The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	// json:"-" to disable installation of specific versions until decided to roll this out
+	// see https://github.com/kyma-project/lifecycle-manager/issues/1847
+	Version string `json:"-"`
+
+	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
+	// It will be removed in the upcoming API version.
+	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef,omitempty"`
+
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
+	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
+	// for the lifecycle of the module.
+	// +kubebuilder:default:=true
+	Managed bool `json:"managed"`
+}
+
+// CustomResourcePolicy determines how a ModuleTemplate should be parsed. When CustomResourcePolicy is set to
+// CustomResourcePolicyCreateAndDelete, the Manifest will receive instructions to create it on installation with
+// the default values provided in ModuleTemplate, and to remove it when the module or Kyma is deleted.
+// +kubebuilder:validation:Enum=CreateAndDelete;Ignore
+type CustomResourcePolicy string
+
+const (
+	// CustomResourcePolicyCreateAndDelete causes the Manifest to contain the default data provided in ModuleTemplate.
+	// While Updates from the Data are never propagated, the resource is deleted on module removal.
+	CustomResourcePolicyCreateAndDelete = "CreateAndDelete"
+	// CustomResourcePolicyIgnore does not pass the Data from ModuleTemplate.
+	// This ensures the user of the module is able to initialize the Module without any default configuration.
+	// This is useful if another controller should manage module configuration as data and not be auto-initialized.
+	// It can also be used to initialize controllers without interacting with them.
+	CustomResourcePolicyIgnore = "Ignore"
+)
 
 //nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
