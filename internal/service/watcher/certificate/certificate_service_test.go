@@ -39,7 +39,7 @@ var (
 func Test_CertificateManager_CreateSkrCertificate_Success(t *testing.T) {
 	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		AdditionalDNSNames: additionalDNSNames,
 		SkrServiceName:     skrServiceName,
 		SkrNamespace:       skrNamespace,
@@ -76,7 +76,7 @@ func Test_CertificateManager_CreateSkrCertificate_Error(t *testing.T) {
 		createErr: assert.AnError,
 	}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		AdditionalDNSNames: additionalDNSNames,
 	})
 
@@ -99,7 +99,7 @@ func Test_CertificateManager_CreateSkrCertificate_Error(t *testing.T) {
 func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationMissing(t *testing.T) {
 	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		AdditionalDNSNames: additionalDNSNames,
 	})
 
@@ -120,7 +120,7 @@ func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationMissing(t *
 func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationEmpty(t *testing.T) {
 	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		AdditionalDNSNames: additionalDNSNames,
 	})
 
@@ -144,7 +144,7 @@ func Test_CertificateManager_CreateSkrCertificate_ErrDomainAnnotationEmpty(t *te
 func Test_CertificateManager_DeleteSkrCertificate_Success(t *testing.T) {
 	certClientStub := &certRepositoryStub{}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{})
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{})
 
 	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
 
@@ -160,7 +160,7 @@ func Test_CertificateManager_DeleteSkrCertificate_Error_OnCertificate(t *testing
 		deleteErr: assert.AnError,
 	}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{})
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{})
 
 	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
 
@@ -175,7 +175,7 @@ func Test_CertificateManager_DeleteSkrCertificate_Error_OnSecret(t *testing.T) {
 	secretClientStub := &certificateSecretClientStub{
 		deleteErr: assert.AnError,
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{})
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{})
 
 	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
 
@@ -211,7 +211,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew(t *testing.T) {
 			},
 		},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -249,7 +249,7 @@ func Test_CertificateManager_RenewSkrCertificate_NoRenew(t *testing.T) {
 			},
 		},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -284,7 +284,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_NoLastModified(t *testing
 			},
 		},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -322,7 +322,7 @@ func Test_CertificateManager_RenewSkrCertificate_Renew_InvalidLastModified(t *te
 			},
 		},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -353,7 +353,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_GatewaySecret(t *testing.
 		},
 		getErrors: []error{assert.AnError},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -384,7 +384,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_SkrSecret(t *testing.T) {
 		},
 		getErrors: []error{nil, assert.AnError},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -423,7 +423,7 @@ func Test_CertificateManager_RenewSkrCertificate_Error_Delete(t *testing.T) {
 		},
 		deleteErr: assert.AnError,
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -442,7 +442,7 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue(t *testing.T) {
 		renewalTime: time.Now().Add(-renewBuffer - time.Second),
 	}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
@@ -459,7 +459,7 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue_NotOverdue(t *testin
 		renewalTime: time.Now().Add(-renewBuffer + time.Second),
 	}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
@@ -475,7 +475,7 @@ func Test_CertificateManager_IsSkrCertificateRenewalOverdue_Error(t *testing.T) 
 		getRenewalTimeErr: assert.AnError,
 	}
 	secretClientStub := &certificateSecretClientStub{}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
@@ -499,7 +499,7 @@ func Test_CertificateManager_GetSkrCertificateSecret(t *testing.T) {
 			},
 		},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{})
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{})
 
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
@@ -515,7 +515,7 @@ func Test_CertificateManager_GetSkrCertificateSecret_Error(t *testing.T) {
 	secretClientStub := &certificateSecretClientStub{
 		getErrors: []error{assert.AnError},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{})
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{})
 
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
@@ -532,7 +532,7 @@ func Test_CertificateManager_GetSkrCertificateSecret_NotFound(t *testing.T) {
 			apierrors.NewNotFound(apicorev1.Resource("secrets"), fmt.Sprintf(expectedCertNameSuffix, kymaName)),
 		},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{})
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{})
 
 	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
 
@@ -554,7 +554,7 @@ func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
 			},
 		},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -572,7 +572,7 @@ func Test_CertificateManager_GetGatewayCertificateSecret_Error(t *testing.T) {
 	secretClientStub := &certificateSecretClientStub{
 		getErrors: []error{assert.AnError},
 	}
-	manager := certificate.NewService(nil, certClientStub, secretClientStub, certificate.Config{
+	manager := certificate.NewService(&renewalServiceStub{}, certClientStub, secretClientStub, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
@@ -707,7 +707,7 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			c := certificate.NewService(nil, testCase.fields.certClient, testCase.fields.secretClient, testCase.fields.config)
+			c := certificate.NewService(&renewalServiceStub{}, testCase.fields.certClient, testCase.fields.secretClient, testCase.fields.config)
 			got, err := c.GetGatewayCertificateSecretData(t.Context())
 			if !testCase.wantErr(t, err) {
 				return
@@ -780,7 +780,7 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			c := certificate.NewService(nil, testCase.fields.certClient, testCase.fields.secretClient, testCase.fields.config)
+			c := certificate.NewService(&renewalServiceStub{}, testCase.fields.certClient, testCase.fields.secretClient, testCase.fields.config)
 			got, err := c.GetSkrCertificateSecretData(t.Context(), testCase.kymaName)
 			if !testCase.wantErr(t, err) {
 				return
@@ -793,4 +793,16 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 			}
 		})
 	}
+}
+
+type renewalServiceStub struct {
+	err error
+}
+
+func (r *renewalServiceStub) Renew(_ context.Context, _ string) error {
+	if r.err != nil {
+		return r.err
+	}
+
+	return nil
 }
