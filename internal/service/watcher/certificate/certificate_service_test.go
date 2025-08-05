@@ -37,7 +37,7 @@ var (
 )
 
 func TestCreateSkrCertificate_Success(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+	certRepo := &certRepoStub{}
 	certService := certificate.NewService(&renewalServiceStub{}, certRepo, &secretRepoStub{}, certificate.Config{
 		AdditionalDNSNames: additionalDNSNames,
 		SkrServiceName:     skrServiceName,
@@ -70,7 +70,7 @@ func TestCreateSkrCertificate_Success(t *testing.T) {
 }
 
 func TestCreateSkrCertificate_CertificateRepositoryReturnsError_ReturnsError(t *testing.T) {
-	certRepo := &certRepositoryStub{
+	certRepo := &certRepoStub{
 		createErr: assert.AnError,
 	}
 	certService := certificate.NewService(&renewalServiceStub{}, certRepo, &secretRepoStub{}, certificate.Config{
@@ -93,7 +93,7 @@ func TestCreateSkrCertificate_CertificateRepositoryReturnsError_ReturnsError(t *
 }
 
 func TestCreateSkrCertificate_ErrDomainAnnotationMissing_ReturnsError(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+	certRepo := &certRepoStub{}
 	certService := certificate.NewService(&renewalServiceStub{}, certRepo, &secretRepoStub{}, certificate.Config{
 		AdditionalDNSNames: additionalDNSNames,
 	})
@@ -112,7 +112,7 @@ func TestCreateSkrCertificate_ErrDomainAnnotationMissing_ReturnsError(t *testing
 }
 
 func TestCreateSkrCertificate_ErrDomainAnnotationEmpty_ReturnsError(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+	certRepo := &certRepoStub{}
 	certService := certificate.NewService(&renewalServiceStub{}, certRepo, &secretRepoStub{}, certificate.Config{
 		AdditionalDNSNames: additionalDNSNames,
 	})
@@ -133,12 +133,12 @@ func TestCreateSkrCertificate_ErrDomainAnnotationEmpty_ReturnsError(t *testing.T
 	assert.False(t, certRepo.createCalled)
 }
 
-func Test_CertificateManager_DeleteSkrCertificate_Success(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+func TestDeleteSkrCertificate_Success(t *testing.T) {
+	certRepo := &certRepoStub{}
 	secretRepo := &secretRepoStub{}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
+	certService := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
 
-	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
+	err := certService.DeleteSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, certRepo.deleteCalled)
@@ -147,32 +147,32 @@ func Test_CertificateManager_DeleteSkrCertificate_Success(t *testing.T) {
 	assert.Equal(t, kymaName+expectedCertNameSuffix, secretRepo.deleteName)
 }
 
-func Test_CertificateManager_DeleteSkrCertificate_Error_OnCertificate(t *testing.T) {
-	certRepo := &certRepositoryStub{
+func TestDeleteSkrCertificate_CertificateRepositoryReturnsError_ReturnsError(t *testing.T) {
+	certRepo := &certRepoStub{
 		deleteErr: assert.AnError,
 	}
 	secretRepo := &secretRepoStub{}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
+	certService := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
 
-	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
+	err := certService.DeleteSkrCertificate(t.Context(), kymaName)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to delete SKR certificate:")
+	require.ErrorContains(t, err, "failed to delete SKR certificate")
 	assert.True(t, certRepo.deleteCalled)
 	assert.False(t, secretRepo.deleteCalled)
 }
 
-func Test_CertificateManager_DeleteSkrCertificate_Error_OnSecret(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+func TestDeleteSkrCertificate_SecretRepositoryReturnsError_ReturnsError(t *testing.T) {
+	certRepo := &certRepoStub{}
 	secretRepo := &secretRepoStub{
 		deleteErr: assert.AnError,
 	}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
+	certService := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
 
-	err := manager.DeleteSkrCertificate(t.Context(), kymaName)
+	err := certService.DeleteSkrCertificate(t.Context(), kymaName)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to delete SKR certificate secret:")
+	require.ErrorContains(t, err, "failed to delete SKR certificate secret")
 	assert.True(t, certRepo.deleteCalled)
 	assert.True(t, secretRepo.deleteCalled)
 }
@@ -201,11 +201,11 @@ func TestRenewSkrCertificate_WhenSecretsIndicateRenew_CallsRenewalServiceRenew(t
 		},
 	}
 	renewalService := &renewalServiceStub{}
-	manager := certificate.NewService(renewalService, &certRepositoryStub{}, secretRepo, certificate.Config{
+	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	err := manager.RenewSkrCertificate(t.Context(), kymaName)
+	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, secretRepo.getCalled)
@@ -238,11 +238,11 @@ func TestRenewSkrCertificate_WhenSecretsIndicateNoRenew_RenewalServiceRenewIsNot
 		},
 	}
 	renewalService := &renewalServiceStub{}
-	manager := certificate.NewService(renewalService, &certRepositoryStub{}, secretRepo, certificate.Config{
+	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	err := manager.RenewSkrCertificate(t.Context(), kymaName)
+	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, secretRepo.getCalled)
@@ -272,11 +272,11 @@ func TestRenewSkrCertificate_GatewaySecretHasNoLastModified_CallsRenewalService(
 		},
 	}
 	renewalService := &renewalServiceStub{}
-	manager := certificate.NewService(renewalService, &certRepositoryStub{}, secretRepo, certificate.Config{
+	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	err := manager.RenewSkrCertificate(t.Context(), kymaName)
+	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, secretRepo.getCalled)
@@ -308,11 +308,11 @@ func TestRenewSkrCertificate_WhenGatewaySecretHasInvalidLastModified_CallsRenewa
 		},
 	}
 	renewalService := &renewalServiceStub{}
-	manager := certificate.NewService(renewalService, &certRepositoryStub{}, secretRepo, certificate.Config{
+	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	err := manager.RenewSkrCertificate(t.Context(), kymaName)
+	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, secretRepo.getCalled)
@@ -325,11 +325,11 @@ func TestRenewSkrCertificate_SecretRepositoryGetReturnsError_ReturnsError(t *tes
 		getErrors: []error{assert.AnError},
 	}
 	renewalService := &renewalServiceStub{}
-	manager := certificate.NewService(renewalService, &certRepositoryStub{}, secretRepo, certificate.Config{
+	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	err := manager.RenewSkrCertificate(t.Context(), kymaName)
+	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	require.ErrorContains(t, err, "failed to get gateway certificate secret")
@@ -363,11 +363,11 @@ func TestRenewSkrCertificate_RenewalServiceReturnsError_ReturnsError(t *testing.
 	renewalService := &renewalServiceStub{
 		err: assert.AnError,
 	}
-	manager := certificate.NewService(renewalService, &certRepositoryStub{}, secretRepo, certificate.Config{
+	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	err := manager.RenewSkrCertificate(t.Context(), kymaName)
+	err := certService.RenewSkrCertificate(t.Context(), kymaName)
 
 	require.ErrorIs(t, err, assert.AnError)
 	require.ErrorContains(t, err, "failed to delete SKR certificate secret")
@@ -376,59 +376,55 @@ func TestRenewSkrCertificate_RenewalServiceReturnsError_ReturnsError(t *testing.
 	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.lastCallArg)
 }
 
-func Test_CertificateManager_IsSkrCertificateRenewalOverdue(t *testing.T) {
-	certRepo := &certRepositoryStub{
+func TestIsSkrCertificateRenewalOverdue_WhenRenewalTimeMatches_ReturnsTrue(t *testing.T) {
+	certRepo := &certRepoStub{
 		// renewal time is one second out of buffer
 		renewalTime: time.Now().Add(-renewBuffer - time.Second),
 	}
-	secretRepo := &secretRepoStub{}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{
+	certService := certificate.NewService(&renewalServiceStub{}, certRepo, &secretRepoStub{}, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
-	overdue, err := manager.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
+	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.True(t, overdue)
 	assert.True(t, certRepo.getRenewalTimeCalled)
 }
 
-func Test_CertificateManager_IsSkrCertificateRenewalOverdue_NotOverdue(t *testing.T) {
-	certRepo := &certRepositoryStub{
+func TestIsSkrCertificateRenewalOverdue_ReturnsFalse(t *testing.T) {
+	certRepo := &certRepoStub{
 		// renewal time is one second within buffer
 		renewalTime: time.Now().Add(-renewBuffer + time.Second),
 	}
-	secretRepo := &secretRepoStub{}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{
+	certService := certificate.NewService(&renewalServiceStub{}, certRepo, &secretRepoStub{}, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
-	overdue, err := manager.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
+	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.False(t, overdue)
 	assert.True(t, certRepo.getRenewalTimeCalled)
 }
 
-func Test_CertificateManager_IsSkrCertificateRenewalOverdue_Error(t *testing.T) {
-	certRepo := &certRepositoryStub{
+func TestIsSkrCertificateRenewalOverdue_CertRepositoryReturnsError_ReturnsError(t *testing.T) {
+	certRepo := &certRepoStub{
 		getRenewalTimeErr: assert.AnError,
 	}
-	secretRepo := &secretRepoStub{}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{
+	certService := certificate.NewService(&renewalServiceStub{}, certRepo, &secretRepoStub{}, certificate.Config{
 		RenewBuffer: renewBuffer,
 	})
 
-	overdue, err := manager.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
+	overdue, err := certService.IsSkrCertificateRenewalOverdue(t.Context(), kymaName)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get SKR certificate renewal time:")
+	require.ErrorContains(t, err, "failed to get SKR certificate renewal time")
 	assert.False(t, overdue)
 	assert.True(t, certRepo.getRenewalTimeCalled)
 }
 
-func Test_CertificateManager_GetSkrCertificateSecret(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+func TestGetSkrCertificateSecret_SecretRepositoryReturns_Success(t *testing.T) {
 	secretRepo := &secretRepoStub{
 		getSecrets: []*apicorev1.Secret{
 			{
@@ -439,9 +435,9 @@ func Test_CertificateManager_GetSkrCertificateSecret(t *testing.T) {
 			},
 		},
 	}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
+	certService := certificate.NewService(&renewalServiceStub{}, &certRepoStub{}, secretRepo, certificate.Config{})
 
-	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
+	result, err := certService.GetSkrCertificateSecret(t.Context(), kymaName)
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -450,40 +446,37 @@ func Test_CertificateManager_GetSkrCertificateSecret(t *testing.T) {
 	assert.Equal(t, certNamespace, result.Namespace)
 }
 
-func Test_CertificateManager_GetSkrCertificateSecret_Error(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+func TestGetSkrCertificateSecret_SecretRepositoryReturnsError_ReturnsError(t *testing.T) {
 	secretRepo := &secretRepoStub{
 		getErrors: []error{assert.AnError},
 	}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
+	certService := certificate.NewService(&renewalServiceStub{}, &certRepoStub{}, secretRepo, certificate.Config{})
 
-	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
+	result, err := certService.GetSkrCertificateSecret(t.Context(), kymaName)
 
-	require.Error(t, err)
+	require.ErrorIs(t, err, assert.AnError)
+	require.ErrorContains(t, err, "failed to get SKR certificate secret")
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to get SKR certificate secret:")
 	assert.True(t, secretRepo.getCalled)
 }
 
-func Test_CertificateManager_GetSkrCertificateSecret_NotFound(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+func TestGetSkrCertificateSecret_SecretRepositoryReturnsNotFound_ReturnsError(t *testing.T) {
 	secretRepo := &secretRepoStub{
 		getErrors: []error{
 			apierrors.NewNotFound(apicorev1.Resource("secrets"), kymaName+expectedCertNameSuffix),
 		},
 	}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{})
+	certService := certificate.NewService(&renewalServiceStub{}, &certRepoStub{}, secretRepo, certificate.Config{})
 
-	result, err := manager.GetSkrCertificateSecret(t.Context(), kymaName)
+	result, err := certService.GetSkrCertificateSecret(t.Context(), kymaName)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get SKR certificate secret:")
+	require.ErrorContains(t, err, "failed to get SKR certificate secret")
 	assert.Nil(t, result)
 	assert.True(t, secretRepo.getCalled)
 }
 
-func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+func TestGetGatewayCertificateSecret_SecretRepositoryReturnsSecret_ReturnsSecret(t *testing.T) {
 	secretRepo := &secretRepoStub{
 		getSecrets: []*apicorev1.Secret{
 			{
@@ -494,11 +487,11 @@ func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
 			},
 		},
 	}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{
+	certService := certificate.NewService(&renewalServiceStub{}, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	result, err := manager.GetGatewayCertificateSecret(t.Context())
+	result, err := certService.GetGatewayCertificateSecret(t.Context())
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -507,26 +500,25 @@ func Test_CertificateManager_GetGatewayCertificateSecret(t *testing.T) {
 	assert.Equal(t, certNamespace, result.Namespace)
 }
 
-func Test_CertificateManager_GetGatewayCertificateSecret_Error(t *testing.T) {
-	certRepo := &certRepositoryStub{}
+func TestGetGatewayCertificateSecret_SecretRepositoryReturnsError_ReturnsError(t *testing.T) {
 	secretRepo := &secretRepoStub{
 		getErrors: []error{assert.AnError},
 	}
-	manager := certificate.NewService(&renewalServiceStub{}, certRepo, secretRepo, certificate.Config{
+	certService := certificate.NewService(&renewalServiceStub{}, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
 
-	result, err := manager.GetGatewayCertificateSecret(t.Context())
+	result, err := certService.GetGatewayCertificateSecret(t.Context())
 
 	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to get gateway certificate secret")
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to get gateway certificate secret:")
 	assert.True(t, secretRepo.getCalled)
 }
 
 // Test stubs
 
-type certRepositoryStub struct {
+type certRepoStub struct {
 	createCalled         bool
 	createErr            error
 	createName           string
@@ -540,7 +532,7 @@ type certRepositoryStub struct {
 	getRenewalTimeErr    error
 }
 
-func (c *certRepositoryStub) Create(_ context.Context, name, commonName string,
+func (c *certRepoStub) Create(_ context.Context, name, commonName string,
 	dnsNames []string,
 ) error {
 	c.createCalled = true
@@ -550,13 +542,13 @@ func (c *certRepositoryStub) Create(_ context.Context, name, commonName string,
 	return c.createErr
 }
 
-func (c *certRepositoryStub) Delete(_ context.Context, name string) error {
+func (c *certRepoStub) Delete(_ context.Context, name string) error {
 	c.deleteCalled = true
 	c.deleteName = name
 	return c.deleteErr
 }
 
-func (c *certRepositoryStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
+func (c *certRepoStub) GetRenewalTime(_ context.Context, _ string) (time.Time, error) {
 	c.getRenewalTimeCalled = true
 	return c.renewalTime, c.getRenewalTimeErr
 }
@@ -617,7 +609,7 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 		{
 			name: "success returns GatewaySecretData",
 			fields: fields{
-				certClient: &certRepositoryStub{},
+				certClient: &certRepoStub{},
 				secretRepo: &secretRepoStub{
 					getSecrets: []*apicorev1.Secret{secretWithCA},
 				},
@@ -633,7 +625,7 @@ func TestCertificateManager_GetGatewayCertificateSecretData(t *testing.T) {
 		{
 			name: "error from secret client",
 			fields: fields{
-				certClient: &certRepositoryStub{},
+				certClient: &certRepoStub{},
 				secretRepo: &secretRepoStub{
 					getErrors: []error{assert.AnError},
 				},
@@ -687,7 +679,7 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 		{
 			name: "success returns CertificateSecretData",
 			fields: fields{
-				certClient: &certRepositoryStub{},
+				certClient: &certRepoStub{},
 				secretRepo: &secretRepoStub{
 					getSecrets: []*apicorev1.Secret{secretWithCert},
 				},
@@ -705,7 +697,7 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 		{
 			name: "error from secret client",
 			fields: fields{
-				certClient: &certRepositoryStub{},
+				certClient: &certRepoStub{},
 				secretRepo: &secretRepoStub{
 					getErrors: []error{assert.AnError},
 				},
