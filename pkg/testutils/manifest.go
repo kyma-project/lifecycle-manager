@@ -38,6 +38,9 @@ var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 var (
 	ErrManifestResourceIsNil                          = errors.New("manifest spec.resource is nil")
 	ErrManifestsExist                                 = errors.New("cluster contains manifest CRs")
+	ErrManifestNotContainLabelKey                     = errors.New("manifest does not contain expected label key")
+	ErrManifestNotContainLabelValue                   = errors.New("manifest does not contain expected label value")
+	ErrManifestNotFound                               = errors.New("manifest does not exist")
 	errManifestNotInExpectedState                     = errors.New("manifest CR not in expected state")
 	errManifestDeletionTimestampSet                   = errors.New("manifest CR has set DeletionTimeStamp")
 	errManifestNotInKymaStatus                        = errors.New("manifest is not tracked by kyma.status")
@@ -45,8 +48,8 @@ var (
 	errManifestOperationNotContainMessage             = errors.New("manifest last operation does  not contain expected message")
 	errManifestVersionIsIncorrect                     = errors.New("manifest version is incorrect")
 	errManifestConditionNotExists                     = errors.New("manifest condition does not exist")
-	errManifestNotFound                               = errors.New("manifest does not exist")
 	errManifestInstallRepoNotCorrect                  = errors.New("manifest install image spec repo is not correct")
+	errManifestNotFound                               = errors.New("manifest does not exist")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -172,6 +175,17 @@ func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt cli
 		}
 	}
 	return fmt.Errorf("manifest with annotation `%s: %s` does not exist", annotationKey, annotationValue)
+}
+
+func ManifestContainsExpectedLabel(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName, labelKey, labelValue string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	return checkLabelExist(manifest.GetLabels(), labelKey, labelValue)
 }
 
 func ManifestExists(
@@ -313,9 +327,32 @@ func MandatoryModuleManifestExistWithCorrectVersion(ctx context.Context, clnt cl
 	}
 
 	if !manifestFound {
-		return errManifestNotFound
+		return ErrManifestNotFound
 	}
 	return nil
+}
+
+func MandatoryModuleManifestContainsExpectedLabel(ctx context.Context, clnt client.Client,
+	moduleName, labelkey, labelValue string,
+) error {
+	manifestList := v1beta2.ManifestList{}
+	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
+	}); err != nil {
+		return fmt.Errorf("failed to list manifests: %w", err)
+	}
+
+	for _, manifest := range manifestList.Items {
+		manifestModuleName, err := manifest.GetModuleName()
+		if err != nil {
+			return fmt.Errorf("failed to get manifest module name, %w", err)
+		}
+		if manifestModuleName == moduleName {
+			return checkLabelExist(manifest.GetLabels(), labelkey, labelValue)
+		}
+	}
+
+	return ErrManifestNotFound
 }
 
 func SkipLabelExistsInManifest(ctx context.Context,
@@ -720,5 +757,21 @@ func ManifestVersionIsCorrect(ctx context.Context, clnt client.Client,
 	if manifest.Spec.Version != version {
 		return errManifestVersionIsIncorrect
 	}
+	return nil
+}
+
+func checkLabelExist(manifestLabels map[string]string, labelKey, labelValue string) error {
+	if manifestLabels == nil {
+		return ErrManifestNotContainLabelKey
+	}
+
+	if _, exists := manifestLabels[labelKey]; !exists {
+		return ErrManifestNotContainLabelKey
+	}
+
+	if manifestLabels[labelKey] != labelValue {
+		return ErrManifestNotContainLabelValue
+	}
+
 	return nil
 }

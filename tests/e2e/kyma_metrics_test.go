@@ -131,11 +131,14 @@ var _ = Describe("Manage Module Metrics", Ordered, func() {
 				Should(Equal(1))
 
 			By("And Kyma Metrics are removed")
-			for _, state := range shared.AllStates() {
+			for _, state := range shared.AllKymaStates() {
 				Eventually(AssertKymaStateMetricNotFound).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), state).
 					Should(Equal(ErrMetricNotFound))
+			}
+
+			for _, state := range shared.AllModuleStates() {
 				Eventually(GetModuleStateMetricCount).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), module.Name, state).

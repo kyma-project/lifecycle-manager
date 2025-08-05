@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"context"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"

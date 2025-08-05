@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -24,10 +25,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-var ErrSkrCertificateNotReady = errors.New("SKR certificate not ready")
+var (
+	ErrSkrCertificateNotReady        = errors.New("SKR certificate not ready")
+	ErrSkrWebhookDeploymentNotReady  = errors.New("SKR webhook deployment not ready")
+	ErrSkrWebhookDeploymentInBackoff = errors.New("SKR webhook deployment in backoff state")
+)
 
 const (
-	skrChartFieldOwner = client.FieldOwner(shared.OperatorName)
+	skrChartFieldOwner       = client.FieldOwner(shared.OperatorName)
+	skrWebhookDeploymentName = "skr-webhook"
 )
 
 type WatcherMetrics interface {
@@ -293,4 +299,39 @@ func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watche
 	}
 
 	return watcherList.Items, nil
+}
+
+func AssertDeploymentReady(ctx context.Context, skrClient client.Reader) error {
+	deployment := apiappsv1.Deployment{}
+	deploymentKey := client.ObjectKey{
+		Name:      skrWebhookDeploymentName,
+		Namespace: shared.DefaultRemoteNamespace,
+	}
+	if err := skrClient.Get(ctx, deploymentKey, &deployment); err != nil {
+		return fmt.Errorf("failed to get skr-webhook deployment: %w", err)
+	}
+
+	podList := &apicorev1.PodList{}
+	err := skrClient.List(ctx, podList, client.InNamespace(shared.DefaultRemoteNamespace),
+		client.MatchingLabels{"app": skrWebhookDeploymentName})
+	if err != nil {
+		return fmt.Errorf("failed to list pods: %w", err)
+	}
+
+	if deploymentNotReady := deployment.Status.ReadyReplicas == 0; deploymentNotReady {
+		// Check if pods are in backoff state
+		for _, pod := range podList.Items {
+			for _, cs := range pod.Status.ContainerStatuses {
+				if cs.State.Waiting != nil && (cs.State.Waiting.Reason == "CrashLoopBackOff" ||
+					cs.State.Waiting.Reason == "ImagePullBackOff") {
+					return fmt.Errorf("%w: pod %s/%s in backoff state (%s)", ErrSkrWebhookDeploymentInBackoff,
+						pod.Namespace, pod.Name, cs.State.Waiting.Reason)
+				}
+			}
+		}
+
+		return fmt.Errorf("%w: deployment %s/%s is not in Ready state", ErrSkrWebhookDeploymentNotReady,
+			deployment.Namespace, deployment.Name)
+	}
+	return nil
 }

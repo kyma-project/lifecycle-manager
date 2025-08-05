@@ -425,14 +425,14 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 		errGroup.Go(func() error {
 			if err := r.SKRWebhookManager.Reconcile(ctx, kyma); err != nil {
 				r.Metrics.RecordRequeueReason(metrics.SkrWebhookResourcesInstallation, queue.UnexpectedRequeue)
+				kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 				if errors.Is(err, watcher.ErrSkrCertificateNotReady) {
-					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 					return nil
 				}
 				return err
 			}
-			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionTrue)
-			return nil
+			skrClient, _ := r.SkrContextFactory.Get(client.ObjectKeyFromObject(kyma))
+			return checkSKRWebhookReadiness(ctx, skrClient, kyma)
 		})
 	}
 
@@ -452,6 +452,19 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 
 	return ctrl.Result{RequeueAfter: requeueInterval},
 		r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
+}
+
+func checkSKRWebhookReadiness(ctx context.Context, skrClient *remote.SkrContext, kyma *v1beta2.Kyma) error {
+	err := watcher.AssertDeploymentReady(ctx, skrClient)
+	if err != nil {
+		kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
+		if errors.Is(err, watcher.ErrSkrWebhookDeploymentInBackoff) {
+			return err
+		}
+		return nil
+	}
+	kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionTrue)
+	return nil
 }
 
 func (r *Reconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {

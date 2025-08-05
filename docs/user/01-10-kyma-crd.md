@@ -1,4 +1,4 @@
-# Kyma
+# Kyma Custom Resource
 
 <!-- Kyma Custom Resources Definition for the end user-->
 

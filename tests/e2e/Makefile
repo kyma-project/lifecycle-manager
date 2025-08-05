@@ -192,3 +192,6 @@ module-deletion-with-multiple-crs-create-and-delete-policy:
 
 module-deletion-with-multiple-crs-ignore-policy:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
+
+module-transferred-to-another-oci-registry:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Transferred to Another OCI Registry"

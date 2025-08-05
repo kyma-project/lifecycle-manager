@@ -74,6 +74,12 @@ type ManifestSpec struct {
 
 	// +kubebuilder:default:=CreateAndDelete
 	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
+	// LocalizedImages specifies a list of docker image references valid for the environment where the Manifest is installed.
+	// The list entries are corresponding to the images actually used in the K8s resources of the Kyma module.
+	// If provided, when the Kyma Module is installed in the target cluster, the "localized" image reference is used instead of the original one.
+	// +optional
+	LocalizedImages []string `json:"localizedImages,omitempty"`
 }
 
 // ImageSpec defines OCI Image specifications.
@@ -93,6 +99,9 @@ type ImageSpec struct {
 	// This time is used in codec to successfully decode from raw extensions.
 	// +kubebuilder:validation:Enum=helm-chart;oci-ref;"kustomize";""
 	Type RefTypeMetadata `json:"type,omitempty"`
+
+	// Deprecated: Field will be removed soon and is not supported anymore.
+	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 type RefTypeMetadata string
