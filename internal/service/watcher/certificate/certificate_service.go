@@ -20,6 +20,10 @@ var (
 	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
 )
 
+type RenewalService interface {
+	Renew(ctx context.Context, name string) error
+}
+
 type CertificateRepository interface {
 	Create(ctx context.Context, name, commonName string, dnsNames []string) error
 	Delete(ctx context.Context, name string) error
@@ -40,16 +44,18 @@ type Config struct {
 }
 
 type Service struct {
-	certRepo   CertificateRepository
-	secretRepo SecretRepository
-	config     Config
+	renewalService RenewalService
+	certRepo       CertificateRepository
+	secretRepo     SecretRepository
+	config         Config
 }
 
-func NewService(certRepo CertificateRepository, secretRepo SecretRepository, config Config) *Service {
+func NewService(renewalService RenewalService, certRepo CertificateRepository, secretRepo SecretRepository, config Config) *Service {
 	return &Service{
-		certRepo:   certRepo,
-		secretRepo: secretRepo,
-		config:     config,
+		renewalService: renewalService,
+		certRepo:       certRepo,
+		secretRepo:     secretRepo,
+		config:         config,
 	}
 }
 
@@ -105,7 +111,7 @@ func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) erro
 	logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 		"kyma", kymaName)
 
-	if err = c.secretRepo.Delete(ctx, constructSkrCertificateName(kymaName)); err != nil {
+	if err = c.renewalService.Renew(ctx, constructSkrCertificateName(kymaName)); err != nil {
 		return fmt.Errorf("failed to delete SKR certificate secret: %w", err)
 	}
 

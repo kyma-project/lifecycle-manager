@@ -206,11 +206,7 @@ var _ = BeforeSuite(func() {
 		certificateConfig,
 	)
 	Expect(err).ToNot(HaveOccurred())
-	certificateService := certificate.NewService(
-		certRepo,
-		secret.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace),
-		certificateManagerConfig,
-	)
+	certificateService := certificate.NewService(nil, certRepo, secret.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
 

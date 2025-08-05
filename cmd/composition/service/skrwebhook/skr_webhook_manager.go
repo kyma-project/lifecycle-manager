@@ -16,8 +16,11 @@ import (
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/renewal"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
+	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
@@ -25,8 +28,8 @@ import (
 )
 
 var (
-	errUnresolvedKcpAddress                = errors.New("failed to resolve KCP address, please check the gateway configuration")
-	errCertReposImplementationNotSupported = errors.New("certificate client not supported, please check the certificate management configuration")
+	errUnresolvedKcpAddress              = errors.New("failed to resolve KCP address, please check the gateway configuration")
+	errCertificateManagementNotSupported = errors.New("certificate management not supported, please check the certificate management configuration")
 )
 
 func ComposeSkrWebhookManager(kcpClient client.Client,
@@ -92,7 +95,7 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 			flagVar.SelfSignedCertIssuerNamespace,
 			certificateConfig)
 	default:
-		return nil, errCertReposImplementationNotSupported
+		return nil, errCertificateManagementNotSupported
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create certificate repository: %w", err)
@@ -106,9 +109,18 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	return certificate.NewService(
-		certRepoImpl,
-		secret.NewRepository(kcpClient, flagVar.IstioNamespace),
-		certServiceConfig,
-	), nil
+	secretRepository := secret.NewRepository(kcpClient, flagVar.IstioNamespace)
+
+	var renewalService certificate.RenewalService
+	switch flagVar.CertificateManagement {
+	case certmanagerv1.SchemeGroupVersion.String():
+		renewalService = certmanagerrenewal.NewService(secretRepository)
+	case gcertv1alpha1.SchemeGroupVersion.String():
+		renewalCertRepo := renewal.NewRepository(kcpClient, flagVar.IstioNamespace)
+		renewalService = gcm.NewService(renewalCertRepo)
+	default:
+		return nil, errCertificateManagementNotSupported
+	}
+
+	return certificate.NewService(renewalService, certRepoImpl, secretRepository, certServiceConfig), nil
 }
