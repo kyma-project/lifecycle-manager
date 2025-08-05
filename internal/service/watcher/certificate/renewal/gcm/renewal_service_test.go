@@ -23,10 +23,10 @@ func TestRenew_WhenRepoReturnsError_ReturnsError(t *testing.T) {
 	err := service.Renew(t.Context(), certName)
 
 	require.ErrorIs(t, err, assert.AnError)
-	require.Contains(t, err.Error(), "could not get certificate for renewal")
-	require.Equal(t, 1, certRepo.getCalls)
-	require.Equal(t, certName, certRepo.getLastCallArg)
-	require.Equal(t, 0, certRepo.updateCalls)
+	require.ErrorContains(t, err, "could not get certificate for renewal")
+	assert.Equal(t, 1, certRepo.getCalls)
+	assert.Equal(t, certName, certRepo.getLastCallArg)
+	assert.Equal(t, 0, certRepo.updateCalls)
 }
 
 func TestRenew_WhenRepoReturnsNil_ReturnsError(t *testing.T) {
@@ -37,10 +37,10 @@ func TestRenew_WhenRepoReturnsNil_ReturnsError(t *testing.T) {
 	err := service.Renew(t.Context(), certName)
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "could not get certificate for renewal")
-	require.Equal(t, 1, certRepo.getCalls)
-	require.Equal(t, certName, certRepo.getLastCallArg)
-	require.Equal(t, 0, certRepo.updateCalls)
+	require.ErrorContains(t, err, "could not get certificate for renewal")
+	assert.Equal(t, 1, certRepo.getCalls)
+	assert.Equal(t, certName, certRepo.getLastCallArg)
+	assert.Equal(t, 0, certRepo.updateCalls)
 }
 
 func TestRenew_WhenRepoReturnsCert_CallsRepoUpdateWithSpecRenewTrue(t *testing.T) {
@@ -58,11 +58,11 @@ func TestRenew_WhenRepoReturnsCert_CallsRepoUpdateWithSpecRenewTrue(t *testing.T
 	err := service.Renew(t.Context(), certName)
 
 	require.NoError(t, err)
-	require.Equal(t, 1, certRepo.getCalls)
-	require.Equal(t, certName, certRepo.getLastCallArg)
-	require.Equal(t, 1, certRepo.updateCalls)
-	require.True(t, *certRepo.getReturnValue.Spec.Renew)
-	require.Nil(t, certRepo.getReturnValue.Spec.EnsureRenewedAfter)
+	assert.Equal(t, 1, certRepo.getCalls)
+	assert.Equal(t, certName, certRepo.getLastCallArg)
+	assert.Equal(t, 1, certRepo.updateCalls)
+	assert.True(t, *certRepo.getReturnValue.Spec.Renew)
+	assert.Nil(t, certRepo.getReturnValue.Spec.EnsureRenewedAfter)
 }
 
 func TestRenew_WhenRepoReturnsCert_CallsRepoUpdateWithSpecEnsureRenewedAfterNil(t *testing.T) {
@@ -80,11 +80,11 @@ func TestRenew_WhenRepoReturnsCert_CallsRepoUpdateWithSpecEnsureRenewedAfterNil(
 	err := service.Renew(t.Context(), certName)
 
 	require.NoError(t, err)
-	require.Equal(t, 1, certRepo.getCalls)
-	require.Equal(t, certName, certRepo.getLastCallArg)
-	require.Equal(t, 1, certRepo.updateCalls)
-	require.True(t, *certRepo.getReturnValue.Spec.Renew)
-	require.Nil(t, certRepo.getReturnValue.Spec.EnsureRenewedAfter)
+	assert.Equal(t, 1, certRepo.getCalls)
+	assert.Equal(t, certName, certRepo.getLastCallArg)
+	assert.Equal(t, 1, certRepo.updateCalls)
+	assert.True(t, *certRepo.getReturnValue.Spec.Renew)
+	assert.Nil(t, certRepo.getReturnValue.Spec.EnsureRenewedAfter)
 }
 
 func TestRenew_WhenRepoUpdateReturnsError_ReturnsError(t *testing.T) {
@@ -100,7 +100,7 @@ func TestRenew_WhenRepoUpdateReturnsError_ReturnsError(t *testing.T) {
 	err := service.Renew(t.Context(), certName)
 
 	require.ErrorIs(t, err, assert.AnError)
-	require.Contains(t, err.Error(), "failed to update certificate for renewal")
+	require.ErrorContains(t, err, "failed to update certificate for renewal")
 }
 
 type certRepoStub struct {
