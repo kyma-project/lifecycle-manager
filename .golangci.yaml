@@ -119,6 +119,8 @@ linters:
           alias: apinetworkv1
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources
           alias: skrwebhookresources
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager
+          alias: certmanagerrenewal
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors
           alias: certerror
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate

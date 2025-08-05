@@ -35,7 +35,7 @@ func (r *Repository) Get(ctx context.Context, name string) (*gcertv1alpha1.Certi
 		return nil, fmt.Errorf("failed to get GCM Certificate %s-%s: %w", name, r.namespace, err)
 	}
 
-	return nil, nil
+	return cert, nil
 }
 
 func (r *Repository) Update(ctx context.Context, cert *gcertv1alpha1.Certificate) error {
