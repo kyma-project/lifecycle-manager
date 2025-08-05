@@ -49,7 +49,6 @@ var (
 	errManifestVersionIsIncorrect                     = errors.New("manifest version is incorrect")
 	errManifestConditionNotExists                     = errors.New("manifest condition does not exist")
 	errManifestInstallRepoNotCorrect                  = errors.New("manifest install image spec repo is not correct")
-	errManifestNotFound                               = errors.New("manifest does not exist")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
