@@ -23,8 +23,8 @@ packages:
   internal/repository/kyma: 100
   internal/repository/watcher/certificate: 100
   internal/repository/watcher/certificate/certmanager/certificate: 100
-  internal/repository/watcher/certificate/certmanager/renewal: 100
   internal/repository/watcher/certificate/gcm/certificate: 98
+  internal/repository/watcher/certificate/gcm/renewal: 100
   internal/repository/watcher/certificate/secret: 100
 
   internal/service/kyma/status/modules/generator: 100
