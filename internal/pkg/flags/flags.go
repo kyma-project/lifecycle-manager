@@ -280,7 +280,10 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.MinMaintenanceWindowSize, "min-maintenance-window-size",
 		DefaultMinMaintenanceWindowSize,
 		"Minimum duration of maintenance window required for reconciling modules with downtime.")
-	flag.StringVar(&flagVar.OciRegistryCredSecretName, "oci-registry-cred-secret", "", "Allows to configure name of the Secret containing the OCI registry credential")
+	flag.StringVar(&flagVar.OciRegistryCredSecretName, "oci-registry-cred-secret", "",
+		"Allows to configure name of the Secret containing the OCI registry credential")
+	flag.StringVar(&flagVar.OciRegistryHost, "oci-registry-host", "",
+		"Allows to configure hostname of the OCI registry.")
 	return flagVar
 }
 
@@ -357,6 +360,7 @@ type FlagVar struct {
 	IstioGatewaySecretRequeueErrInterval       time.Duration
 	MinMaintenanceWindowSize                   time.Duration
 	OciRegistryCredSecretName                  string
+	OciRegistryHost                            string
 }
 
 func (f FlagVar) Validate() error {
@@ -399,6 +403,20 @@ func (f FlagVar) Validate() error {
 		return fmt.Errorf("%w: '%s'", common.ErrUnsupportedCertificateManagementSystem, f.CertificateManagement)
 	}
 
+	if err := validateOciRegistryConfig(f.OciRegistryHost, f.OciRegistryCredSecretName); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateOciRegistryConfig(host, credSecretName string) error {
+	if host == "" && credSecretName == "" {
+		return common.ErrNoOCIRegistryHostAndCredSecret
+	}
+	if host != "" && credSecretName != "" {
+		return common.ErrBothOCIRegistryHostAndCredSecretProvided
+	}
 	return nil
 }
 

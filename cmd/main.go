@@ -36,7 +36,9 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -83,7 +85,6 @@ import (
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "ocm.software/ocm/api/ocm"
-	//nolint:gci // kubebuilder's scaffold imports must be appended here.
 )
 
 const (
@@ -426,6 +427,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
+	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, setupLog)
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
@@ -441,11 +443,33 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
-		manifestClient, orphanDetectionClient, specResolver,
+		manifestClient, orphanDetectionClient, specResolver, ociRegistryHost,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
+}
+
+func getOciRegistryHost(config *rest.Config, flagVar *flags.FlagVar, setupLog logr.Logger) string {
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		setupLog.Error(err, "unable to create kubernetes clientset")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	secretInterface := clientset.CoreV1().Secrets(shared.DefaultControlPlaneNamespace)
+
+	ociRegistrySetup, err := setup.NewOCIRegistry(secretInterface, flagVar.OciRegistryHost,
+		flagVar.OciRegistryCredSecretName)
+	if err != nil {
+		setupLog.Error(err, "failed to setup OCI registry")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	ociRegistryHost, err := ociRegistrySetup.ResolveHost(context.Background())
+	if err != nil {
+		setupLog.Error(err, "failed to resolve OCI registry host")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	return ociRegistryHost
 }
 
 //nolint:ireturn // constructor functions can return interfaces

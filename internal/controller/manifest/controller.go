@@ -19,6 +19,7 @@ func NewReconciler(mgr manager.Manager,
 	manifestClient declarativev2.ManifestAPIClient,
 	orphanDetectionClient orphan.DetectionRepository,
 	specResolver *spec.Resolver,
+	ociRegistryHost string,
 ) *declarativev2.Reconciler {
 	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
@@ -33,5 +34,6 @@ func NewReconciler(mgr manager.Manager,
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
+		declarativev2.WithOciRegistryHost(ociRegistryHost),
 	)
 }
