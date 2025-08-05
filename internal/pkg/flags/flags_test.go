@@ -480,7 +480,6 @@ func newFlagVarBuilder() *flagVarBuilder {
 		withManifestRequeueJitterProbability(0.01).
 		withManifestRequeueJitterPercentage(0.1).
 		withOciRegistryHost("europe-docker.pkg.dev")
-
 }
 
 func (b *flagVarBuilder) build() FlagVar {
