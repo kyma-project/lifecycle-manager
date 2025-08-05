@@ -67,11 +67,11 @@ envtest-dir:
 
 .PHONY: test
 test: unittest manifests test-crd generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
+	GOFIPS140=v1.0.0 KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
 
 .PHONY: unittest
 unittest: ## Run the unit test suite.
-	go test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
+	GOFIPS140=v1.0.0 go test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
 
 .PHONY: dry-run
 dry-run: kustomize manifests
@@ -90,7 +90,7 @@ dry-run-control-plane: kustomize manifests
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -ldflags="-X 'main.buildVersion=${BUILD_VERSION}'" -o bin/manager cmd/main.go
+	GOFIPS140=v1.0.0 go build -ldflags="-X 'main.buildVersion=${BUILD_VERSION}'" -o bin/manager cmd/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
