@@ -30,7 +30,7 @@ packages:
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/manifest/orphan: 100
-  internal/service/watcher/certificate: 100
+  internal/service/watcher/certificate: 98
   internal/service/watcher/certificate/renewal/certmanager: 100
   internal/service/watcher/certificate/renewal/gcm: 100
   internal/service/watcher/certificate/secret/data: 100

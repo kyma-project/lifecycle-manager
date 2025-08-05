@@ -9,10 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	errNilCertificate            = errors.New("failed to update nil Certificate")
-	errFailedToUpdateCertificate = errors.New("failed to update GCM Certificate")
-)
+var ErrNilCertificate = errors.New("failed to update nil Certificate")
 
 type Repository struct {
 	kcpClient client.Client
@@ -40,11 +37,11 @@ func (r *Repository) Get(ctx context.Context, name string) (*gcertv1alpha1.Certi
 
 func (r *Repository) Update(ctx context.Context, cert *gcertv1alpha1.Certificate) error {
 	if cert == nil {
-		return errNilCertificate
+		return ErrNilCertificate
 	}
 
 	if err := r.kcpClient.Update(ctx, cert); err != nil {
-		return errFailedToUpdateCertificate
+		return fmt.Errorf("failed to update GCM Certificate %s-%s: %w", cert.Name, cert.Namespace, err)
 	}
 
 	return nil
