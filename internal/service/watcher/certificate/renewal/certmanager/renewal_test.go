@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager"
+	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 func TestRenew_WhenRepositoryDeleteSucceeds_Returns(t *testing.T) {
-	renewalService := certmanager.NewService(&secretRepoStub{})
+	renewalService := certmanagerrenewal.NewService(&secretRepoStub{})
 
 	err := renewalService.Renew(t.Context(), random.Name())
 
@@ -20,7 +20,7 @@ func TestRenew_WhenRepositoryDeleteSucceeds_Returns(t *testing.T) {
 }
 
 func TestRenew_WhenRepositoryDeleteReturnsAnError_ReturnsError(t *testing.T) {
-	renewalService := certmanager.NewService(&secretRepoStub{
+	renewalService := certmanagerrenewal.NewService(&secretRepoStub{
 		err: assert.AnError,
 	})
 

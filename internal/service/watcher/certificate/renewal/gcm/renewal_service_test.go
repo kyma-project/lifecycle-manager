@@ -7,7 +7,7 @@ import (
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/gcm"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
@@ -69,7 +69,7 @@ func TestRenew_WhenRepoReturnsCert_CallsRepoUpdateWithSpecEnsureRenewedAfterNil(
 	certRepo := &certRepoStub{
 		getReturnValue: &gcertv1alpha1.Certificate{
 			Spec: gcertv1alpha1.CertificateSpec{
-				EnsureRenewedAfter: &v1.Time{},
+				EnsureRenewedAfter: &apimetav1.Time{},
 				Renew:              nil,
 			},
 		},
