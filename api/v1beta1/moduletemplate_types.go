@@ -20,8 +20,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.
@@ -84,11 +82,22 @@ type ModuleTemplateSpec struct {
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
 	Target Target `json:"target"`
 
-	CustomStateCheck []*v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 
 	// RequiresDowntime indicates whether the module requires downtime in support of maintenance windows during module upgrades.
 	// +optional
 	RequiresDowntime bool `json:"requiresDowntime,omitempty"`
+}
+
+type CustomStateCheck struct {
+	// JSONPath specifies the JSON path to the state variable in the Module CR
+	JSONPath string `json:"jsonPath" yaml:"jsonPath"`
+
+	// Value is the value at the JSONPath for which the Module CR state should map with MappedState
+	Value string `json:"value" yaml:"value"`
+
+	// MappedState is the Kyma CR State
+	MappedState State `json:"mappedState" yaml:"mappedState"`
 }
 
 // +kubebuilder:object:root=true
