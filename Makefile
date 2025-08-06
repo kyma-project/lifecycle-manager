@@ -160,17 +160,17 @@ GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
+	GOBIN=$(LOCALBIN) GOFIPS140=v1.0.0 go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+	GOBIN=$(LOCALBIN) GOFIPS140=v1.0.0 go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(ENVTEST_VERSION)
+	GOBIN=$(LOCALBIN) GOFIPS140=v1.0.0 go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(ENVTEST_VERSION)
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -178,7 +178,7 @@ fmt: ## Run go fmt against code.
 
 .PHONY: lint
 lint: ## Run golangci-lint against code.
-	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
+	GOBIN=$(LOCALBIN) GOFIPS140=v1.0.0 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
 	$(LOCALBIN)/golangci-lint run --verbose -c .golangci.yaml
 	pushd api; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
 	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
