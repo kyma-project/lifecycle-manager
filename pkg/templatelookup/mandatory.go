@@ -18,8 +18,9 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 ) {
 	mandatoryModuleTemplateList := &v1beta2.ModuleTemplateList{}
 	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: shared.EnableLabelValue})
-	if err := kymaClient.List(ctx, mandatoryModuleTemplateList,
-		&client.ListOptions{LabelSelector: labelSelector}); err != nil {
+	err := kymaClient.List(ctx, mandatoryModuleTemplateList,
+		&client.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
 		return nil, fmt.Errorf("could not list mandatory ModuleTemplates: %w", err)
 	}
 

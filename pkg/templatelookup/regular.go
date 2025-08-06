@@ -20,6 +20,7 @@ var (
 
 type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
+
 	Err            error
 	DesiredChannel string
 }
@@ -34,6 +35,7 @@ type ModuleTemplateInfoLookupStrategy interface {
 
 type TemplateLookup struct {
 	client.Reader
+
 	descriptorProvider               *provider.CachedDescriptorProvider
 	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy
 }
@@ -79,7 +81,8 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			templates[moduleInfo.Name] = &templateInfo
 			continue
 		}
-		if err := t.descriptorProvider.Add(templateInfo.ModuleTemplate); err != nil {
+		err = t.descriptorProvider.Add(templateInfo.ModuleTemplate)
+		if err != nil {
 			templateInfo.Err = fmt.Errorf("failed to get descriptor: %w", err)
 			templates[moduleInfo.Name] = &templateInfo
 			continue

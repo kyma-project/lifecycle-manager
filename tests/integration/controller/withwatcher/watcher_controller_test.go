@@ -112,7 +112,8 @@ func crSpecUpdates(_ *istio.Client) error {
 		}
 		watcherCR.Spec.ServiceInfo.Port = 9090
 		watcherCR.Spec.Field = v1beta2.StatusField
-		if err := kcpClient.Update(ctx, watcherCR); err != nil {
+		err = kcpClient.Update(ctx, watcherCR)
+		if err != nil {
 			return err
 		}
 	}
@@ -143,7 +144,8 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 		if err != nil {
 			return err
 		}
-		if err := isListenerHTTPRouteConfigured(ctx, customIstioClient, namespace, watcherCR); err != nil {
+		err = isListenerHTTPRouteConfigured(ctx, customIstioClient, namespace, watcherCR)
+		if err != nil {
 			return err
 		}
 		gateways, err := customIstioClient.ListGatewaysByLabelSelector(ctx, &watcherCR.Spec.Gateway.LabelSelector,
@@ -152,13 +154,15 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 			return err
 		}
 		Expect(gateways.Items).To(HaveLen(1))
-		if err := isVirtualServiceHostsConfigured(ctx, watcherCR.Name, namespace, customIstioClient,
-			gateways.Items[0]); err != nil {
+		err = isVirtualServiceHostsConfigured(ctx, watcherCR.Name, namespace, customIstioClient,
+			gateways.Items[0])
+		if err != nil {
 			return err
 		}
 
-		if err := verifyWatcherConfiguredAsVirtualServiceOwner(ctx, watcherCR.Name, namespace, watcherCR,
-			customIstioClient); err != nil {
+		err = verifyWatcherConfiguredAsVirtualServiceOwner(ctx, watcherCR.Name, namespace, watcherCR,
+			customIstioClient)
+		if err != nil {
 			return err
 		}
 	}

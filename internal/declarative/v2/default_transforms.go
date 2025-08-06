@@ -56,7 +56,8 @@ func DockerImageLocalizationTransform(ctx context.Context, obj Object, resources
 	)
 
 	for _, resource := range resources {
-		if err = rewriter.ReplaceImages(resource, localizedImages); err != nil {
+		err = rewriter.ReplaceImages(resource, localizedImages)
+		if err != nil {
 			return fmt.Errorf("failed to rewrite images in resource %s/%s: %w", resource.GetNamespace(), resource.GetName(), err)
 		}
 	}

@@ -30,9 +30,10 @@ type NameAndTag string
 //
 //	The overall format of a reference is: <host[:port][/path]>/<image>:<tag>[@<digest>]
 type DockerImageReference struct {
-	HostAndPath string
 	NameAndTag
-	Digest string
+
+	HostAndPath string
+	Digest      string
 }
 
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
@@ -91,7 +92,8 @@ func (r *PodContainerImageRewriter) Rewrite(targetImages []*DockerImageReference
 	for _, targetImage := range targetImages {
 		// We know that existingImage is a docker image reference, so we only have the verify if the <name>:<tag> matches.
 		if targetImage.Matches(existingImage.NameAndTag) {
-			if err := unstructured.SetNestedField(podContainer.Object, targetImage.String(), "image"); err != nil {
+			err := unstructured.SetNestedField(podContainer.Object, targetImage.String(), "image")
+			if err != nil {
 				return fmt.Errorf("%w: %v", ErrFailedToSetNewImageInPodContainer, err.Error())
 			}
 			break
@@ -143,7 +145,8 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 	}
 
 	// Set the modified environment variables back to the pod container
-	if err = unstructured.SetNestedSlice(podContainer.Object, envEntries, "env"); err != nil {
+	err = unstructured.SetNestedSlice(podContainer.Object, envEntries, "env")
+	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedToSetNewEnvListInPodContainer, err.Error())
 	}
 	return nil

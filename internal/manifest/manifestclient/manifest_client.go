@@ -26,7 +26,8 @@ func NewManifestClient(event event.Event, kcpClient client.Client) *ManifestClie
 }
 
 func (m *ManifestClient) UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error {
-	if err := m.Update(ctx, manifest); err != nil {
+	err := m.Update(ctx, manifest)
+	if err != nil {
 		m.Warning(manifest, "UpdateObject", err)
 		return fmt.Errorf("failed to update object: %w", err)
 	}
@@ -38,7 +39,8 @@ func (m *ManifestClient) PatchStatusIfDiffExist(ctx context.Context, manifest *v
 ) error {
 	if HasStatusDiff(manifest.GetStatus(), previousStatus) {
 		resetNonPatchableField(manifest)
-		if err := m.Status().Patch(ctx, manifest, client.Apply, client.ForceOwnership, DefaultFieldOwner); err != nil {
+		err := m.Status().Patch(ctx, manifest, client.Apply, client.ForceOwnership, DefaultFieldOwner)
+		if err != nil {
 			m.Warning(manifest, "PatchStatus", err)
 			return fmt.Errorf("failed to patch status: %w", err)
 		}
@@ -49,7 +51,8 @@ func (m *ManifestClient) PatchStatusIfDiffExist(ctx context.Context, manifest *v
 
 func (m *ManifestClient) SsaSpec(ctx context.Context, obj client.Object) error {
 	resetNonPatchableField(obj)
-	if err := m.Patch(ctx, obj, client.Apply, client.ForceOwnership, DefaultFieldOwner); err != nil {
+	err := m.Patch(ctx, obj, client.Apply, client.ForceOwnership, DefaultFieldOwner)
+	if err != nil {
 		m.Warning(obj, "PatchObject", err)
 		return fmt.Errorf("failed to patch object: %w", err)
 	}

@@ -498,7 +498,8 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 		template.Spec.Descriptor.Raw = newDescriptor
 		template.Spec.Channel = channel
 		template.Name = fmt.Sprintf("%s-%s", template.Name, channel)
-		if err := kcpClient.Create(ctx, template); err != nil {
+		err = kcpClient.Create(ctx, template)
+		if err != nil {
 			return err
 		}
 	}

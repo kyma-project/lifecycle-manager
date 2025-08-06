@@ -39,16 +39,15 @@ func DefaultOptions() *Options {
 
 type Options struct {
 	record.EventRecorder
-	Config *rest.Config
 	client.Client
-	TargetCluster ClusterFn
-
 	ClientCache
 	ClientCacheKeyFn
 	ManifestParser
 	ManifestCache
-	CustomStateCheck StateCheck
 
+	Config               *rest.Config
+	TargetCluster        ClusterFn
+	CustomStateCheck     StateCheck
 	PostRenderTransforms []ObjectTransform
 }
 

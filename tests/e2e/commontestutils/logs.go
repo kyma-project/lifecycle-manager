@@ -51,7 +51,8 @@ func getPodLogs(ctx context.Context,
 ) (string, error) {
 	pod := apicorev1.Pod{}
 	podList := &apicorev1.PodList{}
-	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: namespace}); err != nil {
+	err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: namespace})
+	if err != nil {
 		return "", fmt.Errorf("failed to list pods %w", err)
 	}
 

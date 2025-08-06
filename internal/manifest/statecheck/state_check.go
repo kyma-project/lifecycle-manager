@@ -79,14 +79,16 @@ func findManager(clt client.Client, resources []*resource.Info) *Manager {
 	statefulSet := &apiappsv1.StatefulSet{}
 
 	for _, res := range resources {
-		if err := clt.Scheme().Convert(res.Object, deploy, nil); err == nil {
+		err := clt.Scheme().Convert(res.Object, deploy, nil)
+		if err == nil {
 			return &Manager{
 				kind:       DeploymentKind,
 				deployment: deploy,
 			}
 		}
 
-		if err := clt.Scheme().Convert(res.Object, statefulSet, nil); err == nil {
+		err = clt.Scheme().Convert(res.Object, statefulSet, nil)
+		if err == nil {
 			return &Manager{
 				kind:        StatefulSetKind,
 				statefulSet: statefulSet,

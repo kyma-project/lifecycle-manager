@@ -14,9 +14,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -216,10 +217,11 @@ func updateCRDPropertyDescription(clnt client.Client, crdKind shared.Kind,
 		Scope:                 crd.Spec.Scope,
 		PreserveUnknownFields: crd.Spec.PreserveUnknownFields,
 	}
-	if err := clnt.Patch(ctx, crd,
+	err = clnt.Patch(ctx, crd,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(shared.OperatorName)); err != nil {
+		client.FieldOwner(shared.OperatorName))
+	if err != nil {
 		return nil, err
 	}
 	crd, err = fetchCrd(clnt, crdKind)
@@ -242,11 +244,12 @@ func getCrdSpec(crd *apiextensionsv1.CustomResourceDefinition) apiextensionsv1.J
 
 func fetchCrd(clnt client.Client, crdKind shared.Kind) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
-	if err := clnt.Get(
+	err := clnt.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group),
 		}, crd,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, err
 	}
 
@@ -262,7 +265,8 @@ func updateKymaChannel(ctx context.Context,
 ) error {
 	kyma := &v1beta2.Kyma{}
 	// Get the latest version of the Kyma resource
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
+	if err != nil {
 		return err
 	}
 	kyma.Spec.Channel = channel
@@ -290,7 +294,8 @@ func kymaIsInExpectedStateWithUpdatedChannel(k8sClient client.Client,
 	expectedState shared.State,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
+	if err != nil {
 		return err
 	}
 
@@ -310,7 +315,8 @@ func kymaIsInExpectedStateWithLabelUpdated(k8sClient client.Client,
 	expectedState shared.State,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
+	if err != nil {
 		return err
 	}
 

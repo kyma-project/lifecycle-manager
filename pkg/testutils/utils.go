@@ -103,7 +103,8 @@ func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.Custom
 		decoder := machineryaml.NewYAMLOrJSONDecoder(moduleFile, defaultBufferSize)
 		for {
 			crd := &apiextensionsv1.CustomResourceDefinition{}
-			if err = decoder.Decode(crd); err != nil {
+			err = decoder.Decode(crd)
+			if err != nil {
 				if errors.Is(err, io.EOF) {
 					break
 				}
@@ -124,8 +125,8 @@ func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, na
 		Version: version,
 		Kind:    kind,
 	})
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
+	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, sampleCR)
+	if err != nil {
 		return false, err
 	}
 
@@ -183,12 +184,14 @@ func parseResourcesFromYAML(yamlFilePath string, clnt client.Client) ([]*unstruc
 
 func PatchServiceToTypeLoadBalancer(ctx context.Context, clnt client.Client, serviceName, namespace string) error {
 	service := &apicorev1.Service{}
-	if err := clnt.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, service); err != nil {
+	err := clnt.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, service)
+	if err != nil {
 		return err
 	}
 
 	service.Spec.Type = apicorev1.ServiceTypeLoadBalancer
-	if err := clnt.Update(ctx, service); err != nil {
+	err = clnt.Update(ctx, service)
+	if err != nil {
 		return err
 	}
 

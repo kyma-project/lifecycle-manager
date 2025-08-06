@@ -19,7 +19,7 @@ const (
 )
 
 func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
-	if err := ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
 		Named(installationControllerName).
 		WithOptions(opts).
@@ -29,19 +29,21 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 			handler.EnqueueRequestsFromMapFunc(watch.NewMandatoryTemplateChangeHandler(r).Watch()),
 		).
 		Watches(&apicorev1.Secret{}, handler.Funcs{}).
-		Complete(r); err != nil {
+		Complete(r)
+	if err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module installation controller: %w", err)
 	}
 	return nil
 }
 
 func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
-	if err := ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.ModuleTemplate{}).
 		Named(deletionControllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Complete(r); err != nil {
+		Complete(r)
+	if err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module deletion controller: %w", err)
 	}
 	return nil

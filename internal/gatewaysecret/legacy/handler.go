@@ -68,7 +68,8 @@ func (h *Handler) createGatewaySecretFromRootSecret(ctx context.Context, rootSec
 func (h *Handler) requiresUpdate(gwSecret *apicorev1.Secret, notBefore time.Time) bool {
 	// If the last modified time of the gateway secret is after the notBefore time of the CA certificate,
 	// then we don't need to update the gateway secret
-	if lastModified, err := h.parseLastModifiedTime(gwSecret, shared.LastModifiedAtAnnotation); err == nil {
+	lastModified, err := h.parseLastModifiedTime(gwSecret, shared.LastModifiedAtAnnotation)
+	if err == nil {
 		if !notBefore.IsZero() && lastModified.After(notBefore) {
 			return false
 		}

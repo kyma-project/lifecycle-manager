@@ -43,7 +43,8 @@ func StopDeployment(ctx context.Context, clnt client.Client,
 		return nil
 	}
 	deploy.Spec.Replicas = int32Ptr(0)
-	if err := clnt.Update(ctx, deploy); err != nil {
+	err = clnt.Update(ctx, deploy)
+	if err != nil {
 		return fmt.Errorf("could not update deployment: %w", err)
 	}
 	return ErrDeploymentUpdating
@@ -60,7 +61,8 @@ func EnableDeployment(ctx context.Context, clnt client.Client,
 		return nil
 	}
 	deploy.Spec.Replicas = int32Ptr(1)
-	if err := clnt.Update(ctx, deploy); err != nil {
+	err = clnt.Update(ctx, deploy)
+	if err != nil {
 		return fmt.Errorf("could not update deployment: %w", err)
 	}
 	return ErrDeploymentUpdating
@@ -70,7 +72,8 @@ func GetDeployment(ctx context.Context, clnt client.Client,
 	name, namespace string,
 ) (*apiappsv1.Deployment, error) {
 	deploy := &apiappsv1.Deployment{}
-	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, deploy); err != nil {
+	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, deploy)
+	if err != nil {
 		return nil, fmt.Errorf("could not get deployment: %w", err)
 	}
 	return deploy, nil

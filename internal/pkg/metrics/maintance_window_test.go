@@ -15,21 +15,23 @@ func TestMaintenanceWindowMetrics(t *testing.T) {
 
 	// Test recording a successful config read
 	maintenanceWindowMetrics.RecordConfigReadSuccess(true)
-	if err := testutil.CollectAndCompare(maintenanceWindowMetrics.ConfigReadSuccessGauge, strings.NewReader(`
+	err := testutil.CollectAndCompare(maintenanceWindowMetrics.ConfigReadSuccessGauge, strings.NewReader(`
 		# HELP lifecycle_mgr_maintenance_window_config_read_success Indicates whether the maintenance window configuration was read successfully (1 for success, 0 for failure)
 		# TYPE lifecycle_mgr_maintenance_window_config_read_success gauge
 		lifecycle_mgr_maintenance_window_config_read_success 1
-	`)); err != nil {
+	`))
+	if err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 
 	// Test recording a failed config read
 	maintenanceWindowMetrics.RecordConfigReadSuccess(false)
-	if err := testutil.CollectAndCompare(maintenanceWindowMetrics.ConfigReadSuccessGauge, strings.NewReader(`
+	err = testutil.CollectAndCompare(maintenanceWindowMetrics.ConfigReadSuccessGauge, strings.NewReader(`
 		# HELP lifecycle_mgr_maintenance_window_config_read_success Indicates whether the maintenance window configuration was read successfully (1 for success, 0 for failure)
 		# TYPE lifecycle_mgr_maintenance_window_config_read_success gauge
 		lifecycle_mgr_maintenance_window_config_read_success 0
-	`)); err != nil {
+	`))
+	if err != nil {
 		t.Errorf("unexpected collecting result:\n%s", err)
 	}
 }

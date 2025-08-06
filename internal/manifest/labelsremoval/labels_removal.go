@@ -57,11 +57,13 @@ func removeFromSyncedResources(ctx context.Context, manifestCR *v1beta2.Manifest
 		}
 
 		obj := constructResource(res)
-		if err := skrClient.Get(ctx, objectKey, obj); err != nil {
+		err := skrClient.Get(ctx, objectKey, obj)
+		if err != nil {
 			return fmt.Errorf("failed to get resource, %w", err)
 		}
 
-		if err := removeFromObject(ctx, obj, skrClient); err != nil {
+		err = removeFromObject(ctx, obj, skrClient)
+		if err != nil {
 			return err
 		}
 	}
@@ -87,7 +89,8 @@ func removeFromDefaultCR(ctx context.Context,
 
 func removeFromObject(ctx context.Context, obj *unstructured.Unstructured, skrClient client.Client) error {
 	if removeManagedLabel(obj) {
-		if err := skrClient.Update(ctx, obj); err != nil {
+		err := skrClient.Update(ctx, obj)
+		if err != nil {
 			return fmt.Errorf("failed to update object: %w", err)
 		}
 	}

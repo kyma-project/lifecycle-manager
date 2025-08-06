@@ -33,7 +33,8 @@ func (c *ExistsStateCheck) GetState(
 		if !ok {
 			return shared.StateError, ErrNotValidClientObject
 		}
-		if err := clnt.Get(ctx, client.ObjectKeyFromObject(obj), obj); client.IgnoreNotFound(err) != nil {
+		err := clnt.Get(ctx, client.ObjectKeyFromObject(obj), obj)
+		if client.IgnoreNotFound(err) != nil {
 			return shared.StateError, fmt.Errorf("failed to fetch object by key: %w", err)
 		}
 	}

@@ -21,7 +21,8 @@ func DropStoredVersion(ctx context.Context, kcpClient client.Client, versionsToB
 	logger.V(log.DebugLevel).Info(fmt.Sprintf("Handling dropping stored versions for, %v",
 		versionsToBeDroppedMap))
 	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
-	if err := kcpClient.List(ctx, crdList); err != nil {
+	err := kcpClient.List(ctx, crdList)
+	if err != nil {
 		logger.V(log.InfoLevel).Error(err, "unable to list CRDs")
 	}
 
@@ -41,7 +42,8 @@ func DropStoredVersion(ctx context.Context, kcpClient client.Client, versionsToB
 		crdItem.Status.StoredVersions = newStoredVersions
 		logger.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
 		crd := crdItem
-		if err := kcpClient.Status().Update(ctx, &crd); err != nil {
+		err := kcpClient.Status().Update(ctx, &crd)
+		if err != nil {
 			msg := fmt.Sprintf("Failed to update CRD to remove %s from stored versions", storedVersionToDrop)
 			logger.V(log.InfoLevel).Error(err, msg)
 		}

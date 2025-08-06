@@ -44,6 +44,7 @@ type DeletionReconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
+
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
@@ -52,7 +53,8 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
 
 	template := &v1beta2.ModuleTemplate{}
-	if err := r.Get(ctx, req.NamespacedName, template); err != nil {
+	err := r.Get(ctx, req.NamespacedName, template)
+	if err != nil {
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("ModuleTemplate %s not found, probably already deleted",
 				req.NamespacedName))
@@ -87,7 +89,8 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
-	if err := r.removeManifests(ctx, manifests); err != nil {
+	err = r.removeManifests(ctx, manifests)
+	if err != nil {
 		r.Event.Warning(template, deletingManifestError, err)
 		return ctrl.Result{}, fmt.Errorf("failed to remove MandatoryModule Manifest: %w", err)
 	}
@@ -98,7 +101,8 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 	template *v1beta2.ModuleTemplate,
 ) (ctrl.Result, error) {
-	if err := r.Update(ctx, template); err != nil {
+	err := r.Update(ctx, template)
+	if err != nil {
 		r.Event.Warning(template, settingFinalizerError, err)
 		return ctrl.Result{}, fmt.Errorf("failed to update MandatoryModuleTemplate finalizer: %w", err)
 	}
@@ -114,10 +118,11 @@ func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
 	}
-	if err := r.List(ctx, manifests, &client.ListOptions{
+	err = r.List(ctx, manifests, &client.ListOptions{
 		Namespace:     template.Namespace,
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); client.IgnoreNotFound(err) != nil {
+	})
+	if client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
 
@@ -128,7 +133,8 @@ func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 
 func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
 	for _, manifest := range manifests {
-		if err := r.Delete(ctx, &manifest); err != nil {
+		err := r.Delete(ctx, &manifest)
+		if err != nil {
 			return fmt.Errorf("not able to delete manifest %s/%s: %w", manifest.Namespace, manifest.Name, err)
 		}
 	}

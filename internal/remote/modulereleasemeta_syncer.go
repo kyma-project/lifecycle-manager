@@ -52,12 +52,14 @@ func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Se
 func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context, kcpModuleReleases []v1beta2.ModuleReleaseMeta) error {
 	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
 
-	if err := worker.SyncConcurrently(ctx, kcpModuleReleases); err != nil {
+	err := worker.SyncConcurrently(ctx, kcpModuleReleases)
+	if err != nil {
 		return err
 	}
 
 	runtimeModuleReleases := &v1beta2.ModuleReleaseMetaList{}
-	if err := mts.skrClient.List(ctx, runtimeModuleReleases); err != nil {
+	err = mts.skrClient.List(ctx, runtimeModuleReleases)
+	if err != nil {
 		// it can happen that the ModuleReleaseMeta CRD is not caught during to apply if there are no objects to apply
 		// if this is the case and there is no CRD there can never be any ModuleReleaseMetas to delete
 		if meta.IsNoMatchError(err) {
@@ -74,7 +76,8 @@ func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context, kcpModuleRele
 // DeleteAllManaged deletes all ModuleReleaseMetas managed by KLM from the SKR cluster.
 func (mts *moduleReleaseMetaSyncer) DeleteAllManaged(ctx context.Context) error {
 	moduleReleaseMetasRuntime := &v1beta2.ModuleReleaseMetaList{Items: []v1beta2.ModuleReleaseMeta{}}
-	if err := mts.skrClient.List(ctx, moduleReleaseMetasRuntime); err != nil {
+	err := mts.skrClient.List(ctx, moduleReleaseMetasRuntime)
+	if err != nil {
 		// if there is no CRD or no ModuleReleaseMeta exists,
 		// there can never be any ModuleReleaseMeta to delete
 		if util.IsNotFound(err) {
@@ -84,7 +87,8 @@ func (mts *moduleReleaseMetaSyncer) DeleteAllManaged(ctx context.Context) error 
 	}
 	for i := range moduleReleaseMetasRuntime.Items {
 		if isModuleReleaseMetaManagedByKcp(&moduleReleaseMetasRuntime.Items[i]) {
-			if err := mts.skrClient.Delete(ctx, &moduleReleaseMetasRuntime.Items[i]); err != nil &&
+			err := mts.skrClient.Delete(ctx, &moduleReleaseMetasRuntime.Items[i])
+			if err != nil &&
 				!util.IsNotFound(err) {
 				return fmt.Errorf("failed to delete ModuleReleaseMeta from skr: %w", err)
 			}

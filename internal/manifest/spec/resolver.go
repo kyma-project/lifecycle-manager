@@ -37,7 +37,8 @@ var ErrRenderModeInvalid = errors.New("render mode is invalid")
 
 func (s *Resolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*declarativev2.Spec, error) {
 	var imageSpec v1beta2.ImageSpec
-	if err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec); err != nil {
+	err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec)
+	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 

@@ -28,7 +28,8 @@ func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 	if err != nil {
 		return err
 	}
-	if err := clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
+	err = clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+	if err != nil {
 		if util.IsNotFound(err) {
 			return nil
 		}
@@ -55,7 +56,8 @@ func GetCR(ctx context.Context, clnt client.Client,
 ) (*unstructured.Unstructured, error) {
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(gvk)
-	if err := clnt.Get(ctx, objectKey, obj); err != nil {
+	err := clnt.Get(ctx, objectKey, obj)
+	if err != nil {
 		return nil, err
 	}
 	return obj, nil

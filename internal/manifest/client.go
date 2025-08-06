@@ -45,7 +45,8 @@ func (cc *ClusterClient) GetRESTConfig(
 	kubeConfigSecret := &apicorev1.Secret{}
 	if len(kubeConfigSecretList.Items) < 1 {
 		key := client.ObjectKey{Name: kymaOwner, Namespace: namespace}
-		if err := cc.DefaultClient.Get(ctx, key, kubeConfigSecret); err != nil {
+		err := cc.DefaultClient.Get(ctx, key, kubeConfigSecret)
+		if err != nil {
 			return nil, fmt.Errorf("could not get by key (%s) or selector (%s): %w",
 				key, labelSelector.String(), common.ErrAccessSecretNotFound)
 		}

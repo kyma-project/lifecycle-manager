@@ -10,7 +10,8 @@ import (
 )
 
 func NewHTTPRoute(watcher *v1beta2.Watcher) (*istioapiv1beta1.HTTPRoute, error) {
-	if err := validateArgumentsForNewHTTPRoute(watcher); err != nil {
+	err := validateArgumentsForNewHTTPRoute(watcher)
+	if err != nil {
 		return nil, err
 	}
 

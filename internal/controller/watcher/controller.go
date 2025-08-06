@@ -55,12 +55,13 @@ var (
 type Reconciler struct {
 	client.Client
 	event.Event
+	queue.RequeueIntervals
+
 	IstioClient           *istio.Client
 	VirtualServiceFactory istio.VirtualServiceFactory
 	RestConfig            *rest.Config
 	Scheme                *machineryruntime.Scheme
 	IstioGatewayNamespace string
-	queue.RequeueIntervals
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -68,7 +69,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	logger.V(log.DebugLevel).Info("Reconciliation loop starting")
 
 	watcher := &v1beta2.Watcher{}
-	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcher); err != nil {
+	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcher)
+	if err != nil {
 		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")
 		if !util.IsNotFound(err) {
 			return ctrl.Result{}, fmt.Errorf("watcherController: %w", err)

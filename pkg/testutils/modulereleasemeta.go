@@ -38,7 +38,8 @@ func UpdateChannelVersionInModuleReleaseMeta(ctx context.Context, clnt client.Cl
 		})
 	}
 
-	if err = clnt.Update(ctx, mrm); err != nil {
+	err = clnt.Update(ctx, mrm)
+	if err != nil {
 		return fmt.Errorf("update module release meta: %w", err)
 	}
 
@@ -61,7 +62,8 @@ func GetModuleReleaseMeta(ctx context.Context, moduleName, namespace string,
 }
 
 func ModuleReleaseMetaExists(ctx context.Context, moduleName, namespace string, clnt client.Client) error {
-	if _, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt); err != nil {
+	_, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
+	if err != nil {
 		if util.IsNotFound(err) {
 			return ErrNotFound
 		}
@@ -106,13 +108,15 @@ func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client clien
 	namespace, name, version string,
 ) error {
 	meta := &v1beta2.ModuleReleaseMeta{}
-	if err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta); err != nil {
+	err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, meta)
+	if err != nil {
 		return err
 	}
 	for i := range meta.Spec.Channels {
 		meta.Spec.Channels[i].Version = version
 	}
-	if err := client.Update(ctx, meta); err != nil {
+	err = client.Update(ctx, meta)
+	if err != nil {
 		return err
 	}
 	return nil

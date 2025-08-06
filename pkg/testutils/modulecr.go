@@ -106,7 +106,8 @@ func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *u
 	}
 	moduleCR.SetFinalizers(append(finalizers, finalizer))
 
-	if err = clnt.Update(ctx, moduleCR); err != nil {
+	err = clnt.Update(ctx, moduleCR)
+	if err != nil {
 		return fmt.Errorf("updating module CR %w", err)
 	}
 

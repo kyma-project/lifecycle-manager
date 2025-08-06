@@ -94,7 +94,8 @@ func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 	defer blobReadCloser.Close()
 
 	// create dir for uncompressed manifest
-	if err := os.MkdirAll(installPath, fs.ModePerm); err != nil {
+	err = os.MkdirAll(installPath, fs.ModePerm)
+	if err != nil {
 		return "", fmt.Errorf(
 			"failure while creating installPath directory for layer %s: %w",
 			imageRef, err,
@@ -104,7 +105,8 @@ func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 	if err != nil {
 		return "", fmt.Errorf("file create failed for layer %s: %w", imageRef, err)
 	}
-	if _, err := io.Copy(outFile, blobReadCloser); err != nil {
+	_, err = io.Copy(outFile, blobReadCloser)
+	if err != nil {
 		return "", fmt.Errorf("file copy storage failed for layer %s: %w", imageRef, err)
 	}
 	err = io.Closer(outFile).Close()
@@ -149,7 +151,8 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 				return "", fmt.Errorf("failed to sanitize archive path: %w", err)
 			}
 
-			if _, err := os.Stat(extractedFilePath); err == nil {
+			_, err = os.Stat(extractedFilePath)
+			if err == nil {
 				return extractedFilePath, nil
 			}
 
@@ -159,7 +162,9 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 			}
 			defer outFile.Close()
 
-			if _, err := io.Copy(outFile, tarReader); err != nil { //nolint:gosec // The upstream content is
+			//nolint:gosec // The tar file is expected to be small, as it is generated from a single layer
+			_, err = io.Copy(outFile, tarReader)
+			if err != nil {
 				// from managed resources, and the size is controlled, so it is safe from decompression bomb attacks.
 				return "", fmt.Errorf("failed to extract from tar: %w", err)
 			}

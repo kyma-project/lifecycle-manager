@@ -36,6 +36,7 @@ const (
 
 type SkrContext struct {
 	Client
+
 	event event.Event
 }
 
@@ -90,14 +91,16 @@ func (s *SkrContext) CreateKymaNamespace(ctx context.Context) error {
 	}
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(namespace); err != nil {
+	err := json.NewEncoder(&buf).Encode(namespace)
+	if err != nil {
 		return fmt.Errorf("failed to encode namespace: %w", err)
 	}
 
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 	force := true
 	patchOpts := &client.PatchOptions{Force: &force, FieldManager: fieldManager}
-	if err := s.Patch(ctx, namespace, patch, patchOpts); err != nil {
+	err = s.Patch(ctx, namespace, patch, patchOpts)
+	if err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
 
@@ -109,7 +112,8 @@ func (s *SkrContext) CreateOrFetchKyma(
 ) (*v1beta2.Kyma, error) {
 	remoteKyma, err := s.getRemoteKyma(ctx)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
-		if err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural()); err != nil {
+		err := s.createOrUpdateCRD(ctx, kcpClient, shared.KymaKind.Plural())
+		if err != nil {
 			return nil, err
 		}
 		s.event.Normal(kyma, crdInstallation, "CRDs were installed to SKR")
@@ -175,7 +179,8 @@ func (s *SkrContext) SynchronizeKymaStatus(ctx context.Context, kcpKyma, skrKyma
 	}
 
 	syncStatus(&kcpKyma.Status, &skrKyma.Status)
-	if err := s.Client.Status().Update(ctx, skrKyma); err != nil {
+	err := s.Client.Status().Update(ctx, skrKyma)
+	if err != nil {
 		err = fmt.Errorf("failed to synchronise Kyma status to SKR: %w", err)
 		s.event.Warning(kcpKyma, statusSyncFailure, err)
 		return err
@@ -230,7 +235,8 @@ func (s *SkrContext) getRemoteKyma(ctx context.Context) (*v1beta2.Kyma, error) {
 		},
 	}
 
-	if err := s.Get(ctx, client.ObjectKeyFromObject(skrKyma), skrKyma); err != nil {
+	err := s.Get(ctx, client.ObjectKeyFromObject(skrKyma), skrKyma)
+	if err != nil {
 		return skrKyma, fmt.Errorf("failed to get remote kyma: %w", err)
 	}
 

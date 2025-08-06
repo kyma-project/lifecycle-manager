@@ -39,7 +39,8 @@ func NewVirtualServiceService(scheme *machineryruntime.Scheme) (*VirtualServiceS
 }
 
 func (vss *VirtualServiceService) NewVirtualService(watcher *v1beta2.Watcher, gateways *istioclientapiv1beta1.GatewayList) (*istioclientapiv1beta1.VirtualService, error) {
-	if err := validateArgumentsForNewVirtualService(watcher, gateways); err != nil {
+	err := validateArgumentsForNewVirtualService(watcher, gateways)
+	if err != nil {
 		return nil, err
 	}
 
@@ -62,7 +63,8 @@ func (vss *VirtualServiceService) NewVirtualService(watcher *v1beta2.Watcher, ga
 		httpRoute,
 	}
 
-	if err := controllerutil.SetOwnerReference(watcher, virtualService, vss.scheme); err != nil {
+	err = controllerutil.SetOwnerReference(watcher, virtualService, vss.scheme)
+	if err != nil {
 		return nil, errors.Join(ErrFailedToAddOwnerReference, err)
 	}
 

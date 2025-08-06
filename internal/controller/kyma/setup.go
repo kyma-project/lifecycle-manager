@@ -54,10 +54,11 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		shared.OperatorName,
 		verifyFunc,
 	)
-	if err := mgr.Add(runnableListener); err != nil {
+	err := mgr.Add(runnableListener)
+	if err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
-	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+	err = ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
@@ -69,7 +70,8 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
 				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler())).
-		Complete(r); err != nil {
+		Complete(r)
+	if err != nil {
 		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
 	}
 

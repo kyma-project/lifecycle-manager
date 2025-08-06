@@ -116,10 +116,11 @@ func GetManifestWithMetadata(ctx context.Context,
 	clnt client.Client, manifestNamespace, manifestName string,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	if err := clnt.Get(ctx, client.ObjectKey{
+	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: manifestNamespace,
 		Name:      manifestName,
-	}, manifest); err != nil {
+	}, manifest)
+	if err != nil {
 		return nil, fmt.Errorf("get manifest: %w", err)
 	}
 	return manifest, nil
@@ -162,9 +163,10 @@ func MandatoryManifestExistsWithLabelAndAnnotation(ctx context.Context, clnt cli
 	annotationKey, annotationValue string,
 ) error {
 	manifests := v1beta2.ManifestList{}
-	if err := clnt.List(ctx, &manifests, &client.ListOptions{
+	err := clnt.List(ctx, &manifests, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed listing manifests: %w", err)
 	}
 
@@ -213,7 +215,8 @@ func NoManifestExist(ctx context.Context,
 	clnt client.Client,
 ) error {
 	manifestList := &v1beta2.ManifestList{}
-	if err := clnt.List(ctx, manifestList); err != nil {
+	err := clnt.List(ctx, manifestList)
+	if err != nil {
 		return fmt.Errorf("error listing manifests: %w", err)
 	}
 	if len(manifestList.Items) == 0 {
@@ -286,9 +289,10 @@ func SetSkipLabelToManifest(
 func SetSkipLabelToMandatoryManifests(ctx context.Context, clnt client.Client, ifSkip bool,
 ) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
+	err := clnt.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
 	for _, manifest := range manifestList.Items {
@@ -305,9 +309,10 @@ func MandatoryModuleManifestExistWithCorrectVersion(ctx context.Context, clnt cl
 	moduleName, expectedVersion string,
 ) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
+	err := clnt.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
 
@@ -335,9 +340,10 @@ func MandatoryModuleManifestContainsExpectedLabel(ctx context.Context, clnt clie
 	moduleName, labelkey, labelValue string,
 ) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := clnt.List(ctx, &manifestList, &client.ListOptions{
+	err := clnt.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to list manifests: %w", err)
 	}
 
@@ -398,7 +404,8 @@ func CheckManifestHasCorrectInstallRepo(
 	}
 
 	var installImageSpec *v1beta2.ImageSpec
-	if err = machineryaml.Unmarshal(manifest.Spec.Install.Source.Raw, &installImageSpec); err != nil {
+	err = machineryaml.Unmarshal(manifest.Spec.Install.Source.Raw, &installImageSpec)
+	if err != nil {
 		return fmt.Errorf("error unmarshalling install image spec: %w", err)
 	}
 
@@ -616,7 +623,8 @@ func UpdateManifestSpec(cxt context.Context, clnt client.Client, manifestName st
 		return err
 	}
 	manifest.Spec = spec
-	if err = clnt.Update(cxt, manifest); err != nil {
+	err = clnt.Update(cxt, manifest)
+	if err != nil {
 		return fmt.Errorf("error updating Manifest: %w", err)
 	}
 
@@ -734,11 +742,12 @@ func GetManifestWithName(ctx context.Context, clnt client.Client, manifestName s
 
 func DeleteManifestAndVerify(ctx context.Context, clnt client.Client, manifest *v1beta2.Manifest) func() error {
 	return func() error {
-		if err := clnt.Delete(ctx, manifest); err != nil && !util.IsNotFound(err) {
+		err := clnt.Delete(ctx, manifest)
+		if err != nil && !util.IsNotFound(err) {
 			return fmt.Errorf("error deleting Manifest %s: %w", manifest.Name, err)
 		}
 		newManifest := v1beta2.Manifest{}
-		err := clnt.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
+		err = clnt.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		if client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("failed to fetch manifest %w", err)
 		}

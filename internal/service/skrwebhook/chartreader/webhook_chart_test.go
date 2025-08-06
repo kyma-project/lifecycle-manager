@@ -86,7 +86,8 @@ kind: Secret
 metadata:
   name: test-secret
 `
-	if err := os.WriteFile(manifestPath, []byte(content), 0o600); err != nil {
+	err := os.WriteFile(manifestPath, []byte(content), 0o600)
+	if err != nil {
 		t.Fatalf("failed to write manifest: %v", err)
 	}
 
@@ -112,7 +113,8 @@ metadata:
 			name: "invalid yaml",
 			dir: func() string {
 				d := t.TempDir()
-				if err := os.WriteFile(d+"/resources.yaml", []byte("not: [valid"), 0o600); err != nil {
+				err := os.WriteFile(d+"/resources.yaml", []byte("not: [valid"), 0o600)
+				if err != nil {
 					return ""
 				}
 				return d

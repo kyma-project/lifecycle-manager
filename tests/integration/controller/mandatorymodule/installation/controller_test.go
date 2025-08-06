@@ -12,10 +12,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -118,9 +117,10 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := reconciler.List(ctx, &manifestList, &client.ListOptions{
+	err := reconciler.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 	for _, manifest := range manifestList.Items {

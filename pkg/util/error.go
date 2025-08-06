@@ -67,7 +67,8 @@ func NestedErrorMessage(err error) string {
 	if err == nil {
 		return res
 	}
-	if uwErr := errors.Unwrap(err); uwErr != nil {
+	uwErr := errors.Unwrap(err)
+	if uwErr != nil {
 		res = uwErr.Error()
 	}
 

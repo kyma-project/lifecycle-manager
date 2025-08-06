@@ -64,7 +64,8 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 
 	var errs []error
 	for range resources {
-		if err := <-results; err != nil {
+		err := <-results
+		if err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -80,7 +81,8 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
-	if err := c.collector.Emit(ctx); err != nil {
+	err := c.collector.Emit(ctx)
+	if err != nil {
 		logger.V(internal.DebugLogLevel).Error(err, "error emitting data of unknown field managers")
 	}
 	return nil

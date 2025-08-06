@@ -56,11 +56,13 @@ func (c *GatewaySecretRotationClient) GetGatewaySecret(ctx context.Context) (*ap
 }
 
 func (c *GatewaySecretRotationClient) CreateGatewaySecret(ctx context.Context, gatewaySecret *apicorev1.Secret) error {
-	if err := ensureGatewaySecret(gatewaySecret); err != nil {
+	err := ensureGatewaySecret(gatewaySecret)
+	if err != nil {
 		return err
 	}
 
-	if _, err := c.secretInterface.Create(ctx, gatewaySecret, apimetav1.CreateOptions{}); err != nil {
+	_, err = c.secretInterface.Create(ctx, gatewaySecret, apimetav1.CreateOptions{})
+	if err != nil {
 		return fmt.Errorf("failed to create gateway secret %s: %w", gatewaySecret.Name, err)
 	}
 
@@ -68,11 +70,13 @@ func (c *GatewaySecretRotationClient) CreateGatewaySecret(ctx context.Context, g
 }
 
 func (c *GatewaySecretRotationClient) UpdateGatewaySecret(ctx context.Context, gatewaySecret *apicorev1.Secret) error {
-	if err := ensureGatewaySecret(gatewaySecret); err != nil {
+	err := ensureGatewaySecret(gatewaySecret)
+	if err != nil {
 		return err
 	}
 
-	if _, err := c.secretInterface.Update(ctx, gatewaySecret, apimetav1.UpdateOptions{}); err != nil {
+	_, err = c.secretInterface.Update(ctx, gatewaySecret, apimetav1.UpdateOptions{})
+	if err != nil {
 		return fmt.Errorf("failed to update gateway secret %s: %w", gatewaySecret.Name, err)
 	}
 
