@@ -45,7 +45,8 @@ type Manifest struct {
 type ManifestList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []Manifest `json:"items"`
+
+	Items []Manifest `json:"items"`
 }
 
 //nolint:gochecknoinits // registers Kyma CRD on startup

@@ -93,7 +93,8 @@ type KymaSpec struct {
 type KymaList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []Kyma `json:"items"`
+
+	Items []Kyma `json:"items"`
 }
 
 //nolint:gochecknoinits // registers Kyma CRD on startup

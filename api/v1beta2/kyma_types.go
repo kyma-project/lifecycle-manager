@@ -61,6 +61,9 @@ type KymaSpec struct {
 
 // Module defines the components to be installed.
 type Module struct {
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
 	// Name is a unique identifier of the module.
 	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
 	//
@@ -90,9 +93,6 @@ type Module struct {
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
 	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef,omitempty"`
-
-	// +kubebuilder:default:=CreateAndDelete
-	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
 
 	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
 	// for the lifecycle of the module.
@@ -132,6 +132,8 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 
 // KymaStatus defines the observed state of Kyma.
 type KymaStatus struct {
+	shared.LastOperation `json:"lastOperation,omitempty"`
+
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
 	State shared.State `json:"state,omitempty"`
@@ -148,8 +150,6 @@ type KymaStatus struct {
 	// Active Channel
 	// +optional
 	ActiveChannel string `json:"activeChannel,omitempty"`
-
-	shared.LastOperation `json:"lastOperation,omitempty"`
 }
 
 func (status *KymaStatus) GetModuleStatus(moduleName string) *ModuleStatus {
@@ -308,7 +308,8 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 type KymaList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []Kyma `json:"items"`
+
+	Items []Kyma `json:"items"`
 }
 
 //nolint:gochecknoinits // registers Kyma CRD on startup
