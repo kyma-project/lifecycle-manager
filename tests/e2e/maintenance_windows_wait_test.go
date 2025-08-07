@@ -53,7 +53,8 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient,
+					shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -88,10 +89,17 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
+			By("And Kyma .status.modules[].maintenance=false")
+			Eventually(ModuleMaintenanceIndicatorInKymaStatusIsCorrect).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
+				Should(Succeed())
+
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient,
+					shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -128,13 +136,20 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient,
+					shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+
+			By("And Kyma .status.modules[].maintenance=true")
+			Eventually(ModuleMaintenanceIndicatorInKymaStatusIsCorrect).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 				Should(Succeed())
 
 			By("And Kyma .status.modules[].version shows correct version")
@@ -171,7 +186,8 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient,
+					shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
