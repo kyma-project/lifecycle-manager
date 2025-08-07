@@ -33,6 +33,8 @@ GINKGO_VERSION ?= v2.12.0
 # FIPS140 Module version
 FIPS140_MODULE_VERSION := v1.0.0
 
+set-fips:
+	export GOFIPS140=$(FIPS140_MODULE_VERSION)
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -69,131 +71,131 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
     done
 
 ##@ E2E Tests
-GO_TEST := GOFIPS140=$(FIPS140_MODULE_VERSION) go test
+GO_TEST := GOFIPS140=$(FIPS140_MODULE_VERSION) go test -timeout 20m -ginkgo.v -ginkgo.focus
 
 kyma-deprovision-with-foreground-propagation:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
+	$(GO_TEST) "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
 
 kyma-deprovision-with-background-propagation:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal"
+	$(GO_TEST) "KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal"
 
 kyma-metrics:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Manage Module Metrics"
+	$(GO_TEST) "Manage Module Metrics"
 
 mandatory-module-metrics:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Metrics"
+	$(GO_TEST) "Mandatory Module Metrics"
 
 mandatory-module-metrics-with-old-naming-pattern:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module With Old Naming Pattern Metrics"
+	$(GO_TEST) "Mandatory Module With Old Naming Pattern Metrics"
 
 watcher-enqueue:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
+	$(GO_TEST) "Enqueue Event from Watcher"
 
 module-status-decoupling-with-statefulset:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Status Decoupling With StatefulSet"
+	$(GO_TEST) "Module Status Decoupling With StatefulSet"
 
 module-status-decoupling-with-deployment:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Status Decoupling With Deployment"
+	$(GO_TEST) "Module Status Decoupling With Deployment"
 
 module-without-default-cr:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
+	$(GO_TEST) "Module Without Default CR"
 
 module-consistency:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Keep Consistent After Deploy"
+	$(GO_TEST) "Module Keep Consistent After Deploy"
 
 mandatory-module:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module Installation and Deletion"
+	$(GO_TEST) "Mandatory Module Installation and Deletion"
 
 mandatory-module-with-old-naming-pattern:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Mandatory Module With Old Naming Pattern Installation and Deletion"
+	$(GO_TEST) "Mandatory Module With Old Naming Pattern Installation and Deletion"
 
 non-blocking-deletion:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
+	$(GO_TEST) "Non Blocking Kyma Module Deletion"
 
 skip-manifest-reconciliation:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Manifest Skip Reconciliation Label"
+	$(GO_TEST) "Manifest Skip Reconciliation Label"
 
 upgrade-under-deletion:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
+	$(GO_TEST) "Kyma Module Upgrade Under Deletion"
 
 modulereleasemeta-upgrade-under-deletion:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
+	$(GO_TEST) "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
 
 unmanage-module:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Unmanaging Kyma Module"
+	$(GO_TEST) "Unmanaging Kyma Module"
 
 purge-controller:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
+	$(GO_TEST) "Purge Controller"
 
 purge-metrics:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
+	$(GO_TEST) "Purge Metrics"
 
 module-upgrade-channel-switch:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
+	$(GO_TEST) "Module Upgrade By Channel Switch"
 
 module-upgrade-new-version:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By New Version"
+	$(GO_TEST) "Module Upgrade By New Version"
 
 modulereleasemeta-module-upgrade-new-version:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module with ModuleReleaseMeta Upgrade By New Version"
+	$(GO_TEST) "Module with ModuleReleaseMeta Upgrade By New Version"
 
 module-install-by-version:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Install By Version"
+	$(GO_TEST) "Module Install By Version"
 
 legacy-istio-gateway-secret-rotation:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation"
+	$(GO_TEST) "Legacy Istio Gateway Secret Rotation"
 
 self-signed-certificate-rotation:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
+	$(GO_TEST) "Self Signed Certificate Rotation"
 
 misconfigured-kyma-secret:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Misconfigured Kyma Secret"
+	$(GO_TEST) "Misconfigured Kyma Secret"
 
 rbac-privileges:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "RBAC Privileges"
+	$(GO_TEST) "RBAC Privileges"
 
 oci-reg-cred-secret:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "OCI Registry Credentials Secret"
+	$(GO_TEST) "OCI Registry Credentials Secret"
 
 ocm-compatible-module-template:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "OCM Format Module Template"
+	$(GO_TEST) "OCM Format Module Template"
 
 modulereleasemeta-with-obsolete-moduletemplate:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta With Obsolete ModuleTemplate"
+	$(GO_TEST) "ModuleReleaseMeta With Obsolete ModuleTemplate"
 
 modulereleasemeta-watch-trigger:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Watch Trigger"
+	$(GO_TEST) "ModuleReleaseMeta Watch Trigger"
   
 modulereleasemeta-sync:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Sync"
+	$(GO_TEST) "ModuleReleaseMeta Sync"
 
 module-status-on-skr-connection-lost:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma Module status on SKR connection lost"
+	$(GO_TEST) "KCP Kyma Module status on SKR connection lost"
   
 modulereleasemeta-not-allowed-installation:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "ModuleReleaseMeta Not Allowed Installation"
+	$(GO_TEST) "ModuleReleaseMeta Not Allowed Installation"
 
 labelling:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Labelling SKR resources"
+	$(GO_TEST) "Labelling SKR resources"
 
 maintenance-windows:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - Wait for Maintenance Window"
+	$(GO_TEST) "Maintenance Windows - Wait for Maintenance Window"
 
 maintenance-windows-initial-installation:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
+	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Window on Initial Installation"
 
 maintenance-windows-skip:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
+	$(GO_TEST) "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
 
 watcher-zero-downtime:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Watcher Zero Downtime"
+	$(GO_TEST) "Watcher Zero Downtime"
 
 module-deletion-with-multiple-crs-create-and-delete-policy:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
+	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy"
 
 module-deletion-with-multiple-crs-ignore-policy:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
+	$(GO_TEST) "Blocking Module Deletion With Multiple Module CRs with Ignore Policy"
 
 module-transferred-to-another-oci-registry:
-	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "Module Transferred to Another OCI Registry"
+	$(GO_TEST) "Module Transferred to Another OCI Registry"
 
