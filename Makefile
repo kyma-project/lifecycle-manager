@@ -23,8 +23,8 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-# FIPS140 Module version
-FIPS140_MODULE_VERSION := v1.0.0
+# Go command with FIPS140 Module enabled
+GO := GOFIPS140=v1.0.0 go
 
 .PHONY: all
 all: build
@@ -70,11 +70,11 @@ envtest-dir:
 
 .PHONY: test
 test: unittest manifests test-crd generate fmt vet envtest ## Run tests.
-	GOFIPS140=$(FIPS140_MODULE_VERSION) KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" $(GO) test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
 
 .PHONY: unittest
 unittest: ## Run the unit test suite.
-	GOFIPS140=$(FIPS140_MODULE_VERSION) go test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
+	$(GO) test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
 
 .PHONY: dry-run
 dry-run: kustomize manifests
@@ -93,7 +93,7 @@ dry-run-control-plane: kustomize manifests
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	GOFIPS140=$(FIPS140_MODULE_VERSION) go build -ldflags="-X 'main.buildVersion=${BUILD_VERSION}'" -o bin/manager cmd/main.go
+	$(GO) build -ldflags="-X 'main.buildVersion=${BUILD_VERSION}'" -o bin/manager cmd/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -163,17 +163,17 @@ GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) GOFIPS140=$(FIPS140_MODULE_VERSION) go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) GOFIPS140=$(FIPS140_MODULE_VERSION) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) GOFIPS140=$(FIPS140_MODULE_VERSION) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(ENVTEST_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(ENVTEST_VERSION)
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -181,7 +181,7 @@ fmt: ## Run go fmt against code.
 
 .PHONY: lint
 lint: ## Run golangci-lint against code.
-	GOBIN=$(LOCALBIN) GOFIPS140=$(FIPS140_MODULE_VERSION) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
 	$(LOCALBIN)/golangci-lint run --verbose -c .golangci.yaml
 	pushd api; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
 	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
