@@ -62,6 +62,12 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+
+			By("And Kyma .status.modules[].maintenance=false")
+			Eventually(ModuleMaintenanceIndicatorInKymaStatusIsCorrect).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
+				Should(Succeed())
 		})
 
 		It("When module channel is changed to fast (requiresDowntime=true)", func() {
@@ -89,12 +95,6 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 				WithArguments(skrClient, ModuleDeploymentNameInNewerVersion, TestModuleResourceNamespace).
 				Should(Equal(ErrNotFound))
 
-			By("And Kyma .status.modules[].maintenance=false")
-			Eventually(ModuleMaintenanceIndicatorInKymaStatusIsCorrect).
-				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
-				Should(Succeed())
-
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
@@ -106,6 +106,12 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+
+			By("And Kyma .status.modules[].maintenance=true")
+			Eventually(ModuleMaintenanceIndicatorInKymaStatusIsCorrect).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
 				Should(Succeed())
 		})
 
@@ -146,10 +152,10 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 
-			By("And Kyma .status.modules[].maintenance=true")
+			By("And Kyma .status.modules[].maintenance=false")
 			Eventually(ModuleMaintenanceIndicatorInKymaStatusIsCorrect).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, true).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, false).
 				Should(Succeed())
 
 			By("And Kyma .status.modules[].version shows correct version")
