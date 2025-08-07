@@ -10,27 +10,27 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type SecretInterface interface {
+type SecretGetter interface {
 	Get(ctx context.Context, name string, opts apimetav1.GetOptions) (*apicorev1.Secret, error)
 }
 
-type OCIRegistry struct {
-	secretInterface SecretInterface
-	host            string
-	credSecretName  string
+type OCIRegistryHostProvider struct {
+	secretGetter   SecretGetter
+	host           string
+	credSecretName string
 }
 
 var (
-	ErrSecretInterfaceNil        = errors.New("secretInterface cannot be nil")
+	ErrSecretGetterNil           = errors.New("secretGetter cannot be nil")
 	ErrHostAndCredSecretEmpty    = errors.New("host and credSecretName cannot be empty")
 	ErrBothHostAndCredSecret     = errors.New("either host or credSecretName should be provided, not both")
 	ErrSecretMissingDockerConfig = errors.New("secret missing .dockerconfigjson field")
 	ErrNoRegistryHostFound       = errors.New("no registry host found in the credential secret")
 )
 
-func NewOCIRegistry(secretInterface SecretInterface, host string, credSecretName string) (*OCIRegistry, error) {
-	if secretInterface == nil {
-		return nil, ErrSecretInterfaceNil
+func NewOCIRegistryHostProvider(secretGetter SecretGetter, host string, credSecretName string) (*OCIRegistryHostProvider, error) {
+	if secretGetter == nil {
+		return nil, ErrSecretGetterNil
 	}
 	if host == "" && credSecretName == "" {
 		return nil, ErrHostAndCredSecretEmpty
@@ -39,14 +39,14 @@ func NewOCIRegistry(secretInterface SecretInterface, host string, credSecretName
 		return nil, ErrBothHostAndCredSecret
 	}
 
-	return &OCIRegistry{
-		secretInterface: secretInterface,
-		host:            host,
-		credSecretName:  credSecretName,
+	return &OCIRegistryHostProvider{
+		secretGetter:   secretGetter,
+		host:           host,
+		credSecretName: credSecretName,
 	}, nil
 }
 
-func (oci *OCIRegistry) ResolveHost(ctx context.Context) (string, error) {
+func (oci *OCIRegistryHostProvider) ResolveHost(ctx context.Context) (string, error) {
 	if oci.host != "" {
 		return oci.host, nil
 	}
@@ -54,8 +54,8 @@ func (oci *OCIRegistry) ResolveHost(ctx context.Context) (string, error) {
 	return oci.getHostFromCredSecret(ctx)
 }
 
-func (oci *OCIRegistry) getHostFromCredSecret(ctx context.Context) (string, error) {
-	secret, err := oci.secretInterface.Get(ctx, oci.credSecretName, apimetav1.GetOptions{})
+func (oci *OCIRegistryHostProvider) getHostFromCredSecret(ctx context.Context) (string, error) {
+	secret, err := oci.secretGetter.Get(ctx, oci.credSecretName, apimetav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

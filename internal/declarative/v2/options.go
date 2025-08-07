@@ -48,7 +48,6 @@ type Options struct {
 	ManifestParser
 	ManifestCache
 	CustomStateCheck StateCheck
-	OciRegistryHost  string
 
 	PostRenderTransforms []ObjectTransform
 }
@@ -177,16 +176,4 @@ type WithClientCacheKeyOption struct {
 
 func (o WithClientCacheKeyOption) Apply(options *Options) {
 	options.ClientCacheKeyFn = o.ClientCacheKeyFn
-}
-
-type WithOciRegistryHostOption struct {
-	host string
-}
-
-func WithOciRegistryHost(host string) WithOciRegistryHostOption {
-	return WithOciRegistryHostOption{host: host}
-}
-
-func (o WithOciRegistryHostOption) Apply(options *Options) {
-	options.OciRegistryHost = o.host
 }

@@ -214,6 +214,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 
+	//nolint:godox // this will be used in the future
+	// TODO: use the oci registry host //nolint:godox // this will be used in the future
+	_ = getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
+
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, logger,
@@ -239,6 +243,28 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		logger.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
+}
+
+func getOciRegistryHost(config *rest.Config, flagVar *flags.FlagVar, setupLog logr.Logger) string {
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		setupLog.Error(err, "unable to create kubernetes clientset")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	secretInterface := clientset.CoreV1().Secrets(shared.DefaultControlPlaneNamespace)
+
+	ociRegistrySetup, err := setup.NewOCIRegistryHostProvider(secretInterface, flagVar.OciRegistryHost,
+		flagVar.OciRegistryCredSecretName)
+	if err != nil {
+		setupLog.Error(err, "failed to setup OCI registry")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	ociRegistryHost, err := ociRegistrySetup.ResolveHost(context.Background())
+	if err != nil {
+		setupLog.Error(err, "failed to resolve OCI registry host")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	return ociRegistryHost
 }
 
 func initMaintenanceWindow(minWindowSize time.Duration, logger logr.Logger) maintenancewindows.MaintenanceWindow {
@@ -427,7 +453,6 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentManifestReconciles
 
-	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, setupLog)
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
@@ -443,33 +468,11 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
-		manifestClient, orphanDetectionClient, specResolver, ociRegistryHost,
+		manifestClient, orphanDetectionClient, specResolver,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
-}
-
-func getOciRegistryHost(config *rest.Config, flagVar *flags.FlagVar, setupLog logr.Logger) string {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		setupLog.Error(err, "unable to create kubernetes clientset")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	secretInterface := clientset.CoreV1().Secrets(shared.DefaultControlPlaneNamespace)
-
-	ociRegistrySetup, err := setup.NewOCIRegistry(secretInterface, flagVar.OciRegistryHost,
-		flagVar.OciRegistryCredSecretName)
-	if err != nil {
-		setupLog.Error(err, "failed to setup OCI registry")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	ociRegistryHost, err := ociRegistrySetup.ResolveHost(context.Background())
-	if err != nil {
-		setupLog.Error(err, "failed to resolve OCI registry host")
-		os.Exit(bootstrapFailedExitCode)
-	}
-	return ociRegistryHost
 }
 
 //nolint:ireturn // constructor functions can return interfaces
