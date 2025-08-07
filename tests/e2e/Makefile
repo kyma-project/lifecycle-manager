@@ -30,6 +30,9 @@ SHELL = /usr/bin/env bash -o pipefail
 GINKGO ?= $(LOCALBIN)/ginkgo
 GINKGO_VERSION ?= v2.12.0
 
+# FIPS140 Module version
+FIPS140_MODULE_VERSION := v1.0.0
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -49,7 +52,7 @@ help: ## Display this help.
 ginkgo: $(GINKGO) ## Download local ginkgo binary if necessary.
 $(GINKGO): $(LOCALBIN)
 	@test -s $(GINKGO) && $(GINKGO) version | grep -q $(GINKGO_VERSION) || \
-	GOBIN=$(LOCALBIN) GOFIPS140=v1.0.0 go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
+	GOBIN=$(LOCALBIN) GOFIPS140=$(FIPS140_MODULE_VERSION) go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the test suites.
 	@# for file in        - Iterates over all the E2E test suite files.
@@ -66,7 +69,7 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
     done
 
 ##@ E2E Tests
-GO_TEST := GOFIPS140=v1.0.0 go test
+GO_TEST := GOFIPS140==$(FIPS140_MODULE_VERSION) go test
 
 kyma-deprovision-with-foreground-propagation:
 	$(GO_TEST) -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal"
