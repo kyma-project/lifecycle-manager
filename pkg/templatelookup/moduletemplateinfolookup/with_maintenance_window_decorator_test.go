@@ -33,7 +33,8 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenDecoratedLookupRe
 	decorated := &lookupStrategyStub{
 		moduleTemplateInfo: expectedModuleTemplateInfo,
 	}
-	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
+	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		decorated)
 
 	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
@@ -52,7 +53,8 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenDecoratedLookupRe
 			ModuleTemplate: nil,
 		},
 	}
-	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
+	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		decorated)
 
 	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
@@ -79,7 +81,8 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenNoMWRequired(t *t
 	decorated := &lookupStrategyStub{
 		moduleTemplateInfo: expectedModuleTemplateInfo,
 	}
-	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
+	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		decorated)
 
 	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
@@ -106,7 +109,8 @@ func Test_WithMWDecorator_Lookup_ReturnsError_WhenIsActiveReturnsError(t *testin
 			},
 		},
 	}
-	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
+	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		decorated)
 
 	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
@@ -134,7 +138,8 @@ func Test_WithMWDecorator_Lookup_ReturnsError_WhenMWIsRequiredAndNotActive(t *te
 			},
 		},
 	}
-	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
+	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		decorated)
 
 	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
@@ -159,11 +164,13 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenMWIsRequiredAndAc
 				Channel: "test",
 			},
 		},
+		UnderMaintenanceWindow: true,
 	}
 	decorated := &lookupStrategyStub{
 		moduleTemplateInfo: expectedModuleTemplateInfo,
 	}
-	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow, decorated)
+	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		decorated)
 
 	moduleTemplateInfo := withMaintenanceWindowDecorator.Lookup(t.Context(),
 		nil,
