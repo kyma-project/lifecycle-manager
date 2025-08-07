@@ -66,6 +66,6 @@ func (p WithMaintenanceWindowDecorator) Lookup(ctx context.Context,
 		moduleTemplateInfo.ModuleTemplate = nil
 		return moduleTemplateInfo
 	}
-
+	moduleTemplateInfo.UnderMaintenanceWindow = true
 	return moduleTemplateInfo
 }
