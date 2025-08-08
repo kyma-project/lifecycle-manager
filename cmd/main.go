@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"flag"
 	"fmt"
@@ -117,11 +118,15 @@ func main() {
 	setupLog := ctrl.Log.WithName("setup")
 	scheme := machineryruntime.NewScheme()
 	registerSchemas(scheme)
-
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
 		zapcore.Lock(os.Stdout)))
+	if fips140.Enabled() {
+		setupLog.Info("FIPS 140 mode is enabled")
+	} else {
+		setupLog.Info("FIPS 140 mode is not enabled")
+	}
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -479,7 +484,10 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 func keychainLookupFromFlag(mgr ctrl.Manager, flagVar *flags.FlagVar) spec.KeyChainLookup {
 	if flagVar.OciRegistryCredSecretName != "" {
 		return keychainprovider.NewFromSecretKeyChainProvider(mgr.GetClient(),
-			types.NamespacedName{Namespace: shared.DefaultControlPlaneNamespace, Name: flagVar.OciRegistryCredSecretName})
+			types.NamespacedName{
+				Namespace: shared.DefaultControlPlaneNamespace,
+				Name:      flagVar.OciRegistryCredSecretName,
+			})
 	}
 	return keychainprovider.NewDefaultKeyChainProvider()
 }
