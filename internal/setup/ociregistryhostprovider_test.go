@@ -21,7 +21,7 @@ type mockSecretGetter struct {
 func (m *mockSecretGetter) Get(ctx context.Context, name string, opts apimetav1.GetOptions,
 ) (*apicorev1.Secret, error) {
 	args := m.Called(ctx, name, opts)
-	return args.Get(0).(*apicorev1.Secret), args.Error(1) //nolint:forcetypeassert // We know the return type is *apicorev1.Secret
+	return args.Get(0).(*apicorev1.Secret), args.Error(1)
 }
 
 func TestNewOCIRegistry(t *testing.T) {
