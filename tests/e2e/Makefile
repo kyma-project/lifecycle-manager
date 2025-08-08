@@ -137,7 +137,10 @@ module-install-by-version:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Install By Version"
 
 legacy-istio-gateway-secret-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation With Cert-Manager"
+
+legacy-istio-gateway-secret-rotation-gcm:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Legacy Istio Gateway Secret Rotation With GCM"
 
 self-signed-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"
@@ -192,4 +195,3 @@ module-deletion-with-multiple-crs-ignore-policy:
 
 module-transferred-to-another-oci-registry:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Transferred to Another OCI Registry"
-
