@@ -167,7 +167,7 @@ runs:
       shell: bash
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
-        sed -i 's|value: --oci-registry-host=europe-docker.pkg.dev|value: --oci-registry-cred-secret=private-oci-reg-creds|' deployment.yaml
+        sed -i 's|value: --oci-registry-host=europe-docker.pkg.dev|value: --oci-registry-cred-secret=private-oci-reg-creds|' kustomization.yaml
         popd
     - name: Create and use maintenance window policy
       if: ${{matrix.e2e-test == 'maintenance-windows' ||
