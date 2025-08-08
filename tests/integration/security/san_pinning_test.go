@@ -22,10 +22,12 @@ import (
 
 func TestRequestVerifier_verifySAN(t *testing.T) {
 	t.Parallel()
+
 	type args struct {
 		certificate *x509.Certificate
 		kymaDomain  string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -87,14 +89,17 @@ func TestRequestVerifier_verifySAN(t *testing.T) {
 
 	zapLog, err := zap.NewDevelopment()
 	require.NoError(t, err)
+
 	verifier := &security.RequestVerifier{
 		Client: nil,
 		Log:    zapr.NewLogger(zapLog),
 	}
+
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			got, err := verifier.VerifySAN(test.args.certificate, test.args.kymaDomain)
 			require.NoError(t, err)
 			require.Equal(t, test.want, got)

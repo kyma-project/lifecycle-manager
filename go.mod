@@ -1,10 +1,11 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.24.4
+go 1.24.6
 
 replace (
 	github.com/kyma-project/lifecycle-manager/api => ./api
 	github.com/kyma-project/lifecycle-manager/maintenancewindows => ./maintenancewindows
+	github.com/kyma-project/runtime-watcher/listener => ../runtime-watcher/listener
 )
 
 require (
