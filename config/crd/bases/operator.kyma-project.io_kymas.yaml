@@ -642,6 +642,11 @@ spec:
                         In the ModuleTemplate it is located in .spec.descriptor.component.name of the ModuleTemplate
                         FQDN is used to calculate Namespace and Name of the Manifest for tracking.
                       type: string
+                    maintenance:
+                      default: false
+                      description: Maintenance indicates whether the module is currently
+                        in a maintenance window.
+                      type: boolean
                     manifest:
                       description: Manifest contains the Information of a related
                         Manifest
