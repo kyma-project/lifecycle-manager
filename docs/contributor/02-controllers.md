@@ -4,7 +4,7 @@ This document describes the controllers used by Lifecycle Manager.
 
 ## Kyma Controller
 
-[Kyma Controller](../../internal/controller/kyma/controller.go) deals with the introspection, interpretation, and status update of the [Kyma custom resource (CR)](./resources/01-kyma.md).
+[Kyma Controller](https://github.com/kyma-project/lifecycle-manager/blob/main/internal/controller/kyma/controller.go) deals with the introspection, interpretation, and status update of the [Kyma custom resource (CR)](./resources/01-kyma.md).
 
 Its main responsibilities are:
 
