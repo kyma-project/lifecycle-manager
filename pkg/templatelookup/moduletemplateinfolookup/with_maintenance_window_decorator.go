@@ -25,7 +25,8 @@ type WithMaintenanceWindowDecorator struct {
 }
 
 func NewWithMaintenanceWindowDecorator(maintenanceWindow MaintenanceWindow,
-	decorated ModuleTemplateInfoLookupStrategy) WithMaintenanceWindowDecorator {
+	decorated ModuleTemplateInfoLookupStrategy,
+) WithMaintenanceWindowDecorator {
 	return WithMaintenanceWindowDecorator{
 		maintenanceWindow: maintenanceWindow,
 		decorated:         decorated,
@@ -33,7 +34,8 @@ func NewWithMaintenanceWindowDecorator(maintenanceWindow MaintenanceWindow,
 }
 
 func (p WithMaintenanceWindowDecorator) IsResponsible(moduleInfo *templatelookup.ModuleInfo,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta) bool {
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) bool {
 	return p.decorated.IsResponsible(moduleInfo, moduleReleaseMeta)
 }
 
