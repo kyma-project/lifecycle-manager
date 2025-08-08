@@ -23,7 +23,8 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 		emptyRequest := make([]reconcile.Request, 0)
 		template := &v1beta2.ModuleTemplate{}
 
-		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
+		err := h.Get(ctx, client.ObjectKeyFromObject(o), template)
+		if err != nil {
 			return emptyRequest
 		}
 

@@ -131,7 +131,8 @@ func compressAndBase64(in []byte) (string, error) {
 		return "", fmt.Errorf("failed to write to gzip archive: %w", err)
 	}
 
-	if err := archive.Close(); err != nil {
+	err = archive.Close()
+	if err != nil {
 		return "", fmt.Errorf("failed to close gzip archive: %w", err)
 	}
 
@@ -166,7 +167,8 @@ func getFrequencyLimiterTTL() int {
 	if configured := os.Getenv(frequencyLimiterTTLEnvVar); configured != "" {
 		rxp := regexp.MustCompile(frequencyLimiterTTLRegexp)
 		if rxp.MatchString(configured) {
-			if parsed, err := strconv.Atoi(configured); err == nil {
+			parsed, err := strconv.Atoi(configured)
+			if err == nil {
 				res = parsed
 			}
 		}

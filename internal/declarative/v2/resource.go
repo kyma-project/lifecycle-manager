@@ -13,7 +13,8 @@ func (r *ResourceList) Append(val *resource.Info) {
 // Visit implements resource.Visitor.
 func (r ResourceList) Visit(fn resource.VisitorFunc) error {
 	for _, i := range r {
-		if err := fn(i, nil); err != nil {
+		err := fn(i, nil)
+		if err != nil {
 			return err
 		}
 	}

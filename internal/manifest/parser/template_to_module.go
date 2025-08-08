@@ -26,6 +26,7 @@ var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.Access
 
 type Parser struct {
 	client.Client
+
 	descriptorProvider  *provider.CachedDescriptorProvider
 	remoteSyncNamespace string
 }
@@ -108,8 +109,8 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	name := modulecommon.CreateModuleName(fqdn, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
-	if manifest, err = p.newManifestFromTemplate(module.Module,
-		template.ModuleTemplate); err != nil {
+	manifest, err = p.newManifestFromTemplate(module.Module, template.ModuleTemplate)
+	if err != nil {
 		template.Err = err
 		modules = append(modules, &modulecommon.Module{
 			ModuleName:   module.Name,
@@ -169,15 +170,18 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
 	}
 
-	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
+	layers, err = img.Parse(descriptor.ComponentDescriptor)
+	if err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(manifest, layers); err != nil {
+	err = translateLayersAndMergeIntoManifest(manifest, layers)
+	if err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
-	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
+	err = appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck)
+	if err != nil {
 		return nil, fmt.Errorf("could not translate custom state check: %w", err)
 	}
 	manifest.Spec.Version = descriptor.Version
@@ -232,7 +236,8 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 
 func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(manifest, layer); err != nil {
+		err := insertLayerIntoManifest(manifest, layer)
+		if err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}

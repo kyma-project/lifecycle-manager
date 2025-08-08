@@ -14,6 +14,7 @@ import (
 
 type KymaHelper struct {
 	client.StatusWriter
+
 	recordKymaStatusMetrics func(ctx context.Context, kyma *v1beta2.Kyma)
 	isManagedKyma           bool
 }
@@ -58,8 +59,9 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	if k.isManagedKyma {
 		fieldOwner = shared.OperatorName
 	}
-	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
-		client.FieldOwner(fieldOwner)); err != nil {
+	err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
+		client.FieldOwner(fieldOwner))
+	if err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

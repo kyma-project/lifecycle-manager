@@ -27,7 +27,7 @@ packages:
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/manifest/orphan: 100
   internal/util/collections: 87
-  pkg/module/sync: 10
+  pkg/module/sync: 9
   pkg/templatelookup: 87
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher: 10

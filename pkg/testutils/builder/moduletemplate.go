@@ -193,7 +193,8 @@ func readComponentDescriptorFromYaml(template string, moduleTemplate *v1beta2.Mo
 	if err != nil {
 		panic(fmt.Errorf("read module template: %w", err))
 	}
-	if err := machineryaml.Unmarshal(moduleFile, &moduleTemplate); err != nil {
+	err = machineryaml.Unmarshal(moduleFile, &moduleTemplate)
+	if err != nil {
 		panic(fmt.Errorf("unmarshal module template: %w", err))
 	}
 }

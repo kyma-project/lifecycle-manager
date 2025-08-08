@@ -89,7 +89,8 @@ func (s *CertificateSecretClient) Delete(ctx context.Context,
 	secret.SetName(name)
 	secret.SetNamespace(namespace)
 
-	if err := s.kcpClient.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
+	err := s.kcpClient.Delete(ctx, secret)
+	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete secret %s-%s: %w", name, namespace, err)
 	}
 

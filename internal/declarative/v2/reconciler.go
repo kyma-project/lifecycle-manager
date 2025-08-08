@@ -63,6 +63,7 @@ type OrphanDetection interface {
 type Reconciler struct {
 	queue.RequeueIntervals
 	*Options
+
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
 	specResolver               SpecResolver
@@ -93,7 +94,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	defer r.recordReconciliationDuration(startTime, req.Name)
 
 	manifest := &v1beta2.Manifest{}
-	if err := r.Get(ctx, req.NamespacedName, manifest); err != nil {
+	err := r.Get(ctx, req.NamespacedName, manifest)
+	if err != nil {
 		if util.IsNotFound(err) {
 			logf.FromContext(ctx).Info(req.String() + " namespace got deleted!")
 			return ctrl.Result{}, nil
@@ -109,7 +111,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	if err := status.Initialize(manifest); err != nil {
+	err = status.Initialize(manifest)
+	if err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestInit, manifestStatus, err)
 	}
 
@@ -134,7 +137,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.handleLabelsRemovalFinalizer(ctx, skrClient, manifest)
 		}
 
-		if err := r.Delete(ctx, manifest); err != nil {
+		err := r.Delete(ctx, manifest)
+		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
 		return ctrl.Result{RequeueAfter: r.Success}, nil
@@ -180,7 +184,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
-	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
+	err = r.pruneDiff(ctx, skrClient, manifest, current, target, spec)
+	if errors.Is(err,
 		resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
@@ -189,7 +194,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := modulecr.NewClient(skrClient).RemoveDefaultModuleCR(ctx, r.Client, manifest); err != nil {
+		err := modulecr.NewClient(skrClient).RemoveDefaultModuleCR(ctx, r.Client, manifest)
+		if err != nil {
 			if errors.Is(err, finalizer.ErrRequeueRequired) {
 				r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 				return ctrl.Result{Requeue: true}, nil
@@ -198,14 +204,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
-	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
+	err = skrresources.SyncResources(ctx, skrClient, manifest, target)
+	if err != nil {
 		if errors.Is(err, skrresources.ErrClientUnauthorized) {
 			r.invalidateClientCache(ctx, manifest)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
 	}
 
-	if err := r.syncManifestState(ctx, skrClient, manifest, target); err != nil {
+	err = r.syncManifestState(ctx, skrClient, manifest, target)
+	if err != nil {
 		if errors.Is(err, finalizer.ErrRequeueRequired) {
 			r.ManifestMetrics.RecordRequeueReason(metrics.ManifestSyncResourcesEnqueueRequired, queue.IntendedRequeue)
 			return ctrl.Result{Requeue: true}, nil
@@ -310,7 +318,8 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 	converter := skrresources.NewDefaultResourceToInfoConverter(skrresources.ResourceInfoConverter(skrClient),
 		apimetav1.NamespaceDefault)
 
-	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
+	target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec)
+	if err != nil {
 		if errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion) {
 			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
 				WithOperation("waiting for module crs deletion"))
@@ -334,12 +343,14 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 ) error {
 	manifestStatus := manifest.GetStatus()
 
-	if err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest); err != nil {
+	err := modulecr.NewClient(skrClient).SyncDefaultModuleCR(ctx, manifest)
+	if err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
-	if err := finalizer.EnsureCRFinalizer(ctx, r.Client, manifest); err != nil {
+	err = finalizer.EnsureCRFinalizer(ctx, r.Client, manifest)
+	if err != nil {
 		return err
 	}
 	if !manifest.GetDeletionTimestamp().IsZero() {
@@ -378,7 +389,8 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest); err != nil {
+		err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest)
+		if err != nil {
 			return nil, err
 		}
 
@@ -397,7 +409,8 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	}
 
 	for _, transform := range r.PostRenderTransforms {
-		if err := transform(ctx, manifest, targetResources.Items); err != nil {
+		err := transform(ctx, manifest, targetResources.Items)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -534,7 +547,8 @@ func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifes
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
-	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
+	err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 	if originalErr != nil {
@@ -550,7 +564,8 @@ func (r *Reconciler) ssaSpec(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason,
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	if err := r.manifestClient.SsaSpec(ctx, manifest); err != nil {
+	err := r.manifestClient.SsaSpec(ctx, manifest)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{Requeue: true}, nil
@@ -561,7 +576,8 @@ func (r *Reconciler) updateManifest(ctx context.Context, manifest *v1beta2.Manif
 ) (ctrl.Result, error) {
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
 
-	if err := r.manifestClient.UpdateManifest(ctx, manifest); err != nil {
+	err := r.manifestClient.UpdateManifest(ctx, manifest)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 

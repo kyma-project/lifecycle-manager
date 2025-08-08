@@ -66,10 +66,11 @@ func (p *ProxyClient) RESTMapper() meta.RESTMapper {
 
 // Create implements client.Client.
 func (p *ProxyClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	_, err := getResourceMapping(obj, p.mapper, true)
+	if err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	err := p.baseClient.Create(ctx, obj, opts...)
+	err = p.baseClient.Create(ctx, obj, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create object for [%v]: %w", obj, err)
 	}
@@ -78,10 +79,11 @@ func (p *ProxyClient) Create(ctx context.Context, obj client.Object, opts ...cli
 
 // Update implements client.Client.
 func (p *ProxyClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	_, err := getResourceMapping(obj, p.mapper, true)
+	if err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	err := p.baseClient.Update(ctx, obj, opts...)
+	err = p.baseClient.Update(ctx, obj, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to update object for[%v]:%w", obj, err)
 	}
@@ -90,10 +92,11 @@ func (p *ProxyClient) Update(ctx context.Context, obj client.Object, opts ...cli
 
 // Delete implements client.Client.
 func (p *ProxyClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	_, err := getResourceMapping(obj, p.mapper, true)
+	if err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	err := p.baseClient.Delete(ctx, obj, opts...)
+	err = p.baseClient.Delete(ctx, obj, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to delete object for [%v]: %w", obj, err)
 	}
@@ -104,10 +107,11 @@ func (p *ProxyClient) Delete(ctx context.Context, obj client.Object, opts ...cli
 func (p *ProxyClient) DeleteAllOf(
 	ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	_, err := getResourceMapping(obj, p.mapper, true)
+	if err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	err := p.baseClient.DeleteAllOf(ctx, obj, opts...)
+	err = p.baseClient.DeleteAllOf(ctx, obj, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to delete all objects for [%v]: %w", obj, err)
 	}
@@ -118,10 +122,11 @@ func (p *ProxyClient) DeleteAllOf(
 func (p *ProxyClient) Patch(
 	ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	_, err := getResourceMapping(obj, p.mapper, true)
+	if err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	err := p.baseClient.Patch(ctx, obj, patch, opts...)
+	err = p.baseClient.Patch(ctx, obj, patch, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to patch object for [%v]: %w", obj, err)
 	}
@@ -134,10 +139,11 @@ func (p *ProxyClient) Get(ctx context.Context,
 	obj client.Object,
 	opts ...client.GetOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	_, err := getResourceMapping(obj, p.mapper, true)
+	if err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	err := p.baseClient.Get(ctx, key, obj, opts...)
+	err = p.baseClient.Get(ctx, key, obj, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to fetch object for [%v]: %w", obj, err)
 	}
@@ -146,10 +152,11 @@ func (p *ProxyClient) Get(ctx context.Context,
 
 // List implements client.Client.
 func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...client.ListOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	_, err := getResourceMapping(obj, p.mapper, true)
+	if err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
-	err := p.baseClient.List(ctx, obj, opts...)
+	err = p.baseClient.List(ctx, obj, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to fetch object for [%v]: %w", obj, err)
 	}
@@ -157,9 +164,7 @@ func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...c
 }
 
 // Status implements client.StatusClient.
-//
-//nolint:ireturn // we do not own the interface
-func (p *ProxyClient) Status() client.StatusWriter {
+func (p *ProxyClient) Status() client.StatusWriter { //nolint:ireturn // This method is used to implement client.StatusClient interface.
 	return p.baseClient.Status()
 }
 

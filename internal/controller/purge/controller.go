@@ -50,6 +50,7 @@ const (
 type Reconciler struct {
 	client.Client
 	event.Event
+
 	SkrContextFactory     remote.SkrContextProvider
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
@@ -62,7 +63,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	logger.V(log.DebugLevel).Info("Purge reconciliation started")
 
 	kyma := &v1beta2.Kyma{}
-	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
+	err := r.Get(ctx, req.NamespacedName, kyma)
+	if err != nil {
 		return handleKymaNotFoundError(logger, kyma, err)
 	}
 
@@ -75,7 +77,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	start := time.Now()
-	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	err = r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if err != nil {
 		return r.handleSkrNotFoundError(ctx, kyma, err)
 	}
@@ -89,7 +91,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 }
 
 func (r *Reconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state shared.State, message string) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
+	err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message)
+	if err != nil {
 		return fmt.Errorf("failed updating status to %s because of %s: %w", state, message, err)
 	}
 	return nil
@@ -110,7 +113,8 @@ func handleKymaNotFoundError(logger logr.Logger, kyma *v1beta2.Kyma, err error) 
 }
 
 func (r *Reconciler) handleKymaNotMarkedForDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if err := r.ensurePurgeFinalizer(ctx, kyma); err != nil {
+	err := r.ensurePurgeFinalizer(ctx, kyma)
+	if err != nil {
 		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Failed setting purge finalizer for Kyma %s: %s", kyma.GetName(), err))
 		r.Warning(kyma, setFinalizerFailure, err)
 		return ctrl.Result{}, err
@@ -181,7 +185,8 @@ func (r *Reconciler) handlePurge(ctx context.Context, kyma *v1beta2.Kyma, remote
 
 func (r *Reconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
 	if controllerutil.AddFinalizer(kyma, shared.PurgeFinalizer) {
-		if err := r.Update(ctx, kyma); err != nil {
+		err := r.Update(ctx, kyma)
+		if err != nil {
 			return fmt.Errorf("failed updating object: %w", err)
 		}
 	}
@@ -190,7 +195,8 @@ func (r *Reconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kym
 
 func (r *Reconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 	if controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer) {
-		if err := r.Update(ctx, kyma); err != nil {
+		err := r.Update(ctx, kyma)
+		if err != nil {
 			return false, fmt.Errorf("failed updating object: %w", err)
 		}
 		return true, nil
@@ -208,7 +214,8 @@ func (r *Reconciler) calculateRequeueAfterTime(kyma *v1beta2.Kyma) time.Duration
 
 func (r *Reconciler) performCleanup(ctx context.Context, remoteClient client.Client) ([]string, error) {
 	crdList := apiextensionsv1.CustomResourceDefinitionList{}
-	if err := remoteClient.List(ctx, &crdList); err != nil {
+	err := remoteClient.List(ctx, &crdList)
+	if err != nil {
 		return nil, fmt.Errorf("failed fetching CRDs from remote cluster: %w", err)
 	}
 
@@ -260,7 +267,8 @@ func getAllRemainingCRs(ctx context.Context, remoteClient client.Client,
 	}
 	staleResources.SetGroupVersionKind(gvk)
 
-	if err := remoteClient.List(ctx, &staleResources); err != nil {
+	err := remoteClient.List(ctx, &staleResources)
+	if err != nil {
 		return unstructured.UnstructuredList{}, fmt.Errorf("failed fetching resources: %w", err)
 	}
 
@@ -274,7 +282,8 @@ func dropFinalizers(ctx context.Context, remoteClient client.Client,
 	for index := range staleResources.Items {
 		resource := staleResources.Items[index]
 		resource.SetFinalizers(nil)
-		if err := remoteClient.Update(ctx, &resource); err != nil {
+		err := remoteClient.Update(ctx, &resource)
+		if err != nil {
 			return handledResources, fmt.Errorf("failed updating resource: %w", err)
 		}
 		handledResources = append(handledResources, fmt.Sprintf("%s/%s", resource.GetNamespace(), resource.GetName()))

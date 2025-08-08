@@ -106,7 +106,8 @@ type CustomStateCheck struct {
 type ModuleTemplateList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []ModuleTemplate `json:"items"`
+
+	Items []ModuleTemplate `json:"items"`
 }
 
 // Target serves as a potential Installation Hint for the Controller to determine which Client to use for installation.

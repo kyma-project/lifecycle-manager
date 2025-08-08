@@ -83,10 +83,11 @@ func verifySecretsHaveSameData(secretA *apicorev1.Secret, secretB *apicorev1.Sec
 func fetchCertificateSecret(ctx context.Context, secretName types.NamespacedName, k8sClient client.Client,
 ) (*apicorev1.Secret, error) {
 	certificateSecret := &apicorev1.Secret{}
-	if err := k8sClient.Get(ctx,
+	err := k8sClient.Get(ctx,
 		secretName,
 		certificateSecret,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, fmt.Errorf("failed to fetch kcp certificate secret %w", err)
 	}
 
@@ -112,7 +113,8 @@ func DeleteCertificateSecret(ctx context.Context, secret types.NamespacedName, k
 func GetCACertificate(ctx context.Context, namespacedCertName types.NamespacedName, k8sClient client.Client,
 ) (*certmanagerv1.Certificate, error) {
 	caCert := &certmanagerv1.Certificate{}
-	if err := k8sClient.Get(ctx, namespacedCertName, caCert); err != nil {
+	err := k8sClient.Get(ctx, namespacedCertName, caCert)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get secret %w", err)
 	}
 
@@ -137,10 +139,11 @@ func GatewaySecretCreationTimeIsUpdated(ctx context.Context, oldTime time.Time, 
 
 func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secret, error) {
 	secret := &apicorev1.Secret{}
-	if err := clnt.Get(ctx, client.ObjectKey{
+	err := clnt.Get(ctx, client.ObjectKey{
 		Name:      shared.GatewaySecretName,
 		Namespace: shared.IstioNamespace,
-	}, secret); err != nil {
+	}, secret)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get gateway secret %s: %w", shared.GatewaySecretName, err)
 	}
 	return secret, nil
@@ -148,7 +151,8 @@ func GetGatewaySecret(ctx context.Context, clnt client.Client) (*apicorev1.Secre
 
 func GetLastModifiedTimeFromAnnotation(secret *apicorev1.Secret) (time.Time, error) {
 	if gwSecretLastModifiedAtValue, ok := secret.Annotations[shared.LastModifiedAtAnnotation]; ok {
-		if gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue); err == nil {
+		gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue)
+		if err == nil {
 			return gwSecretLastModifiedAt, nil
 		}
 	}

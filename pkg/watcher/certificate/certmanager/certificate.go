@@ -125,7 +125,8 @@ func (c *CertificateClient) Delete(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
+	err := c.kcpClient.Delete(ctx, cert)
+	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, namespace, err)
 	}
 
@@ -176,7 +177,8 @@ func (c *CertificateClient) getCertificate(ctx context.Context,
 	cert.SetName(name)
 	cert.SetNamespace(namespace)
 
-	if err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	err := c.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get certificate %s-%s: %w", name, namespace, err)
 	}
 

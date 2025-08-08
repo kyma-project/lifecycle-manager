@@ -56,7 +56,8 @@ func TestConcurrentSSA(t *testing.T) {
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
 				ssa := skrresources.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner, inactiveCollector)
-				if err := ssa.Run(t.Context(), testCase.apply); err != nil {
+				err := ssa.Run(t.Context(), testCase.apply)
+				if err != nil {
 					require.ErrorIs(t, err, testCase.err)
 				}
 			},

@@ -20,10 +20,11 @@ func GetModuleReleaseMeta(ctx context.Context, clnt client.Reader, moduleName st
 	error,
 ) {
 	mrm := &v1beta2.ModuleReleaseMeta{}
-	if err := clnt.Get(ctx, client.ObjectKey{
+	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      moduleName,
-	}, mrm); err != nil {
+	}, mrm)
+	if err != nil {
 		return nil, fmt.Errorf("failed to fetch ModuleReleaseMeta for %s: %w", moduleName, err)
 	}
 

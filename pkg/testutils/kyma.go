@@ -89,14 +89,16 @@ func KymaDeleted(ctx context.Context,
 }
 
 func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
-	if err := SyncKyma(ctx, clnt, kyma); err != nil {
+	err := SyncKyma(ctx, clnt, kyma)
+	if err != nil {
 		return fmt.Errorf("sync kyma %w", err)
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
 			controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer)
-			if err := clnt.Update(ctx, kyma); err != nil {
+			err := clnt.Update(ctx, kyma)
+			if err != nil {
 				return fmt.Errorf("can't remove purge finalizer %w", err)
 			}
 		}

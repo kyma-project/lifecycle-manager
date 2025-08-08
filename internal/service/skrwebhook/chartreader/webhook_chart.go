@@ -43,7 +43,8 @@ func (s *Service) RunResourceOperationWithGroupedErrors(ctx context.Context, skr
 			return operation(grpCtx, skrClient, resources[resIdx])
 		})
 	}
-	if err := errGrp.Wait(); err != nil {
+	err := errGrp.Wait()
+	if err != nil {
 		return fmt.Errorf("failed to run resource operation: %w", err)
 	}
 	return nil

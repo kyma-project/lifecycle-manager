@@ -83,7 +83,8 @@ func newRemoteCatalog(kcpClient client.Client, skrContextFactory SkrContextProvi
 
 func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := c.kcpClient.List(ctx, moduleTemplateList); err != nil {
+	err := c.kcpClient.List(ctx, moduleTemplateList)
+	if err != nil {
 		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
@@ -129,7 +130,8 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	moduleTemplateList *v1beta2.ModuleTemplateList,
 ) ([]v1beta2.ModuleReleaseMeta, error) {
 	moduleReleaseMetaList := &v1beta2.ModuleReleaseMetaList{}
-	if err := c.kcpClient.List(ctx, moduleReleaseMetaList); err != nil {
+	err := c.kcpClient.List(ctx, moduleReleaseMetaList)
+	if err != nil {
 		return nil, fmt.Errorf("failed to list ModuleReleaseMetas: %w", err)
 	}
 

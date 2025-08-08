@@ -47,9 +47,10 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 	}
 
 	kubeConfigSecretList := &apicorev1.SecretList{}
-	if err := k.kcpClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
+	err := k.kcpClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}), Namespace: kyma.Namespace,
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to list kubeconfig secrets: %w", err)
 	} else if len(kubeConfigSecretList.Items) < 1 {
 		return fmt.Errorf("secret with label %s=%s %w", shared.KymaName, kyma.Name, common.ErrAccessSecretNotFound)

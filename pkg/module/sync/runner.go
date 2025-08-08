@@ -33,6 +33,7 @@ func New(clnt client.Client) *Runner {
 
 type Runner struct {
 	client.Client
+
 	versioner machineryruntime.GroupVersioner
 	converter machineryruntime.ObjectConvertor
 }
@@ -61,7 +62,8 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 				results <- nil
 				return
 			}
-			if err := r.updateManifest(ctx, kyma, module); err != nil {
+			err := r.updateManifest(ctx, kyma, module)
+			if err != nil {
 				results <- fmt.Errorf("could not update module %s: %w", module.Manifest.GetName(), err)
 				return
 			}
@@ -71,7 +73,8 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	var errs []error
 	for range modules {
-		if err := <-results; err != nil {
+		err := <-results
+		if err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -87,7 +90,8 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	module *modulecommon.Module,
 ) error {
-	if err := r.setupModule(module, kyma); err != nil {
+	err := r.setupModule(module, kyma)
+	if err != nil {
 		return err
 	}
 	obj, err := r.converter.ConvertToVersion(module.Manifest, r.versioner)
@@ -105,8 +109,8 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 		return err
 	}
 
-	if err := r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module,
-		manifestInCluster, newManifest, moduleStatus); err != nil {
+	err = r.doUpdateWithStrategy(ctx, kyma.Labels[shared.ManagedBy], module, manifestInCluster, newManifest, moduleStatus)
+	if err != nil {
 		return err
 	}
 	module.Manifest = newManifest
@@ -133,7 +137,8 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module 
 		return r.patchManifest(ctx, owner, newManifest)
 	}
 	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
-	if err := r.updateAvailableManifestSpec(ctx, manifestInCluster, newManifest); err != nil && !util.IsNotFound(err) {
+	err := r.updateAvailableManifestSpec(ctx, manifestInCluster, newManifest)
+	if err != nil && !util.IsNotFound(err) {
 		return err
 	}
 	return nil
@@ -157,11 +162,12 @@ func (r *Runner) getManifest(ctx context.Context, name, namespace string) (*v1be
 }
 
 func (r *Runner) patchManifest(ctx context.Context, owner string, newManifest *v1beta2.Manifest) error {
-	if err := r.Patch(ctx, newManifest,
+	err := r.Patch(ctx, newManifest,
 		client.Apply,
 		client.FieldOwner(owner),
 		client.ForceOwnership,
-	); err != nil {
+	)
+	if err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
 	}
 	return nil
@@ -174,7 +180,8 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context,
 		return nil
 	}
 	manifestInCluster.Spec = newManifest.Spec
-	if err := r.Update(ctx, manifestInCluster); err != nil {
+	err := r.Update(ctx, manifestInCluster)
+	if err != nil {
 		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(newManifest), err)
 	}
 	return nil
@@ -218,7 +225,8 @@ func (r *Runner) setupModule(module *modulecommon.Module, kyma *v1beta2.Kyma) er
 
 	refs := module.Manifest.GetOwnerReferences()
 	if len(refs) == 0 {
-		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
+		err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme())
+		if err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
 				module.Manifest.GetName(), kyma.Name, err)
 		}

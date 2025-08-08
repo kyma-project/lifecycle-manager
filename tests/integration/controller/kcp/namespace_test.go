@@ -8,10 +8,9 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var errLabelNotExist = errors.New("label does not exist on namespace")
@@ -44,7 +43,8 @@ func namespaceHasExpectedLabels(ctx context.Context, clnt client.Client,
 	kymaNamespace string, expectedLabels map[string]string,
 ) error {
 	var namespace apicorev1.Namespace
-	if err := clnt.Get(ctx, client.ObjectKey{Name: kymaNamespace}, &namespace); err != nil {
+	err := clnt.Get(ctx, client.ObjectKey{Name: kymaNamespace}, &namespace)
+	if err != nil {
 		return fmt.Errorf("failed to get namespace %s: %w", kymaNamespace, err)
 	}
 

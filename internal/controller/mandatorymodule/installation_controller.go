@@ -39,6 +39,7 @@ import (
 type InstallationReconciler struct {
 	client.Client
 	queue.RequeueIntervals
+
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	RemoteSyncNamespace string
 	Metrics             *metrics.MandatoryModulesMetrics
@@ -49,7 +50,8 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	logger.V(log.DebugLevel).Info("Mandatory Module Reconciliation started")
 
 	kyma := &v1beta2.Kyma{}
-	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
+	err := r.Get(ctx, req.NamespacedName, kyma)
+	if err != nil {
 		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
@@ -75,7 +77,8 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	runner := sync.New(r)
-	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
+	err = runner.ReconcileManifests(ctx, kyma, modules)
+	if err != nil {
 		return emptyResultWithErr(err)
 	}
 

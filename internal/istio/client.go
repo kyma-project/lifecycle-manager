@@ -14,6 +14,7 @@ import (
 
 type Client struct {
 	istioclient.Interface
+
 	logger logr.Logger
 }
 

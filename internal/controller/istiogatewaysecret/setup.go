@@ -42,8 +42,9 @@ func SetupReconciler(mgr ctrl.Manager,
 		annotation string,
 	) (time.Time, error) {
 		if strValue, ok := secret.Annotations[annotation]; ok {
-			if time, err := time.Parse(time.RFC3339, strValue); err == nil {
-				return time, nil
+			parsedTime, err := time.Parse(time.RFC3339, strValue)
+			if err == nil {
+				return parsedTime, nil
 			}
 		}
 		return time.Time{}, fmt.Errorf("%w: %s", errCouldNotGetTimeFromAnnotation, annotation)
@@ -85,12 +86,13 @@ func (r *Reconciler) setupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
 
-	if err := ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&apicorev1.Secret{}).
 		Named(controllerName).
 		WithOptions(opts).
 		WithEventFilter(secretPredicate).
-		Complete(r); err != nil {
+		Complete(r)
+	if err != nil {
 		return fmt.Errorf("failed to setup manager for istio controller: %w", err)
 	}
 
