@@ -143,7 +143,10 @@ module-install-by-version:
 	$(GO_TEST) "Module Install By Version"
 
 legacy-istio-gateway-secret-rotation:
-	$(GO_TEST) "Legacy Istio Gateway Secret Rotation"
+	$(GO_TEST) "Legacy Istio Gateway Secret Rotation With Cert-Manager"
+
+legacy-istio-gateway-secret-rotation-gcm:
+	$(GO_TEST) "Legacy Istio Gateway Secret Rotation With GCM"
 
 self-signed-certificate-rotation:
 	$(GO_TEST) "Self Signed Certificate Rotation"
@@ -198,4 +201,3 @@ module-deletion-with-multiple-crs-ignore-policy:
 
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
-

@@ -10,11 +10,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/certmanager"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher/certificate/secret"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -60,37 +61,35 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	for _, tt := range tests {
 		test := tt
 		It(test.name, func() {
-			Expect(controlPlaneClient.Create(ctx, test.namespace)).Should(Succeed())
+			Expect(kcpClient.Create(ctx, test.namespace)).Should(Succeed())
 			if test.issuer != nil {
-				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
+				Expect(kcpClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 
-			certificateConfig := certificate.CertificateConfig{
+			certificateValues := config.CertificateValues{
 				Duration:    1 * time.Hour,
 				RenewBefore: 5 * time.Minute,
 				KeySize:     flags.DefaultSelfSignedCertKeySize,
+				Namespace:   test.namespace.Name,
 			}
 
-			certificateManagerConfig := certificate.CertificateManagerConfig{
-				SkrServiceName:               skrwebhookresources.SkrResourceName,
-				SkrNamespace:                 test.namespace.Name,
-				CertificateNamespace:         test.namespace.Name,
-				AdditionalDNSNames:           []string{},
-				GatewaySecretName:            shared.GatewaySecretName,
-				RenewBuffer:                  flags.DefaultSelfSignedCertificateRenewBuffer,
-				SkrCertificateNamingTemplate: "%s-webhook-tls",
+			certificateManagerConfig := certificate.Config{
+				SkrServiceName:     skrwebhookresources.SkrResourceName,
+				SkrNamespace:       test.namespace.Name,
+				AdditionalDNSNames: []string{},
+				GatewaySecretName:  shared.GatewaySecretName,
+				RenewBuffer:        flags.DefaultSelfSignedCertificateRenewBuffer,
 			}
 
-			certificateManager := certificate.NewCertificateManager(
-				certmanager.NewCertificateClient(controlPlaneClient,
-					"klm-watcher-selfsigned",
-					certificateConfig,
-				),
-				secret.NewCertificateSecretClient(controlPlaneClient),
-				certificateManagerConfig,
+			certificateRepo, err := certmanagercertificate.NewRepository(kcpClient,
+				"klm-watcher-selfsigned",
+				certificateValues,
 			)
+			Expect(err).ShouldNot(HaveOccurred())
 
-			err := certificateManager.CreateSkrCertificate(ctx, test.kyma)
+			certificateService := certificate.NewService(nil, certificateRepo, secret.NewRepository(kcpClient, test.namespace.Name), certificateManagerConfig)
+
+			err = certificateService.CreateSkrCertificate(ctx, test.kyma)
 			if test.wantCreateErr {
 				Expect(err).Should(HaveOccurred())
 				return
@@ -98,7 +97,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			if test.issuer != nil {
-				Expect(controlPlaneClient.Delete(ctx, test.issuer)).Should(Succeed())
+				Expect(kcpClient.Delete(ctx, test.issuer)).Should(Succeed())
 			}
 		})
 
