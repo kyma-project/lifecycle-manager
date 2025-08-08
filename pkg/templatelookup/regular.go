@@ -20,9 +20,9 @@ var (
 
 type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
-	Err                    error
-	DesiredChannel         string
-	UnderMaintenanceWindow bool
+	Err                         error
+	DesiredChannel              string
+	WaitingForMaintenanceWindow bool
 }
 
 type ModuleTemplateInfoLookupStrategy interface {

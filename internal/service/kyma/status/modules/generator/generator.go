@@ -61,7 +61,7 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 		State:       manifest.Status.State,
 		Channel:     module.TemplateInfo.DesiredChannel,
 		Version:     manifest.Spec.Version,
-		Maintenance: module.TemplateInfo.UnderMaintenanceWindow,
+		Maintenance: module.TemplateInfo.WaitingForMaintenanceWindow,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
 				Name:       manifest.GetName(),

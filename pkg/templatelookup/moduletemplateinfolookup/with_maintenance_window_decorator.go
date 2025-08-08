@@ -24,14 +24,16 @@ type WithMaintenanceWindowDecorator struct {
 	decorated         ModuleTemplateInfoLookupStrategy
 }
 
-func NewWithMaintenanceWindowDecorator(maintenanceWindow MaintenanceWindow, decorated ModuleTemplateInfoLookupStrategy) WithMaintenanceWindowDecorator {
+func NewWithMaintenanceWindowDecorator(maintenanceWindow MaintenanceWindow,
+	decorated ModuleTemplateInfoLookupStrategy) WithMaintenanceWindowDecorator {
 	return WithMaintenanceWindowDecorator{
 		maintenanceWindow: maintenanceWindow,
 		decorated:         decorated,
 	}
 }
 
-func (p WithMaintenanceWindowDecorator) IsResponsible(moduleInfo *templatelookup.ModuleInfo, moduleReleaseMeta *v1beta2.ModuleReleaseMeta) bool {
+func (p WithMaintenanceWindowDecorator) IsResponsible(moduleInfo *templatelookup.ModuleInfo,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta) bool {
 	return p.decorated.IsResponsible(moduleInfo, moduleReleaseMeta)
 }
 
@@ -64,8 +66,8 @@ func (p WithMaintenanceWindowDecorator) Lookup(ctx context.Context,
 	if !active {
 		moduleTemplateInfo.Err = ErrWaitingForNextMaintenanceWindow
 		moduleTemplateInfo.ModuleTemplate = nil
+		moduleTemplateInfo.WaitingForMaintenanceWindow = true
 		return moduleTemplateInfo
 	}
-	moduleTemplateInfo.UnderMaintenanceWindow = true
 	return moduleTemplateInfo
 }

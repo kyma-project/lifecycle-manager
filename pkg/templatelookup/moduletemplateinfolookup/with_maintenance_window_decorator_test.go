@@ -164,7 +164,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenMWIsRequiredAndAc
 				Channel: "test",
 			},
 		},
-		UnderMaintenanceWindow: true,
+		WaitingForMaintenanceWindow: true,
 	}
 	decorated := &lookupStrategyStub{
 		moduleTemplateInfo: expectedModuleTemplateInfo,
