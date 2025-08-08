@@ -22,9 +22,10 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn s
 		return newDefaultErrorStatus(moduleName, desiredChannel, fqdn, err), nil
 	}
 
-	if errorIsMaintenanceWindowActive(err) {
+	if errorIsWaitingForMaintenanceWindow(err) {
 		newModuleStatus := status.DeepCopy()
 		newModuleStatus.Message = err.Error()
+		newModuleStatus.Maintenance = true
 		return newModuleStatus, nil
 	}
 
@@ -51,7 +52,7 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn s
 	return newStatus, nil
 }
 
-func errorIsMaintenanceWindowActive(err error) bool {
+func errorIsWaitingForMaintenanceWindow(err error) bool {
 	return errors.Is(err, moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow)
 }
 

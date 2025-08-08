@@ -56,12 +56,11 @@ func (m *ModuleStatusGenerator) GenerateModuleStatus(module *modulecommon.Module
 	manifestAPIVersion, manifestKind := manifest.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.TemplateInfo.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	moduleStatus := &v1beta2.ModuleStatus{
-		Name:        module.ModuleName,
-		FQDN:        module.FQDN,
-		State:       manifest.Status.State,
-		Channel:     module.TemplateInfo.DesiredChannel,
-		Version:     manifest.Spec.Version,
-		Maintenance: module.TemplateInfo.WaitingForMaintenanceWindow,
+		Name:    module.ModuleName,
+		FQDN:    module.FQDN,
+		State:   manifest.Status.State,
+		Channel: module.TemplateInfo.DesiredChannel,
+		Version: manifest.Spec.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMeta{
 				Name:       manifest.GetName(),

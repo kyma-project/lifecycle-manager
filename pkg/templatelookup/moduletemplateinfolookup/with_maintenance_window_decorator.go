@@ -68,7 +68,6 @@ func (p WithMaintenanceWindowDecorator) Lookup(ctx context.Context,
 	if !active {
 		moduleTemplateInfo.Err = ErrWaitingForNextMaintenanceWindow
 		moduleTemplateInfo.ModuleTemplate = nil
-		moduleTemplateInfo.WaitingForMaintenanceWindow = true
 		return moduleTemplateInfo
 	}
 	return moduleTemplateInfo
