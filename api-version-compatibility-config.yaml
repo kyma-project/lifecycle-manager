@@ -13,22 +13,18 @@ operator.kyma-project.io_kymas.yaml:
     v1beta1:
       - .spec.properties.sync
     v1beta2:
-      - .spec.properties.modules.x-kubernetes-list-map-keys
-      - .spec.properties.modules.x-kubernetes-list-type
+      - .spec
+      - .status
 operator.kyma-project.io_moduletemplates.yaml:
   exclusions:
     v1beta1:
       - .spec.properties.target
       - .spec.required[]|select(.=="target")
     v1beta2:
-      - .spec.properties.version
-      - .spec.properties.moduleName
-      - .spec.properties.customStateCheck.description
-      - .spec.properties.resources
-      - .spec.properties.info
-      - .spec.properties.manager
-      - .spec.properties.associatedResources
+      - .spec
+      - .status
 operator.kyma-project.io_manifests.yaml:
   exclusions:
     v1beta2:
-      - .spec.properties.localizedImages
+      - .spec
+      - .status
