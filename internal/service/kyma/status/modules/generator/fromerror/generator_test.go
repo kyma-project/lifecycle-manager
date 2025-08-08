@@ -55,6 +55,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 	require.NoError(t, err)
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
+	expectedStatus.Maintenance = true
 	assert.Equal(t, expectedStatus, result)
 
 	// Passed module info is not used for new status, but the deep-copied object
