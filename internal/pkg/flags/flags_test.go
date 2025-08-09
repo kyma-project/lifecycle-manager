@@ -209,11 +209,6 @@ func Test_ConstantFlags(t *testing.T) {
 			expectedValue: "klm-watcher-selfsigned",
 		},
 		{
-			constName:     "DefaultSelfSignedCertificateNamingTemplate",
-			constValue:    DefaultSelfSignedCertificateNamingTemplate,
-			expectedValue: "%s-webhook-tls",
-		},
-		{
 			constName:     "DefaultIstioGatewayCertSwitchBeforeExpirationTime",
 			constValue:    DefaultIstioGatewayCertSwitchBeforeExpirationTime.String(),
 			expectedValue: (24 * time.Hour).String(),
@@ -432,6 +427,16 @@ func Test_Flags_Validate(t *testing.T) {
 			flags: newFlagVarBuilder().withManifestRequeueJitterPercentage(0.1).build(),
 			err:   nil,
 		},
+		{
+			name:  "Neither OciRegistryHost nor OciRegistryCredSecret provided",
+			flags: newFlagVarBuilder().withOciRegistryHost("").withOciRegistryCredSecretName("").build(),
+			err:   common.ErrNoOCIRegistryHostAndCredSecret,
+		},
+		{
+			name:  "Both OciRegistryHost and OciRegistryCredSecret provided",
+			flags: newFlagVarBuilder().withOciRegistryHost("test").withOciRegistryCredSecretName("test").build(),
+			err:   common.ErrBothOCIRegistryHostAndCredSecretProvided,
+		},
 	}
 
 	for _, tt := range tests {
@@ -468,7 +473,8 @@ func newFlagVarBuilder() *flagVarBuilder {
 		withLeaderElectionLeaseDuration(180 * time.Second).
 		withSelfSignedCertKeySize(4096).
 		withManifestRequeueJitterProbability(0.01).
-		withManifestRequeueJitterPercentage(0.1)
+		withManifestRequeueJitterPercentage(0.1).
+		withOciRegistryHost("europe-docker.pkg.dev")
 }
 
 func (b *flagVarBuilder) build() FlagVar {
@@ -527,5 +533,15 @@ func (b *flagVarBuilder) withManifestRequeueJitterProbability(probability float6
 
 func (b *flagVarBuilder) withManifestRequeueJitterPercentage(percentage float64) *flagVarBuilder {
 	b.flags.ManifestRequeueJitterPercentage = percentage
+	return b
+}
+
+func (b *flagVarBuilder) withOciRegistryHost(host string) *flagVarBuilder {
+	b.flags.OciRegistryHost = host
+	return b
+}
+
+func (b *flagVarBuilder) withOciRegistryCredSecretName(secretName string) *flagVarBuilder {
+	b.flags.OciRegistryCredSecretName = secretName
 	return b
 }

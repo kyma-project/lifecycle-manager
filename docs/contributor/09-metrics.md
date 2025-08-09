@@ -7,8 +7,8 @@ The following metrics are exposed:
 | Metric Name                              | Metric Type    | Metric Labels                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 |------------------------------------------|----------------|---------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `lifecycle_mgr_requeue_reason_total`     | Counter Vector | `requeue_reason`<br/>`requeue_type`                               | Indicates the requeue reason of the Lifecycle Manager reconcilers. See [Controllers](02-controllers.md#controllers).                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `lifecycle_mgr_kyma_state`               | Gauge Vector   | `kyma_name`<br/>`state`<br/>`shoot`<br/>`instance_id`                 | Indicates the state of a Kyma CR. The state can be one of the following:<ul><li>`Error`: An error is blocking the synchronization of the Kyma CR with the SKR cluster.</li><li>`Ready`: The Kyma CR is synchronized with the SKR cluster.</li><li>`Processing`: The Kyma CR is being synchronized with the SKR cluster.</li><li>`Warning`: Some misconfiguration, that requires the user's action, is blocking the Kyma CR synchronization with the SKR cluster. </li><li>`Deleting`: The Kyma CR and its modules are being removed from the SKR cluster.</li>          |
-| `lifecycle_mgr_module_state`             | Gauge Vector   | `module_name`<br/>`kyma_name`<br/>`state`<br/>`shoot`<br/>`instance_id` | Indicates the state of a module added to a Kyma CR. The state can be one of the following:<ul><li>`Error`: An error is blocking the installation of the module in the SKR cluster. </li><li>`Ready`: The module is successfully installed in the SKR cluster. </li><li>`Processing`: The module is still being installed in the SKR cluster. </li><li>`Warning`: Some misconfiguration, that requires the user's action, is blocking the module installation in the SKR cluster.</li><li>`Deleting`: The module resources are still being removed from the SKR cluster. |
+| `lifecycle_mgr_kyma_state`               | Gauge Vector   | `kyma_name`<br/>`state`<br/>`shoot`<br/>`instance_id`                 | Indicates the state of a Kyma CR. The state can be one of the following:<ul><li>`Error`: An error is blocking the synchronization of the Kyma CR with the SKR cluster.</li><li>`Ready`: The Kyma CR is synchronized with the SKR cluster.</li><li>`Processing`: The Kyma CR is being synchronized with the SKR cluster.</li><li>`Warning`: Some misconfiguration, that requires the user's action, is blocking the Kyma CR synchronization with the SKR cluster. </li><li>`Deleting`: The Kyma CR and its modules are being removed from the SKR cluster.</li></ul>        |
+| `lifecycle_mgr_module_state`             | Gauge Vector   | `module_name`<br/>`kyma_name`<br/>`state`<br/>`shoot`<br/>`instance_id` | Indicates the state of a module added to a Kyma CR. The state can be one of the following:<ul><li>`Error`: An error is blocking the installation of the module in the SKR cluster. </li><li>`Ready`: The module is successfully installed in the SKR cluster. </li><li>`Processing`: The module is still being installed in the SKR cluster. </li><li>`Warning`: Some misconfiguration, that requires the user's action, is blocking the module installation in the SKR cluster.</li><li>`Deleting`: The module resources are still being removed from the SKR cluster.</li></ul> |
 | `lifecycle_mgr_mandatory_modules`        | Gauge          |                                                               | Indicates the number of mandatory ModuleTemplate CRs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `lifecycle_mgr_mandatory_module_state`   | Gauge Vector   | `module_name`<br/>`kyma_name`<br/>`state`                           | Indicates the state of a mandatory module added to a Kyma CR. The state value can be one of the following:  `Error`, `Ready`, `Processing`, `Warning`, or `Deleting`.                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `reconcile_duration_seconds`             | Gauge Vector   | `manifest_name`                                                 | Indicates the duration of a Manifest CR reconciliation in seconds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -18,22 +18,24 @@ The following metrics are exposed:
 | `lifecycle_mgr_self_signed_cert_not_renew` | Gauge Vector  | `kyma_name`                                                     | Indicates that the self-signed Certificate of a Kyma CR is not renewed yet. This metric is just to verify that the renewal of the certificate is working as expected since we rely on the cert-manager mechanism for the certificate rotation.                                                                                                                                                                                                                                                                                                                          |
 | `lifecycle_mgr_maintenance_window_config_read_success`    | Gauge          |                                                               | Indicates whether the maintenance window configuration was read successfully.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
-
 The metrics are grouped by the following labels:
-- `requeue_reason`: Indicates the reason for the Lifecycle Manager reconcilers' requeue. See [Controllers](02-controllers.md#controllers). The reasons describe a specific error and/or the reason for the synchronization between the KCP and SKR clusters.
-- `requeue_type`: Indicates whether the requeue is expected or not. The possible values are `intended` and `unexpected`.
-- `kyma_name`: The Kyma CR name.
-- `state`: The state of the module, Manifest or Kyma CRs. The possible values are `Error`, `Ready`, `Processing`, `Warning`, and `Deleting`.
-- `shoot`: The name of the SKR cluster.
-- `instance_id`: The instance id.
-- `module_name`: The module name.
-- `err_reason`: The error reason for the purge reconciler. The possible values are `PurgeFinalizerRemovalError` and `CleanupError`.
-- `manifest_name`: The name of the Manifest CR.
+
+* `requeue_reason`: Indicates the reason for the Lifecycle Manager reconcilers' requeue. See [Controllers](02-controllers.md#controllers). The reasons describe a specific error and/or the reason for the synchronization between the KCP and SKR clusters.
+* `requeue_type`: Indicates whether the requeue is expected or not. The possible values are `intended` and `unexpected`.
+* `kyma_name`: The Kyma CR name.
+* `state`: The state of the module, Manifest or Kyma CRs. The possible values are `Error`, `Ready`, `Processing`, `Warning`, and `Deleting`.
+* `shoot`: The name of the SKR cluster.
+* `instance_id`: The instance id.
+* `module_name`: The module name.
+* `err_reason`: The error reason for the purge reconciler. The possible values are `PurgeFinalizerRemovalError` and `CleanupError`.
+* `manifest_name`: The name of the Manifest CR.
 
 ## Dashboards
+
 The above-mentioned metrics are visualized using Grafana and grouped into four dashboards:
 
 ### 1. Lifecycle Manager Overview
+
 This dashboard gives an overview of Lifecycle Manager. It includes the following:
 
 | Panel Name                                             | Description                                                                                                                                          |
@@ -59,8 +61,8 @@ This dashboard gives an overview of Lifecycle Manager. It includes the following
 | Purge Errors                                           | Shows the errors produced by the purge.                                                                                                              |
 | Maintenance Window Configuration Read Status           | Indicates whether the maintenance window configuration was read successfully.                                                                        |
 
-
 ### 2. Kyma CRs Status
+
 This dashboard gives an overview of the Kyma CRs and modules states. It includes the following:
 
 | Panel Name                    | Description                                                                                     |
@@ -72,8 +74,8 @@ This dashboard gives an overview of the Kyma CRs and modules states. It includes
 | Mandatory Module State Total  | A graph showing the number of mandatory modules added to Kyma CRs in each state over time.     |
 | Mandatory Modules Count       | Indicates the number of mandatory modules installed in the SKR clusters.                       |
 
-
 ### 3. Runtime Watcher Components
+
 This dashboard gives an overview of the [Runtime Watcher](https://github.com/kyma-project/runtime-watcher/tree/main) components. It includes the following:
 
 | Panel Name                      | Description                                                                                                   |
@@ -92,7 +94,6 @@ This dashboard gives an overview of the [Runtime Watcher](https://github.com/kym
 | KCP Requests Total              | Shows the total number of KCP requests.                                                                       |
 | Requests Ratio                  | Shows the ratio of AdmissionRequests to the total KCP requests.                                               |
 
-
 ### 4. Mandatory Modules
 
 This dashboard gives an overview of all the mandatory modules installed in the SKR clusters. It includes the following metrics:
@@ -103,9 +104,8 @@ This dashboard gives an overview of all the mandatory modules installed in the S
 | Warden Images on Shoots      | A table mapping the Warden images installed in SKR clusters with their numbers.                              |
 | Unready Warden Deployments   | Shows the total number of unready Warden deployments in the SKR clusters.                                    |
 
-
 ## Prometheus Rules
+
 The following Prometheus rules are in place to alert if some metrics are not in the expected state:
 
 * The `lifecycle_mgr_self_signed_cert_not_renew` metric has the value of `1` for 30 minutes, indicating that the Kyma self-signed certificate renewal buffer time has been exceeded by 30 minutes.
- 

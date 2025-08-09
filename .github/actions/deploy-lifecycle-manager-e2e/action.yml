@@ -56,18 +56,7 @@ runs:
       shell: bash
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
-        if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
-        echo \
-        "- op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-duration=${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-before=${E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW}
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
-        else
+        if [[ -z "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
@@ -130,14 +119,7 @@ runs:
       shell: bash
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
-        if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
-        echo \
-        "- op: replace
-          path: /spec/duration
-          value: ${E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION}">> certificate_renewal.yaml
-        cat certificate_renewal.yaml
-        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert.gardener.cloud --version v1alpha1 --name watcher-serving
-        else
+        if [[ -z "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
         echo \
         "- op: replace
           path: /spec/renewBefore
@@ -150,7 +132,8 @@ runs:
         fi
         popd
     - name: Use legacy istio gateway secret rotation strategy
-      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation'}}
+      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
+        matrix.e2e-test == 'legacy-istio-gateway-secret-rotation-gcm'}}
       working-directory: lifecycle-manager
       shell: bash
       run: |
@@ -158,7 +141,10 @@ runs:
         echo \
         "- op: add
           path: /spec/template/spec/containers/0/args/-
-          value: --legacy-strategy-for-istio-gateway-secret=true" >> legacy-secret-rotation.yaml
+          value: --legacy-strategy-for-istio-gateway-secret=true
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --istio-gateway-secret-requeue-success-interval=5s" >> legacy-secret-rotation.yaml
         cat legacy-secret-rotation.yaml
         kustomize edit add patch --path legacy-secret-rotation.yaml --kind Deployment
         popd
@@ -168,12 +154,7 @@ runs:
       shell: bash
       run: |
         pushd ${E2E_KUSTOMIZE_DIR}
-        echo \
-        "- op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --oci-registry-cred-secret=private-oci-reg-creds" >> private-oci-patch.yaml
-        cat private-oci-patch.yaml
-        kustomize edit add patch --path private-oci-patch.yaml --kind Deployment
+        sed -i 's|value: --oci-registry-host=europe-docker.pkg.dev|value: --oci-registry-cred-secret=private-oci-reg-creds|' kustomization.yaml
         popd
     - name: Create and use maintenance window policy
       if: ${{matrix.e2e-test == 'maintenance-windows' ||

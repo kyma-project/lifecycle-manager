@@ -194,6 +194,10 @@ type ModuleStatus struct {
 	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
 	Template *TrackingObject `json:"template,omitempty"`
+
+	// Maintenance indicates whether the module is currently in a maintenance window.
+	// +kubebuilder:default:=false
+	Maintenance bool `json:"maintenance,omitempty"`
 }
 
 func (m *ModuleStatus) GetManifestCR() *unstructured.Unstructured {
