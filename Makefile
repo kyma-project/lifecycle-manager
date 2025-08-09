@@ -1,9 +1,9 @@
 
 # Image URL to use all building/pushing image targets
 APP_NAME = lifecycle-manager
-IMG_REPO := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)
+IMG_REPO := mmesaoudi
 IMG_NAME := $(IMG_REPO)/$(APP_NAME)
-IMG := $(IMG_NAME):$(DOCKER_TAG)
+IMG := $(IMG_NAME):latest
 BUILD_VERSION := from_makefile
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.

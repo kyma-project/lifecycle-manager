@@ -53,4 +53,3 @@ func ExtractWatchedKey(eventObj *unstructured.Unstructured) (client.ObjectKey, e
 
 	return client.ObjectKey{Name: name, Namespace: namespace}, nil
 }
-
