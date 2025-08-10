@@ -5,7 +5,7 @@ go 1.24.6
 replace (
 	github.com/kyma-project/lifecycle-manager/api => ./api
 	github.com/kyma-project/lifecycle-manager/maintenancewindows => ./maintenancewindows
-	github.com/kyma-project/runtime-watcher/listener => github.com/medmes/runtime-watcher/listener v0.0.0-20250808195223-6f9fdb6b1a76
+	github.com/kyma-project/runtime-watcher/listener => github.com/medmes/runtime-watcher/listener v0.0.0-20250810204720-3bfb15765847
 )
 
 require (

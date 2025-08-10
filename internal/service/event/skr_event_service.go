@@ -25,28 +25,43 @@ type SkrRuntimeEventService struct {
 	eventChannel chan event.GenericEvent // Single channel - no pub/sub
 	cancel       context.CancelFunc      // Only store cancel func, not context
 	once         sync.Once               // Ensure channel is closed only once
+	cancelMutex  sync.Mutex              // Protect cancel function access
 }
+
+const (
+	// Default buffer size for the event channel.
+	defaultEventChannelBuffer = 100
+)
 
 // NewSkrRuntimeEventService creates a simplified event service.
 func NewSkrRuntimeEventService(listener *watcherevent.SKREventListener) *SkrRuntimeEventService {
 	return &SkrRuntimeEventService{
 		listener:     listener,
-		eventChannel: make(chan event.GenericEvent, 100), // Single buffered channel
+		eventChannel: make(chan event.GenericEvent, defaultEventChannelBuffer),
 	}
 }
 
 // CreateEventSource returns the single event source.
+//
+//nolint:ireturn // Interface compliance required for controller-runtime integration.
 func (s *SkrRuntimeEventService) CreateEventSource(handler handler.EventHandler) source.Source {
-	// Simple: just return the single channel
 	return source.Channel(s.eventChannel, handler)
 }
 
 // Start begins simple event forwarding - implements manager.Runnable interface.
 func (s *SkrRuntimeEventService) Start(ctx context.Context) error {
 	childCtx, cancel := context.WithCancel(ctx)
+
+	// Thread-safe assignment of cancel function
+	s.cancelMutex.Lock()
 	s.cancel = cancel
+	s.cancelMutex.Unlock()
+
+	// Start event forwarding FIRST (before listener blocks)
+	go s.forwardEvents(childCtx)
 
 	// Start the listener with the context (if listener exists)
+	// This will block until context is cancelled
 	if s.listener != nil {
 		err := s.listener.Start(childCtx)
 		if err != nil {
@@ -54,15 +69,16 @@ func (s *SkrRuntimeEventService) Start(ctx context.Context) error {
 		}
 	}
 
-	// Start simple forwarding (no pub/sub distribution)
-	go s.forwardEvents(childCtx)
-
 	return nil
 }
 
 // Stop shuts down - managed automatically by controller-runtime manager
 // Implements manager.Runnable interface.
 func (s *SkrRuntimeEventService) Stop() error {
+	// Thread-safe access to cancel function
+	s.cancelMutex.Lock()
+	defer s.cancelMutex.Unlock()
+
 	if s.cancel != nil {
 		s.cancel()
 	}
@@ -70,7 +86,9 @@ func (s *SkrRuntimeEventService) Stop() error {
 	return nil
 }
 
-// forwardEvents - Direct 1:1 forwarding.
+// forwardEvents - Direct 1:1 forwarding from listener to controller-runtime.
+// This goroutine reads events from the listener's ReceivedEvents channel and forwards
+// them to the eventChannel that controller-runtime uses as an event source.
 func (s *SkrRuntimeEventService) forwardEvents(ctx context.Context) {
 	// Ensure channel is closed only once using sync.Once
 	defer s.once.Do(func() {
@@ -90,6 +108,7 @@ func (s *SkrRuntimeEventService) forwardEvents(ctx context.Context) {
 				return // Listener closed
 			}
 
+			// Convert from listener types.GenericEvent to controller-runtime event.GenericEvent
 			crEvent := event.GenericEvent{
 				Object: listenerEvent.Object,
 			}

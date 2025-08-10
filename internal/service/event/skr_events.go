@@ -15,7 +15,7 @@ import (
 // NewSKREventService creates a new SKR event service with a listener.
 func NewSKREventService(mgr manager.Manager, listenerAddr, componentName string, enableDomainNameVerification bool) (*SkrRuntimeEventService, error) {
 	// Configure verification function
-	var verifyFunc watcherevent.VerifyFunc
+	var verifyFunc watcherevent.Verify
 	if enableDomainNameVerification {
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
 	} else {
