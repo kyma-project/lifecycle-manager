@@ -7,21 +7,38 @@ on:
   pull_request_target: { }
 
 env:
-  PR_CACHE_KEY: pr-manifests-${{ github.run_id }}-${{ github.run_attempt }}
-  MAIN_CACHE_KEY: main-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+  PR_CACHE_KEY: pr-manifests-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  MAIN_CACHE_KEY: main-manifests-${{ github.event.pull_request.number }}-${{ github.event.pull_request.base.sha }}
 
 jobs:
   create-pr-manifests:
     runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ env.PR_CACHE_KEY }}
+      success: ${{ steps.create-manifests.outcome }}
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Create manifests on PR branch
+        id: create-manifests
         run: |
-          make dry-run-control-plane
+          echo "Creating manifests for PR branch..."
+          if ! make dry-run-control-plane; then
+            echo "❌ Failed to create manifests on PR branch"
+            exit 1
+          fi
+          
+          if [[ ! -f ./dry-run/manifests.yaml ]]; then
+            echo "❌ Manifest file not found after make command"
+            exit 1
+          fi
+          
           mkdir -p ./cache/pr
-          mv ./dry-run/manifests.yaml ./cache/pr/manifests.yaml
+          cp ./dry-run/manifests.yaml ./cache/pr/manifests.yaml
+          echo "✅ PR manifests created successfully"
 
       - name: Save PR manifests in cache
         uses: actions/cache@v3
@@ -31,17 +48,32 @@ jobs:
 
   create-main-manifests:
     runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ env.MAIN_CACHE_KEY }}
+      success: ${{ steps.create-manifests.outcome }}
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.base.sha }}
 
       - name: Create manifests on main branch
+        id: create-manifests
         run: |
-          make dry-run-control-plane
+          echo "Creating manifests for main branch..."
+          if ! make dry-run-control-plane; then
+            echo "❌ Failed to create manifests on main branch"
+            exit 1
+          fi
+          
+          if [[ ! -f ./dry-run/manifests.yaml ]]; then
+            echo "❌ Manifest file not found after make command"
+            exit 1
+          fi
+          
           mkdir -p ./cache/main
-          mv ./dry-run/manifests.yaml ./cache/main/manifests.yaml
+          cp ./dry-run/manifests.yaml ./cache/main/manifests.yaml
+          echo "✅ Main manifests created successfully"
 
       - name: Save main manifests in cache
         uses: actions/cache@v3
@@ -54,29 +86,62 @@ jobs:
       - create-pr-manifests
       - create-main-manifests
     runs-on: ubuntu-latest
+    if: needs.create-pr-manifests.outputs.success == 'success' && needs.create-main-manifests.outputs.success == 'success'
     steps:
       - name: Restore PR manifests from cache
+        id: restore-pr-cache
         uses: actions/cache@v3
         with:
           path: ./cache/pr/
           key: ${{ env.PR_CACHE_KEY }}
 
       - name: Restore main manifests from cache
+        id: restore-main-cache
         uses: actions/cache@v3
         with:
           path: ./cache/main/
           key: ${{ env.MAIN_CACHE_KEY }}
 
+      - name: Verify cached files exist
+        run: |
+          if [[ "${{ steps.restore-pr-cache.outputs.cache-hit }}" != "true" ]]; then
+            echo "❌ Failed to restore PR manifests from cache"
+            exit 1
+          fi
+          
+          if [[ "${{ steps.restore-main-cache.outputs.cache-hit }}" != "true" ]]; then
+            echo "❌ Failed to restore main manifests from cache"
+            exit 1
+          fi
+          
+          if [[ ! -f ./cache/pr/manifests.yaml ]]; then
+            echo "❌ PR manifests file not found in cache"
+            exit 1
+          fi
+          
+          if [[ ! -f ./cache/main/manifests.yaml ]]; then
+            echo "❌ Main manifests file not found in cache"
+            exit 1
+          fi
+          
+          echo "✅ All manifest files verified"
+
       - name: Compare Manifests
         id: compare-manifests
         run: |
           set +e
-          DIFF_OUTPUT=$(diff ./cache/pr/manifests.yaml ./cache/main/manifests.yaml)
+          echo "Comparing manifest files..."
+          DIFF_OUTPUT=$(diff -u ./cache/main/manifests.yaml ./cache/pr/manifests.yaml)
           EXIT_CODE=$?
+          
           if [[ $EXIT_CODE != 0 ]]; then
             echo "❌ Detected differences in manifest outputs!"
+            echo "Diff output:"
             echo "$DIFF_OUTPUT"
             echo "manifests_diff_detected=true" >> $GITHUB_OUTPUT
+          
+            # Save diff to file for potential use in comment
+            echo "$DIFF_OUTPUT" > manifest_diff.txt
           else
             echo "✅ No differences in manifest outputs detected."
             echo "manifests_diff_detected=false" >> $GITHUB_OUTPUT
@@ -89,12 +154,19 @@ jobs:
         with:
           script: |
             const labelName = 'manifests-diff';
-            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-            });
-            return labels.some(label => label.name === labelName);
+            try {
+              const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+              });
+              const hasLabel = labels.some(label => label.name === labelName);
+              console.log(`Label "${labelName}" ${hasLabel ? 'found' : 'not found'}`);
+              return hasLabel;
+            } catch (error) {
+              console.error('Error checking labels:', error);
+              return false;
+            }
           result-encoding: string
 
       - name: Add PR Comment if Manifest Differences Detected
@@ -102,18 +174,26 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please make sure to check if changes are needed in related repositories like management-plane-charts, runtime-watchter, etc.."
-            });
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              labels: ["manifests-diff"]
-            });
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please make sure to check if changes are needed in related repositories like management-plane-charts, runtime-watcher, etc.\n\nThis PR modifies the generated manifests. Please review the changes carefully."
+              });
+            
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: ["manifests-diff"]
+              });
+            
+              console.log('✅ Comment added and label applied successfully');
+            } catch (error) {
+              console.error('❌ Error adding comment or label:', error);
+              throw error;
+            }
 
       - name: Remove 'manifests-diff' Label if No Differences
         if: steps.compare-manifests.outputs.manifests_diff_detected == 'false'
@@ -121,19 +201,26 @@ jobs:
         with:
           script: |
             const labelName = 'manifests-diff';
-            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-            });
-            if (labels.some(label => label.name === labelName)) {
-              console.log(`Label "${labelName}" found, removing it.`);
-              await github.rest.issues.removeLabel({
+            try {
+              const { data: labels } = await github.rest.issues.listLabelsOnIssue({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.pull_request.number,
-                name: labelName,
               });
-            } else {
-              console.log(`Label "${labelName}" not found, skipping removal.`);
+            
+              if (labels.some(label => label.name === labelName)) {
+                console.log(`Label "${labelName}" found, removing it.`);
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  name: labelName,
+                });
+                console.log('✅ Label removed successfully');
+              } else {
+                console.log(`Label "${labelName}" not found, skipping removal.`);
+              }
+            } catch (error) {
+              console.error('❌ Error removing label:', error);
+              // Don't fail the workflow if label removal fails
             }
