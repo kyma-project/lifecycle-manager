@@ -6,25 +6,23 @@ Accepted
 
 ## Context
 
-We currently have several issues that require introducing new spec fields to existing v1beta1 CRDs in our system. Typically, if these spec fields do not introduce breaking changes, such as being optional fields, we can add them using the same CRD version. 
+We currently have several issues that require introducing new spec fields to existing CRDs in our system. Typically, if these spec fields do not introduce breaking changes, such as being optional fields, we can add them using the same CRD version. 
 
 However, in managed mode, we need to sync Kyma to remote, and the remote CRD does not get updated if they are in the same version, which means that remote Kyma instances will not contain changes introduced by new spec fields if we are not updating the CRD version in KCP.
 
 This has raised a concern about whether we should keep the current logic of requiring a version upgrade for any change, or introduce a process to detect differences even if CRDs are in the same version, to avoid unnecessary version upgrades.
 
-Options for non-breaking changes:
-- Keep current logic, when new change comes, create new version, set storage: true, served: false, which means content will be saved as new version, but the resources will be presented still using old version. When all changes are implemented, change served:true for new version.
-- Introduce a process to detect differences between KCP and SKR even if CRDs are in the same version, and update SKR CRD if necessary. 
+Two options for non-breaking changes:
+1. Keep current logic, when new change comes, create new version, set storage: true, served: false, which means content will be saved as new version, but the resources will be presented still using old version. When all changes are implemented, change served:true for new version.
+2. Introduce a process to detect differences between KCP and SKR even if CRDs are in the same version, and update SKR CRD if necessary. 
 
 ## Decision
 
 The decision is to implement option 2, which is to introduce a process to detect differences between KCP and SKR even if CRDs are in the same version, and update SKR CRDs if necessary.
 
-1. Doing time windowed research, find an efficient and robust mechanism to directly compare the remote SKR CRDs spec to KCR CRDs spec, 
-  a. run a performance test to approve it's not being bottlenecked.
-2. More preferred way: record existing CRDs generation numbers, both SKR and KCR CRDs, check for differences in CRD generation numbers, and if there are any, apply CRD updates to SKR.
-  a. use kyma CR annotation to save CRD generation numbers
+Record existing CRDs generation numbers, both SKR and KCR CRDs, check for differences in CRD generation numbers, and if there are any, apply CRD updates to SKR. We use Kyma CR annotations to save CRD generation numbers.
 
+We implemented the decision [here](https://github.com/kyma-project/lifecycle-manager/issues/534).
 
 ## Consequences
 
