@@ -15,7 +15,7 @@ var _ = Describe("FIPS Mode metric", Ordered, func() {
 			By("Then fipsMode metrics is set to \"enabled\"")
 			Eventually(GetFipsModeGauge).
 				WithContext(ctx).
-				Should(Equal(0)) // Then change to 1
+				Should(Equal(1)) // 1 means "on", 2 means "only"
 		})
 	})
 })
