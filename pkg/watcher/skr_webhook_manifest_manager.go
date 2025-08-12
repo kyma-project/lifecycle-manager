@@ -141,7 +141,8 @@ func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	if err = m.skrCertificateService.DeleteSkrCertificate(ctx, kyma.Name); err != nil {
+	err = m.skrCertificateService.DeleteSkrCertificate(ctx, kyma.Name)
+	if err != nil {
 		return fmt.Errorf("failed to delete SKR certificate: %w", err)
 	}
 

@@ -172,7 +172,7 @@ func RotateCAManuallyWithGCM(ctx context.Context, kcpClient client.Client) error
 	caCert.Spec.EnsureRenewedAfter = nil
 	renew := true
 	caCert.Spec.Renew = &renew
-	err := kcpClient.Update(ctx, caCert)
+	err = kcpClient.Update(ctx, caCert)
 	if err != nil {
 		return fmt.Errorf("failed to update CA certificate %w", err)
 	}

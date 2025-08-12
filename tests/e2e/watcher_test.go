@@ -279,7 +279,8 @@ func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace st
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 	kyma.ManagedFields = nil
-	if err := k8sClient.Status().Update(ctx, kyma); err != nil {
+	err = k8sClient.Status().Update(ctx, kyma)
+	if err != nil {
 		return fmt.Errorf("kyma status subresource could not be updated: %w", err)
 	}
 

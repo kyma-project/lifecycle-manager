@@ -69,7 +69,8 @@ func (c *Service) CreateSkrCertificate(ctx context.Context, kyma *v1beta2.Kyma) 
 	certName := constructSkrCertificateName(kyma.Name)
 	commonName := kyma.GetRuntimeID()
 
-	if err = c.certRepo.Create(ctx, certName, commonName, dnsNames); err != nil {
+	err = c.certRepo.Create(ctx, certName, commonName, dnsNames)
+	if err != nil {
 		return fmt.Errorf("failed to create SKR certificate: %w", err)
 	}
 
