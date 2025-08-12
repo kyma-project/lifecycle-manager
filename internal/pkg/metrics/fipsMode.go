@@ -2,9 +2,10 @@ package metrics
 
 import (
 	"crypto/fips140"
-	"github.com/prometheus/client_golang/prometheus"
 	"os"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
