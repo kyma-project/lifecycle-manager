@@ -98,6 +98,7 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 
 type patchClientStub struct {
 	client.Client
+
 	called bool
 	object *gcertv1alpha1.Certificate
 	err    error

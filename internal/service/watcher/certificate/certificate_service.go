@@ -111,7 +111,8 @@ func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) erro
 	logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 		"kyma", kymaName)
 
-	if err = c.renewalService.Renew(ctx, constructSkrCertificateName(kymaName)); err != nil {
+	err = c.renewalService.Renew(ctx, constructSkrCertificateName(kymaName))
+	if err != nil {
 		return fmt.Errorf("failed to delete SKR certificate secret: %w", err)
 	}
 

@@ -398,7 +398,8 @@ func (f FlagVar) Validate() error {
 		return fmt.Errorf("%w: '%s'", common.ErrUnsupportedCertificateManagementSystem, f.CertificateManagement)
 	}
 
-	if err := validateOciRegistryConfig(f.OciRegistryHost, f.OciRegistryCredSecretName); err != nil {
+	err := validateOciRegistryConfig(f.OciRegistryHost, f.OciRegistryCredSecretName)
+	if err != nil {
 		return err
 	}
 

@@ -48,6 +48,7 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 
 type getClientStub struct {
 	client.Client
+
 	called bool
 	object *apicorev1.Secret
 	err    error

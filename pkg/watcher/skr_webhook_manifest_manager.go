@@ -103,7 +103,8 @@ func (m *SkrWebhookManifestManager) Reconcile(ctx context.Context, kyma *v1beta2
 
 	m.writeCertificateRenewalMetrics(ctx, kyma.Name, logger)
 
-	if err = m.skrCertificateService.RenewSkrCertificate(ctx, kyma.Name); err != nil {
+	err = m.skrCertificateService.RenewSkrCertificate(ctx, kyma.Name)
+	if err != nil {
 		return fmt.Errorf("failed to renew SKR certificate: %w", err)
 	}
 
@@ -171,7 +172,8 @@ func (m *SkrWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 // RemoveSkrCertificate removes the SKR certificate from the KCP cluster.
 // The major anticipated use case is to cleanup orphaned certificates.
 func (m *SkrWebhookManifestManager) RemoveSkrCertificate(ctx context.Context, kymaName string) error {
-	if err := m.skrCertificateService.DeleteSkrCertificate(ctx, kymaName); err != nil {
+	err := m.skrCertificateService.DeleteSkrCertificate(ctx, kymaName)
+	if err != nil {
 		return fmt.Errorf("failed to delete SKR certificate: %w", err)
 	}
 
@@ -294,7 +296,8 @@ func (m *SkrWebhookManifestManager) getBaseClientObjects() []client.Object {
 
 func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watcher, error) {
 	watcherList := &v1beta2.WatcherList{}
-	if err := kcpClient.List(ctx, watcherList); err != nil {
+	err := kcpClient.List(ctx, watcherList)
+	if err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}
 
@@ -307,12 +310,13 @@ func AssertDeploymentReady(ctx context.Context, skrClient client.Reader) error {
 		Name:      skrWebhookDeploymentName,
 		Namespace: shared.DefaultRemoteNamespace,
 	}
-	if err := skrClient.Get(ctx, deploymentKey, &deployment); err != nil {
+	err := skrClient.Get(ctx, deploymentKey, &deployment)
+	if err != nil {
 		return fmt.Errorf("failed to get skr-webhook deployment: %w", err)
 	}
 
 	podList := &apicorev1.PodList{}
-	err := skrClient.List(ctx, podList, client.InNamespace(shared.DefaultRemoteNamespace),
+	err = skrClient.List(ctx, podList, client.InNamespace(shared.DefaultRemoteNamespace),
 		client.MatchingLabels{"app": skrWebhookDeploymentName})
 	if err != nil {
 		return fmt.Errorf("failed to list pods: %w", err)

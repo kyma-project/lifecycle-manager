@@ -25,7 +25,8 @@ func NewService(certRepo CertificateRepository) *Service {
 func (s *Service) Renew(ctx context.Context, name string) error {
 	var cert *gcertv1alpha1.Certificate
 	var err error
-	if cert, err = s.certRepo.Get(ctx, name); err != nil || cert == nil {
+	cert, err = s.certRepo.Get(ctx, name)
+	if err != nil || cert == nil {
 		return fmt.Errorf("could not get certificate for renewal: %w", err)
 	}
 
@@ -35,7 +36,8 @@ func (s *Service) Renew(ctx context.Context, name string) error {
 
 	cert.Spec.Renew = boolPtr(true)
 
-	if err = s.certRepo.Update(ctx, cert); err != nil {
+	err = s.certRepo.Update(ctx, cert)
+	if err != nil {
 		return fmt.Errorf("failed to update certificate for renewal: %w", err)
 	}
 

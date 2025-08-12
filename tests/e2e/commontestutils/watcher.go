@@ -162,16 +162,18 @@ func GetLastModifiedTimeFromAnnotation(secret *apicorev1.Secret) (time.Time, err
 
 func RotateCAManuallyWithGCM(ctx context.Context, kcpClient client.Client) error {
 	caCert := &gcertv1alpha1.Certificate{}
-	if err := kcpClient.Get(ctx, types.NamespacedName{
+	err := kcpClient.Get(ctx, types.NamespacedName{
 		Name:      shared.CACertificateName,
 		Namespace: shared.IstioNamespace,
-	}, caCert); err != nil {
+	}, caCert)
+	if err != nil {
 		return fmt.Errorf("failed to get CA certificate %w", err)
 	}
 	caCert.Spec.EnsureRenewedAfter = nil
 	renew := true
 	caCert.Spec.Renew = &renew
-	if err := kcpClient.Update(ctx, caCert); err != nil {
+	err := kcpClient.Update(ctx, caCert)
+	if err != nil {
 		return fmt.Errorf("failed to update CA certificate %w", err)
 	}
 	return nil

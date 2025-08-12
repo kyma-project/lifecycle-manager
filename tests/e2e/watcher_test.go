@@ -226,9 +226,10 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx,
+	err := k8sClient.Get(ctx,
 		client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace},
-		kyma); err != nil {
+		kyma)
+	if err != nil {
 		return err
 	}
 
@@ -251,10 +252,10 @@ func checkWatcherDeploymentReady(ctx context.Context,
 	deploymentName, deploymentNamespace string, k8sClient client.Client,
 ) error {
 	watcherDeployment := &apiappsv1.Deployment{}
-	if err := k8sClient.Get(ctx,
+	err := k8sClient.Get(ctx,
 		client.ObjectKey{Name: deploymentName, Namespace: deploymentNamespace},
-		watcherDeployment,
-	); err != nil {
+		watcherDeployment)
+	if err != nil {
 		return err
 	}
 
@@ -294,7 +295,8 @@ func updateWatcherSpecField(ctx context.Context, k8sClient client.Client, name s
 		return fmt.Errorf("failed to get Kyma %w", err)
 	}
 	watcherCR.Spec.Field = v1beta2.StatusField
-	if err = k8sClient.Update(ctx, watcherCR); err != nil {
+	err = k8sClient.Update(ctx, watcherCR)
+	if err != nil {
 		return fmt.Errorf("failed to update watcher spec.field: %w", err)
 	}
 	return nil

@@ -112,7 +112,8 @@ func (r *Repository) Delete(ctx context.Context, name string) error {
 	cert.SetName(name)
 	cert.SetNamespace(r.certConfig.Namespace)
 
-	if err := r.kcpClient.Delete(ctx, cert); client.IgnoreNotFound(err) != nil {
+	err := r.kcpClient.Delete(ctx, cert)
+	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
@@ -125,7 +126,8 @@ func (r *Repository) GetRenewalTime(ctx context.Context, name string) (time.Time
 	cert.SetName(name)
 	cert.SetNamespace(r.certConfig.Namespace)
 
-	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 
@@ -147,7 +149,8 @@ func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, t
 	cert.SetName(name)
 	cert.SetNamespace(r.certConfig.Namespace)
 
-	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
 	}
 

@@ -28,7 +28,8 @@ func (r *Repository) Get(ctx context.Context, name string) (*gcertv1alpha1.Certi
 	cert.SetName(name)
 	cert.SetNamespace(r.namespace)
 
-	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
+	err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get GCM Certificate %s-%s: %w", name, r.namespace, err)
 	}
 
@@ -40,7 +41,8 @@ func (r *Repository) Update(ctx context.Context, cert *gcertv1alpha1.Certificate
 		return ErrNilCertificate
 	}
 
-	if err := r.kcpClient.Update(ctx, cert); err != nil {
+	err := r.kcpClient.Update(ctx, cert)
+	if err != nil {
 		return fmt.Errorf("failed to update GCM Certificate %s-%s: %w", cert.Name, cert.Namespace, err)
 	}
 
