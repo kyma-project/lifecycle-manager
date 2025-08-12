@@ -34,7 +34,8 @@ func GetStatefulSet(ctx context.Context, clnt client.Client,
 	name, namespace string,
 ) (*apiappsv1.StatefulSet, error) {
 	statefulSet := &apiappsv1.StatefulSet{}
-	if err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, statefulSet); err != nil {
+	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, statefulSet)
+	if err != nil {
 		return nil, fmt.Errorf("could not get statefulset: %w", err)
 	}
 	return statefulSet, nil

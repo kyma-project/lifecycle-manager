@@ -1,13 +1,14 @@
 package kyma_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Given kyma CR with invalid module enabled", Ordered, func() {
@@ -63,7 +64,8 @@ var _ = Describe("Given kyma CR with invalid module enabled", Ordered, func() {
 })
 
 func givenKymaWithModule(kcpClient client.Client, kcpKyma *v1beta2.Kyma, skrClient client.Client, remoteKyma *v1beta2.Kyma, module v1beta2.Module) error {
-	if err := EnableModule(ctx, skrClient, remoteKyma.GetName(), remoteKyma.GetNamespace(), module); err != nil {
+	err := EnableModule(ctx, skrClient, remoteKyma.GetName(), remoteKyma.GetNamespace(), module)
+	if err != nil {
 		return err
 	}
 	Eventually(SyncKyma, Timeout, Interval).

@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"os/exec"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,11 +77,11 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 		})
 
 		It("When SKR Cluster is removed", func() {
-			cmd := exec.Command("sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
+			cmd := exec.CommandContext(context.Background(), "sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
-			cmd = exec.Command("k3d", "cluster", "rm", "skr")
+			cmd = exec.CommandContext(context.Background(), "k3d", "cluster", "rm", "skr")
 			out, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))

@@ -282,6 +282,7 @@ func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 
 type getClientStub struct {
 	client.Client
+
 	object *gcertv1alpha1.Certificate
 	called bool
 	err    error

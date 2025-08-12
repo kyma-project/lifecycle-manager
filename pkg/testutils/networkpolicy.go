@@ -30,7 +30,8 @@ func GetNetworkPolicy(ctx context.Context, clnt client.Client, name, namespace s
 }
 
 func CreateNetworkPolicy(ctx context.Context, clnt client.Client, networkPolicy *apinetworkv1.NetworkPolicy) error {
-	if err := clnt.Create(ctx, networkPolicy); !apierrors.IsAlreadyExists(err) {
+	err := clnt.Create(ctx, networkPolicy)
+	if !apierrors.IsAlreadyExists(err) {
 		return err
 	}
 	return nil

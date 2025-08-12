@@ -15,10 +15,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -130,13 +129,15 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 func deleteMandatoryModuleTemplates(ctx context.Context, clnt client.Client) error {
 	templates := v1beta2.ModuleTemplateList{}
-	if err := clnt.List(ctx, &templates); err != nil {
+	err := clnt.List(ctx, &templates)
+	if err != nil {
 		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
 	}
 
 	for _, template := range templates.Items {
 		if template.Spec.Mandatory {
-			if err := clnt.Delete(ctx, &template); err != nil {
+			err := clnt.Delete(ctx, &template)
+			if err != nil {
 				return fmt.Errorf("failed to delete ModuleTemplate: %w", err)
 			}
 		}
@@ -147,7 +148,8 @@ func deleteMandatoryModuleTemplates(ctx context.Context, clnt client.Client) err
 
 func mandatoryModuleTemplateFinalizerExists(ctx context.Context, clnt client.Client, obj client.ObjectKey) error {
 	template := v1beta2.ModuleTemplate{}
-	if err := clnt.Get(ctx, obj, &template); err != nil {
+	err := clnt.Get(ctx, obj, &template)
+	if err != nil {
 		return fmt.Errorf("failed to get ModuleTemplate: %w", err)
 	}
 

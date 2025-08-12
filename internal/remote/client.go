@@ -12,6 +12,7 @@ type Client interface {
 
 type ConfigAndClient struct {
 	client.Client
+
 	cfg *rest.Config
 }
 

@@ -245,6 +245,7 @@ func TestGetValidity_ClientReturnsAnError_ReturnsError(t *testing.T) {
 
 type getClientStub struct {
 	client.Client
+
 	object *certmanagerv1.Certificate
 	called bool
 	err    error

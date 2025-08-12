@@ -189,7 +189,7 @@ func newChangesComparator(t *testing.T, originalLines, rewrittenLines []string) 
 }
 
 // verify checks that the expected changes exist in the differences between expected and actual lines.
-func (c *changesComparator) verify(expectedChanges ...(func() *changeDefiner)) {
+func (c *changesComparator) verify(expectedChanges ...func() *changeDefiner) {
 	definersCount := len(expectedChanges)
 	changesCount := len(c.differences)
 	require.Len(c.t, expectedChanges, changesCount, "The number of registered changes (%d) must be equal to the number of differences between lines (%d)", definersCount, changesCount)
@@ -244,7 +244,8 @@ func parseToUnstructured(resource string) (*unstructured.Unstructured, error) {
 	}
 
 	u := unstructured.Unstructured{}
-	if err := u.UnmarshalJSON(asJSON); err != nil {
+	err = u.UnmarshalJSON(asJSON)
+	if err != nil {
 		return nil, err
 	}
 	return &u, nil

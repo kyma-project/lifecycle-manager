@@ -173,10 +173,12 @@ func setCRStatus(ctx context.Context, clnt client.Client, moduleCR *unstructured
 		if err != nil {
 			return err
 		}
-		if err = unstructured.SetNestedMap(moduleCR.Object, map[string]any{}, "status"); err != nil {
+		err = unstructured.SetNestedMap(moduleCR.Object, map[string]any{}, "status")
+		if err != nil {
 			return err
 		}
-		if err = unstructured.SetNestedField(moduleCR.Object, string(statusValue), "status", "state"); err != nil {
+		err = unstructured.SetNestedField(moduleCR.Object, string(statusValue), "status", "state")
+		if err != nil {
 			return err
 		}
 		return clnt.Status().Update(ctx, moduleCR)

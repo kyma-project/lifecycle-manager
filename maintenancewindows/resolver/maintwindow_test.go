@@ -94,6 +94,7 @@ func (tc testCase) Message() string {
 
 type MaintWindowSuite struct {
 	suite.Suite
+
 	plan      resolver.MaintenanceWindowPolicy
 	testCases []testCase
 }

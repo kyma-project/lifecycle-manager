@@ -51,7 +51,8 @@ type ModuleReleaseMetaSpec struct {
 type ModuleReleaseMetaList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []ModuleReleaseMeta `json:"items"`
+
+	Items []ModuleReleaseMeta `json:"items"`
 }
 
 type ChannelVersionAssignment struct {

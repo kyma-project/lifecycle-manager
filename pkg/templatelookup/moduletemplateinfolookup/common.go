@@ -48,10 +48,11 @@ func getTemplateByVersion(ctx context.Context,
 	moduleTemplate := &v1beta2.ModuleTemplate{}
 
 	moduleTemplateName := fmt.Sprintf("%s-%s", moduleName, moduleVersion)
-	if err := clnt.Get(ctx, client.ObjectKey{
+	err := clnt.Get(ctx, client.ObjectKey{
 		Name:      moduleTemplateName,
 		Namespace: namespace,
-	}, moduleTemplate); err != nil {
+	}, moduleTemplate)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get module template: %w", err)
 	}
 

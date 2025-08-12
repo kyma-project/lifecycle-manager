@@ -36,7 +36,8 @@ func (r *Repository) Delete(ctx context.Context, name string) error {
 	secret.SetName(name)
 	secret.SetNamespace(r.namespace)
 
-	if err := r.kcpClient.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
+	err := r.kcpClient.Delete(ctx, secret)
+	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete secret %s-%s: %w", name, r.namespace, err)
 	}
 

@@ -123,7 +123,8 @@ func main() {
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
 		zapcore.Lock(os.Stdout)))
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
-	if err := flagVar.Validate(); err != nil {
+	err := flagVar.Validate()
+	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -156,7 +157,8 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 		WriteTimeout:      timeout,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
+	err := server.ListenAndServe()
+	if err != nil {
 		setupLog.Error(err, "error starting pprof server")
 	}
 }
@@ -239,7 +241,8 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, logger)
 	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, logger)
 
-	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	err = mgr.Start(ctrl.SetupSignalHandler())
+	if err != nil {
 		logger.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
@@ -314,11 +317,13 @@ func configManager(flagVar *flags.FlagVar, cacheOptions cache.Options,
 
 func addHealthChecks(mgr manager.Manager, setupLog logr.Logger) {
 	// +kubebuilder:scaffold:builder
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+	err := mgr.AddHealthzCheck("healthz", healthz.Ping)
+	if err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+	err = mgr.AddReadyzCheck("readyz", healthz.Ping)
+	if err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
@@ -351,7 +356,8 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 	_, scheduleErr := scheduler.Every(cleanupIntervalInMinutes).Minutes().Do(func() {
 		ctx, cancel := context.WithTimeout(ctx, metricCleanupTimeout)
 		defer cancel()
-		if err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, mgr.GetClient()); err != nil {
+		err := kymaMetrics.CleanupNonExistingKymaCrsMetrics(ctx, mgr.GetClient())
+		if err != nil {
 			setupLog.Info(fmt.Sprintf("failed to cleanup non existing kyma crs metrics, err: %s", err))
 		}
 	})
@@ -384,7 +390,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
-	if err := (&kyma.Reconciler{
+	err := (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    skrContextFactory,
 		Event:                event,
@@ -411,7 +417,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 			IstioNamespace:               flagVar.IstioNamespace,
 		},
-	); err != nil {
+	)
+	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
@@ -428,7 +435,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 
-	if err := (&purge.Reconciler{
+	err := (&purge.Reconciler{
 		Client:                mgr.GetClient(),
 		SkrContextFactory:     skrContextProvider,
 		Event:                 event,
@@ -438,7 +445,8 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		Metrics:               metrics.NewPurgeMetrics(),
 	}).SetupWithManager(
 		mgr, options,
-	); err != nil {
+	)
+	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -456,7 +464,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
-	if err := manifest.SetupWithManager(
+	err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
 			Success: flagVar.ManifestRequeueSuccessInterval,
 			Busy:    flagVar.ManifestRequeueBusyInterval,
@@ -469,7 +477,8 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
 		manifestClient, orphanDetectionClient, specResolver,
-	); err != nil {
+	)
+	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -492,7 +501,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, ev
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentWatcherReconciles
 
-	if err := (&watcherctrl.Reconciler{
+	err := (&watcherctrl.Reconciler{
 		Client:     mgr.GetClient(),
 		Event:      event,
 		Scheme:     mgr.GetScheme(),
@@ -504,7 +513,8 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, ev
 			Warning: flags.DefaultKymaRequeueWarningInterval,
 		},
 		IstioGatewayNamespace: flagVar.IstioGatewayNamespace,
-	}).SetupWithManager(mgr, options); err != nil {
+	}).SetupWithManager(mgr, options)
+	if err != nil {
 		setupLog.Error(err, "unable to create watcher controller")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -522,7 +532,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	if err := (&mandatorymodule.InstallationReconciler{
+	err := (&mandatorymodule.InstallationReconciler{
 		Client: mgr.GetClient(),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
@@ -533,7 +543,8 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		DescriptorProvider:  descriptorProvider,
 		Metrics:             metrics,
-	}).SetupWithManager(mgr, options); err != nil {
+	}).SetupWithManager(mgr, options)
+	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -551,7 +562,7 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
-	if err := (&mandatorymodule.DeletionReconciler{
+	err := (&mandatorymodule.DeletionReconciler{
 		Client:             mgr.GetClient(),
 		Event:              event,
 		DescriptorProvider: descriptorProvider,
@@ -561,7 +572,8 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
 		},
-	}).SetupWithManager(mgr, options); err != nil {
+	}).SetupWithManager(mgr, options)
+	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}

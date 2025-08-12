@@ -241,7 +241,8 @@ func createScheme(t *testing.T) *machineryruntime.Scheme {
 	t.Helper()
 
 	scheme := machineryruntime.NewScheme()
-	if err := api.AddToScheme(scheme); err != nil {
+	err := api.AddToScheme(scheme)
+	if err != nil {
 		assert.Fail(t, "failed to setup scheme")
 	}
 

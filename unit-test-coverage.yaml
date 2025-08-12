@@ -40,7 +40,7 @@ packages:
   internal/service/watcher/resources: 82
 
   internal/util/collections: 87
-  pkg/module/sync: 10
+  pkg/module/sync: 9
   pkg/templatelookup: 87
   pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher: 10

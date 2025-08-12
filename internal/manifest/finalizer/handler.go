@@ -64,10 +64,11 @@ func EnsureCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 	oMeta.SetFinalizers(manifest.GetFinalizers())
 
 	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManagerFinalizer); added {
-		if err := kcp.Patch(
+		err := kcp.Patch(
 			ctx, oMeta, client.Apply, client.ForceOwnership,
 			client.FieldOwner(CustomResourceManagerFinalizer),
-		); err != nil {
+		)
+		if err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
 		return ErrRequeueRequired
@@ -81,7 +82,8 @@ func RemoveCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 	}
 	onCluster := manifest.DeepCopy()
 
-	if err := kcp.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster); err != nil {
+	err := kcp.Get(ctx, client.ObjectKeyFromObject(manifest), onCluster)
+	if err != nil {
 		// If the manifest is not found, we consider the finalizer removed.
 		if util.IsNotFound(err) {
 			return nil
@@ -90,9 +92,10 @@ func RemoveCRFinalizer(ctx context.Context, kcp client.Client, manifest *v1beta2
 	}
 
 	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManagerFinalizer); removed {
-		if err := kcp.Update(
+		err := kcp.Update(
 			ctx, onCluster, client.FieldOwner(CustomResourceManagerFinalizer),
-		); err != nil {
+		)
+		if err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}
 		return ErrRequeueRequired

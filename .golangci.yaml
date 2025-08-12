@@ -11,6 +11,7 @@ linters:
     - recvcheck
     - sqlclosecheck
     - wsl
+    - wsl_v5 # can be discussed with the team if enforced grouping of statements is desired, but generally considered too strict
   settings:
     cyclop:
       max-complexity: 20

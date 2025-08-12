@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"reflect"
 
-	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"ocm.software/ocm/api/ocm"
 	"ocm.software/ocm/api/ocm/compdesc"
 	"ocm.software/ocm/api/ocm/cpi"
@@ -19,13 +18,14 @@ import (
 	"ocm.software/ocm/api/utils/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -378,15 +378,18 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *types.Descriptor,
 ) error {
-	if err := validateManifestSpecInstallSourceName(manifestImageSpec, moduleTemplateDescriptor); err != nil {
+	err := validateManifestSpecInstallSourceName(manifestImageSpec, moduleTemplateDescriptor)
+	if err != nil {
 		return err
 	}
 
-	if err := validateManifestSpecInstallSourceRef(manifestImageSpec, moduleTemplateDescriptor); err != nil {
+	err = validateManifestSpecInstallSourceRef(manifestImageSpec, moduleTemplateDescriptor)
+	if err != nil {
 		return err
 	}
 
-	if err := validateManifestSpecInstallSourceRepo(manifestImageSpec, moduleTemplateDescriptor); err != nil {
+	err = validateManifestSpecInstallSourceRepo(manifestImageSpec, moduleTemplateDescriptor)
+	if err != nil {
 		return err
 	}
 

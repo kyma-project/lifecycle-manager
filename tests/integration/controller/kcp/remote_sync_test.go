@@ -474,26 +474,32 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 				return err
 			}
 
-			if err = assertCrdGenerationAnnotations(kcpKyma, "kyma-skr-crd-generation", skrKymaCrd); err != nil {
+			err = assertCrdGenerationAnnotations(kcpKyma, "kyma-skr-crd-generation", skrKymaCrd)
+			if err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "kyma-kcp-crd-generation", kcpKymaCrd); err != nil {
+			err = assertCrdGenerationAnnotations(kcpKyma, "kyma-kcp-crd-generation", kcpKymaCrd)
+			if err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-skr-crd-generation",
-				skrModuleTemplateCrd); err != nil {
+			err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-skr-crd-generation",
+				skrModuleTemplateCrd)
+			if err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-kcp-crd-generation",
-				kcpModuleTemplateCrd); err != nil {
+			err = assertCrdGenerationAnnotations(kcpKyma, "moduletemplate-kcp-crd-generation",
+				kcpModuleTemplateCrd)
+			if err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-skr-crd-generation",
-				skrModuleReleaseMetaCrd); err != nil {
+			err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-skr-crd-generation",
+				skrModuleReleaseMetaCrd)
+			if err != nil {
 				return err
 			}
-			if err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-kcp-crd-generation",
-				kcpModuleReleaseMetaCrd); err != nil {
+			err = assertCrdGenerationAnnotations(kcpKyma, "modulereleasemeta-kcp-crd-generation",
+				kcpModuleReleaseMetaCrd)
+			if err != nil {
 				return err
 			}
 

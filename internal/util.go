@@ -26,7 +26,8 @@ func ParseManifestToObjects(path string) (ManifestResources, error) {
 
 	result := builder.Do()
 
-	if err := result.Err(); err != nil {
+	err := result.Err()
+	if err != nil {
 		return ManifestResources{}, fmt.Errorf("parse manifest: %w", err)
 	}
 	items, err := result.Infos()

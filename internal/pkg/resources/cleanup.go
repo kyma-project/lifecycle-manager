@@ -35,7 +35,8 @@ func (c *ConcurrentCleanup) DeleteDiffResources(ctx context.Context, resources [
 	if err != nil {
 		return err
 	}
-	if err := c.cleanupResources(ctx, operatorManagedResources, status); err != nil {
+	err = c.cleanupResources(ctx, operatorManagedResources, status)
+	if err != nil {
 		return err
 	}
 	return c.cleanupResources(ctx, operatorRelatedResources, status)
@@ -106,7 +107,8 @@ func (c *ConcurrentCleanup) cleanupResources(
 	resources []*resource.Info,
 	status shared.Status,
 ) error {
-	if err := c.Run(ctx, resources); errors.Is(err, ErrDeletionNotFinished) {
+	err := c.Run(ctx, resources)
+	if errors.Is(err, ErrDeletionNotFinished) {
 		c.manifest.SetStatus(status.WithState(shared.StateWarning).WithErr(err))
 		return err
 	} else if err != nil {
