@@ -20,11 +20,12 @@ import (
 )
 
 var (
-	ErrStatusModuleStateMismatch        = errors.New("status.modules.state not match")
-	ErrContainsUnexpectedModules        = errors.New("kyma CR contains unexpected modules")
-	ErrNotContainsExpectedModules       = errors.New("kyma CR not contains expected modules")
-	ErrModuleVersionInStatusIsIncorrect = errors.New("status.modules.version is incorrect")
-	ErrModuleMessageInStatusIsIncorrect = errors.New("status.modules.message is incorrect")
+	ErrStatusModuleStateMismatch            = errors.New("status.modules.state not match")
+	ErrContainsUnexpectedModules            = errors.New("kyma CR contains unexpected modules")
+	ErrNotContainsExpectedModules           = errors.New("kyma CR not contains expected modules")
+	ErrModuleVersionInStatusIsIncorrect     = errors.New("status.modules.version is incorrect")
+	ErrModuleMaintenanceInStatusIsIncorrect = errors.New("status.modules.maintenance is incorrect")
+	ErrModuleMessageInStatusIsIncorrect     = errors.New("status.modules.message is incorrect")
 )
 
 const (
@@ -410,6 +411,23 @@ func ModuleVersionInKymaStatusIsCorrect(ctx context.Context,
 	}
 
 	return ErrModuleVersionInStatusIsIncorrect
+}
+
+func ModuleMaintenanceIndicatorInKymaStatusIsCorrect(ctx context.Context,
+	clnt client.Client, kymaName, kymaNamespace, moduleName string, underMaintenanceWindow bool,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+
+	for _, module := range kyma.Status.Modules {
+		if module.Name == moduleName && module.Maintenance == underMaintenanceWindow {
+			return nil
+		}
+	}
+
+	return ErrModuleMaintenanceInStatusIsIncorrect
 }
 
 // AddManifestToKymaStatus adds a reference of the provided module in the status.modules in the Kyma CR

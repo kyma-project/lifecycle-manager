@@ -118,8 +118,16 @@ linters:
           alias: kymarepository
         - pkg: k8s.io/api/networking/v1
           alias: apinetworkv1
-        - pkg: github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources
           alias: skrwebhookresources
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager
+          alias: certmanagerrenewal
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/errors
+          alias: certerror
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate
+          alias: certmanagercertificate
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate
+          alias: gcmcertificate
       no-unaliased: true
       no-extra-aliases: true
     ireturn:
@@ -184,6 +192,7 @@ linters:
       - linters:
           - err113
           - fatcontext
+          - forcetypeassert
           - funlen
           - gochecknoglobals
           - goconst

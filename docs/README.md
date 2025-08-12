@@ -10,9 +10,3 @@ KLM takes care of the following tasks:
 * Watching SKR clusters for changes requested by the users
 
 KLM is built using the [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) framework and extends the Kubernetes API through custom resource definitions. For detailed information about these resources, see [Lifecycle Manager Resources](./contributor/resources/README.md).
-
-## Next Steps
-
-* If you're an end user of SAP BTP, Kyma runtime, go to the [`user`](/docs/user/README.md) directory.
-* If you're a developer interested in the module's code, go to the [`contributor`](/docs/contributor/README.md) directory.
-* If you're a Lifecycle Manager operator, go to the [`operator`](/docs/operator/README.md) directory.

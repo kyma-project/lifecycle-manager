@@ -8,6 +8,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -157,4 +158,21 @@ func GetLastModifiedTimeFromAnnotation(secret *apicorev1.Secret) (time.Time, err
 		}
 	}
 	return time.Time{}, errors.New("getting lastModifiedAt time failed")
+}
+
+func RotateCAManuallyWithGCM(ctx context.Context, kcpClient client.Client) error {
+	caCert := &gcertv1alpha1.Certificate{}
+	if err := kcpClient.Get(ctx, types.NamespacedName{
+		Name:      shared.CACertificateName,
+		Namespace: shared.IstioNamespace,
+	}, caCert); err != nil {
+		return fmt.Errorf("failed to get CA certificate %w", err)
+	}
+	caCert.Spec.EnsureRenewedAfter = nil
+	renew := true
+	caCert.Spec.Renew = &renew
+	if err := kcpClient.Update(ctx, caCert); err != nil {
+		return fmt.Errorf("failed to update CA certificate %w", err)
+	}
+	return nil
 }

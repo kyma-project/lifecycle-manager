@@ -15,13 +15,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	skrwebhookresources "github.com/kyma-project/lifecycle-manager/pkg/watcher/skr_webhook_resources"
+	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
 const (
@@ -227,10 +226,9 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx,
+	if err := k8sClient.Get(ctx,
 		client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace},
-		kyma)
-	if err != nil {
+		kyma); err != nil {
 		return err
 	}
 
@@ -253,11 +251,10 @@ func checkWatcherDeploymentReady(ctx context.Context,
 	deploymentName, deploymentNamespace string, k8sClient client.Client,
 ) error {
 	watcherDeployment := &apiappsv1.Deployment{}
-	err := k8sClient.Get(ctx,
+	if err := k8sClient.Get(ctx,
 		client.ObjectKey{Name: deploymentName, Namespace: deploymentNamespace},
 		watcherDeployment,
-	)
-	if err != nil {
+	); err != nil {
 		return err
 	}
 
@@ -281,8 +278,7 @@ func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace st
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 	kyma.ManagedFields = nil
-	err = k8sClient.Status().Update(ctx, kyma)
-	if err != nil {
+	if err := k8sClient.Status().Update(ctx, kyma); err != nil {
 		return fmt.Errorf("kyma status subresource could not be updated: %w", err)
 	}
 
@@ -298,8 +294,7 @@ func updateWatcherSpecField(ctx context.Context, k8sClient client.Client, name s
 		return fmt.Errorf("failed to get Kyma %w", err)
 	}
 	watcherCR.Spec.Field = v1beta2.StatusField
-	err = k8sClient.Update(ctx, watcherCR)
-	if err != nil {
+	if err = k8sClient.Update(ctx, watcherCR); err != nil {
 		return fmt.Errorf("failed to update watcher spec.field: %w", err)
 	}
 	return nil
