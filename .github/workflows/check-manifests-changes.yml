@@ -86,7 +86,9 @@ jobs:
       - create-pr-manifests
       - create-main-manifests
     runs-on: ubuntu-latest
-    if: needs.create-pr-manifests.outputs.success == 'success' && needs.create-main-manifests.outputs.success == 'success'
+    if: >-
+      needs.create-pr-manifests.outputs.success == 'success' &&
+      needs.create-main-manifests.outputs.success == 'success'
     steps:
       - name: Restore PR manifests from cache
         id: restore-pr-cache
@@ -170,16 +172,26 @@ jobs:
           result-encoding: string
 
       - name: Add PR Comment if Manifest Differences Detected
-        if: steps.compare-manifests.outputs.manifests_diff_detected == 'true' && steps.check-manifests-label.outputs.result != 'true'
+        if: >-
+          steps.compare-manifests.outputs.manifests_diff_detected == 'true' &&
+          steps.check-manifests-label.outputs.result != 'true'
         uses: actions/github-script@v7
         with:
           script: |
             try {
+              const commentBody = [
+                "❌ **Manifests created with 'make dry-run-control-plane' changed!**",
+                "Please make sure to check if changes are needed in related repositories",
+                "like management-plane-charts, runtime-watcher, etc.",
+                "",
+                "This PR modifies the generated manifests. Please review the changes carefully."
+              ].join('\n');
+
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.pull_request.number,
-                body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please make sure to check if changes are needed in related repositories like management-plane-charts, runtime-watcher, etc.\n\nThis PR modifies the generated manifests. Please review the changes carefully."
+                body: commentBody
               });
 
               await github.rest.issues.addLabels({
