@@ -30,12 +30,12 @@ jobs:
             echo "❌ Failed to create manifests on PR branch"
             exit 1
           fi
-          
+
           if [[ ! -f ./dry-run/manifests.yaml ]]; then
             echo "❌ Manifest file not found after make command"
             exit 1
           fi
-          
+
           mkdir -p ./cache/pr
           cp ./dry-run/manifests.yaml ./cache/pr/manifests.yaml
           echo "✅ PR manifests created successfully"
@@ -65,12 +65,12 @@ jobs:
             echo "❌ Failed to create manifests on main branch"
             exit 1
           fi
-          
+
           if [[ ! -f ./dry-run/manifests.yaml ]]; then
             echo "❌ Manifest file not found after make command"
             exit 1
           fi
-          
+
           mkdir -p ./cache/main
           cp ./dry-run/manifests.yaml ./cache/main/manifests.yaml
           echo "✅ Main manifests created successfully"
@@ -108,22 +108,22 @@ jobs:
             echo "❌ Failed to restore PR manifests from cache"
             exit 1
           fi
-          
+
           if [[ "${{ steps.restore-main-cache.outputs.cache-hit }}" != "true" ]]; then
             echo "❌ Failed to restore main manifests from cache"
             exit 1
           fi
-          
+
           if [[ ! -f ./cache/pr/manifests.yaml ]]; then
             echo "❌ PR manifests file not found in cache"
             exit 1
           fi
-          
+
           if [[ ! -f ./cache/main/manifests.yaml ]]; then
             echo "❌ Main manifests file not found in cache"
             exit 1
           fi
-          
+
           echo "✅ All manifest files verified"
 
       - name: Compare Manifests
@@ -133,13 +133,13 @@ jobs:
           echo "Comparing manifest files..."
           DIFF_OUTPUT=$(diff -u ./cache/main/manifests.yaml ./cache/pr/manifests.yaml)
           EXIT_CODE=$?
-          
+
           if [[ $EXIT_CODE != 0 ]]; then
             echo "❌ Detected differences in manifest outputs!"
             echo "Diff output:"
             echo "$DIFF_OUTPUT"
             echo "manifests_diff_detected=true" >> $GITHUB_OUTPUT
-          
+
             # Save diff to file for potential use in comment
             echo "$DIFF_OUTPUT" > manifest_diff.txt
           else
@@ -181,14 +181,14 @@ jobs:
                 issue_number: context.payload.pull_request.number,
                 body: "❌ **Manifests created with 'make dry-run-control-plane' changed!** Please make sure to check if changes are needed in related repositories like management-plane-charts, runtime-watcher, etc.\n\nThis PR modifies the generated manifests. Please review the changes carefully."
               });
-            
+
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.pull_request.number,
                 labels: ["manifests-diff"]
               });
-            
+
               console.log('✅ Comment added and label applied successfully');
             } catch (error) {
               console.error('❌ Error adding comment or label:', error);
@@ -207,7 +207,7 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: context.payload.pull_request.number,
               });
-            
+
               if (labels.some(label => label.name === labelName)) {
                 console.log(`Label "${labelName}" found, removing it.`);
                 await github.rest.issues.removeLabel({
