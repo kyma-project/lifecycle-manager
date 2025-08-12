@@ -14,22 +14,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	controlPlaneClient client.Client
-	controlPlaneEnv    *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
+	kcpClient       client.Client
+	controlPlaneEnv *envtest.Environment
+	ctx             context.Context
+	cancel          context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {
@@ -65,9 +64,9 @@ var _ = BeforeSuite(func() {
 
 	// +kubebuilder:scaffold:scheme
 
-	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: k8sclientscheme.Scheme})
+	kcpClient, err = client.New(cfg, client.Options{Scheme: k8sclientscheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(controlPlaneClient).NotTo(BeNil())
+	Expect(kcpClient).NotTo(BeNil())
 
 	go func() {
 		defer GinkgoRecover()

@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM --platform=$BUILDPLATFORM golang:1.24.5-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24.6-alpine AS builder
 
 WORKDIR /lifecycle-manager
 # Copy the Go Modules manifests
@@ -25,7 +25,7 @@ ARG TAG_default_tag=from_dockerfile
 ARG TARGETOS
 ARG TARGETARCH
 
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-X 'main.buildVersion=${TAG_default_tag}'" -a -o manager cmd/main.go
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOFIPS140=v1.0.0 go build -ldflags="-X 'main.buildVersion=${TAG_default_tag}'" -a -o manager cmd/main.go
 
 
 # Use distroless as minimal base image to package the manager binary
