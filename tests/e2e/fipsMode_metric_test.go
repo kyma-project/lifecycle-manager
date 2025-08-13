@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
 
@@ -15,7 +17,7 @@ var _ = Describe("FIPS Mode metric", Ordered, func() {
 			By("Then fipsMode metrics is set to \"enabled\"")
 			Eventually(GetFipsModeGauge).
 				WithContext(ctx).
-				Should(Equal(1)) // 1 means "on", 2 means "only"
+				Should(Equal(metrics.FipsModeOn))
 		})
 	})
 })
