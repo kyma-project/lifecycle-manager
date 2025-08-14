@@ -76,13 +76,6 @@ test: unittest manifests test-crd generate fmt vet envtest ## Run tests.
 unittest: ## Run the unit test suite.
 	$(GO) test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
 
-.PHONY: dry-run
-dry-run: kustomize manifests
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	mkdir -p dry-run
-	$(KUSTOMIZE) build config/default > dry-run/manifests.yaml
-
-
 .PHONY: dry-run-control-plane
 dry-run-control-plane: kustomize manifests
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
@@ -124,11 +117,6 @@ install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-.PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
-
 .PHONY: local-deploy-with-watcher
 local-deploy-with-watcher: generate kustomize ## Deploy the controller locally with the watcher component using cert-manager for certificate management.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
@@ -141,7 +129,7 @@ local-deploy-with-watcher-gcm: generate kustomize ## Deploy the controller local
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/control-plane | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 ## Location to install dependencies to
 LOCALBIN ?= $(shell pwd)/bin
