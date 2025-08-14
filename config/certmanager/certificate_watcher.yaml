@@ -19,6 +19,17 @@ spec:
     - 'listener.kyma.cloud.sap' # this dnsName should be overwritten based on deployment environment, i.e. listener.dev.kyma.cloud.sap
   isCA: true
   commonName: klm-watcher-selfsigned-ca
+  subject:
+    organizationalUnits:
+      - "BTP Kyma Runtime"
+    organizations:
+      - "SAP SE"
+    localities:
+      - "Walldorf"
+    provinces:
+      - "Baden-Württemberg"
+    countries:
+      - "DE"
   secretName: klm-watcher # this secret will not be prefixed, since it's not managed by kustomize
   secretTemplate:
     labels:
