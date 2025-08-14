@@ -52,7 +52,14 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 			Namespace: r.certConfig.Namespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
-			CommonName:  commonName,
+			CommonName: commonName,
+			Subject: &certmanagerv1.X509Subject{
+				OrganizationalUnits: []string{"BTP Kyma Runtime"},
+				Organizations:       []string{"SAP SE"},
+				Localities:          []string{"Walldorf"},
+				Provinces:           []string{"Baden-Württemberg"},
+				Countries:           []string{"DE"},
+			},
 			Duration:    &apimetav1.Duration{Duration: r.certConfig.Duration},
 			RenewBefore: &apimetav1.Duration{Duration: r.certConfig.RenewBefore},
 			DNSNames:    dnsNames,
