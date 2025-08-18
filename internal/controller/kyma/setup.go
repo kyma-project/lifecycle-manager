@@ -4,27 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
-	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common"
+	skrevent "github.com/kyma-project/lifecycle-manager/internal/service/event"
 	"github.com/kyma-project/lifecycle-manager/internal/watch"
-	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
+
+// EventService defines the interface for event services consumed by this controller.
+// Points to the shared common interface to avoid circular dependencies.
+type EventService = common.EventService
 
 type SetupOptions struct {
 	ListenerAddr                 string
@@ -41,22 +40,21 @@ var (
 )
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
-	var verifyFunc watcherevent.Verify
-	if settings.EnableDomainNameVerification {
-		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
-	} else {
-		verifyFunc = func(r *http.Request, watcherEvtObject *types.WatchEvent) error {
-			return nil
-		}
-	}
-	runnableListener := watcherevent.NewSKREventListener(
+	runtimeEventService, err := skrevent.NewSKREventService(
+		mgr,
 		settings.ListenerAddr,
-		shared.OperatorName,
-		verifyFunc,
+		"kyma", // Component name for Kyma controller events
+		settings.EnableDomainNameVerification,
 	)
-	if err := mgr.Add(runnableListener); err != nil {
-		return fmt.Errorf("KymaReconciler %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to create runtime event service: %w", err)
 	}
+
+	// Note: Service is automatically started by the manager (implements manager.Runnable)
+
+	// Create event source for this controller using the service's channel
+	runtimeEventSource := runtimeEventService.CreateEventSource(r.runtimeEventHandler())
+
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
@@ -68,7 +66,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
 				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler())).
+		WatchesRawSource(runtimeEventSource).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
 	}
@@ -76,36 +74,31 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 	return nil
 }
 
-func (r *Reconciler) skrEventHandler() *handler.Funcs {
+func (r *Reconciler) runtimeEventHandler() *handler.Funcs {
 	return &handler.Funcs{
 		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
 			queue workqueue.TypedRateLimitingInterface[ctrl.Request],
 		) {
-			logger := ctrl.Log.WithName("listener")
+			logger := ctrl.Log.WithName("kyma-listener")
 			unstructWatcherEvt, conversionOk := evnt.Object.(*unstructured.Unstructured)
 			if !conversionOk {
 				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", evnt.Object))
 				return
 			}
 
-			// get owner object from unstructured event, owner = KymaCR object reference in KCP
-			unstructuredOwner, ok := unstructWatcherEvt.Object["owner"]
-			if !ok {
-				logger.Error(errParsingWatched, fmt.Sprintf("unstructured event: %v", unstructWatcherEvt))
-				return
-			}
-
-			ownerObjectKey, conversionOk := unstructuredOwner.(client.ObjectKey)
-			if !conversionOk {
-				logger.Error(errConvertingWatched, fmt.Sprintf("unstructured Owner object: %v", unstructuredOwner))
+			// This is where ExtractOwnerKey is essential - it tells us WHICH Kyma to reconcile
+			ownerObjectKey, err := skrevent.ExtractOwnerKey(unstructWatcherEvt)
+			if err != nil {
+				logger.Error(err, "failed to extract owner key from runtime watcher event")
 				return
 			}
 
 			logger.Info(
-				fmt.Sprintf("event received from SKR, adding %s to queue",
+				fmt.Sprintf("kyma event received from runtime-watcher, adding %s to queue",
 					ownerObjectKey),
 			)
 
+			// The extracted owner key becomes the reconciliation target
 			queue.Add(ctrl.Request{
 				NamespacedName: ownerObjectKey,
 			})
