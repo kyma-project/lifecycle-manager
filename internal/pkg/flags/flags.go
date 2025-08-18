@@ -118,7 +118,7 @@ func DefineFlagVar() *FlagVar {
 		"max-concurrent-mandatory-modules-deletion-reconciles",
 		DefaultMaxConcurrentMandatoryModuleDeletionReconciles,
 		"Maximum number of concurrent Mandatory Modules deletion reconciles which can be run.")
-	flag.BoolVar(&flagVar.EnableLeaderElection, "leader-elect", false,
+	flag.BoolVar(&flagVar.EnableLeaderElection, "leader-elect", true,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.LeaderElectionLeaseDuration, "leader-election-lease-duration",
@@ -183,7 +183,7 @@ func DefineFlagVar() *FlagVar {
 			" limit when there are sudden spikes in request volume.")
 	flag.BoolVar(&flagVar.EnableWebhooks, "enable-webhooks", false,
 		"Enable Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", false,
+	flag.BoolVar(&flagVar.EnableKcpWatcher, "enable-kcp-watcher", true,
 		"Enable KCP Watcher controller to reconcile Watcher CRs.")
 	flag.StringVar(&flagVar.AdditionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to SKR certificates as SANs. Input should be given as "+
@@ -218,7 +218,7 @@ func DefineFlagVar() *FlagVar {
 		&flagVar.LogLevel, "log-level", DefaultLogLevel,
 		"Log level. Enter negative or positive values to increase verbosity. 0 has the lowest verbosity.",
 	)
-	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", false,
+	flag.BoolVar(&flagVar.EnablePurgeFinalizer, "enable-purge-finalizer", true,
 		"Enable Purge controller.")
 	flag.DurationVar(&flagVar.PurgeFinalizerTimeout, "purge-finalizer-timeout", DefaultPurgeFinalizerTimeout,
 		"Duration after a Kyma's deletion timestamp when the remaining resources should be purged in the SKR.")
@@ -253,7 +253,7 @@ func DefineFlagVar() *FlagVar {
 		"Duration after which the Istio Gateway Secret is enqueued after unsuccessful reconciliation.")
 	flag.BoolVar(&flagVar.UseLegacyStrategyForIstioGatewaySecret, "legacy-strategy-for-istio-gateway-secret",
 		false, "Use the legacy strategy (with downtime) for the Istio Gateway Secret.")
-	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "Use managed Kyma mode.")
+	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", true, "Use managed Kyma mode.")
 	flag.StringVar(&flagVar.DropCrdStoredVersionMap, "drop-crd-stored-version-map", DefaultDropCrdStoredVersionMap,
 		"API versions to be dropped from the storage version. The input format should be a "+
 			"comma-separated list of API versions, where each API version is in the format 'kind:version'.")
