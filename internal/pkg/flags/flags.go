@@ -36,7 +36,7 @@ const (
 	RateLimiterFrequencyDefault                                         = 30
 	FailureBaseDelayDefault                                             = 100 * time.Millisecond
 	FailureMaxDelayDefault                                              = 5 * time.Second
-	DefaultCacheSyncTimeout                                             = 2 * time.Minute
+	DefaultCacheSyncTimeout                                             = 60 * time.Minute
 	DefaultLogLevel                                                     = log.WarnLevel
 	DefaultPurgeFinalizerTimeout                                        = 5 * time.Minute
 	DefaultMaxConcurrentManifestReconciles                              = 1
