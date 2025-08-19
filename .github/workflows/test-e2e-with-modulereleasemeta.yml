@@ -47,6 +47,7 @@ jobs:
           - module-status-decoupling-with-statefulset
           - module-status-decoupling-with-deployment
           - kyma-metrics
+          - fips-mode-metric
           - module-without-default-cr
           - module-consistency
           - non-blocking-deletion
