@@ -201,3 +201,7 @@ module-deletion-with-multiple-crs-ignore-policy:
 
 module-transferred-to-another-oci-registry:
 	$(GO_TEST) "Module Transferred to Another OCI Registry"
+
+fips-mode-metric:
+	$(GO_TEST) "FIPS Mode metric"
+
