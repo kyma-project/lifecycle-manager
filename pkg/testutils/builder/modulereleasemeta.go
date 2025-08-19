@@ -56,6 +56,11 @@ func (m ModuleReleaseMetaBuilder) WithNamespace(namespace string) ModuleReleaseM
 	return m
 }
 
+func (m ModuleReleaseMetaBuilder) WithMandatory(version string) ModuleReleaseMetaBuilder {
+	m.moduleReleaseMeta.Spec.Mandatory = &v1beta2.Mandatory{Version: version}
+	return m
+}
+
 func (m ModuleReleaseMetaBuilder) Build() *v1beta2.ModuleReleaseMeta {
 	return m.moduleReleaseMeta
 }
