@@ -30,6 +30,16 @@ func GetMaintenanceWindowGauge(ctx context.Context) (int, error) {
 	return parseCount(re, bodyString)
 }
 
+func GetFipsModeGauge(ctx context.Context) (int, error) {
+	bodyString, err := getKCPMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(metrics.MetricFipsMode + ` (\d+)`)
+	return parseCount(re, bodyString)
+}
+
 func GetKymaStateMetricCount(ctx context.Context, kymaName string, state shared.State) (int, error) {
 	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
