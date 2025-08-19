@@ -31,7 +31,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultKymaRequeueSuccessInterval",
 			constValue:    DefaultKymaRequeueSuccessInterval.String(),
-			expectedValue: (30 * time.Second).String(),
+			expectedValue: (5 * time.Minute).String(),
 		},
 		{
 			constName:     "DefaultKymaRequeueErrInterval",
@@ -51,7 +51,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultManifestRequeueSuccessInterval",
 			constValue:    DefaultManifestRequeueSuccessInterval.String(),
-			expectedValue: (30 * time.Second).String(),
+			expectedValue: (5 * time.Minute).String(),
 		},
 		{
 			constName:     "DefaultManifestRequeueErrInterval",
@@ -81,17 +81,17 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultWatcherRequeueSuccessInterval",
 			constValue:    DefaultWatcherRequeueSuccessInterval.String(),
-			expectedValue: (30 * time.Second).String(),
+			expectedValue: (1 * time.Minute).String(),
 		},
 		{
 			constName:     "DefaultClientQPS",
 			constValue:    strconv.Itoa(DefaultClientQPS),
-			expectedValue: "300",
+			expectedValue: "1000",
 		},
 		{
 			constName:     "DefaultClientBurst",
 			constValue:    strconv.Itoa(DefaultClientBurst),
-			expectedValue: "600",
+			expectedValue: "2000",
 		},
 		{
 			constName:     "DefaultPprofServerTimeout",
@@ -101,27 +101,27 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "RateLimiterBurstDefault",
 			constValue:    strconv.Itoa(RateLimiterBurstDefault),
-			expectedValue: "200",
+			expectedValue: "2000",
 		},
 		{
 			constName:     "RateLimiterFrequencyDefault",
 			constValue:    strconv.Itoa(RateLimiterFrequencyDefault),
-			expectedValue: "30",
+			expectedValue: "1000",
 		},
 		{
 			constName:     "FailureBaseDelayDefault",
 			constValue:    FailureBaseDelayDefault.String(),
-			expectedValue: (100 * time.Millisecond).String(),
+			expectedValue: (5 * time.Second).String(),
 		},
 		{
 			constName:     "FailureMaxDelayDefault",
 			constValue:    FailureMaxDelayDefault.String(),
-			expectedValue: (5 * time.Second).String(),
+			expectedValue: (30 * time.Second).String(),
 		},
 		{
 			constName:     "DefaultCacheSyncTimeout",
 			constValue:    DefaultCacheSyncTimeout.String(),
-			expectedValue: (2 * time.Minute).String(),
+			expectedValue: (60 * time.Minute).String(),
 		},
 		{
 			constName:     "DefaultLogLevel",
