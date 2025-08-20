@@ -28,7 +28,14 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 			Namespace: certNamespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
-			CommonName:  certCommonNameName,
+			CommonName: certCommonNameName,
+			Subject: &certmanagerv1.X509Subject{
+				OrganizationalUnits: []string{"BTP Kyma Runtime"},
+				Organizations:       []string{"SAP SE"},
+				Localities:          []string{"Walldorf"},
+				Provinces:           []string{"Baden-Württemberg"},
+				Countries:           []string{"DE"},
+			},
 			Duration:    &apimetav1.Duration{Duration: certDuration},
 			RenewBefore: &apimetav1.Duration{Duration: certRenewBefore},
 			DNSNames:    certDNSNames,
