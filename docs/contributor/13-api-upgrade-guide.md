@@ -11,10 +11,10 @@ Introduce new API labels on GH-issues for breaking API-changes.
 Guide: https://book.kubebuilder.io/multiversion-tutorial/tutorial.html
 
 - Create new version.
-- Choose a suitable version as storage to ensure max compatibility of data consistency.
-  - Remove fields: use old version.
-  - Add fields: use new version.
-  - Remove and add fields: use old version, and introduce added fields in both the old and new version. The added fields for the old version must be optional.
+- Select the storage version to maximize data compatibility and consistency.
+    - If removing fields, keep the old version as the storage version.
+    - If adding fields, set the new version as the storage version.
+    - If both removing and adding fields, keep the old version as the storage version, and add the new fields to both versions (fields in the old version must be optional).
 - Create conversion webhook including conversion logic.
 - Mark old version as deprecated but still served.
 - Support CLI to generate new version.
