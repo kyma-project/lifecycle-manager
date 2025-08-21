@@ -27,6 +27,13 @@ type ModuleReleaseMetaSpec struct {
 	// +kubebuilder:validation:MaxLength:=64
 	ModuleName string `json:"moduleName"`
 
+	// OcmComponentName is the name of the OCM component that this module belongs to.
+	// https://github.com/open-component-model/ocm/blob/4473dacca406e4c84c0ac5e6e14393c659384afc/resources/component-descriptor-v2-schema.yaml#L40
+	// +optional
+	// +kubebuilder:validation:Pattern:=`^[a-z][-a-z0-9]*([.][a-z][-a-z0-9]*)*[.][a-z]{2,}(/[a-z][-a-z0-9_]*([.][a-z][-a-z0-9_]*)*)+$`
+	// +kubebuilder:validation:MaxLength:=255
+	OcmComponentName string `json:"ocmComponentName,omitempty"`
+
 	// Channels is the list of module channels with their corresponding versions.
 	// +listType=map
 	// +listMapKey=channel

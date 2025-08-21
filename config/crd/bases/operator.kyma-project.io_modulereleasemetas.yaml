@@ -87,6 +87,13 @@ spec:
                 maxLength: 64
                 pattern: ^([a-z]{3,}(-[a-z]{3,})*)?$
                 type: string
+              ocmComponentName:
+                description: |-
+                  OcmComponentName is the name of the OCM component that this module belongs to.
+                  https://github.com/open-component-model/ocm/blob/4473dacca406e4c84c0ac5e6e14393c659384afc/resources/component-descriptor-v2-schema.yaml#L40
+                maxLength: 255
+                pattern: ^[a-z][-a-z0-9]*([.][a-z][-a-z0-9]*)*[.][a-z]{2,}(/[a-z][-a-z0-9_]*([.][a-z][-a-z0-9_]*)*)+$
+                type: string
             required:
             - channels
             - moduleName
