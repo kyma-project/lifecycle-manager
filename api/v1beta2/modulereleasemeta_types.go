@@ -21,6 +21,7 @@ type ModuleReleaseMeta struct {
 }
 
 // ModuleReleaseMetaSpec defines the channel-version assignments for a module.
+// +kubebuilder:validation:XValidation:rule="(has(self.mandatory) && !has(self.channels)) || (!has(self.mandatory) && has(self.channels))",message="exactly one of 'mandatory' or 'channels' must be specified"
 type ModuleReleaseMetaSpec struct {
 	// ModuleName is the name of the Module.
 	// +kubebuilder:validation:Pattern:=`^([a-z]{3,}(-[a-z]{3,})*)?$`
@@ -35,9 +36,14 @@ type ModuleReleaseMetaSpec struct {
 	OcmComponentName string `json:"ocmComponentName,omitempty"`
 
 	// Channels is the list of module channels with their corresponding versions.
+	// +optional
 	// +listType=map
 	// +listMapKey=channel
-	Channels []ChannelVersionAssignment `json:"channels"`
+	Channels []ChannelVersionAssignment `json:"channels,omitempty"`
+
+	// Mandatory specifies a version for the mandatory module.
+	// +optional
+	Mandatory *Mandatory `json:"mandatory,omitempty"`
 
 	// Beta indicates if the module is in beta state. Beta modules are only available for beta Kymas.
 	// Deprecated: This field is deprecated and will be removed in the upcoming API version.
@@ -50,6 +56,15 @@ type ModuleReleaseMetaSpec struct {
 	// +optional
 	// +kubebuilder:default:=false
 	Internal bool `json:"internal"`
+}
+
+// Mandatory defines a mandatory module with a specific version.
+type Mandatory struct {
+	// Version is the mandatory module version in semantic version format.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:=`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
+	// +kubebuilder:validation:MinLength:=1
+	Version string `json:"version"`
 }
 
 // +kubebuilder:object:root=true

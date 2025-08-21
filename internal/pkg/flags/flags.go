@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	DefaultKymaRequeueSuccessInterval                                   = 30 * time.Second
+	DefaultKymaRequeueSuccessInterval                                   = 5 * time.Minute
 	DefaultKymaRequeueErrInterval                                       = 2 * time.Second
 	DefaultKymaRequeueWarningInterval                                   = 30 * time.Second
 	DefaultKymaRequeueBusyInterval                                      = 5 * time.Second
-	DefaultManifestRequeueSuccessInterval                               = 30 * time.Second
+	DefaultManifestRequeueSuccessInterval                               = 5 * time.Minute
 	DefaultManifestRequeueErrInterval                                   = 2 * time.Second
 	DefaultManifestRequeueWarningInterval                               = 30 * time.Second
 	DefaultManifestRequeueBusyInterval                                  = 5 * time.Second
@@ -28,15 +28,15 @@ const (
 	DefaultManifestRequeueJitterPercentage                              = 0.02
 	DefaultMandatoryModuleRequeueSuccessInterval                        = 30 * time.Second
 	DefaultMandatoryModuleDeletionRequeueSuccessInterval                = 30 * time.Second
-	DefaultWatcherRequeueSuccessInterval                                = 30 * time.Second
-	DefaultClientQPS                                                    = 300
-	DefaultClientBurst                                                  = 600
+	DefaultWatcherRequeueSuccessInterval                                = 1 * time.Minute
+	DefaultClientQPS                                                    = 1000
+	DefaultClientBurst                                                  = 2000
 	DefaultPprofServerTimeout                                           = 90 * time.Second
-	RateLimiterBurstDefault                                             = 200
-	RateLimiterFrequencyDefault                                         = 30
-	FailureBaseDelayDefault                                             = 100 * time.Millisecond
-	FailureMaxDelayDefault                                              = 5 * time.Second
-	DefaultCacheSyncTimeout                                             = 2 * time.Minute
+	RateLimiterBurstDefault                                             = 2000
+	RateLimiterFrequencyDefault                                         = 1000
+	FailureBaseDelayDefault                                             = 5 * time.Second
+	FailureMaxDelayDefault                                              = 30 * time.Second
+	DefaultCacheSyncTimeout                                             = 60 * time.Minute
 	DefaultLogLevel                                                     = log.WarnLevel
 	DefaultPurgeFinalizerTimeout                                        = 5 * time.Minute
 	DefaultMaxConcurrentManifestReconciles                              = 1

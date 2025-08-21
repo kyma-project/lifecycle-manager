@@ -82,6 +82,18 @@ spec:
                   Internal indicates if the module is internal. Internal modules are only available for internal Kymas.
                   Deprecated: This field is deprecated and will be removed in the upcoming API version.
                 type: boolean
+              mandatory:
+                description: Mandatory specifies a version for the mandatory module.
+                properties:
+                  version:
+                    description: Version is the mandatory module version in semantic
+                      version format.
+                    minLength: 1
+                    pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+                    type: string
+                required:
+                - version
+                type: object
               moduleName:
                 description: ModuleName is the name of the Module.
                 maxLength: 64
@@ -95,9 +107,12 @@ spec:
                 pattern: ^[a-z][-a-z0-9]*([.][a-z][-a-z0-9]*)*[.][a-z]{2,}(/[a-z][-a-z0-9_]*([.][a-z][-a-z0-9_]*)*)+$
                 type: string
             required:
-            - channels
             - moduleName
             type: object
+            x-kubernetes-validations:
+            - message: exactly one of 'mandatory' or 'channels' must be specified
+              rule: (has(self.mandatory) && !has(self.channels)) || (!has(self.mandatory)
+                && has(self.channels))
         type: object
     served: true
     storage: true
