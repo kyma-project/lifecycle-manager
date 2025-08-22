@@ -20,4 +20,3 @@
   * [Synchronization Between Kyma Control Plane and SAP BTP, Kyma Runtime](../contributor/08-kcp-skr-synchronization.md)
   * [Setting Your Module to the Unmanaged and Managed State](../user/02-unmanaging-modules.md)
   * [Maintenance Windows](../contributor/10-maintenance-windows.md)
-  * [Skipping Maintenance Windows](../user/03-skipping-maintenance-windows.md)
