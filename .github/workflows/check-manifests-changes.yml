@@ -14,7 +14,6 @@ jobs:
   create-pr-manifests:
     runs-on: ubuntu-latest
     outputs:
-      cache-key: ${{ env.PR_CACHE_KEY }}
       success: ${{ steps.create-manifests.outcome }}
     steps:
       - name: Checkout PR branch
@@ -49,7 +48,6 @@ jobs:
   create-main-manifests:
     runs-on: ubuntu-latest
     outputs:
-      cache-key: ${{ env.MAIN_CACHE_KEY }}
       success: ${{ steps.create-manifests.outcome }}
     steps:
       - name: Checkout main branch
