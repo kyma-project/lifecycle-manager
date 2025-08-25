@@ -20,10 +20,11 @@ func NewRepository(reader client.Reader) *Repository {
 
 func (r Repository) Get(ctx context.Context, name, namespace string) (*istioclientapiv1beta1.Gateway, error) {
 	gateway := &istioclientapiv1beta1.Gateway{}
-	if err := r.reader.Get(ctx, client.ObjectKey{
+	err := r.reader.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
-	}, gateway); err != nil {
+	}, gateway)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get istio gateway %s/%s: %w", namespace, name, err)
 	}
 	return gateway, nil

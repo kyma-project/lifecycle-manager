@@ -93,7 +93,8 @@ func (rc *ResourceConfigurator) ConfigureUnstructuredObject(object *unstructured
 func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructured,
 ) (*apiappsv1.Deployment, error) {
 	deployment := &apiappsv1.Deployment{}
-	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
+	err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 	if len(deployment.Spec.Template.Labels) == 0 {
@@ -142,7 +143,8 @@ func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstr
 	error,
 ) {
 	networkPolicy := &apinetworkv1.NetworkPolicy{}
-	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, networkPolicy); err != nil {
+	err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, networkPolicy)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 

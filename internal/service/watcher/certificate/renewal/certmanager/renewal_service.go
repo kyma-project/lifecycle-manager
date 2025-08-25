@@ -20,7 +20,8 @@ func NewService(certRepo SecretRepository) *Service {
 }
 
 func (s *Service) Renew(ctx context.Context, name string) error {
-	if err := s.secretRepository.Delete(ctx, name); err != nil {
+	err := s.secretRepository.Delete(ctx, name)
+	if err != nil {
 		return fmt.Errorf("failed to renew SKR certificate secret. Deletion failed: %w", err)
 	}
 

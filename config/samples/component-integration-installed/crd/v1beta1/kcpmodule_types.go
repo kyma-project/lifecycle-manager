@@ -60,5 +60,6 @@ type KCPModuleStatus struct {
 type KCPModuleList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []KCPModule `json:"items"`
+
+	Items []KCPModule `json:"items"`
 }

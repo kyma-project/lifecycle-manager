@@ -173,7 +173,8 @@ func EnsureNamespaceHasCorrectLabels(ctx context.Context, clnt client.Client, ky
 	labels map[string]string,
 ) error {
 	var namespace apicorev1.Namespace
-	if err := clnt.Get(ctx, client.ObjectKey{Name: kymaNamespace}, &namespace); err != nil {
+	err := clnt.Get(ctx, client.ObjectKey{Name: kymaNamespace}, &namespace)
+	if err != nil {
 		return fmt.Errorf("failed to get namespace %s: %w", kymaNamespace, err)
 	}
 
@@ -207,8 +208,9 @@ func SetFinalizer(name, namespace, group, version, kind string, finalizers []str
 		Version: version,
 		Kind:    kind,
 	})
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
+	err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+	if err != nil {
 		return err
 	}
 

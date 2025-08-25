@@ -19,14 +19,15 @@ func (t testObj) SetStatus(shared.Status)  { panic("status not supported in test
 func Test_defaultTransforms(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name string
 		declarativev2.ObjectTransform
+
+		name      string
 		resources []*unstructured.Unstructured
 		wantErr   assert.ErrorAssertionFunc
 	}{
 		{
+			declarativev2.DisclaimerTransform,
 			"empty DisclaimerTransform",
-			declarativev2.DisclaimerTransform,
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -34,8 +35,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"empty KymaComponentTransform",
 			declarativev2.KymaComponentTransform,
+			"empty KymaComponentTransform",
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -43,8 +44,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"empty WatchedByManagedByOwnedBy",
 			declarativev2.ManagedByOwnedBy,
+			"empty WatchedByManagedByOwnedBy",
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -52,8 +53,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"simple DisclaimerTransform",
 			declarativev2.DisclaimerTransform,
+			"simple DisclaimerTransform",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -69,8 +70,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"simple KymaComponentTransform",
 			declarativev2.KymaComponentTransform,
+			"simple KymaComponentTransform",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -86,8 +87,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"simple WatchedByManagedByOwnedBy",
 			declarativev2.ManagedByOwnedBy,
+			"simple WatchedByManagedByOwnedBy",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)

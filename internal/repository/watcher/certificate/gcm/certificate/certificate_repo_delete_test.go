@@ -63,6 +63,7 @@ func TestDelete_ClientReturnsAnError_ReturnsError(t *testing.T) {
 
 type deleteClientStub struct {
 	client.Client
+
 	called bool
 	object *gcertv1alpha1.Certificate
 	err    error

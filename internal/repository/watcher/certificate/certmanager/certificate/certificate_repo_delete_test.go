@@ -87,6 +87,7 @@ func TestDelete_WhenCalledAndClientReturnsOtherError_ReturnsError(t *testing.T) 
 
 type deleteClientStub struct {
 	client.Client
+
 	called    bool
 	calledArg *certmanagerv1.Certificate
 	err       error

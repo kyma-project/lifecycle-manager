@@ -62,14 +62,16 @@ func (c *moduleTemplateConcurrentWorker) SyncConcurrently(ctx context.Context, k
 	}
 	var errs []error
 	for range channelLength {
-		if err := <-results; err != nil {
+		err := <-results
+		if err != nil {
 			errs = append(errs, err)
 		}
 	}
 
 	// retry if ModuleTemplate CRD is not existing in SKR cluster
 	if containsCRDNotFoundError(errs) {
-		if err := c.createCRD(ctx); err != nil {
+		err := c.createCRD(ctx)
+		if err != nil {
 			return err
 		}
 	}
@@ -94,7 +96,8 @@ func (c *moduleTemplateConcurrentWorker) DeleteConcurrently(ctx context.Context,
 	}
 	var errs []error
 	for range channelLength {
-		if err := <-results; err != nil {
+		err := <-results
+		if err != nil {
 			errs = append(errs, err)
 		}
 	}

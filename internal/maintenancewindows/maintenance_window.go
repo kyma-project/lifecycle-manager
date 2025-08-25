@@ -33,7 +33,8 @@ func InitializeMaintenanceWindow(log logr.Logger,
 	policyName string,
 	minWindowSize time.Duration,
 ) (MaintenanceWindow, error) {
-	if err := os.Setenv(resolver.PolicyPathENV, policiesDirectory); err != nil {
+	err := os.Setenv(resolver.PolicyPathENV, policiesDirectory)
+	if err != nil {
 		return MaintenanceWindow{
 			MaintenanceWindowPolicy: nil,
 		}, fmt.Errorf("failed to set the policy path env variable, %w", err)
@@ -68,11 +69,8 @@ func InitializeMaintenanceWindow(log logr.Logger,
 }
 
 func MaintenancePolicyFileExists(policyFilePath string) bool {
-	if _, err := os.Stat(policyFilePath); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
+	_, err := os.Stat(policyFilePath)
+	return !os.IsNotExist(err)
 }
 
 // IsRequired determines if a maintenance window is required to update the given module.

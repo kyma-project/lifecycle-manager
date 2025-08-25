@@ -57,7 +57,8 @@ func getPodsList(ctx context.Context, clt client.Client, namespace string,
 		Namespace:     namespace,
 		LabelSelector: k8slabels.SelectorFromSet(matchLabels),
 	}
-	if err := clt.List(ctx, podList, listOptions); err != nil {
+	err := clt.List(ctx, podList, listOptions)
+	if err != nil {
 		return nil, fmt.Errorf("failed to list pods: %w", err)
 	}
 	return podList, nil

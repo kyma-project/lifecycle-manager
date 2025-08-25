@@ -9,6 +9,8 @@ import (
 // Status defines the observed state of CustomObject.
 // +k8s:deepcopy-gen=true
 type Status struct {
+	LastOperation `json:"lastOperation,omitempty"`
+
 	// State signifies current state of CustomObject.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
 	// +kubebuilder:validation:Required
@@ -24,8 +26,7 @@ type Status struct {
 	// All resources that are synced are considered for orphan removal on configuration changes,
 	// and it is used to determine effective differences from one state to the next.
 	// +listType=atomic
-	Synced        []Resource `json:"synced,omitempty"`
-	LastOperation `json:"lastOperation,omitempty"`
+	Synced []Resource `json:"synced,omitempty"`
 }
 
 func (s Status) WithState(state State) Status {

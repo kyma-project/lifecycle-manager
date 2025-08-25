@@ -58,7 +58,8 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 	)
 
 	// start listener as a manager runnable
-	if err := mgr.Add(runnableListener); err != nil {
+	err := mgr.Add(runnableListener)
+	if err != nil {
 		return fmt.Errorf("failed to add to listener to manager: %w", err)
 	}
 
@@ -77,7 +78,7 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 	}
 
 	skrEventChannel := source.Channel(runnableListener.ReceivedEvents, addSkrEventToQueueFunc)
-	if err := ctrl.NewControllerManagedBy(mgr).
+	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Named(controllerName).
 		Watches(&apicorev1.Secret{}, handler.Funcs{},
@@ -86,7 +87,8 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
 		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-			manifestClient, orphanDetectionClient, specResolver)); err != nil {
+			manifestClient, orphanDetectionClient, specResolver))
+	if err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

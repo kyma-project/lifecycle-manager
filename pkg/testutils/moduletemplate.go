@@ -21,7 +21,8 @@ func CreateModuleTemplate(ctx context.Context,
 	moduleTemplate *v1beta2.ModuleTemplate,
 ) error {
 	moduleTemplate.SetResourceVersion("") // must be reset to enable retries
-	if err := clnt.Create(ctx, moduleTemplate); client.IgnoreAlreadyExists(err) != nil {
+	err := clnt.Create(ctx, moduleTemplate)
+	if client.IgnoreAlreadyExists(err) != nil {
 		return fmt.Errorf("creating ModuleTemplate failed: %w", err)
 	}
 	return nil
@@ -72,10 +73,11 @@ func ModuleTemplateExistsByName(ctx context.Context,
 	moduleName string,
 	namespace string,
 ) error {
-	if err := clnt.Get(ctx, client.ObjectKey{
+	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      moduleName,
-	}, &v1beta2.ModuleTemplate{}); err != nil {
+	}, &v1beta2.ModuleTemplate{})
+	if err != nil {
 		if util.IsNotFound(err) {
 			return ErrNotFound
 		}
@@ -85,7 +87,8 @@ func ModuleTemplateExistsByName(ctx context.Context,
 
 func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
 	for _, module := range kyma.Spec.Modules {
-		if err := ModuleTemplateExists(ctx, clnt, module, kyma); err != nil {
+		err := ModuleTemplateExists(ctx, clnt, module, kyma)
+		if err != nil {
 			return err
 		}
 	}
@@ -108,7 +111,8 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 		return ErrManifestResourceIsNil
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{key: newValue}
-	if err := clnt.Update(ctx, moduleTemplate); err != nil {
+	err = clnt.Update(ctx, moduleTemplate)
+	if err != nil {
 		return fmt.Errorf("update module tempate: %w", err)
 	}
 	return nil
@@ -132,7 +136,8 @@ func SetModuleTemplateBetaLabel(ctx context.Context, clnt client.Client, module 
 		moduleTemplate.Labels[shared.BetaLabel] = shared.DisableLabelValue
 	}
 
-	if err := clnt.Update(ctx, moduleTemplate); err != nil {
+	err = clnt.Update(ctx, moduleTemplate)
+	if err != nil {
 		return fmt.Errorf("failed to update module template: %w", err)
 	}
 
@@ -157,7 +162,8 @@ func SetModuleTemplateInternalLabel(ctx context.Context, clnt client.Client, mod
 		moduleTemplate.Labels[shared.InternalLabel] = shared.DisableLabelValue
 	}
 
-	if err := clnt.Update(ctx, moduleTemplate); err != nil {
+	err = clnt.Update(ctx, moduleTemplate)
+	if err != nil {
 		return fmt.Errorf("failed to update module template: %w", err)
 	}
 

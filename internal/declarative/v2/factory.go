@@ -31,10 +31,10 @@ const (
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
 type SingletonClients struct {
-	httpClient *http.Client
-
 	// controller runtime client
 	client.Client
+
+	httpClient *http.Client
 
 	// the original config used for all clients
 	config *rest.Config
@@ -64,7 +64,8 @@ type SingletonClients struct {
 }
 
 func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
-	if err := setKubernetesDefaults(info.Config); err != nil {
+	err := setKubernetesDefaults(info.Config)
+	if err != nil {
 		return nil, err
 	}
 

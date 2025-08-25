@@ -14,8 +14,7 @@ import (
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 )
 
-//nolint:ireturn // chosen implementation shall be abstracted
-func SetupCertInterface(kcpClient client.Client, flagVar *flags.FlagVar) (gatewaysecretclient.CertificateInterface,
+func SetupCertInterface(kcpClient client.Client, flagVar *flags.FlagVar) (gatewaysecretclient.CertificateInterface, //nolint:ireturn // we select the interface here on purpose
 	error,
 ) {
 	certificateConfig := config.CertificateValues{

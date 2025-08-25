@@ -51,8 +51,9 @@ func (c *Client) GetDefaultCR(ctx context.Context, manifest *v1beta2.Manifest) (
 		Kind:    gvk.Kind,
 	})
 
-	if err := c.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
+	err := c.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+	if err != nil {
 		return nil, fmt.Errorf("%w: failed to fetch default resource CR", err)
 	}
 
@@ -104,7 +105,8 @@ func (c *Client) RemoveDefaultModuleCR(ctx context.Context, kcp client.Client, m
 		return err
 	}
 	if crDeleted {
-		if err := finalizer.RemoveCRFinalizer(ctx, kcp, manifest); err != nil {
+		err := finalizer.RemoveCRFinalizer(ctx, kcp, manifest)
+		if err != nil {
 			manifest.SetStatus(manifest.GetStatus().WithErr(err))
 			return err
 		}
@@ -124,12 +126,14 @@ func (c *Client) SyncDefaultModuleCR(ctx context.Context, manifest *v1beta2.Mani
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 
-	if err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource); err != nil && util.IsNotFound(err) {
+	err := c.Get(ctx, client.ObjectKeyFromObject(resource), resource)
+	if err != nil && util.IsNotFound(err) {
 		if !manifest.GetDeletionTimestamp().IsZero() {
 			return nil
 		}
-		if err := c.Create(ctx, resource,
-			client.FieldOwner(finalizer.CustomResourceManagerFinalizer)); err != nil && !apierrors.IsAlreadyExists(err) {
+		err := c.Create(ctx, resource,
+			client.FieldOwner(finalizer.CustomResourceManagerFinalizer))
+		if err != nil && !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create resource: %w", err)
 		}
 	}
@@ -147,9 +151,10 @@ func (c *Client) GetAllModuleCRsExcludingDefaultCR(ctx context.Context,
 	resource := manifest.Spec.Resource.DeepCopy()
 	resourceList := &unstructured.UnstructuredList{}
 	resourceList.SetGroupVersionKind(resource.GroupVersionKind())
-	if err := c.List(ctx, resourceList, &client.ListOptions{
+	err := c.List(ctx, resourceList, &client.ListOptions{
 		Namespace: resource.GetNamespace(),
-	}); err != nil && !util.IsNotFound(err) {
+	})
+	if err != nil && !util.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
 

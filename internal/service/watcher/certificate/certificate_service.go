@@ -69,7 +69,8 @@ func (c *Service) CreateSkrCertificate(ctx context.Context, kyma *v1beta2.Kyma) 
 	certName := constructSkrCertificateName(kyma.Name)
 	commonName := kyma.GetRuntimeID()
 
-	if err = c.certRepo.Create(ctx, certName, commonName, dnsNames); err != nil {
+	err = c.certRepo.Create(ctx, certName, commonName, dnsNames)
+	if err != nil {
 		return fmt.Errorf("failed to create SKR certificate: %w", err)
 	}
 
@@ -111,7 +112,8 @@ func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) erro
 	logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 		"kyma", kymaName)
 
-	if err = c.renewalService.Renew(ctx, constructSkrCertificateName(kymaName)); err != nil {
+	err = c.renewalService.Renew(ctx, constructSkrCertificateName(kymaName))
+	if err != nil {
 		return fmt.Errorf("failed to delete SKR certificate secret: %w", err)
 	}
 

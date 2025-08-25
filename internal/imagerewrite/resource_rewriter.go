@@ -44,7 +44,8 @@ func (r *ResourceRewriter) ReplaceImages(resource *unstructured.Unstructured, ta
 		return containers, nil
 	}
 	podContainersSetter := func(containers []*unstructured.Unstructured) error {
-		if err := setPodContainers(deploymentOrSimilar, containers); err != nil {
+		err := setPodContainers(deploymentOrSimilar, containers)
+		if err != nil {
 			return fmt.Errorf("failed to set pod containers: %w", err)
 		}
 		return nil
@@ -63,7 +64,8 @@ func (r *ResourceRewriter) ReplaceImages(resource *unstructured.Unstructured, ta
 		return containers, nil
 	}
 	podInitContainersSetter := func(containers []*unstructured.Unstructured) error {
-		if err := setPodInitContainers(deploymentOrSimilar, containers); err != nil {
+		err := setPodInitContainers(deploymentOrSimilar, containers)
+		if err != nil {
 			return fmt.Errorf("failed to set pod init containers: %w", err)
 		}
 		return nil
@@ -91,12 +93,14 @@ func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGette
 	}
 	for cIdx, container := range containers {
 		for _, rewriter := range r.rewriters {
-			if err := rewriter.Rewrite(targetImages, container); err != nil {
+			err := rewriter.Rewrite(targetImages, container)
+			if err != nil {
 				return fmt.Errorf("failed to rewrite images in container %d: %w", cIdx, err)
 			}
 		}
 	}
-	if err := containersSetter(containers); err != nil {
+	err = containersSetter(containers)
+	if err != nil {
 		return err
 	}
 	return nil

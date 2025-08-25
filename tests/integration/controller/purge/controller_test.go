@@ -13,9 +13,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -271,18 +272,22 @@ func createDestinationRuleFor(kyma *v1beta2.Kyma, nameSuffix string) *unstructur
 	res.SetNamespace(kyma.Namespace)
 	res.SetFinalizers([]string{testFinalizer})
 
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec"); err != nil {
+	err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec")
+	if err != nil {
 		return nil
 	}
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec", "trafficPolicy"); err != nil {
+	err = unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec", "trafficPolicy")
+	if err != nil {
 		return nil
 	}
-	if err := unstructured.SetNestedMap(res.Object,
-		map[string]interface{}{}, "spec", "trafficPolicy", "loadBalancer"); err != nil {
+	err = unstructured.SetNestedMap(res.Object,
+		map[string]interface{}{}, "spec", "trafficPolicy", "loadBalancer")
+	if err != nil {
 		return nil
 	}
-	if err := unstructured.SetNestedField(res.Object,
-		"LEAST_REQUEST", "spec", "trafficPolicy", "loadBalancer", "simple"); err != nil {
+	err = unstructured.SetNestedField(res.Object,
+		"LEAST_REQUEST", "spec", "trafficPolicy", "loadBalancer", "simple")
+	if err != nil {
 		return nil
 	}
 	return res
@@ -298,13 +303,16 @@ func createIssuerFor(kyma *v1beta2.Kyma, nameSuffix string) *unstructured.Unstru
 	res.SetNamespace(kyma.Namespace)
 	res.SetFinalizers([]string{testFinalizer})
 
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec"); err != nil {
+	err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec")
+	if err != nil {
 		return nil
 	}
-	if err := unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec", "ca"); err != nil {
+	err = unstructured.SetNestedMap(res.Object, map[string]interface{}{}, "spec", "ca")
+	if err != nil {
 		return nil
 	}
-	if err := unstructured.SetNestedField(res.Object, "foobar", "spec", "ca", "secretName"); err != nil {
+	err = unstructured.SetNestedField(res.Object, "foobar", "spec", "ca", "secretName")
+	if err != nil {
 		return nil
 	}
 
