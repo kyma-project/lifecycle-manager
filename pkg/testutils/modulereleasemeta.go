@@ -117,3 +117,28 @@ func UpdateAllModuleReleaseMetaChannelVersions(ctx context.Context, client clien
 	}
 	return nil
 }
+
+func MandatoryModuleReleaseMetaHasVersion(ctx context.Context, clnt client.Client, moduleName, version string,
+) error {
+	mrmList := &v1beta2.ModuleReleaseMetaList{}
+	if err := clnt.List(ctx, mrmList); err != nil {
+		return fmt.Errorf("failed to list ModuleReleaseMeta resources: %w", err)
+	}
+
+	for _, mrm := range mrmList.Items {
+		if mrm.Spec.ModuleName == moduleName {
+			if mrm.Spec.Mandatory == nil {
+				return fmt.Errorf("module %s is not configured as mandatory", moduleName)
+			}
+
+			if mrm.Spec.Mandatory.Version != version {
+				return fmt.Errorf("mandatory module %s version mismatch: expected %s, got %s",
+					moduleName, version, mrm.Spec.Mandatory.Version)
+			}
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("mandatory module %s not found", moduleName)
+}

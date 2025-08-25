@@ -46,12 +46,25 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						shared.EnableLabelValue).
 					Should(Succeed())
 			})
+			By("And the Mandatory ModuleReleaseMeta is configured correctly", func() {
+				Eventually(MandatoryModuleReleaseMetaHasVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
+					Should(Succeed())
+			})
 
 			By("And the mandatory ModuleTemplate is not synchronised to the SKR cluster", func() {
 				Consistently(CheckIfExists).
 					WithContext(ctx).
-					WithArguments("template-operator-mandatory", RemoteNamespace,
+					WithArguments("template-operator", RemoteNamespace,
 						shared.OperatorGroup, "v1beta2", string(shared.ModuleTemplateKind), skrClient).
+					Should(Not(Succeed()))
+			})
+			By("And the mandatory ModuleReleaseMeta is not synchronised to the SKR cluster", func() {
+				Consistently(CheckIfExists).
+					WithContext(ctx).
+					WithArguments("template-operator", RemoteNamespace,
+						shared.OperatorGroup, "v1beta2", string(shared.ModuleReleaseMetaKind), skrClient).
 					Should(Not(Succeed()))
 			})
 

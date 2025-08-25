@@ -115,6 +115,22 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma
 	assert.Len(t, mrms[5].Spec.Channels, 3)
 }
 
+func Test_GetModuleReleaseMetasToSync_SkipsMandatoryMRM_ForAnyKyma(t *testing.T) {
+	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
+	kyma := newKymaBuilder().build()
+	mts := &v1beta2.ModuleTemplateList{}
+	err := fakeClient().List(t.Context(), mts)
+	require.NoError(t, err)
+
+	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
+
+	require.NoError(t, err)
+	for _, mrm := range mrms {
+		assert.NotEqual(t, "mandatory-module", mrm.Spec.ModuleName, "mandatory module should not be synced")
+		assert.Nil(t, mrm.Spec.Mandatory, "synced MRM should not have mandatory field set")
+	}
+}
+
 func Test_GetModuleTemplatesToSync_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryNotSyncDisabled(t *testing.T) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().build()
@@ -374,6 +390,10 @@ func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
 		withName("internal-only-module").
 		withChannelVersion("regular", "1.0.0").
 		build()
+	mandatoryMRM := newModuleReleaseMetaBuilder().
+		withName("mandatory-module").
+		withMandatory("1.0.0").
+		build()
 
 	mrms := v1beta2.ModuleReleaseMetaList{
 		Items: []v1beta2.ModuleReleaseMeta{
@@ -383,6 +403,7 @@ func moduleReleaseMetas() v1beta2.ModuleReleaseMetaList {
 			*mrm4,
 			*mrm5,
 			*mrm6,
+			*mandatoryMRM,
 		},
 	}
 
@@ -567,6 +588,15 @@ func (b *moduleReleaseMetaBuilder) withChannelVersion(channel, version string) *
 		b.moduleReleaseMeta.Spec.Channels,
 		v1beta2.ChannelVersionAssignment{Channel: channel, Version: version},
 	)
+	return b
+}
+
+func (b *moduleReleaseMetaBuilder) withMandatory(version string) *moduleReleaseMetaBuilder {
+	b.moduleReleaseMeta.Spec.Mandatory = &v1beta2.Mandatory{
+		Version: version,
+	}
+	// Clear channels as mandatory modules cannot have channels (per validation rule)
+	b.moduleReleaseMeta.Spec.Channels = nil
 	return b
 }
 
