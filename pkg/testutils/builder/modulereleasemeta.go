@@ -51,6 +51,11 @@ func (m ModuleReleaseMetaBuilder) WithModuleName(moduleName string) ModuleReleas
 	return m
 }
 
+func (m ModuleReleaseMetaBuilder) WithOcmComponentName(ocmComponentName string) ModuleReleaseMetaBuilder {
+	m.moduleReleaseMeta.Spec.OcmComponentName = ocmComponentName
+	return m
+}
+
 func (m ModuleReleaseMetaBuilder) WithNamespace(namespace string) ModuleReleaseMetaBuilder {
 	m.moduleReleaseMeta.Namespace = namespace
 	return m

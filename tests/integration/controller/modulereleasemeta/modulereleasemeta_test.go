@@ -18,6 +18,36 @@ const (
 )
 
 var _ = Describe("ModuleReleaseMeta validation", Ordered, func() {
+	DescribeTable("Validate OcmComponentName field",
+		func(givenName string, shouldSucceed bool) {
+			meta := builder.NewModuleReleaseMetaBuilder().
+				WithName("test-ocmcomponentname").
+				WithNamespace(ControlPlaneNamespace).
+				WithModuleName("test-module").
+				WithOcmComponentName(givenName).
+				WithMandatory("1.0.0").
+				Build()
+
+			err := kcpClient.Create(ctx, meta)
+			if shouldSucceed {
+				Expect(err).NotTo(HaveOccurred())
+				err = kcpClient.Delete(ctx, meta)
+				Expect(err).NotTo(HaveOccurred())
+			} else {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("spec.ocmComponentName"))
+			}
+		},
+		Entry("valid OCM component name", "acme.com/my-component", true),
+		Entry("valid OCM component name", "kyma-project.io/module/template-operator", true),
+		Entry("invalid: missing slash", "acme.com", false),
+		Entry("invalid: uppercase", "Acme.com/my-component", false),
+		Entry("invalid: invalid chars", "acme.com/my_component!", false),
+		Entry("empty (optional)", "", true),
+	)
+})
+
+var _ = Describe("ModuleReleaseMeta validation", Ordered, func() {
 	DescribeTable("Validate XValidation rule for mandatory vs channels",
 		func(
 			setupFunc func() *v1beta2.ModuleReleaseMeta,
