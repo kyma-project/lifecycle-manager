@@ -15,6 +15,7 @@ metadata:
   namespace: kcp-system
 spec:
   moduleName: ${MODULE_NAME}
+  ocmComponentName: kyma-project.io/module/${MODULE_NAME}
   channels:
 EOF
 
