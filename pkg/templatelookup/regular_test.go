@@ -119,6 +119,15 @@ func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 				Build(),
 			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
+		{
+			name: "When ModuleTemplate is mandatory, Then result contains error",
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().
+					WithMandatory(true).Build(),
+			},
+			kyma:    builder.NewKymaBuilder().Build(),
+			wantErr: templatelookup.ErrTemplateNotAllowed,
+		},
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
