@@ -163,10 +163,10 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				}).
 				Should(Succeed())
 		})
-		It("Then Kyma is in a \"Warning\" State", func() {
+		It("Then Kyma is in a \"Error\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
 				Should(Succeed())
 		})
 
