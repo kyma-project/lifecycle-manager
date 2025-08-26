@@ -5,7 +5,6 @@ go 1.24.6
 replace (
 	github.com/kyma-project/lifecycle-manager/api => ./api
 	github.com/kyma-project/lifecycle-manager/maintenancewindows => ./maintenancewindows
-	github.com/kyma-project/runtime-watcher/listener => github.com/medmes/runtime-watcher/listener v0.0.0-20250810204720-3bfb15765847
 )
 
 require (
@@ -20,11 +19,11 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	github.com/kyma-project/lifecycle-manager/maintenancewindows v0.0.0-20250113095044-41115399d588
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240502124257-9d96561ef070
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20250825111833-2cf3f8cc5232
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.38.0
 	github.com/prometheus/client_golang v1.23.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/time v0.12.0
@@ -43,11 +42,11 @@ require (
 	github.com/go-co-op/gocron v1.37.0
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.2
-	k8s.io/api v0.33.3
+	k8s.io/api v0.33.4
 	k8s.io/apiextensions-apiserver v0.33.3
-	k8s.io/apimachinery v0.33.3
+	k8s.io/apimachinery v0.33.4
 	k8s.io/cli-runtime v0.33.3
-	k8s.io/client-go v0.33.3
+	k8s.io/client-go v0.33.4
 	k8s.io/kubectl v0.33.3
 )
 

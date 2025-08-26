@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -103,7 +103,7 @@ func (s *SkrRuntimeEventService) forwardEvents(ctx context.Context) {
 
 	for {
 		select {
-		case listenerEvent, ok := <-s.listener.ReceivedEvents:
+		case listenerEvent, ok := <-s.listener.ReceivedEvents():
 			if !ok {
 				return // Listener closed
 			}

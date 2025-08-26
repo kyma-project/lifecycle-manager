@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/zapr"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 

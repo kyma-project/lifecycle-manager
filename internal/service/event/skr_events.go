@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/security"

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
