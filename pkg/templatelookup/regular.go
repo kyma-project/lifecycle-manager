@@ -120,6 +120,10 @@ func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 		template.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
 		return template
 	}
+	if template.Spec.Mandatory {
+		template.Err = fmt.Errorf("%w: mandatory module", ErrTemplateNotAllowed)
+		return template
+	}
 	return template
 }
 
