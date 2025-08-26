@@ -20,8 +20,8 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	skrevent "github.com/kyma-project/lifecycle-manager/internal/service/event"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrevent"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 

@@ -17,7 +17,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/common"
-	skrevent "github.com/kyma-project/lifecycle-manager/internal/service/event"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrevent"
 	"github.com/kyma-project/lifecycle-manager/internal/watch"
 )
 
@@ -33,11 +33,7 @@ type SetupOptions struct {
 
 const controllerName = "kyma"
 
-var (
-	errConvertingWatched      = errors.New("error converting watched to object key")
-	errParsingWatched         = errors.New("error getting watched object from unstructured event")
-	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
-)
+var errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
 
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
 	runtimeEventService, err := skrevent.NewSKREventService(

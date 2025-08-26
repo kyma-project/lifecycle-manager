@@ -1,4 +1,4 @@
-package event
+package skrevent
 
 import (
 	"errors"
@@ -32,6 +32,7 @@ func ExtractOwnerKey(eventObj *unstructured.Unstructured) (client.ObjectKey, err
 
 	return client.ObjectKey{Name: name, Namespace: namespace}, nil
 }
+
 func ExtractWatchedKey(eventObj *unstructured.Unstructured) (client.ObjectKey, error) {
 	watchedData, found := eventObj.Object["watched"]
 	if !found {

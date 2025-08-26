@@ -1,4 +1,4 @@
-package event
+package skrevent
 
 import (
 	"context"

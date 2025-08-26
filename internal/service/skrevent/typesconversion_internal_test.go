@@ -1,4 +1,4 @@
-package event
+package skrevent
 
 import (
 	"testing"
@@ -73,18 +73,18 @@ func TestExtractOwnerKey(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractOwnerKey(tt.eventObj)
+	for _, tcase := range tests {
+		t.Run(tcase.name, func(t *testing.T) {
+			result, err := ExtractOwnerKey(tcase.eventObj)
 
-			if tt.expectError {
+			if tcase.expectError {
 				require.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
+				if tcase.errorType != nil {
+					require.ErrorIs(t, err, tcase.errorType)
 				}
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
+				assert.Equal(t, tcase.expected, result)
 			}
 		})
 	}
@@ -138,18 +138,18 @@ func TestExtractWatchedKey(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractWatchedKey(tt.eventObj)
+	for _, tcase := range tests {
+		t.Run(tcase.name, func(t *testing.T) {
+			result, err := ExtractWatchedKey(tcase.eventObj)
 
-			if tt.expectError {
+			if tcase.expectError {
 				require.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
+				if tcase.errorType != nil {
+					require.ErrorIs(t, err, tcase.errorType)
 				}
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
+				assert.Equal(t, tcase.expected, result)
 			}
 		})
 	}

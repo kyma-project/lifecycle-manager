@@ -1,4 +1,4 @@
-package event
+package skrevent
 
 import (
 	"context"
@@ -7,37 +7,35 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSkrRuntimeEventService_CancelMutexProtection(t *testing.T) {
 	t.Run("concurrent Start and Stop operations are thread-safe", func(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
-		var wg sync.WaitGroup
+		var wgr sync.WaitGroup
 		numGoroutines := 10
 		errors := make([]error, numGoroutines*2) // For both Start and Stop operations
 
 		// Launch concurrent Start and Stop operations
-		for i := 0; i < numGoroutines; i++ {
-			wg.Add(2) // One for Start, one for Stop
+		for gri := range numGoroutines {
+			wgr.Add(2) // One for Start, one for Stop
 
 			go func(idx int) {
-				defer wg.Done()
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+				defer wgr.Done()
+				ctx, cancel := context.WithTimeout(t.Context(), 5*time.Millisecond)
 				defer cancel()
 				errors[idx*2] = service.Start(ctx)
-			}(i)
+			}(gri)
 
 			go func(idx int) {
-				defer wg.Done()
+				defer wgr.Done()
 				errors[idx*2+1] = service.Stop()
-			}(i)
+			}(gri)
 		}
 
-		wg.Wait()
-
-		// Verify no panics occurred (if we reach here, mutex protection worked)
-		assert.True(t, true, "Concurrent operations completed without data races")
+		wgr.Wait()
 
 		// Stop operations should never return errors
 		for i := 1; i < len(errors); i += 2 {
@@ -48,20 +46,20 @@ func TestSkrRuntimeEventService_CancelMutexProtection(t *testing.T) {
 	t.Run("multiple concurrent Stop calls are safe", func(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
-		var wg sync.WaitGroup
+		var wgr sync.WaitGroup
 		numStops := 20
 		errors := make([]error, numStops)
 
 		// Multiple concurrent Stop calls
-		for i := 0; i < numStops; i++ {
-			wg.Add(1)
+		for i := range numStops {
+			wgr.Add(1)
 			go func(idx int) {
-				defer wg.Done()
+				defer wgr.Done()
 				errors[idx] = service.Stop()
 			}(i)
 		}
 
-		wg.Wait()
+		wgr.Wait()
 
 		// All Stop calls should succeed
 		for i, err := range errors {
@@ -76,7 +74,7 @@ func TestSkrRuntimeEventService_ForwardEventsGoroutineOrder(t *testing.T) {
 
 		// The key test: Start should return immediately when listener is nil
 		// (forwardEvents runs in a goroutine and waits for context)
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
 		defer cancel()
 
 		startTime := time.Now()
@@ -84,7 +82,7 @@ func TestSkrRuntimeEventService_ForwardEventsGoroutineOrder(t *testing.T) {
 		elapsed := time.Since(startTime)
 
 		// With nil listener, Start() should return immediately (< 1ms typically)
-		assert.True(t, elapsed < 10*time.Millisecond, "Start should return immediately with nil listener, took %v", elapsed)
+		assert.Less(t, elapsed, 10*time.Millisecond, "Start should return immediately with nil listener, took %v", elapsed)
 		assert.NoError(t, err, "Should not return error with nil listener")
 	})
 
@@ -92,19 +90,16 @@ func TestSkrRuntimeEventService_ForwardEventsGoroutineOrder(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
 		// Test multiple quick Start calls to ensure goroutines are managed properly
-		for i := 0; i < 3; i++ {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+		for range 3 {
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Millisecond)
 
 			err := service.Start(ctx)
 
 			// Should complete without error
-			assert.NoError(t, err, "Start should not return error")
+			require.NoError(t, err, "Start should not return error")
 
 			cancel()
 		}
-
-		// If we reach here, goroutine management is working properly
-		assert.True(t, true, "Multiple Start calls completed successfully")
 	})
 }
 
@@ -113,23 +108,20 @@ func TestSkrRuntimeEventService_ChannelCloseProtection(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
 		// Start multiple forwardEvents goroutines to test sync.Once
-		var wg sync.WaitGroup
+		var wgr sync.WaitGroup
 		numGoroutines := 5
 
-		for i := 0; i < numGoroutines; i++ {
-			wg.Add(1)
+		for range numGoroutines {
+			wgr.Add(1)
 			go func() {
-				defer wg.Done()
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+				defer wgr.Done()
+				ctx, cancel := context.WithTimeout(t.Context(), 5*time.Millisecond)
 				defer cancel()
 				service.forwardEvents(ctx)
 			}()
 		}
 
-		wg.Wait()
-
-		// If we reach here without panics, sync.Once protected the channel close
-		assert.True(t, true, "Multiple forwardEvents calls completed without panic")
+		wgr.Wait()
 
 		// Verify channel is closed
 		select {
@@ -146,7 +138,7 @@ func TestSkrRuntimeEventService_ContextHandling(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
 		// Use a very short timeout to test cancellation
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 1*time.Millisecond)
 		defer cancel()
 
 		startTime := time.Now()
@@ -154,7 +146,7 @@ func TestSkrRuntimeEventService_ContextHandling(t *testing.T) {
 		elapsed := time.Since(startTime)
 
 		// Should complete quickly after context cancellation
-		assert.True(t, elapsed < 50*time.Millisecond, "Should respect context cancellation quickly")
+		assert.Less(t, elapsed, 50*time.Millisecond, "Should respect context cancellation quickly")
 
 		// Should return context-related error
 		if err != nil {
@@ -166,7 +158,7 @@ func TestSkrRuntimeEventService_ContextHandling(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
 		// Cancel the parent context after a short delay
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		go func() {
 			time.Sleep(10 * time.Millisecond)
@@ -178,7 +170,7 @@ func TestSkrRuntimeEventService_ContextHandling(t *testing.T) {
 		elapsed := time.Since(startTime)
 
 		// Should complete reasonably quickly after parent cancellation
-		assert.True(t, elapsed < 100*time.Millisecond, "Should complete quickly after parent context cancellation")
+		assert.Less(t, elapsed, 100*time.Millisecond, "Should complete quickly after parent context cancellation")
 
 		if err != nil {
 			assert.ErrorIs(t, err, context.Canceled)
@@ -190,7 +182,7 @@ func TestSkrRuntimeEventService_NilListenerHandling(t *testing.T) {
 	t.Run("forwardEvents handles nil listener gracefully", func(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 		defer cancel()
 
 		// This should not panic and should complete after context cancellation
@@ -199,14 +191,14 @@ func TestSkrRuntimeEventService_NilListenerHandling(t *testing.T) {
 		elapsed := time.Since(startTime)
 
 		// Should complete around the timeout duration
-		assert.True(t, elapsed >= 8*time.Millisecond, "Should wait for context cancellation")
-		assert.True(t, elapsed < 50*time.Millisecond, "Should not take too long")
+		assert.GreaterOrEqual(t, elapsed, 8*time.Millisecond, "Should wait for context cancellation")
+		assert.Less(t, elapsed, 50*time.Millisecond, "Should not take too long")
 	})
 
 	t.Run("Start with nil listener returns immediately", func(t *testing.T) {
 		service := NewSkrRuntimeEventService(nil)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 15*time.Millisecond)
 		defer cancel()
 
 		startTime := time.Now()
@@ -214,7 +206,7 @@ func TestSkrRuntimeEventService_NilListenerHandling(t *testing.T) {
 		elapsed := time.Since(startTime)
 
 		// With nil listener, Start should return immediately (forwardEvents runs in goroutine)
-		assert.True(t, elapsed < 10*time.Millisecond, "Start should return immediately with nil listener, took %v", elapsed)
+		assert.Less(t, elapsed, 10*time.Millisecond, "Start should return immediately with nil listener, took %v", elapsed)
 		assert.NoError(t, err, "Should not return error with nil listener")
 	})
 }
