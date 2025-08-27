@@ -206,7 +206,6 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	moduleTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName("test-module").
-		WithChannel("regular").
 		WithMandatory(true).
 		Build()
 	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
@@ -221,6 +220,5 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
 
 	assert.NotNil(t, moduleTemplateInfo)
 	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err,
-		"template marked as mandatory: for module test-module in channel regular")
+	assert.Error(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
 }

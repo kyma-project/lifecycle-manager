@@ -131,6 +131,28 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsErr
 	assert.ErrorContains(t, moduleTemplateInfo.Err, "no channels found for module: test-module")
 }
 
+func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_ReturnsError(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+		WithModuleName("test-module").
+		WithName("test-module").
+		WithMandatory("1.0.0").
+		Build()
+	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{},
+		},
+	))
+
+	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
+
+	assert.NotNil(t, moduleTemplateInfo)
+	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
+	assert.ErrorContains(t, moduleTemplateInfo.Err, "for module test-module in channel regular")
+}
+
 func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {
 	scheme := machineryruntime.NewScheme()
 	machineryutilruntime.Must(api.AddToScheme(scheme))

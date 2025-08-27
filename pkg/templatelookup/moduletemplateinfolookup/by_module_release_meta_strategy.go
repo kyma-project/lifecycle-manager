@@ -2,6 +2,7 @@ package moduletemplateinfolookup
 
 import (
 	"context"
+	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -29,8 +30,14 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) templatelookup.ModuleTemplateInfo {
 	moduleTemplateInfo := templatelookup.ModuleTemplateInfo{}
-
 	moduleTemplateInfo.DesiredChannel = getDesiredChannel(moduleInfo.Channel, kyma.Spec.Channel)
+
+	if moduleReleaseMeta.Spec.Mandatory != nil {
+		moduleTemplateInfo.Err = fmt.Errorf("%w: for module %s in channel %s ",
+			ErrNoTemplatesInListResult, moduleInfo.Name, moduleTemplateInfo.DesiredChannel)
+		return moduleTemplateInfo
+	}
+
 	desiredModuleVersion, err := templatelookup.GetChannelVersionForModule(moduleReleaseMeta, moduleTemplateInfo.DesiredChannel)
 	if err != nil {
 		moduleTemplateInfo.Err = err
