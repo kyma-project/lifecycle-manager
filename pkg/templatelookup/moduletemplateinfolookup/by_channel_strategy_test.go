@@ -220,5 +220,5 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
 
 	require.NotNil(t, moduleTemplateInfo)
 	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	require.Error(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
+	require.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
 }
