@@ -63,6 +63,10 @@ func (s ByVersionStrategy) filterTemplatesByVersion(ctx context.Context, name, v
 	for _, template := range templateList.Items {
 		if TemplateNameMatch(&template,
 			name) && shared.NoneChannel.Equals(template.Spec.Channel) && template.Spec.Version == version {
+			if template.Spec.Mandatory {
+				return nil, fmt.Errorf("%w: for module %s in version %s ",
+					ErrNoTemplatesInListResult, name, version)
+			}
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
@@ -73,10 +77,6 @@ func (s ByVersionStrategy) filterTemplatesByVersion(ctx context.Context, name, v
 	if len(filteredTemplates) == 0 {
 		return nil, fmt.Errorf("%w: for module %s in version %s",
 			ErrNoTemplatesInListResult, name, version)
-	}
-	if filteredTemplates[0].Spec.Mandatory {
-		return nil, fmt.Errorf("%w: for module %s in version %s",
-			ErrTemplateMarkedAsMandatory, name, version)
 	}
 	return filteredTemplates[0], nil
 }

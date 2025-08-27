@@ -77,10 +77,15 @@ func (s ByChannelStrategy) filterTemplatesByChannel(ctx context.Context, name, d
 
 	var filteredTemplates []*v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
-		if TemplateNameMatch(&template, name) && template.Spec.Channel == desiredChannel {
-			// Mandatory modules will not be considered because they do have no channel assigned
-			filteredTemplates = append(filteredTemplates, &template)
-			continue
+		if TemplateNameMatch(&template, name) {
+			if template.Spec.Mandatory {
+				return nil, fmt.Errorf("%w: for module %s in channel %s ",
+					ErrNoTemplatesInListResult, name, desiredChannel)
+			}
+			if template.Spec.Channel == desiredChannel {
+				filteredTemplates = append(filteredTemplates, &template)
+				continue
+			}
 		}
 	}
 

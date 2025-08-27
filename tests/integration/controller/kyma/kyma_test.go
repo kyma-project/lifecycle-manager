@@ -80,13 +80,13 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 			By("checking the state to be Warning in KCP", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
 					Should(Succeed())
 			})
 			By("checking the state to be Warning in SKR", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(skrKyma.GetName(), skrKyma.GetNamespace(), skrClient, shared.StateWarning).
+					WithArguments(skrKyma.GetName(), skrKyma.GetNamespace(), skrClient, shared.StateError).
 					Should(Succeed())
 			})
 			By("Kyma status contains expected condition in KCP", func() {

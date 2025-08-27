@@ -53,6 +53,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.Maintenance = true
@@ -75,6 +76,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateError
@@ -97,6 +99,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateWarning
