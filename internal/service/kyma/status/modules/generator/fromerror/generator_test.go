@@ -108,7 +108,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 	assert.NotEqual(t, someFQDN, result.FQDN)
 }
 
-func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultError_ReturnsNewStatusWithStateWarning(t *testing.T) {
+func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultError_ReturnsNewStatusWithStateError(t *testing.T) {
 	expectedModuleName := "some-module"
 	expectedChannel := "some-channel"
 	expectedFQDN := "some-fqdn"
@@ -127,7 +127,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultErro
 	assert.Equal(t, expectedChannel, result.Channel)
 	assert.Equal(t, expectedFQDN, result.FQDN)
 
-	assert.Equal(t, shared.StateWarning, result.State)
+	assert.Equal(t, shared.StateError, result.State)
 	assert.Equal(t, templateError.Error(), result.Message)
 
 	// No tracking objects are set
