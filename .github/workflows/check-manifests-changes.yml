@@ -15,7 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       success: ${{ steps.create-manifests.outcome }}
+      sha: ${{ github.event.pull_request.head.sha }}
     steps:
+      - name: Debug PR information
+        run: |
+          echo "PR Number: ${{ github.event.pull_request.number }}"
+          echo "PR Head SHA: ${{ github.event.pull_request.head.sha }}"
+          echo "PR Base SHA: ${{ github.event.pull_request.base.sha }}"
+          echo "PR Cache Key: ${{ env.PR_CACHE_KEY }}"
+          echo "Main Cache Key: ${{ env.MAIN_CACHE_KEY }}"
+
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
@@ -38,6 +47,10 @@ jobs:
           mkdir -p ./cache/pr
           cp ./dry-run/manifests.yaml ./cache/pr/manifests.yaml
           echo "✅ PR manifests created successfully"
+          
+          # Debug: Show first few lines of PR manifest
+          echo "First 10 lines of PR manifest:"
+          head -10 ./cache/pr/manifests.yaml
 
       - name: Save PR manifests in cache
         uses: actions/cache@v3
@@ -49,7 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       success: ${{ steps.create-manifests.outcome }}
+      sha: ${{ github.event.pull_request.base.sha }}
     steps:
+      - name: Debug Main information
+        run: |
+          echo "Main Base SHA: ${{ github.event.pull_request.base.sha }}"
+          echo "Main Cache Key: ${{ env.MAIN_CACHE_KEY }}"
+
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
@@ -72,6 +91,10 @@ jobs:
           mkdir -p ./cache/main
           cp ./dry-run/manifests.yaml ./cache/main/manifests.yaml
           echo "✅ Main manifests created successfully"
+          
+          # Debug: Show first few lines of main manifest
+          echo "First 10 lines of main manifest:"
+          head -10 ./cache/main/manifests.yaml
 
       - name: Save main manifests in cache
         uses: actions/cache@v3
@@ -88,6 +111,13 @@ jobs:
       needs.create-pr-manifests.outputs.success == 'success' &&
       needs.create-main-manifests.outputs.success == 'success'
     steps:
+      - name: Debug cache information
+        run: |
+          echo "PR SHA: ${{ needs.create-pr-manifests.outputs.sha }}"
+          echo "Main SHA: ${{ needs.create-main-manifests.outputs.sha }}"
+          echo "PR Cache Key: ${{ env.PR_CACHE_KEY }}"
+          echo "Main Cache Key: ${{ env.MAIN_CACHE_KEY }}"
+
       - name: Restore PR manifests from cache
         id: restore-pr-cache
         uses: actions/cache@v3
@@ -131,6 +161,23 @@ jobs:
         run: |
           set +e
           echo "Comparing manifest files..."
+          
+          # Debug: Show file sizes and checksums
+          echo "PR manifest info:"
+          ls -la ./cache/pr/manifests.yaml
+          sha256sum ./cache/pr/manifests.yaml
+          
+          echo "Main manifest info:"
+          ls -la ./cache/main/manifests.yaml
+          sha256sum ./cache/main/manifests.yaml
+          
+          # Debug: Show first few lines of each file
+          echo "First 10 lines of PR manifests:"
+          head -10 ./cache/pr/manifests.yaml
+          
+          echo "First 10 lines of Main manifests:"
+          head -10 ./cache/main/manifests.yaml
+          
           DIFF_OUTPUT=$(diff -u ./cache/main/manifests.yaml ./cache/pr/manifests.yaml)
           EXIT_CODE=$?
 
