@@ -3,7 +3,7 @@ package moduletemplateinfolookup_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
@@ -17,7 +17,7 @@ func Test_ByChannelStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 
 	responsible := byChannelStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
-	assert.True(t, responsible)
+	require.True(t, responsible)
 }
 
 func Test_ByChannelStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
@@ -27,7 +27,7 @@ func Test_ByChannelStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNo
 
 	responsible := byChannelStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
-	assert.False(t, responsible)
+	require.False(t, responsible)
 }
 
 func Test_ByChannelStrategy_IsResponsible_ReturnsFalse_WhenInstalledByVersion(t *testing.T) {
@@ -37,7 +37,7 @@ func Test_ByChannelStrategy_IsResponsible_ReturnsFalse_WhenInstalledByVersion(t 
 
 	responsible := byChannelStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
-	assert.False(t, responsible)
+	require.False(t, responsible)
 }
 
 func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
@@ -58,11 +58,11 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
 
 	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
-	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
-	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
-	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
+	require.NotNil(t, moduleTemplateInfo)
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
+	require.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
 }
 
 func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingGlobalChannel(t *testing.T) {
@@ -83,11 +83,11 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingGlobalChannel(
 
 	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
-	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
-	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
-	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
+	require.NotNil(t, moduleTemplateInfo)
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
+	require.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
 }
 
 func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingDefaultChannel(t *testing.T) {
@@ -108,11 +108,11 @@ func Test_ByChannelStrategy_Lookup_ReturnsModuleTemplateInfo_UsingDefaultChannel
 
 	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
-	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
-	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
-	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
+	require.NotNil(t, moduleTemplateInfo)
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
+	require.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
 }
 
 func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
@@ -125,9 +125,9 @@ func Test_ByChannelStrategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 
 	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err,
+	require.NotNil(t, moduleTemplateInfo)
+	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	require.ErrorContains(t, moduleTemplateInfo.Err,
 		"no templates were found: for module test-module in channel regular")
 }
 
@@ -140,9 +140,9 @@ func Test_ByChannelStrategy_Lookup_WhenFailedToListModuleTemplates(t *testing.T)
 
 	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err,
+	require.NotNil(t, moduleTemplateInfo)
+	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	require.ErrorContains(t, moduleTemplateInfo.Err,
 		"failed to list module templates on lookup")
 }
 
@@ -171,9 +171,9 @@ func Test_ByChannelStrategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing
 
 	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err,
+	require.NotNil(t, moduleTemplateInfo)
+	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	require.ErrorContains(t, moduleTemplateInfo.Err,
 		"no unique template could be identified: more than one module template found for module: test-module, candidates: [test-module-regular test-module-regular-2]")
 }
 
@@ -194,33 +194,8 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateHasNoChannel(t *testing.T) 
 
 	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err,
+	require.NotNil(t, moduleTemplateInfo)
+	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	require.ErrorContains(t, moduleTemplateInfo.Err,
 		"no templates were found: for module test-module in channel regular")
-}
-
-func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
-	kyma := builder.NewKymaBuilder().Build()
-	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("test-module").
-		WithChannel("regular").
-		WithMandatory(true).
-		Build()
-	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
-		&v1beta2.ModuleTemplateList{
-			Items: []v1beta2.ModuleTemplate{
-				*moduleTemplate,
-			},
-		},
-	))
-
-	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
-
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err,
-		"template marked as mandatory: for module test-module in channel regular")
 }

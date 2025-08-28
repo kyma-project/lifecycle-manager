@@ -52,3 +52,28 @@ func Test_GetChannelVersionForModule_WhenChannelNotFound(t *testing.T) {
 
 	require.ErrorIs(t, err, templatelookup.ErrChannelNotFound)
 }
+
+func Test_GetMandatoryVersionForModule_WhenMandatoryFound(t *testing.T) {
+	moduleReleaseMeta := &v1beta2.ModuleReleaseMeta{
+		Spec: v1beta2.ModuleReleaseMetaSpec{
+			Mandatory: &v1beta2.Mandatory{
+				Version: "1.0.0",
+			},
+		},
+	}
+	version, err := templatelookup.GetMandatoryVersionForModule(moduleReleaseMeta)
+
+	require.NoError(t, err)
+	require.Equal(t, "1.0.0", version)
+}
+
+func Test_GetMandatoryVersionForModule_WhenMandatoryNotFound(t *testing.T) {
+	moduleReleaseMeta := &v1beta2.ModuleReleaseMeta{
+		Spec: v1beta2.ModuleReleaseMetaSpec{
+			Mandatory: nil,
+		},
+	}
+	_, err := templatelookup.GetMandatoryVersionForModule(moduleReleaseMeta)
+
+	require.ErrorIs(t, err, templatelookup.ErrNoMandatoryFound)
+}

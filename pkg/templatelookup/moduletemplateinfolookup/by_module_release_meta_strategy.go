@@ -29,9 +29,16 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) templatelookup.ModuleTemplateInfo {
 	moduleTemplateInfo := templatelookup.ModuleTemplateInfo{}
-
 	moduleTemplateInfo.DesiredChannel = getDesiredChannel(moduleInfo.Channel, kyma.Spec.Channel)
-	desiredModuleVersion, err := templatelookup.GetChannelVersionForModule(moduleReleaseMeta, moduleTemplateInfo.DesiredChannel)
+
+	var desiredModuleVersion string
+	var err error
+	if moduleReleaseMeta.Spec.Mandatory != nil {
+		desiredModuleVersion, err = templatelookup.GetMandatoryVersionForModule(moduleReleaseMeta)
+	} else {
+		desiredModuleVersion, err = templatelookup.GetChannelVersionForModule(moduleReleaseMeta,
+			moduleTemplateInfo.DesiredChannel)
+	}
 	if err != nil {
 		moduleTemplateInfo.Err = err
 		return moduleTemplateInfo
