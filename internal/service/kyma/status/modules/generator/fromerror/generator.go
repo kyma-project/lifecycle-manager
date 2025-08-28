@@ -47,7 +47,7 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn s
 	newStatus := newDefaultErrorStatus(moduleName, desiredChannel, fqdn, err)
 
 	if errorIsTemplateNotFound(err) {
-		newStatus.State = shared.StateError
+		newStatus.State = shared.StateWarning
 	}
 
 	return newStatus, nil
