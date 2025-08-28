@@ -3,6 +3,7 @@ package moduletemplateinfolookup
 import (
 	"context"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 

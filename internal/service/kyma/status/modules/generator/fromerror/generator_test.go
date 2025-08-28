@@ -2,7 +2,6 @@ package fromerror_test
 
 import (
 	"errors"
-	errors2 "github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
@@ -117,7 +117,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultErro
 	expectedChannel := "some-channel"
 	expectedFQDN := "some-fqdn"
 	status := createStatus()
-	templateError := errors2.ErrNoTemplatesInListResult
+	templateError := common.ErrNoTemplatesInListResult
 
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedModuleName, expectedChannel,
 		expectedFQDN, status)
