@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/Masterminds/semver/v3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 var (
@@ -121,7 +121,8 @@ func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 		return template
 	}
 	if template.Spec.Mandatory {
-		template.Err = fmt.Errorf("%w: mandatory module", ErrTemplateNotAllowed)
+		template.Err = fmt.Errorf("%w: for module %s in channel %s ",
+			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)
 		return template
 	}
 	return template

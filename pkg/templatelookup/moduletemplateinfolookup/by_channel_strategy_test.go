@@ -199,26 +199,3 @@ func Test_ByChannelStrategy_Lookup_WhenModuleTemplateHasNoChannel(t *testing.T) 
 	require.ErrorContains(t, moduleTemplateInfo.Err,
 		"no templates were found: for module test-module in channel regular")
 }
-
-func Test_ByChannelStrategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
-	kyma := builder.NewKymaBuilder().Build()
-	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("test-module").
-		WithMandatory(true).
-		Build()
-	byChannelStrategy := moduletemplateinfolookup.NewByChannelStrategy(fakeClient(
-		&v1beta2.ModuleTemplateList{
-			Items: []v1beta2.ModuleTemplate{
-				*moduleTemplate,
-			},
-		},
-	))
-
-	moduleTemplateInfo := byChannelStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
-
-	require.NotNil(t, moduleTemplateInfo)
-	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	require.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
-}

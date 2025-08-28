@@ -21,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -126,7 +127,7 @@ func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 					WithMandatory(true).Build(),
 			},
 			kyma:    builder.NewKymaBuilder().Build(),
-			wantErr: templatelookup.ErrTemplateNotAllowed,
+			wantErr: common.ErrNoTemplatesInListResult,
 		},
 	}
 	for _, testCase := range tests {
@@ -663,7 +664,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
-					Err:            moduletemplateinfolookup.ErrNoTemplatesInListResult,
+					Err:            common.ErrNoTemplatesInListResult,
 				},
 			},
 		},
@@ -682,7 +683,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 			want: templatelookup.ModuleTemplatesByModuleName{
 				testModule.Name: &templatelookup.ModuleTemplateInfo{
 					DesiredChannel: testModule.Channel,
-					Err:            moduletemplateinfolookup.ErrNoTemplatesInListResult,
+					Err:            common.ErrNoTemplatesInListResult,
 				},
 			},
 		},

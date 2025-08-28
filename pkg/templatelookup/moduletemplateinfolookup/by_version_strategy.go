@@ -3,7 +3,7 @@ package moduletemplateinfolookup
 import (
 	"context"
 	"fmt"
-
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -63,10 +63,6 @@ func (s ByVersionStrategy) filterTemplatesByVersion(ctx context.Context, name, v
 	for _, template := range templateList.Items {
 		if TemplateNameMatch(&template,
 			name) && shared.NoneChannel.Equals(template.Spec.Channel) && template.Spec.Version == version {
-			if template.Spec.Mandatory {
-				return nil, fmt.Errorf("%w: for module %s in version %s ",
-					ErrNoTemplatesInListResult, name, version)
-			}
 			filteredTemplates = append(filteredTemplates, &template)
 			continue
 		}
@@ -76,7 +72,7 @@ func (s ByVersionStrategy) filterTemplatesByVersion(ctx context.Context, name, v
 	}
 	if len(filteredTemplates) == 0 {
 		return nil, fmt.Errorf("%w: for module %s in version %s",
-			ErrNoTemplatesInListResult, name, version)
+			common.ErrNoTemplatesInListResult, name, version)
 	}
 	return filteredTemplates[0], nil
 }

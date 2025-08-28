@@ -139,33 +139,6 @@ func Test_ByVersion_Strategy_Lookup_WhenNoModuleTemplateFound(t *testing.T) {
 		"no templates were found: for module test-module in version 1.0.0")
 }
 
-func Test_ByVersion_Strategy_Lookup_WhenModuleTemplateIsMandatory(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithVersion("1.0.0").Enabled().Build()
-	var kyma *v1beta2.Kyma = nil
-	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithName("test-module-1.0.0").
-		WithModuleName("test-module").
-		WithVersion("1.0.0").
-		WithChannel("none").
-		WithMandatory(true).
-		Build()
-
-	byVersionStrategy := moduletemplateinfolookup.NewByVersionStrategy(fakeClient(
-		&v1beta2.ModuleTemplateList{
-			Items: []v1beta2.ModuleTemplate{
-				*moduleTemplate,
-			},
-		},
-	))
-
-	moduleTemplateInfo := byVersionStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
-
-	require.NotNil(t, moduleTemplateInfo)
-	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	require.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
-}
-
 type moduleInfoBuilder struct {
 	moduleInfo *templatelookup.ModuleInfo
 }

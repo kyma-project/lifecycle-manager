@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
+	errors2 "github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -60,7 +60,7 @@ func ModuleTemplateExists(ctx context.Context,
 	kyma *v1beta2.Kyma,
 ) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
-	if moduleTemplate == nil || errors.Is(err, moduletemplateinfolookup.ErrNoTemplatesInListResult) {
+	if moduleTemplate == nil || errors.Is(err, errors2.ErrNoTemplatesInListResult) {
 		return ErrNotFound
 	}
 

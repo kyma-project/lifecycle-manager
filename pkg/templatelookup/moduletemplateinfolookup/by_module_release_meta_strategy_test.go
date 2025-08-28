@@ -131,7 +131,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsErr
 	require.ErrorContains(t, moduleTemplateInfo.Err, "no channels found for module: test-module")
 }
 
-func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_ReturnsError(t *testing.T) {
+func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_ReturnsModuleTemplateInfo(t *testing.T) {
 	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
@@ -139,18 +139,26 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_Retur
 		WithName("test-module").
 		WithMandatory("1.0.0").
 		Build()
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-1.0.0").
+		WithModuleName("test-module").
+		WithMandatory(true).
+		WithVersion("1.0.0").
+		Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
 		&v1beta2.ModuleTemplateList{
-			Items: []v1beta2.ModuleTemplate{},
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
 		},
 	))
 
 	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	require.NotNil(t, moduleTemplateInfo)
-	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	require.ErrorIs(t, moduleTemplateInfo.Err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
-	require.ErrorContains(t, moduleTemplateInfo.Err, "for module test-module in channel regular")
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
 }
 
 func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {

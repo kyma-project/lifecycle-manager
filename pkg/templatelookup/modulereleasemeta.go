@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	ErrChannelNotFound = errors.New("no versions found for channel")
-	ErrNoChannelsFound = errors.New("no channels found for module")
+	ErrChannelNotFound  = errors.New("no versions found for channel")
+	ErrNoChannelsFound  = errors.New("no channels found for module")
+	ErrNoMandatoryFound = errors.New("no mandatory version found for module")
 )
 
 func GetModuleReleaseMeta(ctx context.Context, clnt client.Reader, moduleName string,
@@ -43,4 +44,12 @@ func GetChannelVersionForModule(moduleReleaseMeta *v1beta2.ModuleReleaseMeta, de
 	}
 
 	return "", fmt.Errorf("%w: %s in module %s", ErrChannelNotFound, desiredChannel, moduleReleaseMeta.Name)
+}
+
+func GetMandatoryVersionForModule(moduleReleaseMeta *v1beta2.ModuleReleaseMeta) (string, error) {
+	mandatory := moduleReleaseMeta.Spec.Mandatory
+	if mandatory == nil {
+		return "", fmt.Errorf("%w: %s", ErrNoMandatoryFound, moduleReleaseMeta.Name)
+	}
+	return mandatory.Version, nil
 }
