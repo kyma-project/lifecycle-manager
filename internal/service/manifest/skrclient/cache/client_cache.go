@@ -1,4 +1,4 @@
-package v2
+package cache
 
 import (
 	"crypto/rand"
@@ -6,30 +6,26 @@ import (
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
-)
 
-type ClientCache interface {
-	GetClient(key string) Client
-	AddClient(key string, client Client)
-	DeleteClient(key string)
-}
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+)
 
 const (
 	// TTL is between 23 and 25 hours.
 	ttlInSecondsLower, ttlInSecondsUpper = 23 * 60 * 60, 25 * 60 * 60
 )
 
-type MemoryClientCache struct {
-	internal *ttlcache.Cache[string, Client]
+type Service struct {
+	internal *ttlcache.Cache[string, skrclient.Client]
 }
 
-func NewMemoryClientCache() *MemoryClientCache {
-	cache := &MemoryClientCache{internal: ttlcache.New[string, Client]()}
+func NewService() *Service {
+	cache := &Service{internal: ttlcache.New[string, skrclient.Client]()}
 	go cache.internal.Start()
 	return cache
 }
 
-func (m *MemoryClientCache) GetClient(key string) Client {
+func (m *Service) GetClient(key string) skrclient.Client {
 	cachedClient := m.internal.Get(key)
 	if cachedClient != nil {
 		return cachedClient.Value()
@@ -37,15 +33,15 @@ func (m *MemoryClientCache) GetClient(key string) Client {
 	return nil
 }
 
-func (m *MemoryClientCache) AddClient(key string, value Client) {
+func (m *Service) AddClient(key string, value skrclient.Client) {
 	m.internal.Set(key, value, getRandomTTL())
 }
 
-func (m *MemoryClientCache) DeleteClient(key string) {
+func (m *Service) DeleteClient(key string) {
 	m.internal.Delete(key)
 }
 
-func (m *MemoryClientCache) Size() int {
+func (m *Service) Size() int {
 	return m.internal.Len()
 }
 

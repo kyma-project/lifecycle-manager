@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
 )
 
 const (
@@ -28,7 +29,6 @@ func DefaultOptions() *Options {
 			DisclaimerTransform,
 			DockerImageLocalizationTransform,
 		),
-		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
 		WithManifestParser(NewInMemoryManifestCache(DefaultInMemoryParseTTL)),
 		WithCustomResourceLabels{
@@ -43,7 +43,6 @@ type Options struct {
 	client.Client
 	TargetCluster ClusterFn
 
-	ClientCache
 	ClientCacheKeyFn
 	ManifestParser
 	ManifestCache
@@ -110,18 +109,6 @@ func (o PostRenderTransformOption) Apply(options *Options) {
 	options.PostRenderTransforms = append(options.PostRenderTransforms, o.ObjectTransforms...)
 }
 
-type WithSingletonClientCacheOption struct {
-	ClientCache
-}
-
-func WithSingletonClientCache(cache ClientCache) WithSingletonClientCacheOption {
-	return WithSingletonClientCacheOption{ClientCache: cache}
-}
-
-func (o WithSingletonClientCacheOption) Apply(options *Options) {
-	options.ClientCache = o
-}
-
 type ManifestCache string
 
 type WithManifestCache ManifestCache
@@ -154,7 +141,7 @@ func (o WithCustomStateCheckOption) Apply(options *Options) {
 	options.CustomStateCheck = o
 }
 
-type ClusterFn func(context.Context, Object) (*ClusterInfo, error)
+type ClusterFn func(context.Context, Object) (*skrclient.ClusterInfo, error)
 
 func WithRemoteTargetCluster(configFn ClusterFn) WithRemoteTargetClusterOption {
 	return WithRemoteTargetClusterOption{ClusterFn: configFn}

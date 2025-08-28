@@ -25,6 +25,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -60,6 +61,14 @@ type OrphanDetection interface {
 	DetectOrphanedManifest(ctx context.Context, manifest *v1beta2.Manifest) error
 }
 
+type SKRClientCache interface {
+	GetClient(key string) skrclient.Client
+	AddClient(key string, client skrclient.Client)
+	DeleteClient(key string)
+}
+
+type SKRClientFactory func(clusterInfo *skrclient.ClusterInfo) (*skrclient.Service, error)
+
 type Reconciler struct {
 	queue.RequeueIntervals
 	*Options
@@ -69,11 +78,15 @@ type Reconciler struct {
 	manifestClient             ManifestAPIClient
 	managedLabelRemovalService ManagedByLabelRemoval
 	orphanDetectionService     OrphanDetection
+	skrClientCache             SKRClientCache
+	skrClientFactory           SKRClientFactory
 }
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
-	orphanDetectionClient orphan.DetectionRepository, specResolver SpecResolver, options ...Option,
+	orphanDetectionClient orphan.DetectionRepository, specResolver SpecResolver, clientCache SKRClientCache,
+	clientFactory SKRClientFactory,
+	options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
@@ -83,6 +96,8 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 	reconciler.manifestClient = manifestAPIClient
 	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
 	reconciler.orphanDetectionService = orphan.NewDetectionService(orphanDetectionClient)
+	reconciler.skrClientCache = clientCache
+	reconciler.skrClientFactory = clientFactory
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -184,6 +199,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
+	} else if util.IsConnectionRelatedError(err) {
+		r.invalidateClientCache(ctx, manifest)
+		return r.finishReconcile(ctx, manifest, metrics.ManifestUnauthorized, manifestStatus, err)
 	} else if err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
@@ -294,14 +312,14 @@ func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta
 		if ok {
 			logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
 				clientsCacheKey))
-			r.DeleteClient(clientsCacheKey)
+			r.skrClientCache.DeleteClient(clientsCacheKey)
 		}
 	}
 }
 
-func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
+func (r *Reconciler) renderResources(ctx context.Context, skrClient skrclient.Client, manifest *v1beta2.Manifest,
 	spec *Spec,
-) ([]*resource.Info, []*resource.Info, error) {
+) (ResourceList, ResourceList, error) {
 	manifestStatus := manifest.GetStatus()
 
 	var err error
@@ -309,6 +327,21 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 
 	converter := skrresources.NewDefaultResourceToInfoConverter(skrresources.ResourceInfoConverter(skrClient),
 		apimetav1.NamespaceDefault)
+	if current, err = converter.ResourcesToInfos(manifestStatus.Synced); err != nil {
+		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+		return nil, nil, err
+	}
+
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		allModuleCRsDeleted, err := ensureModuleCRsAllDeleted(ctx, skrClient, manifest)
+		if err != nil {
+			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
+			return nil, nil, err
+		}
+		if allModuleCRsDeleted {
+			return ResourceList{}, current, nil
+		}
+	}
 
 	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
 		if errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion) {
@@ -320,16 +353,21 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient Client, mani
 		return nil, nil, err
 	}
 
-	current, err = converter.ResourcesToInfos(manifestStatus.Synced)
-	if err != nil {
-		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
-		return nil, nil, err
-	}
 	status.ConfirmResourcesCondition(manifest)
 	return target, current, nil
 }
 
-func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, manifest *v1beta2.Manifest,
+func ensureModuleCRsAllDeleted(ctx context.Context, skrClient skrclient.Client, manifest *v1beta2.Manifest) (bool,
+	error,
+) {
+	if err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest); err != nil {
+		return false, err
+	}
+
+	return modulecr.NewClient(skrClient).CheckDefaultCRDeletion(ctx, manifest)
+}
+
+func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.Client, manifest *v1beta2.Manifest,
 	target []*resource.Info,
 ) error {
 	manifestStatus := manifest.GetStatus()
@@ -360,7 +398,8 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient Client, ma
 	return nil
 }
 
-func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target []*resource.Info) (shared.State,
+func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Client,
+	target []*resource.Info) (shared.State,
 	error,
 ) {
 	managerReadyCheck := r.CustomStateCheck
@@ -377,20 +416,6 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt Client, target 
 func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client.Client,
 	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
 ) ([]*resource.Info, error) {
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		if err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest); err != nil {
-			return nil, err
-		}
-
-		defaultCRDeleted, err := modulecr.NewClient(skrClient).CheckDefaultCRDeletion(ctx, manifest)
-		if err != nil {
-			return nil, err
-		}
-		if defaultCRDeleted {
-			return ResourceList{}, nil
-		}
-	}
-
 	targetResources, err := r.Parse(spec)
 	if err != nil {
 		return nil, err
@@ -410,7 +435,7 @@ func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client
 	return target, nil
 }
 
-func (r *Reconciler) pruneDiff(ctx context.Context, clnt Client, manifest *v1beta2.Manifest,
+func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manifest *v1beta2.Manifest,
 	current, target []*resource.Info, spec *Spec,
 ) error {
 	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
@@ -485,16 +510,16 @@ func pruneResource(diff []*resource.Info, resourceType string, resourceName stri
 	return diff, nil
 }
 
-func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Manifest) (Client, error) {
+func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Manifest) (skrclient.Client, error) {
 	var err error
-	var clnt Client
+	var clnt skrclient.Client
 	if r.ClientCacheKeyFn == nil {
 		return r.configClient(ctx, manifest)
 	}
 
 	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, manifest)
 	if found {
-		clnt = r.GetClient(clientsCacheKey)
+		clnt = r.skrClientCache.GetClient(clientsCacheKey)
 	}
 
 	if clnt == nil {
@@ -502,16 +527,16 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 		if err != nil {
 			return nil, err
 		}
-		r.AddClient(clientsCacheKey, clnt)
+		r.skrClientCache.AddClient(clientsCacheKey, clnt)
 	}
 
 	return clnt, nil
 }
 
-func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifest) (Client, error) {
+func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifest) (skrclient.Client, error) {
 	var err error
 
-	cluster := &ClusterInfo{
+	cluster := &skrclient.ClusterInfo{
 		Config: r.Config,
 		Client: r.Client,
 	}
@@ -523,7 +548,7 @@ func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifes
 		}
 	}
 
-	clnt, err := NewSingletonClients(cluster)
+	clnt, err := r.skrClientFactory(cluster)
 	if err != nil {
 		return nil, err
 	}

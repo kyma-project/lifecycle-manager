@@ -50,14 +50,17 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -160,9 +163,10 @@ var _ = BeforeSuite(func() {
 		Warning: 1 * time.Second,
 	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
 		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
+		skrclientcache.NewService(), skrclient.NewService,
 		declarativev2.WithRemoteTargetCluster(
-			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
-				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
+			func(_ context.Context, _ declarativev2.Object) (*skrclient.ClusterInfo, error) {
+				return &skrclient.ClusterInfo{Config: authUser.Config()}, nil
 			},
 		), manifest.WithClientCacheKey(), declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
 

@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
@@ -19,8 +20,10 @@ func NewReconciler(mgr manager.Manager,
 	manifestClient declarativev2.ManifestAPIClient,
 	orphanDetectionClient orphan.DetectionRepository,
 	specResolver *spec.Resolver,
+	clientCache declarativev2.SKRClientCache,
+	clientFactory declarativev2.SKRClientFactory,
 ) *declarativev2.Reconciler {
-	kcp := &declarativev2.ClusterInfo{
+	kcp := &skrclient.ClusterInfo{
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
@@ -30,6 +33,8 @@ func NewReconciler(mgr manager.Manager,
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient, orphanDetectionClient,
 		specResolver,
+		clientCache,
+		clientFactory,
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),

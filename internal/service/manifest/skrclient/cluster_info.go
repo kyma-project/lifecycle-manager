@@ -1,4 +1,4 @@
-package v2
+package skrclient
 
 import (
 	"k8s.io/client-go/rest"

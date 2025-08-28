@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
@@ -140,7 +140,7 @@ func verifyDeploymentInstallation(ctx context.Context, clnt client.Client, deplo
 	return nil
 }
 
-func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiappsv1.Deployment) ([]*resource.Info,
+func prepareResourceInfosForCustomCheck(clt skrclient.Client, deploy *apiappsv1.Deployment) ([]*resource.Info,
 	error,
 ) {
 	deployUnstructuredObj, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(deploy)
@@ -157,13 +157,13 @@ func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiapp
 	return []*resource.Info{deployInfo}, nil
 }
 
-func declarativeTestClient(clnt client.Client) (declarativev2.Client, error) {
-	cluster := &declarativev2.ClusterInfo{
+func declarativeTestClient(clnt client.Client) (skrclient.Client, error) {
+	cluster := &skrclient.ClusterInfo{
 		Config: cfg,
 		Client: clnt,
 	}
 
-	return declarativev2.NewSingletonClients(cluster)
+	return skrclient.NewService(cluster)
 }
 
 func asResource(name, namespace, group, version, kind string) shared.Resource {

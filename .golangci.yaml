@@ -127,6 +127,8 @@ linters:
           alias: certmanagercertificate
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate
           alias: gcmcertificate
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache
+          alias: skrclientcache
       no-unaliased: true
       no-extra-aliases: true
     ireturn:

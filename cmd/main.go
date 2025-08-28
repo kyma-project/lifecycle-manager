@@ -75,6 +75,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -457,6 +459,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
+	clientCache := skrclientcache.NewService()
 	if err := manifest.SetupWithManager(
 		mgr, options, queue.RequeueIntervals{
 			Success: flagVar.ManifestRequeueSuccessInterval,
@@ -469,8 +472,7 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 			ListenerAddr:                 flagVar.ManifestListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
-		manifestClient, orphanDetectionClient, specResolver,
-	); err != nil {
+		manifestClient, orphanDetectionClient, specResolver, clientCache, skrclient.NewService); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -480,7 +482,10 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 func keychainLookupFromFlag(mgr ctrl.Manager, flagVar *flags.FlagVar) spec.KeyChainLookup {
 	if flagVar.OciRegistryCredSecretName != "" {
 		return keychainprovider.NewFromSecretKeyChainProvider(mgr.GetClient(),
-			types.NamespacedName{Namespace: shared.DefaultControlPlaneNamespace, Name: flagVar.OciRegistryCredSecretName})
+			types.NamespacedName{
+				Namespace: shared.DefaultControlPlaneNamespace,
+				Name:      flagVar.OciRegistryCredSecretName,
+			})
 	}
 	return keychainprovider.NewDefaultKeyChainProvider()
 }

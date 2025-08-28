@@ -1,12 +1,14 @@
-package v2
+package skrclient
 
 import (
 	"fmt"
 	"net/http"
 	"sync"
 
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
@@ -25,12 +27,30 @@ const (
 	api  = "/api"
 )
 
-// SingletonClients serves as a single-minded client interface that combines
+type Client interface {
+	resource.RESTClientGetter
+	skrresources.ResourceInfoConverter
+
+	client.Client
+}
+
+type MappingResolver func(obj machineryruntime.Object, mapper meta.RESTMapper, retryOnNoMatch bool) (*meta.RESTMapping,
+	error,
+)
+
+type ResourceInfoClientResolver func(obj *unstructured.Unstructured,
+	s *Service,
+	mapping *meta.RESTMapping,
+) (resource.RESTClient,
+	error,
+)
+
+// Service serves as a single-minded client interface that combines
 // all kubernetes Client APIs (Kubernetes, Client-Go) under the hood.
 // It offers a simple initialization lifecycle during creation, but delegates all
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
-type SingletonClients struct {
+type Service struct {
 	httpClient *http.Client
 
 	// controller runtime client
@@ -61,14 +81,17 @@ type SingletonClients struct {
 	// GVK based unstructured Client Cache
 	unstructuredSyncLock        sync.Mutex
 	unstructuredRESTClientCache map[string]resource.RESTClient
+
+	mappingResolver            MappingResolver
+	resourceInfoClientResolver ResourceInfoClientResolver
 }
 
-func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
+func NewService(info *ClusterInfo) (*Service, error) {
 	if err := setKubernetesDefaults(info.Config); err != nil {
 		return nil, err
 	}
 
-	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache. SingletonClients are cached anyways.
+	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache. Service are cached anyways.
 	info.Config.Proxy = http.ProxyFromEnvironment
 
 	httpClient, err := rest.HTTPClientFor(info.Config)
@@ -94,7 +117,7 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 	runtimeClient := info.Client
 	if info.Client == nil {
 		// For all other cases where a client instance is not passed, create a client proxy.
-		runtimeClient, err = NewClientProxy(info.Config, discoveryShortcutExpander)
+		runtimeClient, err = newClientProxy(info.Config, discoveryShortcutExpander)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +134,7 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 
 	openAPIGetter := openapi.NewOpenAPIGetter(cachedDiscoveryClient)
 
-	clients := &SingletonClients{
+	clients := &Service{
 		httpClient:                  httpClient,
 		config:                      info.Config,
 		discoveryClient:             cachedDiscoveryClient,
@@ -123,19 +146,51 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 		structuredRESTClientCache:   map[string]resource.RESTClient{},
 		unstructuredRESTClientCache: map[string]resource.RESTClient{},
 		Client:                      runtimeClient,
+		mappingResolver:             getResourceMapping,
+		resourceInfoClientResolver:  getResourceInfoClient,
 	}
 
 	return clients, nil
 }
 
-func (s *SingletonClients) ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bool) (*resource.Info, error) {
-	mapping, err := getResourceMapping(obj, s.discoveryShortcutExpander, retryOnNoMatch)
+// Add these methods to the Service struct
+func (s *Service) SetMappingResolver(resolver MappingResolver) {
+	s.mappingResolver = resolver
+}
+
+func (s *Service) SetResourceInfoClientResolver(resolver ResourceInfoClientResolver) {
+	s.resourceInfoClientResolver = resolver
+}
+
+func (s *Service) ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bool) (*resource.Info, error) {
+	mapping, err := s.mappingResolver(obj, s.discoveryShortcutExpander, retryOnNoMatch)
 	if err != nil {
 		return nil, err
 	}
-	info := &resource.Info{}
 
+	clnt, err := s.resourceInfoClientResolver(obj, s, mapping)
+	if err != nil {
+		return nil, err
+	}
+
+	info := &resource.Info{}
+	info.Client = clnt
+	info.Mapping = mapping
+	info.Namespace = obj.GetNamespace()
+	info.Name = obj.GetName()
+	info.Object = obj
+	info.ResourceVersion = obj.GetResourceVersion()
+	return info, nil
+}
+
+func getResourceInfoClient(obj *unstructured.Unstructured,
+	s *Service,
+	mapping *meta.RESTMapping,
+) (resource.RESTClient,
+	error,
+) {
 	var clnt resource.RESTClient
+	var err error
 	if s.Scheme().IsGroupRegistered(mapping.GroupVersionKind.Group) {
 		clnt, err = s.ClientForMapping(mapping)
 		if err != nil {
@@ -148,21 +203,7 @@ func (s *SingletonClients) ResourceInfo(obj *unstructured.Unstructured, retryOnN
 		}
 		obj.SetGroupVersionKind(mapping.GroupVersionKind)
 	}
-
-	info.Client = clnt
-	info.Mapping = mapping
-	info.Namespace = obj.GetNamespace()
-	info.Name = obj.GetName()
-	info.Object = obj
-	info.ResourceVersion = obj.GetResourceVersion()
-	return info, nil
-}
-
-func (s *SingletonClients) clientCacheKeyForMapping(mapping *meta.RESTMapping) string {
-	return fmt.Sprintf(
-		"%s+%s:%s",
-		mapping.Resource.String(), mapping.GroupVersionKind.String(), mapping.Scope.Name(),
-	)
+	return clnt, nil
 }
 
 func setKubernetesDefaults(config *rest.Config) error {
@@ -182,4 +223,27 @@ func setKubernetesDefaults(config *rest.Config) error {
 		return fmt.Errorf("failed to create kubernetes default config: %w", err)
 	}
 	return nil
+}
+
+func getResourceMapping(obj machineryruntime.Object, mapper meta.RESTMapper, retryOnNoMatch bool) (*meta.RESTMapping,
+	error,
+) {
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if gvk.Empty() {
+		return mapping, nil
+	}
+
+	if retryOnNoMatch && meta.IsNoMatchError(err) {
+		// reset mapper if a NoMatchError is reported on the first call
+		meta.MaybeResetRESTMapper(mapper)
+		// return second call after reset
+		mapping, err = mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed rest mapping [%v, %v]: %w", gvk.GroupKind(), gvk.Version, err)
+	}
+
+	return mapping, nil
 }

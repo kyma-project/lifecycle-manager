@@ -11,12 +11,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
 )
 
 type RESTConfigGetter func() (*rest.Config, error)
 
 type RemoteClusterLookup struct {
-	KCP          *declarativev2.ClusterInfo
+	KCP          *skrclient.ClusterInfo
 	ConfigGetter RESTConfigGetter
 }
 
@@ -24,7 +25,7 @@ var errTypeAssertManifest = errors.New("value can not be converted to v1beta2.Ma
 
 func (r *RemoteClusterLookup) ConfigResolver(
 	ctx context.Context, obj declarativev2.Object,
-) (*declarativev2.ClusterInfo, error) {
+) (*skrclient.ClusterInfo, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, errTypeAssertManifest
@@ -61,5 +62,5 @@ func (r *RemoteClusterLookup) ConfigResolver(
 	config.QPS = r.KCP.Config.QPS
 	config.Burst = r.KCP.Config.Burst
 
-	return &declarativev2.ClusterInfo{Config: config}, nil
+	return &skrclient.ClusterInfo{Config: config}, nil
 }
