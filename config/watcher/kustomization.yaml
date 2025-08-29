@@ -17,10 +17,10 @@ patches:
         value: --skr-watcher-path=/skr-webhook
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-watcher-image-tag=latest
+        value: --skr-watcher-image-tag=2.0.0
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-watcher-image-registry=docker.io/mmesaoudi
+        value: --skr-watcher-image-registry=europe-docker.pkg.dev/kyma-project/prod
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-domain-name-pinning=true
