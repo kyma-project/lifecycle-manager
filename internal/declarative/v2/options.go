@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 const (

@@ -16,7 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 

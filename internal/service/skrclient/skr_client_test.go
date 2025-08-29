@@ -11,7 +11,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/rest"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 // fakeMappingResolver returns a static RESTMapping for testing.

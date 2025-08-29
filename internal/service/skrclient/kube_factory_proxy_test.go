@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 func TestUnstructuredClientForMapping_CachesAndSeparatesByGroup(t *testing.T) {

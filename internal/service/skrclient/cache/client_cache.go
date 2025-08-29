@@ -7,7 +7,7 @@ import (
 
 	"github.com/jellydator/ttlcache/v3"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 const (

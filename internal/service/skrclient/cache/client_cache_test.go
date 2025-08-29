@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 )
 
 func TestService_Basic(t *testing.T) {

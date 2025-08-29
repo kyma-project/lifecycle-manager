@@ -9,7 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 

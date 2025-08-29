@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
-	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 
