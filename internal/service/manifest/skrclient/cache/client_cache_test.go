@@ -3,8 +3,9 @@ package cache_test
 import (
 	"testing"
 
-	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
 	"github.com/stretchr/testify/require"
+
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
 )
 
 func TestService_Basic(t *testing.T) {
