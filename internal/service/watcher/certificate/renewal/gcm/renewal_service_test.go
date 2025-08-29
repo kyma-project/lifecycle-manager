@@ -98,7 +98,7 @@ func TestRenew_WhenRepoReturnsNilCertificate_ReturnsError(t *testing.T) {
 	service := gcm.NewService(certRepo)
 	certName := random.Name()
 
-	err := service.Renew(context.Background(), certName)
+	err := service.Renew(t.Context(), certName)
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "could not get certificate for renewal")
