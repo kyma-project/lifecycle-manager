@@ -208,9 +208,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info(fmt.Sprintf("manifest is in deleting state, before prune diff: current %d, target %d",
-			len(current), len(target)))
+	if !manifest.GetDeletionTimestamp().IsZero() && len(current) == 0 {
+		r.invalidateClientCache(ctx, manifest)
 	}
 
 	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
