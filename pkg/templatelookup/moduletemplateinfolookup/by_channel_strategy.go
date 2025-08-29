@@ -11,6 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 var ErrNotDefaultChannelAllowed = errors.New("specifying no default channel is not allowed")
@@ -89,12 +90,7 @@ func (s ByChannelStrategy) filterTemplatesByChannel(ctx context.Context, name, d
 
 	if len(filteredTemplates) == 0 {
 		return nil, fmt.Errorf("%w: for module %s in channel %s ",
-			ErrNoTemplatesInListResult, name, desiredChannel)
-	}
-
-	if filteredTemplates[0].Spec.Mandatory {
-		return nil, fmt.Errorf("%w: for module %s in channel %s",
-			ErrTemplateMarkedAsMandatory, name, desiredChannel)
+			common.ErrNoTemplatesInListResult, name, desiredChannel)
 	}
 
 	return filteredTemplates[0], nil

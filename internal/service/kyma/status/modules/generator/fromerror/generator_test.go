@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
@@ -53,6 +54,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.Maintenance = true
@@ -75,6 +77,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateError
@@ -97,6 +100,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+
 	expectedStatus := status.DeepCopy()
 	expectedStatus.Message = templateError.Error()
 	expectedStatus.State = shared.StateWarning
@@ -113,7 +117,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultErro
 	expectedChannel := "some-channel"
 	expectedFQDN := "some-fqdn"
 	status := createStatus()
-	templateError := moduletemplateinfolookup.ErrNoTemplatesInListResult
+	templateError := common.ErrNoTemplatesInListResult
 
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, expectedModuleName, expectedChannel,
 		expectedFQDN, status)

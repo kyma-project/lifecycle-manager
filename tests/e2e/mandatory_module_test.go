@@ -46,12 +46,25 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 						shared.EnableLabelValue).
 					Should(Succeed())
 			})
+			By("And the Mandatory ModuleReleaseMeta is configured correctly", func() {
+				Eventually(MandatoryModuleReleaseMetaHasVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "1.1.0-smoke-test").
+					Should(Succeed())
+			})
 
 			By("And the mandatory ModuleTemplate is not synchronised to the SKR cluster", func() {
 				Consistently(CheckIfExists).
 					WithContext(ctx).
-					WithArguments("template-operator-mandatory", RemoteNamespace,
+					WithArguments("template-operator", RemoteNamespace,
 						shared.OperatorGroup, "v1beta2", string(shared.ModuleTemplateKind), skrClient).
+					Should(Not(Succeed()))
+			})
+			By("And the mandatory ModuleReleaseMeta is not synchronised to the SKR cluster", func() {
+				Consistently(CheckIfExists).
+					WithContext(ctx).
+					WithArguments("template-operator", RemoteNamespace,
+						shared.OperatorGroup, "v1beta2", string(shared.ModuleReleaseMetaKind), skrClient).
 					Should(Not(Succeed()))
 			})
 
@@ -134,37 +147,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 
 			By("And the KCP Kyma CR is in a \"Ready\" State", func() {
 				Consistently(KymaIsInState).
-					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
-					Should(Succeed())
-			})
-		})
-
-		It("When mandatory Module is enabled on SKR Kyma CR", func() {
-			Eventually(EnableModule).
-				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, v1beta2.Module{
-					Name:    TestModuleName,
-					Channel: v1beta2.DefaultChannel,
-					Managed: true,
-				}).
-				Should(Succeed())
-		})
-		It("Then Kyma is in a \"Warning\" State", func() {
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
-				Should(Succeed())
-		})
-
-		It("When mandatory Module is disabled on SKR Kyma CR", func() {
-			Eventually(DisableModule).
-				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, TestModuleName).
-				Should(Succeed())
-
-			By("Then Kyma is back in a \"Ready\" State", func() {
-				Eventually(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 					Should(Succeed())

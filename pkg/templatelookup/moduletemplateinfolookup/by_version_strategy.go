@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 // ByVersionStrategy looks up the module template for a given version-based installation.
@@ -72,11 +73,7 @@ func (s ByVersionStrategy) filterTemplatesByVersion(ctx context.Context, name, v
 	}
 	if len(filteredTemplates) == 0 {
 		return nil, fmt.Errorf("%w: for module %s in version %s",
-			ErrNoTemplatesInListResult, name, version)
-	}
-	if filteredTemplates[0].Spec.Mandatory {
-		return nil, fmt.Errorf("%w: for module %s in version %s",
-			ErrTemplateMarkedAsMandatory, name, version)
+			common.ErrNoTemplatesInListResult, name, version)
 	}
 	return filteredTemplates[0], nil
 }
