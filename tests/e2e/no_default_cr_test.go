@@ -2,9 +2,11 @@ package e2e_test
 
 import (
 	"context"
+	"os/exec"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -55,6 +57,77 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("When a blocking finalizer is added to the Manifest CR", func() {
+			Eventually(AddFinalizerToManifest).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					"blocking-finalizer").
+				Should(Succeed())
+
+			By("And Manifest CR has deletion timestamp set")
+			Eventually(DeleteManifest).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Succeed())
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateDeleting).
+				Should(Succeed())
+		})
+
+		It("Then KCP Kyma CR is deleted", func() {
+			Eventually(DeleteKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
+				Should(Succeed())
+		})
+
+		It("Then KCP Kyma CR still exists", func() {
+			Eventually(KymaExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace()).
+				Should(Equal(ErrDeletionTimestampFound))
+		})
+
+		It("When SKR Cluster is removed", func() {
+			cmd := exec.Command("sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
+			out, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+			cmd = exec.Command("k3d", "cluster", "rm", "skr")
+			out, err = cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+		})
+
+		It("Then KCP Kyma CR is in \"Error\" State", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
+				Should(Succeed())
+		})
+
+		It("When Kubeconfig Secret is deleted", func() {
+			Eventually(DeleteKymaSecret).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+				Should(Succeed())
+		})
+
+		It("Then Manifest CR is deleted", func() {
+			Eventually(ManifestExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Equal(ErrNotFound))
+
+			By("And KCP Kyma CR is deleted")
+			Eventually(KymaDeleted).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
 		})
 	})

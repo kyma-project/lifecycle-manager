@@ -41,6 +41,8 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 	settings SetupOptions, manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestClient declarativev2.ManifestAPIClient,
 	orphanDetectionClient orphan.DetectionRepository, specResolver *spec.Resolver,
+	clientCache declarativev2.SKRClientCache,
+	clientFactory declarativev2.SKRClientFactory,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -86,7 +88,7 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
 		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-			manifestClient, orphanDetectionClient, specResolver)); err != nil {
+			manifestClient, orphanDetectionClient, specResolver, clientCache, clientFactory)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

@@ -221,6 +221,10 @@ func (r *Reconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, e
 
 func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
+	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, queue.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
 	r.cleanupMetrics(kyma.Name)
 	r.removeAllFinalizers(kyma)
 

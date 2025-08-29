@@ -1,4 +1,4 @@
-package v2
+package skrclient
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 // Checking compliance with the interface methods implemented below.
-var _ client.Client = &SingletonClients{}
+var _ client.Client = &Service{}
 
 // ProxyClient holds information required to proxy Client requests to verify RESTMapper integrity.
 // During the proxy, the underlying mapper verifies mapping for the calling resource.
@@ -24,8 +24,8 @@ type ProxyClient struct {
 	baseClient client.Client
 }
 
-// NewClientProxy returns a new instance of ProxyClient.
-func NewClientProxy(config *rest.Config, mapper meta.RESTMapper) (client.Client, error) {
+// newClientProxy returns a new instance of ProxyClient.
+func newClientProxy(config *rest.Config, mapper meta.RESTMapper) (client.Client, error) {
 	baseClient, err := client.New(config, client.Options{Mapper: mapper})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client proxy: %w", err)
