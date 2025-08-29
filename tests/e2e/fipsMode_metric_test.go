@@ -9,7 +9,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 )
 
-
 var _ = Describe("FIPS Mode metric", Ordered, func() {
 
 	Context("Given KCP Cluster", func() {
