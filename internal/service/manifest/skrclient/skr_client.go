@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +19,8 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/kubectl/pkg/util/openapi"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 )
 
 const (
@@ -153,7 +154,6 @@ func NewService(info *ClusterInfo) (*Service, error) {
 	return clients, nil
 }
 
-// Add these methods to the Service struct
 func (s *Service) SetMappingResolver(resolver MappingResolver) {
 	s.mappingResolver = resolver
 }
@@ -184,20 +184,20 @@ func (s *Service) ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bo
 }
 
 func getResourceInfoClient(obj *unstructured.Unstructured,
-	s *Service,
+	service *Service,
 	mapping *meta.RESTMapping,
 ) (resource.RESTClient,
 	error,
 ) {
 	var clnt resource.RESTClient
 	var err error
-	if s.Scheme().IsGroupRegistered(mapping.GroupVersionKind.Group) {
-		clnt, err = s.ClientForMapping(mapping)
+	if service.Scheme().IsGroupRegistered(mapping.GroupVersionKind.Group) {
+		clnt, err = service.ClientForMapping(mapping)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		clnt, err = s.UnstructuredClientForMapping(mapping)
+		clnt, err = service.UnstructuredClientForMapping(mapping)
 		if err != nil {
 			return nil, err
 		}

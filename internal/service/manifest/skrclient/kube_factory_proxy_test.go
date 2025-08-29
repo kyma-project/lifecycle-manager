@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
 	apicorev1 "k8s.io/api/core/v1"
-	metapkg "k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient"
 )
 
 func TestUnstructuredClientForMapping_CachesAndSeparatesByGroup(t *testing.T) {
@@ -22,7 +22,7 @@ func TestUnstructuredClientForMapping_CachesAndSeparatesByGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, svc)
 
-	coreMapping := &metapkg.RESTMapping{
+	coreMapping := &meta.RESTMapping{
 		Resource: schema.GroupVersionResource{
 			Group:    apicorev1.GroupName,
 			Version:  "v1",
@@ -33,19 +33,19 @@ func TestUnstructuredClientForMapping_CachesAndSeparatesByGroup(t *testing.T) {
 			Version: "v1",
 			Kind:    "Pod",
 		},
-		Scope: metapkg.RESTScopeNamespace,
+		Scope: meta.RESTScopeNamespace,
 	}
 
-	c1, err := svc.UnstructuredClientForMapping(coreMapping)
+	clnt1, err := svc.UnstructuredClientForMapping(coreMapping)
 	require.NoError(t, err)
-	require.NotNil(t, c1)
+	require.NotNil(t, clnt1)
 
-	c2, err := svc.UnstructuredClientForMapping(coreMapping)
+	clnt2, err := svc.UnstructuredClientForMapping(coreMapping)
 	require.NoError(t, err)
-	require.NotNil(t, c2)
-	require.Equal(t, c1, c2, "expected cached client to be returned on second call, but got a different instance")
+	require.NotNil(t, clnt2)
+	require.Equal(t, clnt1, clnt2, "expected cached client to be returned on second call, but got a different instance")
 
-	otherMapping := &metapkg.RESTMapping{
+	otherMapping := &meta.RESTMapping{
 		Resource: schema.GroupVersionResource{
 			Group:    "mygroup.example.com",
 			Version:  "v1alpha1",
@@ -56,11 +56,11 @@ func TestUnstructuredClientForMapping_CachesAndSeparatesByGroup(t *testing.T) {
 			Version: "v1alpha1",
 			Kind:    "MyKind",
 		},
-		Scope: metapkg.RESTScopeRoot,
+		Scope: meta.RESTScopeRoot,
 	}
 
-	c3, err := svc.UnstructuredClientForMapping(otherMapping)
+	clnt3, err := svc.UnstructuredClientForMapping(otherMapping)
 	require.NoError(t, err)
-	require.NotNil(t, c3)
-	require.NotEqual(t, c1, c3, "expected different client instances for different mapping groups")
+	require.NotNil(t, clnt3)
+	require.NotEqual(t, clnt1, clnt3, "expected different client instances for different mapping groups")
 }

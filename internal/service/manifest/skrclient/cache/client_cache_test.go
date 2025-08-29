@@ -3,11 +3,11 @@ package cache_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
 )
 
 func TestService_Basic(t *testing.T) {
-	svc := cache.NewService()
+	svc := skrclientcache.NewService()
 
 	if got := svc.Size(); got != 0 {
 		t.Fatalf("expected size 0, got %d", got)

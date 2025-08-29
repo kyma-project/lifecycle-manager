@@ -53,7 +53,8 @@ type ManagedByLabelRemoval interface {
 type ManifestAPIClient interface {
 	UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error
 	PatchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest,
-		previousStatus shared.Status) error
+		previousStatus shared.Status,
+	) error
 	SsaSpec(ctx context.Context, obj client.Object) error
 }
 
@@ -343,7 +344,7 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient skrclient.Cl
 		}
 	}
 
-	if target, err = r.renderTargetResources(ctx, skrClient, converter, manifest, spec); err != nil {
+	if target, err = r.renderTargetResources(ctx, converter, manifest, spec); err != nil {
 		if errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion) {
 			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
 				WithOperation("waiting for module crs deletion"))
@@ -399,7 +400,8 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.
 }
 
 func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Client,
-	target []*resource.Info) (shared.State,
+	target []*resource.Info,
+) (shared.State,
 	error,
 ) {
 	managerReadyCheck := r.CustomStateCheck
@@ -413,8 +415,10 @@ func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Clien
 	return managerState, nil
 }
 
-func (r *Reconciler) renderTargetResources(ctx context.Context, skrClient client.Client,
-	converter skrresources.ResourceToInfoConverter, manifest *v1beta2.Manifest, spec *Spec,
+func (r *Reconciler) renderTargetResources(ctx context.Context,
+	converter skrresources.ResourceToInfoConverter,
+	manifest *v1beta2.Manifest,
+	spec *Spec,
 ) ([]*resource.Info, error) {
 	targetResources, err := r.Parse(spec)
 	if err != nil {
