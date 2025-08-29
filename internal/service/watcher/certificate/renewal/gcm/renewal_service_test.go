@@ -196,7 +196,13 @@ func TestRenewSkrCertificate_WhenGatewaySecretHasInvalidLastModified_CallsRenewa
 
 func TestSkrSecretNeedsRenewal_WhenSkrSecretHasNoRequestedAt_ReturnsTrue(t *testing.T) {
 	renewalService := gcm.NewService(nil)
-	gatewaySecret := &apicorev1.Secret{}
+	gatewaySecret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{
+				shared.LastModifiedAtAnnotation: time.Now().Format(time.RFC3339),
+			},
+		},
+	}
 	skrSecret := &apicorev1.Secret{ // skr secret, no requestedAt
 		ObjectMeta: apimetav1.ObjectMeta{
 			Annotations: map[string]string{},
@@ -210,7 +216,13 @@ func TestSkrSecretNeedsRenewal_WhenSkrSecretHasNoRequestedAt_ReturnsTrue(t *test
 
 func TestRenewSkrCertificate_WhenSkrSecretHasInvalidRequestedAt_ReturnsTrue(t *testing.T) {
 	renewalService := gcm.NewService(nil)
-	gatewaySecret := &apicorev1.Secret{}
+	gatewaySecret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Annotations: map[string]string{
+				shared.LastModifiedAtAnnotation: time.Now().Format(time.RFC3339),
+			},
+		},
+	}
 	skrSecret := &apicorev1.Secret{ // skr secret, invalid requestedAt
 		ObjectMeta: apimetav1.ObjectMeta{
 			Annotations: map[string]string{
