@@ -4,7 +4,7 @@ go 1.24.6
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	k8s.io/apimachinery v0.34.0
 	sigs.k8s.io/controller-runtime v0.21.0
 )
