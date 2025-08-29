@@ -22,6 +22,7 @@ var (
 
 type RenewalService interface {
 	Renew(ctx context.Context, name string) error
+	SkrSecretNeedsRenewal(gatewaySecret, skrSecret *apicorev1.Secret) bool
 }
 
 type CertificateRepository interface {
@@ -91,8 +92,7 @@ func (c *Service) DeleteSkrCertificate(ctx context.Context, kymaName string) err
 	return nil
 }
 
-// RenewSkrCertificate checks if the gateway certificate secret has been rotated. If so, it renews
-// the SKR certificate by removing its certificate secret which will trigger a new certificate to be issued.
+// RenewSkrCertificate checks if the gateway certificate secret has been rotated. If so, it renews the SKR certificate.
 func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) error {
 	gatewaySecret, err := c.secretRepo.Get(ctx, c.config.GatewaySecretName)
 	if err != nil {
@@ -104,7 +104,7 @@ func (c *Service) RenewSkrCertificate(ctx context.Context, kymaName string) erro
 		return fmt.Errorf("failed to get SKR certificate secret: %w", err)
 	}
 
-	if !skrSecretRequiresRenewal(gatewaySecret, skrCertificateSecret) {
+	if !c.renewalService.SkrSecretNeedsRenewal(gatewaySecret, skrCertificateSecret) {
 		return nil
 	}
 
@@ -167,23 +167,6 @@ func (c *Service) GetGatewayCertificateSecretData(ctx context.Context) (*data.Ga
 	}
 
 	return data.NewGatewaySecretData(gatewayCertSecret)
-}
-
-// renewal is required if the gateway certificate secret is newer than the SKR certificate secret.
-func skrSecretRequiresRenewal(gatewaySecret *apicorev1.Secret, skrSecret *apicorev1.Secret) bool {
-	gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
-	// always renew if the annotation is not set
-	if !ok {
-		return true
-	}
-
-	gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue)
-	// always renew if unable to parse
-	if err != nil {
-		return true
-	}
-
-	return skrSecret.CreationTimestamp.Time.Before(gwSecretLastModifiedAt)
 }
 
 // DNS names are

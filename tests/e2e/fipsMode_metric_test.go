@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("FIPS Mode metric", Ordered, func() {
-
 	Context("Given KCP Cluster", func() {
 		It("When KLM is initialized", func() {
 			By("Then fipsMode metrics is set to \"enabled\"")
