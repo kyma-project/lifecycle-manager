@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -56,6 +57,39 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
+		})
+
+		It("When a blocking finalizer is added to the Manifest CR", func() {
+			Eventually(AddFinalizerToManifest).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					"blocking-finalizer").
+				Should(Succeed())
+
+			By("And Manifest CR has deletion timestamp set")
+			Eventually(DeleteManifest).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Succeed())
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateDeleting).
+				Should(Succeed())
+		})
+
+		It("Then KCP Kyma CR is deleted", func() {
+			Eventually(DeleteKyma).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma, apimetav1.DeletePropagationBackground).
+				Should(Succeed())
+		})
+
+		It("Then KCP Kyma CR still exists", func() {
+			Eventually(KymaExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace()).
+				Should(Equal(ErrDeletionTimestampFound))
 		})
 	})
 })

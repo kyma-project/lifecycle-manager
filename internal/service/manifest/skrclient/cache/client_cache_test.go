@@ -4,35 +4,24 @@ import (
 	"testing"
 
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/manifest/skrclient/cache"
+	"github.com/stretchr/testify/require"
 )
 
 func TestService_Basic(t *testing.T) {
 	svc := skrclientcache.NewService()
 
-	if got := svc.Size(); got != 0 {
-		t.Fatalf("expected size 0, got %d", got)
-	}
+	require.Equal(t, 0, svc.Size(), "expected size 0")
 
 	svc.AddClient("a", nil)
-	if got := svc.Size(); got != 1 {
-		t.Fatalf("expected size 1 after add, got %d", got)
-	}
+	require.Equal(t, 1, svc.Size(), "expected size 1 after add")
 
-	if val := svc.GetClient("a"); val != nil {
-		t.Fatalf("expected nil client value, got %#v", val)
-	}
+	require.Nil(t, svc.GetClient("a"), "expected nil client value")
 
 	svc.AddClient("b", nil)
-	if got := svc.Size(); got != 2 {
-		t.Fatalf("expected size 2 after second add, got %d", got)
-	}
+	require.Equal(t, 2, svc.Size(), "expected size 2 after second add")
 
 	svc.DeleteClient("a")
-	if got := svc.Size(); got != 1 {
-		t.Fatalf("expected size 1 after delete, got %d", got)
-	}
+	require.Equal(t, 1, svc.Size(), "expected size 1 after delete")
 
-	if val := svc.GetClient("a"); val != nil {
-		t.Fatalf("expected nil for deleted key, got %#v", val)
-	}
+	require.Nil(t, svc.GetClient("a"), "expected nil for deleted key")
 }
