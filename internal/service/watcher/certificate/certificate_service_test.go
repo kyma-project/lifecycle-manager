@@ -178,29 +178,8 @@ func TestDeleteSkrCertificate_SecretRepositoryReturnsError_ReturnsError(t *testi
 }
 
 func TestRenewSkrCertificate_WhenSecretsIndicateRenew_CallsRenewalServiceRenew(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{
-			{ // gateway secret, modified now
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      gatewaySecretName,
-					Namespace: certNamespace,
-					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: time.Now().Format(time.RFC3339),
-					},
-				},
-			},
-			{ // skr secret, created a minute ago
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      kymaName + expectedCertNameSuffix,
-					Namespace: certNamespace,
-					CreationTimestamp: apimetav1.Time{
-						Time: time.Now().Add(-time.Minute),
-					},
-				},
-			},
-		},
-	}
-	renewalService := &renewalServiceStub{}
+	secretRepo := &secretRepoStub{}
+	renewalService := &renewalServiceStub{skrNeedsReturn: true}
 	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
@@ -210,34 +189,13 @@ func TestRenewSkrCertificate_WhenSecretsIndicateRenew_CallsRenewalServiceRenew(t
 	require.NoError(t, err)
 	assert.True(t, secretRepo.getCalled)
 	assert.False(t, secretRepo.deleteCalled)
-	assert.Equal(t, 1, renewalService.calls)
-	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.lastCallArg)
+	assert.Equal(t, 1, renewalService.renewCalls)
+	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.renewLastCallArg)
 }
 
 func TestRenewSkrCertificate_WhenSecretsIndicateNoRenew_RenewalServiceRenewIsNotCalled(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{
-			{ // gateway secret, modified a minute ago
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      gatewaySecretName,
-					Namespace: certNamespace,
-					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: time.Now().Add(-time.Minute).Format(time.RFC3339),
-					},
-				},
-			},
-			{ // skr secret, created now
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      kymaName + expectedCertNameSuffix,
-					Namespace: certNamespace,
-					CreationTimestamp: apimetav1.Time{
-						Time: time.Now(),
-					},
-				},
-			},
-		},
-	}
-	renewalService := &renewalServiceStub{}
+	secretRepo := &secretRepoStub{}
+	renewalService := &renewalServiceStub{skrNeedsReturn: false}
 	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
 	})
@@ -246,78 +204,8 @@ func TestRenewSkrCertificate_WhenSecretsIndicateNoRenew_RenewalServiceRenewIsNot
 
 	require.NoError(t, err)
 	assert.True(t, secretRepo.getCalled)
-	assert.Equal(t, 0, renewalService.calls)
-	assert.Empty(t, renewalService.lastCallArg)
-}
-
-func TestRenewSkrCertificate_GatewaySecretHasNoLastModified_CallsRenewalService(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{
-			{ // gateway secret, no last modified
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:        gatewaySecretName,
-					Namespace:   certNamespace,
-					Annotations: map[string]string{},
-				},
-			},
-			{ // skr secret, created a minute ago
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      kymaName + expectedCertNameSuffix,
-					Namespace: certNamespace,
-					CreationTimestamp: apimetav1.Time{
-						Time: time.Now().Add(-time.Minute),
-					},
-				},
-			},
-		},
-	}
-	renewalService := &renewalServiceStub{}
-	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
-
-	err := certService.RenewSkrCertificate(t.Context(), kymaName)
-
-	require.NoError(t, err)
-	assert.True(t, secretRepo.getCalled)
-	assert.Equal(t, 1, renewalService.calls)
-	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.lastCallArg)
-}
-
-func TestRenewSkrCertificate_WhenGatewaySecretHasInvalidLastModified_CallsRenewalServiceRenew(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{
-			{ // gateway secret, no last modified
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      gatewaySecretName,
-					Namespace: certNamespace,
-					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: "not a time",
-					},
-				},
-			},
-			{ // skr secret, created a minute ago
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      kymaName + expectedCertNameSuffix,
-					Namespace: certNamespace,
-					CreationTimestamp: apimetav1.Time{
-						Time: time.Now().Add(-time.Minute),
-					},
-				},
-			},
-		},
-	}
-	renewalService := &renewalServiceStub{}
-	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
-		GatewaySecretName: gatewaySecretName,
-	})
-
-	err := certService.RenewSkrCertificate(t.Context(), kymaName)
-
-	require.NoError(t, err)
-	assert.True(t, secretRepo.getCalled)
-	assert.Equal(t, 1, renewalService.calls)
-	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.lastCallArg)
+	assert.Equal(t, 0, renewalService.renewCalls)
+	assert.Empty(t, renewalService.renewLastCallArg)
 }
 
 func TestRenewSkrCertificate_SecretRepositoryGetReturnsError_ReturnsError(t *testing.T) {
@@ -334,34 +222,14 @@ func TestRenewSkrCertificate_SecretRepositoryGetReturnsError_ReturnsError(t *tes
 	require.ErrorIs(t, err, assert.AnError)
 	require.ErrorContains(t, err, "failed to get gateway certificate secret")
 	assert.True(t, secretRepo.getCalled)
-	assert.Equal(t, 0, renewalService.calls)
+	assert.Equal(t, 0, renewalService.renewCalls)
 }
 
 func TestRenewSkrCertificate_RenewalServiceReturnsError_ReturnsError(t *testing.T) {
-	secretRepo := &secretRepoStub{
-		getSecrets: []*apicorev1.Secret{
-			{ // gateway secret, modified now
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      gatewaySecretName,
-					Namespace: certNamespace,
-					Annotations: map[string]string{
-						shared.LastModifiedAtAnnotation: time.Now().Format(time.RFC3339),
-					},
-				},
-			},
-			{ // skr secret, created a minute ago
-				ObjectMeta: apimetav1.ObjectMeta{
-					Name:      kymaName + expectedCertNameSuffix,
-					Namespace: certNamespace,
-					CreationTimestamp: apimetav1.Time{
-						Time: time.Now().Add(-time.Minute),
-					},
-				},
-			},
-		},
-	}
+	secretRepo := &secretRepoStub{}
 	renewalService := &renewalServiceStub{
-		err: assert.AnError,
+		skrNeedsReturn: true,
+		renewErr:       assert.AnError,
 	}
 	certService := certificate.NewService(renewalService, &certRepoStub{}, secretRepo, certificate.Config{
 		GatewaySecretName: gatewaySecretName,
@@ -372,8 +240,8 @@ func TestRenewSkrCertificate_RenewalServiceReturnsError_ReturnsError(t *testing.
 	require.ErrorIs(t, err, assert.AnError)
 	require.ErrorContains(t, err, "failed to delete SKR certificate secret")
 	assert.True(t, secretRepo.getCalled)
-	assert.Equal(t, 1, renewalService.calls)
-	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.lastCallArg)
+	assert.Equal(t, 1, renewalService.renewCalls)
+	assert.Equal(t, kymaName+expectedCertNameSuffix, renewalService.renewLastCallArg)
 }
 
 func TestIsSkrCertificateRenewalOverdue_WhenRenewalTimeMatches_ReturnsTrue(t *testing.T) {
@@ -728,17 +596,25 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 }
 
 type renewalServiceStub struct {
-	calls       int
-	lastCallArg string
-	err         error
+	renewCalls       int
+	renewLastCallArg string
+	renewErr         error
+
+	skrNeedsCalls  int
+	skrNeedsReturn bool
 }
 
 func (r *renewalServiceStub) Renew(_ context.Context, name string) error {
-	r.calls++
-	r.lastCallArg = name
-	if r.err != nil {
-		return r.err
+	r.renewCalls++
+	r.renewLastCallArg = name
+	if r.renewErr != nil {
+		return r.renewErr
 	}
 
 	return nil
+}
+
+func (r *renewalServiceStub) SkrSecretNeedsRenewal(_, _ *apicorev1.Secret) bool {
+	r.skrNeedsCalls++
+	return r.skrNeedsReturn
 }
