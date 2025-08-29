@@ -90,6 +90,20 @@ func TestRenew_WhenRepoReturnsCert_CallsRepoUpdateWithSpecEnsureRenewedAfterNil(
 	assert.Nil(t, certRepo.getReturnValue.Spec.EnsureRenewedAfter)
 }
 
+func TestRenew_WhenRepoReturnsNilCertificate_ReturnsError(t *testing.T) {
+	certRepo := &certRepoStub{
+		getReturnValue: nil,
+		getErr:         nil,
+	}
+	service := gcm.NewService(certRepo)
+	certName := random.Name()
+
+	err := service.Renew(context.Background(), certName)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "could not get certificate for renewal")
+}
+
 func TestRenew_WhenRepoUpdateReturnsError_ReturnsError(t *testing.T) {
 	certRepo := &certRepoStub{
 		getReturnValue: &gcertv1alpha1.Certificate{
@@ -199,7 +213,9 @@ func TestRenewSkrCertificate_WhenSkrSecretHasInvalidRequestedAt_ReturnsTrue(t *t
 	gatewaySecret := &apicorev1.Secret{}
 	skrSecret := &apicorev1.Secret{ // skr secret, invalid requestedAt
 		ObjectMeta: apimetav1.ObjectMeta{
-			Annotations: map[string]string{},
+			Annotations: map[string]string{
+				shared.GCMSecretAnnotation: "invalid-timestamp",
+			},
 		},
 	}
 
