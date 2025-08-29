@@ -218,7 +218,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
-		if errors.Is(err, skrresources.ErrClientUnauthorized) {
+		if util.IsConnectionRelatedError(err) {
 			r.invalidateClientCache(ctx, manifest)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
@@ -563,11 +563,15 @@ func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifes
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
+	if originalErr != nil {
+		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
+		manifest.GetStatus().
+			WithOperation(fmt.Sprintf("reconcile got Error: %s", originalErr))
+	}
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
 	}
 	if originalErr != nil {
-		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 		return ctrl.Result{}, originalErr
 	}
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)

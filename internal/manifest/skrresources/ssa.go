@@ -14,12 +14,12 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var (
 	ErrClientObjectConversionFailed = errors.New("client object conversion failed")
 	ErrServerSideApplyFailed        = errors.New("ServerSideApply failed")
-	ErrClientUnauthorized           = errors.New("ServerSideApply is unauthorized")
 )
 
 type SSA interface {
@@ -41,7 +41,10 @@ type ConcurrentDefaultSSA struct {
 	collector ManagedFieldsCollector
 }
 
-func ConcurrentSSA(clnt client.Client, owner client.FieldOwner, managedFieldsCollector ManagedFieldsCollector) *ConcurrentDefaultSSA {
+func ConcurrentSSA(clnt client.Client,
+	owner client.FieldOwner,
+	managedFieldsCollector ManagedFieldsCollector,
+) *ConcurrentDefaultSSA {
 	return &ConcurrentDefaultSSA{
 		clnt:      clnt,
 		owner:     owner,
@@ -74,7 +77,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	if errs != nil {
 		summaryErr := fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish)
 		if c.allUnauthorized(errs) {
-			return errors.Join(ErrClientUnauthorized, summaryErr)
+			return errors.Join(util.ErrClientUnauthorized, summaryErr)
 		}
 		errs = append(errs, summaryErr)
 		return errors.Join(errs...)
@@ -94,7 +97,7 @@ func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
 
 	unauthorizedFound := 0
 	for i := range errs {
-		if errors.Is(errs[i], ErrClientUnauthorized) {
+		if errors.Is(errs[i], util.ErrClientUnauthorized) {
 			unauthorizedFound++
 		}
 	}
@@ -142,7 +145,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 // suppressUnauthorized replaces client-go error with our own in order to suppress it's very long Error() payload.
 func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) error {
 	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), ": Unauthorized") {
-		return ErrClientUnauthorized
+		return util.ErrClientUnauthorized
 	}
 	return src
 }

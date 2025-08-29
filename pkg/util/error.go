@@ -12,6 +12,8 @@ import (
 	"k8s.io/client-go/discovery"
 )
 
+var ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
+
 func IsNotFound(err error) bool {
 	if err == nil {
 		return false
@@ -49,7 +51,9 @@ func IsConnectionRelatedError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.Is(err, syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err) || isNoSuchHostError(err)
+	return errors.Is(err,
+		syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err) || isNoSuchHostError(err) || errors.Is(err,
+		ErrClientUnauthorized)
 }
 
 func isNoSuchHostError(err error) bool {
