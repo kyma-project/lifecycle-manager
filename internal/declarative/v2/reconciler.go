@@ -131,6 +131,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	recordMandatoryModuleState(manifest, r)
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info("manifest is in deleting state, before getTargetClient")
+	}
+
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
 		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, common.ErrAccessSecretNotFound) {
@@ -172,6 +176,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info("manifest is in deleting state, before GetSpec")
+	}
+
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -186,6 +194,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info("manifest is in deleting state, before renderResources")
+	}
+
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
@@ -196,15 +208,32 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info("manifest is in deleting state, before prune diff")
+	}
+
 	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
 		resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			logf.FromContext(ctx).Error(err, "manifest is in deleting state, got error")
+		}
 		return ctrl.Result{Requeue: true}, nil
 	} else if util.IsConnectionRelatedError(err) {
 		r.invalidateClientCache(ctx, manifest)
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			logf.FromContext(ctx).Error(err, "manifest is in deleting state, got connection error")
+		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestUnauthorized, manifestStatus, err)
 	} else if err != nil {
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			logf.FromContext(ctx).Error(err, "manifest is in deleting state, got other error")
+		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
+	}
+
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info("manifest is in deleting state, after prune diff")
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
