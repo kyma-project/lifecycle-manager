@@ -209,7 +209,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info("manifest is in deleting state, before prune diff")
+		logf.FromContext(ctx).Info(fmt.Sprintf("manifest is in deleting state, before prune diff: current %d, target %d",
+			len(current), len(target)))
 	}
 
 	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
@@ -472,6 +473,10 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 	current, target []*resource.Info, spec *Spec,
 ) error {
 	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info(fmt.Sprintf("manifest is in deleting state, during prune diff: diff %d, err: %s",
+			len(diff), err))
+	}
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithErr(err))
 		return err
@@ -492,7 +497,9 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithErr(err))
 	}
-
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Info(fmt.Sprintf("manifest is in deleting state, after cleanup: err: %s", err))
+	}
 	return err
 }
 
@@ -594,8 +601,7 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 ) (ctrl.Result, error) {
 	if originalErr != nil {
 		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
-		manifest.GetStatus().
-			WithOperation(fmt.Sprintf("reconcile got Error: %s", originalErr))
+		manifest.SetStatus(manifest.GetStatus().WithErr(originalErr))
 	}
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
