@@ -16,14 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/common"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrevent"
 	"github.com/kyma-project/lifecycle-manager/internal/watch"
 )
-
-// EventService defines the interface for event services consumed by this controller.
-// Points to the shared common interface to avoid circular dependencies.
-type EventService = common.EventService
 
 type SetupOptions struct {
 	ListenerAddr                 string

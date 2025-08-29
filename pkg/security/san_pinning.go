@@ -139,8 +139,7 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 // getDomain fetches the KymaCR, mentioned in the requests body, and returns the value of the SKR-Domain annotation.
 func (v *RequestVerifier) getDomain(request *http.Request, watcherEvtObject *types.WatchEvent) (string, error) {
 	var kymaCR v1beta2.Kyma
-	clientKey := client.ObjectKey(watcherEvtObject.Owner)
-	if err := v.Client.Get(request.Context(), clientKey, &kymaCR); err != nil {
+	if err := v.Client.Get(request.Context(), watcherEvtObject.Owner, &kymaCR); err != nil {
 		return "", fmt.Errorf("failed to get Kyma CR: %w", err)
 	}
 	domain, ok := kymaCR.Annotations[shootDomainKey]
