@@ -5,5 +5,5 @@ const (
 	IstioNamespace           = "istio-system"
 	GatewaySecretName        = "klm-istio-gateway" //nolint:gosec // It is just a name
 	LastModifiedAtAnnotation = "lastModifiedAt"
-	GCMSecretAnnotation      = "cert.gardener.cloud/requestedAt"
+	GCMSecretAnnotation      = "cert.gardener.cloud/requestedAt" //nolint:gosec // It is just a name
 )
