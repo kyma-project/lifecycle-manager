@@ -102,7 +102,7 @@ func TestSkrSecretNeedsRenewal_GatewaySecretHasNoLastModified_ReturnsTrue(t *tes
 
 func TestRenewSkrCertificate_WhenGatewaySecretHasInvalidLastModified_ReturnsTrue(t *testing.T) {
 	renewalService := certmanagerrenewal.NewService(&secretRepoStub{})
-	// gateway secret, no last modified
+	// gateway secret, invalid last modified
 	gatewaySecret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Annotations: map[string]string{

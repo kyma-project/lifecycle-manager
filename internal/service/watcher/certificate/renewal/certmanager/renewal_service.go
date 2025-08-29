@@ -32,7 +32,7 @@ func (s *Service) Renew(ctx context.Context, name string) error {
 	return nil
 }
 
-// SkrSecretNeedsRenewal check if the SKR Secret needs to be renewed.
+// SkrSecretNeedsRenewal checks if the SKR Secret needs to be renewed.
 // Renewal is required if the gateway certificate secret is newer than the SKR certificate secret.
 func (s *Service) SkrSecretNeedsRenewal(gatewaySecret, skrSecret *apicorev1.Secret) bool {
 	gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
