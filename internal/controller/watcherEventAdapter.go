@@ -15,8 +15,8 @@ func AdaptEvents(listenerChan func() <-chan WatcherListenerEvent) <-chan CtrlRun
 	dest := make(chan CtrlRuntimeEvent)
 	go func() {
 		defer close(dest)
-		for e := range listenerChan() {
-			dest <- CtrlRuntimeEvent{Object: e.Object}
+		for evt := range listenerChan() {
+			dest <- CtrlRuntimeEvent{Object: evt.Object}
 		}
 	}()
 	return dest
