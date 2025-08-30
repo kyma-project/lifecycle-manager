@@ -47,7 +47,7 @@ linters:
           alias: declarativetest
         - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest
           alias: manifesttest
-        - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/event
+        - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/v2/event
           alias: watcherevent
         - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/metrics
           alias: watchermetrics

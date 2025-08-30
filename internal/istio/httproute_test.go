@@ -115,7 +115,7 @@ func getWatcherName(watcher *v1beta2.Watcher) string {
 }
 
 func getHTTPRoutePrefix(watcher *v1beta2.Watcher) string {
-	return fmt.Sprintf("/v1/%s/event", watcher.GetLabels()[shared.ManagedBy])
+	return fmt.Sprintf("/v2/%s/event", watcher.GetLabels()[shared.ManagedBy])
 }
 
 func getDestinationHost(watcher *v1beta2.Watcher) string {

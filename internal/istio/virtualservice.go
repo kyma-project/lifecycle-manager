@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	contractVersion = "v1"
+	contractVersion = "v2"
 	prefixFormat    = "/%s/%s/event"
 )
 

@@ -70,7 +70,7 @@ spec:
             - name: TLS_CALLBACK
               value: "true"
             - name: KCP_CONTRACT
-              value: "v1"
+              value: "v2"
             - name: KCP_ADDR
               value: "kcp-base-url-invalid"
           image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher:latest" # this image will be dynamically replaced by flags
