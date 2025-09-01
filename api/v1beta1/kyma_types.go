@@ -91,24 +91,21 @@ type KymaSpec struct {
 
 // KymaStatus defines the observed state of Kyma.
 type KymaStatus struct {
+	LastOperation `json:"lastOperation,omitempty"`
+
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
 	State State `json:"state,omitempty"`
-
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
 	// +listType=map
 	// +listMapKey=type
 	Conditions []apimetav1.Condition `json:"conditions,omitempty"`
-
 	// Contains essential information about the current deployed module
 	Modules []ModuleStatus `json:"modules,omitempty"`
-
 	// Active Channel
 	// +optional
 	ActiveChannel string `json:"activeChannel,omitempty"`
-
-	LastOperation `json:"lastOperation,omitempty"`
 }
 
 type ModuleStatus struct {
@@ -187,29 +184,30 @@ type PartialMeta struct {
 type KymaList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []Kyma `json:"items"`
+
+	Items []Kyma `json:"items"`
 }
 
 // Module defines the components to be installed.
 type Module struct {
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
 	// Name is a unique identifier of the module.
 	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
 	//
 	// Name can only be the ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
 	Name string `json:"name"`
-
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
 	// together with Cache Configuration on the Operator responsible for the templated Modules to split
 	// workload.
 	ControllerName string `json:"controller,omitempty"`
-
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel,omitempty"`
-
 	// Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on this specific version.
 	// The Version and Channel are mutually exclusive options.
@@ -217,14 +215,9 @@ type Module struct {
 	// json:"-" to disable installation of specific versions until decided to roll this out
 	// see https://github.com/kyma-project/lifecycle-manager/issues/1847
 	Version string `json:"-"`
-
 	// RemoteModuleTemplateRef is deprecated and will no longer have any functionality.
 	// It will be removed in the upcoming API version.
 	RemoteModuleTemplateRef string `json:"remoteModuleTemplateRef,omitempty"`
-
-	// +kubebuilder:default:=CreateAndDelete
-	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
-
 	// Managed is determining whether the module is managed or not. If the module is unmanaged, the user is responsible
 	// for the lifecycle of the module.
 	// +kubebuilder:default:=true

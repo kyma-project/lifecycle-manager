@@ -50,6 +50,7 @@ const (
 type Reconciler struct {
 	client.Client
 	event.Event
+
 	SkrContextFactory     remote.SkrContextProvider
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
@@ -111,7 +112,8 @@ func handleKymaNotFoundError(logger logr.Logger, kyma *v1beta2.Kyma, err error) 
 
 func (r *Reconciler) handleKymaNotMarkedForDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if err := r.ensurePurgeFinalizer(ctx, kyma); err != nil {
-		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Failed setting purge finalizer for Kyma %s: %s", kyma.GetName(), err))
+		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("Failed setting purge finalizer for Kyma %s: %s",
+			kyma.GetName(), err))
 		r.Warning(kyma, setFinalizerFailure, err)
 		return ctrl.Result{}, err
 	}
@@ -123,8 +125,12 @@ func handlePurgeNotDue(logger logr.Logger, kyma *v1beta2.Kyma, requeueAfter time
 	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
-func (r *Reconciler) handleRemovingPurgeFinalizerFailedError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
-	logf.FromContext(ctx).Error(err, fmt.Sprintf("Failed removing purge finalizer from Kyma %s/%s", kyma.GetNamespace(), kyma.GetName()))
+func (r *Reconciler) handleRemovingPurgeFinalizerFailedError(ctx context.Context,
+	kyma *v1beta2.Kyma,
+	err error,
+) (ctrl.Result, error) {
+	logf.FromContext(ctx).Error(err,
+		fmt.Sprintf("Failed removing purge finalizer from Kyma %s/%s", kyma.GetNamespace(), kyma.GetName()))
 	r.Warning(kyma, removeFinalizerFailure, err)
 	r.Metrics.SetPurgeError(ctx, kyma, metrics.ErrPurgeFinalizerRemoval)
 	return ctrl.Result{}, err
@@ -152,14 +158,19 @@ func (r *Reconciler) handleCleanupError(ctx context.Context, kyma *v1beta2.Kyma,
 	return ctrl.Result{}, err
 }
 
-func (r *Reconciler) handlePurge(ctx context.Context, kyma *v1beta2.Kyma, remoteClient client.Client, start time.Time) (ctrl.Result, error) {
+func (r *Reconciler) handlePurge(ctx context.Context,
+	kyma *v1beta2.Kyma,
+	remoteClient client.Client,
+	start time.Time,
+) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 
 	r.Metrics.UpdatePurgeCount()
 
 	handledResources, err := r.performCleanup(ctx, remoteClient)
 	if len(handledResources) > 0 {
-		logger.Info(fmt.Sprintf("Removed all finalizers for Kyma %s related resources %s", kyma.GetName(), strings.Join(handledResources, ", ")))
+		logger.Info(fmt.Sprintf("Removed all finalizers for Kyma %s related resources %s", kyma.GetName(),
+			strings.Join(handledResources, ", ")))
 	}
 	if err != nil {
 		return r.handleCleanupError(ctx, kyma, err)

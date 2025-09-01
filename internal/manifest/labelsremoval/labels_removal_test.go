@@ -344,6 +344,7 @@ func (m *manifestClientStub) UpdateManifest(ctx context.Context, manifest *v1bet
 
 type errorClientStub struct {
 	client.Client
+
 	fakeClient client.Client
 }
 
@@ -351,6 +352,10 @@ func (e errorClientStub) Update(_ context.Context, _ client.Object, _ ...client.
 	return errors.New("test error")
 }
 
-func (e errorClientStub) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+func (e errorClientStub) Get(ctx context.Context,
+	key client.ObjectKey,
+	obj client.Object,
+	opts ...client.GetOption,
+) error {
 	return e.fakeClient.Get(ctx, key, obj, opts...)
 }

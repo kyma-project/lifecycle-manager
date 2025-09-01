@@ -53,28 +53,23 @@ func (i InstallInfo) Raw() []byte {
 
 // ManifestSpec defines the desired state of Manifest.
 type ManifestSpec struct {
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
 	// Remote indicates if Manifest should be installed on a remote cluster
 	Remote bool `json:"remote"`
-
 	// Version specifies current Resource version
 	// +optional
 	Version string `json:"version,omitempty"`
-
 	// Config specifies OCI image configuration for Manifest
 	Config *ImageSpec `json:"config,omitempty"`
-
 	// Install specifies a list of installations for Manifest
 	Install InstallInfo `json:"install"`
-
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:XEmbeddedResource
 	// +nullable
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
-
-	// +kubebuilder:default:=CreateAndDelete
-	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
-
 	// LocalizedImages specifies a list of docker image references valid for the environment where the Manifest is installed.
 	// The list entries are corresponding to the images actually used in the K8s resources of the Kyma module.
 	// If provided, when the Kyma Module is installed in the target cluster, the "localized" image reference is used instead of the original one.
@@ -148,7 +143,8 @@ func (manifest *Manifest) IsMandatoryModule() bool {
 type ManifestList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []Manifest `json:"items"`
+
+	Items []Manifest `json:"items"`
 }
 
 //nolint:gochecknoinits // registers Manifest CRD on startup

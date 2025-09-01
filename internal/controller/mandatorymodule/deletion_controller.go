@@ -44,6 +44,7 @@ type DeletionReconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
+
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
@@ -106,7 +107,8 @@ func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 }
 
 func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
-	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
+	template *v1beta2.ModuleTemplate,
+) ([]v1beta2.Manifest,
 	error,
 ) {
 	manifests := &v1beta2.ManifestList{}

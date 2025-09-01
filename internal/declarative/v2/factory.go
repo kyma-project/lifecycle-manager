@@ -31,33 +31,25 @@ const (
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
 type SingletonClients struct {
-	httpClient *http.Client
-
-	// controller runtime client
 	client.Client
 
+	httpClient *http.Client
 	// the original config used for all clients
 	config *rest.Config
-
 	// discovery client, used for dynamic clients and GVK discovery
 	discoveryClient discovery.CachedDiscoveryInterface
 	// expander for GVK and REST expansion from discovery client
 	discoveryShortcutExpander meta.RESTMapper
-
 	// kubernetes client
 	kubernetesClient *kubernetes.Clientset
 	dynamicClient    *dynamic.DynamicClient
-
 	// OpenAPI document parser singleton
 	openAPIParser *openapi.CachedOpenAPIParser
-
 	// OpenAPI document getter singleton
 	openAPIGetter *openapi.CachedOpenAPIGetter
-
 	// GVK based structured Client Cache
 	structuredSyncLock        sync.Mutex
 	structuredRESTClientCache map[string]resource.RESTClient
-
 	// GVK based unstructured Client Cache
 	unstructuredSyncLock        sync.Mutex
 	unstructuredRESTClientCache map[string]resource.RESTClient

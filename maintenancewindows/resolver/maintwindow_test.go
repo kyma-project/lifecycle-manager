@@ -94,6 +94,7 @@ func (tc testCase) Message() string {
 
 type MaintWindowSuite struct {
 	suite.Suite
+
 	plan      resolver.MaintenanceWindowPolicy
 	testCases []testCase
 }
@@ -320,6 +321,7 @@ func Test_MPMString(t *testing.T) {
 		Region:          resolver.NewRegexp(reg),
 		PlatformRegion:  resolver.NewRegexp(preg),
 	}
-	expected := fmt.Sprintf("<MaintenancePolicyMatch GlobalAccountID:'%s' Plan:'%s' Region:'%s' PlatformRegion:'%s'>", gaid, plan, reg, preg)
+	expected := fmt.Sprintf("<MaintenancePolicyMatch GlobalAccountID:'%s' Plan:'%s' Region:'%s' PlatformRegion:'%s'>",
+		gaid, plan, reg, preg)
 	require.Equal(t, expected, data.String())
 }

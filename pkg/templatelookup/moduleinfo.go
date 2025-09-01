@@ -15,6 +15,7 @@ var (
 
 type ModuleInfo struct {
 	v1beta2.Module
+
 	Enabled         bool
 	ValidationError error
 	Unmanaged       bool
@@ -43,19 +44,21 @@ func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
 		moduleMap[module.Name] = true
 		if shared.NoneChannel.Equals(module.Channel) {
 			modules = append(modules, ModuleInfo{
-				Module:          module,
-				Enabled:         true,
-				ValidationError: fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec, module.Name),
-				Unmanaged:       !module.Managed,
+				Module:  module,
+				Enabled: true,
+				ValidationError: fmt.Errorf("%w for module %s: Channel \"none\" is not allowed", ErrInvalidModuleInSpec,
+					module.Name),
+				Unmanaged: !module.Managed,
 			})
 			continue
 		}
 		if module.Version != "" && module.Channel != "" {
 			modules = append(modules, ModuleInfo{
-				Module:          module,
-				Enabled:         true,
-				ValidationError: fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options", ErrInvalidModuleInSpec, module.Name),
-				Unmanaged:       !module.Managed,
+				Module:  module,
+				Enabled: true,
+				ValidationError: fmt.Errorf("%w for module %s: Version and channel are mutually exclusive options",
+					ErrInvalidModuleInSpec, module.Name),
+				Unmanaged: !module.Managed,
 			})
 			continue
 		}
@@ -83,7 +86,8 @@ func FetchModuleInfo(kyma *v1beta2.Kyma) []ModuleInfo {
 
 func determineModuleValidity(moduleStatus v1beta2.ModuleStatus) error {
 	if moduleStatus.Template == nil {
-		return fmt.Errorf("%w for module %s: ModuleTemplate reference is missing", ErrInvalidModuleInStatus, moduleStatus.Name)
+		return fmt.Errorf("%w for module %s: ModuleTemplate reference is missing", ErrInvalidModuleInStatus,
+			moduleStatus.Name)
 	}
 	return nil
 }

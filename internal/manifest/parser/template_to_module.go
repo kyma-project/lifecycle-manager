@@ -26,6 +26,7 @@ var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.Access
 
 type Parser struct {
 	client.Client
+
 	descriptorProvider  *provider.CachedDescriptorProvider
 	remoteSyncNamespace string
 }
@@ -204,7 +205,8 @@ func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
 		if access.GetType() == ociartifact.Type {
 			ociAccessSpec, ok := ocmAccessSpec.(*ociartifact.AccessSpec)
 			if !ok {
-				logf.Log.Error(fmt.Errorf("%w: actual type: %T", ErrConvertingToOCIAccessSpec, access), "getLocalizedImagesFromDescriptor")
+				logf.Log.Error(fmt.Errorf("%w: actual type: %T", ErrConvertingToOCIAccessSpec, access),
+					"getLocalizedImagesFromDescriptor")
 				continue
 			}
 			if len(ociAccessSpec.ImageReference) > 0 {

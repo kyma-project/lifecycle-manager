@@ -108,11 +108,11 @@ type WatcherStatus struct {
 
 // WatcherList contains a list of Watcher.
 type WatcherList struct {
-	apimetav1.TypeMeta `json:",inline"`
-
 	// +kubebuilder:validation:Optional
 	apimetav1.ListMeta `json:"metadata"`
-	Items              []Watcher `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+
+	Items []Watcher `json:"items"`
 }
 
 //nolint:gochecknoinits // registers Watcher CRD on startup
