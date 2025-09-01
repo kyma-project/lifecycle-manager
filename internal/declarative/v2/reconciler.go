@@ -138,6 +138,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
 		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, common.ErrAccessSecretNotFound) {
+			if !manifest.GetDeletionTimestamp().IsZero() {
+				logf.FromContext(ctx).Info("manifest is in deleting state, cleanupManifest")
+			}
+
 			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestClientInit, err)
 		}
 
@@ -201,15 +205,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
-			r.invalidateClientCache(ctx, manifest)
+			r.evictSKRClientCache(ctx, manifest)
 			return r.finishReconcile(ctx, manifest, metrics.ManifestUnauthorized, manifestStatus, err)
 		}
 
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() && len(current) == 0 {
-		r.invalidateClientCache(ctx, manifest)
+	if manifestUnderDeletingButNoSyncedResources(manifest, current) {
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			logf.FromContext(ctx).Info("manifest is in deleting state, manifestUnderDeletingButNoSyncedResources")
+		}
+		r.evictSKRClientCache(ctx, manifest)
 	}
 
 	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
@@ -220,7 +227,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		return ctrl.Result{Requeue: true}, nil
 	} else if util.IsConnectionRelatedError(err) {
-		r.invalidateClientCache(ctx, manifest)
+		r.evictSKRClientCache(ctx, manifest)
 		if !manifest.GetDeletionTimestamp().IsZero() {
 			logf.FromContext(ctx).Error(err, "manifest is in deleting state, got connection error")
 		}
@@ -248,7 +255,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
 		if util.IsConnectionRelatedError(err) {
-			r.invalidateClientCache(ctx, manifest)
+			r.evictSKRClientCache(ctx, manifest)
 		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
 	}
@@ -273,6 +280,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
+}
+
+func manifestUnderDeletingButNoSyncedResources(manifest *v1beta2.Manifest, current ResourceList) bool {
+	return !manifest.GetDeletionTimestamp().IsZero() && len(current) == 0
 }
 
 func recordMandatoryModuleState(manifest *v1beta2.Manifest, r *Reconciler) {
@@ -336,7 +347,7 @@ func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
 	return nil
 }
 
-func (r *Reconciler) invalidateClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
+func (r *Reconciler) evictSKRClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
 	if r.ClientCacheKeyFn != nil {
 		clientsCacheKey, ok := r.ClientCacheKeyFn(ctx, manifest)
 		if ok {
