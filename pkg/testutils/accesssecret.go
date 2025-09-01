@@ -32,7 +32,7 @@ func GetAccessSecret(ctx context.Context, clnt client.Client, name string) (*api
 	return accessSecretService.GetAccessSecretByKyma(ctx, name)
 }
 
-func CreateAccessSecret(ctx context.Context, klnt client.Client, name, patchedRuntimeConfig string) error {
+func CreateAccessSecret(ctx context.Context, clnt client.Client, name, patchedRuntimeConfig string) error {
 	secret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      name,
@@ -43,5 +43,5 @@ func CreateAccessSecret(ctx context.Context, klnt client.Client, name, patchedRu
 		},
 		Data: map[string][]byte{"config": []byte(patchedRuntimeConfig)},
 	}
-	return klnt.Create(ctx, secret)
+	return clnt.Create(ctx, secret)
 }
