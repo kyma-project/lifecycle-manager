@@ -67,6 +67,7 @@ type SKRClientCache interface {
 	GetClient(key string) skrclient.Client
 	AddClient(key string, client skrclient.Client)
 	DeleteClient(key string)
+	GetCacheKey(manifest *v1beta2.Manifest) (string, bool)
 }
 
 type SKRClientFactory func(clusterInfo *skrclient.ClusterInfo) (*skrclient.Service, error)
@@ -350,13 +351,11 @@ func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
 }
 
 func (r *Reconciler) evictSKRClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
-	if r.ClientCacheKeyFn != nil {
-		clientsCacheKey, ok := r.ClientCacheKeyFn(ctx, manifest)
-		if ok {
-			logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
-				clientsCacheKey))
-			r.skrClientCache.DeleteClient(clientsCacheKey)
-		}
+	clientsCacheKey, ok := r.skrClientCache.GetCacheKey(manifest)
+	if ok {
+		logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
+			clientsCacheKey))
+		r.skrClientCache.DeleteClient(clientsCacheKey)
 	}
 }
 
@@ -565,11 +564,8 @@ func pruneResource(diff []*resource.Info, resourceType string, resourceName stri
 func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Manifest) (skrclient.Client, error) {
 	var err error
 	var clnt skrclient.Client
-	if r.ClientCacheKeyFn == nil {
-		return r.configClient(ctx, manifest)
-	}
 
-	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, manifest)
+	clientsCacheKey, found := r.skrClientCache.GetCacheKey(manifest)
 	if found {
 		clnt = r.skrClientCache.GetClient(clientsCacheKey)
 	}

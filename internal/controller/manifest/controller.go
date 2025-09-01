@@ -29,7 +29,7 @@ func NewReconciler(mgr manager.Manager,
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	lookup := &manifest.NewRemoteClusterLookup(kcp, accessManagerService)
+	lookup := manifest.NewRemoteClusterLookup(kcp, accessManagerService)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
@@ -39,6 +39,5 @@ func NewReconciler(mgr manager.Manager,
 		clientFactory,
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
 		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
-		manifest.WithClientCacheKey(),
 	)
 }

@@ -42,8 +42,6 @@ type Options struct {
 	Config *rest.Config
 	client.Client
 	TargetCluster ClusterFn
-
-	ClientCacheKeyFn
 	ManifestParser
 	ManifestCache
 	CustomStateCheck StateCheck
@@ -153,14 +151,4 @@ type WithRemoteTargetClusterOption struct {
 
 func (o WithRemoteTargetClusterOption) Apply(options *Options) {
 	options.TargetCluster = o.ClusterFn
-}
-
-type ClientCacheKeyFn func(ctx context.Context, obj Object) (string, bool)
-
-type WithClientCacheKeyOption struct {
-	ClientCacheKeyFn
-}
-
-func (o WithClientCacheKeyOption) Apply(options *Options) {
-	options.ClientCacheKeyFn = o.ClientCacheKeyFn
 }

@@ -171,7 +171,7 @@ var _ = BeforeSuite(func() {
 			func(_ context.Context, _ declarativev2.Object) (*skrclient.ClusterInfo, error) {
 				return &skrclient.ClusterInfo{Config: authUser.Config()}, nil
 			},
-		), manifest.WithClientCacheKey(), declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()),
+		), declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()),
 	)
 
 	err = ctrl.NewControllerManagedBy(mgr).
