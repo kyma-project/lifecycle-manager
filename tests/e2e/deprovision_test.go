@@ -106,7 +106,7 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
-				Should(Equal(accessmanager.ErrAccessSecretNotFound))
+				Should(MatchError(accessmanager.ErrAccessSecretNotFound))
 		})
 
 		It("Then Manifest CR is deleted", func() {

@@ -123,7 +123,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
-				Should(Equal(accessmanager.ErrAccessSecretNotFound))
+				Should(MatchError(accessmanager.ErrAccessSecretNotFound))
 		})
 
 		It("Then Manifest CR is deleted", func() {

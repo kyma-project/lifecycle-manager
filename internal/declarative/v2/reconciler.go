@@ -28,6 +28,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -107,13 +108,16 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 
 //nolint:funlen,cyclop,gocyclo,gocognit // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := logf.FromContext(ctx)
+
 	startTime := time.Now()
 	defer r.recordReconciliationDuration(startTime, req.Name)
 
 	manifest := &v1beta2.Manifest{}
 	if err := r.Get(ctx, req.NamespacedName, manifest); err != nil {
 		if util.IsNotFound(err) {
-			logf.FromContext(ctx).Info(req.String() + " namespace got deleted!")
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Manifest %s not found, probably already deleted",
+				req.NamespacedName))
 			return ctrl.Result{}, nil
 		}
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestRetrieval, queue.UnexpectedRequeue)

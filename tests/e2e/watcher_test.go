@@ -199,7 +199,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
-				Should(Equal(accessmanager.ErrAccessSecretNotFound))
+				Should(MatchError(accessmanager.ErrAccessSecretNotFound))
 
 			By("And skip-reconciliation label is removed from KCP Kyma CR")
 			Eventually(UpdateKymaLabel).
