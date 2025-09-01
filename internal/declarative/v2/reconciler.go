@@ -138,6 +138,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
+
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		logf.FromContext(ctx).Error(err, "manifest is in deleting state, after getTargetClient")
+	}
+
 	if err != nil {
 		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 			if !manifest.GetDeletionTimestamp().IsZero() {
@@ -572,6 +577,9 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 
 	if clnt == nil {
 		clnt, err = r.configClient(ctx, manifest)
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			logf.FromContext(ctx).Error(err, "manifest is in deleting state, recreate client cache")
+		}
 		if err != nil {
 			return nil, err
 		}
