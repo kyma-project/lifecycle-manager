@@ -25,6 +25,7 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -43,6 +44,7 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 	orphanDetectionClient orphan.DetectionRepository, specResolver *spec.Resolver,
 	clientCache declarativev2.SKRClientCache,
 	clientFactory declarativev2.SKRClientFactory,
+	accessManagerService *accessmanager.Service,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -88,7 +90,8 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
 		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-			manifestClient, orphanDetectionClient, specResolver, clientCache, clientFactory)); err != nil {
+			manifestClient, orphanDetectionClient, specResolver, clientCache, clientFactory,
+			accessManagerService)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

@@ -24,6 +24,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/status"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/resources"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
@@ -137,7 +138,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	skrClient, err := r.getTargetClient(ctx, manifest)
 	if err != nil {
-		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, common.ErrAccessSecretNotFound) {
+		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 			if !manifest.GetDeletionTimestamp().IsZero() {
 				logf.FromContext(ctx).Info("manifest is in deleting state, cleanupManifest")
 			}
@@ -282,6 +283,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
 }
 
+// Normally after all resources have been deleted, the manifest should be cleared as well. But when this happens, it might be the connection to the SKR is lost which prevents the manifest deletion, so the next step is try to evict the cache and hope the next reconciliation can determine if the skr kubeconfig secret is deleted or not. If the secret is deleted, then the manifest will be deleted as well.
 func manifestUnderDeletingButNoSyncedResources(manifest *v1beta2.Manifest, current ResourceList) bool {
 	return !manifest.GetDeletionTimestamp().IsZero() && len(current) == 0
 }
@@ -315,7 +317,7 @@ func (r *Reconciler) cleanupManifest(ctx context.Context, manifest *v1beta2.Mani
 		return ctrl.Result{}, err
 	}
 	var finalizerRemoved bool
-	if errors.Is(originalErr, common.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
+	if errors.Is(originalErr, accessmanager.ErrAccessSecretNotFound) || manifest.IsUnmanaged() {
 		finalizerRemoved = finalizer.RemoveAllFinalizers(manifest)
 	} else {
 		finalizerRemoved = finalizer.RemoveRequiredFinalizers(manifest)

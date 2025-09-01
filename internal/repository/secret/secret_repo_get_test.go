@@ -10,7 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 )
 
 func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {

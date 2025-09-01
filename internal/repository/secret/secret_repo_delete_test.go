@@ -10,7 +10,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 )
 
 func TestDelete_ClientCallSucceeds_Returns(t *testing.T) {

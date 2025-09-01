@@ -1,9 +1,10 @@
 package e2e_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
@@ -49,13 +50,17 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 		})
 
 		It("When Kyma Secret is corrected", func() {
-			Eventually(DeleteKymaSecret).
+			Eventually(DeleteAccessSecret).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
 				Should(Succeed())
+			Consistently(AccessSecretExists).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kcpClient).
+				Should(Equal(ErrNotFound))
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+				WithArguments(kyma.GetName(), kcpClient).
 				Should(Succeed())
 		})
 

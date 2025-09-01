@@ -28,7 +28,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then no resources exist in Manifest CR", func() {
+		It("Then no Default CR get deployed in SKR", func() {
 			Eventually(func(g Gomega, ctx context.Context) error {
 				_, err := GetManifestResource(ctx, kcpClient, kyma.GetName(), kyma.GetNamespace(),
 					module.Name)
@@ -64,7 +64,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 			Eventually(AddFinalizerToManifest).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-					"blocking-finalizer").
+					"kyma-project.io/blocking-finalizer").
 				Should(Succeed())
 
 			By("And Manifest CR has deletion timestamp set")
@@ -112,10 +112,18 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		})
 
 		It("When Kubeconfig Secret is deleted", func() {
-			Eventually(DeleteKymaSecret).
+			Consistently(AccessSecretExists).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+				WithArguments(kyma.GetName(), kcpClient).
 				Should(Succeed())
+			Eventually(DeleteAccessSecret).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kcpClient).
+				Should(Succeed())
+			Consistently(AccessSecretExists).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kcpClient).
+				Should(Equal(ErrNotFound))
 		})
 
 		It("Then Manifest CR is deleted", func() {

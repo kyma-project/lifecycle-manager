@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -22,12 +23,13 @@ func NewReconciler(mgr manager.Manager,
 	specResolver *spec.Resolver,
 	clientCache declarativev2.SKRClientCache,
 	clientFactory declarativev2.SKRClientFactory,
+	accessManagerService *accessmanager.Service,
 ) *declarativev2.Reconciler {
 	kcp := &skrclient.ClusterInfo{
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
+	lookup := &manifest.NewRemoteClusterLookup(kcp, accessManagerService)
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(

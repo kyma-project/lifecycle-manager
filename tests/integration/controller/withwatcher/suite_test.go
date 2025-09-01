@@ -51,9 +51,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -206,7 +206,8 @@ var _ = BeforeSuite(func() {
 		certificateConfig,
 	)
 	Expect(err).ToNot(HaveOccurred())
-	certificateService := certificate.NewService(certmanagerrenewal.NewService(nil), certRepo, secret.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
+	certificateService := certificate.NewService(certmanagerrenewal.NewService(nil), certRepo,
+		secret.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
 
