@@ -55,7 +55,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
-	testskrcontext
+	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
