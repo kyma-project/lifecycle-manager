@@ -549,14 +549,11 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
-	if originalErr != nil {
-		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
-		manifest.SetStatus(manifest.GetStatus().WithErr(originalErr))
-	}
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
 	}
 	if originalErr != nil {
+		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 		return ctrl.Result{}, originalErr
 	}
 	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
