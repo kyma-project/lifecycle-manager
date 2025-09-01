@@ -1,6 +1,7 @@
 package skrclient_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,10 +12,17 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/rest"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
-// fakeMappingResolver returns a static RESTMapping for testing.
+type FakeAccessManagerService struct{}
+
+func (f *FakeAccessManagerService) GetAccessRestConfigByKyma(_ context.Context, _ string) (*rest.Config, error) {
+	return &rest.Config{Host: "http://example.invalid"}, nil
+}
+
 func fakeMappingResolver(_ machineryruntime.Object, _ meta.RESTMapper, _ bool) (*meta.RESTMapping, error) {
 	return &meta.RESTMapping{
 		Resource: schema.GroupVersionResource{
@@ -32,37 +40,33 @@ func fakeMappingResolver(_ machineryruntime.Object, _ meta.RESTMapper, _ bool) (
 }
 
 func fakeResourceInfoClientResolver(_ *unstructured.Unstructured,
-	_ *skrclient.Service,
+	_ *skrclient.SingletonClient,
 	_ *meta.RESTMapping,
 ) (resource.RESTClient, error) {
 	return nil, nil
 }
 
-func TestService_ResourceInfo_WithFakes(t *testing.T) {
-	cfg := &rest.Config{Host: "http://example.invalid"}
-	info := &skrclient.ClusterInfo{
-		Config: cfg,
-	}
+func TestSingletonClient_ResourceInfo_WithClientResolver(t *testing.T) {
+	manifest := &v1beta2.Manifest{}
+	manifest.SetLabels(map[string]string{shared.KymaName: "kyma-test"})
+	manifest.SetName("test-manifest")
+	manifest.SetNamespace("default")
 
-	svc, err := skrclient.NewService(info)
+	service := skrclient.NewService(1, 1, &FakeAccessManagerService{})
+	singleton, err := service.ResolveClient(context.Background(), manifest)
 	require.NoError(t, err)
-	require.NotNil(t, svc)
+	require.NotNil(t, singleton)
 
-	svc.SetMappingResolver(fakeMappingResolver)
-	svc.SetResourceInfoClientResolver(fakeResourceInfoClientResolver)
+	singleton.SetMappingResolver(fakeMappingResolver)
+	singleton.SetResourceInfoClientResolver(fakeResourceInfoClientResolver)
 
-	// Create a test unstructured object
 	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "",
-		Version: "v1",
-		Kind:    "Pod",
-	})
+	obj.SetGroupVersionKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"})
 	obj.SetNamespace("default")
 	obj.SetName("test-pod")
 	obj.SetResourceVersion("123")
 
-	infoResult, err := svc.ResourceInfo(obj, false)
+	infoResult, err := singleton.ResourceInfo(obj, false)
 	require.NoError(t, err)
 	require.NotNil(t, infoResult)
 	require.Equal(t, "default", infoResult.Namespace)

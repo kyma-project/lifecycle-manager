@@ -1,6 +1,7 @@
 package skrclient
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -20,6 +21,9 @@ import (
 	"k8s.io/kubectl/pkg/util/openapi"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 )
 
@@ -40,18 +44,37 @@ type MappingResolver func(obj machineryruntime.Object, mapper meta.RESTMapper, r
 )
 
 type ResourceInfoClientResolver func(obj *unstructured.Unstructured,
-	s *Service,
+	singletonClient *SingletonClient,
 	mapping *meta.RESTMapping,
 ) (resource.RESTClient,
 	error,
 )
 
-// Service serves as a single-minded client interface that combines
+type Service struct {
+	qps                  float32
+	burst                int
+	accessManagerService AccessManagerService
+	singletonClient      *SingletonClient
+}
+
+type AccessManagerService interface {
+	GetAccessRestConfigByKyma(ctx context.Context, kymaName string) (*rest.Config, error)
+}
+
+func NewService(qps float32, burst int, accessManagerService AccessManagerService) *Service {
+	return &Service{
+		qps:                  qps,
+		burst:                burst,
+		accessManagerService: accessManagerService,
+	}
+}
+
+// SingletonClient serves as a single-minded client interface that combines
 // all kubernetes Client APIs (Kubernetes, Client-Go) under the hood.
 // It offers a simple initialization lifecycle during creation, but delegates all
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
-type Service struct {
+type SingletonClient struct {
 	httpClient *http.Client
 
 	// controller runtime client
@@ -87,20 +110,32 @@ type Service struct {
 	resourceInfoClientResolver ResourceInfoClientResolver
 }
 
-func NewService(info *ClusterInfo) (*Service, error) {
-	if err := setKubernetesDefaults(info.Config); err != nil {
+func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*SingletonClient, error) {
+	kymaOwnerLabel, err := internal.GetResourceLabel(manifest, shared.KymaName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kyma owner label: %w", err)
+	}
+
+	config, err := s.accessManagerService.GetAccessRestConfigByKyma(ctx, kymaOwnerLabel)
+	if err != nil {
+		return nil, err
+	}
+	config.QPS = s.qps
+	config.Burst = s.burst
+
+	if err := setKubernetesDefaults(config); err != nil {
 		return nil, err
 	}
 
 	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache. Service are cached anyways.
-	info.Config.Proxy = http.ProxyFromEnvironment
+	config.Proxy = http.ProxyFromEnvironment
 
-	httpClient, err := rest.HTTPClientFor(info.Config)
+	httpClient, err := rest.HTTPClientFor(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initiliaze httpClient: %w", err)
 	}
 
-	discoveryConfig := *info.Config
+	discoveryConfig := *config
 	discoveryConfig.Burst = 200
 	discoveryClient, err := discovery.NewDiscoveryClientForConfigAndClient(&discoveryConfig, httpClient)
 	if err != nil {
@@ -110,34 +145,25 @@ func NewService(info *ClusterInfo) (*Service, error) {
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
 	discoveryShortcutExpander := restmapper.NewShortcutExpander(discoveryRESTMapper, cachedDiscoveryClient, nil)
 
-	// Create target cluster client only if not passed.
-	// Clients should be passed only in two cases:
-	// 1. Single cluster mode is enabled.
-	// Since such clients are similar to the root client instance.
-	// 2. Client instance is explicitly passed from the library interface
-	runtimeClient := info.Client
-	if info.Client == nil {
-		// For all other cases where a client instance is not passed, create a client proxy.
-		runtimeClient, err = newClientProxy(info.Config, discoveryShortcutExpander)
-		if err != nil {
-			return nil, err
-		}
+	runtimeClient, err := newClientProxy(config, discoveryShortcutExpander)
+	if err != nil {
+		return nil, err
 	}
 
-	kubernetesClient, err := kubernetes.NewForConfigAndClient(info.Config, httpClient)
+	kubernetesClient, err := kubernetes.NewForConfigAndClient(config, httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialiaze k8s-client: %w", err)
 	}
-	dynamicClient, err := dynamic.NewForConfigAndClient(info.Config, httpClient)
+	dynamicClient, err := dynamic.NewForConfigAndClient(config, httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialiaze dynamic-client: %w", err)
 	}
 
 	openAPIGetter := openapi.NewOpenAPIGetter(cachedDiscoveryClient)
 
-	clients := &Service{
+	clients := &SingletonClient{
 		httpClient:                  httpClient,
-		config:                      info.Config,
+		config:                      config,
 		discoveryClient:             cachedDiscoveryClient,
 		discoveryShortcutExpander:   discoveryShortcutExpander,
 		kubernetesClient:            kubernetesClient,
@@ -154,15 +180,17 @@ func NewService(info *ClusterInfo) (*Service, error) {
 	return clients, nil
 }
 
-func (s *Service) SetMappingResolver(resolver MappingResolver) {
+func (s *SingletonClient) SetMappingResolver(resolver MappingResolver) {
 	s.mappingResolver = resolver
 }
 
-func (s *Service) SetResourceInfoClientResolver(resolver ResourceInfoClientResolver) {
+func (s *SingletonClient) SetResourceInfoClientResolver(resolver ResourceInfoClientResolver) {
 	s.resourceInfoClientResolver = resolver
 }
 
-func (s *Service) ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bool) (*resource.Info, error) {
+func (s *SingletonClient) ResourceInfo(obj *unstructured.Unstructured,
+	retryOnNoMatch bool,
+) (*resource.Info, error) {
 	mapping, err := s.mappingResolver(obj, s.discoveryShortcutExpander, retryOnNoMatch)
 	if err != nil {
 		return nil, err
@@ -184,20 +212,20 @@ func (s *Service) ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bo
 }
 
 func getResourceInfoClient(obj *unstructured.Unstructured,
-	service *Service,
+	client *SingletonClient,
 	mapping *meta.RESTMapping,
 ) (resource.RESTClient,
 	error,
 ) {
 	var clnt resource.RESTClient
 	var err error
-	if service.Scheme().IsGroupRegistered(mapping.GroupVersionKind.Group) {
-		clnt, err = service.ClientForMapping(mapping)
+	if client.Scheme().IsGroupRegistered(mapping.GroupVersionKind.Group) {
+		clnt, err = client.ClientForMapping(mapping)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		clnt, err = service.UnstructuredClientForMapping(mapping)
+		clnt, err = client.UnstructuredClientForMapping(mapping)
 		if err != nil {
 			return nil, err
 		}

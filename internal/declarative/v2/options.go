@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
 const (
@@ -41,7 +40,6 @@ type Options struct {
 	record.EventRecorder
 	Config *rest.Config
 	client.Client
-	TargetCluster ClusterFn
 	ManifestParser
 	ManifestCache
 	CustomStateCheck StateCheck
@@ -137,18 +135,4 @@ func WithCustomStateCheck(check StateCheck) WithCustomStateCheckOption {
 
 func (o WithCustomStateCheckOption) Apply(options *Options) {
 	options.CustomStateCheck = o
-}
-
-type ClusterFn func(context.Context, Object) (*skrclient.ClusterInfo, error)
-
-func WithRemoteTargetCluster(configFn ClusterFn) WithRemoteTargetClusterOption {
-	return WithRemoteTargetClusterOption{ClusterFn: configFn}
-}
-
-type WithRemoteTargetClusterOption struct {
-	ClusterFn
-}
-
-func (o WithRemoteTargetClusterOption) Apply(options *Options) {
-	options.TargetCluster = o.ClusterFn
 }

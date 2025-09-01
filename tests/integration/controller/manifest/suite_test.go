@@ -55,6 +55,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -141,20 +142,14 @@ var _ = BeforeSuite(func() {
 	)
 	Expect(err).ToNot(HaveOccurred())
 
-	authUser, err := testEnv.AddUser(
-		envtest.User{
-			Name:   "skr-admin-account",
-			Groups: []string{"system:masters"},
-		}, cfg,
-	)
-	Expect(err).NotTo(HaveOccurred())
-
 	kcpClient = mgr.GetClient()
 	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider()
 	extractor := img.NewPathExtractor()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
 	orphanDetectionClient := kymarepository.NewClient(kcpClient)
+	accessManagerService := skrcontextimpl.NewFakeAccessManagerService(testEnv, cfg)
+
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
@@ -162,12 +157,9 @@ var _ = BeforeSuite(func() {
 		Warning: 1 * time.Second,
 	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
 		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
-		skrclientcache.NewService(), skrclient.NewService,
-		declarativev2.WithRemoteTargetCluster(
-			func(_ context.Context, _ declarativev2.Object) (*skrclient.ClusterInfo, error) {
-				return &skrclient.ClusterInfo{Config: authUser.Config()}, nil
-			},
-		), declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
+		skrclientcache.NewService(),
+		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
+		declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

@@ -470,20 +470,19 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
-	if err := manifest.SetupWithManager(
-		mgr, options, queue.RequeueIntervals{
-			Success: flagVar.ManifestRequeueSuccessInterval,
-			Busy:    flagVar.ManifestRequeueBusyInterval,
-			Error:   flagVar.ManifestRequeueErrInterval,
-			Warning: flagVar.ManifestRequeueWarningInterval,
-			Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
-				flagVar.ManifestRequeueJitterPercentage),
-		}, manifest.SetupOptions{
-			ListenerAddr:                 flagVar.ManifestListenerAddr,
-			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
-		manifestClient, orphanDetectionClient, specResolver, clientCache, skrclient.NewService,
-		accessManagerService); err != nil {
+	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
+	if err := manifest.SetupWithManager(mgr, options, queue.RequeueIntervals{
+		Success: flagVar.ManifestRequeueSuccessInterval,
+		Busy:    flagVar.ManifestRequeueBusyInterval,
+		Error:   flagVar.ManifestRequeueErrInterval,
+		Warning: flagVar.ManifestRequeueWarningInterval,
+		Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
+			flagVar.ManifestRequeueJitterPercentage),
+	}, manifest.SetupOptions{
+		ListenerAddr:                 flagVar.ManifestListenerAddr,
+		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
+	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionClient,
+		specResolver, clientCache, skrClient); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

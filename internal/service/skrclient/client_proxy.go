@@ -12,7 +12,7 @@ import (
 )
 
 // Checking compliance with the interface methods implemented below.
-var _ client.Client = &Service{}
+var _ client.Client = &SingletonClient{}
 
 // ProxyClient holds information required to proxy Client requests to verify RESTMapper integrity.
 // During the proxy, the underlying mapper verifies mapping for the calling resource.

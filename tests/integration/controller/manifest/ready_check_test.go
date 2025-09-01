@@ -19,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -61,8 +62,11 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
-		testClient, err := declarativeTestClient(kcpClient)
-		Expect(err).ToNot(HaveOccurred())
+		accessManagerService := skrcontextimpl.NewFakeAccessManagerService(testEnv, cfg)
+		testClientService := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
+		testClient, err := testClientService.ResolveClient(ctx, testManifest)
+		Expect(err).NotTo(HaveOccurred())
+
 		By("Verifying that deployment is deployed and ready")
 		deploy := &apiappsv1.Deployment{}
 		Expect(verifyDeploymentInstallation(ctx, kcpClient, deploy)).To(Succeed())
@@ -155,15 +159,6 @@ func prepareResourceInfosForCustomCheck(clt skrclient.Client, deploy *apiappsv1.
 		return nil, err
 	}
 	return []*resource.Info{deployInfo}, nil
-}
-
-func declarativeTestClient(clnt client.Client) (skrclient.Client, error) {
-	cluster := &skrclient.ClusterInfo{
-		Config: cfg,
-		Client: clnt,
-	}
-
-	return skrclient.NewService(cluster)
 }
 
 func asResource(name, namespace, group, version, kind string) shared.Resource {

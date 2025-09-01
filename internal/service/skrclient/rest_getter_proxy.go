@@ -7,19 +7,19 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func (s *Service) ToRESTConfig() (*rest.Config, error) {
+func (s *SingletonClient) ToRESTConfig() (*rest.Config, error) {
 	return s.config, nil
 }
 
-func (s *Service) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+func (s *SingletonClient) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
 	return s.discoveryClient, nil
 }
 
-func (s *Service) ToRESTMapper() (meta.RESTMapper, error) {
+func (s *SingletonClient) ToRESTMapper() (meta.RESTMapper, error) {
 	return s.discoveryShortcutExpander, nil
 }
 
-func (s *Service) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+func (s *SingletonClient) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}

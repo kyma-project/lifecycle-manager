@@ -25,7 +25,6 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -38,13 +37,17 @@ type SetupOptions struct {
 	EnableDomainNameVerification bool
 }
 
-func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueIntervals queue.RequeueIntervals,
-	settings SetupOptions, manifestMetrics *metrics.ManifestMetrics,
-	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestClient declarativev2.ManifestAPIClient,
-	orphanDetectionClient orphan.DetectionRepository, specResolver *spec.Resolver,
-	clientCache declarativev2.SKRClientCache,
-	clientFactory declarativev2.SKRClientFactory,
-	accessManagerService *accessmanager.Service,
+func SetupWithManager(mgr manager.Manager,
+	opts ctrlruntime.Options,
+	requeueIntervals queue.RequeueIntervals,
+	settings SetupOptions,
+	manifestMetrics *metrics.ManifestMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	manifestClient declarativev2.ManifestAPIClient,
+	orphanDetectionClient orphan.DetectionRepository,
+	specResolver *spec.Resolver,
+	skrClientCache declarativev2.SKRClientCache,
+	skrClient declarativev2.SKRClient,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -89,9 +92,8 @@ func SetupWithManager(mgr manager.Manager, opts ctrlruntime.Options, requeueInte
 				predicate.LabelChangedPredicate{}))).
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
-		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics,
-			manifestClient, orphanDetectionClient, specResolver, clientCache, clientFactory,
-			accessManagerService)); err != nil {
+		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
+			orphanDetectionClient, specResolver, skrClientCache, skrClient)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

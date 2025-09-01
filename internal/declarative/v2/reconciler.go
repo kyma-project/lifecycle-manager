@@ -71,7 +71,9 @@ type SKRClientCache interface {
 	GetCacheKey(manifest *v1beta2.Manifest) (string, bool)
 }
 
-type SKRClientFactory func(clusterInfo *skrclient.ClusterInfo) (*skrclient.Service, error)
+type SKRClient interface {
+	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SingletonClient, error)
+}
 
 type Reconciler struct {
 	queue.RequeueIntervals
@@ -83,13 +85,13 @@ type Reconciler struct {
 	managedLabelRemovalService ManagedByLabelRemoval
 	orphanDetectionService     OrphanDetection
 	skrClientCache             SKRClientCache
-	skrClientFactory           SKRClientFactory
+	skrClient                  SKRClient
 }
 
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
 	orphanDetectionClient orphan.DetectionRepository, specResolver SpecResolver, clientCache SKRClientCache,
-	clientFactory SKRClientFactory,
+	skrClient SKRClient,
 	options ...Option,
 ) *Reconciler {
 	reconciler := &Reconciler{}
@@ -101,7 +103,7 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
 	reconciler.orphanDetectionService = orphan.NewDetectionService(orphanDetectionClient)
 	reconciler.skrClientCache = clientCache
-	reconciler.skrClientFactory = clientFactory
+	reconciler.skrClient = skrClient
 	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
 	return reconciler
 }
@@ -137,22 +139,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	recordMandatoryModuleState(manifest, r)
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info("manifest is in deleting state, before getTargetClient")
-	}
-
 	skrClient, err := r.getTargetClient(ctx, manifest)
-
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Error(err, "manifest is in deleting state, after getTargetClient")
-	}
-
 	if err != nil {
 		if !manifest.GetDeletionTimestamp().IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
-			if !manifest.GetDeletionTimestamp().IsZero() {
-				logf.FromContext(ctx).Info("manifest is in deleting state, cleanupManifest")
-			}
-
 			return r.cleanupManifest(ctx, manifest, manifestStatus, metrics.ManifestClientInit, err)
 		}
 
@@ -191,10 +180,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info("manifest is in deleting state, before GetSpec")
-	}
-
 	spec, err := r.specResolver.GetSpec(ctx, manifest)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateError).WithErr(err))
@@ -209,10 +194,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.updateManifest(ctx, manifest, metrics.ManifestInitSyncedOCIRef)
 	}
 
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info("manifest is in deleting state, before renderResources")
-	}
-
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
 	if err != nil {
 		if util.IsConnectionRelatedError(err) {
@@ -224,34 +205,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if manifestUnderDeletingButNoSyncedResources(manifest, current) {
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			logf.FromContext(ctx).Info("manifest is in deleting state, manifestUnderDeletingButNoSyncedResources")
-		}
 		r.evictSKRClientCache(ctx, manifest)
 	}
 
 	if err := r.pruneDiff(ctx, skrClient, manifest, current, target, spec); errors.Is(err,
 		resources.ErrDeletionNotFinished) {
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			logf.FromContext(ctx).Error(err, "manifest is in deleting state, got error")
-		}
+
 		return ctrl.Result{Requeue: true}, nil
 	} else if util.IsConnectionRelatedError(err) {
 		r.evictSKRClientCache(ctx, manifest)
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			logf.FromContext(ctx).Error(err, "manifest is in deleting state, got connection error")
-		}
+
 		return r.finishReconcile(ctx, manifest, metrics.ManifestUnauthorized, manifestStatus, err)
 	} else if err != nil {
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			logf.FromContext(ctx).Error(err, "manifest is in deleting state, got other error")
-		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
-	}
-
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info("manifest is in deleting state, after prune diff")
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
@@ -489,10 +456,6 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 	current, target []*resource.Info, spec *Spec,
 ) error {
 	diff, err := pruneResource(ResourceList(current).Difference(target), "Namespace", namespaceNotBeRemoved)
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info(fmt.Sprintf("manifest is in deleting state, during prune diff: diff %d, err: %s",
-			len(diff), err))
-	}
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithErr(err))
 		return err
@@ -512,9 +475,6 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 	err = resources.NewConcurrentCleanup(clnt, manifest).DeleteDiffResources(ctx, diff)
 	if err != nil {
 		manifest.SetStatus(manifest.GetStatus().WithErr(err))
-	}
-	if !manifest.GetDeletionTimestamp().IsZero() {
-		logf.FromContext(ctx).Info(fmt.Sprintf("manifest is in deleting state, after cleanup: err: %s", err))
 	}
 	return err
 }
@@ -576,37 +536,11 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 	}
 
 	if clnt == nil {
-		clnt, err = r.configClient(ctx, manifest)
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			logf.FromContext(ctx).Error(err, "manifest is in deleting state, recreate client cache")
-		}
+		clnt, err = r.skrClient.ResolveClient(ctx, manifest)
 		if err != nil {
 			return nil, err
 		}
 		r.skrClientCache.AddClient(clientsCacheKey, clnt)
-	}
-
-	return clnt, nil
-}
-
-func (r *Reconciler) configClient(ctx context.Context, manifest *v1beta2.Manifest) (skrclient.Client, error) {
-	var err error
-
-	cluster := &skrclient.ClusterInfo{
-		Config: r.Config,
-		Client: r.Client,
-	}
-
-	if r.TargetCluster != nil {
-		cluster, err = r.TargetCluster(ctx, manifest)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	clnt, err := r.skrClientFactory(cluster)
-	if err != nil {
-		return nil, err
 	}
 
 	return clnt, nil
