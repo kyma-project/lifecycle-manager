@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
@@ -57,7 +58,7 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
-				Should(Equal(ErrNotFound))
+				Should(Equal(accessmanager.ErrAccessSecretNotFound))
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).

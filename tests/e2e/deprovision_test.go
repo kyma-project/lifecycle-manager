@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -105,7 +106,7 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
-				Should(Equal(ErrNotFound))
+				Should(Equal(accessmanager.ErrAccessSecretNotFound))
 		})
 
 		It("Then Manifest CR is deleted", func() {

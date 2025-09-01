@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 )
 
@@ -25,4 +27,22 @@ func TestService_Basic(t *testing.T) {
 	require.Equal(t, 1, svc.Size(), "expected size 1 after delete")
 
 	require.Nil(t, svc.GetClient("a"), "expected nil for deleted key")
+}
+
+func TestGetCacheKey(t *testing.T) {
+	manifest := &v1beta2.Manifest{}
+	manifest.SetName("test-manifest")
+	manifest.SetNamespace("test-namespace")
+	manifest.SetLabels(map[string]string{
+		shared.KymaName: "kyma-test",
+	})
+
+	cache := skrclientcache.NewService()
+
+	expectedKey := "kyma-test|test-namespace"
+	cache.AddClient(expectedKey, nil)
+
+	key, found := cache.GetCacheKey(manifest)
+	require.True(t, found)
+	require.Equal(t, expectedKey, key)
 }

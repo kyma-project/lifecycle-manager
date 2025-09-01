@@ -10,6 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -18,7 +19,6 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
 		It("When Kyma Module without Module Default CR is enabled", func() {
@@ -123,7 +123,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
-				Should(Equal(ErrNotFound))
+				Should(Equal(accessmanager.ErrAccessSecretNotFound))
 		})
 
 		It("Then Manifest CR is deleted", func() {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
@@ -198,7 +199,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
-				Should(Equal(ErrNotFound))
+				Should(Equal(accessmanager.ErrAccessSecretNotFound))
 
 			By("And skip-reconciliation label is removed from KCP Kyma CR")
 			Eventually(UpdateKymaLabel).

@@ -22,8 +22,8 @@ func DeleteAccessSecret(ctx context.Context, clnt client.Client, kymaName string
 }
 
 func AccessSecretExists(ctx context.Context, clnt client.Client, kymaName string) error {
-	secret, err := GetAccessSecret(ctx, clnt, kymaName)
-	return CRExists(secret, err)
+	_, err := GetAccessSecret(ctx, clnt, kymaName)
+	return err
 }
 
 func GetAccessSecret(ctx context.Context, clnt client.Client, name string) (*apicorev1.Secret, error) {

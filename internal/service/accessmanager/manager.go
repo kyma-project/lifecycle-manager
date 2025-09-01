@@ -7,7 +7,7 @@ import (
 
 	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -53,7 +53,7 @@ func (s Service) GetAccessSecretByKyma(ctx context.Context, kymaName string) (*a
 	return &kubeConfigSecretList.Items[0], nil
 }
 
-func (s Service) GetAccessRestConfigByKyma(ctx context.Context, kymaName string) (*restclient.Config, error) {
+func (s Service) GetAccessRestConfigByKyma(ctx context.Context, kymaName string) (*rest.Config, error) {
 	kubeConfigSecret, err := s.GetAccessSecretByKyma(ctx, kymaName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get access secret by kyma: %w", err)

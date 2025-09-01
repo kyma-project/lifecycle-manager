@@ -40,7 +40,7 @@ func (r *Repository) List(ctx context.Context, labelSelector k8slabels.Selector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secret by label (%s): %w", labelSelector, err)
 	}
-	return secretList, err
+	return secretList, nil
 }
 
 func (r *Repository) Delete(ctx context.Context, name string) error {

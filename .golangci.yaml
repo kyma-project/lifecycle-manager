@@ -115,6 +115,8 @@ linters:
           alias: modulecommon
         - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/kyma
           alias: kymarepository
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/repository/secret
+          alias: secretrepository
         - pkg: k8s.io/api/networking/v1
           alias: apinetworkv1
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources
