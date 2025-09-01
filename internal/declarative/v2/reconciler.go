@@ -351,8 +351,8 @@ func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
 }
 
 func (r *Reconciler) evictSKRClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
-	clientsCacheKey, ok := r.skrClientCache.GetCacheKey(manifest)
-	if ok {
+	clientsCacheKey, found := r.skrClientCache.GetCacheKey(manifest)
+	if found {
 		logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
 			clientsCacheKey))
 		r.skrClientCache.DeleteClient(clientsCacheKey)

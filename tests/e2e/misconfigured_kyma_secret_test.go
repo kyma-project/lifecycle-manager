@@ -52,15 +52,15 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 		It("When Kyma Secret is corrected", func() {
 			Eventually(DeleteAccessSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Succeed())
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Equal(ErrNotFound))
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Succeed())
 		})
 

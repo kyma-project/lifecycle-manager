@@ -96,15 +96,15 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 		It("When Kubeconfig Secret is deleted", func() {
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Succeed())
 			Eventually(DeleteAccessSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Succeed())
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Equal(ErrNotFound))
 		})
 

@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-func DeleteAccessSecret(ctx context.Context, kymaName string, clnt client.Client) error {
+func DeleteAccessSecret(ctx context.Context, clnt client.Client, kymaName string) error {
 	secret, err := GetAccessSecret(ctx, clnt, kymaName)
 	if util.IsNotFound(err) {
 		return nil

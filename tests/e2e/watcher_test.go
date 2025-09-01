@@ -189,15 +189,15 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			By("And Kubeconfig Secret is deleted")
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Succeed())
 			Eventually(DeleteAccessSecret).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Succeed())
 			Consistently(AccessSecretExists).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kcpClient).
+				WithArguments(kcpClient, kyma.GetName()).
 				Should(Equal(ErrNotFound))
 
 			By("And skip-reconciliation label is removed from KCP Kyma CR")
