@@ -26,7 +26,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
-	"github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 
@@ -153,7 +153,7 @@ var _ = BeforeSuite(func() {
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
 	orphanDetectionClient := kymarepository.NewClient(kcpClient)
-	accessManagerService := skrcontextimpl.NewFakeAccessManagerService(testEnv, cfg)
+	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,

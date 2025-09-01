@@ -1,7 +1,6 @@
 package skrclient_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestUnstructuredClientForMapping_CachesAndSeparatesByGroup(t *testing.T) {
 	service := skrclient.NewService(1, 1, &FakeAccessManagerService{})
 	require.NotNil(t, service)
 
-	singleton, err := service.ResolveClient(context.Background(), manifest)
+	singleton, err := service.ResolveClient(t.Context(), manifest)
 	require.NoError(t, err)
 	require.NotNil(t, singleton)
 

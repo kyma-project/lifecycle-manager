@@ -53,7 +53,7 @@ func TestSingletonClient_ResourceInfo_WithClientResolver(t *testing.T) {
 	manifest.SetNamespace("default")
 
 	service := skrclient.NewService(1, 1, &FakeAccessManagerService{})
-	singleton, err := service.ResolveClient(context.Background(), manifest)
+	singleton, err := service.ResolveClient(t.Context(), manifest)
 	require.NoError(t, err)
 	require.NotNil(t, singleton)
 

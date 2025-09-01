@@ -19,7 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -62,7 +62,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
-		accessManagerService := skrcontextimpl.NewFakeAccessManagerService(testEnv, cfg)
+		accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
 		testClientService := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 		testClient, err := testClientService.ResolveClient(ctx, testManifest)
 		Expect(err).NotTo(HaveOccurred())

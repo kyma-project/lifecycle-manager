@@ -10,7 +10,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 )
 
 func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {
@@ -22,7 +22,7 @@ func TestGet_ClientCallSucceeds_ReturnsSecret(t *testing.T) {
 			},
 		},
 	}
-	secretRepository := secret.NewRepository(clientStub, namespace)
+	secretRepository := secretrepository.NewRepository(clientStub, namespace)
 
 	result, err := secretRepository.Get(t.Context(), secretName)
 
@@ -37,7 +37,7 @@ func TestGet_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	clientStub := &getClientStub{
 		err: assert.AnError,
 	}
-	secretRepository := secret.NewRepository(clientStub, namespace)
+	secretRepository := secretrepository.NewRepository(clientStub, namespace)
 
 	result, err := secretRepository.Get(t.Context(), secretName)
 

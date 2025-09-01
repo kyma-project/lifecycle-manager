@@ -54,7 +54,6 @@ type Service struct {
 	qps                  float32
 	burst                int
 	accessManagerService AccessManagerService
-	singletonClient      *SingletonClient
 }
 
 type AccessManagerService interface {

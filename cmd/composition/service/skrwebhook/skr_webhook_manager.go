@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
@@ -109,7 +109,7 @@ func setupSKRCertService(kcpClient client.Client, flagVar *flags.FlagVar) (*cert
 		RenewBuffer:        flagVar.SelfSignedCertRenewBuffer,
 	}
 
-	secretRepository := secret.NewRepository(kcpClient, flagVar.IstioNamespace)
+	secretRepository := secretrepository.NewRepository(kcpClient, flagVar.IstioNamespace)
 
 	var renewalService certificate.RenewalService
 	switch flagVar.CertificateManagement {
