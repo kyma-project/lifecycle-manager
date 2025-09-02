@@ -4,7 +4,7 @@ permissions:
   pull-requests: write
 
 on:
-  pull_request_target: { }
+  pull_request: { }
 
 jobs:
   check-manifest-changes:
@@ -38,15 +38,15 @@ jobs:
         id: compare-manifests
         run: |
           cd ./manifests-comparison
-          
+
           # Sort keys for consistent comparison
           yq eval 'sort_keys(.)' pr-manifests.yaml > pr-sorted.yaml
           yq eval 'sort_keys(.)' base-manifests.yaml > base-sorted.yaml
-          
+
           set +e
           DIFF_OUTPUT=$(diff -u base-sorted.yaml pr-sorted.yaml)
           EXIT_CODE=$?
-          
+
           if [[ $EXIT_CODE != 0 ]]; then
             echo "❌ Detected differences in manifest outputs!"
             echo "$DIFF_OUTPUT"
