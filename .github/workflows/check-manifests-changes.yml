@@ -15,16 +15,16 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Checkout base branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
 
-      - name: Generate base manifests
+      - name: Generate main manifests
         run: |
           make dry-run-control-plane
           mkdir -p /tmp/manifests-comparison
-          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/base-manifests.yaml
+          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/main-manifests.yaml
 
       - name: Checkout PR branch
         uses: actions/checkout@v4
