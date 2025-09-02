@@ -7,7 +7,6 @@ commonLabels:
   app.kubernetes.io/created-by: argo-cd
   app.kubernetes.io/part-of: kcp
   app.kubernetes.io/managed-by: kustomize
-  test.pipeline: "trigger-diff" # Test label to trigger manifest diff detection
 images:
   - name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
 resources:
