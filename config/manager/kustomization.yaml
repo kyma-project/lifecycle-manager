@@ -3,8 +3,8 @@ kind: Kustomization
 generatorOptions:
   disableNameSuffixHash: true
 resources:
-- manager.yaml
-- metrics_service.yaml
+  - manager.yaml
+  - metrics_service.yaml
 images:
-- name: controller
-  newName: /lifecycle-manager
+  - name: controller
+    newName: /lifecycle-manager
