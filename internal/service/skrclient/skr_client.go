@@ -44,7 +44,7 @@ type MappingResolver func(obj machineryruntime.Object, mapper meta.RESTMapper, r
 )
 
 type ResourceInfoClientResolver func(obj *unstructured.Unstructured,
-	singletonClient *SingletonClient,
+	skrClient *SKRClient,
 	mapping *meta.RESTMapping,
 ) (resource.RESTClient,
 	error,
@@ -68,12 +68,12 @@ func NewService(qps float32, burst int, accessManagerService AccessManagerServic
 	}
 }
 
-// SingletonClient serves as a single-minded client interface that combines
+// SKRClient serves as a single-minded client interface that combines
 // all kubernetes Client APIs (Kubernetes, Client-Go) under the hood.
 // It offers a simple initialization lifecycle during creation, but delegates all
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
-type SingletonClient struct {
+type SKRClient struct {
 	httpClient *http.Client
 
 	// controller runtime client
@@ -109,7 +109,7 @@ type SingletonClient struct {
 	resourceInfoClientResolver ResourceInfoClientResolver
 }
 
-func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*SingletonClient, error) {
+func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*SKRClient, error) {
 	kymaOwnerLabel, err := internal.GetResourceLabel(manifest, shared.KymaName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kyma owner label: %w", err)
@@ -160,7 +160,7 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 
 	openAPIGetter := openapi.NewOpenAPIGetter(cachedDiscoveryClient)
 
-	clients := &SingletonClient{
+	clients := &SKRClient{
 		httpClient:                  httpClient,
 		config:                      config,
 		discoveryClient:             cachedDiscoveryClient,
@@ -179,15 +179,15 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 	return clients, nil
 }
 
-func (s *SingletonClient) SetMappingResolver(resolver MappingResolver) {
+func (s *SKRClient) SetMappingResolver(resolver MappingResolver) {
 	s.mappingResolver = resolver
 }
 
-func (s *SingletonClient) SetResourceInfoClientResolver(resolver ResourceInfoClientResolver) {
+func (s *SKRClient) SetResourceInfoClientResolver(resolver ResourceInfoClientResolver) {
 	s.resourceInfoClientResolver = resolver
 }
 
-func (s *SingletonClient) ResourceInfo(obj *unstructured.Unstructured,
+func (s *SKRClient) ResourceInfo(obj *unstructured.Unstructured,
 	retryOnNoMatch bool,
 ) (*resource.Info, error) {
 	mapping, err := s.mappingResolver(obj, s.discoveryShortcutExpander, retryOnNoMatch)
@@ -211,7 +211,7 @@ func (s *SingletonClient) ResourceInfo(obj *unstructured.Unstructured,
 }
 
 func getResourceInfoClient(obj *unstructured.Unstructured,
-	client *SingletonClient,
+	client *SKRClient,
 	mapping *meta.RESTMapping,
 ) (resource.RESTClient,
 	error,

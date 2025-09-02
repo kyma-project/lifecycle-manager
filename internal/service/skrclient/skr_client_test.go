@@ -40,7 +40,7 @@ func fakeMappingResolver(_ machineryruntime.Object, _ meta.RESTMapper, _ bool) (
 }
 
 func fakeResourceInfoClientResolver(_ *unstructured.Unstructured,
-	_ *skrclient.SingletonClient,
+	_ *skrclient.SKRClient,
 	_ *meta.RESTMapping,
 ) (resource.RESTClient, error) {
 	return nil, nil
@@ -53,12 +53,12 @@ func TestSingletonClient_ResourceInfo_WithClientResolver(t *testing.T) {
 	manifest.SetNamespace("default")
 
 	service := skrclient.NewService(1, 1, &FakeAccessManagerService{})
-	singleton, err := service.ResolveClient(t.Context(), manifest)
+	skrClient, err := service.ResolveClient(t.Context(), manifest)
 	require.NoError(t, err)
-	require.NotNil(t, singleton)
+	require.NotNil(t, skrClient)
 
-	singleton.SetMappingResolver(fakeMappingResolver)
-	singleton.SetResourceInfoClientResolver(fakeResourceInfoClientResolver)
+	skrClient.SetMappingResolver(fakeMappingResolver)
+	skrClient.SetResourceInfoClientResolver(fakeResourceInfoClientResolver)
 
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"})
@@ -66,7 +66,7 @@ func TestSingletonClient_ResourceInfo_WithClientResolver(t *testing.T) {
 	obj.SetName("test-pod")
 	obj.SetResourceVersion("123")
 
-	infoResult, err := singleton.ResourceInfo(obj, false)
+	infoResult, err := skrClient.ResourceInfo(obj, false)
 	require.NoError(t, err)
 	require.NotNil(t, infoResult)
 	require.Equal(t, "default", infoResult.Namespace)

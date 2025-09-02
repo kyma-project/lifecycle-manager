@@ -72,7 +72,7 @@ type SKRClientCache interface {
 }
 
 type SKRClient interface {
-	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SingletonClient, error)
+	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
 
 type Reconciler struct {
