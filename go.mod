@@ -19,7 +19,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	github.com/kyma-project/lifecycle-manager/maintenancewindows v0.0.0-20250113095044-41115399d588
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20240502124257-9d96561ef070
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20250825111833-2cf3f8cc5232
 	github.com/onsi/ginkgo/v2 v2.25.2
 	github.com/onsi/gomega v1.38.2
 	github.com/prometheus/client_golang v1.23.0

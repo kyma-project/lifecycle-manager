@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/util/workqueue"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/watch"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
@@ -54,9 +55,11 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		shared.OperatorName,
 		verifyFunc,
 	)
+
 	if err := mgr.Add(runnableListener); err != nil {
 		return fmt.Errorf("KymaReconciler %w", err)
 	}
+
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		Named(controllerName).
 		WithOptions(opts).
@@ -68,7 +71,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 		Watches(&v1beta2.Manifest{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
 				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		WatchesRawSource(source.Channel(runnableListener.ReceivedEvents, r.skrEventHandler())).
+		WatchesRawSource(source.Channel(controller.AdaptEvents(runnableListener.ReceivedEvents), r.skrEventHandler())).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
 	}

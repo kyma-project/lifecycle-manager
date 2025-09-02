@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-	apicorev1 "k8s.io/api/core/v1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func createKyma(kymaName string, annotations map[string]string) *v1beta2.Kyma {
@@ -53,11 +51,11 @@ func createRequest(kymaName string, header map[string][]string) *http.Request {
 
 func createWatcherCR(kymaName string) *types.WatchEvent {
 	return &types.WatchEvent{
-		Owner: client.ObjectKey{
+		Owner: types.ObjectKey{
 			Namespace: "default",
 			Name:      kymaName,
 		},
-		Watched: client.ObjectKey{
+		Watched: types.ObjectKey{
 			Namespace: "default",
 			Name:      kymaName,
 		},

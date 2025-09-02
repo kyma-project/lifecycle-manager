@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/v2/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/v2/types"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -83,7 +84,7 @@ func SetupWithManager(mgr manager.Manager,
 		},
 	}
 
-	skrEventChannel := source.Channel(runnableListener.ReceivedEvents, addSkrEventToQueueFunc)
+	skrEventChannel := source.Channel(controller.AdaptEvents(runnableListener.ReceivedEvents), addSkrEventToQueueFunc)
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Named(controllerName).
