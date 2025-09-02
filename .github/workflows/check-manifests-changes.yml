@@ -21,30 +21,30 @@ jobs:
       - name: Generate PR manifests
         run: |
           make dry-run-control-plane
-          mkdir -p ./manifests-comparison
-          cp ./dry-run/manifests.yaml ./manifests-comparison/pr-manifests.yaml
+          mkdir -p /tmp/manifests-comparison
+          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/pr-manifests.yaml
 
-      - name: Checkout base branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
 
-      - name: Generate base manifests
+      - name: Generate main manifests
         run: |
           make dry-run-control-plane
-          cp ./dry-run/manifests.yaml ./manifests-comparison/base-manifests.yaml
+          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/main-manifests.yaml
 
       - name: Compare manifests using yq
         id: compare-manifests
         run: |
-          cd ./manifests-comparison
+          cd /tmp/manifests-comparison
 
           # Sort keys for consistent comparison
           yq eval 'sort_keys(.)' pr-manifests.yaml > pr-sorted.yaml
-          yq eval 'sort_keys(.)' base-manifests.yaml > base-sorted.yaml
+          yq eval 'sort_keys(.)' main-manifests.yaml > main-sorted.yaml
 
           set +e
-          DIFF_OUTPUT=$(diff -u base-sorted.yaml pr-sorted.yaml)
+          DIFF_OUTPUT=$(diff -u main-sorted.yaml pr-sorted.yaml)
           EXIT_CODE=$?
 
           if [[ $EXIT_CODE != 0 ]]; then
