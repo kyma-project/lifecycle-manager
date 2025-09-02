@@ -3,7 +3,7 @@ package moduletemplateinfolookup_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -22,7 +22,7 @@ func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 
 	responsible := byMRMStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
-	assert.True(t, responsible)
+	require.True(t, responsible)
 }
 
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
@@ -32,7 +32,7 @@ func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleRelea
 
 	responsible := byMRMStrategy.IsResponsible(moduleInfo, moduleReleaseMeta)
 
-	assert.False(t, responsible)
+	require.False(t, responsible)
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
@@ -63,11 +63,11 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 
 	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
-	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
-	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
-	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
+	require.NotNil(t, moduleTemplateInfo)
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
+	require.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleReturnsError(t *testing.T) {
@@ -98,9 +98,9 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleRetu
 
 	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err,
+	require.NotNil(t, moduleTemplateInfo)
+	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	require.ErrorContains(t, moduleTemplateInfo.Err,
 		"failed to get module template: moduletemplates.operator.kyma-project.io \"test-module-1.0.0\" not found")
 }
 
@@ -126,9 +126,39 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsErr
 
 	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
-	assert.NotNil(t, moduleTemplateInfo)
-	assert.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	assert.ErrorContains(t, moduleTemplateInfo.Err, "no channels found for module: test-module")
+	require.NotNil(t, moduleTemplateInfo)
+	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
+	require.ErrorContains(t, moduleTemplateInfo.Err, "no channels found for module: test-module")
+}
+
+func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_ReturnsModuleTemplateInfo(t *testing.T) {
+	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	kyma := builder.NewKymaBuilder().Build()
+	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+		WithModuleName("test-module").
+		WithName("test-module").
+		WithMandatory("1.0.0").
+		Build()
+	moduleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("test-module-1.0.0").
+		WithModuleName("test-module").
+		WithMandatory(true).
+		WithVersion("1.0.0").
+		Build()
+	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(fakeClient(
+		&v1beta2.ModuleTemplateList{
+			Items: []v1beta2.ModuleTemplate{
+				*moduleTemplate,
+			},
+		},
+	))
+
+	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
+
+	require.NotNil(t, moduleTemplateInfo)
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
 }
 
 func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {

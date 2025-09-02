@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 var (
@@ -118,6 +119,11 @@ func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) Modul
 	}
 	if template.IsBeta() && !kyma.IsBeta() {
 		template.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
+		return template
+	}
+	if template.Spec.Mandatory {
+		template.Err = fmt.Errorf("%w: for module %s in channel %s ",
+			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)
 		return template
 	}
 	return template

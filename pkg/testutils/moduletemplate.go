@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -60,7 +61,7 @@ func ModuleTemplateExists(ctx context.Context,
 	kyma *v1beta2.Kyma,
 ) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
-	if moduleTemplate == nil || errors.Is(err, moduletemplateinfolookup.ErrNoTemplatesInListResult) {
+	if moduleTemplate == nil || errors.Is(err, common.ErrNoTemplatesInListResult) {
 		return ErrNotFound
 	}
 

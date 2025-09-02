@@ -136,6 +136,11 @@ func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	moduleReleaseMetas := []v1beta2.ModuleReleaseMeta{}
 
 	for _, moduleReleaseMeta := range moduleReleaseMetaList.Items {
+		if moduleReleaseMeta.Spec.Mandatory != nil {
+			// Skip mandatory ModuleReleaseMetas as they are not allowed to be synced
+			continue
+		}
+
 		allowedChannels := []v1beta2.ChannelVersionAssignment{}
 		// Only add channel-version pairs which have allowed ModuleTemplates to be synced
 		for _, channel := range moduleReleaseMeta.Spec.Channels {
