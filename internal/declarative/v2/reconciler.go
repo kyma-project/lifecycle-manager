@@ -226,6 +226,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if errors.Is(err, finalizer.ErrRequeueRequired) {
 				r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 				return ctrl.Result{Requeue: true}, nil
+			} else if util.IsConnectionRelatedError(err) {
+				r.evictSKRClientCache(ctx, manifest)
 			}
 			return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 		}
