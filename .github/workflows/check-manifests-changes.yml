@@ -4,7 +4,7 @@ permissions:
   pull-requests: write
 
 on:
-  pull_request: { }
+  pull_request_target: { }
 
 jobs:
   check-manifest-changes:
@@ -15,29 +15,32 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-
-      - name: Generate PR manifests
-        run: |
-          make dry-run-control-plane
-          mkdir -p /tmp/manifests-comparison
-          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/pr-manifests.yaml
-
-      - name: Checkout main branch
+      - name: Checkout base branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
 
-      - name: Generate main manifests
+      - name: Generate base manifests
         run: |
           make dry-run-control-plane
-          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/main-manifests.yaml
+          mkdir -p /tmp/manifests-comparison
+          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/base-manifests.yaml
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Generate PR manifests
+        run: |
+          make dry-run-control-plane
+          cp ./dry-run/manifests.yaml /tmp/manifests-comparison/pr-manifests.yaml
 
       - name: Compare manifests using yq
         id: compare-manifests
         run: |
           cd /tmp/manifests-comparison
+          # ... existing comparison logic
 
           # Sort keys for consistent comparison
           yq eval 'sort_keys(.)' pr-manifests.yaml > pr-sorted.yaml
