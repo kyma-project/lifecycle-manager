@@ -196,11 +196,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	target, current, err := r.renderResources(ctx, skrClient, manifest, spec)
 	if err != nil {
-		if util.IsConnectionRelatedError(err) {
-			r.evictSKRClientCache(ctx, manifest)
-			return r.finishReconcile(ctx, manifest, metrics.ManifestUnauthorized, manifestStatus, err)
-		}
-
 		return r.finishReconcile(ctx, manifest, metrics.ManifestRenderResources, manifestStatus, err)
 	}
 
@@ -213,10 +208,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPruneDiffNotFinished, queue.IntendedRequeue)
 
 		return ctrl.Result{Requeue: true}, nil
-	} else if util.IsConnectionRelatedError(err) {
-		r.evictSKRClientCache(ctx, manifest)
-
-		return r.finishReconcile(ctx, manifest, metrics.ManifestUnauthorized, manifestStatus, err)
 	} else if err != nil {
 		return r.finishReconcile(ctx, manifest, metrics.ManifestPruneDiff, manifestStatus, err)
 	}
@@ -226,17 +217,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if errors.Is(err, finalizer.ErrRequeueRequired) {
 				r.ManifestMetrics.RecordRequeueReason(metrics.ManifestPreDeleteEnqueueRequired, queue.IntendedRequeue)
 				return ctrl.Result{Requeue: true}, nil
-			} else if util.IsConnectionRelatedError(err) {
-				r.evictSKRClientCache(ctx, manifest)
 			}
 			return r.finishReconcile(ctx, manifest, metrics.ManifestPreDelete, manifestStatus, err)
 		}
 	}
 
 	if err := skrresources.SyncResources(ctx, skrClient, manifest, target); err != nil {
-		if util.IsConnectionRelatedError(err) {
-			r.evictSKRClientCache(ctx, manifest)
-		}
 		return r.finishReconcile(ctx, manifest, metrics.ManifestSyncResources, manifestStatus, err)
 	}
 
@@ -554,13 +540,19 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
 	}
-	if originalErr != nil {
+	switch {
+	case util.IsConnectionRelatedError(originalErr):
+		r.evictSKRClientCache(ctx, manifest)
+		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestUnauthorized, queue.UnexpectedRequeue)
+		return ctrl.Result{}, originalErr
+	case originalErr != nil:
 		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.UnexpectedRequeue)
 		return ctrl.Result{}, originalErr
+	default:
+		r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
+		requeueAfter := queue.DetermineRequeueInterval(manifest.GetStatus().State, r.RequeueIntervals)
+		return ctrl.Result{RequeueAfter: requeueAfter}, nil
 	}
-	r.ManifestMetrics.RecordRequeueReason(requeueReason, queue.IntendedRequeue)
-	requeueAfter := queue.DetermineRequeueInterval(manifest.GetStatus().State, r.RequeueIntervals)
-	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
 func (r *Reconciler) ssaSpec(ctx context.Context, manifest *v1beta2.Manifest,
