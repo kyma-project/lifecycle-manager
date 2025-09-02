@@ -21,9 +21,7 @@ import (
 	"k8s.io/kubectl/pkg/util/openapi"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/skrresources"
 )
 
@@ -110,12 +108,12 @@ type SKRClient struct {
 }
 
 func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*SKRClient, error) {
-	kymaOwnerLabel, err := internal.GetResourceLabel(manifest, shared.KymaName)
+	kymaName, err := manifest.GetKymaName()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kyma owner label: %w", err)
 	}
 
-	config, err := s.accessManagerService.GetAccessRestConfigByKyma(ctx, kymaOwnerLabel)
+	config, err := s.accessManagerService.GetAccessRestConfigByKyma(ctx, kymaName)
 	if err != nil {
 		return nil, err
 	}

@@ -340,14 +340,16 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient skrclient.Cl
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
 		allModuleCRsDeleted, err := ensureModuleCRsAllDeleted(ctx, skrClient, manifest)
-		if errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion) {
+		switch {
+		case allModuleCRsDeleted:
+			return ResourceList{}, current, nil
+		case errors.Is(err, modulecr.ErrWaitingForModuleCRsDeletion):
 			manifest.SetStatus(manifest.GetStatus().WithState(shared.StateDeleting).
 				WithOperation("waiting for module crs deletion"))
-		} else if err != nil {
+			return nil, nil, err
+		case err != nil:
 			manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
-		}
-		if allModuleCRsDeleted {
-			return ResourceList{}, current, nil
+			return nil, nil, err
 		}
 	}
 

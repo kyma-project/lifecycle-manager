@@ -2,18 +2,14 @@ package cache
 
 import (
 	"crypto/rand"
-	"errors"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 const (
@@ -57,12 +53,11 @@ func getRandomTTL() time.Duration {
 }
 
 func (m *Service) GetCacheKey(manifest *v1beta2.Manifest) (string, bool) {
-	labelValue, err := internal.GetResourceLabel(manifest, shared.KymaName)
-	var labelErr *types.LabelNotFoundError
-	if errors.As(err, &labelErr) {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
 		return "", false
 	}
-	cacheKey := generateCacheKey(labelValue, manifest.GetNamespace())
+	cacheKey := generateCacheKey(kymaName, manifest.GetNamespace())
 	return cacheKey, true
 }
 
