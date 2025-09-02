@@ -40,9 +40,7 @@ jobs:
         id: compare-manifests
         run: |
           cd /tmp/manifests-comparison
-          # ... existing comparison logic
 
-          # Sort keys for consistent comparison
           yq eval 'sort_keys(.)' pr-manifests.yaml > pr-sorted.yaml
           yq eval 'sort_keys(.)' main-manifests.yaml > main-sorted.yaml
 
