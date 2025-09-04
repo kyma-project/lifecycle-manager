@@ -11,8 +11,6 @@
   * [ModuleTemplate](resources/03-moduletemplate.md)
   * [Watcher](resources/04-watcher.md)
   * [ModuleReleaseMeta](resources/05-modulereleasemeta.md)
-* [New Module Submission and Promotion Concept](06-module-migration-concept.md)
-* [New Module Submission and Promotion Process: Migration Guide](07-module-migration-guide.md)
 * [Synchronization Between Kyma Control Plane and SAP BTP, Kyma Runtime](08-kcp-skr-synchronization.md)
 * [Lifecycle Manager Metrics](09-metrics.md)
 * [Maintenance Windows](10-maintenance-windows.md)
