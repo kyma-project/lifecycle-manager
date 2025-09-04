@@ -7,10 +7,12 @@ linters:
     - exhaustruct
     - lll
     - nlreturn
+    - noinlineerr
     - paralleltest
     - recvcheck
     - sqlclosecheck
     - wsl
+    - wsl_v5
   settings:
     cyclop:
       max-complexity: 20

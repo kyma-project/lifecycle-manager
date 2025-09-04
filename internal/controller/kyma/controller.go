@@ -74,6 +74,7 @@ type Reconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
+
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SyncRemoteCrds       remote.SyncCrdsUseCase

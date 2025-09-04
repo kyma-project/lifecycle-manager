@@ -52,7 +52,8 @@ type ManagedByLabelRemoval interface {
 type ManifestAPIClient interface {
 	UpdateManifest(ctx context.Context, manifest *v1beta2.Manifest) error
 	PatchStatusIfDiffExist(ctx context.Context, manifest *v1beta2.Manifest,
-		previousStatus shared.Status) error
+		previousStatus shared.Status,
+	) error
 	SsaSpec(ctx context.Context, obj client.Object) error
 }
 
@@ -63,6 +64,7 @@ type OrphanDetection interface {
 type Reconciler struct {
 	queue.RequeueIntervals
 	*Options
+
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
 	specResolver               SpecResolver

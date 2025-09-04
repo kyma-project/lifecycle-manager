@@ -470,7 +470,8 @@ func Test_syncBTPRelatedLabels_UpdatesLabels(t *testing.T) {
 
 func Test_syncBTPRelatedLabels_NoChange(t *testing.T) {
 	kcpKyma := builder.NewKymaBuilder().
-		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").WithLabel(shared.SubAccountIDLabel, "sub-account-id").Build()
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").WithLabel(shared.SubAccountIDLabel,
+		"sub-account-id").Build()
 	skrKyma := builder.NewKymaBuilder().
 		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
 		WithLabel(shared.SubAccountIDLabel, "sub-account-id").
@@ -522,6 +523,7 @@ func assertLabelsAndAnnotations(t *testing.T, skrKyma *v1beta2.Kyma) {
 
 type eventStub struct {
 	event.Event
+
 	called bool
 }
 
@@ -530,9 +532,10 @@ func (e *eventStub) Warning(_ machineryruntime.Object, _ event.Reason, _ error) 
 }
 
 type clientStub struct {
+	client.Client
+
 	err    error
 	status client.SubResourceWriter
-	client.Client
 	called bool
 }
 
@@ -550,8 +553,9 @@ func (*clientStub) Config() *rest.Config {
 }
 
 type statusClient struct {
-	err error
 	client.SubResourceWriter
+
+	err    error
 	called bool
 }
 

@@ -10,9 +10,10 @@ import (
 
 // +k8s:deepcopy-gen=true
 type Resource struct {
-	Name                       string `json:"name"`
-	Namespace                  string `json:"namespace"`
 	apimetav1.GroupVersionKind `json:",inline"`
+
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 func (r Resource) ToUnstructured() *unstructured.Unstructured {

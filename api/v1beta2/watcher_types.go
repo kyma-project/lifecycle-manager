@@ -132,7 +132,8 @@ func (watcher *Watcher) GetManagerName() string {
 type WatcherList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []Watcher `json:"items"`
+
+	Items []Watcher `json:"items"`
 }
 
 //nolint:gochecknoinits // registers Watcher CRD on startup

@@ -14,6 +14,7 @@ import (
 
 type Client struct {
 	istioclient.Interface
+
 	logger logr.Logger
 }
 
@@ -90,7 +91,8 @@ func (c *Client) DeleteVirtualService(ctx context.Context, name, namespace strin
 }
 
 func (c *Client) ListGatewaysByLabelSelector(ctx context.Context, labelSelector *apimetav1.LabelSelector,
-	gatewayNamespace string) (*istioclientapiv1beta1.GatewayList,
+	gatewayNamespace string,
+) (*istioclientapiv1beta1.GatewayList,
 	error,
 ) {
 	selector, err := apimetav1.LabelSelectorAsSelector(labelSelector)

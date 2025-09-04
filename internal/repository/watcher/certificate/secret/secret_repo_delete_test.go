@@ -55,6 +55,7 @@ func TestDelete_ClientReturnsNotFoundError_Returns(t *testing.T) {
 
 type deleteClientStub struct {
 	client.Client
+
 	called     bool
 	calledWith *apicorev1.Secret
 	err        error

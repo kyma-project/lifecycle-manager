@@ -68,6 +68,7 @@ func Test_DeleteDiffResourcesWhenManifestUnderDeleting(t *testing.T) {
 
 type ErrorMockFakeClient struct {
 	client.WithWatch
+
 	failError error
 }
 

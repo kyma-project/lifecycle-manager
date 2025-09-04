@@ -7,11 +7,13 @@ import (
 
 type Client interface {
 	client.Client
+
 	Config() *rest.Config
 }
 
 type ConfigAndClient struct {
 	client.Client
+
 	cfg *rest.Config
 }
 

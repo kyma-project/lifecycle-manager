@@ -39,6 +39,7 @@ import (
 type InstallationReconciler struct {
 	client.Client
 	queue.RequeueIntervals
+
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	RemoteSyncNamespace string
 	Metrics             *metrics.MandatoryModulesMetrics

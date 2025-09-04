@@ -21,6 +21,7 @@ var (
 
 type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
+
 	Err            error
 	DesiredChannel string
 }
@@ -35,6 +36,7 @@ type ModuleTemplateInfoLookupStrategy interface {
 
 type TemplateLookup struct {
 	client.Reader
+
 	descriptorProvider               *provider.CachedDescriptorProvider
 	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy
 }
