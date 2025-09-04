@@ -167,7 +167,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 	testCases := []struct {
 		name        string
 		template    *v1beta2.ModuleTemplate
-		want        v1beta2.DescriptorKey
+		want        string
 		expectError bool
 	}{
 		{
