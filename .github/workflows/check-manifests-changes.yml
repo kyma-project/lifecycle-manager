@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install yq
-        run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
+        uses: ./lifecycle-manager/.github/actions/install-yq
+        with:
+          yq_version: 4.45.1
 
       - name: Checkout main branch
         uses: actions/checkout@v4
