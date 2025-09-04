@@ -22,7 +22,7 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnCorrectValue(t *testi
 	secondModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("warden-1.0.1-dev").
 		WithLabel("module-diff", "second").
-		WithAnnotation("operator.kyma-project.io/module-version", "1.0.1-dev").
+		WithVersion("1.0.1-dev").
 		Build()
 
 	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
@@ -44,66 +44,6 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnError_NotSemver(t *te
 		Build()
 
 	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
-	require.ErrorContains(t, err, "could not parse version as a semver")
-	require.Nil(t, result)
-}
-
-func TestGetModuleName_withModuleName(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("warden").
-		WithLabelModuleName("warden-dev").
-		Build()
-
-	result := templatelookup.GetModuleName(moduleTemplate)
-	require.Equal(t, "warden", result)
-}
-
-func TestGetModuleName_withModuleNameLabel(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("").
-		WithLabelModuleName("warden").
-		Build()
-
-	result := templatelookup.GetModuleName(moduleTemplate)
-	require.Equal(t, "warden", result)
-}
-
-func TestGetModuleSemverVersion_WithCorrectSemVer_SpecVersion(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithVersion("1.0.0-dev").
-		Build()
-
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0-dev", result.String())
-}
-
-func TestGetModuleSemverVersion_WithCorrectSemVer_VersionAnnotation(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithAnnotation("operator.kyma-project.io/module-version", "1.0.0-dev").
-		Build()
-
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0-dev", result.String())
-}
-
-func TestGetModuleSemverVersion_ReturnError_NotSemver_SpecVersion(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithVersion("dev").
-		Build()
-
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
-	require.ErrorContains(t, err, "could not parse version as a semver")
-	require.Nil(t, result)
-}
-
-func TestGetModuleSemverVersion_ReturnError_NotSemver_VersionAnnotation(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithAnnotation("operator.kyma-project.io/module-version", "dev").
-		Build()
-
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
 	require.ErrorContains(t, err, "could not parse version as a semver")
 	require.Nil(t, result)
 }

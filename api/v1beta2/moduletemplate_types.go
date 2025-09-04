@@ -219,14 +219,8 @@ func (m *ModuleTemplate) IsInternal() bool {
 	return false
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) GetVersion() string {
-	version := m.Spec.Version
-	if version == "" {
-		version = m.Annotations[shared.ModuleVersionAnnotation]
-	}
-	return version
+	return m.Spec.Version
 }
 
 var ErrInvalidVersion = errors.New("can't find valid semantic version")
@@ -263,4 +257,13 @@ func (m *ModuleTemplate) GetModuleName() string {
 		moduleName = m.Labels[shared.ModuleName]
 	}
 	return moduleName
+}
+
+func (m *ModuleTemplate) GenerateDescriptorKey() (string, error) {
+	version, err := m.GetSemanticVersion()
+	if err != nil {
+		return "", fmt.Errorf("failed to parse module template version: %w", err)
+	}
+
+	return fmt.Sprintf("%s:%d:%s", m.Name, m.Generation, version), nil
 }

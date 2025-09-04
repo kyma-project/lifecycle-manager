@@ -21,33 +21,8 @@ func Test_GetSemanticVersion(t *testing.T) {
 		expectedErr     string
 	}{
 		{
-			name: "Test GetSemanticVersion() by annotation (legacy)",
-			m: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{
-						shared.ModuleVersionAnnotation: testVersion,
-					},
-				},
-			},
-			expectedVersion: testVersion,
-		},
-		{
 			name: "Test GetSemanticVersion() by explicit version in Spec",
 			m: &v1beta2.ModuleTemplate{
-				Spec: v1beta2.ModuleTemplateSpec{
-					Version: testVersion,
-				},
-			},
-			expectedVersion: testVersion,
-		},
-		{
-			name: "Test GetSemanticVersion() with both version in Spec and annotation",
-			m: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{
-						shared.ModuleVersionAnnotation: otherVersion,
-					},
-				},
 				Spec: v1beta2.ModuleTemplateSpec{
 					Version: testVersion,
 				},
@@ -114,36 +89,10 @@ func Test_GetVersion(t *testing.T) {
 		expectedVersion string
 	}{
 		{
-			name: "Test GetVersion() by annotation (legacy)",
-			m: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{
-						shared.ModuleVersionAnnotation: "1.0.0-annotated",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{},
-			},
-			expectedVersion: "1.0.0-annotated",
-		},
-		{
 			name: "Test GetVersion() by spec.version",
 			m: &v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					Version: "2.0.0-spec",
-				},
-			},
-			expectedVersion: "2.0.0-spec",
-		},
-		{
-			name: "Test GetVersion() spec.moduleName has priority over annotation",
-			m: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Annotations: map[string]string{
-						shared.ModuleVersionAnnotation: "1.0.0-annotated",
-					},
 				},
 				Spec: v1beta2.ModuleTemplateSpec{
 					Version: "2.0.0-spec",
@@ -210,6 +159,82 @@ func Test_GetModuleName(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			actualName := testCase.m.GetModuleName()
 			assert.Equal(t, testCase.expectedName, actualName)
+		})
+	}
+}
+
+func TestGenerateDescriptorCacheKey(t *testing.T) {
+	testCases := []struct {
+		name        string
+		template    *v1beta2.ModuleTemplate
+		want        v1beta2.DescriptorKey
+		expectError bool
+	}{
+		{
+			name: "Module Version is not nil and valid semver",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 1,
+				},
+				Spec: v1beta2.ModuleTemplateSpec{
+					Version: "1.0.0",
+				},
+			},
+			want:        "name:1:1.0.0",
+			expectError: false,
+		},
+		{
+			name: "Module Version is not nil but invalid semver",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 1,
+				},
+				Spec: v1beta2.ModuleTemplateSpec{
+					Version: "not-semver",
+				},
+			},
+			want:        "",
+			expectError: true,
+		},
+		{
+			name: "Module Version is not nil but module version is empty",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 2,
+				},
+				Spec: v1beta2.ModuleTemplateSpec{
+					Version: "",
+				},
+			},
+			want:        "",
+			expectError: true,
+		},
+		{
+			name: "Module Version is nil",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 2,
+				},
+			},
+			want:        "",
+			expectError: true,
+		},
+	}
+
+	for i := range testCases {
+		t.Run(testCases[i].name, func(t *testing.T) {
+			got, err := testCases[i].template.GenerateDescriptorKey()
+			if testCases[i].expectError {
+				assert.Error(t, err, "expected error but got none")
+			} else {
+				assert.NoError(t, err, "unexpected error")
+				assert.Equalf(t, testCases[i].want, got,
+					"GetComponentDescriptorCacheKey() = %v, want %v", got, testCases[i].want)
+			}
 		})
 	}
 }

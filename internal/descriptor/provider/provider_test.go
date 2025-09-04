@@ -95,11 +95,12 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 	}
 	template := builder.NewModuleTemplateBuilder().WithDescriptor(expected).Build()
 
-	key := cache.GenerateDescriptorKey(template)
+	key, err := template.GenerateDescriptorKey()
+	require.NoError(t, err)
 	entry := descriptorCache.Get(key)
 	assert.Nil(t, entry)
 
-	err := descriptorProvider.Add(template)
+	err = descriptorProvider.Add(template)
 	require.NoError(t, err)
 
 	result, err := descriptorProvider.GetDescriptor(template)
