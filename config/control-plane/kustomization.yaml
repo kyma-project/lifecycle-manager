@@ -7,6 +7,7 @@ commonLabels:
   app.kubernetes.io/created-by: argo-cd
   app.kubernetes.io/part-of: kcp
   app.kubernetes.io/managed-by: kustomize
+  test.kyma-project.io/managed-by: test #testing manifest change
 images:
   - name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
 resources:
