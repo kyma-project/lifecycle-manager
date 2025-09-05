@@ -10,11 +10,6 @@ jobs:
   check-manifest-changes:
     runs-on: ubuntu-latest
     steps:
-      - name: Install yq
-        uses: ./.github/actions/install-yq
-        with:
-          yq_version: 4.45.1
-
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
@@ -35,6 +30,11 @@ jobs:
         run: |
           make dry-run-control-plane
           cp ./dry-run/manifests.yaml /tmp/manifests-comparison/pr-manifests.yaml
+
+      - name: Install yq
+        uses: ./.github/actions/install-yq
+        with:
+          yq_version: 4.45.1
 
       - name: Compare manifests using yq
         id: compare-manifests
