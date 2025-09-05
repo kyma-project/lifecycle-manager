@@ -28,7 +28,6 @@ func DefaultOptions() *Options {
 			DisclaimerTransform,
 			DockerImageLocalizationTransform,
 		),
-		WithSingletonClientCache(NewMemoryClientCache()),
 		WithManifestCache(os.TempDir()),
 		WithManifestParser(NewInMemoryManifestCache(DefaultInMemoryParseTTL)),
 		WithCustomResourceLabels{
@@ -41,10 +40,6 @@ type Options struct {
 	record.EventRecorder
 	Config *rest.Config
 	client.Client
-	TargetCluster ClusterFn
-
-	ClientCache
-	ClientCacheKeyFn
 	ManifestParser
 	ManifestCache
 	CustomStateCheck StateCheck
@@ -110,18 +105,6 @@ func (o PostRenderTransformOption) Apply(options *Options) {
 	options.PostRenderTransforms = append(options.PostRenderTransforms, o.ObjectTransforms...)
 }
 
-type WithSingletonClientCacheOption struct {
-	ClientCache
-}
-
-func WithSingletonClientCache(cache ClientCache) WithSingletonClientCacheOption {
-	return WithSingletonClientCacheOption{ClientCache: cache}
-}
-
-func (o WithSingletonClientCacheOption) Apply(options *Options) {
-	options.ClientCache = o
-}
-
 type ManifestCache string
 
 type WithManifestCache ManifestCache
@@ -152,28 +135,4 @@ func WithCustomStateCheck(check StateCheck) WithCustomStateCheckOption {
 
 func (o WithCustomStateCheckOption) Apply(options *Options) {
 	options.CustomStateCheck = o
-}
-
-type ClusterFn func(context.Context, Object) (*ClusterInfo, error)
-
-func WithRemoteTargetCluster(configFn ClusterFn) WithRemoteTargetClusterOption {
-	return WithRemoteTargetClusterOption{ClusterFn: configFn}
-}
-
-type WithRemoteTargetClusterOption struct {
-	ClusterFn
-}
-
-func (o WithRemoteTargetClusterOption) Apply(options *Options) {
-	options.TargetCluster = o.ClusterFn
-}
-
-type ClientCacheKeyFn func(ctx context.Context, obj Object) (string, bool)
-
-type WithClientCacheKeyOption struct {
-	ClientCacheKeyFn
-}
-
-func (o WithClientCacheKeyOption) Apply(options *Options) {
-	options.ClientCacheKeyFn = o.ClientCacheKeyFn
 }

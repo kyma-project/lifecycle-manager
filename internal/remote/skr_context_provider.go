@@ -6,15 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
-	apicorev1 "k8s.io/api/core/v1"
-	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
-	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 )
 
 type SkrContextProvider interface {
@@ -24,20 +20,24 @@ type SkrContextProvider interface {
 }
 
 type KymaSkrContextProvider struct {
-	clientCache *ClientCache
-	kcpClient   Client
-	event       event.Event
+	clientCache          *ClientCache
+	kcpClient            Client
+	event                event.Event
+	accessManagerService *accessmanager.Service
 }
 
-func NewKymaSkrContextProvider(kcpClient Client, clientCache *ClientCache, event event.Event) *KymaSkrContextProvider {
+func NewKymaSkrContextProvider(kcpClient Client,
+	clientCache *ClientCache,
+	event event.Event,
+	accessManagerService *accessmanager.Service,
+) *KymaSkrContextProvider {
 	return &KymaSkrContextProvider{
-		clientCache: clientCache,
-		kcpClient:   kcpClient,
-		event:       event,
+		clientCache:          clientCache,
+		kcpClient:            kcpClient,
+		event:                event,
+		accessManagerService: accessManagerService,
 	}
 }
-
-const kubeConfigKey = "config"
 
 var ErrSkrClientContextNotFound = errors.New("skr client context not found")
 
@@ -46,18 +46,7 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 		return nil
 	}
 
-	kubeConfigSecretList := &apicorev1.SecretList{}
-	if err := k.kcpClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}), Namespace: kyma.Namespace,
-	}); err != nil {
-		return fmt.Errorf("failed to list kubeconfig secrets: %w", err)
-	} else if len(kubeConfigSecretList.Items) < 1 {
-		return fmt.Errorf("secret with label %s=%s %w", shared.KymaName, kyma.Name, common.ErrAccessSecretNotFound)
-	}
-
-	kubeConfigSecret := kubeConfigSecretList.Items[0]
-
-	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigSecret.Data[kubeConfigKey])
+	restConfig, err := k.accessManagerService.GetAccessRestConfigByKyma(ctx, kyma.Name)
 	if err != nil {
 		return fmt.Errorf("failed to create rest config from kubeconfig: %w", err)
 	}

@@ -18,7 +18,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -50,7 +49,7 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 		By("When a KCP Kyma CR is created on the KCP cluster")
 		Eventually(CreateKymaSecret).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient).
+			WithArguments(kcpClient, kyma.GetName()).
 			Should(Succeed())
 		Eventually(kcpClient.Create).
 			WithContext(ctx).
@@ -110,19 +109,9 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 	return CRExists(resourceCR, err)
 }
 
-func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
+func CreateKymaSecret(ctx context.Context, k8sClient client.Client, kymaName string) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*skrConfig), localHostname, skrHostname)
-	secret := &apicorev1.Secret{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      kymaName,
-			Namespace: kymaNamespace,
-			Labels: map[string]string{
-				shared.KymaName: kymaName,
-			},
-		},
-		Data: map[string][]byte{"config": []byte(patchedRuntimeConfig)},
-	}
-	return k8sClient.Create(ctx, secret)
+	return CreateAccessSecret(ctx, k8sClient, kymaName, patchedRuntimeConfig)
 }
 
 func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
@@ -188,16 +177,6 @@ func EnsureNamespaceHasCorrectLabels(ctx context.Context, clnt client.Client, ky
 	}
 
 	return nil
-}
-
-func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	secret := &apicorev1.Secret{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	Expect(err).ToNot(HaveOccurred())
-	return k8sClient.Delete(ctx, secret)
 }
 
 func SetFinalizer(name, namespace, group, version, kind string, finalizers []string, clnt client.Client) error {

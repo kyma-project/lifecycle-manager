@@ -15,10 +15,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -61,8 +62,11 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 			standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
-		testClient, err := declarativeTestClient(kcpClient)
-		Expect(err).ToNot(HaveOccurred())
+		accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
+		testClientService := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
+		testClient, err := testClientService.ResolveClient(ctx, testManifest)
+		Expect(err).NotTo(HaveOccurred())
+
 		By("Verifying that deployment is deployed and ready")
 		deploy := &apiappsv1.Deployment{}
 		Expect(verifyDeploymentInstallation(ctx, kcpClient, deploy)).To(Succeed())
@@ -140,7 +144,7 @@ func verifyDeploymentInstallation(ctx context.Context, clnt client.Client, deplo
 	return nil
 }
 
-func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiappsv1.Deployment) ([]*resource.Info,
+func prepareResourceInfosForCustomCheck(clt skrclient.Client, deploy *apiappsv1.Deployment) ([]*resource.Info,
 	error,
 ) {
 	deployUnstructuredObj, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(deploy)
@@ -155,15 +159,6 @@ func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiapp
 		return nil, err
 	}
 	return []*resource.Info{deployInfo}, nil
-}
-
-func declarativeTestClient(clnt client.Client) (declarativev2.Client, error) {
-	cluster := &declarativev2.ClusterInfo{
-		Config: cfg,
-		Client: clnt,
-	}
-
-	return declarativev2.NewSingletonClients(cluster)
 }
 
 func asResource(name, namespace, group, version, kind string) shared.Resource {

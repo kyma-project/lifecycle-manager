@@ -3,15 +3,17 @@ package e2e_test
 import (
 	"os/exec"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 )
 
 var _ = Describe("Mandatory Module With Old Naming Pattern Installation and Deletion", Ordered, func() {

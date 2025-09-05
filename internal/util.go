@@ -6,9 +6,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 const (
@@ -54,16 +51,4 @@ func getID(item *unstructured.Unstructured) string {
 		item.GetNamespace(), item.GetName(),
 		item.GroupVersionKind().Group, item.GroupVersionKind().Version, item.GroupVersionKind().Kind,
 	}, "/")
-}
-
-func GetResourceLabel(resource client.Object, labelName string) (string, error) {
-	resourceLables := resource.GetLabels()
-	labelValue, ok := resourceLables[labelName]
-	if !ok {
-		return "", &types.LabelNotFoundError{
-			Resource:  resource,
-			LabelName: labelValue,
-		}
-	}
-	return labelValue, nil
 }

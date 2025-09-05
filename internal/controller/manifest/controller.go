@@ -4,7 +4,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -19,19 +18,16 @@ func NewReconciler(mgr manager.Manager,
 	manifestClient declarativev2.ManifestAPIClient,
 	orphanDetectionClient orphan.DetectionRepository,
 	specResolver *spec.Resolver,
+	skrClientCache declarativev2.SKRClientCache,
+	skrClient declarativev2.SKRClient,
 ) *declarativev2.Reconciler {
-	kcp := &declarativev2.ClusterInfo{
-		Client: mgr.GetClient(),
-		Config: mgr.GetConfig(),
-	}
-	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	return declarativev2.NewFromManager(
 		mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient, orphanDetectionClient,
 		specResolver,
+		skrClientCache,
+		skrClient,
 		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
-		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
-		manifest.WithClientCacheKey(),
 	)
 }

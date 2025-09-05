@@ -1,4 +1,4 @@
-package v2
+package skrclient
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 // OpenAPISchema returns metadata and structural information about
 // Kubernetes object definitions.
-func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
+func (s *SKRClient) OpenAPISchema() (openapi.Resources, error) {
 	parsedMetadata, err := s.openAPIParser.Parse()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse schema metadata: %w", err)
@@ -21,12 +21,14 @@ func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
 }
 
 // OpenAPIGetter returns a getter for the openapi schema document.
-func (s *SingletonClients) OpenAPIGetter() *openapi.CachedOpenAPIGetter {
+func (s *SKRClient) OpenAPIGetter() *openapi.CachedOpenAPIGetter {
 	return s.openAPIGetter
 }
 
 // UnstructuredClientForMapping returns a RESTClient for working with Unstructured objects.
-func (s *SingletonClients) UnstructuredClientForMapping(mapping *meta.RESTMapping) (resource.RESTClient, error) {
+func (s *SKRClient) UnstructuredClientForMapping(mapping *meta.RESTMapping) (resource.RESTClient,
+	error,
+) {
 	s.unstructuredSyncLock.Lock()
 	defer s.unstructuredSyncLock.Unlock()
 	key := s.clientCacheKeyForMapping(mapping)
@@ -53,9 +55,16 @@ func (s *SingletonClients) UnstructuredClientForMapping(mapping *meta.RESTMappin
 	return client, nil
 }
 
+func (s *SKRClient) clientCacheKeyForMapping(mapping *meta.RESTMapping) string {
+	return fmt.Sprintf(
+		"%s+%s:%s",
+		mapping.Resource.String(), mapping.GroupVersionKind.String(), mapping.Scope.Name(),
+	)
+}
+
 // ClientForMapping returns a RESTClient for working with the specified RESTMapping or an error. This is intended
 // for working with arbitrary resources and is not guaranteed to point to a Kubernetes APIServer.
-func (s *SingletonClients) ClientForMapping(mapping *meta.RESTMapping) (resource.RESTClient, error) {
+func (s *SKRClient) ClientForMapping(mapping *meta.RESTMapping) (resource.RESTClient, error) {
 	s.structuredSyncLock.Lock()
 	defer s.structuredSyncLock.Unlock()
 	key := s.clientCacheKeyForMapping(mapping)

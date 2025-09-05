@@ -1,14 +1,16 @@
 package e2e_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Blocking Module Deletion With Multiple Module CRs with CreateAndDelete Policy", Ordered, func() {

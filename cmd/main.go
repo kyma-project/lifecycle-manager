@@ -72,9 +72,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -174,7 +178,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	remoteClientCache := remote.NewClientCache()
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
-	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder)
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	if err != nil {
@@ -182,6 +185,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(bootstrapFailedExitCode)
 	}
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
+	accessSecretRepository := secretrepository.NewRepository(kcpClientWithoutCache, shared.DefaultControlPlaneNamespace)
+	accessManagerService := accessmanager.NewService(accessSecretRepository)
+	skrContextProvider := remote.NewKymaSkrContextProvider(kcpClient, remoteClientCache, eventRecorder,
+		accessManagerService)
 	var skrWebhookManager *watcher.SkrWebhookManifestManager
 	var options ctrlruntime.Options
 	if flagVar.EnableKcpWatcher {
@@ -221,7 +228,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, logger,
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, logger)
@@ -445,9 +452,14 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 	}
 }
 
-func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options ctrlruntime.Options,
-	sharedMetrics *metrics.SharedMetrics, mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
-	setupLog logr.Logger, event event.Event,
+func setupManifestReconciler(mgr ctrl.Manager,
+	flagVar *flags.FlagVar,
+	options ctrlruntime.Options,
+	sharedMetrics *metrics.SharedMetrics,
+	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
+	accessManagerService *accessmanager.Service,
+	setupLog logr.Logger,
+	event event.Event,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -457,20 +469,20 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
-	if err := manifest.SetupWithManager(
-		mgr, options, queue.RequeueIntervals{
-			Success: flagVar.ManifestRequeueSuccessInterval,
-			Busy:    flagVar.ManifestRequeueBusyInterval,
-			Error:   flagVar.ManifestRequeueErrInterval,
-			Warning: flagVar.ManifestRequeueWarningInterval,
-			Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
-				flagVar.ManifestRequeueJitterPercentage),
-		}, manifest.SetupOptions{
-			ListenerAddr:                 flagVar.ManifestListenerAddr,
-			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-		}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics,
-		manifestClient, orphanDetectionClient, specResolver,
-	); err != nil {
+	clientCache := skrclientcache.NewService()
+	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
+	if err := manifest.SetupWithManager(mgr, options, queue.RequeueIntervals{
+		Success: flagVar.ManifestRequeueSuccessInterval,
+		Busy:    flagVar.ManifestRequeueBusyInterval,
+		Error:   flagVar.ManifestRequeueErrInterval,
+		Warning: flagVar.ManifestRequeueWarningInterval,
+		Jitter: queue.NewRequeueJitter(flagVar.ManifestRequeueJitterProbability,
+			flagVar.ManifestRequeueJitterPercentage),
+	}, manifest.SetupOptions{
+		ListenerAddr:                 flagVar.ManifestListenerAddr,
+		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
+	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionClient,
+		specResolver, clientCache, skrClient); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
@@ -480,7 +492,10 @@ func setupManifestReconciler(mgr ctrl.Manager, flagVar *flags.FlagVar, options c
 func keychainLookupFromFlag(mgr ctrl.Manager, flagVar *flags.FlagVar) spec.KeyChainLookup {
 	if flagVar.OciRegistryCredSecretName != "" {
 		return keychainprovider.NewFromSecretKeyChainProvider(mgr.GetClient(),
-			types.NamespacedName{Namespace: shared.DefaultControlPlaneNamespace, Name: flagVar.OciRegistryCredSecretName})
+			types.NamespacedName{
+				Namespace: shared.DefaultControlPlaneNamespace,
+				Name:      flagVar.OciRegistryCredSecretName,
+			})
 	}
 	return keychainprovider.NewDefaultKeyChainProvider()
 }

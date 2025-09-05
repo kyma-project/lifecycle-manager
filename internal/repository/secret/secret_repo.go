@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apicorev1 "k8s.io/api/core/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -29,6 +30,17 @@ func (r *Repository) Get(ctx context.Context, name string) (*apicorev1.Secret, e
 	}
 
 	return secret, nil
+}
+
+func (r *Repository) List(ctx context.Context, labelSelector k8slabels.Selector) (*apicorev1.SecretList, error) {
+	secretList := &apicorev1.SecretList{}
+	err := r.kcpClient.List(ctx, secretList, &client.ListOptions{
+		LabelSelector: labelSelector, Namespace: r.namespace,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret by label (%s): %w", labelSelector, err)
+	}
+	return secretList, nil
 }
 
 func (r *Repository) Delete(ctx context.Context, name string) error {
