@@ -49,7 +49,6 @@ func TestList_ClientCallSucceeds_ReturnsSecrets(t *testing.T) {
 	assert.True(t, clientStub.called)
 	assert.Equal(t, selector, clientStub.lastSelector, "expected selector to be passed to clientStub")
 	assert.Equal(t, namespace, clientStub.lastNamespace, "expected namespace to be passed to clientStub")
-
 }
 
 type listClientStub struct {
