@@ -22,7 +22,7 @@ func RequiredSchemeBuilder() *runtimeScheme.Builder {
 }
 
 func InitCRD() {
-	SchemeBuilder := &runtimeScheme.Builder{GroupVersion: v1beta2.GroupVersion}
+	SchemeBuilder := RequiredSchemeBuilder()
 	SchemeBuilder.Register(&v1beta2.Kyma{}, &v1beta2.KymaList{})
 	SchemeBuilder.Register(&v1beta2.ModuleTemplate{}, &v1beta2.ModuleTemplateList{})
 	SchemeBuilder.Register(&v1beta2.Watcher{}, &v1beta2.WatcherList{})
