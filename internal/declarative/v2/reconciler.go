@@ -542,7 +542,7 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 		return ctrl.Result{}, err
 	}
 	switch {
-	case util.IsConnectionRelatedError(originalErr):
+	case util.IsConnectionRelatedError(originalErr) && !manifest.GetDeletionTimestamp().IsZero():
 		r.evictSKRClientCache(ctx, manifest)
 		r.ManifestMetrics.RecordRequeueReason(metrics.ManifestUnauthorized, queue.UnexpectedRequeue)
 		return ctrl.Result{}, originalErr
