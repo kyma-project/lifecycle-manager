@@ -78,7 +78,7 @@ patches:
         value: --leader-election-retry-period=3s
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --oci-registry-host=europe-docker.pkg.dev/kyma-project/modules-modules
+        value: --oci-registry-host=europe-docker.pkg.dev/kyma-project/kyma-modules
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
