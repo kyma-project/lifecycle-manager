@@ -3,8 +3,12 @@ package gcm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	apicorev1 "k8s.io/api/core/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 type CertificateRepository interface {
@@ -40,6 +44,36 @@ func (s *Service) Renew(ctx context.Context, name string) error {
 	}
 
 	return nil
+}
+
+// SkrSecretNeedsRenewal checks if the SKR Secret needs to be renewed.
+// Renewal is required if the gateway certificate secret is newer than the SKR certificate secret.
+func (s *Service) SkrSecretNeedsRenewal(gatewaySecret, skrSecret *apicorev1.Secret) bool {
+	gwSecretLastModifiedAtValue, ok := gatewaySecret.Annotations[shared.LastModifiedAtAnnotation]
+	// always renew if the annotation is not set
+	if !ok {
+		return true
+	}
+
+	gwSecretLastModifiedAt, err := time.Parse(time.RFC3339, gwSecretLastModifiedAtValue)
+	// always renew if unable to parse
+	if err != nil {
+		return true
+	}
+
+	lastRequestedAtValue, ok := skrSecret.Annotations[shared.GCMSecretAnnotation]
+	// always renew if the annotation is not set
+	if !ok {
+		return true
+	}
+
+	lastRequestedAt, err := time.Parse(time.RFC3339, lastRequestedAtValue)
+	// always renew if unable to parse
+	if err != nil {
+		return true
+	}
+
+	return lastRequestedAt.Before(gwSecretLastModifiedAt)
 }
 
 func boolPtr(b bool) *bool {

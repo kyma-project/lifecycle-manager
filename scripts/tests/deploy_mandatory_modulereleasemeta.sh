@@ -5,9 +5,9 @@ set -E
 set -o pipefail
 
 MODULE_NAME=$1
-shift 1
-CHANNELS=("$@")
-cat <<EOF > module-release-meta.yaml
+VERSION=$2
+
+cat <<EOF > module-release-meta-mandatory.yaml
 apiVersion: operator.kyma-project.io/v1beta2
 kind: ModuleReleaseMeta
 metadata:
@@ -16,20 +16,14 @@ metadata:
 spec:
   moduleName: ${MODULE_NAME}
   ocmComponentName: kyma-project.io/module/${MODULE_NAME}
-  channels:
+  mandatory:
+    version: ${VERSION}
 EOF
 
-for CHANNEL in "${CHANNELS[@]}"; do
-  IFS=':' read -r CHANNEL_NAME CHANNEL_VERSION <<< "${CHANNEL}"
-  cat <<EOF >> module-release-meta.yaml
-  - channel: ${CHANNEL_NAME}
-    version: ${CHANNEL_VERSION}
-EOF
-done
-kubectl apply -f module-release-meta.yaml
+kubectl apply -f module-release-meta-mandatory.yaml
 
-echo "ModuleReleaseMeta created successfully"
-rm -f module-release-meta.yaml
+echo "Mandatory ModuleReleaseMeta created successfully"
+rm -f module-release-meta-mandatory.yaml
 
 kubectl get modulereleasemeta "${MODULE_NAME}" -n kcp-system -o yaml
 kubectl get moduletemplate -n kcp-system

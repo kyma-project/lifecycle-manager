@@ -16,6 +16,17 @@ metadata:
   namespace: kcp-system
 spec:
   commonName: klm-controller-manager-webhook-serving
+  subject:
+    organizationalUnits:
+      - "BTP Kyma Runtime"
+    organizations:
+      - "SAP SE"
+    localities:
+      - "Walldorf"
+    provinces:
+      - "Baden-Württemberg"
+    countries:
+      - "DE"
   # $(SERVICE_NAME) and $(SERVICE_NAMESPACE) will be substituted by kustomize
   dnsNames:
     - $(SERVICE_NAME).$(SERVICE_NAMESPACE).svc

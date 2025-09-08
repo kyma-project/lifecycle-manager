@@ -6,6 +6,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
@@ -65,7 +66,7 @@ func errorIsForbiddenTemplateUpdate(err error) bool {
 }
 
 func errorIsTemplateNotFound(err error) bool {
-	return errors.Is(err, moduletemplateinfolookup.ErrNoTemplatesInListResult)
+	return errors.Is(err, common.ErrNoTemplatesInListResult)
 }
 
 func newDefaultErrorStatus(moduleName, desiredChannel, fqdn string, err error) *v1beta2.ModuleStatus {

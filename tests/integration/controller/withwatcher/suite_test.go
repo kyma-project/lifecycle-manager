@@ -58,6 +58,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
+	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
@@ -205,7 +206,7 @@ var _ = BeforeSuite(func() {
 		certificateConfig,
 	)
 	Expect(err).ToNot(HaveOccurred())
-	certificateService := certificate.NewService(nil, certRepo, secret.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
+	certificateService := certificate.NewService(certmanagerrenewal.NewService(nil), certRepo, secret.NewRepository(mgr.GetClient(), flags.DefaultIstioNamespace), certificateManagerConfig)
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -2,19 +2,13 @@ package moduletemplateinfolookup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-)
-
-var (
-	ErrNoTemplatesInListResult   = errors.New("no templates were found")
-	ErrTemplateMarkedAsMandatory = errors.New("template marked as mandatory")
-	ErrTemplateNotIdentified     = errors.New("no unique template could be identified")
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
@@ -38,7 +32,7 @@ func newMoreThanOneTemplateCandidateErr(moduleName string,
 	}
 
 	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
-		ErrTemplateNotIdentified, moduleName, candidates)
+		common.ErrTemplateNotIdentified, moduleName, candidates)
 }
 
 func getTemplateByVersion(ctx context.Context,

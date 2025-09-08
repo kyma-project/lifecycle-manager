@@ -213,6 +213,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
+	metrics.NewFipsMetrics().Update()
 
 	//nolint:godox // this will be used in the future
 	// TODO: use the oci registry host //nolint:godox // this will be used in the future

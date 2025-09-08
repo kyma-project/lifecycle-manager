@@ -21,6 +21,7 @@ runs:
       run: |
         cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
         cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_mandatory_modulereleasemeta.sh .
     - name: Create and apply Template Operator ModuleTemplate from the latest release
       working-directory: template-operator
       if: ${{ matrix.e2e-test != 'mandatory-module' &&
@@ -127,6 +128,7 @@ runs:
         make build-manifests
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true
+        ./deploy_mandatory_modulereleasemeta.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }}
 
     - name: Create ModuleTemplate in a new version for Mandatory module
       if: ${{ matrix.e2e-test == 'mandatory-module'}}
