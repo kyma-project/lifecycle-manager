@@ -47,9 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
@@ -72,10 +70,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	kymaService "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -109,7 +109,6 @@ func registerSchemas(scheme *machineryruntime.Scheme) {
 	machineryutilruntime.Must(certmanagerv1.AddToScheme(scheme))
 	machineryutilruntime.Must(gcertv1alpha1.AddToScheme(scheme))
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
-	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -117,6 +116,7 @@ func main() {
 	setupLog := ctrl.Log.WithName("setup")
 	scheme := machineryruntime.NewScheme()
 	registerSchemas(scheme)
+	api.InitCRD()
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
@@ -215,12 +215,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
 
+	kymaService := kymaService.NewService()
 	//nolint:godox // this will be used in the future
 	// TODO: use the oci registry host //nolint:godox // this will be used in the future
 	_ = getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow)
+		kymaMetrics, logger, maintenanceWindow, kymaService)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, logger,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger)
@@ -367,7 +368,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow,
+	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, kymaService *kymaService.Service,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -385,28 +386,31 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
-	if err := (&kyma.Reconciler{
-		Client:               kcpClient,
-		SkrContextFactory:    skrContextFactory,
-		Event:                event,
-		DescriptorProvider:   descriptorProvider,
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
-		ModulesStatusHandler: modulesStatusHandler,
-		SKRWebhookManager:    skrWebhookManager,
-		RequeueIntervals: queue.RequeueIntervals{
+	if err := kyma.NewKymaReconciler(
+
+		kcpClient,
+		event,
+		queue.RequeueIntervals{
 			Success: flagVar.KymaRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
 		},
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		IsManagedKyma:       flagVar.IsKymaManaged,
-		Metrics:             kymaMetrics,
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
+		skrContextFactory,
+		descriptorProvider,
+		remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+		modulesStatusHandler,
+		skrWebhookManager,
+
+		flagVar.RemoteSyncNamespace,
+		flagVar.IsKymaManaged,
+		kymaMetrics,
+		remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+		templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookupStrategies),
-	}).SetupWithManager(
+		kymaService,
+	).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
 			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,

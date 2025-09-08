@@ -12,7 +12,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"

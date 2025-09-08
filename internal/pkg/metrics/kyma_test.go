@@ -14,6 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 )
 
 func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
@@ -33,7 +34,7 @@ func TestKymaMetrics_CleanupNonExistingKymaCrsMetrics(t *testing.T) {
 		},
 	}
 	sc := machineryruntime.NewScheme()
-	machineryutilruntime.Must(v1beta2.AddToScheme(sc))
+	machineryutilruntime.Must(api.AddToScheme(sc))
 
 	fakeClientBuilder := fake.NewClientBuilder().WithScheme(sc).WithRuntimeObjects(deployedKymas).Build()
 	ctrlmetrics.Registry.Unregister(sampleGauge)

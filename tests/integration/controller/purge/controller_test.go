@@ -11,9 +11,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/tests/integration"
-
+	kymaService "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -26,7 +26,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 	kyma := NewTestKyma("no-module-kyma")
 	skrKyma := NewSKRKyma() // Only used to create the Issuers, not actually deployed itself
 	var skrClient client.Client
-
+	kymaService := kymaService.NewService()
 	BeforeAll(ensureSetup(kyma, &skrClient))
 
 	It("The purge logic should start after the timeout", func() {
@@ -36,7 +36,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 
 		By("Create the Kyma object", func() {
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
-			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
+			if updateRequired := kymaService.EnsureLabelsAndFinalizers(kyma); updateRequired {
 				var err error
 				for range retries {
 					err = kcpClient.Update(ctx, kyma)
@@ -93,8 +93,8 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 var _ = Describe("When kyma is deleted before configured timeout", Ordered, func() {
 	kyma := NewTestKyma("drop-intantly-kyma")
 	skrKyma := NewSKRKyma() // Only used to create the Issuers, not actually deployed itself
+	kymaService := kymaService.NewService()
 	var skrClient client.Client
-
 	BeforeAll(ensureSetup(kyma, &skrClient))
 
 	It("Should start purging right after the kyma is deleted", func() {
@@ -103,7 +103,7 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 
 		By("Creating the kyma object first", func() {
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
-			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
+			if updateRequired := kymaService.EnsureLabelsAndFinalizers(kyma); updateRequired {
 				var err error
 				for range 2 {
 					err = kcpClient.Update(ctx, kyma)
@@ -154,6 +154,8 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 	kyma := NewTestKyma("skip-crds-kyma")
 	skrKyma := NewSKRKyma()
+	kymaService := kymaService.NewService()
+
 	var skrClient client.Client
 	const retries = 5
 
@@ -167,7 +169,7 @@ var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 
 		By("Creating the kyma object first and adding custom finalizers to be skipped", func() {
 			Expect(kcpClient.Create(ctx, kyma)).Should(Succeed())
-			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
+			if updateRequired := kymaService.EnsureLabelsAndFinalizers(kyma); updateRequired {
 				var err error
 				for range retries {
 					err = kcpClient.Update(ctx, kyma)

@@ -12,12 +12,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func TestRemoveCRFinalizer_WhenGivenManifestWithFinalizer_FinalizerShouldBeRemoved(t *testing.T) {
 	scheme := k8sclientscheme.Scheme
-	require.NoError(t, v1beta2.AddToScheme(scheme))
+	require.NoError(t, api.AddToScheme(scheme))
 
 	manifest := testutils.NewTestManifest("test-manifest")
 	manifest.SetFinalizers([]string{finalizer.CustomResourceManagerFinalizer})

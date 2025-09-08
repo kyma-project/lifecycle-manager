@@ -93,6 +93,8 @@ linters:
           alias: k8scorev1
         - pkg: sigs.k8s.io/controller-runtime
           alias: ctrl
+        - pkg:  "sigs.k8s.io/controller-runtime/pkg/scheme"
+          alias: runtimeScheme
         - pkg: sigs.k8s.io/controller-runtime/pkg/controller
           alias: ctrlruntime
         - pkg: sigs.k8s.io/controller-runtime/pkg/log

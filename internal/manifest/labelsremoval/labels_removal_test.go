@@ -17,6 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/labelsremoval"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
@@ -80,7 +81,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesHaveLabels(t *testing.T) {
 	})
 
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
 	manifestClient := manifestClientStub{}
@@ -108,7 +109,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesHaveLabels(t *testing.T) {
 
 func Test_RemoveManagedByLabel_WhenManifestResourceCannotBeFetched(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	gvk := schema.GroupVersionKind{
@@ -158,7 +159,7 @@ func Test_RemoveManagedByLabel_WhenDefaultCRHasLabels(t *testing.T) {
 	objs := []client.Object{defaultCR}
 
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
@@ -194,7 +195,7 @@ func Test_RemoveManagedByLabel_WhenDefaultCRCannotBeFetched(t *testing.T) {
 	})
 
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -245,7 +246,7 @@ func Test_RemoveManagedByLabel_WhenObjCannotBeUpdated(t *testing.T) {
 	})
 
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
 
@@ -264,7 +265,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesAreNilAndNoDefaultCR(t *test
 	manifest := builder.NewManifestBuilder().Build()
 
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -280,7 +281,7 @@ func Test_RemoveManagedByLabel_WhenManifestResourcesAreNilAndNoDefaultCR(t *test
 
 func Test_RemoveManagedByLabel_WhenFinalizerIsRemoved(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	gvk := schema.GroupVersionKind{

@@ -110,8 +110,3 @@ type ManifestList struct {
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []Manifest `json:"items"`
 }
-
-//nolint:gochecknoinits // registers Kyma CRD on startup
-func init() {
-	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
-}

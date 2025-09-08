@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 )
 
 // TestModuleReleaseMetaSyncer_SyncToSKR_happypath tests the happy path of the SyncToSKR method,
@@ -27,7 +28,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 	mrmSKR4 := moduleReleaseMeta("mrm4", "kyma-system") // this one should be deleted, because it's not in the KCP
 
 	// Create a fake client with the SKR objects
-	scheme, err := v1beta2.SchemeBuilder.Build()
+	scheme, err := api.RequiredSchemeBuilder().Build()
 	require.NoError(t, err)
 	skrClient := fake.NewClientBuilder().
 		WithObjects(&mrmSKR2, &mrmSKR3, &mrmSKR4).
@@ -87,7 +88,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_nilList(t *testing.T) {
 	mtSKR4 := moduleReleaseMeta("mrm4", "kyma-system") // should be deleted, because it's not in the KCP
 
 	// Create a fake client with the SKR modules
-	scheme, err := v1beta2.SchemeBuilder.Build()
+	scheme, err := api.RequiredSchemeBuilder().Build()
 	require.NoError(t, err)
 	skrClient := fake.NewClientBuilder().
 		WithObjects(&mtSKR2, &mtSKR3, &mtSKR4).
