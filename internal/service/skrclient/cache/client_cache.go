@@ -3,12 +3,10 @@ package cache
 import (
 	"crypto/rand"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 )
 
@@ -50,17 +48,4 @@ func (m *Service) Size() int {
 func getRandomTTL() time.Duration {
 	randomRange, _ := rand.Int(rand.Reader, big.NewInt(int64(ttlInSecondsUpper-ttlInSecondsLower)))
 	return time.Duration(randomRange.Int64()+int64(ttlInSecondsLower)) * time.Second
-}
-
-func (m *Service) GetCacheKey(manifest *v1beta2.Manifest) (string, bool) {
-	kymaName, err := manifest.GetKymaName()
-	if err != nil {
-		return "", false
-	}
-	cacheKey := generateCacheKey(kymaName, manifest.GetNamespace())
-	return cacheKey, true
-}
-
-func generateCacheKey(values ...string) string {
-	return strings.Join(values, "|")
 }

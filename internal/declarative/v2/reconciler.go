@@ -68,7 +68,6 @@ type SKRClientCache interface {
 	GetClient(key string) skrclient.Client
 	AddClient(key string, client skrclient.Client)
 	DeleteClient(key string)
-	GetCacheKey(manifest *v1beta2.Manifest) (string, bool)
 }
 
 type SKRClient interface {
@@ -315,7 +314,7 @@ func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
 }
 
 func (r *Reconciler) evictSKRClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
-	clientsCacheKey, found := r.skrClientCache.GetCacheKey(manifest)
+	clientsCacheKey, found := manifest.GenerateCacheKey()
 	if found {
 		logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
 			clientsCacheKey))
@@ -520,7 +519,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 	var err error
 	var clnt skrclient.Client
 
-	clientsCacheKey, found := r.skrClientCache.GetCacheKey(manifest)
+	clientsCacheKey, found := manifest.GenerateCacheKey()
 	if found {
 		clnt = r.skrClientCache.GetClient(clientsCacheKey)
 	}
