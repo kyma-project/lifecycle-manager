@@ -13,7 +13,6 @@ import (
 
 func Test_GetSemanticVersion(t *testing.T) {
 	const testVersion = "1.0.1"
-	const otherVersion = "0.0.1"
 	tests := []struct {
 		name            string
 		m               *v1beta2.ModuleTemplate
@@ -233,7 +232,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 			} else {
 				assert.NoError(t, err, "unexpected error")
 				assert.Equalf(t, testCases[i].want, got,
-					"GetComponentDescriptorCacheKey() = %v, want %v", got, testCases[i].want)
+					"GenerateDescriptorKey() = %v, want %v", got, testCases[i].want)
 			}
 		})
 	}
