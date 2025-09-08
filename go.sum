@@ -1396,6 +1396,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20250825111833-2cf3f8cc5232 h1:4jPg3Ey0ie5ipYCR72VuxsCR3139uywIIYIfjZs+zQs=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20250825111833-2cf3f8cc5232/go.mod h1:KdQvykzVhghVhwLZJbrXUoV1YplGVnxe2wgAfMDWoXM=
+github.com/kyma-project/runtime-watcher/listener v0.0.0-20250908135737-12ddb4e47da9 h1:PSnS3NFgs1/kSapL2bQMTg39pTfjJWOYD6Bfx1KgiWA=
+github.com/kyma-project/runtime-watcher/listener v0.0.0-20250908135737-12ddb4e47da9/go.mod h1:aR3sboOyEdMIXShVTPrB1fhc7awivJzhuech3ORVPTk=
 github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c h1:alsRB1f5TaNNOCg8f1DEI/74lk5lpq6bbNmi8PZpFxI=
 github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c/go.mod h1:WpDVtbu62bjMTNY2kWThlw6iffWRrG3zERdRwZHnwv8=
 github.com/letsencrypt/boulder v0.0.0-20241010192615-6692160cedfa h1:/kPrcWfMENmWJh9AceGWaTJ0QBS3OyCDENx2vI71T8k=
@@ -1553,6 +1555,7 @@ github.com/prashantv/gostub v1.1.0 h1:BTyx3RfQjRHnUWaGF9oQos79AlQ5k8WNktv7VGvVH4
 github.com/prashantv/gostub v1.1.0/go.mod h1:A5zLQHz7ieHGG7is6LLXLz7I8+3LZzsrV0P1IAHhP5U=
 github.com/prometheus/client_golang v1.23.1 h1:w6gXMLQGgd0jXXlote9lRHMe0nG01EbnJT+C0EJru2Y=
 github.com/prometheus/client_golang v1.23.1/go.mod h1:br8j//v2eg2K5Vvna5klK8Ku5pcU5r4ll73v6ik5dIQ=
+github.com/prometheus/client_golang v1.23.2/go.mod h1:Tb1a6LWHB3/SPIzCoaDXI4I8UHKeFTEQ1YCr+0Gyqmg=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/prometheus/client_model v0.2.0/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/prometheus/client_model v0.3.0/go.mod h1:LDGWKZIo7rky3hgvBe+caln+Dr3dPggB5dvjtD7w9+w=
@@ -1560,6 +1563,7 @@ github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNw
 github.com/prometheus/client_model v0.6.2/go.mod h1:y3m2F6Gdpfy6Ut/GBsUqTWZqCUvMVzSfMLjcu6wAwpE=
 github.com/prometheus/common v0.66.0 h1:K/rJPHrG3+AoQs50r2+0t7zMnMzek2Vbv31OFVsMeVY=
 github.com/prometheus/common v0.66.0/go.mod h1:Ux6NtV1B4LatamKE63tJBntoxD++xmtI/lK0VtEplN4=
+github.com/prometheus/common v0.66.1/go.mod h1:gcaUsgf3KfRSwHY4dIMXLPV0K/Wg1oZ8+SbZk/HH/dA=
 github.com/prometheus/procfs v0.17.0 h1:FuLQ+05u4ZI+SS/w9+BWEM2TXiHKsUQ9TADiRH7DuK0=
 github.com/prometheus/procfs v0.17.0/go.mod h1:oPQLaDAMRbA+u8H5Pbfq+dl3VDAvHxMUOVhe0wYB2zw=
 github.com/protocolbuffers/txtpbfmt v0.0.0-20241112170944-20d2c9ebc01d h1:HWfigq7lB31IeJL8iy7jkUmU/PG1Sr8jVGhS749dbUA=
