@@ -65,8 +65,8 @@ type OrphanDetection interface {
 }
 
 type SKRClientCache interface {
-	GetClient(key string) skrclient.Client
-	AddClient(key string, client skrclient.Client)
+	GetClient(key string) *skrclient.SKRClient
+	AddClient(key string, client *skrclient.SKRClient)
 	DeleteClient(key string)
 }
 
@@ -517,7 +517,7 @@ func pruneResource(diff []*resource.Info, resourceType string, resourceName stri
 
 func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Manifest) (skrclient.Client, error) {
 	var err error
-	var clnt skrclient.Client
+	var clnt *skrclient.SKRClient
 
 	clientsCacheKey, found := manifest.GenerateCacheKey()
 	if found {

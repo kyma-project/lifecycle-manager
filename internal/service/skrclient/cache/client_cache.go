@@ -16,16 +16,16 @@ const (
 )
 
 type Service struct {
-	internal *ttlcache.Cache[string, skrclient.Client]
+	internal *ttlcache.Cache[string, *skrclient.SKRClient]
 }
 
 func NewService() *Service {
-	cache := &Service{internal: ttlcache.New[string, skrclient.Client]()}
+	cache := &Service{internal: ttlcache.New[string, *skrclient.SKRClient]()}
 	go cache.internal.Start()
 	return cache
 }
 
-func (m *Service) GetClient(key string) skrclient.Client {
+func (m *Service) GetClient(key string) *skrclient.SKRClient {
 	cachedClient := m.internal.Get(key)
 	if cachedClient != nil {
 		return cachedClient.Value()
@@ -33,7 +33,7 @@ func (m *Service) GetClient(key string) skrclient.Client {
 	return nil
 }
 
-func (m *Service) AddClient(key string, value skrclient.Client) {
+func (m *Service) AddClient(key string, value *skrclient.SKRClient) {
 	m.internal.Set(key, value, getRandomTTL())
 }
 
