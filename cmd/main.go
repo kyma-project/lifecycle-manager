@@ -70,7 +70,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
-	kymaService "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
+	kymaservice "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -215,7 +215,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
 
-	kymaService := kymaService.NewService()
+	kymaService := kymaservice.NewService()
 	//nolint:godox // this will be used in the future
 	// TODO: use the oci registry host //nolint:godox // this will be used in the future
 	_ = getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
@@ -368,7 +368,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, kymaService *kymaService.Service,
+	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, kymaService *kymaservice.Service,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)

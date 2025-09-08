@@ -37,7 +37,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	kymaService "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
+	kymaservice "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -98,7 +99,7 @@ func NewKymaReconciler(client client.Client, eventRecorder event.Event,
 	modulesStatusHandler ModuleStatusHandler, skrWebhookManager SKRWebhookManager,
 	remoteSyncNamespace string, isManagedKyma bool, kymaMetrics *metrics.KymaMetrics,
 	remoteCatalog *remote.RemoteCatalog, templateLookup *templatelookup.TemplateLookup,
-	kymaService *kymaService.Service,
+	kymaService *kymaservice.Service,
 ) *Reconciler {
 	return &Reconciler{
 		Client:               client,

@@ -11,7 +11,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	kymaService "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
+	kymaservice "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	. "github.com/onsi/ginkgo/v2"
@@ -26,7 +27,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 	kyma := NewTestKyma("no-module-kyma")
 	skrKyma := NewSKRKyma() // Only used to create the Issuers, not actually deployed itself
 	var skrClient client.Client
-	kymaService := kymaService.NewService()
+	kymaService := kymaservice.NewService()
 	BeforeAll(ensureSetup(kyma, &skrClient))
 
 	It("The purge logic should start after the timeout", func() {
@@ -93,7 +94,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 var _ = Describe("When kyma is deleted before configured timeout", Ordered, func() {
 	kyma := NewTestKyma("drop-intantly-kyma")
 	skrKyma := NewSKRKyma() // Only used to create the Issuers, not actually deployed itself
-	kymaService := kymaService.NewService()
+	kymaService := kymaservice.NewService()
 	var skrClient client.Client
 	BeforeAll(ensureSetup(kyma, &skrClient))
 
@@ -154,7 +155,7 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 	kyma := NewTestKyma("skip-crds-kyma")
 	skrKyma := NewSKRKyma()
-	kymaService := kymaService.NewService()
+	kymaService := kymaservice.NewService()
 
 	var skrClient client.Client
 	const retries = 5
