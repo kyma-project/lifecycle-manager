@@ -116,7 +116,6 @@ func main() {
 	setupLog := ctrl.Log.WithName("setup")
 	scheme := machineryruntime.NewScheme()
 	registerSchemas(scheme)
-	api.RegisterCRD()
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()

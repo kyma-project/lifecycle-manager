@@ -21,7 +21,7 @@ func RequiredSchemeBuilder() *runtimeScheme.Builder {
 	return &runtimeScheme.Builder{GroupVersion: v1beta2.GroupVersion}
 }
 
-func RegisterCRD() {
+func init() {
 	SchemeBuilder := RequiredSchemeBuilder()
 	SchemeBuilder.Register(&v1beta2.Kyma{}, &v1beta2.KymaList{})
 	SchemeBuilder.Register(&v1beta2.ModuleTemplate{}, &v1beta2.ModuleTemplateList{})
