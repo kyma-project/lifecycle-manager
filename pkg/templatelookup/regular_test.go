@@ -812,24 +812,24 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 		t.Run(testCase.name, func(t *testing.T) {
 			givenTemplateList := &v1beta2.ModuleTemplateList{}
 			moduleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
+			const moduleTemplateVersion = "1.0.0"
 			for _, module := range templatelookup.FetchModuleInfo(testCase.kyma) {
 				if testCase.mrmExist {
 					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
-						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
+						WithName(fmt.Sprintf("%s-%s", module.Name, moduleTemplateVersion)).
 						WithModuleName(module.Name).
-						WithLabelModuleName(module.Name).
-						WithChannel("").
+						WithVersion(moduleTemplateVersion).
 						WithOCM(compdescv2.SchemaVersion).Build())
 					moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
 						*builder.NewModuleReleaseMetaBuilder().
 							WithModuleName(module.Name).
 							WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
-								{Channel: module.Channel, Version: testModule.Version},
+								{Channel: module.Channel, Version: moduleTemplateVersion},
 							}).Build())
 				} else {
 					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
-						WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
-						WithModuleName(module.Name).
+						WithName(fmt.Sprintf("%s-%s", module.Name, moduleTemplateVersion)).
+						WithAnnotation(shared.ModuleVersionAnnotation, moduleTemplateVersion).
 						WithLabelModuleName(module.Name).
 						WithChannel(module.Channel).
 						WithOCM(compdescv2.SchemaVersion).Build())
