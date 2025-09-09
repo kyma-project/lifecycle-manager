@@ -43,21 +43,24 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
+	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
+	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -139,20 +142,14 @@ var _ = BeforeSuite(func() {
 	)
 	Expect(err).ToNot(HaveOccurred())
 
-	authUser, err := testEnv.AddUser(
-		envtest.User{
-			Name:   "skr-admin-account",
-			Groups: []string{"system:masters"},
-		}, cfg,
-	)
-	Expect(err).NotTo(HaveOccurred())
-
 	kcpClient = mgr.GetClient()
 	keyChainLookup := keychainprovider.NewDefaultKeyChainProvider()
 	extractor := img.NewPathExtractor()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
 	orphanDetectionClient := kymarepository.NewClient(kcpClient)
+	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
+
 	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
@@ -160,11 +157,9 @@ var _ = BeforeSuite(func() {
 		Warning: 1 * time.Second,
 	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
 		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
-		declarativev2.WithRemoteTargetCluster(
-			func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
-				return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
-			},
-		), manifest.WithClientCacheKey(), declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
+		skrclientcache.NewService(),
+		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
+		declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

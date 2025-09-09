@@ -37,7 +37,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
@@ -116,7 +116,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
-	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, common.ErrAccessSecretNotFound) {
+	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 		return r.handleDeletedSkr(ctx, kyma)
 	}
 
@@ -221,6 +221,10 @@ func (r *Reconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, e
 
 func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logf.FromContext(ctx).Info("access secret not found for kyma, assuming already deleted cluster")
+	if err := r.cleanupManifestCRs(ctx, kyma); err != nil {
+		r.Metrics.RecordRequeueReason(metrics.CleanupManifestCrs, queue.UnexpectedRequeue)
+		return ctrl.Result{}, err
+	}
 	r.cleanupMetrics(kyma.Name)
 	r.removeAllFinalizers(kyma)
 
