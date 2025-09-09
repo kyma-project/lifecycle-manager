@@ -13,7 +13,7 @@ import (
 
 func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache()
-	key := cache.DescriptorKey("key 1")
+	key := "key 1"
 
 	actual := descriptorCache.Get(key)
 
@@ -22,7 +22,7 @@ func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
 
 func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache()
-	key1 := cache.DescriptorKey("key 1")
+	key1 := "key 1"
 	ocmDesc1 := &compdesc.ComponentDescriptor{
 		ComponentSpec: compdesc.ComponentSpec{
 			ObjectMeta: ocmmetav1.ObjectMeta{
@@ -39,14 +39,14 @@ func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
 
 func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache()
-	originalKey, originalValue := cache.DescriptorKey("key 1"), &types.Descriptor{
+	originalKey, originalValue := "key 1", &types.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{
 			ComponentSpec: compdesc.ComponentSpec{
 				ObjectMeta: ocmmetav1.ObjectMeta{Name: "descriptor 1"},
 			},
 		},
 	}
-	newKey, newValue := cache.DescriptorKey("key 2"), &types.Descriptor{
+	newKey, newValue := "key 2", &types.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{
 			ComponentSpec: compdesc.ComponentSpec{
 				ObjectMeta: ocmmetav1.ObjectMeta{Name: "descriptor 2"},

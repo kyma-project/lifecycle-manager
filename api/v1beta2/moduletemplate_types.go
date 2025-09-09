@@ -264,3 +264,12 @@ func (m *ModuleTemplate) GetModuleName() string {
 	}
 	return moduleName
 }
+
+func (m *ModuleTemplate) GenerateDescriptorKey() (string, error) {
+	version, err := m.GetSemanticVersion()
+	if err != nil {
+		return "", fmt.Errorf("failed to parse module template version: %w", err)
+	}
+
+	return fmt.Sprintf("%s:%d:%s", m.Name, m.Generation, version), nil
+}

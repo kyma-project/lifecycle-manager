@@ -213,3 +213,79 @@ func Test_GetModuleName(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateDescriptorCacheKey(t *testing.T) {
+	testCases := []struct {
+		name        string
+		template    *v1beta2.ModuleTemplate
+		want        string
+		expectError bool
+	}{
+		{
+			name: "Module Version is not nil and valid semver",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 1,
+				},
+				Spec: v1beta2.ModuleTemplateSpec{
+					Version: "1.0.0",
+				},
+			},
+			want:        "name:1:1.0.0",
+			expectError: false,
+		},
+		{
+			name: "Module Version is not nil but invalid semver",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 1,
+				},
+				Spec: v1beta2.ModuleTemplateSpec{
+					Version: "not-semver",
+				},
+			},
+			want:        "",
+			expectError: true,
+		},
+		{
+			name: "Module Version is not nil but module version is empty",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 2,
+				},
+				Spec: v1beta2.ModuleTemplateSpec{
+					Version: "",
+				},
+			},
+			want:        "",
+			expectError: true,
+		},
+		{
+			name: "Module Version is nil",
+			template: &v1beta2.ModuleTemplate{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:       "name",
+					Generation: 2,
+				},
+			},
+			want:        "",
+			expectError: true,
+		},
+	}
+
+	for i := range testCases {
+		t.Run(testCases[i].name, func(t *testing.T) {
+			got, err := testCases[i].template.GenerateDescriptorKey()
+			if testCases[i].expectError {
+				assert.Error(t, err, "expected error but got none")
+			} else {
+				assert.NoError(t, err, "unexpected error")
+				assert.Equalf(t, testCases[i].want, got,
+					"GenerateDescriptorKey() = %v, want %v", got, testCases[i].want)
+			}
+		})
+	}
+}

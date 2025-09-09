@@ -2,6 +2,7 @@ package provider
 
 import (
 	"errors"
+	"fmt"
 
 	"ocm.software/ocm/api/ocm/compdesc"
 
@@ -44,7 +45,11 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 
 		return desc, nil
 	}
-	key := cache.GenerateDescriptorKey(template)
+	key, err := template.GenerateDescriptorKey()
+	if err != nil {
+		return nil, err
+	}
+
 	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
 		return descriptor, nil
@@ -70,7 +75,11 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	if template == nil {
 		return ErrTemplateNil
 	}
-	key := cache.GenerateDescriptorKey(template)
+	key, err := template.GenerateDescriptorKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate descriptor key: %w", err)
+	}
+
 	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
 		return nil
