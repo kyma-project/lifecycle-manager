@@ -135,11 +135,6 @@ type WatcherList struct {
 	Items              []Watcher `json:"items"`
 }
 
-//nolint:gochecknoinits // registers Watcher CRD on startup
-func init() {
-	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
-}
-
 // DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService
 // for the Watcher.
 func DefaultIstioGatewaySelector() apimetav1.LabelSelector {

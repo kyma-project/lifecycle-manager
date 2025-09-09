@@ -18,13 +18,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/finalizer"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/modulecr"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func TestClient_RemoveDefaultModuleCR(t *testing.T) {
 	// Given a manifest CR with finalizer and a resource CR deployed in the cluster
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -77,7 +78,7 @@ func TestClient_RemoveDefaultModuleCR(t *testing.T) {
 func TestClient_SyncDefaultModuleCR(t *testing.T) {
 	// Given a manifest CR with a resource CR
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -127,7 +128,7 @@ func TestClient_SyncDefaultModuleCR(t *testing.T) {
 func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *testing.T) {
 	// Given a manifest CR and two resource CRs deployed in the cluster
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -173,7 +174,7 @@ func TestClient_GetAllModuleCRsExcludingDefaultCR_WithCreateAndDeletePolicy(t *t
 func TestClient_GetAllModuleCRsExcludingDefaultCR_WithIgnorePolicy(t *testing.T) {
 	// Given a manifest CR and two resource CRs deployed in the cluster
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	kcpClient := fake.NewClientBuilder().WithScheme(scheme).Build()

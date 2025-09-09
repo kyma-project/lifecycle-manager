@@ -89,11 +89,6 @@ type ChannelVersionAssignment struct {
 	Version string `json:"version"`
 }
 
-//nolint:gochecknoinits // registers ModuleReleaseMeta CRD on startup
-func init() {
-	SchemeBuilder.Register(&ModuleReleaseMeta{}, &ModuleReleaseMetaList{})
-}
-
 func (m ModuleReleaseMeta) IsBeta() bool {
 	return m.Spec.Beta
 }

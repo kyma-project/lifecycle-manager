@@ -114,8 +114,3 @@ type WatcherList struct {
 	apimetav1.ListMeta `json:"metadata"`
 	Items              []Watcher `json:"items"`
 }
-
-//nolint:gochecknoinits // registers Watcher CRD on startup
-func init() {
-	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
-}

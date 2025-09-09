@@ -247,8 +247,3 @@ const (
 	// It can also be used to initialize controllers without interacting with them.
 	CustomResourcePolicyIgnore = "Ignore"
 )
-
-//nolint:gochecknoinits // registers Kyma CRD on startup
-func init() {
-	SchemeBuilder.Register(&Kyma{}, &KymaList{})
-}

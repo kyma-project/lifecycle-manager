@@ -151,11 +151,6 @@ type ManifestList struct {
 	Items              []Manifest `json:"items"`
 }
 
-//nolint:gochecknoinits // registers Manifest CRD on startup
-func init() {
-	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
-}
-
 func (manifest *Manifest) SkipReconciliation() bool {
 	return manifest.GetLabels() != nil && manifest.GetLabels()[shared.SkipReconcileLabel] == shared.EnableLabelValue
 }

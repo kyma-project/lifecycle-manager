@@ -187,11 +187,6 @@ type Resource struct {
 	Link string `json:"link"`
 }
 
-//nolint:gochecknoinits // registers ModuleTemplate CRD on startup
-func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
-}
-
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {

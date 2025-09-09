@@ -7,7 +7,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
@@ -110,7 +110,7 @@ func TestGetModuleSemverVersion_ReturnError_NotSemver_VersionAnnotation(t *testi
 
 func TestGetMandatory_OneVersion(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
@@ -157,7 +157,7 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 
 func TestGetMandatory_MultipleVersions(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
@@ -212,7 +212,7 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 
 func TestGetMandatory_WithErrorNotSemVer(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
-	err := v1beta2.AddToScheme(scheme)
+	err := api.AddToScheme(scheme)
 	require.NoError(t, err)
 
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().

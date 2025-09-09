@@ -37,6 +37,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
+	kymaservice "github.com/kyma-project/lifecycle-manager/internal/service/kyma"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -70,6 +72,10 @@ type ModuleStatusHandler interface {
 	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error
 }
 
+type KymaService interface {
+	EnsureLabelsAndFinalizers(kyma *v1beta2.Kyma) bool
+}
+
 type Reconciler struct {
 	client.Client
 	event.Event
@@ -84,6 +90,33 @@ type Reconciler struct {
 	Metrics              *metrics.KymaMetrics
 	RemoteCatalog        *remote.RemoteCatalog
 	TemplateLookup       *templatelookup.TemplateLookup
+	kymaService          KymaService
+}
+
+func NewKymaReconciler(client client.Client, eventRecorder event.Event,
+	intervals queue.RequeueIntervals, skrContextFactory remote.SkrContextProvider,
+	descriptorProvider *provider.CachedDescriptorProvider, syncRemoteCrds remote.SyncCrdsUseCase,
+	modulesStatusHandler ModuleStatusHandler, skrWebhookManager SKRWebhookManager,
+	remoteSyncNamespace string, isManagedKyma bool, kymaMetrics *metrics.KymaMetrics,
+	remoteCatalog *remote.RemoteCatalog, templateLookup *templatelookup.TemplateLookup,
+	kymaService *kymaservice.Service,
+) *Reconciler {
+	return &Reconciler{
+		Client:               client,
+		Event:                eventRecorder,
+		RequeueIntervals:     intervals,
+		SkrContextFactory:    skrContextFactory,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       syncRemoteCrds,
+		ModulesStatusHandler: modulesStatusHandler,
+		SKRWebhookManager:    skrWebhookManager,
+		RemoteSyncNamespace:  remoteSyncNamespace,
+		IsManagedKyma:        isManagedKyma,
+		Metrics:              kymaMetrics,
+		RemoteCatalog:        remoteCatalog,
+		TemplateLookup:       templateLookup,
+		kymaService:          kymaService,
+	}
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -247,7 +280,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
+	if needsUpdate := r.kymaService.EnsureLabelsAndFinalizers(kyma); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, queue.UnexpectedRequeue)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))

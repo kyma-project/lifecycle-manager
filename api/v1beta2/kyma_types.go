@@ -21,7 +21,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -315,11 +314,6 @@ type KymaList struct {
 	Items              []Kyma `json:"items"`
 }
 
-//nolint:gochecknoinits // registers Kyma CRD on startup
-func init() {
-	SchemeBuilder.Register(&Kyma{}, &KymaList{})
-}
-
 func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status apimetav1.ConditionStatus) {
 	meta.SetStatusCondition(&kyma.Status.Conditions, apimetav1.Condition{
 		Type:               string(conditionType),
@@ -405,28 +399,6 @@ func (kyma *Kyma) IsInternal() bool {
 func (kyma *Kyma) IsBeta() bool {
 	beta, found := kyma.Labels[shared.BetaLabel]
 	return found && shared.IsEnabled(beta)
-}
-
-func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
-	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
-		return false
-	}
-
-	updateRequired := false
-	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, shared.KymaFinalizer) {
-		controllerutil.AddFinalizer(kyma, shared.KymaFinalizer)
-		updateRequired = true
-	}
-
-	if kyma.Labels == nil {
-		kyma.Labels = make(map[string]string)
-	}
-
-	if _, ok := kyma.Labels[shared.ManagedBy]; !ok {
-		kyma.Labels[shared.ManagedBy] = shared.OperatorName
-		updateRequired = true
-	}
-	return updateRequired
 }
 
 func (kyma *Kyma) GetNamespacedName() types.NamespacedName {

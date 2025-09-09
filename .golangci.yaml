@@ -93,6 +93,8 @@ linters:
           alias: k8scorev1
         - pkg: sigs.k8s.io/controller-runtime
           alias: ctrl
+        - pkg: sigs.k8s.io/controller-runtime/pkg/scheme
+          alias: runtimeScheme
         - pkg: sigs.k8s.io/controller-runtime/pkg/controller
           alias: ctrlruntime
         - pkg: sigs.k8s.io/controller-runtime/pkg/log
@@ -117,6 +119,8 @@ linters:
           alias: kymarepository
         - pkg: k8s.io/api/networking/v1
           alias: apinetworkv1
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/service/kyma
+          alias: kymaservice
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources
           alias: skrwebhookresources
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager

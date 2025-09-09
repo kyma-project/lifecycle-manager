@@ -117,8 +117,3 @@ const (
 	TargetRemote       Target = "remote"
 	TargetControlPlane Target = "control-plane"
 )
-
-//nolint:gochecknoinits // registers ModuleTemplate CRD on startup
-func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
-}
