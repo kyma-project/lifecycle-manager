@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"ocm.software/ocm/api/ocm/compdesc"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
@@ -15,7 +16,7 @@ import (
 
 func TestGetDescriptor_OnEmptySpec_ReturnsErrDecode(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider() // assuming it handles nil cache internally
-	template := builder.NewModuleTemplateBuilder().WithVersion("1.0.0").Build()
+	template := &v1beta2.ModuleTemplate{}
 
 	_, err := descriptorProvider.GetDescriptor(template)
 
