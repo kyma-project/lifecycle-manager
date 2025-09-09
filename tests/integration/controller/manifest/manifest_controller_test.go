@@ -162,7 +162,7 @@ var _ = Describe(
 					})
 
 					By("The Manifest CR is in Ready State and lastOperation is updated correctly", func() {
-						Eventually(ExpectManifestStateIn(ctx, kcpClient, shared.StateError),
+						Eventually(ExpectManifestStateIn(ctx, kcpClient, shared.StateReady),
 							standardTimeout,
 							standardInterval).
 							WithArguments(manifest.GetName()).Should(Succeed())

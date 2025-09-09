@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -194,4 +195,13 @@ func (manifest *Manifest) IsSameChannel(otherManifest *Manifest) bool {
 		return false
 	}
 	return channel == otherChannel
+}
+
+func (manifest *Manifest) GenerateCacheKey() (string, bool) {
+	kymaName, err := manifest.GetKymaName()
+	if err != nil {
+		return "", false
+	}
+	cacheKey := strings.Join([]string{kymaName, manifest.GetNamespace()}, "|")
+	return cacheKey, true
 }

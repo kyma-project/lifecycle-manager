@@ -27,7 +27,7 @@ packages:
   internal/repository/watcher/certificate/certmanager/certificate: 100
   internal/repository/watcher/certificate/gcm/certificate: 98
   internal/repository/watcher/certificate/gcm/renewal: 100
-  internal/repository/watcher/certificate/secret: 100
+  internal/repository/secret: 94
 
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
@@ -39,6 +39,7 @@ packages:
   internal/service/watcher/chartreader: 100
   internal/service/watcher/gateway: 94
   internal/service/watcher/resources: 82
+  internal/service/skrclient:  35
 
   internal/util/collections: 87
   pkg/module/sync: 10
