@@ -223,7 +223,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 })
 
 func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
-	key, _ := template.GenerateDescriptorKey()
+	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.GetVersion())
 	result := descriptorProvider.DescriptorCache.Get(key)
 	return result != nil
 }

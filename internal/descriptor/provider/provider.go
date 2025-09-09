@@ -45,10 +45,7 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 
 		return desc, nil
 	}
-	key, err := template.GenerateDescriptorKey()
-	if err != nil {
-		return nil, err
-	}
+	key := c.GenerateDescriptorKey(template.Name, template.GetVersion())
 
 	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
@@ -71,15 +68,16 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 	return descriptor, nil
 }
 
+func (c *CachedDescriptorProvider) GenerateDescriptorKey(name, version string) string {
+	return fmt.Sprintf("%s:%s", name, version)
+}
+
 func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	if template == nil {
 		return ErrTemplateNil
 	}
-	key, err := template.GenerateDescriptorKey()
-	if err != nil {
-		return fmt.Errorf("failed to generate descriptor key: %w", err)
-	}
 
+	key := c.GenerateDescriptorKey(template.Name, template.GetVersion())
 	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
 		return nil
