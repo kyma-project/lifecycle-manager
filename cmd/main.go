@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"strings"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -50,6 +51,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
@@ -221,21 +224,43 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+
+	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
+	var insecure bool
+
+	if noSchemeRef, found := strings.CutPrefix(ociRegistryHost, "http://"); found {
+		insecure = true
+		ociRegistryHost = noSchemeRef
+	} else if noSchemeRef, found := strings.CutPrefix(ociRegistryHost, "https://"); found {
+		ociRegistryHost = noSchemeRef
+	}
+
+	ocmDescriptorRepository := oci.ComposeOCIRepository(
+		keychainLookupFromFlag(mgr.GetClient(), flagVar),
+		ociRegistryHost,
+		insecure,
+		logger,
+		bootstrapFailedExitCode,
+	)
+	ocmDescriptorService := componentdescriptor.ComposeComponentDescriptorService(
+		ocmDescriptorRepository,
+		logger,
+		bootstrapFailedExitCode,
+	)
+
+	descriptorProvider := provider.NewCachedDescriptorProvider(ocmDescriptorService)
+
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
 
-	//nolint:godox // this will be used in the future
-	// TODO: use the oci registry host //nolint:godox // this will be used in the future
-	_ = getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
-
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
-		eventRecorder)
-	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger)
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder,
+		flagVar, options, skrWebhookManager, kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics,
+		accessManagerService, logger, eventRecorder)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options,
+		mandatoryModulesMetrics, logger, ociRegistryHost)
 	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, logger)
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
@@ -379,7 +404,7 @@ func scheduleMetricsCleanup(kymaMetrics *metrics.KymaMetrics, cleanupIntervalInM
 func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDescriptorProvider,
 	skrContextFactory remote.SkrContextProvider, event event.Event, flagVar *flags.FlagVar, options ctrlruntime.Options,
 	skrWebhookManager *watcher.SkrWebhookManifestManager, kymaMetrics *metrics.KymaMetrics,
-	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow,
+	setupLog logr.Logger, maintenanceWindow maintenancewindows.MaintenanceWindow, ociRegistryHost string,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -420,6 +445,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookupStrategies),
+		OCIRegistryHost: ociRegistryHost,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
@@ -476,7 +502,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
-	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
+	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 
@@ -504,9 +530,9 @@ func setupManifestReconciler(mgr ctrl.Manager,
 }
 
 //nolint:ireturn // constructor functions can return interfaces
-func keychainLookupFromFlag(mgr ctrl.Manager, flagVar *flags.FlagVar) spec.KeyChainLookup {
+func keychainLookupFromFlag(clnt client.Client, flagVar *flags.FlagVar) spec.KeyChainLookup {
 	if flagVar.OciRegistryCredSecretName != "" {
-		return keychainprovider.NewFromSecretKeyChainProvider(mgr.GetClient(),
+		return keychainprovider.NewFromSecretKeyChainProvider(clnt,
 			types.NamespacedName{
 				Namespace: shared.DefaultControlPlaneNamespace,
 				Name:      flagVar.OciRegistryCredSecretName,
@@ -547,6 +573,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options ctrlruntime.Options,
 	metrics *metrics.MandatoryModulesMetrics,
 	setupLog logr.Logger,
+	ociRegistryHost string,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
 		flagVar.FailureMaxDelay, flagVar.RateLimiterFrequency, flagVar.RateLimiterBurst)
@@ -564,6 +591,7 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
 		DescriptorProvider:  descriptorProvider,
 		Metrics:             metrics,
+		OCIRegistryHost:     ociRegistryHost,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/types"
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -37,8 +36,10 @@ var _ = Describe("Module installation", func() {
 				moduleInternal).Should(Succeed())
 			Eventually(configureKCPModuleReleaseMeta, Timeout, Interval).WithArguments(moduleName).Should(Succeed())
 
+			err := registerDescriptor(FullOCMName(moduleName), moduleVersion)
+			Expect(err).ShouldNot(HaveOccurred())
+
 			var skrClient client.Client
-			var err error
 			Eventually(func() error {
 				skrClient, err = testSkrContextFactory.Get(types.NamespacedName{
 					Name:      kymaName,
@@ -219,7 +220,6 @@ func configureKCPModuleTemplates(moduleName string, moduleBeta, moduleInternal b
 		WithName(fmt.Sprintf("%s-%s", moduleName, moduleVersion)).
 		WithModuleName(moduleName).
 		WithVersion(moduleVersion).
-		WithOCM(compdescv2.SchemaVersion).
 		WithBeta(moduleBeta).
 		WithInternal(moduleInternal).
 		Build()
@@ -236,6 +236,7 @@ func configureKCPModuleReleaseMeta(moduleName string) error {
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
+		WithOcmComponentName(FullOCMName(moduleName)).
 		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, moduleVersion).
 		Build()
 
