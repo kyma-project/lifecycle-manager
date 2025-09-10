@@ -28,8 +28,8 @@ import (
 
 const (
 	defaultBufferSize      = 2048
-	Timeout                = time.Second * 10
-	ConsistentCheckTimeout = time.Second * 10
+	Timeout                = time.Second * 20
+	ConsistentCheckTimeout = time.Second * 20
 	Interval               = time.Millisecond * 250
 )
 

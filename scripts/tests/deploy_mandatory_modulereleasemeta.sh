@@ -26,4 +26,4 @@ echo "Mandatory ModuleReleaseMeta created successfully"
 rm -f module-release-meta-mandatory.yaml
 
 kubectl get modulereleasemeta "${MODULE_NAME}" -n kcp-system -o yaml
-kubectl get moduletemplate -n kcp-system
+kubectl get moduletemplate -n kcp-system -o wide

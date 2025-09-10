@@ -18,6 +18,7 @@ package mandatorymodule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/parser"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -43,7 +45,10 @@ type InstallationReconciler struct {
 	DescriptorProvider  *provider.CachedDescriptorProvider
 	RemoteSyncNamespace string
 	Metrics             *metrics.MandatoryModulesMetrics
+	OCIRegistryHost     string
 }
+
+var ErrNoModuleReleaseMeta = errors.New("no ModuleReleaseMeta found")
 
 func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
@@ -68,13 +73,22 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err != nil {
 		return emptyResultWithErr(err)
 	}
+
+	// Note: Here we're just adding OCM identity information.
+	// It doesn't change how the Mandatory Modules are selected for installation:
+	// we still take the latest version of every ModuleTemplate which is marked as mandatory.
+	// The switch to the logic based on ModuleReleaseMeta will be done in a follow-up PR.
+	// However, the first step towards this switch is already done here:
+	// the OCM identity information is taken from the ModuleReleaseMeta instance,
+	// that should exist in the cluster.
+	r.extendWithOCMIdentities(ctx, mandatoryTemplates)
+
 	r.Metrics.RecordMandatoryTemplatesCount(len(mandatoryTemplates))
 
 	modules, err := r.GenerateModulesFromTemplate(ctx, mandatoryTemplates, kyma)
 	if err != nil {
 		return emptyResultWithErr(err)
 	}
-
 	runner := sync.New(r)
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return emptyResultWithErr(err)
@@ -86,10 +100,61 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 func (r *InstallationReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (modulecommon.Modules, error) {
-	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace)
+	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, r.OCIRegistryHost)
 	return parser.GenerateMandatoryModulesFromTemplates(ctx, kyma, templates), nil
 }
 
 func emptyResultWithErr(err error) (ctrl.Result, error) {
 	return ctrl.Result{}, fmt.Errorf("MandatoryModuleController: %w", err)
+}
+
+// extendWithOCMIdentities extends every ModuleTemplateInfo in the given map with OCM identities
+func (r *InstallationReconciler) extendWithOCMIdentities(ctx context.Context, templates templatelookup.ModuleTemplatesByModuleName) {
+	for _, template := range templates {
+		if template.Err != nil {
+			continue
+		}
+
+		mrm, err := r.LookupModuleReleaseMeta(ctx, template.Spec.ModuleName, template.Namespace)
+		if client.IgnoreNotFound(err) != nil { // errors other than NotFound
+			template.Err = fmt.Errorf("failed getting ModuleReleaseMeta for module %s in namespace %s: %w",
+				template.Spec.ModuleName, template.Namespace, err)
+			continue
+		}
+
+		// Note: In the future this MUST be treated as an error, as every
+		// mandatory ModuleTemplate must have a corresponding ModuleReleaseMeta.
+		// For now (the migration time), if we can't find the ModuleReleaseMeta,
+		// we just skip such module.
+		// Such module can't be installed, because without ModuleReleaseMeta there is
+		// no way to fetch the ComponentDescriptor for the Module.
+		if mrm == nil {
+			template.Err = fmt.Errorf("%w for mandatory module %s in namespace %s",
+				ErrNoModuleReleaseMeta, template.Spec.ModuleName, template.Namespace)
+			continue
+		}
+
+		if template.ComponentIdentity == nil {
+			ocmi, err := ocmidentity.New(mrm.Spec.OcmComponentName, template.Spec.Version)
+			if err != nil {
+				template.Err = fmt.Errorf("failed creating OCM identity for module %s in namespace %s: %w",
+					template.Spec.ModuleName, template.Namespace, err)
+				continue
+			}
+			template.ComponentIdentity = ocmi
+		}
+	}
+}
+
+// TODO: Probably duplicated code
+func (r *InstallationReconciler) LookupModuleReleaseMeta(ctx context.Context, moduleName, namespace string) (*v1beta2.ModuleReleaseMeta, error) {
+	mrm := &v1beta2.ModuleReleaseMeta{}
+	err := r.Get(ctx, client.ObjectKey{
+		Name:      moduleName,
+		Namespace: namespace,
+	}, mrm)
+	if err != nil {
+		return nil, err
+	}
+	return mrm, nil
 }

@@ -18,6 +18,7 @@ package mandatorymodule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -29,6 +30,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -46,6 +48,26 @@ type DeletionReconciler struct {
 	queue.RequeueIntervals
 
 	DescriptorProvider *provider.CachedDescriptorProvider
+}
+
+// TODO: This function is a duplicate, we should use some common implementation.
+func (r *DeletionReconciler) FindMRMForTemplate(ctx context.Context,
+	template *v1beta2.ModuleTemplate,
+) (*v1beta2.ModuleReleaseMeta, error) {
+	if template == nil {
+		return nil, errors.New("template is nil")
+	}
+
+	key := client.ObjectKey{
+		Name:      template.Spec.ModuleName,
+		Namespace: template.Namespace,
+	}
+	obj := &v1beta2.ModuleReleaseMeta{}
+	if err := r.Get(ctx, key, obj); err != nil {
+		return nil, fmt.Errorf("failed to get ModuleReleaseMeta %s: %w", key.String(), err)
+	}
+
+	return obj, nil
 }
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -76,7 +98,14 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
-	manifests, err := r.getCorrespondingManifests(ctx, template)
+	mrm, err := r.FindMRMForTemplate(ctx, template)
+	if err == nil {
+		return ctrl.Result{}, fmt.Errorf("failed to find ModuleReleaseMeta for Mandatory Module %s: %w",
+			template.Name, err)
+	}
+	ocmi, err := ocmidentity.New(mrm.Spec.OcmComponentName, template.Spec.Version)
+
+	manifests, err := r.getCorrespondingManifests(ctx, template.Namespace, *ocmi)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get MandatoryModuleManifests: %w", err)
 	}
@@ -107,22 +136,18 @@ func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 }
 
 func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
-	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
+	namespace string, ocmi ocmidentity.Component) ([]v1beta2.Manifest,
 	error,
 ) {
 	manifests := &v1beta2.ManifestList{}
-	descriptor, err := r.DescriptorProvider.GetDescriptor(template)
-	if err != nil {
-		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
-	}
 	if err := r.List(ctx, manifests, &client.ListOptions{
-		Namespace:     template.Namespace,
+		Namespace:     namespace,
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
 	}); client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
 
-	filtered := filterManifestsByFQDNAndVersion(manifests.Items, descriptor.GetName(), descriptor.GetVersion())
+	filtered := filterManifestsByComponentIdentity(manifests.Items, ocmi)
 
 	return filtered, nil
 }
@@ -137,8 +162,10 @@ func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1
 	return nil
 }
 
-func filterManifestsByFQDNAndVersion(manifests []v1beta2.Manifest,
-	fqdn, moduleVersion string,
+// filterManifestsByComponentIdentity filters the manifests by OCM Component Name and module version.
+// OCM Component Name is a fully qualified name that looks like: 'kyma-project.io/module/<module-name>'
+func filterManifestsByComponentIdentity(manifests []v1beta2.Manifest,
+	ocmi ocmidentity.Component,
 ) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
@@ -146,7 +173,7 @@ func filterManifestsByFQDNAndVersion(manifests []v1beta2.Manifest,
 			continue
 		}
 
-		if manifest.Annotations[shared.FQDN] == fqdn && manifest.Spec.Version == moduleVersion {
+		if manifest.Annotations[shared.FQDN] == ocmi.Name() && manifest.Spec.Version == ocmi.Version() {
 			filteredManifests = append(filteredManifests, manifest)
 		}
 	}

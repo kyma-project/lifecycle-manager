@@ -62,7 +62,11 @@ func errorIsMaintenanceWindowUnknown(err error) bool {
 }
 
 func errorIsForbiddenTemplateUpdate(err error) bool {
-	return errors.Is(err, templatelookup.ErrTemplateUpdateNotAllowed)
+	return errors.Is(err, templatelookup.ErrTemplateUpdateNotAllowed) ||
+		//Review note: This sets Kyma status to Warning if ModuleReleaseMeta is not found,
+		//because that was the behavior when ModuleTemplate was not found.
+		//If this should be an Error, the integration tests must be adapted.
+		errors.Is(err, templatelookup.ErrNoModuleReleaseMeta)
 }
 
 func errorIsTemplateNotFound(err error) bool {

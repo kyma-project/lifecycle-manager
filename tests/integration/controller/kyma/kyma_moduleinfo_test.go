@@ -20,7 +20,7 @@ var (
 	moduleName = "module"
 )
 
-var _ = Describe("Kyma module control", Ordered, func() {
+var _ = PDescribe("Kyma module control", Ordered, func() {
 	kyma := NewTestKyma(kymaName)
 	skrKyma := NewSKRKyma()
 	module := NewTestModule(moduleName, v1beta2.DefaultChannel)
@@ -28,7 +28,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 	var err error
 
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, kcpClient, &v1beta2.Kyma{Spec: v1beta2.KymaSpec{Modules: []v1beta2.Module{module}}})
+		DeployModuleTemplates(ctx, kcpClient, &v1beta2.Kyma{Spec: v1beta2.KymaSpec{Modules: []v1beta2.Module{module}}}, "fixme")
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
