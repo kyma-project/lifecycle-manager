@@ -576,7 +576,8 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
-	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace)
+	ociRepo := "http://k3d-kcp-registry.localhost:5000" ///component-descriptors" //TODO: Get from configuration
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, ociRepo)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)

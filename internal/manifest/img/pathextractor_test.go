@@ -101,7 +101,7 @@ func TestPathExtractor_FetchLayerToFile(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			p := img.NewPathExtractor()
-			imageSpec, err := testCase.want.ConvertToImageSpec()
+			imageSpec, err := testCase.want.ConvertToImageSpec("fix-me") //TODO: Fix
 			require.NoError(t, err)
 			extractedFilePath, err := p.GetPathFromRawManifest(t.Context(), *imageSpec, authn.DefaultKeychain)
 			require.NoError(t, err)

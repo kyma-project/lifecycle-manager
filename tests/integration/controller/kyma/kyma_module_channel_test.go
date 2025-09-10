@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -486,7 +487,14 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 
-		descriptor, err := descriptorProvider.GetDescriptor(template)
+		//TODO: Fix this. Is this even relevant?
+		//      This doesn't use ModuleReleaseMeta. Probably it's one of this tests
+		//      that should be re-written to the new approach.
+		ocmi, err := ocmidentity.New("fix", "me")
+		if err != nil {
+			return err
+		}
+		descriptor, err := descriptorProvider.GetDescriptor(*ocmi)
 		if err != nil {
 			return err
 		}

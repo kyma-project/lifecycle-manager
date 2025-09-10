@@ -61,7 +61,8 @@ func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 	keyChain authn.Keychain,
 	filename string,
 ) (string, error) {
-	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
+	//TODO: use component-descriptors from constants
+	imageRef := fmt.Sprintf("%s/%s/%s@%s", imageSpec.Repo, "component-descriptors", imageSpec.Name, imageSpec.Ref)
 
 	installPath := getFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, filename)
@@ -169,6 +170,7 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	return "", ErrInvalidArchiveStructure
 }
 
+// TODO : Use THIS to fetch component descriptor!
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
 	noSchemeImageRef := noSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)

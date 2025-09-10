@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"strings"
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -72,8 +73,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/oci"
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -216,15 +219,38 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+
+	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
+	var insecure bool
+
+	if tryInsecure := strings.TrimPrefix(ociRegistryHost, "http://"); tryInsecure != ociRegistryHost {
+		insecure = true
+		ociRegistryHost = tryInsecure
+	} else if trySecure := strings.TrimPrefix(ociRegistryHost, "https://"); trySecure != ociRegistryHost {
+		ociRegistryHost = trySecure
+	}
+
+	ocmDescriptorRepository, err := oci.NewRepository(
+		keychainLookupFromFlag(mgr.GetClient(), flagVar),
+		ociRegistryHost,
+		insecure,
+	)
+	if err != nil {
+		logger.Error(err, "failed to create OCM descriptor repository")
+		os.Exit(bootstrapFailedExitCode)
+	}
+
+	ocmDescriptorService, err := componentdescriptor.NewService(ocmDescriptorRepository)
+	if err != nil {
+		logger.Error(err, "failed to create OCM descriptor service")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	descriptorProvider := provider.NewCachedDescriptorProvider(ocmDescriptorService)
+
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
-
-	//nolint:godox // this will be used in the future
-	// TODO: use the oci registry host //nolint:godox // this will be used in the future
-	_ = getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow)
@@ -468,7 +494,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
-	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
+	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 	if err := manifest.SetupWithManager(mgr, options, queue.RequeueIntervals{
@@ -489,9 +515,9 @@ func setupManifestReconciler(mgr ctrl.Manager,
 }
 
 //nolint:ireturn // constructor functions can return interfaces
-func keychainLookupFromFlag(mgr ctrl.Manager, flagVar *flags.FlagVar) spec.KeyChainLookup {
+func keychainLookupFromFlag(clnt client.Client, flagVar *flags.FlagVar) spec.KeyChainLookup {
 	if flagVar.OciRegistryCredSecretName != "" {
-		return keychainprovider.NewFromSecretKeyChainProvider(mgr.GetClient(),
+		return keychainprovider.NewFromSecretKeyChainProvider(clnt,
 			types.NamespacedName{
 				Namespace: shared.DefaultControlPlaneNamespace,
 				Name:      flagVar.OciRegistryCredSecretName,

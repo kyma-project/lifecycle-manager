@@ -85,7 +85,8 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 func (r *InstallationReconciler) GenerateModulesFromTemplate(ctx context.Context,
 	templates templatelookup.ModuleTemplatesByModuleName, kyma *v1beta2.Kyma,
 ) (modulecommon.Modules, error) {
-	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace)
+	ociRepo := "http://k3d-kcp-registry.localhost:5000" ///component-descriptors" //TODO: Get from configuration
+	parser := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, ociRepo)
 	return parser.GenerateMandatoryModulesFromTemplates(ctx, kyma, templates), nil
 }
 

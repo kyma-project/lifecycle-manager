@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
@@ -22,7 +23,19 @@ var (
 type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
 	Err            error
-	DesiredChannel string
+	DesiredChannel string // This is the channel that was requested by the user
+	//                       using Kyma 'spec.channel' or configured module channel.
+
+	ComponentIdentity *ocmidentity.Component // Identifies the OCM Component that is
+	//                                                  represented by this ModuleTemplateInfo.
+}
+
+// Implements provider.OCMIProvider interface
+func (m ModuleTemplateInfo) GetOCMIdentity() (*ocmidentity.Component, error) {
+	if m.ComponentIdentity == nil {
+		return nil, fmt.Errorf("component identity is nil for module template %s", m.Name)
+	}
+	return m.ComponentIdentity, nil
 }
 
 type ModuleTemplateInfoLookupStrategy interface {
@@ -80,7 +93,14 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			templates[moduleInfo.Name] = &templateInfo
 			continue
 		}
-		if err := t.descriptorProvider.Add(templateInfo.ModuleTemplate); err != nil {
+		ocmi, err := ocmidentity.New(moduleReleaseMeta.Spec.OcmComponentName, templateInfo.ModuleTemplate.GetVersion())
+		if err != nil {
+			templateInfo.Err = fmt.Errorf("failed to create OCM Component Identity: %w", err)
+			templates[moduleInfo.Name] = &templateInfo
+			continue
+		}
+
+		if err := t.descriptorProvider.Add(*ocmi); err != nil {
 			templateInfo.Err = fmt.Errorf("failed to get descriptor: %w", err)
 			templates[moduleInfo.Name] = &templateInfo
 			continue
@@ -88,7 +108,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
 			if moduleMatch(moduleStatus, moduleInfo.Name) {
-				descriptor, err := t.descriptorProvider.GetDescriptor(templateInfo.ModuleTemplate)
+				descriptor, err := t.descriptorProvider.GetDescriptor(*ocmi)
 				if err != nil {
 					msg := "could not handle channel skew as descriptor from template cannot be fetched"
 					templateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)

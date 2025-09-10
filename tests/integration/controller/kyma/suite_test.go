@@ -142,7 +142,8 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider = provider.NewCachedDescriptorProvider()
+	//TODO: Fix
+	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)

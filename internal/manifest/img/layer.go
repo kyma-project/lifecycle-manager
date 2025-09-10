@@ -43,13 +43,14 @@ type (
 
 type Layers []Layer
 
-func (l Layer) ConvertToImageSpec() (*v1beta2.ImageSpec, error) {
+func (l Layer) ConvertToImageSpec(ociRepo string) (*v1beta2.ImageSpec, error) {
 	ociImage, ok := l.LayerRepresentation.(*OCI)
 	if !ok {
 		return nil, fmt.Errorf("%w: not an OCIImage", ErrLayerParsing)
 	}
+
 	return &v1beta2.ImageSpec{
-		Repo: ociImage.Repo,
+		Repo: ociRepo, //Note: this value will be used to fetch the layer from the OCI registry
 		Name: ociImage.Name,
 		Ref:  ociImage.Ref,
 		Type: v1beta2.RefTypeMetadata(ociImage.Type),

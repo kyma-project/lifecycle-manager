@@ -10,7 +10,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
@@ -32,7 +31,7 @@ func GetModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
-) (*v1beta2.ModuleTemplate, error) {
+) (*templatelookup.ModuleTemplateInfo, error) {
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 		moduletemplateinfolookup.NewByVersionStrategy(clnt),
 		moduletemplateinfolookup.NewByChannelStrategy(clnt),
@@ -52,7 +51,7 @@ func GetModuleTemplate(ctx context.Context,
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
 	}
-	return templateInfo.ModuleTemplate, nil
+	return &templateInfo, nil
 }
 
 func ModuleTemplateExists(ctx context.Context,
@@ -207,21 +206,51 @@ func DeleteModuleTemplate(ctx context.Context,
 	return nil
 }
 
+// TODO: Rename to GetOCMVersionForModule
 func ReadModuleVersionFromModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) (string, error) {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	moduleInfo, err := GetModuleTemplate(ctx, clnt, module, kyma)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider()
-	ocmDesc, err := descriptorProvider.GetDescriptor(moduleTemplate)
+	//TODO: We're only interested in the OCM Component Version.
+	//We don't need to get it from ComponentDescriptor - we already have it:
+	//It is used to fetch the ComponentDescriptor in the first place.
+	//descriptorProvider := provider.NewCachedDescriptorProvider()
+	//ocmDesc, err := descriptorProvider.GetDescriptorWithIdentity(moduleInfo)
+	//if err != nil {
+	//	return "", fmt.Errorf("failed to get descriptor: %w", err)
+	//}
+
+	ocmDesc, err := moduleInfo.GetOCMIdentity()
 	if err != nil {
-		return "", fmt.Errorf("failed to get descriptor: %w", err)
+		return "", fmt.Errorf("failed to get OCM identity: %w", err)
+	}
+	return ocmDesc.Version(), nil
+}
+
+// TODO: Remove
+func validateModuleReleaseMeta(mrm *v1beta2.ModuleReleaseMeta, expectedName, expectedVersion string) error {
+	if mrm.Spec.ModuleName != expectedName {
+		return fmt.Errorf("unexpected ModuleReleaseMeta %s: module name mismatch: expected %s, got %s", mrm.GetName(), expectedName, mrm.Spec.ModuleName)
 	}
 
-	return ocmDesc.Version, nil
+	if mrm.Spec.Mandatory != nil {
+		if mrm.Spec.Mandatory.Version != expectedVersion {
+			return fmt.Errorf("unexpected ModuleReleaseMeta %s: mandatory version mismatch: expected %s, got %s", mrm.GetName(), expectedVersion, mrm.Spec.Mandatory.Version)
+		}
+		return nil
+	}
+
+	for _, channel := range mrm.Spec.Channels {
+		if channel.Version == expectedVersion {
+			return nil
+		}
+	}
+	return fmt.Errorf("unexpected ModuleReleaseMeta %s: version %s not found in channels mapping", mrm.GetName(), expectedVersion)
+
 }
