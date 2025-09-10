@@ -109,9 +109,6 @@ non-blocking-deletion:
 skip-manifest-reconciliation:
 	$(GO_TEST) "Manifest Skip Reconciliation Label"
 
-upgrade-under-deletion:
-	$(GO_TEST) "Kyma Module Upgrade Under Deletion"
-
 modulereleasemeta-upgrade-under-deletion:
 	$(GO_TEST) "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
 
@@ -147,9 +144,6 @@ rbac-privileges:
 
 oci-reg-cred-secret:
 	$(GO_TEST) "OCI Registry Credentials Secret"
-
-ocm-compatible-module-template:
-	$(GO_TEST) "OCM Format Module Template"
 
 modulereleasemeta-with-obsolete-moduletemplate:
 	$(GO_TEST) "ModuleReleaseMeta With Obsolete ModuleTemplate"
