@@ -159,7 +159,7 @@ var _ = Describe("Maintenance Windows - Wait for Maintenance Window", Ordered, f
 				Should(Succeed())
 
 			By("And Kyma .status.modules[].version shows correct version")
-			newModuleTemplateVersion, err := ReadModuleVersionFromModuleTemplate(ctx, kcpClient, module,
+			newModuleTemplateVersion, err := GetOCMVersionForModule(ctx, kcpClient, module,
 				kyma)
 			Expect(err).ToNot(HaveOccurred())
 

@@ -62,7 +62,8 @@ func errorIsMaintenanceWindowUnknown(err error) bool {
 }
 
 func errorIsForbiddenTemplateUpdate(err error) bool {
-	return errors.Is(err, templatelookup.ErrTemplateUpdateNotAllowed)
+	return errors.Is(err, templatelookup.ErrTemplateUpdateNotAllowed) ||
+		errors.Is(err, templatelookup.ErrNoModuleReleaseMeta)
 }
 
 func errorIsTemplateNotFound(err error) bool {

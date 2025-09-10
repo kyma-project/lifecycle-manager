@@ -118,6 +118,31 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 	assert.NotEqual(t, someFQDN, result.FQDN)
 }
 
+func TestGenerateModuleStatusFromError_WhenCalledWithErrNoModuleReleaseMeta_ReturnsDeepCopyAndStateWarning(
+	t *testing.T,
+) {
+	someModuleName := "some-module"
+	someChannel := "some-channel"
+	someFQDN := "some-fqdn"
+	status := createStatus()
+	templateError := templatelookup.ErrNoModuleReleaseMeta
+
+	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
+
+	assert.NotNil(t, result)
+	require.NoError(t, err)
+
+	expectedStatus := status.DeepCopy()
+	expectedStatus.Message = templateError.Error()
+	expectedStatus.State = shared.StateWarning
+	assert.Equal(t, expectedStatus, result)
+
+	// Passed module info is not used for new status, but the deep-copied object
+	assert.NotEqual(t, someModuleName, result.Name)
+	assert.NotEqual(t, someChannel, result.Channel)
+	assert.NotEqual(t, someFQDN, result.FQDN)
+}
+
 func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultError_ReturnsNewStatusWithStateWarning(
 	t *testing.T,
 ) {
