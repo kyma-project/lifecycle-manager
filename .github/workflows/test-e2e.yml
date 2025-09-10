@@ -35,7 +35,7 @@ jobs:
           SLEEP_SECONDS: 30
         run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
-    name: E2E
+    name: E2E With ModuleReleaseMeta
     needs: wait-for-image-build
     strategy:
       fail-fast: false
@@ -47,25 +47,38 @@ jobs:
           - module-status-decoupling-with-statefulset
           - module-status-decoupling-with-deployment
           - kyma-metrics
+          - fips-mode-metric
           - module-without-default-cr
           - module-consistency
           - non-blocking-deletion
-          - upgrade-under-deletion
+          - modulereleasemeta-upgrade-under-deletion
           - purge-controller
           - purge-metrics
           - module-upgrade-channel-switch
-          - module-upgrade-new-version
+          - modulereleasemeta-module-upgrade-new-version
           - unmanage-module
-          - module-install-by-version
           - skip-manifest-reconciliation
           - legacy-istio-gateway-secret-rotation
           - self-signed-certificate-rotation
-          - mandatory-module-with-old-naming-pattern
-          - mandatory-module-metrics-with-old-naming-pattern
+          - mandatory-module
+          - mandatory-module-metrics
           - misconfigured-kyma-secret
           - rbac-privileges
-          - ocm-compatible-module-template
+          - modulereleasemeta-with-obsolete-moduletemplate
+          - modulereleasemeta-sync
+          - module-status-on-skr-connection-lost
+          - modulereleasemeta-watch-trigger
+          - modulereleasemeta-not-allowed-installation
           - labelling
+          - maintenance-windows
+          - maintenance-windows-initial-installation
+          - maintenance-windows-skip
+          - watcher-zero-downtime
+          - module-deletion-with-multiple-crs-create-and-delete-policy
+          - module-deletion-with-multiple-crs-ignore-policy
+          - oci-reg-cred-secret
+          - module-transferred-to-another-oci-registry
+
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -73,17 +86,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: lifecycle-manager
-
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:
           repository: kyma-project/template-operator
           path: template-operator
-
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
-
       - name: Setup tools
         uses: ./lifecycle-manager/.github/actions/setup-tools
         with:
@@ -93,21 +103,38 @@ jobs:
           modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
-
       - name: Setup test clusters
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters
         with:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           cert_manager_version: ${{ steps.configuration.outputs.cert_manager_version }}
+
+      - name: Setup private registry
+        if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
+        uses: ./lifecycle-manager/.github/actions/setup-private-registry
+
       - name: Deploy lifecycle-manager
         uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
         with:
           klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
           klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
-
       - name: Deploy template-operator
-        uses: ./lifecycle-manager/.github/actions/deploy-template-operator
-
+        uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
+        env:
+          ModuleDeploymentName: template-operator-controller-manager
+          ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
+          ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
+          NewerVersion: 2.4.2-e2e-test
+          OlderVersion: 1.1.1-e2e-test
+          OlderVersionForMandatoryModule: 1.1.0-smoke-test
+          NewerVersionForMandatoryModule: 2.4.1-smoke-test
+          VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
+          VersionForDeploymentInWarning: 1.0.0-warning-deployment
+          VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment
+          VersionForMisconfiguredStatefulSetImage: 1.0.0-misconfigured-statefulset
+          VersionForNoDefaultCR: 1.0.0-no-default-cr
+          MisconfiguredModuleName: template-operator-misconfigured
+          ModuleName: template-operator
       - name: Run '${{ matrix.e2e-test }}' test
         working-directory: lifecycle-manager
         run: |
