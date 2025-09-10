@@ -1,6 +1,7 @@
 package v1beta2
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -101,4 +102,10 @@ func (m ModuleReleaseMeta) IsBeta() bool {
 
 func (m ModuleReleaseMeta) IsInternal() bool {
 	return m.Spec.Internal
+}
+
+// FullOCMName returns the fully qualified OCM component name for a given module name.
+// This is used by OCM-related functionality, end-users do not have to use this format.
+func FullOCMName(moduleName string) string {
+	return shared.KymaGroup + "/module/" + moduleName
 }

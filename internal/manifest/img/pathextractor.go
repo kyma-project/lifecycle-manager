@@ -16,6 +16,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
+	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg/componentmapping"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/filemutex"
@@ -65,7 +66,13 @@ func (p PathExtractor) GetPathForFetchedLayer(ctx context.Context,
 	keyChain authn.Keychain,
 	filename string,
 ) (string, error) {
-	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
+	// [Review Note]: Previously the source of imageSpec.Repo value was a "real" OCM ComponentDescriptor,
+	// which alredy contained the `component-descriptors` suffix in the value.
+	// Now the source for repository is the user-provided configuration value that specifies just the host.
+	// Therefore we need to add here the `component-descriptors` suffix manually.
+	imageRef := fmt.Sprintf("%s/%s/%s@%s", imageSpec.Repo, componentmapping.ComponentDescriptorNamespace,
+		imageSpec.Name, imageSpec.Ref,
+	)
 
 	installPath := getFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, filename)

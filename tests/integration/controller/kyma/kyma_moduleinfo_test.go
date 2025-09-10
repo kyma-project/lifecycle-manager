@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -28,10 +29,21 @@ var _ = Describe("Kyma module control", Ordered, func() {
 	var err error
 
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, kcpClient, &v1beta2.Kyma{Spec: v1beta2.KymaSpec{Modules: []v1beta2.Module{module}}})
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		DeployModuleTemplates(
+			ctx,
+			kcpClient,
+			&v1beta2.Kyma{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Namespace: shared.DefaultControlPlaneNamespace},
+				Spec: v1beta2.KymaSpec{
+					Modules: []v1beta2.Module{module},
+				},
+			},
+			"1.2.3",
+		)
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err

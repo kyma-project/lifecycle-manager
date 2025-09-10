@@ -235,12 +235,13 @@ var _ = BeforeSuite(func() {
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	err = (&kyma.Reconciler{
-		Client:               kcpClient,
-		SkrContextFactory:    testSkrContextFactory,
-		Event:                testEventRec,
-		RequeueIntervals:     intervals,
-		SKRWebhookManager:    skrWebhookChartManager,
-		DescriptorProvider:   provider.NewCachedDescriptorProvider(),
+		Client:            kcpClient,
+		SkrContextFactory: testSkrContextFactory,
+		Event:             testEventRec,
+		RequeueIntervals:  intervals,
+		SKRWebhookManager: skrWebhookChartManager,
+		//TODO: Why it works?
+		DescriptorProvider:   provider.NewCachedDescriptorProvider(nil),
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,

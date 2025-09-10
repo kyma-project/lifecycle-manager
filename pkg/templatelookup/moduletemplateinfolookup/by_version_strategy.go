@@ -29,11 +29,7 @@ func (ByVersionStrategy) IsResponsible(
 		return false
 	}
 
-	if !moduleInfo.IsInstalledByVersion() {
-		return false
-	}
-
-	return true
+	return moduleInfo.IsInstalledByVersion()
 }
 
 func (s ByVersionStrategy) Lookup(ctx context.Context,

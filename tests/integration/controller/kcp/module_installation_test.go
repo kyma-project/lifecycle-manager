@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/types"
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -14,6 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,6 +36,8 @@ var _ = Describe("Module installation", func() {
 			Eventually(configureKCPModuleTemplates, Timeout, Interval).WithArguments(moduleName, moduleBeta,
 				moduleInternal).Should(Succeed())
 			Eventually(configureKCPModuleReleaseMeta, Timeout, Interval).WithArguments(moduleName).Should(Succeed())
+
+			registerDescriptor(v1beta2.FullOCMName(moduleName), moduleVersion)
 
 			var skrClient client.Client
 			var err error
@@ -219,7 +221,7 @@ func configureKCPModuleTemplates(moduleName string, moduleBeta, moduleInternal b
 		WithName(fmt.Sprintf("%s-%s", moduleName, moduleVersion)).
 		WithModuleName(moduleName).
 		WithVersion(moduleVersion).
-		WithOCM(compdescv2.SchemaVersion).
+		WithOCM(compdescv2.SchemaVersion). //TODO: remove
 		WithBeta(moduleBeta).
 		WithInternal(moduleInternal).
 		Build()
@@ -236,6 +238,7 @@ func configureKCPModuleReleaseMeta(moduleName string) error {
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
+		WithOcmComponentName(v1beta2.FullOCMName(moduleName)).
 		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, moduleVersion).
 		Build()
 
