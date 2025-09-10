@@ -22,12 +22,17 @@ type CachedDescriptorProvider struct {
 }
 
 func NewCachedDescriptorProvider() *CachedDescriptorProvider {
+
 	return &CachedDescriptorProvider{
 		DescriptorCache: cache.NewDescriptorCache(),
 	}
 }
 
-func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplate) (*types.Descriptor, error) {
+func (c *CachedDescriptorProvider) GetDescriptor(ociComponentName, componentVersion string) (*types.Descriptor, error) {
+	return nil, nil // TODO: implement
+}
+
+func (c *CachedDescriptorProvider) GetDescriptorOld(template *v1beta2.ModuleTemplate) (*types.Descriptor, error) {
 	if template == nil {
 		return nil, ErrTemplateNil
 	}
@@ -66,6 +71,10 @@ func (c *CachedDescriptorProvider) GetDescriptor(template *v1beta2.ModuleTemplat
 	return descriptor, nil
 }
 
+/*
+[Review note:]
+This method was adding the ComponentDescriptor configured in the given ModuleTemplate to the cache if it is not already present.
+We don't need it anymore as now the ComponentDescriptor is fetched directly from the OCI registry.
 func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	if template == nil {
 		return ErrTemplateNil
@@ -100,3 +109,4 @@ func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
 	c.DescriptorCache.Set(key, descriptor)
 	return nil
 }
+*/

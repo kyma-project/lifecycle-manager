@@ -31,12 +31,16 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	moduleTemplateInfo := templatelookup.ModuleTemplateInfo{}
 	moduleTemplateInfo.DesiredChannel = getDesiredChannel(moduleInfo.Channel, kyma.Spec.Channel)
 
-	var desiredModuleVersion string
+        //[Review Note]
+	//the original name: "desirectModuleVersion" is misleading: it would be "desired", if user provides it.
+	//here we resolve the version using data from moduleReleaseMeta, so the name should be "resolvedModuleVersion"
+	//var desiredModuleVersion string
+	var resolvedModuleVersion string
 	var err error
 	if moduleReleaseMeta.Spec.Mandatory != nil {
-		desiredModuleVersion, err = templatelookup.GetMandatoryVersionForModule(moduleReleaseMeta)
+		resolvedModuleVersion, err = templatelookup.GetMandatoryVersionForModule(moduleReleaseMeta)
 	} else {
-		desiredModuleVersion, err = templatelookup.GetChannelVersionForModule(moduleReleaseMeta,
+		resolvedModuleVersion, err = templatelookup.GetChannelVersionForModule(moduleReleaseMeta,
 			moduleTemplateInfo.DesiredChannel)
 	}
 	if err != nil {
@@ -47,7 +51,7 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	template, err := getTemplateByVersion(ctx,
 		s.client,
 		moduleInfo.Name,
-		desiredModuleVersion,
+		resolvedModuleVersion,
 		kyma.Namespace)
 	if err != nil {
 		moduleTemplateInfo.Err = err
@@ -55,5 +59,6 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	}
 
 	moduleTemplateInfo.ModuleTemplate = template
+	moduleTemplateInfo.ResolvedVersion = resolvedModuleVersion
 	return moduleTemplateInfo
 }
