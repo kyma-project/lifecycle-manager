@@ -52,7 +52,6 @@ var _ = Describe("Module with ModuleReleaseMeta Upgrade By New Version", Ordered
 				Should(Succeed())
 		})
 
-		//nolint:dupl //this nolint can be removed after this issue https://github.com/kyma-project/lifecycle-manager/issues/2060 get resolvedSS
 		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).

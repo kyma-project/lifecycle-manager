@@ -85,9 +85,6 @@ kyma-metrics:
 mandatory-module-metrics:
 	$(GO_TEST) "Mandatory Module Metrics"
 
-mandatory-module-metrics-with-old-naming-pattern:
-	$(GO_TEST) "Mandatory Module With Old Naming Pattern Metrics"
-
 watcher-enqueue:
 	$(GO_TEST) "Enqueue Event from Watcher"
 
@@ -106,17 +103,11 @@ module-consistency:
 mandatory-module:
 	$(GO_TEST) "Mandatory Module Installation and Deletion"
 
-mandatory-module-with-old-naming-pattern:
-	$(GO_TEST) "Mandatory Module With Old Naming Pattern Installation and Deletion"
-
 non-blocking-deletion:
 	$(GO_TEST) "Non Blocking Kyma Module Deletion"
 
 skip-manifest-reconciliation:
 	$(GO_TEST) "Manifest Skip Reconciliation Label"
-
-upgrade-under-deletion:
-	$(GO_TEST) "Kyma Module Upgrade Under Deletion"
 
 modulereleasemeta-upgrade-under-deletion:
 	$(GO_TEST) "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion"
@@ -133,14 +124,8 @@ purge-metrics:
 module-upgrade-channel-switch:
 	$(GO_TEST) "Module Upgrade By Channel Switch"
 
-module-upgrade-new-version:
-	$(GO_TEST) "Module Upgrade By New Version"
-
 modulereleasemeta-module-upgrade-new-version:
 	$(GO_TEST) "Module with ModuleReleaseMeta Upgrade By New Version"
-
-module-install-by-version:
-	$(GO_TEST) "Module Install By Version"
 
 legacy-istio-gateway-secret-rotation:
 	$(GO_TEST) "Legacy Istio Gateway Secret Rotation With Cert-Manager"
@@ -159,9 +144,6 @@ rbac-privileges:
 
 oci-reg-cred-secret:
 	$(GO_TEST) "OCI Registry Credentials Secret"
-
-ocm-compatible-module-template:
-	$(GO_TEST) "OCM Format Module Template"
 
 modulereleasemeta-with-obsolete-moduletemplate:
 	$(GO_TEST) "ModuleReleaseMeta With Obsolete ModuleTemplate"

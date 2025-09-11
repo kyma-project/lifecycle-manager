@@ -1,4 +1,3 @@
-//nolint:dupl //this test will be deleted during this issue https://github.com/kyma-project/lifecycle-manager/issues/2060
 package e2e_test
 
 import (
