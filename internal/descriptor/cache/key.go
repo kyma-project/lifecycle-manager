@@ -2,12 +2,12 @@ package cache
 
 import (
 	"fmt"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type DescriptorKey string
 
+/*
+TODO: Remove
 func GenerateDescriptorKey(template *v1beta2.ModuleTemplate) DescriptorKey {
 	version, err := template.GetSemanticVersion()
 	if err == nil {
@@ -16,4 +16,9 @@ func GenerateDescriptorKey(template *v1beta2.ModuleTemplate) DescriptorKey {
 	}
 
 	return DescriptorKey(fmt.Sprintf("%s:%s:%d", template.Name, template.Spec.Channel, template.Generation))
+}
+*/
+
+func GenerateDescriptorKey(ociComponentName, componentVersion string) DescriptorKey {
+	return DescriptorKey(fmt.Sprintf("%s:%s", ociComponentName, componentVersion))
 }

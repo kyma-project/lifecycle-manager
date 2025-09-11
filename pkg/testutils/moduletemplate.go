@@ -207,18 +207,20 @@ func DeleteModuleTemplate(ctx context.Context,
 	return nil
 }
 
+// TODO: Rename to GetModuleVersionFrom<???>
 func ReadModuleVersionFromModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) (string, error) {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
-	}
+	//moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	//if err != nil {
+	//	return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
+	//}
 
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	ocmDesc, err := descriptorProvider.GetDescriptor(moduleTemplate)
+	ocmi := provider.OCMComponentIdentity{ /*TODO: Implement*/ }
+	ocmDesc, err := descriptorProvider.GetDescriptor(ocmi)
 	if err != nil {
 		return "", fmt.Errorf("failed to get descriptor: %w", err)
 	}

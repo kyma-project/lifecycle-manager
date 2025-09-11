@@ -2,12 +2,11 @@ package provider
 
 import (
 	"errors"
+	"fmt"
 
-	"ocm.software/ocm/api/ocm/compdesc"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 )
 
 var (
@@ -19,6 +18,7 @@ var (
 
 type CachedDescriptorProvider struct {
 	DescriptorCache *cache.DescriptorCache
+	CompDescService componentdescriptor.Service
 }
 
 func NewCachedDescriptorProvider() *CachedDescriptorProvider {
@@ -28,11 +28,48 @@ func NewCachedDescriptorProvider() *CachedDescriptorProvider {
 	}
 }
 
-func (c *CachedDescriptorProvider) GetDescriptor(ociComponentName, componentVersion string) (*types.Descriptor, error) {
-	return nil, nil // TODO: implement
+// OCMComponentIdentity uniquely identifies an OCM Component.
+// See: https://ocm.software/docs/overview/important-terms/#component-identity
+type OCMComponentIdentity struct {
+	ComponentName    string
+	ComponentVersion string
 }
 
-func (c *CachedDescriptorProvider) GetDescriptorOld(template *v1beta2.ModuleTemplate) (*types.Descriptor, error) {
+func (c *CachedDescriptorProvider) Add(ocmi OCMComponentIdentity) error {
+	key := cache.GenerateDescriptorKey(ocmi.ComponentName, ocmi.ComponentVersion)
+	descriptor := c.DescriptorCache.Get(key)
+	if descriptor != nil {
+		return nil
+	}
+
+	//TODO: Implement!
+	//Fetch the descriptor from the OCI repository
+	//c.DescriptorCache.Set(key, descriptor)
+	return nil
+}
+
+// [Review note] Signature of this function has changed because:
+//  1. We no longer want to read the descriptor from the ModuleTemplate instance.
+//  2. After we remove ModuleTemplate.Spec.Descriptor attribute, the remaining attributes of the
+//     ModuleTemplate doesn't provide *enough* information to uniquely identify a
+//     Component: the full OCM Component Name is missing.
+func (c *CachedDescriptorProvider) GetDescriptor(ocmi OCMComponentIdentity) (*types.Descriptor, error) {
+	key := cache.GenerateDescriptorKey(ocmi.ComponentName, ocmi.ComponentVersion)
+	descriptor := c.DescriptorCache.Get(key)
+	if descriptor != nil {
+		return descriptor, nil
+	}
+
+	descriptor, err := c.CompDescService.GetComponentDescriptor(ocmi.ComponentName, ocmi.ComponentVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ComponentDescriptor: %w", err)
+	}
+	c.DescriptorCache.Set(key, descriptor)
+	return descriptor, nil
+}
+
+/*
+func (c *CachedDescriptorProvider) getDescriptorOld(template *v1beta2.ModuleTemplate) (*types.Descriptor, error) {
 	if template == nil {
 		return nil, ErrTemplateNil
 	}
@@ -71,11 +108,7 @@ func (c *CachedDescriptorProvider) GetDescriptorOld(template *v1beta2.ModuleTemp
 	return descriptor, nil
 }
 
-/*
-[Review note:]
-This method was adding the ComponentDescriptor configured in the given ModuleTemplate to the cache if it is not already present.
-We don't need it anymore as now the ComponentDescriptor is fetched directly from the OCI registry.
-func (c *CachedDescriptorProvider) Add(template *v1beta2.ModuleTemplate) error {
+func (c *CachedDescriptorProvider) addOld(template *v1beta2.ModuleTemplate) error {
 	if template == nil {
 		return ErrTemplateNil
 	}

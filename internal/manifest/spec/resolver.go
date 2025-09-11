@@ -51,6 +51,7 @@ func (s *Resolver) GetSpec(ctx context.Context, manifest *v1beta2.Manifest) (*de
 		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
 
+	// TODO: remove: this is (probably) where we fetch data from OCI registry
 	rawManifestPath, err := s.manifestPathExtractor.GetPathFromRawManifest(ctx, imageSpec, keyChain)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)

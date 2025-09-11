@@ -22,8 +22,10 @@ var (
 type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
 	Err            error
-	DesiredChannel string
-	ResolvedVersion string
+	DesiredChannel string // This is the channel that was requested by the user
+	// using Kyma 'spec.channel' or configured module channel.
+	ResolvedVersion string // This is the version that was resolved using the configuration
+	// from the corresponding ModuleReleaseMeta and the DesiredChannel.
 }
 
 type ModuleTemplateInfoLookupStrategy interface {
@@ -81,19 +83,19 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			templates[moduleInfo.Name] = &templateInfo
 			continue
 		}
-		/*
-		if err := t.descriptorProvider.Add(templateInfo.ModuleTemplate); err != nil {
+		ocmi := provider.OCMComponentIdentity{
+			ComponentName:    moduleReleaseMeta.Spec.OcmComponentName,
+			ComponentVersion: templateInfo.ModuleTemplate.GetVersion(),
+		}
+		if err := t.descriptorProvider.Add(ocmi); err != nil {
 			templateInfo.Err = fmt.Errorf("failed to get descriptor: %w", err)
 			templates[moduleInfo.Name] = &templateInfo
 			continue
 		}
-		*/
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
 			if moduleMatch(moduleStatus, moduleInfo.Name) {
-				ociComponentName := moduleReleaseMeta.Spec.OcmComponentName
-				moduleVersion := templateInfo.ModuleTemplate.GetVersion()
-				descriptor, err := t.descriptorProvider.GetDescriptor(ociComponentName, moduleVersion)
+				descriptor, err := t.descriptorProvider.GetDescriptor(ocmi)
 				if err != nil {
 					msg := "could not handle channel skew as descriptor from template cannot be fetched"
 					templateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)

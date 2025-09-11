@@ -49,7 +49,8 @@ func (p *Parser) GenerateModulesFromTemplates(kyma *v1beta2.Kyma, templates temp
 
 	for _, module := range templatelookup.FetchModuleInfo(kyma) {
 		template := templates[module.Name]
-		modules = p.appendModuleWithInformation(module, kyma, template, modules)
+		ocmi := provider.OCMComponentIdentity{ /*TODO: Implement!*/ }
+		modules = p.appendModuleWithInformation(module, kyma, template, modules, ocmi)
 	}
 	return modules
 }
@@ -69,21 +70,21 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 			moduleName = template.Name
 		}
 
+		ocmi := provider.OCMComponentIdentity{ /*TODO: Implement!*/ }
 		modules = p.appendModuleWithInformation(templatelookup.ModuleInfo{
 			Module: v1beta2.Module{
 				Name:                 moduleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
 			},
 			Enabled: true,
-		}, kyma, template, modules)
+		}, kyma, template, modules, ocmi)
 	}
 
 	return modules
 }
 
 func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, kyma *v1beta2.Kyma,
-	template *templatelookup.ModuleTemplateInfo, modules modulecommon.Modules,
-) modulecommon.Modules {
+	template *templatelookup.ModuleTemplateInfo, modules modulecommon.Modules, ocmi provider.OCMComponentIdentity) modulecommon.Modules {
 	if template.Err != nil && !errors.Is(template.Err, templatelookup.ErrTemplateNotAllowed) {
 		modules = append(modules, &modulecommon.Module{
 			ModuleName:   module.Name,
@@ -93,23 +94,13 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		})
 		return modules
 	}
-	descriptor, err := p.descriptorProvider.GetDescriptor(template.ModuleTemplate)
-	if err != nil {
-		template.Err = err
-		modules = append(modules, &modulecommon.Module{
-			ModuleName:   module.Name,
-			TemplateInfo: template,
-			Enabled:      module.Enabled,
-			IsUnmanaged:  module.Unmanaged,
-		})
-		return modules
-	}
-	fqdn := descriptor.GetName()
+	fqdn := ocmi.ComponentName //TODO: Why?
 	name := modulecommon.CreateModuleName(fqdn, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
+	var err error
 	var manifest *v1beta2.Manifest
 	if manifest, err = p.newManifestFromTemplate(module.Module,
-		template.ModuleTemplate); err != nil {
+		template.ModuleTemplate, ocmi); err != nil {
 		template.Err = err
 		modules = append(modules, &modulecommon.Module{
 			ModuleName:   module.Name,
@@ -151,6 +142,7 @@ func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateInfo, nam
 func (p *Parser) newManifestFromTemplate(
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
+	ocmi provider.OCMComponentIdentity,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	if manifest.Annotations == nil {
@@ -164,7 +156,7 @@ func (p *Parser) newManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-	descriptor, err := p.descriptorProvider.GetDescriptor(template)
+	descriptor, err := p.descriptorProvider.GetDescriptor(ocmi)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
 	}

@@ -75,7 +75,10 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
-	manifests, err := r.getCorrespondingManifests(ctx, template)
+	//TODO: fetch ModuleReleaseMeta to get ocmComponentName and moduleVersion. Compilation error on purpose.
+	ocmi := provider.OCMComponentIdentity{ /*TODO: implement*/ }
+
+	manifests, err := r.getCorrespondingManifests(ctx, template.Namespace, ocmi)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get MandatoryModuleManifests: %w", err)
 	}
@@ -105,23 +108,20 @@ func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 	return ctrl.Result{Requeue: true}, nil
 }
 
+// TODO: ocmComponentName+moduleVersion should be passed as a single parameter.
 func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
-	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
+	namespace string, ocmi provider.OCMComponentIdentity) ([]v1beta2.Manifest,
 	error,
 ) {
 	manifests := &v1beta2.ManifestList{}
-	descriptor, err := r.DescriptorProvider.GetDescriptor(template)
-	if err != nil {
-		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
-	}
 	if err := r.List(ctx, manifests, &client.ListOptions{
-		Namespace:     template.Namespace,
+		Namespace:     namespace,
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
 	}); client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
 
-	filtered := filterManifestsByFQDNAndVersion(manifests.Items, descriptor.GetName(), descriptor.GetVersion())
+	filtered := filterManifestsByOCNAndVersion(manifests.Items, ocmi.ComponentName, ocmi.ComponentVersion)
 
 	return filtered, nil
 }
@@ -136,8 +136,10 @@ func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1
 	return nil
 }
 
-func filterManifestsByFQDNAndVersion(manifests []v1beta2.Manifest,
-	fqdn, moduleVersion string,
+// filterManifestsByOCNAndVersion filters the manifests by OCM Component Name and module version.
+// OCM Component Name is a fully qualified name that looks like: 'kyma-project.io/module/<module-name>'
+func filterManifestsByOCNAndVersion(manifests []v1beta2.Manifest,
+	ocmComponentName, moduleVersion string,
 ) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
@@ -145,7 +147,7 @@ func filterManifestsByFQDNAndVersion(manifests []v1beta2.Manifest,
 			continue
 		}
 
-		if manifest.Annotations[shared.FQDN] == fqdn && manifest.Spec.Version == moduleVersion {
+		if manifest.Annotations[shared.FQDN] == ocmComponentName && manifest.Spec.Version == moduleVersion {
 			filteredManifests = append(filteredManifests, manifest)
 		}
 	}
