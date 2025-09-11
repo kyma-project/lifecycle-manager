@@ -35,7 +35,7 @@ jobs:
           SLEEP_SECONDS: 30
         run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
   e2e-integration:
-    name: E2E With ModuleReleaseMeta
+    name: E2E
     needs: wait-for-image-build
     strategy:
       fail-fast: false
