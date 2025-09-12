@@ -18,6 +18,7 @@ package mandatorymodule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -29,6 +30,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -45,6 +47,17 @@ type DeletionReconciler struct {
 	event.Event
 	queue.RequeueIntervals
 	DescriptorProvider *provider.CachedDescriptorProvider
+}
+
+func (r *DeletionReconciler) FindMRMForTemplate(ctx context.Context,
+	template *v1beta2.ModuleTemplate,
+) (*v1beta2.ModuleReleaseMeta, error) {
+	if template == nil {
+		return nil, errors.New("template is nil")
+	}
+
+	//TODO: Implement
+	return nil, nil
 }
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -75,10 +88,14 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
-	//TODO: fetch ModuleReleaseMeta to get ocmComponentName and moduleVersion. Compilation error on purpose.
-	ocmi := provider.OCMComponentIdentity{ /*TODO: implement*/ }
+	mrm, err := r.FindMRMForTemplate(ctx, template)
+	if err == nil {
+		return ctrl.Result{}, fmt.Errorf("failed to find ModuleReleaseMeta for MandatoryModuleTemplate %s: %w",
+			template.Name, err)
+	}
+	ocmi, err := ocmidentity.New(mrm.Spec.OcmComponentName, template.Spec.Version)
 
-	manifests, err := r.getCorrespondingManifests(ctx, template.Namespace, ocmi)
+	manifests, err := r.getCorrespondingManifests(ctx, template.Namespace, *ocmi)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get MandatoryModuleManifests: %w", err)
 	}
@@ -110,7 +127,7 @@ func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 
 // TODO: ocmComponentName+moduleVersion should be passed as a single parameter.
 func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
-	namespace string, ocmi provider.OCMComponentIdentity) ([]v1beta2.Manifest,
+	namespace string, ocmi ocmidentity.Component) ([]v1beta2.Manifest,
 	error,
 ) {
 	manifests := &v1beta2.ManifestList{}

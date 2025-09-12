@@ -26,11 +26,12 @@ type ModuleTemplateInfo struct {
 	DesiredChannel string // This is the channel that was requested by the user
 	//                       using Kyma 'spec.channel' or configured module channel.
 
-	ComponentIdentity *ocmidentity.ComponentIdentity // Identifies the OCM Component that is
+	ComponentIdentity *ocmidentity.Component // Identifies the OCM Component that is
 	//                                                  represented by this ModuleTemplateInfo.
 }
 
-func (m ModuleTemplateInfo) GetOCMI() (*ocmidentity.ComponentIdentity, error) {
+// Implements provider.OCMIProvider interface
+func (m ModuleTemplateInfo) GetOCMIdentity() (*ocmidentity.Component, error) {
 	if m.ComponentIdentity == nil {
 		return nil, fmt.Errorf("component identity is nil for module template %s", m.Name)
 	}
@@ -99,7 +100,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 
-		if err := t.descriptorProvider.Add(ocmi); err != nil {
+		if err := t.descriptorProvider.Add(*ocmi); err != nil {
 			templateInfo.Err = fmt.Errorf("failed to get descriptor: %w", err)
 			templates[moduleInfo.Name] = &templateInfo
 			continue
@@ -107,7 +108,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
 			if moduleMatch(moduleStatus, moduleInfo.Name) {
-				descriptor, err := t.descriptorProvider.GetDescriptor(ocmi)
+				descriptor, err := t.descriptorProvider.GetDescriptor(*ocmi)
 				if err != nil {
 					msg := "could not handle channel skew as descriptor from template cannot be fetched"
 					templateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)

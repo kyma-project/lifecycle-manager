@@ -24,18 +24,20 @@ type CachedDescriptorProvider struct {
 }
 
 func NewCachedDescriptorProvider() *CachedDescriptorProvider {
-
 	return &CachedDescriptorProvider{
 		DescriptorCache: cache.NewDescriptorCache(),
 	}
 }
 
+// Convenience interface to get the OCM identity of a component from objects
+// that already have all required data.
+// Then we don't have to create intermediate variables of type ocmidentity.Component.
 type OCMIProvider interface {
-	GetOCMI() (*ocmidentity.ComponentIdentity, error)
+	GetOCMIdentity() (*ocmidentity.Component, error)
 }
 
 // [Review note] I am leaving that function as only this one adds new items to the cache.
-func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.ComponentIdentity) error {
+func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.Component) error {
 	_, err := c.getDescriptor(ocmi, true)
 	return err
 }
@@ -45,12 +47,15 @@ func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.ComponentIdentity) error
 //  2. After we remove ModuleTemplate.Spec.Descriptor attribute, the remaining attributes of the
 //     ModuleTemplate doesn't provide *enough* information to uniquely identify a
 //     Component: the full OCM Component Name is missing.
-func (c *CachedDescriptorProvider) GetDescriptor(ocmi ocmidentity.ComponentIdentity) (*types.Descriptor, error) {
+//
+// TODO: Rename to just Get
+func (c *CachedDescriptorProvider) GetDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error) {
 	return c.getDescriptor(ocmi, false)
 }
 
+// TODO: Rename to GetWithIdentityProvider
 func (c *CachedDescriptorProvider) GetDescriptorWithIdentity(ocp OCMIProvider) (*types.Descriptor, error) {
-	ocmi, err := ocp.GetOCMI()
+	ocmi, err := ocp.GetOCMIdentity()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get component identity from provider: %w", err)
 	}
@@ -61,7 +66,7 @@ func (c *CachedDescriptorProvider) GetDescriptorWithIdentity(ocp OCMIProvider) (
 	return c.getDescriptor(*ocmi, false)
 }
 
-func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.ComponentIdentity, updateCache bool) (*types.Descriptor, error) {
+func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, updateCache bool) (*types.Descriptor, error) {
 	key := cache.GenerateDescriptorKey(ocmi.ComponentName, ocmi.ComponentVersion)
 	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
