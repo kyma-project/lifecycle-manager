@@ -21,11 +21,6 @@ func TestGet_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.ErrNameEmpty)
-
-	_, err = descriptorProvider.GetDescriptor(ocmidentity.Component{ComponentName: "name"})
-
-	require.Error(t, err)
-	require.ErrorIs(t, err, provider.ErrVersionEmpty)
 }
 
 func TestAdd_OnEmptyIdentity_ReturnsErr(t *testing.T) {
@@ -34,11 +29,6 @@ func TestAdd_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.ErrNameEmpty)
-
-	err = descriptorProvider.Add(ocmidentity.Component{ComponentName: "name"})
-
-	require.Error(t, err)
-	require.ErrorIs(t, err, provider.ErrVersionEmpty)
 }
 
 /*

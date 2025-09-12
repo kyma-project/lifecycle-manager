@@ -6,31 +6,35 @@ import (
 )
 
 var (
-	ErrMissingValue = errors.New("missing value")
+	ErrValueNotProvided = errors.New("value not provided")
 )
 
 // Component uniquely identifies an OCM Component.
 // See: https://ocm.software/docs/overview/important-terms/#component-identity
 type Component struct {
-	ComponentName    string
-	ComponentVersion string
+	componentName    string
+	componentVersion string
 }
 
-// New is a helper function that ensures that both name and version are provided.
-// This is important during the transition period as we still may have code paths
-// relying just on ModuleTemplate which cannot provide the full OCM Component Name.
-// Once we remove ModuleTemplate from module handling logic, these extra checks
-// (or the whole function) can be removed.
+func (c *Component) Name() string {
+	return c.componentName
+}
+
+func (c *Component) Version() string {
+	return c.componentVersion
+}
+
+// New is a constructor that ensures that both name and version are provided.
 func New(name, version string) (*Component, error) {
 	if name == "" {
-		return nil, fmt.Errorf("provided empty component name: %w", ErrMissingValue)
+		return nil, fmt.Errorf("invalid component name: %w", ErrValueNotProvided)
 	}
 	if version == "" {
-		return nil, fmt.Errorf("provide empty component version: %w", ErrMissingValue)
+		return nil, fmt.Errorf("invalid component version: %w", ErrValueNotProvided)
 	}
 
 	return &Component{
-		ComponentName:    name,
-		ComponentVersion: version,
+		componentName:    name,
+		componentVersion: version,
 	}, nil
 }

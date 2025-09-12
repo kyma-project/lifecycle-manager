@@ -2,23 +2,11 @@ package cache
 
 import (
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 )
 
 type DescriptorKey string
 
-/*
-TODO: Remove
-func GenerateDescriptorKey(template *v1beta2.ModuleTemplate) DescriptorKey {
-	version, err := template.GetSemanticVersion()
-	if err == nil {
-		return DescriptorKey(fmt.Sprintf("%s:%s:%d:%s", template.Name, template.Spec.Channel, template.Generation,
-			version))
-	}
-
-	return DescriptorKey(fmt.Sprintf("%s:%s:%d", template.Name, template.Spec.Channel, template.Generation))
-}
-*/
-
-func GenerateDescriptorKey(ociComponentName, componentVersion string) DescriptorKey {
-	return DescriptorKey(fmt.Sprintf("%s:%s", ociComponentName, componentVersion))
+func GenerateDescriptorKey(ocmi ocmidentity.Component) DescriptorKey {
+	return DescriptorKey(fmt.Sprintf("%s:%s", ocmi.Name(), ocmi.Version()))
 }
