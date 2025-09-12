@@ -16,6 +16,8 @@ var (
 	ErrTemplateNil   = errors.New("module template is nil")
 	ErrDescriptorNil = errors.New("module template contains nil descriptor")
 	ErrNoIdentity    = errors.New("component identity is nil")
+	ErrNameEmpty     = errors.New("component name is empty")
+	ErrVersionEmpty  = errors.New("component version is empty")
 )
 
 type CachedDescriptorProvider struct {
@@ -67,6 +69,12 @@ func (c *CachedDescriptorProvider) GetDescriptorWithIdentity(ocp OCMIProvider) (
 }
 
 func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, updateCache bool) (*types.Descriptor, error) {
+	if ocmi.ComponentName == "" {
+		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrNameEmpty)
+	}
+	if ocmi.ComponentVersion == "" {
+		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrVersionEmpty)
+	}
 	key := cache.GenerateDescriptorKey(ocmi.ComponentName, ocmi.ComponentVersion)
 	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
