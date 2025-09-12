@@ -6,6 +6,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 )
 
@@ -14,6 +15,7 @@ var (
 	ErrDecode        = errors.New("failed to decode to descriptor target")
 	ErrTemplateNil   = errors.New("module template is nil")
 	ErrDescriptorNil = errors.New("module template contains nil descriptor")
+	ErrNoIdentity    = errors.New("component identity is nil")
 )
 
 type CachedDescriptorProvider struct {
@@ -28,24 +30,14 @@ func NewCachedDescriptorProvider() *CachedDescriptorProvider {
 	}
 }
 
-// OCMComponentIdentity uniquely identifies an OCM Component.
-// See: https://ocm.software/docs/overview/important-terms/#component-identity
-type OCMComponentIdentity struct {
-	ComponentName    string
-	ComponentVersion string
+type OCMIProvider interface {
+	GetOCMI() (*ocmidentity.ComponentIdentity, error)
 }
 
-func (c *CachedDescriptorProvider) Add(ocmi OCMComponentIdentity) error {
-	key := cache.GenerateDescriptorKey(ocmi.ComponentName, ocmi.ComponentVersion)
-	descriptor := c.DescriptorCache.Get(key)
-	if descriptor != nil {
-		return nil
-	}
-
-	//TODO: Implement!
-	//Fetch the descriptor from the OCI repository
-	//c.DescriptorCache.Set(key, descriptor)
-	return nil
+// [Review note] I am leaving that function as only this one adds new items to the cache.
+func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.ComponentIdentity) error {
+	_, err := c.getDescriptor(ocmi, true)
+	return err
 }
 
 // [Review note] Signature of this function has changed because:
@@ -53,7 +45,23 @@ func (c *CachedDescriptorProvider) Add(ocmi OCMComponentIdentity) error {
 //  2. After we remove ModuleTemplate.Spec.Descriptor attribute, the remaining attributes of the
 //     ModuleTemplate doesn't provide *enough* information to uniquely identify a
 //     Component: the full OCM Component Name is missing.
-func (c *CachedDescriptorProvider) GetDescriptor(ocmi OCMComponentIdentity) (*types.Descriptor, error) {
+func (c *CachedDescriptorProvider) GetDescriptor(ocmi ocmidentity.ComponentIdentity) (*types.Descriptor, error) {
+	return c.getDescriptor(ocmi, false)
+}
+
+func (c *CachedDescriptorProvider) GetDescriptorWithIdentity(ocp OCMIProvider) (*types.Descriptor, error) {
+	ocmi, err := ocp.GetOCMI()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get component identity from provider: %w", err)
+	}
+	if ocmi == nil {
+		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNoIdentity)
+	}
+
+	return c.getDescriptor(*ocmi, false)
+}
+
+func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.ComponentIdentity, updateCache bool) (*types.Descriptor, error) {
 	key := cache.GenerateDescriptorKey(ocmi.ComponentName, ocmi.ComponentVersion)
 	descriptor := c.DescriptorCache.Get(key)
 	if descriptor != nil {
@@ -62,9 +70,13 @@ func (c *CachedDescriptorProvider) GetDescriptor(ocmi OCMComponentIdentity) (*ty
 
 	descriptor, err := c.CompDescService.GetComponentDescriptor(ocmi.ComponentName, ocmi.ComponentVersion)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ComponentDescriptor: %w", err)
+		return nil, fmt.Errorf("error finding ComponentDescriptor: %w", err)
 	}
-	c.DescriptorCache.Set(key, descriptor)
+
+	if updateCache {
+		c.DescriptorCache.Set(key, descriptor)
+	}
+
 	return descriptor, nil
 }
 

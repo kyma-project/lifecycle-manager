@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
@@ -23,9 +24,17 @@ type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
 	Err            error
 	DesiredChannel string // This is the channel that was requested by the user
-	// using Kyma 'spec.channel' or configured module channel.
-	ResolvedVersion string // This is the version that was resolved using the configuration
-	// from the corresponding ModuleReleaseMeta and the DesiredChannel.
+	//                       using Kyma 'spec.channel' or configured module channel.
+
+	ComponentIdentity *ocmidentity.ComponentIdentity // Identifies the OCM Component that is
+	//                                                  represented by this ModuleTemplateInfo.
+}
+
+func (m ModuleTemplateInfo) GetOCMI() (*ocmidentity.ComponentIdentity, error) {
+	if m.ComponentIdentity == nil {
+		return nil, fmt.Errorf("component identity is nil for module template %s", m.Name)
+	}
+	return m.ComponentIdentity, nil
 }
 
 type ModuleTemplateInfoLookupStrategy interface {
@@ -83,10 +92,13 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			templates[moduleInfo.Name] = &templateInfo
 			continue
 		}
-		ocmi := provider.OCMComponentIdentity{
-			ComponentName:    moduleReleaseMeta.Spec.OcmComponentName,
-			ComponentVersion: templateInfo.ModuleTemplate.GetVersion(),
+		ocmi, err := ocmidentity.New(moduleReleaseMeta.Spec.OcmComponentName, templateInfo.ModuleTemplate.GetVersion())
+		if err != nil {
+			templateInfo.Err = fmt.Errorf("failed to create OCM Component Identity: %w", err)
+			templates[moduleInfo.Name] = &templateInfo
+			continue
 		}
+
 		if err := t.descriptorProvider.Add(ocmi); err != nil {
 			templateInfo.Err = fmt.Errorf("failed to get descriptor: %w", err)
 			templates[moduleInfo.Name] = &templateInfo

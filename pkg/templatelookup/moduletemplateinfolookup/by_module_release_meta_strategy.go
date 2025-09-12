@@ -6,6 +6,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
@@ -47,7 +48,13 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 		moduleTemplateInfo.Err = err
 		return moduleTemplateInfo
 	}
-	moduleTemplateInfo.ResolvedVersion = resolvedModuleVersion
+
+	if ocmi, err := ocmidentity.New(moduleReleaseMeta.Spec.OcmComponentName, resolvedModuleVersion); err != nil {
+		moduleTemplateInfo.Err = err
+		return moduleTemplateInfo
+	} else {
+		moduleTemplateInfo.ComponentIdentity = ocmi
+	}
 
 	template, err := getTemplateByVersion(ctx,
 		s.client,
