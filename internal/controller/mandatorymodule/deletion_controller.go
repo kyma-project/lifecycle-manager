@@ -125,7 +125,6 @@ func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 	return ctrl.Result{Requeue: true}, nil
 }
 
-// TODO: ocmComponentName+moduleVersion should be passed as a single parameter.
 func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 	namespace string, ocmi ocmidentity.Component) ([]v1beta2.Manifest,
 	error,
@@ -138,7 +137,7 @@ func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
 		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
 	}
 
-	filtered := filterManifestsByOCNAndVersion(manifests.Items, ocmi.ComponentName, ocmi.ComponentVersion)
+	filtered := filterManifestsByComponentIdentity(manifests.Items, ocmi)
 
 	return filtered, nil
 }
@@ -153,10 +152,10 @@ func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1
 	return nil
 }
 
-// filterManifestsByOCNAndVersion filters the manifests by OCM Component Name and module version.
+// filterManifestsByComponentIdentity filters the manifests by OCM Component Name and module version.
 // OCM Component Name is a fully qualified name that looks like: 'kyma-project.io/module/<module-name>'
-func filterManifestsByOCNAndVersion(manifests []v1beta2.Manifest,
-	ocmComponentName, moduleVersion string,
+func filterManifestsByComponentIdentity(manifests []v1beta2.Manifest,
+	ocmi ocmidentity.Component,
 ) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {
@@ -164,7 +163,7 @@ func filterManifestsByOCNAndVersion(manifests []v1beta2.Manifest,
 			continue
 		}
 
-		if manifest.Annotations[shared.FQDN] == ocmComponentName && manifest.Spec.Version == moduleVersion {
+		if manifest.Annotations[shared.FQDN] == ocmi.Name() && manifest.Spec.Version == ocmi.Version() {
 			filteredManifests = append(filteredManifests, manifest)
 		}
 	}

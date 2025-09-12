@@ -25,6 +25,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -137,7 +138,13 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+			//TODO: Fix it!
+			ocmi, err := ocmidentity.New("fix", "me")
+			if err != nil {
+				return err
+			}
+
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(*ocmi)
 			if err != nil {
 				return err
 			}
@@ -155,7 +162,9 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Version")
 		hasValidSpecVersion := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+			//TODO: Fix it!
+			ocmi, err := ocmidentity.New("fix", "me")
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(*ocmi)
 			if err != nil {
 				return err
 			}
@@ -207,7 +216,12 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+			//TODO: Fix it!
+			ocmi, err := ocmidentity.New("fix", "me")
+			if err != nil {
+				return err
+			}
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(*ocmi)
 			if err != nil {
 				return err
 			}
@@ -516,12 +530,12 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 // getKCPModuleTemplate is a generic ModuleTemplate validation function.
 func validateKCPModuleTemplate(module v1beta2.Module, kyma *v1beta2.Kyma) func(moduleTemplateFn) error {
 	return func(validateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
+		moduleTemplateInfo, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
 		if err != nil {
 			return err
 		}
 
-		err = validateFunc(moduleTemplate)
+		err = validateFunc(moduleTemplateInfo.ModuleTemplate)
 		if err != nil {
 			return err
 		}
@@ -533,17 +547,17 @@ func validateKCPModuleTemplate(module v1beta2.Module, kyma *v1beta2.Kyma) func(m
 // updateKCPModuleTemplate is a generic ModuleTemplate update function.
 func updateKCPModuleTemplate(module v1beta2.Module, kyma *v1beta2.Kyma) func(moduleTemplateFn) error {
 	return func(updateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
+		moduleTemplateInfo, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
 		if err != nil {
 			return err
 		}
 
-		err = updateFunc(moduleTemplate)
+		err = updateFunc(moduleTemplateInfo.ModuleTemplate)
 		if err != nil {
 			return err
 		}
 
-		return kcpClient.Update(ctx, moduleTemplate)
+		return kcpClient.Update(ctx, moduleTemplateInfo.ModuleTemplate)
 	}
 }
 
@@ -593,7 +607,12 @@ func updateComponentSources(descriptor *types.Descriptor) {
 }
 
 func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+	//TODO: Fix it!
+	ocmi, err := ocmidentity.New("fix", "me")
+	if err != nil {
+		return err
+	}
+	descriptor, err := descriptorProvider.GetDescriptor(*ocmi)
 	if err != nil {
 		return err
 	}
@@ -609,7 +628,12 @@ func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
 }
 
 func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+	//TODO: Fix it!
+	ocmi, err := ocmidentity.New("fix", "me")
+	if err != nil {
+		return err
+	}
+	descriptor, err := descriptorProvider.GetDescriptor(*ocmi)
 	if err != nil {
 		return err
 	}
