@@ -10,7 +10,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
@@ -221,13 +220,17 @@ func ReadModuleVersionFromModuleTemplate(ctx context.Context,
 	//TODO: We're only interested in the OCM Component Version.
 	//We don't need to get it from ComponentDescriptor - we already have it:
 	//It is used to fetch the ComponentDescriptor in the first place.
-	descriptorProvider := provider.NewCachedDescriptorProvider()
-	ocmDesc, err := descriptorProvider.GetDescriptorWithIdentity(moduleInfo)
-	if err != nil {
-		return "", fmt.Errorf("failed to get descriptor: %w", err)
-	}
+	//descriptorProvider := provider.NewCachedDescriptorProvider()
+	//ocmDesc, err := descriptorProvider.GetDescriptorWithIdentity(moduleInfo)
+	//if err != nil {
+	//	return "", fmt.Errorf("failed to get descriptor: %w", err)
+	//}
 
-	return ocmDesc.Version, nil
+	ocmDesc, err := moduleInfo.GetOCMIdentity()
+	if err != nil {
+		return "", fmt.Errorf("failed to get OCM identity: %w", err)
+	}
+	return ocmDesc.Version(), nil
 }
 
 // TODO: Remove

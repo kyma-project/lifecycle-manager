@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"ocm.software/ocm/api/ocm/compdesc"
 )
 
@@ -12,7 +13,7 @@ var (
 )
 
 type OCIRepository interface {
-	GetComponentDescriptor(name, version string) (*compdesc.ComponentDescriptor, error)
+	GetComponentDescriptor(ocmName, version string) (*compdesc.ComponentDescriptor, error)
 }
 
 type Service struct {
@@ -29,13 +30,14 @@ func NewService(ociRepository OCIRepository) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) GetComponentDescriptor(ociComponentName, componentVersion string) (*types.Descriptor, error) {
-	componentDescriptor, err := s.ociRepository.GetComponentDescriptor(ociComponentName, componentVersion)
+func (s *Service) GetComponentDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error) {
+	cd, err := s.ociRepository.GetComponentDescriptor(ocmi.Name(), ocmi.Version())
 	if err != nil {
-		return nil, fmt.Errorf("error geting Component Descriptor for name=%s and version=%s: %w",
-			ociComponentName, componentVersion, err)
+		return nil, fmt.Errorf(
+			"error geting Component Descriptor for name=%s and version=%s: %w",
+			ocmi.Name(), ocmi.Version(), err)
 	}
 	return &types.Descriptor{
-		ComponentDescriptor: componentDescriptor,
+		ComponentDescriptor: cd,
 	}, nil
 }

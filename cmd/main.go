@@ -72,8 +72,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/oci"
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
+	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
@@ -216,7 +218,21 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+
+	ocmDescriptorRepository := oci.NewRepository(
+		"k3d-kcp-registry.localhost:5111", //registryURL,
+		"",                                //userPasswordCreds,
+		true,                              //insecure
+		nil,                               //CredResolverFunc
+	)
+
+	ocmDescriptorService, err := componentdescriptor.NewService(ocmDescriptorRepository)
+	if err != nil {
+		logger.Error(err, "failed to create OCM descriptor service")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	descriptorProvider := provider.NewCachedDescriptorProvider(ocmDescriptorService)
+
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)

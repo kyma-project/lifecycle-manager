@@ -100,7 +100,8 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	descriptorProvider = provider.NewCachedDescriptorProvider()
+	//TODO: Fix
+	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	kcpClient = mgr.GetClient()
 	Eventually(CreateNamespace, Timeout, Interval).
 		WithContext(ctx).

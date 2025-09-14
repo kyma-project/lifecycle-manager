@@ -1,33 +1,38 @@
 package provider
 
+/*
 import (
-	//"context"
-	//"net/url"
-	//"ocm.software/ocm/api/ocm/compdesc"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
-	"github.com/kyma-project/lifecycle-manager/internal/service/configuration"
-	//"ocm.software/ocm/api/ocm/extensions/accessmethods/ociartifact"
-	//"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/oci"
+
 )
 
 type Service struct {
-	ConfigurationService *configuration.Service
+	ocmRepository        *oci.Repository
 }
 
-func (c *Service) GetDescriptor(template *v1beta2.ModuleTemplate) (*types.Descriptor, error) {
-	/*
-		ociRegistryURL, err := c.ConfigurationService.GetOCIRegistryURL()
-		if err != nil {
-			return nil, err
-		}
+func New(ocmRepository *oci.Repository) (*Service, error) {
+	if ocmRepository == nil {
+		return nil, fmt.Errorf("ociRepository must not be nil")
+	}
 
-		genericociregistry := genericocireg.NewRepositorySpec(nil, nil)
-		cpiRepo, err := genericociregistry.Repository()
-		if err != nil {
-			return nil, err
-		}
-	*/
-	return nil, nil //TODO: implement
+	return &Service{
+		ocmRepository: ocmRepository,
+	}, nil
 }
+
+// GetDescriptor fetches the ComponentDescriptor for the given OCM identity.
+// It returns an error if the identity is invalid or if fetching the descriptor fails.
+func (s *Service) GetDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error) {
+
+	cd, err := s.ocmRepository.GetComponentDescriptor(ocmi.Name(), ocmi.Version())
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ComponentDescriptor for name=%q version=%q: %w", ocmi.Name(), ocmi.Version(), err)
+	}
+
+	return &types.Descriptor{ComponentDescriptor: cd}, nil
+}
+*/

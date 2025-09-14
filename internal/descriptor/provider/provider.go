@@ -11,23 +11,25 @@ import (
 )
 
 var (
-	ErrTypeAssert    = errors.New("failed to convert to v1beta2.Descriptor")
-	ErrDecode        = errors.New("failed to decode to descriptor target")
-	ErrTemplateNil   = errors.New("module template is nil")
-	ErrDescriptorNil = errors.New("module template contains nil descriptor")
-	ErrNoIdentity    = errors.New("component identity is nil")
-	ErrNameEmpty     = errors.New("component name is empty")
-	ErrVersionEmpty  = errors.New("component version is empty")
+	//ErrTypeAssert    = errors.New("failed to convert to v1beta2.Descriptor")
+	ErrDecode = errors.New("failed to decode to descriptor target")
+	//ErrTemplateNil   = errors.New("module template is nil")
+	//ErrDescriptorNil = errors.New("module template contains nil descriptor")
+	ErrNoIdentity   = errors.New("component identity is nil")
+	ErrNameEmpty    = errors.New("component name is empty")
+	ErrVersionEmpty = errors.New("component version is empty")
 )
 
 type CachedDescriptorProvider struct {
 	DescriptorCache *cache.DescriptorCache
-	CompDescService componentdescriptor.Service
+	//TODO: Consider replacing with an interface
+	CompDescService *componentdescriptor.Service
 }
 
-func NewCachedDescriptorProvider() *CachedDescriptorProvider {
+func NewCachedDescriptorProvider(service *componentdescriptor.Service) *CachedDescriptorProvider {
 	return &CachedDescriptorProvider{
 		DescriptorCache: cache.NewDescriptorCache(),
+		CompDescService: service,
 	}
 }
 
@@ -81,7 +83,7 @@ func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, upd
 		return descriptor, nil
 	}
 
-	descriptor, err := c.CompDescService.GetComponentDescriptor(ocmi.Name(), ocmi.Version())
+	descriptor, err := c.CompDescService.GetComponentDescriptor(ocmi)
 	if err != nil {
 		return nil, fmt.Errorf("error finding ComponentDescriptor: %w", err)
 	}

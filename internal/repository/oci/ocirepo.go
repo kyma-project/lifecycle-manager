@@ -14,14 +14,28 @@ import (
 type CredResolverFunc func(ctx cpi.Context, userPasswordCreds, registryURL string) (credentials.Credentials, error)
 
 // TODO: Initial structure: Rename, refactor
-type OCIRepo struct {
+type Repository struct {
 	insecure          bool
 	userPasswordCreds string
 	registryURL       string
 	credResolver      CredResolverFunc
 }
 
-func (s *OCIRepo) GetComponentDescriptor(
+func NewRepository(
+	registryURL string,
+	userPasswordCreds string,
+	insecure bool,
+	credResolver CredResolverFunc,
+) *Repository {
+	return &Repository{
+		insecure:          insecure,
+		userPasswordCreds: userPasswordCreds,
+		registryURL:       registryURL,
+		credResolver:      credResolver,
+	}
+}
+
+func (s *Repository) GetComponentDescriptor(
 	name, version string,
 ) (*compdesc.ComponentDescriptor, error) {
 	repo, err := s.getRepository()
@@ -37,7 +51,7 @@ func (s *OCIRepo) GetComponentDescriptor(
 	return cva.GetDescriptor(), nil
 }
 
-func (s *OCIRepo) getRepository() (cpi.Repository, error) {
+func (s *Repository) getRepository() (cpi.Repository, error) {
 	ctx := cpi.DefaultContext()
 
 	// TODO: This should be one-time setup, not per call

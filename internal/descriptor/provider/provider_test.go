@@ -16,7 +16,8 @@ import (
 )
 
 func TestGet_OnEmptyIdentity_ReturnsErr(t *testing.T) {
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+	//TODO: Fix
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	_, err := descriptorProvider.GetDescriptor(ocmidentity.Component{})
 
 	require.Error(t, err)
@@ -24,7 +25,8 @@ func TestGet_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 }
 
 func TestAdd_OnEmptyIdentity_ReturnsErr(t *testing.T) {
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+	//TODO: Fix
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
 	err := descriptorProvider.Add(ocmidentity.Component{})
 
 	require.Error(t, err)

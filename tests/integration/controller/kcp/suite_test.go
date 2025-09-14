@@ -149,7 +149,8 @@ var _ = BeforeSuite(func() {
 
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
-	descriptorProvider = provider.NewCachedDescriptorProvider()
+	//TODO: Fix
+	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
