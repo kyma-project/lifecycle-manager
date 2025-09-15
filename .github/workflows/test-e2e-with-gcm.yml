@@ -72,7 +72,6 @@ jobs:
       - name: Setup Gardener CertManager Variables
         run: |
           echo "E2E_USE_GARDENER_CERT_MANAGER=1" >> $GITHUB_ENV
-          echo "E2E_GARDENER_CERT_MANAGER_CERTIFICATE_DURATION=1441h" >> $GITHUB_ENV
           echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=720h1m" >> $GITHUB_ENV
       - name: Setup test clusters
         uses: ./lifecycle-manager/.github/actions/setup-test-clusters-gcm

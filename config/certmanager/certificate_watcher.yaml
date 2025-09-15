@@ -42,6 +42,8 @@ spec:
     name: watcher-root
     kind: Issuer
     group: cert-manager.io
+  duration: 2160h # 90d
+  renewBefore: 1464h # 61d
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
