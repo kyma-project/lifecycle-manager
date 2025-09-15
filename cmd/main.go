@@ -73,6 +73,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/repository/istiogateway"
 	kymarepository "github.com/kyma-project/lifecycle-manager/internal/repository/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/oci"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/oci/credential"
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
 	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
@@ -223,7 +224,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		"k3d-kcp-registry.localhost:5111", //registryURL,
 		"",                                //userPasswordCreds,
 		true,                              //insecure
-		nil,                               //CredResolverFunc
+		credential.ResolveCredentials,
 	)
 
 	ocmDescriptorService, err := componentdescriptor.NewService(ocmDescriptorRepository)

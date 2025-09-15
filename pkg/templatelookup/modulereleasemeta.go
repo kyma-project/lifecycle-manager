@@ -16,6 +16,7 @@ var (
 	ErrNoMandatoryFound = errors.New("no mandatory version found for module")
 )
 
+//Note: this finds the MRM by the name of module in the Kyma spec.
 func GetModuleReleaseMeta(ctx context.Context, clnt client.Reader, moduleName string,
 	namespace string) (*v1beta2.ModuleReleaseMeta,
 	error,
