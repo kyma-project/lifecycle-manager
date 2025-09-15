@@ -63,7 +63,7 @@ func TestGetDescriptor_OnEmptyCache_ReturnsParsedDescriptor(t *testing.T) {
 
 func TestAdd_OnInvalidRawDescriptor_ReturnsErrDecode(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	template := builder.NewModuleTemplateBuilder().WithRawDescriptor([]byte("invalid descriptor")).WithDescriptor(nil).Build()
+	template := builder.NewModuleTemplateBuilder().WithVersion("1.0.0").WithRawDescriptor([]byte("invalid descriptor")).WithDescriptor(nil).Build()
 
 	err := descriptorProvider.Add(template)
 
@@ -73,7 +73,7 @@ func TestAdd_OnInvalidRawDescriptor_ReturnsErrDecode(t *testing.T) {
 
 func TestAdd_OnDescriptorTypeButNull_ReturnsNoError(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	template := builder.NewModuleTemplateBuilder().WithDescriptor(&types.Descriptor{}).Build()
+	template := builder.NewModuleTemplateBuilder().WithVersion("1.0.0").WithDescriptor(&types.Descriptor{}).Build()
 
 	err := descriptorProvider.Add(template)
 
@@ -87,15 +87,11 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 	}
 
 	expected := &types.Descriptor{
-		ComponentDescriptor: &compdesc.ComponentDescriptor{
-			Metadata: compdesc.Metadata{
-				ConfiguredVersion: "v2",
-			},
-		},
+		ComponentDescriptor: compdesc.New("test-component", "1.0.0"),
 	}
-	template := builder.NewModuleTemplateBuilder().WithDescriptor(expected).Build()
+	template := builder.NewModuleTemplateBuilder().WithVersion("1.0.0").WithDescriptor(expected).Build()
 
-	key := cache.GenerateDescriptorKey(template)
+	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.GetVersion())
 	entry := descriptorCache.Get(key)
 	assert.Nil(t, entry)
 
@@ -109,4 +105,28 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 	entry = descriptorCache.Get(key)
 	assert.NotNil(t, entry)
 	assert.Equal(t, expected.Name, entry.Name)
+}
+
+func TestGenerateDescriptorCacheKey(t *testing.T) {
+	testCases := []struct {
+		name          string
+		moduleName    string
+		moduleVersion string
+		want          string
+	}{
+		{
+			name:          "with valid module name and version",
+			moduleName:    "name",
+			moduleVersion: "1.0.0",
+			want:          "name:1.0.0",
+		},
+	}
+
+	providerInstance := provider.NewCachedDescriptorProvider()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := providerInstance.GenerateDescriptorKey(tc.moduleName, tc.moduleVersion)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
