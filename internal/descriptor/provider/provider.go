@@ -7,29 +7,29 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
-	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 )
 
 var (
-	//ErrTypeAssert    = errors.New("failed to convert to v1beta2.Descriptor")
-	ErrDecode = errors.New("failed to decode to descriptor target")
-	//ErrTemplateNil   = errors.New("module template is nil")
-	//ErrDescriptorNil = errors.New("module template contains nil descriptor")
+	//TODO: Remove ErrDecode if not needed anymore
+	ErrDecode       = errors.New("failed to decode to descriptor target")
 	ErrNoIdentity   = errors.New("component identity is nil")
 	ErrNameEmpty    = errors.New("component name is empty")
 	ErrVersionEmpty = errors.New("component version is empty")
 )
 
-type CachedDescriptorProvider struct {
-	DescriptorCache *cache.DescriptorCache
-	//TODO: Consider replacing with an interface
-	CompDescService *componentdescriptor.Service
+type DescriptorService interface {
+	GetComponentDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error)
 }
 
-func NewCachedDescriptorProvider(service *componentdescriptor.Service) *CachedDescriptorProvider {
+type CachedDescriptorProvider struct {
+	descriptorCache   *cache.DescriptorCache
+	descriptorService DescriptorService
+}
+
+func NewCachedDescriptorProvider(service DescriptorService) *CachedDescriptorProvider {
 	return &CachedDescriptorProvider{
-		DescriptorCache: cache.NewDescriptorCache(),
-		CompDescService: service,
+		descriptorCache:   cache.NewDescriptorCache(),
+		descriptorService: service,
 	}
 }
 
@@ -78,18 +78,18 @@ func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, upd
 		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrVersionEmpty)
 	}
 	key := cache.GenerateDescriptorKey(ocmi)
-	descriptor := c.DescriptorCache.Get(key)
+	descriptor := c.descriptorCache.Get(key)
 	if descriptor != nil {
 		return descriptor, nil
 	}
 
-	descriptor, err := c.CompDescService.GetComponentDescriptor(ocmi)
+	descriptor, err := c.descriptorService.GetComponentDescriptor(ocmi)
 	if err != nil {
 		return nil, fmt.Errorf("error finding ComponentDescriptor: %w", err)
 	}
 
 	if updateCache {
-		c.DescriptorCache.Set(key, descriptor)
+		c.descriptorCache.Set(key, descriptor)
 	}
 
 	return descriptor, nil

@@ -49,6 +49,7 @@ type DeletionReconciler struct {
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
+// TODO: This function is a duplicate, we should use some common implementation.
 func (r *DeletionReconciler) FindMRMForTemplate(ctx context.Context,
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.ModuleReleaseMeta, error) {
@@ -56,8 +57,16 @@ func (r *DeletionReconciler) FindMRMForTemplate(ctx context.Context,
 		return nil, errors.New("template is nil")
 	}
 
-	//TODO: Implement
-	return nil, nil
+	key := client.ObjectKey{
+		Name:      template.Spec.ModuleName,
+		Namespace: template.Namespace,
+	}
+	obj := &v1beta2.ModuleReleaseMeta{}
+	if err := r.Get(ctx, key, obj); err != nil {
+		return nil, fmt.Errorf("failed to get ModuleReleaseMeta %s: %w", key.String(), err)
+	}
+
+	return obj, nil
 }
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -90,7 +99,7 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	mrm, err := r.FindMRMForTemplate(ctx, template)
 	if err == nil {
-		return ctrl.Result{}, fmt.Errorf("failed to find ModuleReleaseMeta for MandatoryModuleTemplate %s: %w",
+		return ctrl.Result{}, fmt.Errorf("failed to find ModuleReleaseMeta for Mandatory Module %s: %w",
 			template.Name, err)
 	}
 	ocmi, err := ocmidentity.New(mrm.Spec.OcmComponentName, template.Spec.Version)
