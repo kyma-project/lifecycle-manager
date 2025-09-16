@@ -89,9 +89,8 @@ jobs:
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:
-          repository: c-pius/template-operator
+          repository: kyma-project/template-operator
           path: template-operator
-          ref: b9b7a43c4a44099c1e3c8bef6ac6bdfa33b657b2
 
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
