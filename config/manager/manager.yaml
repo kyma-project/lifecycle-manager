@@ -23,6 +23,9 @@ spec:
             - /manager
           args:
             - --leader-elect
+          env:
+            - name: GODEBUG
+              value: fips140=only
           image: controller:latest
           ports:
             - containerPort: 8082
