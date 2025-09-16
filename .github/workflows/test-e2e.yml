@@ -89,8 +89,10 @@ jobs:
       - name: Checkout template-operator
         uses: actions/checkout@v4
         with:
-          repository: kyma-project/template-operator
+          repository: c-pius/template-operator
           path: template-operator
+          ref: bump-go-bump-controller-gen
+
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
