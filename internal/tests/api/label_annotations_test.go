@@ -12,7 +12,6 @@ func Test_AnnotationHasExternalDependencies(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, "operator.kyma-project.io/module-version", shared.ModuleVersionAnnotation)
 	assert.Equal(t, "operator.kyma-project.io/is-cluster-scoped", shared.IsClusterScopedAnnotation)
-	assert.Equal(t, "operator.kyma-project.io/custom-state-check", shared.CustomStateCheckAnnotation)
 	assert.Equal(t, "skr-domain", shared.SkrDomainAnnotation)
 }
 
