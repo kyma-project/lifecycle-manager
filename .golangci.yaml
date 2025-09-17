@@ -11,6 +11,10 @@ linters:
     - recvcheck
     - sqlclosecheck
     - wsl
+    - wsl_v5
+    - noinlineerr
+    - embeddedstructfieldcheck # TODO: enable and fix
+    - noctx # TODO: check
   settings:
     cyclop:
       max-complexity: 20

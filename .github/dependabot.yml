@@ -15,6 +15,7 @@ updates:
       - "/"
       - "/api"
       - "/maintenancewindows"
+      - "/tools"
     labels:
       - "go"
       - "area/dependency"

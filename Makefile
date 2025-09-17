@@ -146,7 +146,10 @@ GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v$(shell yq e '.kustomize' ./versions.yaml)
 CONTROLLER_TOOLS_VERSION ?= v$(shell yq e '.controllerTools' ./versions.yaml)
-GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
+
+.PHONY install-tools:
+install-tools:
+	pushd tools; GOBIN=$(LOCALBIN) $(GO) install tool; popd
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
@@ -168,8 +171,7 @@ fmt: ## Run go fmt against code.
 	go fmt ./...
 
 .PHONY: lint
-lint: ## Run golangci-lint against code.
-	GOBIN=$(LOCALBIN) $(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
+lint: install-tools ## Run golangci-lint against code.
 	$(LOCALBIN)/golangci-lint run --verbose -c .golangci.yaml
 	pushd api; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
 	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
