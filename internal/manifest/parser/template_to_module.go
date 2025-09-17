@@ -20,6 +20,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"strings"
 )
 
 var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.AccessSpec to *ociartifact.AccessSpec")
@@ -251,6 +252,10 @@ func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer) error 
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
+		fmt.Println(strings.Repeat("-", 80))
+		fmt.Printf("Inserting installRaw from layer of type %T\n", layer)
+		fmt.Printf("%s\n", string(installRaw))
+		fmt.Println(strings.Repeat("-", 80))
 		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: machineryruntime.RawExtension{Raw: installRaw},
 			Name:   string(layer.LayerName),

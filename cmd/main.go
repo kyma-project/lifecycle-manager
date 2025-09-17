@@ -220,8 +220,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
+	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
+
 	ocmDescriptorRepository := oci.NewRepository(
-		"k3d-kcp-registry.localhost:5111", //registryURL,
+		ociRegistryHost,                   //registryURL,
 		"",                                //userPasswordCreds,
 		true,                              //insecure
 		credential.ResolveCredentials,
@@ -238,10 +240,6 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
-
-	//nolint:godox // this will be used in the future
-	// TODO: use the oci registry host //nolint:godox // this will be used in the future
-	_ = getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
 		kymaMetrics, logger, maintenanceWindow)

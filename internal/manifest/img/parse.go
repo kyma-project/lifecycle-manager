@@ -18,6 +18,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"strings"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"
@@ -129,7 +130,11 @@ func getOCIRef(
 	switch repo.ComponentNameMapping {
 	case genericocireg.OCIRegistryURLPathMapping:
 		repoSubpath := DefaultRepoSubdirectory
-		baseURL := repo.Name()
+		//baseURL := repo.Name()
+		baseURL := "k3d-kcp-registry.localhost:5000"
+		fmt.Println(strings.Repeat("=", 80))
+		fmt.Printf("Replacing baseURL: %q => %q\n", repo.Name(), baseURL)
+		fmt.Println(strings.Repeat("=", 80))
 		if repo.SubPath != "" {
 			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
 		}
@@ -137,7 +142,11 @@ func getOCIRef(
 		layerRef.Repo = fmt.Sprintf("%s/%s", baseURL, repoSubpath)
 		layerRef.Name = descriptor.GetName()
 	case genericocireg.OCIRegistryDigestMapping:
-		baseURL := repo.Name()
+		//baseURL := repo.Name()
+		baseURL := "k3d-kcp-registry.localhost:5000"
+		fmt.Println(strings.Repeat("=", 80))
+		fmt.Printf("Replacing baseURL: %q => %q\n", repo.Name(), baseURL)
+		fmt.Println(strings.Repeat("=", 80))
 		if repo.SubPath != "" {
 			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
 		}
