@@ -9,7 +9,8 @@ body:
     id: objective
     attributes:
       label: Objective
-      description: Start the spike story with a brief description of the specific question or concern that the investigation aims to address. Clearly state what information needs to be gathered or what problem needs to be solved.
+      description: Start the spike story with a brief description of the specific question or concern that the investigation aims to address.
+        Clearly state what information needs to be gathered or what problem needs to be solved.
       placeholder: Type the spike objective here.
     validations:
       required: true
@@ -18,7 +19,8 @@ body:
     id: acceptance-criteria
     attributes:
       label: Acceptance Criteria
-      description: Outline the criteria that must be met for the spike story to be considered complete. Including specific deliverables such as research findings, a prototype, or a recommendation report.
+      description: Outline the criteria that must be met for the spike story to be considered complete.
+        Including specific deliverables such as research findings, a prototype, or a recommendation report.
       value: |
         - [ ] AC 1
         - [ ] AC 2
@@ -27,7 +29,8 @@ body:
     id: timebox
     attributes:
       label: Timebox
-      description: Specify the timebox allocated for the spike investigation. Help you and the team to ensure that the investigation remains focused and does not exceed the allotted time.
+      description: Specify the timebox allocated for the spike investigation.
+        Help you and the team to ensure that the investigation remains focused and does not exceed the allotted time.
       placeholder: 1d, 2d, 3d, etc.
     validations:
       required: true
@@ -36,6 +39,7 @@ body:
     id: constraints
     attributes:
       label: Constraints
-      description: Mention any limitations or constraints that may impact the investigation, such as time constraints, resource limitations, or dependencies on external factors.
+      description: Mention any limitations or constraints that may impact the investigation, such as time constraints,
+        resource limitations, or dependencies on external factors.
     validations:
       required: false
