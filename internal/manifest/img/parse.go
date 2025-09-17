@@ -130,27 +130,28 @@ func getOCIRef(
 	switch repo.ComponentNameMapping {
 	case genericocireg.OCIRegistryURLPathMapping:
 		repoSubpath := DefaultRepoSubdirectory
-		//baseURL := repo.Name()
-		baseURL := "k3d-kcp-registry.localhost:5000"
-		fmt.Println(strings.Repeat("=", 80))
-		fmt.Printf("Replacing baseURL: %q => %q\n", repo.Name(), baseURL)
-		fmt.Println(strings.Repeat("=", 80))
+		baseURL := repo.Name()
 		if repo.SubPath != "" {
 			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
 		}
-
 		layerRef.Repo = fmt.Sprintf("%s/%s", baseURL, repoSubpath)
+
+		fmt.Println(strings.Repeat("=", 80))
+		fmt.Printf("layerRef.Repo: %q\n", layerRef.Repo)
+		fmt.Println(strings.Repeat("=", 80))
+
 		layerRef.Name = descriptor.GetName()
 	case genericocireg.OCIRegistryDigestMapping:
-		//baseURL := repo.Name()
-		baseURL := "k3d-kcp-registry.localhost:5000"
-		fmt.Println(strings.Repeat("=", 80))
-		fmt.Printf("Replacing baseURL: %q => %q\n", repo.Name(), baseURL)
-		fmt.Println(strings.Repeat("=", 80))
+		baseURL := repo.Name()
 		if repo.SubPath != "" {
 			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
 		}
 		layerRef.Repo = baseURL + "/"
+
+		fmt.Println(strings.Repeat("=", 80))
+		fmt.Printf("layerRef.Repo: %q\n", layerRef.Repo)
+		fmt.Println(strings.Repeat("=", 80))
+
 		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
 		return nil, fmt.Errorf(
