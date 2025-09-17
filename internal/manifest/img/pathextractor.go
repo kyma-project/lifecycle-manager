@@ -169,7 +169,7 @@ func (p PathExtractor) ExtractLayer(tarPath string) (string, error) {
 	return "", ErrInvalidArchiveStructure
 }
 
-// [Review note]: Use THIS to fetch component descriptor!
+// TODO : Use THIS to fetch component descriptor!
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
 	noSchemeImageRef := noSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)

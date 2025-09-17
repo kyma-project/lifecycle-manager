@@ -223,9 +223,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
 
 	ocmDescriptorRepository := oci.NewRepository(
-		ociRegistryHost,                   //registryURL,
-		"",                                //userPasswordCreds,
-		true,                              //insecure
+		ociRegistryHost, //registryURL,
+		"",              //userPasswordCreds,
+		true,            //insecure
 		credential.ResolveCredentials,
 	)
 
