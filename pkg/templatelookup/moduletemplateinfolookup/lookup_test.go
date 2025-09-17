@@ -1,7 +1,6 @@
 package moduletemplateinfolookup_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -49,13 +48,13 @@ func Test_ModuleTemplateInfoLookup_ReturnsModuleTemplateInfo(t *testing.T) {
 		},
 	))
 
-	moduleTemplateInfo := lookup.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := lookup.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	require.NotNil(t, moduleTemplateInfo)
 	require.NoError(t, moduleTemplateInfo.Err)
-	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
-	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.ModuleTemplate.Spec.ModuleName)
-	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.ModuleTemplate.Spec.Version)
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
 }
 
 func Test_ModuleTemplateInfoLookup_WhenMandatoryModuleActivated_ReturnsModuleTemplateInfo(t *testing.T) {
@@ -86,13 +85,13 @@ func Test_ModuleTemplateInfoLookup_WhenMandatoryModuleActivated_ReturnsModuleTem
 		},
 	))
 
-	moduleTemplateInfo := lookup.Lookup(context.Background(), moduleInfo, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := lookup.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	require.NotNil(t, moduleTemplateInfo)
 	require.NoError(t, moduleTemplateInfo.Err)
-	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.ModuleTemplate.Name)
-	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.ModuleTemplate.Spec.ModuleName)
-	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.ModuleTemplate.Spec.Version)
+	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
 }
 
 func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {

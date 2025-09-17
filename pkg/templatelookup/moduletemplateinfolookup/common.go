@@ -8,7 +8,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
@@ -21,18 +20,6 @@ func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
 		return false
 	}
 	return template.Labels[shared.ModuleName] == name
-}
-
-func newMoreThanOneTemplateCandidateErr(moduleName string,
-	candidateTemplates []v1beta2.ModuleTemplate,
-) error {
-	candidates := make([]string, len(candidateTemplates))
-	for i, candidate := range candidateTemplates {
-		candidates[i] = candidate.GetName()
-	}
-
-	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
-		common.ErrTemplateNotIdentified, moduleName, candidates)
 }
 
 func getTemplateByVersion(ctx context.Context,

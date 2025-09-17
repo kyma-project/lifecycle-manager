@@ -798,7 +798,7 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
 				moduletemplateinfolookup.New(reader))
-			got := lookup.GetRegularTemplates(context.Background(), testCase.kyma)
+			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Len(t, got, 1)
 			for key, module := range got {
 				assert.Equal(t, key, moduleToInstall.Name)
