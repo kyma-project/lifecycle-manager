@@ -15,7 +15,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -224,7 +223,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 })
 
 func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
-	key := cache.GenerateDescriptorKey(template)
+	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.GetVersion())
 	result := descriptorProvider.DescriptorCache.Get(key)
 	return result != nil
 }

@@ -16,7 +16,7 @@ func NewDescriptorCache() *DescriptorCache {
 	}
 }
 
-func (d *DescriptorCache) Get(key DescriptorKey) *types.Descriptor {
+func (d *DescriptorCache) Get(key string) *types.Descriptor {
 	value, ok := d.cache.Load(key)
 	if !ok {
 		return nil
@@ -29,6 +29,6 @@ func (d *DescriptorCache) Get(key DescriptorKey) *types.Descriptor {
 	return &types.Descriptor{ComponentDescriptor: desc.Copy()}
 }
 
-func (d *DescriptorCache) Set(key DescriptorKey, value *types.Descriptor) {
+func (d *DescriptorCache) Set(key string, value *types.Descriptor) {
 	d.cache.Store(key, value)
 }

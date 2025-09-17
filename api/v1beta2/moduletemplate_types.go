@@ -17,11 +17,8 @@ limitations under the License.
 package v1beta2
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -227,19 +224,6 @@ func (m *ModuleTemplate) GetVersion() string {
 		version = m.Annotations[shared.ModuleVersionAnnotation]
 	}
 	return version
-}
-
-var ErrInvalidVersion = errors.New("can't find valid semantic version")
-
-// GetSemanticVersion returns the declared version of the ModuleTemplate as semantic version.
-func (m *ModuleTemplate) GetSemanticVersion() (*semver.Version, error) {
-	version := m.GetVersion()
-
-	semanticVersion, err := semver.NewVersion(version)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrInvalidVersion, err.Error())
-	}
-	return semanticVersion, nil
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096

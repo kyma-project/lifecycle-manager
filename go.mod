@@ -26,7 +26,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.17.0
-	golang.org/x/time v0.12.0
+	golang.org/x/time v0.13.0
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	ocm.software/ocm v0.28.0
 	sigs.k8s.io/controller-runtime v0.21.0
@@ -42,12 +42,12 @@ require (
 	github.com/go-co-op/gocron v1.37.0
 	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.2
-	k8s.io/api v0.34.0
-	k8s.io/apiextensions-apiserver v0.34.0
-	k8s.io/apimachinery v0.34.0
-	k8s.io/cli-runtime v0.34.0
-	k8s.io/client-go v0.34.0
-	k8s.io/kubectl v0.34.0
+	k8s.io/api v0.34.1
+	k8s.io/apiextensions-apiserver v0.34.1
+	k8s.io/apimachinery v0.34.1
+	k8s.io/cli-runtime v0.34.1
+	k8s.io/client-go v0.34.1
+	k8s.io/kubectl v0.34.1
 )
 
 require (
@@ -328,7 +328,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
-	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c // indirect
+	github.com/texttheater/golang-levenshtein v1.0.1 // indirect
 	github.com/thales-e-security/pool v0.0.2 // indirect
 	github.com/theupdateframework/go-tuf v0.7.0 // indirect
 	github.com/theupdateframework/go-tuf/v2 v2.1.1 // indirect
@@ -395,7 +395,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.18.6 // indirect
-	k8s.io/component-base v0.34.0 // indirect
+	k8s.io/component-base v0.34.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect

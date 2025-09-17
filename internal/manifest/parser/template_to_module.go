@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -177,9 +176,6 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
-	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
-		return nil, fmt.Errorf("could not translate custom state check: %w", err)
-	}
 	manifest.Spec.Version = descriptor.Version
 	if localizedImages := getLocalizedImagesFromDescriptor(descriptor); len(localizedImages) > 0 {
 		manifest.Spec.LocalizedImages = localizedImages
@@ -204,7 +200,8 @@ func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
 		if access.GetType() == ociartifact.Type {
 			ociAccessSpec, ok := ocmAccessSpec.(*ociartifact.AccessSpec)
 			if !ok {
-				logf.Log.Error(fmt.Errorf("%w: actual type: %T", ErrConvertingToOCIAccessSpec, access), "getLocalizedImagesFromDescriptor")
+				logf.Log.Error(fmt.Errorf("%w: actual type: %T", ErrConvertingToOCIAccessSpec, access),
+					"getLocalizedImagesFromDescriptor")
 				continue
 			}
 			if len(ociAccessSpec.ImageReference) > 0 {
@@ -213,21 +210,6 @@ func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
 		}
 	}
 	return localizedImages
-}
-
-func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1beta2.CustomStateCheck) error {
-	if manifest.Spec.Resource == nil || stateCheck == nil {
-		return nil
-	}
-	if manifest.Annotations == nil {
-		manifest.Annotations = make(map[string]string)
-	}
-	stateCheckByte, err := json.Marshal(stateCheck)
-	if err != nil {
-		return fmt.Errorf("failed to marshal stateCheck: %w", err)
-	}
-	manifest.Annotations[shared.CustomStateCheckAnnotation] = string(stateCheckByte)
-	return nil
 }
 
 func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers) error {

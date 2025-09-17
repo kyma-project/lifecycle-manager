@@ -186,12 +186,12 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultSelfSignedCertDuration",
 			constValue:    DefaultSelfSignedCertDuration.String(),
-			expectedValue: (90 * 24 * time.Hour).String(),
+			expectedValue: (60 * 24 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultSelfSignedCertRenewBefore",
 			constValue:    DefaultSelfSignedCertRenewBefore.String(),
-			expectedValue: (60 * 24 * time.Hour).String(),
+			expectedValue: (30 * 24 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultSelfSignedCertificateRenewBuffer",
@@ -211,7 +211,7 @@ func Test_ConstantFlags(t *testing.T) {
 		{
 			constName:     "DefaultIstioGatewayCertSwitchBeforeExpirationTime",
 			constValue:    DefaultIstioGatewayCertSwitchBeforeExpirationTime.String(),
-			expectedValue: (24 * time.Hour).String(),
+			expectedValue: (33 * 24 * time.Hour).String(),
 		},
 		{
 			constName:     "DefaultIstioGatewaySecretRequeueSuccessInterval",

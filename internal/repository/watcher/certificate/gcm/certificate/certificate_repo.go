@@ -79,6 +79,7 @@ func (r *Repository) Create(ctx context.Context, name, commonName string, dnsNam
 		Spec: gcertv1alpha1.CertificateSpec{
 			CommonName:   &commonName,
 			Duration:     &apimetav1.Duration{Duration: r.certConfig.Duration},
+			RenewBefore:  &apimetav1.Duration{Duration: r.certConfig.RenewBefore},
 			DNSNames:     dnsNames,
 			SecretName:   &name,
 			SecretLabels: certificate.GetCertificateLabels(),
