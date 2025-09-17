@@ -23,4 +23,5 @@ jobs:
           go-version-file: './lifecycle-manager/go.mod'
           cache: false
       - name: Run golangci-lint
+        working-directory: lifecycle-manager
         run: make lint
