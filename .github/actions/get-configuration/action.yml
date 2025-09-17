@@ -19,9 +19,6 @@ outputs:
   gardener_cert_manager_version:
     description: The version of gardener cert-manager to deploy. For example, 0.17.5.
     value: ${{ steps.define-variables.outputs.gardener_cert_manager_version }}
-  golangci_lint_version:
-    description: The version of golangci-lint to use. For example, 1.60.3.
-    value: ${{ steps.define-variables.outputs.golangci_lint_version }}
   klm_version_tag:
     description: The version tag for the KLM image. For example, PR-123.
     value: ${{ steps.define-variables.outputs.klm_version_tag }}
@@ -45,7 +42,6 @@ runs:
         echo "modulectl_version=$(yq e '.modulectl' versions.yaml)" >> $GITHUB_OUTPUT
         echo "cert_manager_version=$(yq e '.certManager' versions.yaml)" >> $GITHUB_OUTPUT
         echo "gardener_cert_manager_version=$(yq e '.gardenerCertManager' versions.yaml)" >> $GITHUB_OUTPUT
-        echo "golangci_lint_version=$(yq e '.golangciLint' versions.yaml)" >> $GITHUB_OUTPUT
 
         if [[ -n "${{ github.event.pull_request.number }}" ]]; then
           echo "klm_version_tag=PR-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
