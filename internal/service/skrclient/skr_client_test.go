@@ -23,7 +23,7 @@ func (f *FakeAccessManagerService) GetAccessRestConfigByKyma(_ context.Context, 
 	return &rest.Config{Host: "http://example.invalid"}, nil
 }
 
-func fakeMappingResolver(_ machineryruntime.Object, _ meta.RESTMapper, _ bool) (*meta.RESTMapping, error) {
+func fakeMappingResolver(_ machineryruntime.Object, _ meta.RESTMapper) (*meta.RESTMapping, error) {
 	return &meta.RESTMapping{
 		Resource: schema.GroupVersionResource{
 			Group:    "",

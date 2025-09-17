@@ -13,12 +13,9 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"k8s.io/kubectl/pkg/util/openapi"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -31,13 +28,12 @@ const (
 )
 
 type Client interface {
-	resource.RESTClientGetter
 	skrresources.ResourceInfoConverter
 
 	client.Client
 }
 
-type MappingResolver func(obj machineryruntime.Object, mapper meta.RESTMapper, retryOnNoMatch bool) (*meta.RESTMapping,
+type MappingResolver func(obj machineryruntime.Object, mapper meta.RESTMapper) (*meta.RESTMapping,
 	error,
 )
 
@@ -80,21 +76,8 @@ type SKRClient struct {
 	// the original config used for all clients
 	config *rest.Config
 
-	// discovery client, used for dynamic clients and GVK discovery
-	discoveryClient discovery.CachedDiscoveryInterface
 	// expander for GVK and REST expansion from discovery client
 	discoveryShortcutExpander meta.RESTMapper
-
-	// kubernetes client
-	kubernetesClient *kubernetes.Clientset
-	dynamicClient    *dynamic.DynamicClient
-
-	// OpenAPI document parser singleton
-	openAPIParser *openapi.CachedOpenAPIParser
-
-	// OpenAPI document getter singleton
-	openAPIGetter *openapi.CachedOpenAPIGetter
-
 	// GVK based structured Client Cache
 	structuredSyncLock        sync.Mutex
 	structuredRESTClientCache map[string]resource.RESTClient
@@ -117,6 +100,7 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 	if err != nil {
 		return nil, err
 	}
+
 	config.QPS = s.qps
 	config.Burst = s.burst
 
@@ -139,6 +123,7 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 		return nil, fmt.Errorf("failed to initiliaze DiscoveryClient: %w", err)
 	}
 	cachedDiscoveryClient := memory.NewMemCacheClient(discoveryClient)
+
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
 	discoveryShortcutExpander := restmapper.NewShortcutExpander(discoveryRESTMapper, cachedDiscoveryClient, nil)
 
@@ -147,26 +132,10 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 		return nil, err
 	}
 
-	kubernetesClient, err := kubernetes.NewForConfigAndClient(config, httpClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialiaze k8s-client: %w", err)
-	}
-	dynamicClient, err := dynamic.NewForConfigAndClient(config, httpClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialiaze dynamic-client: %w", err)
-	}
-
-	openAPIGetter := openapi.NewOpenAPIGetter(cachedDiscoveryClient)
-
 	clients := &SKRClient{
 		httpClient:                  httpClient,
 		config:                      config,
-		discoveryClient:             cachedDiscoveryClient,
 		discoveryShortcutExpander:   discoveryShortcutExpander,
-		kubernetesClient:            kubernetesClient,
-		dynamicClient:               dynamicClient,
-		openAPIGetter:               openAPIGetter,
-		openAPIParser:               openapi.NewOpenAPIParser(openAPIGetter),
 		structuredRESTClientCache:   map[string]resource.RESTClient{},
 		unstructuredRESTClientCache: map[string]resource.RESTClient{},
 		Client:                      runtimeClient,
@@ -188,7 +157,7 @@ func (s *SKRClient) SetResourceInfoClientResolver(resolver ResourceInfoClientRes
 func (s *SKRClient) ResourceInfo(obj *unstructured.Unstructured,
 	retryOnNoMatch bool,
 ) (*resource.Info, error) {
-	mapping, err := s.mappingResolver(obj, s.discoveryShortcutExpander, retryOnNoMatch)
+	mapping, err := s.mappingResolver(obj, s.discoveryShortcutExpander)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +219,7 @@ func setKubernetesDefaults(config *rest.Config) error {
 	return nil
 }
 
-func getResourceMapping(obj machineryruntime.Object, mapper meta.RESTMapper, retryOnNoMatch bool) (*meta.RESTMapping,
+func getResourceMapping(obj machineryruntime.Object, mapper meta.RESTMapper) (*meta.RESTMapping,
 	error,
 ) {
 	gvk := obj.GetObjectKind().GroupVersionKind()
@@ -259,7 +228,7 @@ func getResourceMapping(obj machineryruntime.Object, mapper meta.RESTMapper, ret
 		return mapping, nil
 	}
 
-	if retryOnNoMatch && meta.IsNoMatchError(err) {
+	if meta.IsNoMatchError(err) {
 		// reset mapper if a NoMatchError is reported on the first call
 		meta.MaybeResetRESTMapper(mapper)
 		// return second call after reset
