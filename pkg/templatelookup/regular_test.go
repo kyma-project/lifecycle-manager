@@ -260,7 +260,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
 		Build()
 
-	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
+	availableModuleReleaseMetas := generateModuleReleaseMetaList(moduleToInstall.Name,
+		[]v1beta2.ChannelVersionAssignment{
+			{Channel: moduleToInstall.Channel, Version: version2},
+		})
 
 	tests := getRegularTemplatesTestCases{
 		{
@@ -313,7 +316,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromChannelToVersion(t *te
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
 		Build()
 
-	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
+	availableModuleReleaseMetas := generateModuleReleaseMetaList(moduleToInstall.Name,
+		[]v1beta2.ChannelVersionAssignment{
+			{Channel: moduleToInstall.Channel, Version: version2},
+		})
 
 	tests := getRegularTemplatesTestCases{
 		{
@@ -383,7 +389,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 		Add(moduleToInstall.Name, string(shared.NoneChannel), version3).
 		Build()
 
-	availableModuleReleaseMetas := v1beta2.ModuleReleaseMetaList{}
+	availableModuleReleaseMetas := generateModuleReleaseMetaList(moduleToInstall.Name,
+		[]v1beta2.ChannelVersionAssignment{
+			{Channel: moduleToInstall.Channel, Version: version2},
+		})
 
 	tests := getRegularTemplatesTestCases{
 		{
