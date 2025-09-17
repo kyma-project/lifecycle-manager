@@ -154,7 +154,7 @@ func prepareResourceInfosForCustomCheck(clt skrclient.Client, deploy *apiappsv1.
 	deployUnstructured := &unstructured.Unstructured{}
 	deployUnstructured.SetUnstructuredContent(deployUnstructuredObj)
 	deployUnstructured.SetGroupVersionKind(apiappsv1.SchemeGroupVersion.WithKind("Deployment"))
-	deployInfo, err := clt.ResourceInfo(deployUnstructured, true)
+	deployInfo, err := clt.ResourceInfo(deployUnstructured)
 	if err != nil {
 		return nil, err
 	}

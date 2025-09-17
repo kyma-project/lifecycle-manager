@@ -154,9 +154,7 @@ func (s *SKRClient) SetResourceInfoClientResolver(resolver ResourceInfoClientRes
 	s.resourceInfoClientResolver = resolver
 }
 
-func (s *SKRClient) ResourceInfo(obj *unstructured.Unstructured,
-	retryOnNoMatch bool,
-) (*resource.Info, error) {
+func (s *SKRClient) ResourceInfo(obj *unstructured.Unstructured) (*resource.Info, error) {
 	mapping, err := s.mappingResolver(obj, s.discoveryShortcutExpander)
 	if err != nil {
 		return nil, err

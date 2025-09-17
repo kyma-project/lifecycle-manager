@@ -66,7 +66,7 @@ func TestSingletonClient_ResourceInfo_WithClientResolver(t *testing.T) {
 	obj.SetName("test-pod")
 	obj.SetResourceVersion("123")
 
-	infoResult, err := skrClient.ResourceInfo(obj, false)
+	infoResult, err := skrClient.ResourceInfo(obj)
 	require.NoError(t, err)
 	require.NotNil(t, infoResult)
 	require.Equal(t, "default", infoResult.Namespace)
