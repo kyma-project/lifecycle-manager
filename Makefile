@@ -3,7 +3,7 @@
 APP_NAME = lifecycle-manager
 IMG_REPO := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)
 IMG_NAME := $(IMG_REPO)/$(APP_NAME)
-IMG := "tsmsap/lifecycle-manager:$(DOCKER_TAG)"
+IMG := "tsmelcerz/lifecycle-manager:$(DOCKER_TAG)"
 BUILD_VERSION := from_makefile
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
