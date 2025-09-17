@@ -25,7 +25,7 @@ spec:
             - --leader-elect
           env:
             - name: GODEBUG
-              value: fips140=only
+              value: fips140=only,tlsmlkem=0
           image: controller:latest
           ports:
             - containerPort: 8082
