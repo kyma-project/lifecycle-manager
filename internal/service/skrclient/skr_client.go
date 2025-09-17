@@ -68,8 +68,6 @@ func NewService(qps float32, burst int, accessManagerService AccessManagerServic
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
 type SKRClient struct {
-	httpClient *http.Client
-
 	// controller runtime client
 	client.Client
 
@@ -111,17 +109,11 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache. Service are cached anyways.
 	config.Proxy = http.ProxyFromEnvironment
 
-	httpClient, err := rest.HTTPClientFor(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initiliaze httpClient: %w", err)
-	}
-
-	discoveryConfig := *config
-	discoveryConfig.Burst = 200
-	discoveryClient, err := discovery.NewDiscoveryClientForConfigAndClient(&discoveryConfig, httpClient)
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initiliaze DiscoveryClient: %w", err)
 	}
+
 	cachedDiscoveryClient := memory.NewMemCacheClient(discoveryClient)
 
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
@@ -133,7 +125,6 @@ func (s *Service) ResolveClient(ctx context.Context, manifest *v1beta2.Manifest)
 	}
 
 	clients := &SKRClient{
-		httpClient:                  httpClient,
 		config:                      config,
 		discoveryShortcutExpander:   discoveryShortcutExpander,
 		structuredRESTClientCache:   map[string]resource.RESTClient{},

@@ -31,7 +31,7 @@ func (s *SKRClient) UnstructuredClientForMapping(mapping *meta.RESTMapping) (res
 	cfg.ContentConfig = resource.UnstructuredPlusDefaultContentConfig()
 	cfg.GroupVersion = &gv
 
-	client, err := rest.RESTClientForConfigAndClient(cfg, s.httpClient)
+	client, err := rest.RESTClientFor(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
@@ -69,7 +69,7 @@ func (s *SKRClient) ClientForMapping(mapping *meta.RESTMapping) (resource.RESTCl
 	gv := gvk.GroupVersion()
 	cfg.GroupVersion = &gv
 
-	client, err := rest.RESTClientForConfigAndClient(cfg, s.httpClient)
+	client, err := rest.RESTClientFor(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
