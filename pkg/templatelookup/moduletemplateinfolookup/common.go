@@ -51,3 +51,10 @@ func getTemplateByVersion(ctx context.Context,
 
 	return moduleTemplate, nil
 }
+
+func getDesiredChannel(moduleChannel, kymaChannel string) string {
+	if moduleChannel != "" {
+		return moduleChannel
+	}
+	return kymaChannel
+}

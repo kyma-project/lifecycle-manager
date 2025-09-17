@@ -58,9 +58,10 @@ import (
 
 	_ "ocm.software/ocm/api/ocm"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -157,14 +158,12 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RequeueIntervals:     intervals,
 		IsManagedKyma:        true,
-		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
-		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-		})),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
+		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduletemplateinfolookup.New(kcpClient)),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())

@@ -176,11 +176,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 		test := tt
 		t.Run(tt.name, func(t *testing.T) {
 			lookup := templatelookup.NewTemplateLookup(nil, provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(nil),
-					moduletemplateinfolookup.NewByChannelStrategy(nil),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil),
-				}))
+				moduletemplateinfolookup.New(nil))
 			kyma := &v1beta2.Kyma{
 				Spec:   test.KymaSpec,
 				Status: test.KymaStatus,
@@ -205,83 +201,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 		availableModuleReleaseMeta v1beta2.ModuleReleaseMetaList
 		want                       templatelookup.ModuleTemplatesByModuleName
 	}{
-		{
-			name: "When upgrade version during channel switch, Then result contains no error, without ModuleReleaseMeta",
-			kyma: builder.NewKymaBuilder().
-				WithEnabledModule(testModule).
-				WithModuleStatus(v1beta2.ModuleStatus{
-					Name:    testModule.Name,
-					Channel: v1beta2.DefaultChannel,
-					Version: version1,
-					Template: &v1beta2.TrackingObject{
-						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
-						},
-					},
-				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
-				version2),
-			availableModuleReleaseMeta: v1beta2.ModuleReleaseMetaList{},
-			want: templatelookup.ModuleTemplatesByModuleName{
-				testModule.Name: &templatelookup.ModuleTemplateInfo{
-					DesiredChannel: testModule.Channel,
-					Err:            nil,
-				},
-			},
-		},
-		{
-			name: "When downgrade version during channel switch, Then result contains error, without ModuleReleaseMeta",
-			kyma: builder.NewKymaBuilder().
-				WithEnabledModule(testModule).
-				WithModuleStatus(v1beta2.ModuleStatus{
-					Name:    testModule.Name,
-					Channel: v1beta2.DefaultChannel,
-					Version: version2,
-					Template: &v1beta2.TrackingObject{
-						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
-						},
-					},
-				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, testModule.Channel,
-				version1),
-			availableModuleReleaseMeta: v1beta2.ModuleReleaseMetaList{},
-
-			want: templatelookup.ModuleTemplatesByModuleName{
-				testModule.Name: &templatelookup.ModuleTemplateInfo{
-					DesiredChannel: testModule.Channel,
-					Err:            templatelookup.ErrTemplateUpdateNotAllowed,
-				},
-			},
-		},
-		{
-			name: "When upgrade version during channel switch, Then result contains no error, with ModuleReleaseMeta",
-			kyma: builder.NewKymaBuilder().
-				WithEnabledModule(testModule).
-				WithModuleStatus(v1beta2.ModuleStatus{
-					Name:    testModule.Name,
-					Channel: v1beta2.DefaultChannel,
-					Version: version1,
-					Template: &v1beta2.TrackingObject{
-						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
-						},
-					},
-				}).Build(),
-			availableModuleTemplate: generateModuleTemplateListWithModule(testModule.Name, "",
-				version2),
-			availableModuleReleaseMeta: generateModuleReleaseMetaList(testModule.Name,
-				[]v1beta2.ChannelVersionAssignment{
-					{Channel: testModule.Channel, Version: version2},
-					{Channel: v1beta2.DefaultChannel, Version: version1},
-				}),
-			want: templatelookup.ModuleTemplatesByModuleName{
-				testModule.Name: &templatelookup.ModuleTemplateInfo{
-					DesiredChannel: testModule.Channel,
-					Err:            nil,
-				},
-			},
-		},
 		{
 			name: "When downgrade version during channel switch, Then result contains error, with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
@@ -315,11 +234,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 			reader := NewFakeModuleTemplateReader(testCase.availableModuleTemplate, testCase.availableModuleReleaseMeta)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
+				moduletemplateinfolookup.New(reader))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
 			assert.Len(t, got, expected)
@@ -536,38 +451,6 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 		want      templatelookup.ModuleTemplatesByModuleName
 	}{
 		{
-			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error, without ModuleReleaseMeta",
-			kyma: builder.NewKymaBuilder().
-				WithEnabledModule(testModule).Build(),
-			mrmExists: false,
-			want: templatelookup.ModuleTemplatesByModuleName{
-				testModule.Name: &templatelookup.ModuleTemplateInfo{
-					DesiredChannel: testModule.Channel,
-					Err:            provider.ErrDecode,
-				},
-			},
-		},
-		{
-			name: "When module exits in ModuleStatus only, then return ModuleTemplatesByModuleName with error, without ModuleReleaseMeta",
-			kyma: builder.NewKymaBuilder().
-				WithModuleStatus(v1beta2.ModuleStatus{
-					Name:    testModule.Name,
-					Channel: testModule.Channel,
-					Template: &v1beta2.TrackingObject{
-						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
-						},
-					},
-				}).Build(),
-			mrmExists: false,
-			want: templatelookup.ModuleTemplatesByModuleName{
-				testModule.Name: &templatelookup.ModuleTemplateInfo{
-					DesiredChannel: testModule.Channel,
-					Err:            provider.ErrDecode,
-				},
-			},
-		},
-		{
 			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error, with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).Build(),
@@ -626,11 +509,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 				moduleReleaseMetas)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
+				moduletemplateinfolookup.New(reader))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
 			assert.Len(t, got, expected)
@@ -695,11 +574,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 				v1beta2.ModuleReleaseMetaList{})
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
+				moduletemplateinfolookup.New(reader))
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
 			assert.Len(t, got, expected)
@@ -724,22 +599,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 		want     templatelookup.ModuleTemplatesByModuleName
 	}{
 		{
-			name: "When module enabled in Spec, then return expected moduleTemplateInfo, without ModuleReleaseMeta",
-			kyma: builder.NewKymaBuilder().
-				WithEnabledModule(testModule).Build(),
-			mrmExist: false,
-			want: templatelookup.ModuleTemplatesByModuleName{
-				testModule.Name: &templatelookup.ModuleTemplateInfo{
-					DesiredChannel: testModule.Channel,
-					Err:            nil,
-					ModuleTemplate: builder.NewModuleTemplateBuilder().
-						WithModuleName(testModule.Name).
-						WithChannel(testModule.Channel).
-						Build(),
-				},
-			},
-		},
-		{
 			name: "When module enabled in Spec, then return expected moduleTemplateInfo, with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).Build(),
@@ -751,32 +610,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					ModuleTemplate: builder.NewModuleTemplateBuilder().
 						WithModuleName(testModule.Name).
 						WithChannel("").
-						Build(),
-				},
-			},
-		},
-		{
-			name: "When module exits in ModuleStatus only, then return expected moduleTemplateInfo, without ModuleReleaseMeta",
-			kyma: builder.NewKymaBuilder().
-				WithEnabledModule(testModule).
-				WithModuleStatus(v1beta2.ModuleStatus{
-					Name:    testModule.Name,
-					Channel: testModule.Channel,
-					Template: &v1beta2.TrackingObject{
-						PartialMeta: v1beta2.PartialMeta{
-							Generation: 1,
-						},
-					},
-					Version: "1.0.0",
-				}).Build(),
-			mrmExist: false,
-			want: templatelookup.ModuleTemplatesByModuleName{
-				testModule.Name: &templatelookup.ModuleTemplateInfo{
-					DesiredChannel: testModule.Channel,
-					Err:            nil,
-					ModuleTemplate: builder.NewModuleTemplateBuilder().
-						WithModuleName(testModule.Name).
-						WithChannel(testModule.Channel).
 						Build(),
 				},
 			},
@@ -839,11 +672,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				moduleReleaseMetas)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
+				moduletemplateinfolookup.New(reader))
 			expected := len(testCase.want)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Len(t, got, expected)
@@ -968,12 +797,8 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 			reader := NewFakeModuleTemplateReader(availableModuleTemplates, availableModuleReleaseMetas)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(reader),
-					moduletemplateinfolookup.NewByChannelStrategy(reader),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-				}))
-			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
+				moduletemplateinfolookup.New(reader))
+			got := lookup.GetRegularTemplates(context.Background(), testCase.kyma)
 			assert.Len(t, got, 1)
 			for key, module := range got {
 				assert.Equal(t, key, moduleToInstall.Name)
