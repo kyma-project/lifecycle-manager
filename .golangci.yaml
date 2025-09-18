@@ -11,6 +11,8 @@ linters:
     - recvcheck
     - sqlclosecheck
     - wsl
+    - wsl_v5
+    - noinlineerr
   settings:
     cyclop:
       max-complexity: 20
