@@ -38,6 +38,7 @@ const (
 
 type ManifestMetrics struct {
 	*SharedMetrics
+
 	ManifestDurationGauge *prometheus.GaugeVec
 }
 

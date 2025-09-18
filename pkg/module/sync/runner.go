@@ -33,6 +33,7 @@ func New(clnt client.Client) *Runner {
 
 type Runner struct {
 	client.Client
+
 	versioner machineryruntime.GroupVersioner
 	converter machineryruntime.ObjectConvertor
 }

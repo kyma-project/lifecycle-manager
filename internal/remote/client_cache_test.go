@@ -69,6 +69,7 @@ func TestSizeClientCache(t *testing.T) {
 
 type TestClient struct {
 	client.Client
+
 	name string
 }
 

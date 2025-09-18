@@ -71,6 +71,8 @@ type SKRClient struct {
 	// controller runtime client
 	client.Client
 
+	httpClient *http.Client
+
 	// the original config used for all clients
 	config *rest.Config
 

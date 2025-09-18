@@ -32,6 +32,7 @@ jobs:
           args: --verbose
           working-directory: ./lifecycle-manager
           skip-cache: true
+          install-mode: binary
         env:
           GOSUMDB: sum.golang.org
       - name: golangci-lint for api module
@@ -41,6 +42,7 @@ jobs:
           args: --verbose
           working-directory: ./lifecycle-manager/api
           skip-cache: true
+          install-mode: binary
         env:
           GOSUMDB: sum.golang.org
       - name: golangci-lint for maintenancewindows module
@@ -50,5 +52,6 @@ jobs:
           args: --verbose
           working-directory: ./lifecycle-manager/maintenancewindows
           skip-cache: true
+          install-mode: binary
         env:
           GOSUMDB: sum.golang.org

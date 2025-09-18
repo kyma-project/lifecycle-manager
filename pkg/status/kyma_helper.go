@@ -14,6 +14,7 @@ import (
 
 type KymaHelper struct {
 	client.StatusWriter
+
 	recordKymaStatusMetrics func(ctx context.Context, kyma *v1beta2.Kyma)
 	isManagedKyma           bool
 }
