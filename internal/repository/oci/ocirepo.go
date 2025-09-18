@@ -6,16 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"regexp"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
-	"ocm.software/ocm/api/config"
 	"ocm.software/ocm/api/credentials"
-	"ocm.software/ocm/api/oci/extensions/repositories/ocireg"
 	"ocm.software/ocm/api/ocm/compdesc"
 	"ocm.software/ocm/api/ocm/cpi"
-	"ocm.software/ocm/api/utils/runtime"
+	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg"
 )
 
 type CredResolverFunc func(ctx cpi.Context, userPasswordCreds, registryURL string) (credentials.Credentials, error)
@@ -53,26 +50,20 @@ func (s *Repository) GetComponentDescriptor(name, version string) (*compdesc.Com
 		return nil, fmt.Errorf("failed to get config for ref=%q: %w", ref, err)
 	}
 
-	// Parse the config data to extract the ComponentDescriptor layer digest
-	genericRepresentation := new(map[string]any)
-	err = json.Unmarshal(configBytes, genericRepresentation)
+	ocmArtifactConfig := genericocireg.ComponentDescriptorConfig{}
+
+	err = json.Unmarshal(configBytes, &ocmArtifactConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config for ref=%q: %w", ref, err)
 	}
 
-	layerInfo, ok := (*genericRepresentation)["componentDescriptorLayer"]
-	if !ok {
+	if ocmArtifactConfig.ComponentDescriptorLayer == nil {
 		return nil, fmt.Errorf("componentDescriptorLayer not found in config for ref=%q", ref)
 	}
 
-	layerInfoMap, ok := layerInfo.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("invalid componentDescriptorLayer format in config for ref=%q", ref)
-	}
-
-	digest, ok := layerInfoMap["digest"].(string)
-	if !ok {
-		return nil, fmt.Errorf("digest not found or invalid in componentDescriptorLayer for ref=%q", ref)
+	digest := ocmArtifactConfig.ComponentDescriptorLayer.Digest
+	if digest == "" {
+		return nil, fmt.Errorf("digest is empty in componentDescriptorLayer for ref=%q", ref)
 	}
 
 	layer, err := crane.PullLayer(fmt.Sprintf("%s@%s", ref, digest), crane.Insecure)
@@ -91,7 +82,7 @@ func (s *Repository) GetComponentDescriptor(name, version string) (*compdesc.Com
 		return nil, fmt.Errorf("failed to read layer content for ref=%q with digest=%q: %w", ref, digest, err)
 	}
 
-	compdescBytes, err := extractDescriptor(layerBytes)
+	compdescBytes, err := unTar("component-descriptor.yaml", layerBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract component descriptor from layer for ref=%q with digest=%q: %w", ref, digest, err)
 	}
@@ -107,64 +98,7 @@ func (s *Repository) GetComponentDescriptor(name, version string) (*compdesc.Com
 	return cd, nil
 }
 
-func (s *Repository) GetComponentDescriptorOld(
-	name, version string,
-) (*compdesc.ComponentDescriptor, error) {
-	repo, err := s.getRepository()
-	if err != nil {
-		return nil, fmt.Errorf("could not get repository: %w", err)
-	}
-
-	cva, err := repo.LookupComponentVersion(name, version)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get ComponentVersion for name=%q version=%q: %w", name, version, err)
-	}
-
-	return cva.GetDescriptor(), nil
-}
-
-func (s *Repository) getRepository() (cpi.Repository, error) {
-	ctx := cpi.DefaultContext()
-
-	// TODO: This should be one-time setup, not per call
-	creds, err := s.credResolver(ctx, s.userPasswordCreds, s.registryURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve credentials: %w", err)
-	}
-
-	ociRepoSpec := &ocireg.RepositorySpec{
-		ObjectVersionedType: runtime.NewVersionedObjectType(ocireg.Type),
-		BaseURL:             ConstructRegistryUrl(s.registryURL, s.insecure),
-	}
-
-	ociRepo, err := ctx.RepositoryTypes().Convert(ociRepoSpec)
-	if err != nil {
-		return nil, fmt.Errorf("could not convert repository spec: %w", err)
-	}
-
-	repo, err := ctx.RepositoryForSpec(ociRepo, creds)
-	if err != nil {
-		return nil, fmt.Errorf("could not create repository from spec: %w", err)
-	}
-
-	return repo, nil
-}
-
-func ConstructRegistryUrl(url string, insecure bool) string {
-	registryURL := noSchemeURL(url)
-	if insecure {
-		registryURL = "http://" + registryURL
-	}
-
-	return registryURL
-}
-
-func noSchemeURL(url string) string {
-	regex := regexp.MustCompile(`^https?://`)
-	return regex.ReplaceAllString(url, "")
-}
-
-func extractDescriptor(layerBytes []byte) ([]byte, error) {
+func unTar(expectedName string, layerBytes []byte) ([]byte, error) {
 	tr := tar.NewReader(bytes.NewReader(layerBytes))
 
 	for {
@@ -176,7 +110,7 @@ func extractDescriptor(layerBytes []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		if hdr.Name == "component-descriptor.yaml" {
+		if hdr.Name == expectedName {
 			var buf bytes.Buffer
 			if _, err := io.Copy(&buf, tr); err != nil {
 				return nil, err
@@ -185,5 +119,5 @@ func extractDescriptor(layerBytes []byte) ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("component-descriptor.yaml not found")
+	return nil, fmt.Errorf("%s not found", expectedName)
 }
