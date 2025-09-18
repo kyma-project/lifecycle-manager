@@ -8,4 +8,4 @@ resources:
 images:
 - name: controller
   newName: tsmelcerz/lifecycle-manager
-  newTag: 01-26
+  newTag: 00-42
