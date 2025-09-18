@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,7 +19,7 @@ var (
 )
 
 type DescriptorService interface {
-	GetComponentDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error)
+	GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error)
 }
 
 type CachedDescriptorProvider struct {
@@ -83,7 +84,7 @@ func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, upd
 		return descriptor, nil
 	}
 
-	descriptor, err := c.descriptorService.GetComponentDescriptor(ocmi)
+	descriptor, err := c.descriptorService.GetComponentDescriptor(context.Background(), ocmi)
 	if err != nil {
 		return nil, fmt.Errorf("error finding ComponentDescriptor: %w", err)
 	}
