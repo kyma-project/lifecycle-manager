@@ -21,6 +21,9 @@ linters:
       # Default: []
       exclusions:
         - "ResourceList.append"
+        - "*.DeepCopyInto"
+        - "*.DeepCopy"
+        - "*.DeepCopyObject"
     cyclop:
       max-complexity: 20
     exhaustruct:
