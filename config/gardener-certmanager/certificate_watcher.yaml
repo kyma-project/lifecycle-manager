@@ -25,6 +25,8 @@ spec:
   issuerRef:
     name: watcher-root
     namespace: default
+  duration: 2160h # 90d
+  renewBefore: 1464h # 61d
 ---
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Issuer

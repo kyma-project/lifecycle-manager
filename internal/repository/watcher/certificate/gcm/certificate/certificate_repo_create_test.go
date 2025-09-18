@@ -28,6 +28,7 @@ func TestCreate_ClientCallSucceeds_Returns(t *testing.T) {
 		Spec: gcertv1alpha1.CertificateSpec{
 			CommonName:   &certCommonName,
 			Duration:     &apimetav1.Duration{Duration: certDuration},
+			RenewBefore:  &apimetav1.Duration{Duration: certRenewBefore},
 			DNSNames:     certDNSNames,
 			SecretName:   &certName,
 			SecretLabels: certificate.GetCertificateLabels(),

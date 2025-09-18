@@ -1,6 +1,6 @@
 # defines the versions of the tools used in the project
 certManager: "1.18.1"
-gardenerCertManager: "0.17.5"
+gardenerCertManager: "0.18.0"
 controllerTools: "0.18.0"
 docker: "27.5.1"
 go: "1.24.6"
