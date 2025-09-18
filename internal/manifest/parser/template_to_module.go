@@ -25,6 +25,7 @@ var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.Access
 
 type Parser struct {
 	client.Client
+
 	descriptorProvider  *provider.CachedDescriptorProvider
 	remoteSyncNamespace string
 }

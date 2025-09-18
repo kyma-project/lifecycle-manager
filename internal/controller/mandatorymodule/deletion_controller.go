@@ -44,6 +44,7 @@ type DeletionReconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
+
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
