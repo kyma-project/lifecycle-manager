@@ -153,8 +153,6 @@ GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
 .PHONY: install-golangci-lint
 install-golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANG_CI_LINT_VERSION)
-	echo "golangci-lint installed"
-	$(LOCALBIN)/golangci-lint --version
 
 ## Tool Execution Targets
 
