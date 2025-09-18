@@ -53,6 +53,7 @@ func TestList_ClientCallSucceeds_ReturnsSecrets(t *testing.T) {
 
 type listClientStub struct {
 	client.Client
+
 	called        bool
 	list          *apicorev1.SecretList
 	lastSelector  k8slabels.Selector

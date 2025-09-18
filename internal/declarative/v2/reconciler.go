@@ -77,6 +77,7 @@ type SKRClient interface {
 type Reconciler struct {
 	queue.RequeueIntervals
 	*Options
+
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
 	specResolver               SpecResolver

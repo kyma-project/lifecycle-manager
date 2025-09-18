@@ -117,6 +117,7 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 
 type patchClientStub struct {
 	client.Client
+
 	called bool
 	object *certmanagerv1.Certificate
 	err    error

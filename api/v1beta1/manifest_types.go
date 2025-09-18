@@ -40,6 +40,9 @@ type Manifest struct {
 
 // ManifestSpec defines the desired state of Manifest.
 type ManifestSpec struct {
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
 	// Remote indicates if Manifest should be installed on a remote cluster
 	Remote bool `json:"remote"`
 
@@ -58,9 +61,6 @@ type ManifestSpec struct {
 	// +nullable
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
-
-	// +kubebuilder:default:=CreateAndDelete
-	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
 }
 
 // InstallInfo defines installation information.
@@ -108,7 +108,8 @@ const (
 type ManifestList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
-	Items              []Manifest `json:"items"`
+
+	Items []Manifest `json:"items"`
 }
 
 //nolint:gochecknoinits // registers Kyma CRD on startup

@@ -37,13 +37,13 @@ func DefaultOptions() *Options {
 }
 
 type Options struct {
-	record.EventRecorder
-	Config *rest.Config
 	client.Client
-	ManifestParser
 	ManifestCache
-	CustomStateCheck StateCheck
+	ManifestParser
+	record.EventRecorder
 
+	Config               *rest.Config
+	CustomStateCheck     StateCheck
 	PostRenderTransforms []ObjectTransform
 }
 
