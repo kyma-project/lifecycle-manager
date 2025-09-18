@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	"ocm.software/ocm/api/config"
 	"ocm.software/ocm/api/credentials"
 	"ocm.software/ocm/api/oci/extensions/repositories/ocireg"
 	"ocm.software/ocm/api/ocm/compdesc"
