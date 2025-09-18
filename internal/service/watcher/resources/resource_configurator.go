@@ -22,7 +22,6 @@ import (
 type ResourceConfigurator struct {
 	remoteNs                 string
 	skrWatcherImage          string
-	secretResVer             string
 	kcpAddress               KCPAddr
 	cpuResLimit, memResLimit string
 	objectHandlers           map[string]ObjectHandler
@@ -37,12 +36,10 @@ var (
 	errExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
 	errPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
-	errConvertUnstruct         = errors.New("failed to convert deployment to unstructured")
-	errNoSecretResourceVersion = errors.New("secret resource version must not be empty")
+	errConvertUnstruct = errors.New("failed to convert deployment to unstructured")
 )
 
 const (
-	PodRestartLabelKey             = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
 	kcpAddressEnvName              = "KCP_ADDR"
 	ApiServerNetworkPolicyName     = "kyma-project.io--watcher-to-apiserver"
 	SeedToWatcherNetworkPolicyName = "kyma-project.io--seed-to-watcher"
@@ -76,10 +73,6 @@ func NewResourceConfigurator(remoteNs, skrWatcherImage,
 	return configurator
 }
 
-func (rc *ResourceConfigurator) SetSecretResVer(secretResVer string) {
-	rc.secretResVer = secretResVer
-}
-
 type ObjectHandler func(rc *ResourceConfigurator, obj *unstructured.Unstructured) (client.Object, error)
 
 func (rc *ResourceConfigurator) ConfigureUnstructuredObject(object *unstructured.Unstructured) (client.Object, error) {
@@ -102,10 +95,6 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
 		return nil, errExpectedNonEmptyPodContainers
 	}
-	if rc.secretResVer == "" {
-		return nil, fmt.Errorf("secret resource version must not be empty: %w", errNoSecretResourceVersion)
-	}
-	deployment.Spec.Template.Labels[PodRestartLabelKey] = rc.secretResVer
 
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
 	serverContainer.Image = rc.skrWatcherImage
@@ -138,7 +127,8 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 	return deployment, nil
 }
 
-func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstructured) (*apinetworkv1.NetworkPolicy,
+func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstructured) (
+	*apinetworkv1.NetworkPolicy,
 	error,
 ) {
 	networkPolicy := &apinetworkv1.NetworkPolicy{}

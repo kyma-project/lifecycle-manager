@@ -27,7 +27,6 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 	kcpAddr := skrwebhookresources.KCPAddr{Hostname: "test-host", Port: 8080}
 	cpuLimit := "100m"
 	memLimit := "128Mi"
-	secretResVer := "v1"
 	watcherImage := "test-image:latest"
 
 	tests := []struct {
@@ -44,7 +43,6 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 				kcpAddress:      kcpAddr,
 				cpuResLimit:     cpuLimit,
 				memResLimit:     memLimit,
-				secretResVer:    secretResVer,
 				skrWatcherImage: watcherImage,
 			},
 			obj: toUnstructured(&apiappsv1.Deployment{
@@ -82,7 +80,6 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 				cpuResLimit:     cpuLimit,
 				memResLimit:     memLimit,
 				skrWatcherImage: watcherImage,
-				secretResVer:    secretResVer,
 			},
 			obj: toUnstructured(&apiappsv1.Deployment{
 				ObjectMeta: apimetav1.ObjectMeta{Name: "test"},
@@ -102,7 +99,6 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 				cpuResLimit:     cpuLimit,
 				memResLimit:     memLimit,
 				skrWatcherImage: watcherImage,
-				secretResVer:    secretResVer,
 			},
 			obj: toUnstructured(&apiappsv1.Deployment{
 				ObjectMeta: apimetav1.ObjectMeta{Name: "test"},
@@ -126,7 +122,6 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 				testCase.fields.memResLimit,
 				testCase.fields.kcpAddress,
 			)
-			configurator.SetSecretResVer(testCase.fields.secretResVer)
 			got, err := configurator.ConfigureDeployment(testCase.obj)
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("ConfigureDeployment() error = %v, wantErr %v", err, testCase.wantErr)
@@ -145,11 +140,6 @@ func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 				}
 				if !found {
 					t.Errorf("KCP_ADDR env not set correctly, want %v", testCase.wantEnv)
-				}
-				if got.Spec.Template.Labels[skrwebhookresources.PodRestartLabelKey] != secretResVer {
-					t.Errorf("PodRestartLabelKey = %v, want %v",
-						got.Spec.Template.Labels[skrwebhookresources.PodRestartLabelKey],
-						secretResVer)
 				}
 				if got.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().String() != cpuLimit {
 					t.Errorf("CPU limit = %v, want %v",
@@ -232,7 +222,6 @@ func TestResourceConfigurator_ConfigureNetworkPolicies(t *testing.T) {
 type fields struct {
 	remoteNs        string
 	skrWatcherImage string
-	secretResVer    string
 	kcpAddress      skrwebhookresources.KCPAddr
 	cpuResLimit     string
 	memResLimit     string

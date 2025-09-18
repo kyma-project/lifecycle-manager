@@ -201,7 +201,7 @@ func (m *SkrWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 	logger logr.Logger,
 ) ([]client.Object, error) {
 	var skrClientObjects []client.Object
-	resources, err := m.getRawManifestClientObjects(ctx, kymaName)
+	resources, err := m.getRawManifestClientObjects()
 	if err != nil {
 		return nil, err
 	}
@@ -234,23 +234,13 @@ func (m *SkrWebhookManifestManager) getGeneratedClientObjects(skrCertificateSecr
 	return append(genClientObjects, skrSecret)
 }
 
-func (m *SkrWebhookManifestManager) getRawManifestClientObjects(ctx context.Context, kymaName string,
-) ([]client.Object, error) {
+func (m *SkrWebhookManifestManager) getRawManifestClientObjects() ([]client.Object, error) {
 	resources := make([]client.Object, 0)
-	skrCertificateSecret, err := m.skrCertificateService.GetSkrCertificateSecret(ctx, kymaName)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, ErrSkrCertificateNotReady
-		}
-		return nil, fmt.Errorf("failed to get SKR certificate secret: %w", err)
-	}
-
 	for _, baseRes := range m.baseResources {
 		resource := baseRes.DeepCopy()
 		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
 			shared.ManagedBy: shared.ManagedByLabelValue,
 		}))
-		m.resourceConfigurator.SetSecretResVer(skrCertificateSecret.ResourceVersion)
 		configuredResource, err := m.resourceConfigurator.ConfigureUnstructuredObject(resource)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure %s resource: %w", resource.GetKind(), err)
