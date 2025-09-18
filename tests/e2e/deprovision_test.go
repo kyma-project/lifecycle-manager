@@ -77,11 +77,11 @@ func RunDeletionTest(deletionPropagation apimetav1.DeletionPropagation) {
 		})
 
 		It("When SKR Cluster is removed", func() {
-			cmd := exec.Command("sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
+			cmd := exec.CommandContext(ctx, "sh", "../../scripts/tests/remove_skr_host_from_coredns.sh")
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
-			cmd = exec.Command("k3d", "cluster", "rm", "skr")
+			cmd = exec.CommandContext(ctx, "k3d", "cluster", "rm", "skr")
 			out, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))

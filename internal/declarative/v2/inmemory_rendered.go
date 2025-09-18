@@ -19,8 +19,9 @@ type ManifestParser interface {
 }
 
 type InMemoryManifestCache struct {
-	TTL time.Duration
 	*ttlcache.Cache[string, internal.ManifestResources]
+
+	TTL time.Duration
 }
 
 func NewInMemoryManifestCache(ttl time.Duration) *InMemoryManifestCache {

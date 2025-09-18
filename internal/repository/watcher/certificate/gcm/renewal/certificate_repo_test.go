@@ -75,6 +75,7 @@ func TestUpdate_WhenClientCallSucceeds_Returns(t *testing.T) {
 
 type clientStub struct {
 	client.Client
+
 	getErr         error
 	getCalls       int
 	getLastCallArg client.ObjectKey

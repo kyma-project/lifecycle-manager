@@ -22,9 +22,10 @@ const (
 )
 
 type KymaMetrics struct {
+	*SharedMetrics
+
 	KymaStateGauge   *prometheus.GaugeVec
 	moduleStateGauge *prometheus.GaugeVec
-	*SharedMetrics
 }
 
 type KymaRequeueReason string

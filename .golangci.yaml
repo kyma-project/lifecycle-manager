@@ -2,15 +2,17 @@ version: "2"
 linters:
   default: all
   disable:
-    - contextcheck
-    - depguard
-    - exhaustruct
+    - contextcheck # too many false positives
+    - depguard # checks if package imports are whitelisted
+    - exhaustruct # too subjective and harms code readability
     - lll
-    - nlreturn
-    - paralleltest
+    - nlreturn # too strict and mostly code is not more readable
+    - paralleltest # should be enabled consciously for long running tests
     - recvcheck
-    - sqlclosecheck
-    - wsl
+    - sqlclosecheck # not needed for this project
+    - wsl # too strict and mostly code is not more readable
+    - wsl_v5 # too strict
+    - noinlineerr # we want to keep inlining
   settings:
     cyclop:
       max-complexity: 20

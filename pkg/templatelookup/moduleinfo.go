@@ -15,6 +15,7 @@ var (
 
 type ModuleInfo struct {
 	v1beta2.Module
+
 	Enabled         bool
 	ValidationError error
 	Unmanaged       bool

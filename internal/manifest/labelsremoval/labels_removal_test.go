@@ -344,6 +344,7 @@ func (m *manifestClientStub) UpdateManifest(ctx context.Context, manifest *v1bet
 
 type errorClientStub struct {
 	client.Client
+
 	fakeClient client.Client
 }
 
