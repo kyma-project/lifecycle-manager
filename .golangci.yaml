@@ -5,7 +5,6 @@ linters:
     - contextcheck # too many false positives
     - depguard # checks if package imports are whitelisted
     - exhaustruct # too subjective and harms code readability
-    - lll
     - nlreturn # too strict and mostly code is not more readable
     - paralleltest # should be enabled consciously for long running tests
     - recvcheck
@@ -222,10 +221,10 @@ linters:
         text: has alias "" which is not part of config
       - linters:
           - lll
-        source: '^// +kubebuilder: '
+        source: "^// +kubebuilder: "
       - linters:
           - lll
-        source: '^// http '
+        source: "^// http "
     paths:
       - zz_generated.deepcopy.go
       - third_party$

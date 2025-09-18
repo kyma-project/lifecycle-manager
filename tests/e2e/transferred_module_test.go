@@ -77,12 +77,16 @@ var _ = Describe("Module Transferred to Another OCI Registry", Ordered, func() {
 				WithArguments(skrClient, ModuleResourceName, TestModuleResourceNamespace).
 				Should(Succeed())
 
-			By("And Module Operator Deployment images are re-written according to the localizedImages provided in the Manifest CR")
+			By(
+				"And Module Operator Deployment images are re-written according to the localizedImages provided in the Manifest CR",
+			)
 			deployment, err := GetDeployment(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
 			Expect(err).Should(Succeed())
 			Expect(deployment.Spec.Template.Spec.Containers).ShouldNot(BeEmpty())
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).Should(Equal(rewrittenTemplateOperatorImage))
-			Expect(allEnvValuesIn(deployment)).Should(ConsistOf(rewrittenTelemetryManagerImage, rewrittenKedaManagerImage))
+			Expect(
+				allEnvValuesIn(deployment),
+			).Should(ConsistOf(rewrittenTelemetryManagerImage, rewrittenKedaManagerImage))
 		})
 	})
 })

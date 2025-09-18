@@ -89,7 +89,9 @@ func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundErrorAndCreation
 	mockClient.AssertNumberOfCalls(t, "CreateGatewaySecret", 1)
 }
 
-func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGatewaySecretWithLastModifiedAnnotation(t *testing.T) {
+func TestManageGatewaySecret_WhenGetGatewaySecretReturnsNotFoundError_CreatesGatewaySecretWithLastModifiedAnnotation(
+	t *testing.T,
+) {
 	// ARRANGE
 	mockClient := &testutils.ClientMock{}
 	mockClient.On("GetGatewaySecret", mock.Anything).Return(nil, notFoundError())

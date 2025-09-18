@@ -44,7 +44,10 @@ func TestGetDescriptor_OnNilTemplate_ReturnsErrTemplateNil(t *testing.T) {
 
 func TestGetDescriptor_OnInvalidRawDescriptor_ReturnsErrDescriptorNil(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	template := builder.NewModuleTemplateBuilder().WithRawDescriptor([]byte("invalid descriptor")).WithDescriptor(nil).Build()
+	template := builder.NewModuleTemplateBuilder().
+		WithRawDescriptor([]byte("invalid descriptor")).
+		WithDescriptor(nil).
+		Build()
 
 	_, err := descriptorProvider.GetDescriptor(template)
 
@@ -63,7 +66,11 @@ func TestGetDescriptor_OnEmptyCache_ReturnsParsedDescriptor(t *testing.T) {
 
 func TestAdd_OnInvalidRawDescriptor_ReturnsErrDecode(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider()
-	template := builder.NewModuleTemplateBuilder().WithVersion("1.0.0").WithRawDescriptor([]byte("invalid descriptor")).WithDescriptor(nil).Build()
+	template := builder.NewModuleTemplateBuilder().
+		WithVersion("1.0.0").
+		WithRawDescriptor([]byte("invalid descriptor")).
+		WithDescriptor(nil).
+		Build()
 
 	err := descriptorProvider.Add(template)
 

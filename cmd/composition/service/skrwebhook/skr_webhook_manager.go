@@ -28,8 +28,12 @@ import (
 )
 
 var (
-	errUnresolvedKcpAddress              = errors.New("failed to resolve KCP address, please check the gateway configuration")
-	errCertificateManagementNotSupported = errors.New("certificate management not supported, please check the certificate management configuration")
+	errUnresolvedKcpAddress = errors.New(
+		"failed to resolve KCP address, please check the gateway configuration",
+	)
+	errCertificateManagementNotSupported = errors.New(
+		"certificate management not supported, please check the certificate management configuration",
+	)
 )
 
 func ComposeSkrWebhookManager(kcpClient client.Client,

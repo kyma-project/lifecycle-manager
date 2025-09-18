@@ -457,7 +457,11 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
-		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
+		manifest.SetStatus(
+			manifest.GetStatus().
+				WithState(shared.StateWarning).
+				WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()),
+		)
 		r.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}

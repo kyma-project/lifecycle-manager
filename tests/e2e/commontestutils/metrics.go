@@ -105,10 +105,12 @@ func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName string,
 	if err != nil {
 		return 0, err
 	}
-	re := regexp.MustCompile(fmt.Sprintf(`%s{instance_id="[^"]+",kyma_name="%s",module_name="%s",shoot="[^"]+",state="%s"} (\d+)`,
-		metrics.MetricModuleState,
-		kymaName,
-		moduleName, string(state)))
+	re := regexp.MustCompile(
+		fmt.Sprintf(`%s{instance_id="[^"]+",kyma_name="%s",module_name="%s",shoot="[^"]+",state="%s"} (\d+)`,
+			metrics.MetricModuleState,
+			kymaName,
+			moduleName, string(state)),
+	)
 	return parseCount(re, bodyString)
 }
 

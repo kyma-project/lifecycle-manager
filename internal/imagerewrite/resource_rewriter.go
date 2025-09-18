@@ -30,7 +30,10 @@ func (r *ResourceRewriter) WithRewriters(rewriters ...ImageRewriter) *ResourceRe
 
 // ReplaceImages replaces images in the given Kubernetes resource with the target images.
 // It supports only Deployment and StatefulSet kinds, it ignores any unsupported resources.
-func (r *ResourceRewriter) ReplaceImages(resource *unstructured.Unstructured, targetImages []*DockerImageReference) error {
+func (r *ResourceRewriter) ReplaceImages(
+	resource *unstructured.Unstructured,
+	targetImages []*DockerImageReference,
+) error {
 	if !IsSupportedKind(resource.GetKind()) {
 		return nil
 	}
@@ -81,7 +84,11 @@ type (
 	podContainersSetterFn func([]*unstructured.Unstructured) error
 )
 
-func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGetterFn, containersSetter podContainersSetterFn, targetImages []*DockerImageReference) error {
+func (r *ResourceRewriter) rewriteContainers(
+	containersGetter podContainersGetterFn,
+	containersSetter podContainersSetterFn,
+	targetImages []*DockerImageReference,
+) error {
 	containers, err := containersGetter()
 	if err != nil {
 		return err
@@ -119,13 +126,30 @@ func getPodInitContainers(deploymentOrSimilar *unstructured.Unstructured) ([]*un
 
 func setPodContainers(deploymentOrSimilar *unstructured.Unstructured, containers []*unstructured.Unstructured) error {
 	return setContainersGeneric(containers, func(containerObjects []any) error {
-		return unstructured.SetNestedSlice(deploymentOrSimilar.Object, containerObjects, "spec", "template", "spec", "containers")
+		return unstructured.SetNestedSlice(
+			deploymentOrSimilar.Object,
+			containerObjects,
+			"spec",
+			"template",
+			"spec",
+			"containers",
+		)
 	})
 }
 
-func setPodInitContainers(deploymentOrSimilar *unstructured.Unstructured, containers []*unstructured.Unstructured) error {
+func setPodInitContainers(
+	deploymentOrSimilar *unstructured.Unstructured,
+	containers []*unstructured.Unstructured,
+) error {
 	return setContainersGeneric(containers, func(containerObjects []any) error {
-		return unstructured.SetNestedSlice(deploymentOrSimilar.Object, containerObjects, "spec", "template", "spec", "initContainers")
+		return unstructured.SetNestedSlice(
+			deploymentOrSimilar.Object,
+			containerObjects,
+			"spec",
+			"template",
+			"spec",
+			"initContainers",
+		)
 	})
 }
 

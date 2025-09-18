@@ -53,7 +53,10 @@ func TestGetWhenClientReturnsSecretReturnsKeychain(t *testing.T) {
 	}
 	kcpClient := fake.NewClientBuilder().WithObjects(secret).Build()
 
-	sut := keychainprovider.NewFromSecretKeyChainProvider(kcpClient, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace})
+	sut := keychainprovider.NewFromSecretKeyChainProvider(
+		kcpClient,
+		types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace},
+	)
 
 	keychain, err := sut.Get(t.Context())
 

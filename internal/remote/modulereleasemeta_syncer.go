@@ -49,7 +49,10 @@ func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Se
 // 1. All ModuleReleaseMeta that have to be created based on the ModuleReleaseMetas existing in the Control Plane.
 // 2. All ModuleReleaseMeta that have to be removed as they are not existing in the Control Plane.
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-func (mts *moduleReleaseMetaSyncer) SyncToSKR(ctx context.Context, kcpModuleReleases []v1beta2.ModuleReleaseMeta) error {
+func (mts *moduleReleaseMetaSyncer) SyncToSKR(
+	ctx context.Context,
+	kcpModuleReleases []v1beta2.ModuleReleaseMeta,
+) error {
 	worker := mts.syncWorkerFactoryFn(mts.kcpClient, mts.skrClient, mts.settings)
 
 	if err := worker.SyncConcurrently(ctx, kcpModuleReleases); err != nil {

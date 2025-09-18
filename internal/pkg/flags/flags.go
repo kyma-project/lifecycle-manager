@@ -76,13 +76,19 @@ const (
 )
 
 var (
-	ErrMissingWatcherImageTag                  = errors.New("runtime watcher image tag is not provided")
-	ErrMissingWatcherImageRegistry             = errors.New("runtime watcher image registry is not provided")
-	ErrWatcherDirNotExist                      = errors.New("failed to locate watcher resource manifest folder")
-	ErrLeaderElectionTimeoutConfig             = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
-	ErrInvalidSelfSignedCertKeyLength          = errors.New("invalid self-signed-cert-key-size: must be 4096")
-	ErrInvalidManifestRequeueJitterPercentage  = errors.New("invalid manifest requeue jitter percentage: must be between 0 and 0.05")
-	ErrInvalidManifestRequeueJitterProbability = errors.New("invalid manifest requeue jitter probability: must be between 0 and 1")
+	ErrMissingWatcherImageTag      = errors.New("runtime watcher image tag is not provided")
+	ErrMissingWatcherImageRegistry = errors.New("runtime watcher image registry is not provided")
+	ErrWatcherDirNotExist          = errors.New("failed to locate watcher resource manifest folder")
+	ErrLeaderElectionTimeoutConfig = errors.New(
+		"configured leader-election-renew-deadline must be less than leader-election-lease-duration",
+	)
+	ErrInvalidSelfSignedCertKeyLength         = errors.New("invalid self-signed-cert-key-size: must be 4096")
+	ErrInvalidManifestRequeueJitterPercentage = errors.New(
+		"invalid manifest requeue jitter percentage: must be between 0 and 0.05",
+	)
+	ErrInvalidManifestRequeueJitterProbability = errors.New(
+		"invalid manifest requeue jitter probability: must be between 0 and 1",
+	)
 )
 
 //nolint:funlen // defines all program flags

@@ -202,7 +202,8 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 		return diffInSpec
 	}
 
-	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != module.TemplateInfo.GetGeneration()
+	diffInTemplate := moduleInStatus.Template != nil &&
+		moduleInStatus.Template.GetGeneration() != module.TemplateInfo.GetGeneration()
 	return diffInTemplate || diffInSpec
 }
 

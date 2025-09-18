@@ -33,11 +33,13 @@ func GetModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) (*v1beta2.ModuleTemplate, error) {
-	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		moduletemplateinfolookup.NewByVersionStrategy(clnt),
-		moduletemplateinfolookup.NewByChannelStrategy(clnt),
-		moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(clnt),
-	})
+	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+			moduletemplateinfolookup.NewByVersionStrategy(clnt),
+			moduletemplateinfolookup.NewByChannelStrategy(clnt),
+			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(clnt),
+		},
+	)
 	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}

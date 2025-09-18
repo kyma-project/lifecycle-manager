@@ -178,7 +178,14 @@ type changesComparator struct {
 
 func newChangesComparator(t *testing.T, originalLines, rewrittenLines []string) *changesComparator {
 	t.Helper()
-	require.Len(t, originalLines, len(rewrittenLines), "Original lines count (%d) should equal the rewritten lines count (%d)", len(originalLines), len(rewrittenLines))
+	require.Len(
+		t,
+		originalLines,
+		len(rewrittenLines),
+		"Original lines count (%d) should equal the rewritten lines count (%d)",
+		len(originalLines),
+		len(rewrittenLines),
+	)
 
 	return &changesComparator{
 		originalLines:  originalLines,
@@ -192,11 +199,31 @@ func newChangesComparator(t *testing.T, originalLines, rewrittenLines []string) 
 func (c *changesComparator) verify(expectedChanges ...(func() *changeDefiner)) {
 	definersCount := len(expectedChanges)
 	changesCount := len(c.differences)
-	require.Len(c.t, expectedChanges, changesCount, "The number of registered changes (%d) must be equal to the number of differences between lines (%d)", definersCount, changesCount)
+	require.Len(
+		c.t,
+		expectedChanges,
+		changesCount,
+		"The number of registered changes (%d) must be equal to the number of differences between lines (%d)",
+		definersCount,
+		changesCount,
+	)
 
 	for _, lineNumber := range c.differences {
-		require.GreaterOrEqual(c.t, lineNumber, 0, "The difference position %d should be greater than or equal to 0", lineNumber)
-		require.Less(c.t, lineNumber, len(c.originalLines), "The difference position %d should be less than the number of lines in comparison (%d)", lineNumber, len(c.originalLines))
+		require.GreaterOrEqual(
+			c.t,
+			lineNumber,
+			0,
+			"The difference position %d should be greater than or equal to 0",
+			lineNumber,
+		)
+		require.Less(
+			c.t,
+			lineNumber,
+			len(c.originalLines),
+			"The difference position %d should be less than the number of lines in comparison (%d)",
+			lineNumber,
+			len(c.originalLines),
+		)
 	}
 
 	for i, cd := range expectedChanges {
@@ -207,8 +234,24 @@ func (c *changesComparator) verify(expectedChanges ...(func() *changeDefiner)) {
 		originalValueShouldContain := changeDefiner.shouldChangeFromValue
 		rewrittenValueShouldContain := changeDefiner.toValue
 
-		assert.Contains(c.t, originalLine, originalValueShouldContain, "Problem with %s\n: => Original line %q does not contain the configured value: %q", changeDefiner.description, originalLine, originalValueShouldContain)
-		assert.Contains(c.t, rewrittenLine, rewrittenValueShouldContain, "Problem with %s\n: => Rewriten line %q does not contain the configured value: %q", changeDefiner.description, rewrittenLine, rewrittenValueShouldContain)
+		assert.Contains(
+			c.t,
+			originalLine,
+			originalValueShouldContain,
+			"Problem with %s\n: => Original line %q does not contain the configured value: %q",
+			changeDefiner.description,
+			originalLine,
+			originalValueShouldContain,
+		)
+		assert.Contains(
+			c.t,
+			rewrittenLine,
+			rewrittenValueShouldContain,
+			"Problem with %s\n: => Rewriten line %q does not contain the configured value: %q",
+			changeDefiner.description,
+			rewrittenLine,
+			rewrittenValueShouldContain,
+		)
 	}
 }
 
@@ -293,7 +336,11 @@ func getFirstContainer(t *testing.T, deployment *unstructured.Unstructured) *uns
 }
 
 // setFirstContainer replaces the first container in a deployment-like resource with the provided container.
-func setFirstContainer(t *testing.T, deployment *unstructured.Unstructured, container *unstructured.Unstructured) error {
+func setFirstContainer(
+	t *testing.T,
+	deployment *unstructured.Unstructured,
+	container *unstructured.Unstructured,
+) error {
 	t.Helper()
 	containers, err := imagerewrite.GetPodContainers(deployment)
 	require.NoError(t, err, "Failed to get containers from deployment resource")
