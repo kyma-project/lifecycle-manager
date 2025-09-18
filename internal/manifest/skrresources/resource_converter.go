@@ -13,7 +13,7 @@ import (
 )
 
 type ResourceInfoConverter interface {
-	ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bool) (*resource.Info, error)
+	ResourceInfo(obj *unstructured.Unstructured) (*resource.Info, error)
 }
 
 type ResourceToInfoConverter interface {
@@ -66,7 +66,7 @@ func (c *DefaultResourceToInfoConverter) ResourcesToInfos(resources []shared.Res
 	current := make([]*resource.Info, 0, len(resources))
 	errs := make([]error, 0, len(resources))
 	for _, res := range resources {
-		resourceInfo, err := c.converter.ResourceInfo(res.ToUnstructured(), true)
+		resourceInfo, err := c.converter.ResourceInfo(res.ToUnstructured())
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -86,7 +86,7 @@ func (c *DefaultResourceToInfoConverter) UnstructuredToInfos(
 	target := make([]*resource.Info, 0, len(resources))
 	errs := make([]error, 0, len(resources))
 	for _, obj := range resources {
-		resourceInfo, err := c.converter.ResourceInfo(obj, true)
+		resourceInfo, err := c.converter.ResourceInfo(obj)
 		if util.IsConnectionRelatedError(err) {
 			return nil, err
 		}
