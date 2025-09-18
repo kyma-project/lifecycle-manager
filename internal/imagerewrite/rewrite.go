@@ -30,9 +30,10 @@ type NameAndTag string
 //
 //	The overall format of a reference is: <host[:port][/path]>/<image>:<tag>[@<digest>]
 type DockerImageReference struct {
-	HostAndPath string
 	NameAndTag
-	Digest string
+
+	HostAndPath string
+	Digest      string
 }
 
 func NewDockerImageReference(val string) (*DockerImageReference, error) {

@@ -36,6 +36,7 @@ const (
 
 type SkrContext struct {
 	Client
+
 	event event.Event
 }
 

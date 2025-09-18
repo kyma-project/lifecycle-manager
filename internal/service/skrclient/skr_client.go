@@ -72,10 +72,10 @@ func NewService(qps float32, burst int, accessManagerService AccessManagerServic
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
 type SKRClient struct {
-	httpClient *http.Client
-
 	// controller runtime client
 	client.Client
+
+	httpClient *http.Client
 
 	// the original config used for all clients
 	config *rest.Config
