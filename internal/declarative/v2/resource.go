@@ -5,8 +5,6 @@ import "k8s.io/cli-runtime/pkg/resource"
 // ResourceList provides convenience methods for comparing collections of Infos. Copy from https://github.com/helm/helm/blob/v3.19.0/pkg/kube/resource.go
 type ResourceList []*resource.Info
 
-// append adds an Info to the Result.
-
 // Difference will return a new Result with objects not contained in rs.
 func (r ResourceList) Difference(rs ResourceList) ResourceList {
 	return r.filter(func(info *resource.Info) bool {
@@ -24,6 +22,7 @@ func (r ResourceList) Visit(fn resource.VisitorFunc) error {
 	return nil
 }
 
+// append adds an Info to the Result.
 func (r *ResourceList) append(val *resource.Info) {
 	*r = append(*r, val)
 }
