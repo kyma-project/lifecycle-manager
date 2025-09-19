@@ -7,23 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubectl/pkg/util/openapi"
 )
-
-// OpenAPISchema returns metadata and structural information about
-// Kubernetes object definitions.
-func (s *SKRClient) OpenAPISchema() (openapi.Resources, error) {
-	parsedMetadata, err := s.openAPIParser.Parse()
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse schema metadata: %w", err)
-	}
-	return parsedMetadata, nil
-}
-
-// OpenAPIGetter returns a getter for the openapi schema document.
-func (s *SKRClient) OpenAPIGetter() *openapi.CachedOpenAPIGetter {
-	return s.openAPIGetter
-}
 
 // UnstructuredClientForMapping returns a RESTClient for working with Unstructured objects.
 func (s *SKRClient) UnstructuredClientForMapping(mapping *meta.RESTMapping) (resource.RESTClient,
@@ -47,7 +31,7 @@ func (s *SKRClient) UnstructuredClientForMapping(mapping *meta.RESTMapping) (res
 	cfg.ContentConfig = resource.UnstructuredPlusDefaultContentConfig()
 	cfg.GroupVersion = &gv
 
-	client, err := rest.RESTClientForConfigAndClient(cfg, s.httpClient)
+	client, err := rest.RESTClientFor(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
@@ -85,7 +69,7 @@ func (s *SKRClient) ClientForMapping(mapping *meta.RESTMapping) (resource.RESTCl
 	gv := gvk.GroupVersion()
 	cfg.GroupVersion = &gv
 
-	client, err := rest.RESTClientForConfigAndClient(cfg, s.httpClient)
+	client, err := rest.RESTClientFor(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
