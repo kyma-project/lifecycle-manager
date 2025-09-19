@@ -14,9 +14,9 @@ import (
 // RepositoryReader provides basic support to read data from OCI repositories.
 type RepositoryReader struct {
 	keyChainLookup spec.KeyChainLookup
-	hostPort string
-	insecure bool
-	craneClient CraneClient
+	hostPort       string
+	insecure       bool
+	craneClient    CraneClient
 }
 
 func NewRepository(kcl spec.KeyChainLookup, hostPort string, insecure bool) (*RepositoryReader, error) {
@@ -35,9 +35,9 @@ func NewRepository(kcl spec.KeyChainLookup, hostPort string, insecure bool) (*Re
 
 	return &RepositoryReader{
 		keyChainLookup: kcl,
-		hostPort: hostPort,
-		insecure: insecure,
-		craneClient: &craneClient{},
+		hostPort:       hostPort,
+		insecure:       insecure,
+		craneClient:    &craneClient{},
 	}, nil
 }
 

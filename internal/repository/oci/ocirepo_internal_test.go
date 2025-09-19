@@ -143,7 +143,7 @@ func TestPullLayer(t *testing.T) {
 		mcc := mockCraneClient{
 			pullResult: mockLayer,
 		}
-		
+
 		ctx := context.Background()
 		repo, err := NewRepository(nil, "europe-docker.pkg.dev/kyma-project/prod", true)
 		require.NoError(t, err)
@@ -190,7 +190,7 @@ type mockCraneClient struct {
 
 	pullRefArg  string
 	pullOptsArg []crane.Option
-	pullResult v1.Layer
+	pullResult  v1.Layer
 }
 
 func (m *mockCraneClient) Config(ref string, opts ...crane.Option) ([]byte, error) {
@@ -219,7 +219,7 @@ func (e *errorKeyChainLookup) Get(ctx context.Context) (authn.Keychain, error) {
 	return nil, errKeyChain
 }
 
-type mockKeyChainLookup struct{
+type mockKeyChainLookup struct {
 	ctx context.Context
 }
 
