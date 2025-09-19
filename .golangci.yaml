@@ -7,13 +7,23 @@ linters:
     - exhaustruct # too subjective and harms code readability
     - nlreturn # too strict and mostly code is not more readable
     - paralleltest # should be enabled consciously for long running tests
-    - recvcheck
     - lll # revive.line-length-limit serve same purpose
     - sqlclosecheck # not needed for this project
     - wsl # too strict and mostly code is not more readable
     - wsl_v5 # too strict
     - noinlineerr # we want to keep inlining
   settings:
+    recvcheck:
+      disable-builtin: true
+      # User-defined method exclusions.
+      # The format is `struct_name.method_name` (ex: `Foo.MethodName`).
+      # A wildcard `*` can use as a struct name (ex: `*.MethodName`).
+      # Default: []
+      exclusions:
+        - "ResourceList.append"
+        - "*.DeepCopyInto"
+        - "*.DeepCopy"
+        - "*.DeepCopyObject"
     cyclop:
       max-complexity: 20
     exhaustruct:
