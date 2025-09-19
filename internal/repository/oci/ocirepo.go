@@ -15,34 +15,37 @@ import (
 
 var (
 	ErrKeyChainNotNil   = errors.New("keychain lookup must not be nil")
-	ErrNoProtocolScheme = errors.New("hostPort must not contain protocol scheme (http/https)")
-	ErrNoLeadingSlash   = errors.New("hostPort must not start with a '/'")
+	ErrNoProtocolScheme = errors.New("hostref must not contain protocol scheme (http/https)")
+	ErrNoLeadingSlash   = errors.New("hostref must not start with a '/'")
 )
 
 // RepositoryReader provides basic support to read data from OCI repositories.
 type RepositoryReader struct {
 	keyChainLookup spec.KeyChainLookup
-	hostPort       string
+	hostref    string
 	insecure       bool
 	craneClient    CraneClient
 }
 
-func NewRepository(kcl spec.KeyChainLookup, hostPort string, insecure bool) (*RepositoryReader, error) {
+// NewRepository creates a new RepositoryReader for the given hostref.
+// If insecure is false, a non-nil KeyChainLookup must be provided to retrieve authentication information.
+// The hostref must not contain a protocol scheme (http/https), for example: "k3d-kcp-registry.localhost:5000".
+func NewRepository(kcl spec.KeyChainLookup, hostref string, insecure bool) (*RepositoryReader, error) {
 	if !insecure && kcl == nil {
 		return nil, ErrKeyChainNotNil
 	}
 
-	if strings.Contains(hostPort, "://") {
-		return nil, fmt.Errorf("%w: %q", ErrNoProtocolScheme, hostPort)
+	if strings.Contains(hostref, "://") {
+		return nil, fmt.Errorf("%w: %q", ErrNoProtocolScheme, hostref)
 	}
 
-	if strings.HasPrefix(hostPort, "/") {
-		return nil, fmt.Errorf("%w: %q", ErrNoLeadingSlash, hostPort)
+	if strings.HasPrefix(hostref, "/") {
+		return nil, fmt.Errorf("%w: %q", ErrNoLeadingSlash, hostref)
 	}
 
 	return &RepositoryReader{
 		keyChainLookup: kcl,
-		hostPort:       hostPort,
+		hostref:    hostref,
 		insecure:       insecure,
 		craneClient:    &craneClient{},
 	}, nil
@@ -79,12 +82,8 @@ func (s *RepositoryReader) PullLayer(ctx context.Context, name, tag, digest stri
 	return configBytes, nil
 }
 
-func (s *RepositoryReader) HostRef() string {
-	return s.hostPort
-}
-
 func (s *RepositoryReader) toImageRef(name, tag string) string {
-	hostPath := path.Join(s.hostPort, "component-descriptors", name)
+	hostPath := path.Join(s.hostref, "component-descriptors", name)
 	return fmt.Sprintf("%s:%s", hostPath, tag)
 }
 
