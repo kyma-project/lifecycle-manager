@@ -13,14 +13,15 @@ import (
 
 // RepositoryReader provides basic support to read data from OCI repositories.
 type RepositoryReader struct {
-	keyChain spec.KeyChainLookup
+	keyChainLookup spec.KeyChainLookup
 	hostPort string
 	insecure bool
+	craneClient CraneClient
 }
 
 func NewRepository(kcl spec.KeyChainLookup, hostPort string, insecure bool) (*RepositoryReader, error) {
 
-	if kcl == nil {
+	if !insecure && kcl == nil {
 		return nil, fmt.Errorf("keychain lookup must not be nil")
 	}
 
@@ -33,11 +34,19 @@ func NewRepository(kcl spec.KeyChainLookup, hostPort string, insecure bool) (*Re
 	}
 
 	return &RepositoryReader{
-		keyChain: kcl,
+		keyChainLookup: kcl,
 		hostPort: hostPort,
 		insecure: insecure,
+		craneClient: &craneClient{},
 	}, nil
 }
+
+//func (s *RepositoryReader) WithCraneClient(clnt CraneClient) *RepositoryReader {
+//	if clnt != nil {
+//		s.craneClient = clnt
+//	}
+//	return s
+//}
 
 func (s *RepositoryReader) stdOptions(ctx context.Context) ([]crane.Option, error) {
 
@@ -45,7 +54,7 @@ func (s *RepositoryReader) stdOptions(ctx context.Context) ([]crane.Option, erro
 	if s.insecure {
 		options = append(options, crane.Insecure)
 	} else {
-		keyChain, err := s.keyChain.Get(ctx)
+		keyChain, err := s.keyChainLookup.Get(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get keychain: %w", err)
 		}
@@ -62,8 +71,8 @@ func (s *RepositoryReader) GetConfigFile(ctx context.Context, name, tag string) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get standard options: %w", err)
 	}
-	ref := s.toRef(name, tag)
-	configBytes, err := crane.Config(ref, options...)
+	ref := s.toImageRef(name, tag)
+	configBytes, err := s.craneClient.Config(ref, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config file for ref=%q: %w", ref, err)
 	}
@@ -71,14 +80,15 @@ func (s *RepositoryReader) GetConfigFile(ctx context.Context, name, tag string) 
 	return configBytes, nil
 }
 
+// PullLayer retrieves a layer with given digest from an OCI artifact identified by name and tag.
 func (s *RepositoryReader) PullLayer(ctx context.Context, name, tag, digest string) (v1.Layer, error) {
 	options, err := s.stdOptions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get standard options: %w", err)
 	}
-	ref := s.toRef(name, tag)
+	ref := s.toImageRef(name, tag)
 	refWithDigest := fmt.Sprintf("%s@%s", ref, digest)
-	configBytes, err := crane.PullLayer(refWithDigest, options...)
+	configBytes, err := s.craneClient.PullLayer(refWithDigest, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pull layer for ref=%q: %w", refWithDigest, err)
 	}
@@ -89,7 +99,24 @@ func (s *RepositoryReader) HostRef() string {
 	return s.hostPort
 }
 
-func (s *RepositoryReader) toRef(name, tag string) string {
+func (s *RepositoryReader) toImageRef(name, tag string) string {
 	hostPath := path.Join(s.hostPort, "component-descriptors", name)
 	return fmt.Sprintf("%s:%s", hostPath, tag)
+}
+
+// CraneClient defines the subset of crane functions used by RepositoryReader.
+type CraneClient interface {
+	Config(ref string, opt ...crane.Option) ([]byte, error)
+	PullLayer(ref string, opt ...crane.Option) (v1.Layer, error)
+}
+
+type craneClient struct {
+}
+
+func (c *craneClient) Config(ref string, opt ...crane.Option) ([]byte, error) {
+	return crane.Config(ref, opt...)
+}
+
+func (c *craneClient) PullLayer(ref string, opt ...crane.Option) (v1.Layer, error) {
+	return crane.PullLayer(ref, opt...)
 }
