@@ -349,7 +349,11 @@ var _ = Describe("Channel switch", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), v1beta2.DefaultChannel).
 			Should(Succeed())
-		Consistently(expectEveryModuleStatusToHaveChannel(kcpClient, kyma.GetName(), kyma.GetNamespace(), FastChannel), ConsistentCheckTimeout, Interval).
+		Consistently(
+			expectEveryModuleStatusToHaveChannel(kcpClient, kyma.GetName(), kyma.GetNamespace(), FastChannel),
+			ConsistentCheckTimeout,
+			Interval,
+		).
 			Should(Succeed())
 		Skip("KLM doesn't set the channel in the manifest with label `operator.kyma-project.io/channel`")
 		Consistently(expectEveryManifestToHaveChannel, ConsistentCheckTimeout, Interval).

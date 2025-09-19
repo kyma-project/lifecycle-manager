@@ -125,7 +125,11 @@ type mockPathExtractor struct {
 	mockError error
 }
 
-func (m *mockPathExtractor) GetPathFromRawManifest(_ context.Context, _ v1beta2.ImageSpec, _ authn.Keychain) (string, error) {
+func (m *mockPathExtractor) GetPathFromRawManifest(
+	_ context.Context,
+	_ v1beta2.ImageSpec,
+	_ authn.Keychain,
+) (string, error) {
 	if m.mockError != nil {
 		return "", m.mockError
 	}

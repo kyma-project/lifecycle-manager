@@ -15,10 +15,12 @@ import (
 func Test_ModuleTemplateInfoLookupStrategies_Lookup_CallsResponsibleStrategy(t *testing.T) {
 	nonResponsibleStrategy := newLookupStrategyStub(false)
 	responsibleStrategy := newLookupStrategyStub(true)
-	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		&nonResponsibleStrategy,
-		&responsibleStrategy,
-	})
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+			&nonResponsibleStrategy,
+			&responsibleStrategy,
+		},
+	)
 
 	moduleTemplateInfo := strategies.Lookup(t.Context(), nil, nil, nil)
 
@@ -31,11 +33,13 @@ func Test_ModuleTemplateInfoLookupStrategies_Lookup_CallsFirstResponsibleStrateg
 	nonResponsibleStrategy := newLookupStrategyStub(false)
 	responsibleStrategy := newLookupStrategyStub(true)
 	responsibleStrategy2 := newLookupStrategyStub(true)
-	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		&nonResponsibleStrategy,
-		&responsibleStrategy,
-		&responsibleStrategy2,
-	})
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+			&nonResponsibleStrategy,
+			&responsibleStrategy,
+			&responsibleStrategy2,
+		},
+	)
 
 	moduleTemplateInfo := strategies.Lookup(t.Context(), nil, nil, nil)
 
@@ -47,9 +51,11 @@ func Test_ModuleTemplateInfoLookupStrategies_Lookup_CallsFirstResponsibleStrateg
 
 func Test_ModuleTemplateInfoLookupStrategies_Lookup_ReturnsFailureWhenNoStrategyResponsible(t *testing.T) {
 	nonResponsibleStrategy := newLookupStrategyStub(false)
-	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		&nonResponsibleStrategy,
-	})
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+			&nonResponsibleStrategy,
+		},
+	)
 
 	moduleTemplateInfo := strategies.Lookup(t.Context(), nil, nil, nil)
 
@@ -58,7 +64,9 @@ func Test_ModuleTemplateInfoLookupStrategies_Lookup_ReturnsFailureWhenNoStrategy
 }
 
 func Test_ModuleTemplateInfoLookupStrategies_Lookup_ReturnsFailureWhenNoStrategies(t *testing.T) {
-	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{})
+	strategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{},
+	)
 
 	moduleTemplateInfo := strategies.Lookup(t.Context(), nil, nil, nil)
 

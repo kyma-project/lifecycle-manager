@@ -10,7 +10,9 @@ import (
 )
 
 var (
-	ErrWaitingForNextMaintenanceWindow              = errors.New("waiting for next maintenance window to update module version")
+	ErrWaitingForNextMaintenanceWindow = errors.New(
+		"waiting for next maintenance window to update module version",
+	)
 	ErrFailedToDetermineIfMaintenanceWindowIsActive = errors.New("failed to determine if maintenance window is active")
 )
 

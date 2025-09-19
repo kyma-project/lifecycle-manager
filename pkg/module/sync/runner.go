@@ -14,7 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -97,7 +97,7 @@ func (r *Runner) updateManifest(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	newManifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return commonerrs.ErrTypeAssert
+		return common.ErrTypeAssert
 	}
 
 	moduleStatus := kyma.GetModuleStatusMap()[module.ModuleName]
@@ -133,7 +133,8 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module 
 	if module.Enabled {
 		return r.patchManifest(ctx, owner, newManifest)
 	}
-	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
+	// For disabled module, the manifest CR is under deleting, in this case,
+	// we only update the spec when it's still not deleted.
 	if err := r.updateAvailableManifestSpec(ctx, manifestInCluster, newManifest); err != nil && !util.IsNotFound(err) {
 		return err
 	}
@@ -202,7 +203,8 @@ func NeedToUpdate(manifestInCluster, newManifest *v1beta2.Manifest, moduleInStat
 		return diffInSpec
 	}
 
-	diffInTemplate := moduleInStatus.Template != nil && moduleInStatus.Template.GetGeneration() != module.TemplateInfo.GetGeneration()
+	diffInTemplate := moduleInStatus.Template != nil &&
+		moduleInStatus.Template.GetGeneration() != module.TemplateInfo.GetGeneration()
 	return diffInTemplate || diffInSpec
 }
 

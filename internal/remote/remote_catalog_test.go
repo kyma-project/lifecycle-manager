@@ -171,7 +171,9 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 	assert.Equal(t, "regular-module-2.0.0", mts[1].Name)
 }
 
-func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryInternal_ForInternalKyma(t *testing.T) {
+func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryInternal_ForInternalKyma(
+	t *testing.T,
+) {
 	kyma := newKymaBuilder().withInternalEnabled().build()
 	mts := remote.FilterAllowedModuleTemplates(moduleTemplates().Items, []v1beta2.ModuleReleaseMeta{
 		*newModuleReleaseMetaBuilder().
@@ -201,7 +203,9 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 	assert.Equal(t, "beta-module-2.0.0", mts[1].Name)
 }
 
-func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryInternalBeta_ForInternalBetaKyma(t *testing.T) {
+func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryInternalBeta_ForInternalBetaKyma(
+	t *testing.T,
+) {
 	kyma := newKymaBuilder().withInternalEnabled().withBetaEnabled().build()
 	mts := remote.FilterAllowedModuleTemplates(moduleTemplates().Items, []v1beta2.ModuleReleaseMeta{
 		*newModuleReleaseMetaBuilder().
@@ -216,7 +220,9 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 	assert.Equal(t, "internal-beta-module-2.0.0", mts[1].Name)
 }
 
-func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryInternal_ForNonInternalKyma(t *testing.T) {
+func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMandatoryInternal_ForNonInternalKyma(
+	t *testing.T,
+) {
 	kyma := newKymaBuilder().build()
 	mts := remote.FilterAllowedModuleTemplates(moduleTemplates().Items, []v1beta2.ModuleReleaseMeta{
 		*newModuleReleaseMetaBuilder().
@@ -229,7 +235,9 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 	require.Len(t, mts, 1)
 }
 
-func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaNonInternalKyma(t *testing.T) {
+func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaNonInternalKyma(
+	t *testing.T,
+) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().build()
 	mts := &v1beta2.ModuleTemplateList{}
@@ -243,7 +251,9 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNo
 	assert.Equal(t, "old-module-regular", filteredMts[0].Name)
 }
 
-func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForBetaNonInternalKyma(t *testing.T) {
+func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForBetaNonInternalKyma(
+	t *testing.T,
+) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withBetaEnabled().build()
 	mts := &v1beta2.ModuleTemplateList{}
@@ -258,7 +268,9 @@ func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMa
 	assert.Equal(t, "old-module-regular", filteredMts[1].Name)
 }
 
-func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaInternalKyma(t *testing.T) {
+func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaInternalKyma(
+	t *testing.T,
+) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withInternalEnabled().build()
 	mts := &v1beta2.ModuleTemplateList{}
@@ -273,7 +285,9 @@ func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMa
 	assert.Equal(t, "old-module-regular", filteredMts[1].Name)
 }
 
-func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonMandatoryMTs_ForBetaInternalKyma(t *testing.T) {
+func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonMandatoryMTs_ForBetaInternalKyma(
+	t *testing.T,
+) {
 	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
 	kyma := newKymaBuilder().withBetaEnabled().withInternalEnabled().build()
 	mts := &v1beta2.ModuleTemplateList{}

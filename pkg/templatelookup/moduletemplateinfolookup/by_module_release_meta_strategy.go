@@ -19,7 +19,10 @@ func NewByModuleReleaseMetaStrategy(client client.Reader) ByModuleReleaseMetaStr
 	return ByModuleReleaseMetaStrategy{client: client}
 }
 
-func (ByModuleReleaseMetaStrategy) IsResponsible(_ *templatelookup.ModuleInfo, moduleReleaseMeta *v1beta2.ModuleReleaseMeta) bool {
+func (ByModuleReleaseMetaStrategy) IsResponsible(
+	_ *templatelookup.ModuleInfo,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) bool {
 	return moduleReleaseMeta != nil
 }
 

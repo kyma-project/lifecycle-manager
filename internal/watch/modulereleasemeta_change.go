@@ -76,9 +76,11 @@ func (m TypedModuleReleaseMetaEventHandler[object, request]) Update(ctx context.
 	requeueKymas(rli, affectedKymas)
 }
 
-// DiffModuleReleaseMetaChannels determines the difference between the old and new ModuleReleaseMeta channels. It returns
-// a map of the channels that have been updated or added.
-func DiffModuleReleaseMetaChannels(oldModuleReleaseMeta, newModuleReleaseMeta *v1beta2.ModuleReleaseMeta) map[string]v1beta2.ChannelVersionAssignment {
+// DiffModuleReleaseMetaChannels determines the difference between the old and new ModuleReleaseMeta channels.
+// It returns a map of the channels that have been updated or added.
+func DiffModuleReleaseMetaChannels(
+	oldModuleReleaseMeta, newModuleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) map[string]v1beta2.ChannelVersionAssignment {
 	diff := make(map[string]v1beta2.ChannelVersionAssignment)
 
 	oldChannels := make(map[string]v1beta2.ChannelVersionAssignment)
@@ -133,7 +135,12 @@ func GetAffectedKymas(kymas *v1beta2.KymaList, moduleName string,
 	return affectedKymas
 }
 
-func handleEvent(ctx context.Context, evt interface{}, rli workqueue.TypedRateLimitingInterface[reconcile.Request], reader client.Reader) {
+func handleEvent(
+	ctx context.Context,
+	evt interface{},
+	rli workqueue.TypedRateLimitingInterface[reconcile.Request],
+	reader client.Reader,
+) {
 	kymaList, err := getKymaList(ctx, reader)
 	if err != nil {
 		return
@@ -173,7 +180,9 @@ func requeueKymas(rli workqueue.TypedRateLimitingInterface[reconcile.Request], k
 	}
 }
 
-func getChannelAssignmentMapping(moduleReleaseMeta *v1beta2.ModuleReleaseMeta) map[string]v1beta2.ChannelVersionAssignment {
+func getChannelAssignmentMapping(
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) map[string]v1beta2.ChannelVersionAssignment {
 	channelMapping := make(map[string]v1beta2.ChannelVersionAssignment)
 	for _, channelAssignment := range moduleReleaseMeta.Spec.Channels {
 		channelMapping[channelAssignment.Channel] = channelAssignment

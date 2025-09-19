@@ -43,7 +43,9 @@ func TestGenerateModuleStatusFromError_WhenCalledWithAnyOtherError_ReturnsDefaul
 	assert.Nil(t, result.Template)
 }
 
-func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveError_ReturnsDeepCopyAndMessage(t *testing.T) {
+func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveError_ReturnsDeepCopyAndMessage(
+	t *testing.T,
+) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
 	someFQDN := "some-fqdn"
@@ -66,7 +68,9 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 	assert.NotEqual(t, someFQDN, result.FQDN)
 }
 
-func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownError_ReturnsDeepCopyAndStateError(t *testing.T) {
+func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownError_ReturnsDeepCopyAndStateError(
+	t *testing.T,
+) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
 	someFQDN := "some-fqdn"
@@ -89,7 +93,9 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 	assert.NotEqual(t, someFQDN, result.FQDN)
 }
 
-func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedError_ReturnsDeepCopyAndStateWarning(t *testing.T) {
+func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedError_ReturnsDeepCopyAndStateWarning(
+	t *testing.T,
+) {
 	someModuleName := "some-module"
 	someChannel := "some-channel"
 	someFQDN := "some-fqdn"
@@ -112,7 +118,9 @@ func TestGenerateModuleStatusFromError_WhenCalledWithTemplateUpdateNotAllowedErr
 	assert.NotEqual(t, someFQDN, result.FQDN)
 }
 
-func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultError_ReturnsNewStatusWithStateWarning(t *testing.T) {
+func TestGenerateModuleStatusFromError_WhenCalledWithNoTemplatesInListResultError_ReturnsNewStatusWithStateWarning(
+	t *testing.T,
+) {
 	expectedModuleName := "some-module"
 	expectedChannel := "some-channel"
 	expectedFQDN := "some-fqdn"

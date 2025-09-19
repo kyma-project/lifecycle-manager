@@ -54,7 +54,8 @@ func (k *KymaSkrContextProvider) Init(ctx context.Context, kyma types.Namespaced
 	restConfig.QPS = k.kcpClient.Config().QPS
 	restConfig.Burst = k.kcpClient.Config().Burst
 
-	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache. skrClients are cached anyways.
+	// Required to prevent memory leak by avoiding caching in transport.tlsTransportCache.
+	// skrClients are cached anyways.
 	restConfig.Proxy = http.ProxyFromEnvironment
 
 	clnt, err := client.New(restConfig, client.Options{Scheme: k.kcpClient.Scheme()})

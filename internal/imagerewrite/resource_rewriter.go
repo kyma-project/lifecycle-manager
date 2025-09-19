@@ -14,8 +14,10 @@ type ImageRewriter interface {
 	Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error
 }
 
-// ResourceRewriter rewrites the host and path of the images in the kubernetes resources based on the localized images specified in the manifest.
-// The target resource must represent a Kubernetes object that contains a Pod template, such as a Deployment or StatefulSet.
+// ResourceRewriter rewrites the host and path of the images in the kubernetes resources
+// based on the localized images specified in the manifest.
+// The target resource must represent a Kubernetes object that contains a Pod template,
+// such as a Deployment or StatefulSet.
 // The rewriter modifies images specified in the following places:
 //   - all pod template container images
 //   - all pod template environment variables that contain image references
@@ -30,7 +32,10 @@ func (r *ResourceRewriter) WithRewriters(rewriters ...ImageRewriter) *ResourceRe
 
 // ReplaceImages replaces images in the given Kubernetes resource with the target images.
 // It supports only Deployment and StatefulSet kinds, it ignores any unsupported resources.
-func (r *ResourceRewriter) ReplaceImages(resource *unstructured.Unstructured, targetImages []*DockerImageReference) error {
+func (r *ResourceRewriter) ReplaceImages(
+	resource *unstructured.Unstructured,
+	targetImages []*DockerImageReference,
+) error {
 	if !IsSupportedKind(resource.GetKind()) {
 		return nil
 	}
@@ -81,7 +86,11 @@ type (
 	podContainersSetterFn func([]*unstructured.Unstructured) error
 )
 
-func (r *ResourceRewriter) rewriteContainers(containersGetter podContainersGetterFn, containersSetter podContainersSetterFn, targetImages []*DockerImageReference) error {
+func (r *ResourceRewriter) rewriteContainers(
+	containersGetter podContainersGetterFn,
+	containersSetter podContainersSetterFn,
+	targetImages []*DockerImageReference,
+) error {
 	containers, err := containersGetter()
 	if err != nil {
 		return err
@@ -119,13 +128,30 @@ func getPodInitContainers(deploymentOrSimilar *unstructured.Unstructured) ([]*un
 
 func setPodContainers(deploymentOrSimilar *unstructured.Unstructured, containers []*unstructured.Unstructured) error {
 	return setContainersGeneric(containers, func(containerObjects []any) error {
-		return unstructured.SetNestedSlice(deploymentOrSimilar.Object, containerObjects, "spec", "template", "spec", "containers")
+		return unstructured.SetNestedSlice(
+			deploymentOrSimilar.Object,
+			containerObjects,
+			"spec",
+			"template",
+			"spec",
+			"containers",
+		)
 	})
 }
 
-func setPodInitContainers(deploymentOrSimilar *unstructured.Unstructured, containers []*unstructured.Unstructured) error {
+func setPodInitContainers(
+	deploymentOrSimilar *unstructured.Unstructured,
+	containers []*unstructured.Unstructured,
+) error {
 	return setContainersGeneric(containers, func(containerObjects []any) error {
-		return unstructured.SetNestedSlice(deploymentOrSimilar.Object, containerObjects, "spec", "template", "spec", "initContainers")
+		return unstructured.SetNestedSlice(
+			deploymentOrSimilar.Object,
+			containerObjects,
+			"spec",
+			"template",
+			"spec",
+			"initContainers",
+		)
 	})
 }
 
@@ -136,7 +162,9 @@ func getContainersGeneric(getNestedSliceFn func() ([]any, bool, error)) ([]*unst
 	}
 
 	if !found || len(containers) == 0 {
-		return nil, nil // No containers found: It's normal case for initContainers. For "standard" containers, it should not happen but we don't have to error out here - it's the API Server job to prevent this.
+		return nil, nil // No containers found: It's normal case for initContainers.
+		// For "standard" containers, it should not happen but we don't have to error out here -
+		// it's the API Server job to prevent this.
 	}
 
 	containerResources := make([]*unstructured.Unstructured, len(containers))

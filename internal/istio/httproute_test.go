@@ -123,5 +123,5 @@ func getDestinationHost(watcher *v1beta2.Watcher) string {
 }
 
 func getDestinationPort(watcher *v1beta2.Watcher) uint32 {
-	return uint32(watcher.Spec.ServiceInfo.Port) //nolint: gosec // test code
+	return uint32(watcher.Spec.ServiceInfo.Port) //nolint:gosec // test code
 }

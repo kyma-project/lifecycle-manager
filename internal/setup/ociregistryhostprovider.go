@@ -28,7 +28,11 @@ var (
 	ErrNoRegistryHostFound       = errors.New("no registry host found in the credential secret")
 )
 
-func NewOCIRegistryHostProvider(secretGetter SecretGetter, host string, credSecretName string) (*OCIRegistryHostProvider, error) {
+func NewOCIRegistryHostProvider(
+	secretGetter SecretGetter,
+	host string,
+	credSecretName string,
+) (*OCIRegistryHostProvider, error) {
 	if secretGetter == nil {
 		return nil, ErrSecretGetterNil
 	}

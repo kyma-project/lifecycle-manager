@@ -4,10 +4,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
@@ -68,7 +67,8 @@ var _ = Describe("ModuleReleaseMeta Watch Trigger", Ordered, func() {
 				Eventually(ModuleMessageInKymaStatusIsCorrect).
 					WithContext(ctx).
 					WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name,
-						"failed to get module template: ModuleTemplate.operator.kyma-project.io \"template-operator-1.2.3\" not found").
+						"failed to get module template: "+
+							"ModuleTemplate.operator.kyma-project.io \"template-operator-1.2.3\" not found").
 					Should(Succeed())
 			})
 		})

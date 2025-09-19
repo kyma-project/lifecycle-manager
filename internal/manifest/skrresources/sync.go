@@ -21,7 +21,8 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 
 	managedFieldsCollector := NewManifestLogCollector(manifest, manifestclient.DefaultFieldOwner)
 
-	if err := ConcurrentSSA(skrClient, manifestclient.DefaultFieldOwner, managedFieldsCollector).Run(ctx, target); err != nil {
+	if err := ConcurrentSSA(skrClient, manifestclient.DefaultFieldOwner, managedFieldsCollector).
+		Run(ctx, target); err != nil {
 		manifest.SetStatus(manifestStatus.WithState(shared.StateError).WithErr(err))
 		return err
 	}
@@ -32,9 +33,12 @@ func SyncResources(ctx context.Context, skrClient client.Client, manifest *v1bet
 
 	if HasDiff(oldSynced, newSynced) {
 		if manifest.GetDeletionTimestamp().IsZero() {
-			manifest.SetStatus(manifestStatus.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+			manifest.SetStatus(
+				manifestStatus.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()),
+			)
 		} else if manifestStatus.State != shared.StateWarning {
-			manifest.SetStatus(manifestStatus.WithState(shared.StateDeleting).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+			manifest.SetStatus(manifestStatus.WithState(shared.StateDeleting).
+				WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		}
 		return ErrWarningResourceSyncStateDiff
 	}

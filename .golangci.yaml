@@ -5,9 +5,9 @@ linters:
     - contextcheck # too many false positives
     - depguard # checks if package imports are whitelisted
     - exhaustruct # too subjective and harms code readability
-    - lll
     - nlreturn # too strict and mostly code is not more readable
     - paralleltest # should be enabled consciously for long running tests
+    - lll # revive.line-length-limit serve same purpose
     - sqlclosecheck # not needed for this project
     - wsl # too strict and mostly code is not more readable
     - wsl_v5 # too strict
@@ -158,6 +158,7 @@ linters:
         - runtime.Object
         - meta.RESTMapper
         - client.SubResourceWriter
+        - client.StatusWriter
         - openapi.Resources
         - validation.Schema
         - discovery.CachedDiscoveryInterface
@@ -181,7 +182,8 @@ linters:
           arguments:
             - 120
           severity: warning
-          disabled: true
+          exclude:
+            - "**/api/**/*_types.go"
     staticcheck:
       dot-import-whitelist:
         - github.com/onsi/ginkgo/v2
@@ -232,10 +234,10 @@ linters:
         text: has alias "" which is not part of config
       - linters:
           - lll
-        source: '^// +kubebuilder: '
+        source: "^// +kubebuilder: "
       - linters:
           - lll
-        source: '^// http '
+        source: "^// http "
     paths:
       - zz_generated.deepcopy.go
       - third_party$

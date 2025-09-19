@@ -9,9 +9,15 @@ import (
 )
 
 var (
-	ErrInvalidImageReference               = errors.New("invalid docker image reference")
-	ErrMissingSlashInImageReference        = fmt.Errorf("%w: missing '/' separator between registry host and image name", ErrInvalidImageReference)
-	ErrMissingColonInImageReference        = fmt.Errorf("%w: missing ':' separator between image name and tag", ErrInvalidImageReference)
+	ErrInvalidImageReference        = errors.New("invalid docker image reference")
+	ErrMissingSlashInImageReference = fmt.Errorf(
+		"%w: missing '/' separator between registry host and image name",
+		ErrInvalidImageReference,
+	)
+	ErrMissingColonInImageReference = fmt.Errorf(
+		"%w: missing ':' separator between image name and tag",
+		ErrInvalidImageReference,
+	)
 	ErrFindingImageInPodContainer          = errors.New("error finding image in pod container")
 	ErrFindingEnvVarsInPodContainer        = errors.New("error finding env vars in pod container")
 	ErrUnexpectedEnvVarType                = errors.New("unexpected environment variable type")
@@ -73,14 +79,18 @@ func (ir *DockerImageReference) String() string {
 
 type PodContainerImageRewriter struct{}
 
-func (r *PodContainerImageRewriter) Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error {
+func (r *PodContainerImageRewriter) Rewrite(
+	targetImages []*DockerImageReference,
+	podContainer *unstructured.Unstructured,
+) error {
 	existingImageValue, found, err := unstructured.NestedString(podContainer.Object, "image")
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFindingImageInPodContainer, err.Error())
 	}
 	if !found {
 		// No image found in the pod container, nothing to rewrite
-		// Note: For some reasons the image attribute is marked as optional in the k8s sources: k8s.io/api@v0.33.3/core/v1/types.go, line 2764
+		// Note: For some reasons the image attribute is marked as optional in the k8s sources:
+		// k8s.io/api@v0.33.3/core/v1/types.go, line 2764
 		return nil
 	}
 
@@ -90,7 +100,8 @@ func (r *PodContainerImageRewriter) Rewrite(targetImages []*DockerImageReference
 	}
 
 	for _, targetImage := range targetImages {
-		// We know that existingImage is a docker image reference, so we only have the verify if the <name>:<tag> matches.
+		// We know that existingImage is a docker image reference,
+		// so we only have the verify if the <name>:<tag> matches.
 		if targetImage.Matches(existingImage.NameAndTag) {
 			if err := unstructured.SetNestedField(podContainer.Object, targetImage.String(), "image"); err != nil {
 				return fmt.Errorf("%w: %v", ErrFailedToSetNewImageInPodContainer, err.Error())
@@ -105,7 +116,10 @@ func (r *PodContainerImageRewriter) Rewrite(targetImages []*DockerImageReference
 // PodContainerEnvsRewriter is a rewriter that rewrites container env vars in a Kubernetes manifest.
 type PodContainerEnvsRewriter struct{}
 
-func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error {
+func (r *PodContainerEnvsRewriter) Rewrite(
+	targetImages []*DockerImageReference,
+	podContainer *unstructured.Unstructured,
+) error {
 	// Note: NestedSlice returns a COPY
 	envEntries, found, err := unstructured.NestedSlice(podContainer.Object, "env")
 	if err != nil {
@@ -132,7 +146,11 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 
 		envVarValueStr, ok := existingEnvValue.(string)
 		if !ok {
-			return fmt.Errorf("%w: invalid type for value: %T (expected a string)", ErrUnexpectedEnvVarType, existingEnvValue)
+			return fmt.Errorf(
+				"%w: invalid type for value: %T (expected a string)",
+				ErrUnexpectedEnvVarType,
+				existingEnvValue,
+			)
 		}
 		for _, targetImage := range targetImages {
 			// Check if the existing environment variable value is an image reference suitable for the replacement.
@@ -150,13 +168,15 @@ func (r *PodContainerEnvsRewriter) Rewrite(targetImages []*DockerImageReference,
 	return nil
 }
 
-// isImageRefForReplacement checks if the environment variable value is a Docker image reference suitable for replacement with the target image.
+// isImageRefForReplacement checks if the environment variable value is a Docker image reference
+// suitable for replacement with the target image.
 func isImageRefForReplacement(envVarValue string, targetNameAndTag NameAndTag) bool {
 	if !strings.Contains(envVarValue, string(targetNameAndTag)) {
 		return false // The envVarValue does not contain the targetRef.NameAndTag so it is not suitable for replacement.
 	}
 
-	// The envVarValue contains the targetRef.NameAndTag substring (e.g: "myimage:1.2.3"), so it may be a Docker image referenence suitable for replacement.
+	// The envVarValue contains the targetRef.NameAndTag substring (e.g: "myimage:1.2.3"),
+	// so it may be a Docker image referenence suitable for replacement.
 	trySourceRef, err := NewDockerImageReference(envVarValue)
 	if err != nil {
 		return false // Not a valid Docker image reference, not suitable for replacement.

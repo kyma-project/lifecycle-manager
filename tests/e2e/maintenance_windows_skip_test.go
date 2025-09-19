@@ -1,13 +1,13 @@
 package e2e_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 /*
@@ -52,7 +52,8 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Widnow on Skip",
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName,
+					shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -90,7 +91,8 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Widnow on Skip",
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName,
+					shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")
@@ -115,7 +117,8 @@ var _ = Describe("Maintenance Windows - No Wait for Maintenance Widnow on Skip",
 			By("And SKR Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(shared.DefaultRemoteKymaName, shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
+				WithArguments(shared.DefaultRemoteKymaName,
+					shared.DefaultRemoteNamespace, skrClient, shared.StateReady).
 				Should(Succeed())
 
 			By("And KCP Kyma CR is in \"Ready\" State")

@@ -76,9 +76,11 @@ type ManifestSpec struct {
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 
-	// LocalizedImages specifies a list of docker image references valid for the environment where the Manifest is installed.
+	// LocalizedImages specifies a list of docker image references valid for the environment
+	// where the Manifest is installed.
 	// The list entries are corresponding to the images actually used in the K8s resources of the Kyma module.
-	// If provided, when the Kyma Module is installed in the target cluster, the "localized" image reference is used instead of the original one.
+	// If provided, when the Kyma Module is installed in the target cluster,
+	// the "localized" image reference is used instead of the original one.
 	// +optional
 	LocalizedImages []string `json:"localizedImages,omitempty"`
 }
@@ -136,7 +138,8 @@ func (manifest *Manifest) SetStatus(status shared.Status) {
 }
 
 func (manifest *Manifest) IsUnmanaged() bool {
-	return manifest.GetAnnotations() != nil && manifest.GetAnnotations()[shared.UnmanagedAnnotation] == shared.EnableLabelValue
+	return manifest.GetAnnotations() != nil &&
+		manifest.GetAnnotations()[shared.UnmanagedAnnotation] == shared.EnableLabelValue
 }
 
 func (manifest *Manifest) IsMandatoryModule() bool {

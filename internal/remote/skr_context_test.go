@@ -470,7 +470,8 @@ func Test_syncBTPRelatedLabels_UpdatesLabels(t *testing.T) {
 
 func Test_syncBTPRelatedLabels_NoChange(t *testing.T) {
 	kcpKyma := builder.NewKymaBuilder().
-		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").WithLabel(shared.SubAccountIDLabel, "sub-account-id").Build()
+		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
+		WithLabel(shared.SubAccountIDLabel, "sub-account-id").Build()
 	skrKyma := builder.NewKymaBuilder().
 		WithLabel(shared.GlobalAccountIDLabel, "global-account-id").
 		WithLabel(shared.SubAccountIDLabel, "sub-account-id").

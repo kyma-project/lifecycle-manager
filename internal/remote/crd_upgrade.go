@@ -268,7 +268,13 @@ func containsCRDNotFoundError(errs []error) bool {
 	return false
 }
 
-func createCRDInRuntime(ctx context.Context, crdKind shared.Kind, crdNotReadyErr error, kcpClient client.Client, skrClient client.Client) error {
+func createCRDInRuntime(
+	ctx context.Context,
+	crdKind shared.Kind,
+	crdNotReadyErr error,
+	kcpClient client.Client,
+	skrClient client.Client,
+) error {
 	kcpCrd := &apiextensionsv1.CustomResourceDefinition{}
 	skrCrd := &apiextensionsv1.CustomResourceDefinition{}
 	objKey := client.ObjectKey{

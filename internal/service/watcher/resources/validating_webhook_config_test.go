@@ -77,7 +77,10 @@ func TestBuildValidatingWebhookConfigFromWatchers(t *testing.T) {
 					return &s
 				}(),
 				TimeoutSeconds: func() *int32 { i := int32(15); return &i }(),
-				FailurePolicy:  func() *admissionregistrationv1.FailurePolicyType { f := admissionregistrationv1.Ignore; return &f }(),
+				FailurePolicy: func() *admissionregistrationv1.FailurePolicyType {
+					f := admissionregistrationv1.Ignore
+					return &f
+				}(),
 			},
 		},
 	}

@@ -192,7 +192,9 @@ func TestUpdateModuleStatuses_WhenCalledWithTemplateErrorTemplateUpdateNotAllowe
 	_ = statusHandler.UpdateModuleStatuses(t.Context(), &v1beta2.Kyma{}, modulecommon.Modules{})
 }
 
-func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_NotReturnsError_And_ModuleStatusExistsWithErrorState(t *testing.T) {
+func TestUpdateModuleStatuses_WhenStatusGeneratorReturnsError_NotReturnsError_And_ModuleStatusExistsWithErrorState(
+	t *testing.T,
+) {
 	const moduleStatusError = "status generator error"
 	const moduleUnderTest = "test-module"
 	statusGenerator := &mockStatusGenerator{

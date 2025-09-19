@@ -44,7 +44,8 @@ func determineDeploymentState(progressingCondition, availableCondition *apiappsv
 			}
 		} else {
 			switch progressingCondition.Reason {
-			case NewReplicaSetAvailableReason, FoundNewReplicaSetReason, NewReplicaSetCreatedReason, ReplicaSetUpdatedReason:
+			case NewReplicaSetAvailableReason, FoundNewReplicaSetReason,
+				NewReplicaSetCreatedReason, ReplicaSetUpdatedReason:
 				return shared.StateProcessing
 			}
 		}

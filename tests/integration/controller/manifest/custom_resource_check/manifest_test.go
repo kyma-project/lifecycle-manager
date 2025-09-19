@@ -52,7 +52,11 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 			Should(Succeed())
 
 		manifestName := testManifest.GetName()
-		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(), manifestFilePath)
+		validImageSpec, err := CreateOCIImageSpecFromFile(
+			installName,
+			server.Listener.Addr().String(),
+			manifestFilePath,
+		)
 		Expect(err).NotTo(HaveOccurred())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())

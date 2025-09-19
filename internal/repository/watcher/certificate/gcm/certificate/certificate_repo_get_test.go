@@ -157,8 +157,11 @@ func Test_CertificateClient_GetRenewalTime_Error_InvalidExpirationDate(t *testin
 func Test_CertificateClient_GetValidity_Success(t *testing.T) {
 	expectedNotBefore := time.Now().UTC()
 	expectedNotAfter := time.Now().Add(certDuration).UTC()
-	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to %v",
-		expectedNotBefore, expectedNotAfter)
+	certificateStateMessage := fmt.Sprintf(
+		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to %v",
+		expectedNotBefore,
+		expectedNotAfter,
+	)
 
 	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
@@ -250,8 +253,11 @@ func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 
 func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) {
 	expectedNotAfter := time.Now().Add(certDuration).UTC()
-	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from 2025-04-24 13:60:60.148938 +0000 UTC to %v",
-		expectedNotAfter)
+	certificateStateMessage := fmt.Sprintf(
+		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from "+
+			"2025-04-24 13:60:60.148938 +0000 UTC to %v",
+		expectedNotAfter,
+	)
 
 	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)
@@ -266,8 +272,11 @@ func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) 
 
 func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 	expectedNotBefore := time.Now().Add(certDuration).UTC()
-	certificateStateMessage := fmt.Sprintf("certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to 2025-04-24 13:60:60.148938 +0000 UTC",
-		expectedNotBefore)
+	certificateStateMessage := fmt.Sprintf(
+		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to "+
+			"2025-04-24 13:60:60.148938 +0000 UTC",
+		expectedNotBefore,
+	)
 
 	certificateRepository, err := newCertRepoWithGetClientStubWithStatusMessage(certificateStateMessage)
 	require.NoError(t, err)

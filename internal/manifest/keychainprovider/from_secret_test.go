@@ -53,7 +53,10 @@ func TestGetWhenClientReturnsSecretReturnsKeychain(t *testing.T) {
 	}
 	kcpClient := fake.NewClientBuilder().WithObjects(secret).Build()
 
-	sut := keychainprovider.NewFromSecretKeyChainProvider(kcpClient, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace})
+	sut := keychainprovider.NewFromSecretKeyChainProvider(
+		kcpClient,
+		types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace},
+	)
 
 	keychain, err := sut.Get(t.Context())
 
@@ -61,6 +64,8 @@ func TestGetWhenClientReturnsSecretReturnsKeychain(t *testing.T) {
 	require.NoError(t, err)
 }
 
-var otherErrorFunc = func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+var otherErrorFunc = func(ctx context.Context, client client.WithWatch,
+	key client.ObjectKey, obj client.Object, opts ...client.GetOption,
+) error {
 	return errors.New("some other error")
 }

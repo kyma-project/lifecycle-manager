@@ -13,7 +13,7 @@ func ConfigLogger(level int8, syncer zapcore.WriteSyncer) logr.Logger {
 		level = -level
 	}
 	// The following settings is based on kyma community Improvement of log messages usability
-	// https://github.com/kyma-project/community/blob/main/concepts/observability-consistent-logging/improvement-of-log-messages-usability.md#log-structure
+	//nolint:revive // https://github.com/kyma-project/community/blob/main/concepts/observability-consistent-logging/improvement-of-log-messages-usability.md#log-structure
 	atomicLevel := zap.NewAtomicLevelAt(zapcore.Level(level))
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.TimeKey = "date"

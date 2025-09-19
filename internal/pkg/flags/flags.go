@@ -67,7 +67,7 @@ const (
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
-	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
+	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1" //nolint:revive // keep it readible
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
 	DefaultMinMaintenanceWindowSize                                     = 20 * time.Minute
 	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second
@@ -76,13 +76,19 @@ const (
 )
 
 var (
-	ErrMissingWatcherImageTag                  = errors.New("runtime watcher image tag is not provided")
-	ErrMissingWatcherImageRegistry             = errors.New("runtime watcher image registry is not provided")
-	ErrWatcherDirNotExist                      = errors.New("failed to locate watcher resource manifest folder")
-	ErrLeaderElectionTimeoutConfig             = errors.New("configured leader-election-renew-deadline must be less than leader-election-lease-duration")
-	ErrInvalidSelfSignedCertKeyLength          = errors.New("invalid self-signed-cert-key-size: must be 4096")
-	ErrInvalidManifestRequeueJitterPercentage  = errors.New("invalid manifest requeue jitter percentage: must be between 0 and 0.05")
-	ErrInvalidManifestRequeueJitterProbability = errors.New("invalid manifest requeue jitter probability: must be between 0 and 1")
+	ErrMissingWatcherImageTag      = errors.New("runtime watcher image tag is not provided")
+	ErrMissingWatcherImageRegistry = errors.New("runtime watcher image registry is not provided")
+	ErrWatcherDirNotExist          = errors.New("failed to locate watcher resource manifest folder")
+	ErrLeaderElectionTimeoutConfig = errors.New(
+		"configured leader-election-renew-deadline must be less than leader-election-lease-duration",
+	)
+	ErrInvalidSelfSignedCertKeyLength         = errors.New("invalid self-signed-cert-key-size: must be 4096")
+	ErrInvalidManifestRequeueJitterPercentage = errors.New(
+		"invalid manifest requeue jitter percentage: must be between 0 and 0.05",
+	)
+	ErrInvalidManifestRequeueJitterProbability = errors.New(
+		"invalid manifest requeue jitter probability: must be between 0 and 1",
+	)
 )
 
 //nolint:funlen // defines all program flags
@@ -377,7 +383,8 @@ func (f FlagVar) Validate() error {
 	}
 
 	if !map[int]bool{
-		2048: false, // 2048 is a valid value for cert-manager, but explicitly prohibited as not compliant to security requirements
+		2048: false, // 2048 is a valid value for cert-manager,
+		// but explicitly prohibited as not compliant to security requirements
 		4096: true,
 		8192: false, // see https://github.com/kyma-project/lifecycle-manager/issues/1793
 	}[f.SelfSignedCertKeySize] {

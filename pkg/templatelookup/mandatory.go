@@ -80,7 +80,9 @@ func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Ver
 	return version, nil
 }
 
-func GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate,
+func GetModuleTemplateWithHigherVersion(
+	firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate,
+) (*v1beta2.ModuleTemplate,
 	error,
 ) {
 	firstVersion, err := GetModuleSemverVersion(firstModuleTemplate)

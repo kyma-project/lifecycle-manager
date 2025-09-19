@@ -17,7 +17,8 @@ func NewMaintenanceWindowMetrics() *MaintenanceWindowMetrics {
 	metrics := &MaintenanceWindowMetrics{
 		ConfigReadSuccessGauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: MetricMaintenanceWindowConfigReadSuccess,
-			Help: "Indicates whether the maintenance window configuration was read successfully (1 for success, 0 for failure)",
+			Help: "Indicates whether the maintenance window configuration " +
+				"was read successfully (1 for success, 0 for failure)",
 		}),
 	}
 	ctrlmetrics.Registry.MustRegister(metrics.ConfigReadSuccessGauge)

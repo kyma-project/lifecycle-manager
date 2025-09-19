@@ -22,7 +22,7 @@ var (
 	ErrGCMRepoConfigKeySizeOutOfRange     = errors.New("KeySize is out of range for int32")
 	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
 	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
-	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`)
+	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
 )
 
 const regexMatchesCount = 3
@@ -149,7 +149,12 @@ func (r *Repository) GetValidity(ctx context.Context, name string) (time.Time, t
 	cert.SetNamespace(r.certConfig.Namespace)
 
 	if err := r.kcpClient.Get(ctx, client.ObjectKeyFromObject(cert), cert); err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("failed to get certificate %s-%s: %w", name, r.certConfig.Namespace, err)
+		return time.Time{}, time.Time{}, fmt.Errorf(
+			"failed to get certificate %s-%s: %w",
+			name,
+			r.certConfig.Namespace,
+			err,
+		)
 	}
 
 	if cert.Status.Message == nil {

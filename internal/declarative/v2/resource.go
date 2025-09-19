@@ -2,7 +2,8 @@ package v2
 
 import "k8s.io/cli-runtime/pkg/resource"
 
-// ResourceList provides convenience methods for comparing collections of Infos. Copy from https://github.com/helm/helm/blob/v3.19.0/pkg/kube/resource.go
+// ResourceList provides convenience methods for comparing collections of Infos.
+// Copy from https://github.com/helm/helm/blob/v3.19.0/pkg/kube/resource.go
 type ResourceList []*resource.Info
 
 // Difference will return a new Result with objects not contained in rs.

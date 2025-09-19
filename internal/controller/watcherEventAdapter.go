@@ -10,7 +10,8 @@ type (
 	CtrlRuntimeEvent     = event.GenericEvent
 )
 
-// AdaptEvents converts given channel from the type used by runtime-watcher/listener module to the type required by the controller-runtime library.
+// AdaptEvents converts given channel from the type used by runtime-watcher/listener
+// module to the type required by the controller-runtime library.
 func AdaptEvents(listenerChan func() <-chan WatcherListenerEvent) <-chan CtrlRuntimeEvent {
 	dest := make(chan CtrlRuntimeEvent)
 	go func() {

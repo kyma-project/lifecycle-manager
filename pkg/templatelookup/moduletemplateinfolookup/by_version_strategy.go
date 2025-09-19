@@ -21,7 +21,10 @@ func NewByVersionStrategy(client client.Reader) ByVersionStrategy {
 	return ByVersionStrategy{client: client}
 }
 
-func (ByVersionStrategy) IsResponsible(moduleInfo *templatelookup.ModuleInfo, moduleReleaseMeta *v1beta2.ModuleReleaseMeta) bool {
+func (ByVersionStrategy) IsResponsible(
+	moduleInfo *templatelookup.ModuleInfo,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) bool {
 	if moduleReleaseMeta != nil {
 		return false
 	}

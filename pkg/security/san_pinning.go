@@ -172,7 +172,8 @@ func (e AnnotationMissingError) Error() string {
 	return fmt.Sprintf("KymaCR '%s' does not have annotation `%s`", e.KymaCR, e.Annotation)
 }
 
-// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists. Otherwise an empty string is returned.
+// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header,
+// if exists. Otherwise an empty string is returned.
 func getCertTokenFromXFCCHeader(hVal string) string {
 	certStartIdx := strings.Index(hVal, certificateKey)
 	if certStartIdx >= 0 {

@@ -30,7 +30,10 @@ type GatewaySecretRotationClient struct {
 	secretInterface      k8scorev1.SecretInterface
 }
 
-func NewGatewaySecretRotationClient(config *rest.Config, certificateInterface CertificateInterface) *GatewaySecretRotationClient {
+func NewGatewaySecretRotationClient(
+	config *rest.Config,
+	certificateInterface CertificateInterface,
+) *GatewaySecretRotationClient {
 	return &GatewaySecretRotationClient{
 		certificateInterface: certificateInterface,
 		secretInterface:      kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(shared.IstioNamespace),
@@ -81,11 +84,21 @@ func (c *GatewaySecretRotationClient) UpdateGatewaySecret(ctx context.Context, g
 
 func ensureGatewaySecret(gatewaySecret *apicorev1.Secret) error {
 	if gatewaySecret.Name != shared.GatewaySecretName {
-		return fmt.Errorf("expected name %s to be %s: %w", gatewaySecret.Name, shared.GatewaySecretName, errInvalidGatewaySecret)
+		return fmt.Errorf(
+			"expected name %s to be %s: %w",
+			gatewaySecret.Name,
+			shared.GatewaySecretName,
+			errInvalidGatewaySecret,
+		)
 	}
 
 	if gatewaySecret.Namespace != shared.IstioNamespace {
-		return fmt.Errorf("expected namespace %s to be %s: %w", gatewaySecret.Namespace, shared.IstioNamespace, errInvalidGatewaySecret)
+		return fmt.Errorf(
+			"expected namespace %s to be %s: %w",
+			gatewaySecret.Namespace,
+			shared.IstioNamespace,
+			errInvalidGatewaySecret,
+		)
 	}
 
 	return nil

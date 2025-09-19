@@ -17,7 +17,9 @@ import (
 
 func TestReconcile_WhenGetSecretFuncReturnsError_ReturnError(t *testing.T) {
 	// ARRANGE
-	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context,
+		name types.NamespacedName,
+	) (*apicorev1.Secret, error) {
 		return nil, errors.New("some-error")
 	}
 	mockHandler := &mockHandler{}
@@ -33,7 +35,9 @@ func TestReconcile_WhenGetSecretFuncReturnsError_ReturnError(t *testing.T) {
 
 func TestReconcile_WhenGetSecretFuncReturnsNoErrorAndSecretIsNil_ReturnError(t *testing.T) {
 	// ARRANGE
-	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context,
+		name types.NamespacedName,
+	) (*apicorev1.Secret, error) {
 		return nil, nil
 	}
 	mockHandler := &mockHandler{}
@@ -52,7 +56,9 @@ func TestReconcile_WhenGetSecretFuncIsCalled_IsCalledWithRequestNamespacedName(t
 	secretName, secretNamespace := "test-name", "test-namespace"
 	request := ctrl.Request{NamespacedName: types.NamespacedName{Name: secretName, Namespace: secretNamespace}}
 
-	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context,
+		name types.NamespacedName,
+	) (*apicorev1.Secret, error) {
 		assert.Equal(t, request.Namespace, name.Namespace)
 		assert.Equal(t, request.Name, name.Name)
 		return nil, nil
@@ -67,7 +73,9 @@ func TestReconcile_WhenGetSecretFuncIsCalled_IsCalledWithRequestNamespacedName(t
 func TestReconcile_WhenGetSecretFuncReturnsSecret_HandlerManageGatewaySecretIsCalled(t *testing.T) {
 	// ARRANGE
 	secret := &apicorev1.Secret{}
-	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context,
+		name types.NamespacedName,
+	) (*apicorev1.Secret, error) {
 		return secret, nil
 	}
 	mockHandler := &mockHandler{}
@@ -84,7 +92,9 @@ func TestReconcile_WhenGetSecretFuncReturnsSecret_HandlerManageGatewaySecretIsCa
 func TestReconcile_WhenHandlerManageGatewaySecretReturnsError_ReturnError(t *testing.T) {
 	// ARRANGE
 	secret := &apicorev1.Secret{}
-	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context,
+		name types.NamespacedName,
+	) (*apicorev1.Secret, error) {
 		return secret, nil
 	}
 	mockHandler := &mockHandler{err: errors.New("some-error")}

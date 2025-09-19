@@ -62,7 +62,13 @@ var _ = Describe("Given kyma CR with invalid module enabled", Ordered, func() {
 	})
 })
 
-func givenKymaWithModule(kcpClient client.Client, kcpKyma *v1beta2.Kyma, skrClient client.Client, remoteKyma *v1beta2.Kyma, module v1beta2.Module) error {
+func givenKymaWithModule(
+	kcpClient client.Client,
+	kcpKyma *v1beta2.Kyma,
+	skrClient client.Client,
+	remoteKyma *v1beta2.Kyma,
+	module v1beta2.Module,
+) error {
 	if err := EnableModule(ctx, skrClient, remoteKyma.GetName(), remoteKyma.GetNamespace(), module); err != nil {
 		return err
 	}

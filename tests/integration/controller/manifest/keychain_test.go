@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	ociSecretName      = "private-oci-registry-cred" //nolint: gosec // test secret
-	ociSecretNamespace = "kcp-system"                //nolint: gosec // test secret
+	ociSecretName      = "private-oci-registry-cred" //nolint:gosec // test secret
+	ociSecretNamespace = "kcp-system"                //nolint:gosec // test secret
 	repo               = "test.registry.io"
 )
 

@@ -28,7 +28,12 @@ func TestResourceRewriter(t *testing.T) {
 		require.NoError(t, err, "Unexpected error when re-writing unsupported resource kind")
 		rewrittenYAML := mustYAML(cronJobResource)
 
-		require.Equal(t, unmodifiedYAML, rewrittenYAML, "ConfigMap should not be modified") //nolint: testifylint // I want to test for equality, not for equivalence
+		require.YAMLEq(
+			t,
+			unmodifiedYAML,
+			rewrittenYAML,
+			"ConfigMap should not be modified",
+		)
 	})
 
 	t.Run("SingleContainerRewriteAll", func(t *testing.T) {
@@ -58,9 +63,18 @@ func TestResourceRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the first env var in the first container").shouldChangeFrom("value: localhost:5000/foo-image:1.2.3").to("value: private-registry.com/prod/foo-image:1.2.3"),
-			valueOf("the second env var in the first container").shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").to("value: private-registry.com/prod/bar-image:4.5.6"),
-			valueOf("the image in the first container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the first env var in the first container",
+			).shouldChangeFrom("value: localhost:5000/foo-image:1.2.3").
+				to("value: private-registry.com/prod/foo-image:1.2.3"),
+			valueOf(
+				"the second env var in the first container",
+			).shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").
+				to("value: private-registry.com/prod/bar-image:4.5.6"),
+			valueOf(
+				"the image in the first container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com/prod/template-operator:1.0.3"),
 		)
 	})
 
@@ -91,7 +105,10 @@ func TestResourceRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the image in the container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the image in the container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com/prod/template-operator:1.0.3"),
 		)
 	})
 
@@ -121,8 +138,14 @@ func TestResourceRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the second env var in the container").shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").to("value: private-registry.com/prod/bar-image:4.5.6"),
-			valueOf("the image in the container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the second env var in the container",
+			).shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").
+				to("value: private-registry.com/prod/bar-image:4.5.6"),
+			valueOf(
+				"the image in the container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com/prod/template-operator:1.0.3"),
 		)
 	})
 
@@ -154,10 +177,22 @@ func TestResourceRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the second env var in the first container").shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").to("value: private-registry.com/dev/bar-image:4.5.6"),
-			valueOf("the image in the first container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com/prod/template-operator:1.0.3"),
-			valueOf("the first env var in the second container").shouldChangeFrom("value: europe-docker.pkg.dev/second-container/env/qux-image:1.2.3").to("value: private-registry.com/prod/qux-image:1.2.3"),
-			valueOf("the image in the second container").shouldChangeFrom("image: example.com/second-container/operator-image:7.8.9").to("image: private-registry.com/stage/operator-image:7.8.9"),
+			valueOf(
+				"the second env var in the first container",
+			).shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").
+				to("value: private-registry.com/dev/bar-image:4.5.6"),
+			valueOf(
+				"the image in the first container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the first env var in the second container",
+			).shouldChangeFrom("value: europe-docker.pkg.dev/second-container/env/qux-image:1.2.3").
+				to("value: private-registry.com/prod/qux-image:1.2.3"),
+			valueOf(
+				"the image in the second container",
+			).shouldChangeFrom("image: example.com/second-container/operator-image:7.8.9").
+				to("image: private-registry.com/stage/operator-image:7.8.9"),
 		)
 	})
 
@@ -190,12 +225,30 @@ func TestResourceRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the first env var in the first container").shouldChangeFrom("value: localhost:5000/foo-image:1.2.3").to("value: private-registry.com/prod/foo-image:1.2.3"),
-			valueOf("the second env var in the first container").shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").to("value: private-registry.com/prod/bar-image:4.5.6"),
-			valueOf("the image in the first container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com/prod/template-operator:1.0.3"),
-			valueOf("the first env var in the init container").shouldChangeFrom("value: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("value: private-registry.com/prod/template-operator:1.0.3"),
-			valueOf("the second env var in the init container").shouldChangeFrom("value: example.com/myrepo/baz-image:4.5.6").to("value: very-private-registry.com/baz/baz-image:4.5.6"),
-			valueOf("the image in the init container").shouldChangeFrom("image: example.com/myrepo/init-image:1.0.0").to("image: very-private-registry.com/base/init-image:1.0.0"),
+			valueOf(
+				"the first env var in the first container",
+			).shouldChangeFrom("value: localhost:5000/foo-image:1.2.3").
+				to("value: private-registry.com/prod/foo-image:1.2.3"),
+			valueOf(
+				"the second env var in the first container",
+			).shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").
+				to("value: private-registry.com/prod/bar-image:4.5.6"),
+			valueOf(
+				"the image in the first container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the first env var in the init container",
+			).shouldChangeFrom("value: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("value: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the second env var in the init container",
+			).shouldChangeFrom("value: example.com/myrepo/baz-image:4.5.6").
+				to("value: very-private-registry.com/baz/baz-image:4.5.6"),
+			valueOf(
+				"the image in the init container",
+			).shouldChangeFrom("image: example.com/myrepo/init-image:1.0.0").
+				to("image: very-private-registry.com/base/init-image:1.0.0"),
 		)
 	})
 
@@ -233,15 +286,42 @@ func TestResourceRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the first env var in the first container").shouldChangeFrom("value: localhost:5000/foo-image:1.2.3").to("value: localhost:5123/foo-image:1.2.3"),
-			valueOf("the second env var in the first container").shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").to("value: private-registry.com/first/container/bar-image:4.5.6"),
-			valueOf("the image in the first container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com:123/first/container/template-operator:1.0.3"),
-			valueOf("the first env var in the second container").shouldChangeFrom("value: europe-docker.pkg.dev/second-container/env/qux-image:1.2.3").to("value: very-private-registry.com:123/second/container/qux-image:1.2.3"),
-			valueOf("the second env var in the second container").shouldChangeFrom("value: example.com/second-container/baz-image:4.5.6").to("value: very-private-registry.com/second/container/baz-image:4.5.6"),
-			valueOf("the image in the second container").shouldChangeFrom("image: example.com/second-container/operator-image:7.8.9").to("image: very-private-registry.com/second/container/operator-image:7.8.9"),
-			valueOf("the first env var in the init container").shouldChangeFrom("value: example.com/sql/db-image:0.3.1").to("value: really-private-registry.com/first/init-container/db-image:0.3.1"),
-			valueOf("the second env var in the init container").shouldChangeFrom("value: example.com/message/queue-impl:1.3.0").to("value: really-private-registry.com/first/init-container/queue-impl:1.3.0"),
-			valueOf("the image in the init container").shouldChangeFrom("image: example.com/somerepo/other-init-image:1.1.1").to("image: really-private-registry.com/first/init-container/other-init-image:1.1.1"),
+			valueOf(
+				"the first env var in the first container",
+			).shouldChangeFrom("value: localhost:5000/foo-image:1.2.3").
+				to("value: localhost:5123/foo-image:1.2.3"),
+			valueOf(
+				"the second env var in the first container",
+			).shouldChangeFrom("value: example.com/myrepo/bar-image:4.5.6").
+				to("value: private-registry.com/first/container/bar-image:4.5.6"),
+			valueOf(
+				"the image in the first container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com:123/first/container/template-operator:1.0.3"),
+			valueOf(
+				"the first env var in the second container",
+			).shouldChangeFrom("value: europe-docker.pkg.dev/second-container/env/qux-image:1.2.3").
+				to("value: very-private-registry.com:123/second/container/qux-image:1.2.3"),
+			valueOf(
+				"the second env var in the second container",
+			).shouldChangeFrom("value: example.com/second-container/baz-image:4.5.6").
+				to("value: very-private-registry.com/second/container/baz-image:4.5.6"),
+			valueOf(
+				"the image in the second container",
+			).shouldChangeFrom("image: example.com/second-container/operator-image:7.8.9").
+				to("image: very-private-registry.com/second/container/operator-image:7.8.9"),
+			valueOf(
+				"the first env var in the init container",
+			).shouldChangeFrom("value: example.com/sql/db-image:0.3.1").
+				to("value: really-private-registry.com/first/init-container/db-image:0.3.1"),
+			valueOf(
+				"the second env var in the init container",
+			).shouldChangeFrom("value: example.com/message/queue-impl:1.3.0").
+				to("value: really-private-registry.com/first/init-container/queue-impl:1.3.0"),
+			valueOf(
+				"the image in the init container",
+			).shouldChangeFrom("image: example.com/somerepo/other-init-image:1.1.1").
+				to("image: really-private-registry.com/first/init-container/other-init-image:1.1.1"),
 		)
 	})
 }

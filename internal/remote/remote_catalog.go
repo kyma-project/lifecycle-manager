@@ -122,7 +122,8 @@ func (c *RemoteCatalog) Delete(
 }
 
 // GetModuleReleaseMetasToSync returns a list of ModuleReleaseMetas that should be synced to the SKR.
-// A ModuleReleaseMeta is synced if it has at least one channel-version pair whose ModuleTemplate is allowed to be synced.
+// A ModuleReleaseMeta is synced if it has at least
+// one channel-version pair whose ModuleTemplate is allowed to be synced.
 func (c *RemoteCatalog) GetModuleReleaseMetasToSync(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,

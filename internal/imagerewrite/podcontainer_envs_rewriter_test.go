@@ -43,8 +43,14 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the first env var in the container").shouldChangeFrom("localhost:5000/foo-image:1.2.3").to("private-registry.com/prod/foo-image:1.2.3"),
-			valueOf("the second env var in the container").shouldChangeFrom("example.com/myrepo/bar-image:4.5.6").to("private-registry.com/stage/bar-image:4.5.6"),
+			valueOf(
+				"the first env var in the container",
+			).shouldChangeFrom("localhost:5000/foo-image:1.2.3").
+				to("private-registry.com/prod/foo-image:1.2.3"),
+			valueOf(
+				"the second env var in the container",
+			).shouldChangeFrom("example.com/myrepo/bar-image:4.5.6").
+				to("private-registry.com/stage/bar-image:4.5.6"),
 		)
 	})
 
@@ -74,7 +80,12 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 
 		// then
 		rewrittenYAML := mustYAML(deploymentResource)
-		assert.Equal(t, unmodifiedYAML, rewrittenYAML, "Expected no changes in the rewritten YAML") //nolint: testifylint // I want to test for equality, not for equivalence
+		assert.YAMLEq(
+			t,
+			unmodifiedYAML,
+			rewrittenYAML,
+			"Expected no changes in the rewritten YAML",
+		)
 	})
 
 	t.Run("RewriteSingleContainerWithoutEnvs", func(t *testing.T) {
@@ -103,6 +114,11 @@ func TestPodContainerEnvRewriter(t *testing.T) {
 
 		// then
 		rewrittenYAML := mustYAML(deploymentResource)
-		assert.Equal(t, unmodifiedYAML, rewrittenYAML, "Expected no changes in the rewritten YAML") //nolint: testifylint // I want to test for equality, not for equivalence
+		assert.YAMLEq(
+			t,
+			unmodifiedYAML,
+			rewrittenYAML,
+			"Expected no changes in the rewritten YAML",
+		)
 	})
 }

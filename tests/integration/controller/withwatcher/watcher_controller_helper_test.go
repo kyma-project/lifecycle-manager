@@ -39,7 +39,9 @@ var (
 	errVirtualServiceHostsNotMatchGateway         = errors.New("virtual service hosts not match with gateway")
 	errWatcherExistsAfterDeletion                 = errors.New("watcher CR still exists after deletion")
 	errWatcherNotReady                            = errors.New("watcher not ready")
-	errVirtualServiceOwnerReferencesNotConfigured = errors.New("virtual service does not include KLM in owner references")
+	errVirtualServiceOwnerReferencesNotConfigured = errors.New(
+		"virtual service does not include KLM in owner references",
+	)
 )
 
 func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
