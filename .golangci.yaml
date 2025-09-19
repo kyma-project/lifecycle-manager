@@ -8,6 +8,7 @@ linters:
     - nlreturn # too strict and mostly code is not more readable
     - paralleltest # should be enabled consciously for long running tests
     - recvcheck
+    - lll # revive.line-length-limit serve same purpose
     - sqlclosecheck # not needed for this project
     - wsl # too strict and mostly code is not more readable
     - wsl_v5 # too strict
@@ -170,7 +171,6 @@ linters:
           arguments:
             - 120
           severity: warning
-          disabled: true
     staticcheck:
       dot-import-whitelist:
         - github.com/onsi/ginkgo/v2

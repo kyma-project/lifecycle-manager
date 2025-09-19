@@ -248,7 +248,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
 }
 
-// Normally after all resources have been deleted, the manifest should be cleared as well. But when this happens, it might be the connection to the SKR is lost which prevents the manifest deletion, so the next step is try to evict the cache and hope the next reconciliation can determine if the skr kubeconfig secret is deleted or not. If the secret is deleted, then the manifest will be deleted as well.
+// Normally after all resources have been deleted, the manifest should be cleared as well.
+// But when this happens, it might be the connection to the SKR is lost which prevents the manifest deletion,
+// so the next step is try to evict the cache and hope the next reconciliation can determine
+// if the skr kubeconfig secret is deleted or not. If the secret is deleted, then the manifest will be deleted as well.
 func manifestUnderDeletingButNoSyncedResources(manifest *v1beta2.Manifest, current ResourceList) bool {
 	return !manifest.GetDeletionTimestamp().IsZero() && len(current) == 0
 }

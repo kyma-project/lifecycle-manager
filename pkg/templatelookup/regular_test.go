@@ -949,7 +949,8 @@ func TestTemplateNameMatch(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "When moduleName does matches and legacy label does not match, Then return true as moduleName takes precedence over label",
+			name: "When moduleName does matches and legacy label does not match," +
+				" Then return true as moduleName takes precedence over label",
 			template: v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Labels: map[string]string{

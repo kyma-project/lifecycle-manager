@@ -114,12 +114,12 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		// then
 		rewrittenYAML := mustYAML(deploymentResource)
-		assert.Equal(
+		assert.YAMLEq(
 			t,
 			unmodifiedYAML,
 			rewrittenYAML,
 			"Expected no changes in the rewritten YAML",
-		) //nolint:testifylint // I want to test for equality, not for equivalence
+		)
 	})
 
 	t.Run("RewriteSingleContainerWithoutImageAttribute", func(t *testing.T) {
@@ -147,11 +147,11 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		// then
 		rewrittenYAML := mustYAML(deploymentResource)
-		assert.Equal(
+		assert.YAMLEq(
 			t,
 			unmodifiedYAML,
 			rewrittenYAML,
 			"Expected no changes in the rewritten YAML",
-		) //nolint:testifylint // I want to test for equality, not for equivalence
+		)
 	})
 }

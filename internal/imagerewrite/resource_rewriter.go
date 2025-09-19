@@ -14,7 +14,8 @@ type ImageRewriter interface {
 	Rewrite(targetImages []*DockerImageReference, podContainer *unstructured.Unstructured) error
 }
 
-// ResourceRewriter rewrites the host and path of the images in the kubernetes resources based on the localized images specified in the manifest.
+// ResourceRewriter rewrites the host and path of the images in the kubernetes resources
+// based on the localized images specified in the manifest.
 // The target resource must represent a Kubernetes object that contains a Pod template, such as a Deployment or StatefulSet.
 // The rewriter modifies images specified in the following places:
 //   - all pod template container images
@@ -160,7 +161,9 @@ func getContainersGeneric(getNestedSliceFn func() ([]any, bool, error)) ([]*unst
 	}
 
 	if !found || len(containers) == 0 {
-		return nil, nil // No containers found: It's normal case for initContainers. For "standard" containers, it should not happen but we don't have to error out here - it's the API Server job to prevent this.
+		return nil, nil // No containers found: It's normal case for initContainers.
+		// For "standard" containers, it should not happen but we don't have to error out here -
+		// it's the API Server job to prevent this.
 	}
 
 	containerResources := make([]*unstructured.Unstructured, len(containers))

@@ -421,7 +421,8 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) func() error {
 	return func(validationFn func(*v1beta2.Manifest) error) func() error {
 		return func() error {
-			// ensure manifest is refreshed each time the function is invoked for "Eventually" assertion to work correctly.
+			// ensure manifest is refreshed each time the function is invoked 
+			// for "Eventually" assertion to work correctly.
 			manifest, err := GetManifest(ctx, kcpClient,
 				kyma.GetName(), kyma.GetNamespace(),
 				kyma.Spec.Modules[0].Name)

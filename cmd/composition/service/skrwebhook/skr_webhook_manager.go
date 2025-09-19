@@ -14,12 +14,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
-	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/renewal"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
-	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager"
+	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"

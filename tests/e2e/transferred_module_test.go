@@ -30,9 +30,16 @@ var _ = Describe("Module Transferred to Another OCI Registry", Ordered, func() {
 		// "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market" registry.
 		// Their values should be visible in the Manifest's Spec.LocalizedImages field
 		// and in the actual values in the target "template-operator-controller-manager" Deployment in the SKR.
-		rewrittenTemplateOperatorImage = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/template-operator:1.0.3@sha256:e48f087538b17336d6e84c5e276d010158a482ef823f04f296df11c9ca2a047a"
-		rewrittenKedaManagerImage      = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/keda-manager:1.7.0@sha256:43b4efb42a08ffb4d463db4a2d859d22407316a813ff2e45e34437cb218bd143"
-		rewrittenTelemetryManagerImage = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/kyma-project/prod/telemetry-manager:1.43.1@sha256:3d820e3d9e9a5a036cbde12c38ece8805558046de4b190c0cb213e9bab6bec95"
+		rewrittenTemplateOperatorImage = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/" +
+			"kyma-project/prod/template-operator:1.0.3" +
+			"@sha256:e48f087538b17336d6e84c5e276d010158a482ef823f04f296df11c9ca2a047a"
+		rewrittenKedaManagerImage = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/" +
+			"kyma-project/prod/keda-manager:1.7.0" +
+			"@sha256:43b4efb42a08ffb4d463db4a2d859d22407316a813ff2e45e34437cb218bd143"
+
+		rewrittenTelemetryManagerImage = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market/" +
+			"kyma-project/prod/telemetry-manager:1.43.1" +
+			"@sha256:3d820e3d9e9a5a036cbde12c38ece8805558046de4b190c0cb213e9bab6bec95"
 	)
 
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)

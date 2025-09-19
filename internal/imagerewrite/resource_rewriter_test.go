@@ -28,12 +28,12 @@ func TestResourceRewriter(t *testing.T) {
 		require.NoError(t, err, "Unexpected error when re-writing unsupported resource kind")
 		rewrittenYAML := mustYAML(cronJobResource)
 
-		require.Equal(
+		require.YAMLEq(
 			t,
 			unmodifiedYAML,
 			rewrittenYAML,
 			"ConfigMap should not be modified",
-		) //nolint:testifylint // I want to test for equality, not for equivalence
+		)
 	})
 
 	t.Run("SingleContainerRewriteAll", func(t *testing.T) {

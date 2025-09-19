@@ -101,7 +101,7 @@ const (
 )
 
 var (
-	buildVersion                         = "not_provided" //nolint:gochecknoglobals // used to embed static binary version during release builds
+	buildVersion                         = "not_provided" //nolint:gochecknoglobals,revive // used to embed static binary version during release builds
 	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
 	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
 )

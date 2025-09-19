@@ -18,8 +18,8 @@ type moduleReleaseMetaSyncWorker interface {
 	DeleteConcurrently(ctx context.Context, runtimeModules []v1beta2.ModuleReleaseMeta) error
 }
 
-// moduleReleaseMetaSyncWorkerFactory is a factory function for creating new moduleReleaseMetaSyncWorker instance.
-type moduleReleaseMetaSyncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker
+// mrmSyncWorkerFactory is a factory function for creating new moduleReleaseMetaSyncWorker instance.
+type mrmSyncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker
 
 // moduleReleaseMetaSyncer provides a top-level API for synchronizing ModuleReleaseMetas from KCP to SKR.
 // It expects a ready-to-use client to the KCP and SKR cluster.
@@ -27,11 +27,11 @@ type moduleReleaseMetaSyncer struct {
 	kcpClient           client.Client
 	skrClient           client.Client
 	settings            *Settings
-	syncWorkerFactoryFn moduleReleaseMetaSyncWorkerFactory
+	syncWorkerFactoryFn mrmSyncWorkerFactory
 }
 
 func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleReleaseMetaSyncer {
-	var syncWokerFactoryFn moduleReleaseMetaSyncWorkerFactory = func(kcpClient,
+	var syncWokerFactoryFn mrmSyncWorkerFactory = func(kcpClient,
 		skrClient client.Client, settings *Settings,
 	) moduleReleaseMetaSyncWorker {
 		return newModuleReleaseMetaConcurrentWorker(kcpClient, skrClient, settings)
