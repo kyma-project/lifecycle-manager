@@ -211,7 +211,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 		want                       templatelookup.ModuleTemplatesByModuleName
 	}{
 		{
-			name: "When upgrade version during channel switch, Then result contains no error, without ModuleReleaseMeta",
+			name: "When upgrade version during channel switch, " +
+				"then result contains no error, without ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).
 				WithModuleStatus(v1beta2.ModuleStatus{
@@ -777,7 +778,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			},
 		},
 		{
-			name: "When module exits in ModuleStatus only, then return expected moduleTemplateInfo, without ModuleReleaseMeta",
+			name: "When module exits in ModuleStatus only, " +
+				"then return expected moduleTemplateInfo, without ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).
 				WithModuleStatus(v1beta2.ModuleStatus{
@@ -803,7 +805,8 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			},
 		},
 		{
-			name: "When module exits in ModuleStatus only, then return expected moduleTemplateInfo, with ModuleReleaseMeta",
+			name: "When module exits in ModuleStatus only, " +
+				"then return expected moduleTemplateInfo, with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).
 				WithModuleStatus(v1beta2.ModuleStatus{
@@ -935,7 +938,8 @@ func TestTemplateNameMatch(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "When moduleName does not match and legacy label matches, Then return false as moduleName takes precedence over label",
+			name: "When moduleName does not match and legacy label matches, " +
+				"Then return false as moduleName takes precedence over label",
 			template: v1beta2.ModuleTemplate{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Labels: map[string]string{

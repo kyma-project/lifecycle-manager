@@ -158,6 +158,7 @@ linters:
         - runtime.Object
         - meta.RESTMapper
         - client.SubResourceWriter
+        - client.StatusWriter
         - openapi.Resources
         - validation.Schema
         - discovery.CachedDiscoveryInterface

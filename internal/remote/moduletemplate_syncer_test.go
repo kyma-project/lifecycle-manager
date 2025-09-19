@@ -16,9 +16,7 @@ import (
 
 // TestSyncer_SyncToSKR_happypath tests the happy path of the SyncToSKR method,
 // with some ModuleTemplates to be installed in the SKR and some modules to be deleted from the SKR.
-func TestSyncer_SyncToSKR_happypath(
-	t *testing.T,
-) { //nolint:dupl // duplication will be removed: https://github.com/kyma-project/lifecycle-manager/issues/2015
+func TestSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:dupl,revive // duplication will be removed: https://github.com/kyma-project/lifecycle-manager/issues/2015
 	// given
 	mtKCP1 := moduleTemplate("mt1", "kcp-system") // this one should be installed in the SKR, because it's not there
 	mtKCP2 := moduleTemplate("mt2", "kcp-system")

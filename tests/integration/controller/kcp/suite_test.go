@@ -167,11 +167,12 @@ var _ = BeforeSuite(func() {
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-				moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-			})),
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+				})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

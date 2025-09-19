@@ -93,7 +93,8 @@ var _ = Describe("Module Transferred to Another OCI Registry", Ordered, func() {
 				Should(Succeed())
 
 			By(
-				"And Module Operator Deployment images are re-written according to the localizedImages provided in the Manifest CR",
+				"And Module Operator Deployment images are re-written " +
+					"according to the localizedImages provided in the Manifest CR",
 			)
 			deployment, err := GetDeployment(ctx, skrClient, ModuleResourceName, TestModuleResourceNamespace)
 			Expect(err).Should(Succeed())

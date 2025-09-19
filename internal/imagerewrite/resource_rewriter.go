@@ -16,7 +16,8 @@ type ImageRewriter interface {
 
 // ResourceRewriter rewrites the host and path of the images in the kubernetes resources
 // based on the localized images specified in the manifest.
-// The target resource must represent a Kubernetes object that contains a Pod template, such as a Deployment or StatefulSet.
+// The target resource must represent a Kubernetes object that contains a Pod template,
+// such as a Deployment or StatefulSet.
 // The rewriter modifies images specified in the following places:
 //   - all pod template container images
 //   - all pod template environment variables that contain image references

@@ -1,7 +1,8 @@
 package collections
 
 // FilterInPlace modifies a slice using provided predicate function.
-// It returns a sub-slice of the input list that only contains the elements for which the predicate function returns true.
+// It returns a sub-slice of the input list that only contains the elements
+// for which the predicate function returns true.
 // Warning: This function modifies the input list!
 func FilterInPlace[E any](list []*E, predicate func(*E) bool) []*E {
 	last := 0

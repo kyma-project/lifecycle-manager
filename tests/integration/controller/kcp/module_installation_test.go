@@ -61,7 +61,7 @@ var _ = Describe("Module installation", func() {
 			}
 		},
 		Entry(
-			"Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation: true",
+			"Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation:true",
 			false,
 			false,
 			false,
@@ -69,7 +69,7 @@ var _ = Describe("Module installation", func() {
 			true,
 		),
 		Entry(
-			"Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			"Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation: false",
 			true,
 			false,
 			false,
@@ -77,7 +77,7 @@ var _ = Describe("Module installation", func() {
 			false,
 		),
 		Entry(
-			"Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			"Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation: false",
 			false,
 			true,
 			false,

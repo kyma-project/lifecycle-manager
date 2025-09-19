@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	allowedManagers           = getAllowedManagers()  //nolint:gochecknoglobals // list of managers is a global configuration
-	singletonFrequencyLimiter = newFrequencyLimiter() //nolint:gochecknoglobals // singleton cache is used to prevent emitting the same log multiple times in a short period
+	allowedManagers           = getAllowedManagers()  //nolint:gochecknoglobals,revive // list of managers is a global configuration
+	singletonFrequencyLimiter = newFrequencyLimiter() //nolint:gochecknoglobals,revive // singleton cache is used to prevent emitting the same log multiple times in a short period
 )
 
 type LogCollectorEntry struct {

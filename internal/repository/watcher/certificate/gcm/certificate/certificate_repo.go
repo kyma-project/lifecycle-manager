@@ -22,7 +22,7 @@ var (
 	ErrGCMRepoConfigKeySizeOutOfRange     = errors.New("KeySize is out of range for int32")
 	ErrInputStringNotContainValidDates    = errors.New("input string does not contain valid dates")
 	ErrCertificateStatusNotContainMessage = errors.New("certificate status does not contain message")
-	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:lll //keep regex readible
+	dateRegex                             = regexp.MustCompile(`valid from (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC) to (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)? [+-]\d{4} UTC)`) //nolint:revive //keep regex readible
 )
 
 const regexMatchesCount = 3

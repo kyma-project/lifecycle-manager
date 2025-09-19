@@ -67,7 +67,7 @@ const (
 	DefaultWatcherResourcesPath                                         = "./skr-webhook"
 	DefaultWatcherResourceLimitsCPU                                     = "0.1"
 	DefaultWatcherResourceLimitsMemory                                  = "200Mi"
-	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1"
+	DefaultDropCrdStoredVersionMap                                      = "Manifest:v1beta1,Watcher:v1beta1,ModuleTemplate:v1beta1,Kyma:v1beta1" //nolint:revive // keep it readible
 	DefaultMetricsCleanupIntervalInMinutes                              = 15
 	DefaultMinMaintenanceWindowSize                                     = 20 * time.Minute
 	DefaultLeaderElectionLeaseDuration                                  = 180 * time.Second

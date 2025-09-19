@@ -17,7 +17,9 @@ import (
 
 func TestReconcile_WhenGetSecretFuncReturnsError_ReturnError(t *testing.T) {
 	// ARRANGE
-	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context, name types.NamespacedName) (*apicorev1.Secret, error) {
+	var stubGetterFunc istiogatewaysecret.GetterFunc = func(ctx context.Context,
+		name types.NamespacedName,
+	) (*apicorev1.Secret, error) {
 		return nil, errors.New("some-error")
 	}
 	mockHandler := &mockHandler{}
