@@ -3,14 +3,16 @@ package oci
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/v1"
+	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/static"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 )
 
 func TestNewRepository(t *testing.T) {
@@ -74,12 +76,11 @@ func TestGetConfigFile(t *testing.T) {
 		mcc := mockCraneClient{
 			configResult: []byte("mock config data"),
 		}
-		ctx := context.Background()
 		repo, err := NewRepository(nil, "europe-docker.pkg.dev/kyma-project/prod", true)
 		require.NoError(t, err)
 		repo.craneClient = &mcc
 		// when
-		configData, err := repo.GetConfigFile(ctx, "test-name", "test-version")
+		configData, err := repo.GetConfigFile(t.Context(), "test-name", "test-version")
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, []byte("mock config data"), configData)
@@ -91,14 +92,13 @@ func TestGetConfigFile(t *testing.T) {
 
 	t.Run("should return an error from KeyChain Lookup", func(t *testing.T) {
 		// given
-		ctx := context.Background()
 		repo, err := NewRepository(&errorKeyChainLookup{}, "dummy", false)
 		require.NoError(t, err)
 		// when
-		_, err = repo.GetConfigFile(ctx, "test-name", "test-version")
+		_, err = repo.GetConfigFile(t.Context(), "test-name", "test-version")
 		// then
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errKeyChain)
+		require.ErrorIs(t, err, errKeyChain)
 		assert.Contains(t, err.Error(), "failed to get keychain:")
 	})
 
@@ -108,30 +108,28 @@ func TestGetConfigFile(t *testing.T) {
 			configResult: []byte("mock config data"),
 		}
 		mkcl := &mockKeyChainLookup{}
-		ctx := context.Background()
 		repo, err := NewRepository(mkcl, "europe-docker.pkg.dev/kyma-project/prod", false)
 		require.NoError(t, err)
 		repo.craneClient = &mcc
 		assert.Nil(t, mkcl.ctx)
 		// when
-		configData, err := repo.GetConfigFile(ctx, "test-name", "test-version")
+		configData, err := repo.GetConfigFile(t.Context(), "test-name", "test-version")
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, []byte("mock config data"), configData)
-		assert.Equal(t, ctx, mkcl.ctx) // we know that the keychain lookup was called (and so used) with the given context
+		assert.Equal(t, t.Context(), mkcl.ctx) // ensure that the keychain lookup was called (and so used) with the given context
 	})
 
 	t.Run("should return an error from craneClient.Config", func(t *testing.T) {
 		// given
-		ctx := context.Background()
 		repo, err := NewRepository(nil, "europe-docker.pkg.dev/kyma-project/prod", true)
 		require.NoError(t, err)
 		repo.craneClient = &mockCraneClient{}
 		// when
-		_, err = repo.GetConfigFile(ctx, "test-name", "test-version")
+		_, err = repo.GetConfigFile(t.Context(), "test-name", "test-version")
 		// then
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errMockConfig)
+		require.ErrorIs(t, err, errMockConfig)
 		assert.Contains(t, err.Error(), "failed to get config file for ref=")
 		assert.Contains(t, err.Error(), "europe-docker.pkg.dev/kyma-project/prod/component-descriptors/test-name:test-version")
 	})
@@ -144,12 +142,11 @@ func TestPullLayer(t *testing.T) {
 			pullResult: mockLayer,
 		}
 
-		ctx := context.Background()
 		repo, err := NewRepository(nil, "europe-docker.pkg.dev/kyma-project/prod", true)
 		require.NoError(t, err)
 		repo.craneClient = &mcc
 
-		layer, err := repo.PullLayer(ctx, "test-name", "test-version", "sha256:abcdef1234567890")
+		layer, err := repo.PullLayer(t.Context(), "test-name", "test-version", "sha256:abcdef1234567890")
 		require.NoError(t, err)
 		assert.Equal(t, mockLayer, layer)
 		assert.Equal(t, "europe-docker.pkg.dev/kyma-project/prod/component-descriptors/test-name:test-version@sha256:abcdef1234567890", mcc.pullRefArg)
@@ -159,29 +156,29 @@ func TestPullLayer(t *testing.T) {
 	})
 
 	t.Run("should return an error from KeyChain Lookup", func(t *testing.T) {
-		ctx := context.Background()
 		repo, err := NewRepository(&errorKeyChainLookup{}, "europe-docker.pkg.dev/kyma-project/prod", false)
 		require.NoError(t, err)
-		_, err = repo.PullLayer(ctx, "test-name", "test-version", "sha256:abcdef1234567890")
+		_, err = repo.PullLayer(t.Context(), "test-name", "test-version", "sha256:abcdef1234567890")
 		require.Error(t, err)
 		assert.ErrorIs(t, err, errKeyChain)
 	})
 
 	t.Run("should return an error from craneClient.PullLayer", func(t *testing.T) {
-		ctx := context.Background()
 		repo, err := NewRepository(nil, "europe-docker.pkg.dev/kyma-project/prod", true)
 		require.NoError(t, err)
 		repo.craneClient = &mockCraneClient{}
-		_, err = repo.PullLayer(ctx, "test-name", "test-version", "sha256:abcdef1234567890")
+		_, err = repo.PullLayer(t.Context(), "test-name", "test-version", "sha256:abcdef1234567890")
 		require.Error(t, err)
-		assert.ErrorIs(t, err, errMockPull)
+		require.ErrorIs(t, err, errMockPull)
 		assert.Contains(t, err.Error(), "failed to pull layer for ref=")
 		assert.Contains(t, err.Error(), "europe-docker.pkg.dev/kyma-project/prod/component-descriptors/test-name:test-version@sha256:abcdef1234567890")
 	})
 }
 
-var errMockConfig = errors.New("mock config error")
-var errMockPull = errors.New("mock pull error")
+var (
+	errMockConfig = errors.New("mock config error")
+	errMockPull   = errors.New("mock pull error")
+)
 
 type mockCraneClient struct {
 	configRefArg  string
@@ -190,7 +187,7 @@ type mockCraneClient struct {
 
 	pullRefArg  string
 	pullOptsArg []crane.Option
-	pullResult  v1.Layer
+	pullResult  containerregistryv1.Layer
 }
 
 func (m *mockCraneClient) Config(ref string, opts ...crane.Option) ([]byte, error) {
@@ -202,7 +199,7 @@ func (m *mockCraneClient) Config(ref string, opts ...crane.Option) ([]byte, erro
 	return m.configResult, nil
 }
 
-func (m *mockCraneClient) PullLayer(ref string, opt ...crane.Option) (v1.Layer, error) {
+func (m *mockCraneClient) PullLayer(ref string, opt ...crane.Option) (containerregistryv1.Layer, error) {
 	m.pullRefArg = ref
 	m.pullOptsArg = opt
 	if m.pullResult == nil {
@@ -220,7 +217,7 @@ func (e *errorKeyChainLookup) Get(ctx context.Context) (authn.Keychain, error) {
 }
 
 type mockKeyChainLookup struct {
-	ctx context.Context
+	ctx context.Context //nolint:containedctx //used to verify that the mock is called with the correct context
 }
 
 func (m *mockKeyChainLookup) Get(ctx context.Context) (authn.Keychain, error) {
