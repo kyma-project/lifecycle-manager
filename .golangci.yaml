@@ -183,7 +183,7 @@ linters:
             - 120
           severity: warning
           exclude:
-            - "**/*_types.go"
+            - "**/api/**/*_types.go"
     staticcheck:
       dot-import-whitelist:
         - github.com/onsi/ginkgo/v2
