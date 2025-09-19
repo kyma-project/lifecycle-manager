@@ -545,7 +545,8 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 		want      templatelookup.ModuleTemplatesByModuleName
 	}{
 		{
-			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error, without ModuleReleaseMeta",
+			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error, " +
+				"without ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).Build(),
 			mrmExists: false,
@@ -557,7 +558,8 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 			},
 		},
 		{
-			name: "When module exits in ModuleStatus only, then return ModuleTemplatesByModuleName with error, without ModuleReleaseMeta",
+			name: "When module exits in ModuleStatus only, then return ModuleTemplatesByModuleName with error," +
+				"without ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    testModule.Name,
@@ -577,7 +579,8 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 			},
 		},
 		{
-			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error, with ModuleReleaseMeta",
+			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error," +
+				"with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).Build(),
 			mrmExists: true,
@@ -589,7 +592,8 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 			},
 		},
 		{
-			name: "When module exits in ModuleStatus only, then return ModuleTemplatesByModuleName with error, with ModuleReleaseMeta",
+			name: "When module exits in ModuleStatus only, then return ModuleTemplatesByModuleName with error," +
+				"with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
 				WithModuleStatus(v1beta2.ModuleStatus{
 					Name:    testModule.Name,

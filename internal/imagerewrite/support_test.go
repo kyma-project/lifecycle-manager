@@ -75,7 +75,8 @@ const testDeploymentTwoContainers = testDeploymentSingleContainerWithEnvs + `
         imagePullPolicy: Always
 `
 
-// testDeploymentWithInitContainer is a deployment with a single container and an init container, both having environment variables set.
+// testDeploymentWithInitContainer is a deployment with a single container and an init container,
+// both having environment variables set.
 const testDeploymentWithInitContainer = testDeploymentSingleContainerWithEnvs + `
       initContainers:
       - name: init-container
@@ -96,7 +97,8 @@ const testDeploymentWithInitContainer = testDeploymentSingleContainerWithEnvs + 
         imagePullPolicy: Always
 `
 
-// testDeploymentTwoContainersWithInitContainer is a deployment with two containers and an init container, all having environment variables set.
+// testDeploymentTwoContainersWithInitContainer is a deployment with two containers and an init container,
+// all having environment variables set.
 const testDeploymentTwoContainersWithInitContainer = testDeploymentTwoContainers + `
       initContainers:
       - name: init-container
@@ -167,7 +169,8 @@ spec:
           restartPolicy: OnFailure
 `
 
-// changesComparator is used to make comparison between original and rewritten object in a YAML format easier. It compares YAMLs line-by-line, assuming that the overall structure is identical.
+// changesComparator is used to make comparison between original and rewritten object in a YAML format easier.
+// It compares YAMLs line-by-line, assuming that the overall structure is identical.
 type changesComparator struct {
 	t              *testing.T
 	originalLines  []string
@@ -255,7 +258,8 @@ func (c *changesComparator) verify(expectedChanges ...(func() *changeDefiner)) {
 	}
 }
 
-// changeDefiner is used to "register" a change to be verified later on. The API allows to define a change in a readable, DSL way.
+// changeDefiner is used to "register" a change to be verified later on.
+// The API allows to define a change in a readable, DSL way.
 type changeDefiner struct {
 	description           string
 	shouldChangeFromValue string
@@ -311,7 +315,8 @@ func mustYAML(obj *unstructured.Unstructured) string {
 	return nlnl(string(yamlData))
 }
 
-// diffLines compares two slices of strings line by line and returns the indices of lines that differ. Both slices must have the same length.
+// diffLines compares two slices of strings line by line and returns the indices of lines that differ.
+// Both slices must have the same length.
 func diffLines(lines1, lines2 []string) []int {
 	if len(lines1) != len(lines2) {
 		panic(fmt.Sprintf("line counts do not match: %d vs %d", len(lines1), len(lines2)))
@@ -348,7 +353,8 @@ func setFirstContainer(
 	return imagerewrite.SetPodContainers(deployment, containers)
 }
 
-// reorder is a helper function to reorder the input slice to reduce the likelihood that the order of elements matters in the test.
+// reorder is a helper function to reorder the input slice to
+// reduce the likelihood that the order of elements matters in the test.
 func reorder(seed int, input []string) []string {
 	for i := range input {
 		firstIndex := i

@@ -53,12 +53,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	_ "ocm.software/ocm/api/ocm"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -164,12 +164,14 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:        true,
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		RemoteCatalog:        remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory, flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-			moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-		})),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+				moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+			})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

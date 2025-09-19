@@ -70,7 +70,7 @@ type FallbackDefault bool
  */
 func GetMaintenancePolicy(pool map[string]*[]byte, name string) (*MaintenanceWindowPolicy, error) {
 	if name == "" {
-		return nil, nil //nolint: nilnil //changing that now would break the API
+		return nil, nil //nolint:nilnil //changing that now would break the API
 	}
 
 	extName := name + ".json"

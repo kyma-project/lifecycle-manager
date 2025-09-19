@@ -33,7 +33,7 @@ func TestResourceRewriter(t *testing.T) {
 			unmodifiedYAML,
 			rewrittenYAML,
 			"ConfigMap should not be modified",
-		) //nolint: testifylint // I want to test for equality, not for equivalence
+		) //nolint:testifylint // I want to test for equality, not for equivalence
 	})
 
 	t.Run("SingleContainerRewriteAll", func(t *testing.T) {

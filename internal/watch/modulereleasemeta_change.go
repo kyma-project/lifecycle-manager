@@ -76,8 +76,8 @@ func (m TypedModuleReleaseMetaEventHandler[object, request]) Update(ctx context.
 	requeueKymas(rli, affectedKymas)
 }
 
-// DiffModuleReleaseMetaChannels determines the difference between the old and new ModuleReleaseMeta channels. It returns
-// a map of the channels that have been updated or added.
+// DiffModuleReleaseMetaChannels determines the difference between the old and new ModuleReleaseMeta channels.
+// It returns a map of the channels that have been updated or added.
 func DiffModuleReleaseMetaChannels(
 	oldModuleReleaseMeta, newModuleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) map[string]v1beta2.ChannelVersionAssignment {

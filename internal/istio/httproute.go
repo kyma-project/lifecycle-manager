@@ -32,7 +32,7 @@ func NewHTTPRoute(watcher *v1beta2.Watcher) (*istioapiv1beta1.HTTPRoute, error) 
 					Port: &istioapiv1beta1.PortSelector{
 						Number: uint32(
 							watcher.Spec.ServiceInfo.Port,
-						), //nolint: gosec // see validation of port range below
+						), //nolint:gosec // see validation of port range below
 					},
 				},
 			},

@@ -585,13 +585,13 @@ func TestCertificateManager_GetSkrCertificateSecretData(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			c := certificate.NewService(
+			cert := certificate.NewService(
 				&renewalServiceStub{},
 				testCase.fields.certClient,
 				testCase.fields.secretRepo,
 				testCase.fields.config,
 			)
-			got, err := c.GetSkrCertificateSecretData(t.Context(), testCase.kymaName)
+			got, err := cert.GetSkrCertificateSecretData(t.Context(), testCase.kymaName)
 			if !testCase.wantErr(t, err) {
 				return
 			}

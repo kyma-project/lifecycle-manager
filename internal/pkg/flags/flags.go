@@ -383,7 +383,8 @@ func (f FlagVar) Validate() error {
 	}
 
 	if !map[int]bool{
-		2048: false, // 2048 is a valid value for cert-manager, but explicitly prohibited as not compliant to security requirements
+		2048: false, // 2048 is a valid value for cert-manager,
+		// but explicitly prohibited as not compliant to security requirements
 		4096: true,
 		8192: false, // see https://github.com/kyma-project/lifecycle-manager/issues/1793
 	}[f.SelfSignedCertKeySize] {

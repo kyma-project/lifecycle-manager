@@ -133,7 +133,8 @@ func (r *Runner) doUpdateWithStrategy(ctx context.Context, owner string, module 
 	if module.Enabled {
 		return r.patchManifest(ctx, owner, newManifest)
 	}
-	// For disabled module, the manifest CR is under deleting, in this case, we only update the spec when it's still not deleted.
+	// For disabled module, the manifest CR is under deleting, in this case,
+	// we only update the spec when it's still not deleted.
 	if err := r.updateAvailableManifestSpec(ctx, manifestInCluster, newManifest); err != nil && !util.IsNotFound(err) {
 		return err
 	}

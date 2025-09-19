@@ -254,7 +254,8 @@ func Test_CertificateClient_GetValidity_NoValidDatesError(t *testing.T) {
 func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) {
 	expectedNotAfter := time.Now().Add(certDuration).UTC()
 	certificateStateMessage := fmt.Sprintf(
-		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from 2025-04-24 13:60:60.148938 +0000 UTC to %v",
+		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from "+
+			"2025-04-24 13:60:60.148938 +0000 UTC to %v",
 		expectedNotAfter,
 	)
 
@@ -272,7 +273,8 @@ func Test_CertificateClient_GetValidity_InvalidNotBeforeDateError(t *testing.T) 
 func Test_CertificateClient_GetValidity_InvalidNotAfterDateError(t *testing.T) {
 	expectedNotBefore := time.Now().Add(certDuration).UTC()
 	certificateStateMessage := fmt.Sprintf(
-		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to 2025-04-24 13:60:60.148938 +0000 UTC",
+		"certificate (SN 3A:7F:23:4B:12:98:D4:00:1C:2A:BB:77:AC:E3:F1:54) valid from %v to "+
+			"2025-04-24 13:60:60.148938 +0000 UTC",
 		expectedNotBefore,
 	)
 

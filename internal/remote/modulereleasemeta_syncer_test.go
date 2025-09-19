@@ -171,7 +171,8 @@ func (f *fakeModuleReleaseMetaSyncWorker) SyncConcurrently(
 ) error {
 	f.onSyncConcurrently(ctx, kcpModules)
 
-	// Simulate namespace switch on modules in kcpModules list that happens in moduleReleaseMetaConcurrentWorker.SyncConcurrently
+	// Simulate namespace switch on modules in kcpModules list that happens in
+	// moduleReleaseMetaConcurrentWorker.SyncConcurrently
 	// This is necessary for proper diff calculation later in the process.
 	for i := range kcpModules {
 		prepareModuleReleaseMetaForSSA(&kcpModules[i], f.namespace)

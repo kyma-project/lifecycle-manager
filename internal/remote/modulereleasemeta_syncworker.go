@@ -27,7 +27,8 @@ type moduleReleaseMetaConcurrentWorker struct {
 	createCRD  func(ctx context.Context) error
 }
 
-// newModuleReleaseMetaConcurrentWorker returns a new moduleReleaseMetaConcurrentWorker instance with default dependencies.
+// newModuleReleaseMetaConcurrentWorker returns a new moduleReleaseMetaConcurrentWorker
+// instance with default dependencies.
 func newModuleReleaseMetaConcurrentWorker(
 	kcpClient, skrClient client.Client,
 	settings *Settings,

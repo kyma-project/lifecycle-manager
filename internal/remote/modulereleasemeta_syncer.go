@@ -31,7 +31,9 @@ type moduleReleaseMetaSyncer struct {
 }
 
 func newModuleReleaseMetaSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleReleaseMetaSyncer {
-	var syncWokerFactoryFn moduleReleaseMetaSyncWorkerFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleReleaseMetaSyncWorker {
+	var syncWokerFactoryFn moduleReleaseMetaSyncWorkerFactory = func(kcpClient,
+		skrClient client.Client, settings *Settings,
+	) moduleReleaseMetaSyncWorker {
 		return newModuleReleaseMetaConcurrentWorker(kcpClient, skrClient, settings)
 	}
 
