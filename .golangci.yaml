@@ -183,8 +183,7 @@ linters:
             - 120
           severity: warning
           exclude:
-            - .*/moduletemplate_types.go
-            - ./v1beta2/.*_types.go
+            - "**/*_types.go"
     staticcheck:
       dot-import-whitelist:
         - github.com/onsi/ginkgo/v2
