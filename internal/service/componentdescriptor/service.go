@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	MaxDescriptorSizeBytes      = 100 * 1024 // 100KiB
-	TarReadChunkSize            = 1024       // 1KiB
+	MaxDescriptorSizeBytes      = 100 * 1024 // 100KiB, our average is around 4KiB
+	TarReadChunkSize            = 10 * 1024  // 10KiB, for our average size we'll read it in one go
 	ComponentDescriptorFileName = "component-descriptor.yaml"
 )
 
@@ -28,6 +28,7 @@ var (
 	ErrLayerNil         = errors.New("ComponentDescriptorLayer is nil in ComponentDescriptorConfig")
 	ErrLayerDigestEmpty = errors.New("ComponentDescriptorLayer.Digest is empty in ComponentDescriptorConfig")
 	ErrNotFoundInTar    = errors.New("not found in TAR archive")
+	ErrTarTooLarge      = errors.New("entry in the TAR archive is too large")
 )
 
 type OCIRepository interface {
@@ -35,14 +36,8 @@ type OCIRepository interface {
 	PullLayer(ctx context.Context, name, tag, digest string) (containerregistryv1.Layer, error)
 }
 
-// Helper interface to simplify logic.
-type FileExtractor interface {
-	ExtractFile(layer containerregistryv1.Layer, fileName string) ([]byte, error)
-}
-
 type Service struct {
 	ociRepository OCIRepository
-	fileExtractor FileExtractor
 }
 
 func NewService(ociRepository OCIRepository) (*Service, error) {
@@ -52,7 +47,6 @@ func NewService(ociRepository OCIRepository) (*Service, error) {
 
 	return &Service{
 		ociRepository: ociRepository,
-		fileExtractor: &defaultFileExtractor{},
 	}, nil
 }
 
@@ -95,7 +89,7 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 			ocmi.Name(), ocmi.Version(), string(compDescLayerDigest), err)
 	}
 
-	compdescBytes, err := s.fileExtractor.ExtractFile(layer, ComponentDescriptorFileName)
+	compdescBytes, err := extractFile(layer, ComponentDescriptorFileName)
 	if err != nil {
 		return nil,
 			fmt.Errorf("failed to extract component descriptor from layer fetched from %s with digest=%q: %w",
@@ -112,29 +106,30 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 	}, nil
 }
 
-type defaultFileExtractor struct{}
+func extractFile(layer containerregistryv1.Layer, fileName string) ([]byte, error) {
+	wrap := func(err error) error {
+		digest, derr := layer.Digest()
+		if derr != nil {
+			err = errors.Join(err, derr)
+		}
+		return fmt.Errorf("failed to extract data of file=%q from TAR archive in a layer with digest=%q: %w",
+			fileName, digest, err)
+	}
 
-func (d *defaultFileExtractor) ExtractFile(layer containerregistryv1.Layer, fileName string) ([]byte, error) {
 	layerReader, err := layer.Uncompressed()
 	if err != nil {
-		return nil, err //nolint:wrapcheck // let the caller wrap
+		return nil, wrap(err)
 	}
 	defer layerReader.Close()
 
 	layerBytes, err := io.ReadAll(layerReader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read layer data: %w", err)
+		return nil, wrap(err)
 	}
 
 	compdescBytes, err := unTar(layerBytes, fileName)
 	if err != nil {
-		digest, derr := layer.Digest()
-		if derr != nil {
-			err = errors.Join(err, derr)
-		}
-		return nil,
-			fmt.Errorf("failed to extract data from TAR archive for file=%q in layer with digest=%q: %w",
-				fileName, digest, err)
+		return nil, wrap(err)
 	}
 
 	return compdescBytes, nil
@@ -142,6 +137,10 @@ func (d *defaultFileExtractor) ExtractFile(layer containerregistryv1.Layer, file
 
 // unTar extracts the file with expectedName from the given tarBytes and returns its content.
 func unTar(tarBytes []byte, expectedName string) ([]byte, error) {
+	if len(tarBytes) == 0 {
+		return nil, ErrInvalidArg
+	}
+
 	treader := tar.NewReader(bytes.NewReader(tarBytes))
 
 	for {
@@ -157,9 +156,12 @@ func unTar(tarBytes []byte, expectedName string) ([]byte, error) {
 			var buf bytes.Buffer
 			maxSize := hdr.Size
 			if maxSize <= 0 {
-				maxSize = MaxDescriptorSizeBytes // use default max if size is not set or invalid
+				maxSize = MaxDescriptorSizeBytes // sanity
 			}
-			for buf.Len() < int(maxSize) {
+			if maxSize > MaxDescriptorSizeBytes { // DoS protection
+				return nil, fmt.Errorf("%s %w", expectedName, ErrTarTooLarge)
+			}
+			for buf.Len() < int(maxSize) { // DoS protection: read in chunks
 				if _, err := io.CopyN(&buf, treader, TarReadChunkSize); err != nil {
 					if errors.Is(err, io.EOF) {
 						break

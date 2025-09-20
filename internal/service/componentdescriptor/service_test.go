@@ -19,11 +19,13 @@ import (
 )
 
 const (
-	testComponentName            = "kyma-project.io/test-component"
-	testComponentVersion         = "0.1.2"
-	componentDescriptorMediaType = "application/vnd.ocm.software.component-descriptor.v2+yaml+tar"
-	testHostRef                  = "k3d-kcp-registry.localhost:5000"
-	testDigest                   = "sha256:4e51d8f80b88bdbd208e6e22314376a0d5212026bf3054f8ef79d43250e5182b"
+	testComponentName             = "kyma-project.io/test-component"
+	testComponentVersion          = "0.1.2"
+	componentDescriptorMediaType  = "application/vnd.ocm.software.component-descriptor.v2+yaml+tar"
+	testDigest                    = "sha256:4e51d8f80b88bdbd208e6e22314376a0d5212026bf3054f8ef79d43250e5182b"
+	testComponentDescriptorConfig = `{"componentDescriptorLayer":{"mediaType":"application/vnd.ocm.software.component-descriptor.v2+yaml+tar","digest":"` + testDigest + `","size":4608}}`
+	invalidConfigNullLayer        = `{"componentDescriptorLayer":null}`
+	invalidConfigNoDigest         = `{"componentDescriptorLayer":{"mediaType":"application/vnd.ocm.software.component-descriptor.v2+yaml+tar","size":4608}}`
 )
 
 func TestNewService(t *testing.T) {
@@ -212,7 +214,8 @@ func TestGetComponentDescriptor(t *testing.T) {
 		assert.Nil(t, result)
 		require.ErrorIs(t, err, componentdescriptor.ErrNotFoundInTar)
 		assert.Contains(t, err.Error(), "not found in TAR archive")
-		assert.Contains(t, err.Error(), "failed to extract data from TAR archive")
+		assert.Contains(t, err.Error(), "failed to extract data of file=\""+
+			componentdescriptor.ComponentDescriptorFileName+"\"")
 	})
 
 	t.Run("should fail on component descriptor decoding error", func(t *testing.T) {
@@ -277,12 +280,6 @@ func (m *mockOCIRepository) PullLayer(ctx context.Context, name, tag, digest str
 	}
 	return m.pullLayerResult, nil
 }
-
-const (
-	testComponentDescriptorConfig = `{"componentDescriptorLayer":{"mediaType":"application/vnd.ocm.software.component-descriptor.v2+yaml+tar","digest":"sha256:4e51d8f80b88bdbd208e6e22314376a0d5212026bf3054f8ef79d43250e5182b","size":4608}}`
-	invalidConfigNullLayer        = `{"componentDescriptorLayer":null}`
-	invalidConfigNoDigest         = `{"componentDescriptorLayer":{"mediaType":"application/vnd.ocm.software.component-descriptor.v2+yaml+tar","size":4608}}`
-)
 
 func wrapAsTar(t *testing.T, fileName string, data []byte) []byte {
 	t.Helper()
