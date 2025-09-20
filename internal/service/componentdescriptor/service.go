@@ -140,7 +140,6 @@ func unTar(tarBytes []byte, expectedName string) ([]byte, error) {
 	if len(tarBytes) == 0 {
 		return nil, ErrInvalidArg
 	}
-
 	treader := tar.NewReader(bytes.NewReader(tarBytes))
 
 	for {
