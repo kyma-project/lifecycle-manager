@@ -7,16 +7,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
-	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
-	"ocm.software/ocm/api/ocm/compdesc"
-	"ocm.software/ocm/api/ocm/compdesc/versions/v2"
-
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/static"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"ocm.software/ocm/api/ocm/compdesc"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
-	"github.com/google/go-containerregistry/pkg/v1/static"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
+	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 )
 
 const (
@@ -39,8 +38,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestGetComponentDescriptor(t *testing.T) {
-
-	compdesc.RegisterScheme(&v2.DescriptorVersion{})
+	compdesc.RegisterScheme(&compdescv2.DescriptorVersion{})
 
 	t.Run("should return component descriptor", func(t *testing.T) {
 		// given
@@ -52,7 +50,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		repo := mockOCIRepository{
 			getConfigResult: []byte(testComponentDescriptorConfig),
-			pullLayerResult:  mockLayer,
+			pullLayerResult: mockLayer,
 		}
 
 		svc, err := componentdescriptor.NewService(&repo)
@@ -66,8 +64,8 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		// then
 		require.NoError(t, err)
-		assert.Equal(t, testComponentName, result.ComponentDescriptor.GetName())
-		assert.Equal(t, testComponentVersion, result.ComponentDescriptor.GetVersion())
+		assert.Equal(t, testComponentName, result.GetName())
+		assert.Equal(t, testComponentVersion, result.GetVersion())
 		assert.Equal(t, testComponentVersion, repo.getConfigTag)
 		assert.Equal(t, testComponentName, repo.getConfigName)
 		assert.Equal(t, testComponentVersion, repo.pullLayerTag)
@@ -126,7 +124,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 	t.Run("should fail when config object has null layer", func(t *testing.T) {
 		repo := mockOCIRepository{
 			getConfigResult: []byte(invalidConfigNullLayer),
-			pullLayerResult:  nil,
+			pullLayerResult: nil,
 		}
 
 		svc, err := componentdescriptor.NewService(&repo)
@@ -139,15 +137,16 @@ func TestGetComponentDescriptor(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.Nil(t, result)
+		require.ErrorIs(t, err, componentdescriptor.ErrLayerNil)
 		assert.Contains(t, err.Error(), "ComponentDescriptorLayer is nil in ComponentDescriptorConfig")
 	})
 
 	t.Run("should fail when config object has no digest", func(t *testing.T) {
 		repo := mockOCIRepository{
 			getConfigResult: []byte(invalidConfigNoDigest),
-			pullLayerResult:  nil,
+			pullLayerResult: nil,
 		}
-		
+
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
 		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
@@ -155,13 +154,13 @@ func TestGetComponentDescriptor(t *testing.T) {
 		// when
 		result, err := svc.GetComponentDescriptor(t.Context(), *ocmi)
 		// then
-		require.Error(t, err)
 		assert.Nil(t, result)
+		require.Error(t, err)
+		require.ErrorIs(t, err, componentdescriptor.ErrLayerDigestEmpty)
 		assert.Contains(t, err.Error(), "ComponentDescriptorLayer.Digest is empty in ComponentDescriptorConfig")
 	})
 
 	t.Run("should fail when pulling layer returns an error", func(t *testing.T) {
-
 		// given
 		repo := mockOCIRepository{
 			getConfigResult: []byte(testComponentDescriptorConfig),
@@ -186,10 +185,9 @@ func TestGetComponentDescriptor(t *testing.T) {
 		assert.Contains(t, err.Error(), "pullLayerError")
 	})
 
-
 	t.Run("should fail when tar archive doesn't contain expected file", func(t *testing.T) {
 		cd := compdesc.New(testComponentName, testComponentVersion)
-		compdesc.RegisterScheme(&v2.DescriptorVersion{})
+		compdesc.RegisterScheme(&compdescv2.DescriptorVersion{})
 		cdBytes, err := compdesc.Encode(cd)
 		require.NoError(t, err)
 		tarBytes := wrapAsTar(t, "invalid-name", cdBytes)
@@ -197,7 +195,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		repo := mockOCIRepository{
 			getConfigResult: []byte(testComponentDescriptorConfig),
-			pullLayerResult:  mockLayer,
+			pullLayerResult: mockLayer,
 		}
 
 		svc, err := componentdescriptor.NewService(&repo)
@@ -212,13 +210,15 @@ func TestGetComponentDescriptor(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.Nil(t, result)
+		require.ErrorIs(t, err, componentdescriptor.ErrNotFoundInTar)
+		assert.Contains(t, err.Error(), "not found in TAR archive")
 		assert.Contains(t, err.Error(), "failed to extract data from TAR archive")
 	})
 
 	t.Run("should fail on component descriptor decoding error", func(t *testing.T) {
 		// given
 		cd := compdesc.New(testComponentName, testComponentVersion)
-		compdesc.RegisterScheme(&v2.DescriptorVersion{})
+		compdesc.RegisterScheme(&compdescv2.DescriptorVersion{})
 		cdBytes, err := compdesc.Encode(cd)
 		require.NoError(t, err)
 		// introduce an error
@@ -228,7 +228,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		repo := mockOCIRepository{
 			getConfigResult: []byte(testComponentDescriptorConfig),
-			pullLayerResult:  mockLayer,
+			pullLayerResult: mockLayer,
 		}
 
 		svc, err := componentdescriptor.NewService(&repo)
@@ -253,10 +253,10 @@ type mockOCIRepository struct {
 	pullLayerName   string
 	pullLayerTag    string
 	pullLayerDigest string
-	getConfigResult    []byte
-	getConfigError error
-	pullLayerResult     containerregistryv1.Layer
-	pullLayerError error
+	getConfigResult []byte
+	getConfigError  error
+	pullLayerResult containerregistryv1.Layer
+	pullLayerError  error
 }
 
 func (m *mockOCIRepository) GetConfigFile(ctx context.Context, name, tag string) ([]byte, error) {
@@ -285,18 +285,19 @@ const (
 )
 
 func wrapAsTar(t *testing.T, fileName string, data []byte) []byte {
+	t.Helper()
 	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
-	err := tw.WriteHeader(&tar.Header{
+	twriter := tar.NewWriter(&buf)
+	err := twriter.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeReg,
 		Name:     fileName,
 		Size:     int64(len(data)),
-		Mode:     0600,
+		Mode:     0o600,
 	})
 	require.NoError(t, err)
-	_, err = tw.Write(data)
+	_, err = twriter.Write(data)
 	require.NoError(t, err)
-	err = tw.Close()
+	err = twriter.Close()
 	require.NoError(t, err)
 	return buf.Bytes()
 }

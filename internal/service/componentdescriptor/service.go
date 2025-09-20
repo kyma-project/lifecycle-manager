@@ -7,22 +7,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"io"
-	"ocm.software/ocm/api/ocm/compdesc"
 
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
-
+	"ocm.software/ocm/api/ocm/compdesc"
 	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 )
 
 const (
+	MaxDescriptorSizeBytes      = 100 * 1024 // 100KiB
+	TarReadChunkSize            = 1024       // 1KiB
 	ComponentDescriptorFileName = "component-descriptor.yaml"
 )
 
 var (
-	ErrInvalidArg = errors.New("invalid argument")
+	ErrInvalidArg       = errors.New("invalid argument")
+	ErrLayerNil         = errors.New("ComponentDescriptorLayer is nil in ComponentDescriptorConfig")
+	ErrLayerDigestEmpty = errors.New("ComponentDescriptorLayer.Digest is empty in ComponentDescriptorConfig")
+	ErrNotFoundInTar    = errors.New("not found in TAR archive")
 )
 
 type OCIRepository interface {
@@ -30,7 +35,7 @@ type OCIRepository interface {
 	PullLayer(ctx context.Context, name, tag, digest string) (containerregistryv1.Layer, error)
 }
 
-// Helper interface to simplify testing
+// Helper interface to simplify logic.
 type FileExtractor interface {
 	ExtractFile(layer containerregistryv1.Layer, fileName string) ([]byte, error)
 }
@@ -52,10 +57,8 @@ func NewService(ociRepository OCIRepository) (*Service, error) {
 }
 
 func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
-
-	//{"componentDescriptorLayer":{"mediaType":"application/vnd.ocm.software.component-descriptor.v2+yaml+tar","digest":"sha256:4e51d8f80b88bdbd208e6e22314376a0d5212026bf3054f8ef79d43250e5182b","size":4608}}
-	//ref := fmt.Sprintf("k3d-kcp-registry.localhost:5000/component-descriptors/%s:%s", name, version)
-
+	// {"componentDescriptorLayer":{"mediaType":"application/vnd.ocm.software.component-descriptor.v2+yaml+tar","digest":"sha256:4e51d8f80b88bdbd208e6e22314376a0d5212026bf3054f8ef79d43250e5182b","size":4608}}
+	// ref := fmt.Sprintf("k3d-kcp-registry.localhost:5000/component-descriptors/%s:%s", name, version)
 	commonErrMsg := func() string {
 		return fmt.Sprintf("ocm artifact with name=%q and version=%q",
 			ocmi.Name(), ocmi.Version())
@@ -77,15 +80,13 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 	}
 
 	if ocmArtifactConfig.ComponentDescriptorLayer == nil {
-		return nil, fmt.Errorf("ComponentDescriptorLayer is nil in ComponentDescriptorConfig for %s",
-			commonErrMsg())
+		return nil, fmt.Errorf("%w for %s", ErrLayerNil, commonErrMsg())
 	}
 
 	compDescLayerDigest := ocmArtifactConfig.ComponentDescriptorLayer.Digest
 	if string(compDescLayerDigest) == "" {
 		return nil,
-			fmt.Errorf("ComponentDescriptorLayer.Digest is empty in ComponentDescriptorConfig for %s",
-				commonErrMsg())
+			fmt.Errorf("%w for %s", ErrLayerDigestEmpty, commonErrMsg())
 	}
 
 	layer, err := s.ociRepository.PullLayer(ctx, ocmi.Name(), ocmi.Version(), string(compDescLayerDigest))
@@ -100,22 +101,20 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 			fmt.Errorf("failed to extract component descriptor from layer fetched from %s with digest=%q: %w",
 				commonErrMsg(), string(compDescLayerDigest), err)
 	}
-	cd, err := compdesc.Decode(compdescBytes)
+	descriptor, err := compdesc.Decode(compdescBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode component descriptor fetched from %s: %w",
 			commonErrMsg(), err)
 	}
 
 	return &types.Descriptor{
-		ComponentDescriptor: cd,
+		ComponentDescriptor: descriptor,
 	}, nil
 }
 
-type defaultFileExtractor struct {
-}
+type defaultFileExtractor struct{}
 
 func (d *defaultFileExtractor) ExtractFile(layer containerregistryv1.Layer, fileName string) ([]byte, error) {
-
 	layerReader, err := layer.Uncompressed()
 	if err != nil {
 		return nil, err //nolint:wrapcheck // let the caller wrap
@@ -143,25 +142,35 @@ func (d *defaultFileExtractor) ExtractFile(layer containerregistryv1.Layer, file
 
 // unTar extracts the file with expectedName from the given tarBytes and returns its content.
 func unTar(tarBytes []byte, expectedName string) ([]byte, error) {
-	tr := tar.NewReader(bytes.NewReader(tarBytes))
+	treader := tar.NewReader(bytes.NewReader(tarBytes))
 
 	for {
-		hdr, err := tr.Next()
+		hdr, err := treader.Next()
 		if err == io.EOF {
 			break // end of archive
 		}
 		if err != nil {
-			return nil, err
+			return nil, err //nolint:wrapcheck // will be wrapped by caller
 		}
 
 		if hdr.Name == expectedName {
 			var buf bytes.Buffer
-			if _, err := io.Copy(&buf, tr); err != nil {
-				return nil, err
+			maxSize := hdr.Size
+			if maxSize <= 0 {
+				maxSize = MaxDescriptorSizeBytes // use default max if size is not set or invalid
 			}
+			for buf.Len() < int(maxSize) {
+				if _, err := io.CopyN(&buf, treader, TarReadChunkSize); err != nil {
+					if errors.Is(err, io.EOF) {
+						break
+					}
+					return nil, err //nolint:wrapcheck // will be wrapped by caller
+				}
+			}
+
 			return buf.Bytes(), nil
 		}
 	}
 
-	return nil, fmt.Errorf("%s not found in TAR archive", expectedName)
+	return nil, fmt.Errorf("%s %w", expectedName, ErrNotFoundInTar)
 }
