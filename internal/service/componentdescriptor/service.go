@@ -20,7 +20,7 @@ import (
 const (
 	MaxDescriptorSizeBytes      = 100 * 1024 // 100KiB, our average is around 4KiB
 	TarReadChunkSize            = 10 * 1024  // 10KiB, for our average size we'll read it in one go
-	ComponentDescriptorFileName = "component-descriptor.yaml"
+	ComponentDescriptorFileName = compdesc.ComponentDescriptorFileName
 )
 
 var (
@@ -29,6 +29,7 @@ var (
 	ErrLayerDigestEmpty = errors.New("ComponentDescriptorLayer.Digest is empty in ComponentDescriptorConfig")
 	ErrNotFoundInTar    = errors.New("not found in TAR archive")
 	ErrTarTooLarge      = errors.New("entry in the TAR archive is too large")
+	ErrLayerEmpty       = errors.New("layer content is empty")
 )
 
 type OCIRepository interface {
@@ -51,8 +52,6 @@ func NewService(ociRepository OCIRepository) (*Service, error) {
 }
 
 func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
-	// {"componentDescriptorLayer":{"mediaType":"application/vnd.ocm.software.component-descriptor.v2+yaml+tar","digest":"sha256:4e51d8f80b88bdbd208e6e22314376a0d5212026bf3054f8ef79d43250e5182b","size":4608}}
-	// ref := fmt.Sprintf("k3d-kcp-registry.localhost:5000/component-descriptors/%s:%s", name, version)
 	commonErrMsg := func() string {
 		return fmt.Sprintf("ocm artifact with name=%q and version=%q",
 			ocmi.Name(), ocmi.Version())
@@ -65,7 +64,6 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 	}
 
 	ocmArtifactConfig := genericocireg.ComponentDescriptorConfig{}
-
 	err = json.Unmarshal(configBytes, &ocmArtifactConfig)
 	if err != nil {
 		return nil,
@@ -89,7 +87,8 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 			ocmi.Name(), ocmi.Version(), string(compDescLayerDigest), err)
 	}
 
-	compdescBytes, err := extractFile(layer, ComponentDescriptorFileName)
+	ioh := &defaultExtractFileIOHelper{readAllFunc: io.ReadAll}
+	compdescBytes, err := extractFile(ioh, layer, ComponentDescriptorFileName)
 	if err != nil {
 		return nil,
 			fmt.Errorf("failed to extract component descriptor from layer fetched from %s with digest=%q: %w",
@@ -106,7 +105,13 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 	}, nil
 }
 
-func extractFile(layer containerregistryv1.Layer, fileName string) ([]byte, error) {
+// SimplifiedLayer represents only necessary part of containerregistryv1.Layer to simplify testing.
+type SimplifiedLayer interface {
+	Digest() (containerregistryv1.Hash, error)
+	Uncompressed() (io.ReadCloser, error)
+}
+
+func extractFile(ioh extractFileIOHelper, layer SimplifiedLayer, fileName string) ([]byte, error) {
 	wrap := func(err error) error {
 		digest, derr := layer.Digest()
 		if derr != nil {
@@ -122,12 +127,17 @@ func extractFile(layer containerregistryv1.Layer, fileName string) ([]byte, erro
 	}
 	defer layerReader.Close()
 
-	layerBytes, err := io.ReadAll(layerReader)
+	layerBytes, err := ioh.ReadAll(layerReader)
 	if err != nil {
 		return nil, wrap(err)
 	}
 
-	compdescBytes, err := unTar(layerBytes, fileName)
+	if len(layerBytes) == 0 {
+		return nil, wrap(ErrLayerEmpty)
+	}
+
+	tarIOh := &defaultUntarIOHelper{tarReader: tar.NewReader(bytes.NewReader(layerBytes))}
+	compdescBytes, err := unTar(tarIOh, fileName)
 	if err != nil {
 		return nil, wrap(err)
 	}
@@ -135,20 +145,27 @@ func extractFile(layer containerregistryv1.Layer, fileName string) ([]byte, erro
 	return compdescBytes, nil
 }
 
-// unTar extracts the file with expectedName from the given tarBytes and returns its content.
-func unTar(tarBytes []byte, expectedName string) ([]byte, error) {
-	if len(tarBytes) == 0 {
-		return nil, ErrInvalidArg
-	}
-	treader := tar.NewReader(bytes.NewReader(tarBytes))
+type extractFileIOHelper interface {
+	ReadAll(r io.Reader) ([]byte, error) // Reads all data from the reader
+}
 
+type defaultExtractFileIOHelper struct {
+	readAllFunc func(r io.Reader) ([]byte, error)
+}
+
+func (d *defaultExtractFileIOHelper) ReadAll(r io.Reader) ([]byte, error) {
+	return d.readAllFunc(r)
+}
+
+// unTar extracts the file with expectedName from the given tarBytes and returns its content.
+func unTar(ioh untarIoHelper, expectedName string) ([]byte, error) {
 	for {
-		hdr, err := treader.Next()
-		if err == io.EOF {
+		hdr, err := ioh.Next()
+		if errors.Is(err, io.EOF) {
 			break // end of archive
 		}
 		if err != nil {
-			return nil, err //nolint:wrapcheck // will be wrapped by caller
+			return nil, err
 		}
 
 		if hdr.Name == expectedName {
@@ -161,11 +178,11 @@ func unTar(tarBytes []byte, expectedName string) ([]byte, error) {
 				return nil, fmt.Errorf("%s %w", expectedName, ErrTarTooLarge)
 			}
 			for buf.Len() < int(maxSize) { // DoS protection: read in chunks
-				if _, err := io.CopyN(&buf, treader, TarReadChunkSize); err != nil {
+				if _, err := ioh.CopyN(&buf, TarReadChunkSize); err != nil {
 					if errors.Is(err, io.EOF) {
 						break
 					}
-					return nil, err //nolint:wrapcheck // will be wrapped by caller
+					return nil, err
 				}
 			}
 
@@ -174,4 +191,22 @@ func unTar(tarBytes []byte, expectedName string) ([]byte, error) {
 	}
 
 	return nil, fmt.Errorf("%s %w", expectedName, ErrNotFoundInTar)
+}
+
+// untarIoHelper abstracts the methods of tar.Reader and io package used in unTar function, for better testability.
+type untarIoHelper interface {
+	Next() (*tar.Header, error)                              // tar.Reader.Next()
+	CopyN(dst io.Writer, n int64) (written int64, err error) // modified io.CopyN()
+}
+
+type defaultUntarIOHelper struct {
+	tarReader *tar.Reader
+}
+
+func (d *defaultUntarIOHelper) Next() (*tar.Header, error) {
+	return d.tarReader.Next() //nolint:wrapcheck // this helper should be transparent
+}
+
+func (d *defaultUntarIOHelper) CopyN(dst io.Writer, n int64) (int64, error) {
+	return io.CopyN(dst, d.tarReader, n) //nolint:wrapcheck // this helper should be transparent
 }
