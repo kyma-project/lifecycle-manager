@@ -42,6 +42,7 @@ var (
 )
 
 const (
+	// PodRestartLabelKey is used to trigger a rolling update of the watcher pod when the SKR's certificate secret changes
 	PodRestartLabelKey             = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
 	kcpAddressEnvName              = "KCP_ADDR"
 	ApiServerNetworkPolicyName     = "kyma-project.io--watcher-to-apiserver"
@@ -138,7 +139,8 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 	return deployment, nil
 }
 
-func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstructured) (*apinetworkv1.NetworkPolicy,
+func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstructured) (
+	*apinetworkv1.NetworkPolicy,
 	error,
 ) {
 	networkPolicy := &apinetworkv1.NetworkPolicy{}
