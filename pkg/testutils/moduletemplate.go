@@ -33,11 +33,7 @@ func GetModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) (*v1beta2.ModuleTemplate, error) {
-	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		moduletemplateinfolookup.NewByVersionStrategy(clnt),
-		moduletemplateinfolookup.NewByChannelStrategy(clnt),
-		moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(clnt),
-	})
+	moduleTemplateInfoLookup := moduletemplateinfolookup.New(clnt)
 	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}
@@ -47,7 +43,7 @@ func GetModuleTemplate(ctx context.Context,
 		return nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
 	}
 
-	templateInfo := moduleTemplateInfoLookupStrategies.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
+	templateInfo := moduleTemplateInfoLookup.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
 
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
