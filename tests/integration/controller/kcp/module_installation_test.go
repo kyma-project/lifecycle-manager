@@ -25,7 +25,8 @@ import (
 const moduleVersion = "1.1.1-e2e-test"
 
 var _ = Describe("Module installation", func() {
-	DescribeTable("Verify module installation for different beta/internal configurations",
+	DescribeTable(
+		"Verify module installation for different beta/internal configurations",
 		func(moduleBeta, moduleInternal, kymaBeta, kymaInternal, shouldHaveInstallation bool) {
 			kymaName := "installation-test-kyma-" + random.Name()
 			moduleName := "installation-test-module-" + random.Name()
@@ -53,43 +54,123 @@ var _ = Describe("Module installation", func() {
 				Eventually(expectInstallation, Timeout, Interval).WithArguments(kymaName, moduleName).Should(Succeed())
 			} else {
 				// we use Consistently here as the installation may require multiple reconciliation runs to be installed
-				// otherwise, we may get a false positive after the first reconciliation where no module is installed yet, but in a consecutive run it will be
+				// otherwise, we may get a false positive after the first reconciliation 
+				// where no module is installed yet, but in a consecutive run it will be
 				Consistently(expectNoInstallation, Timeout, Interval).WithArguments(kymaName,
 					moduleName).Should(Succeed())
 			}
 		},
-		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation: true",
-			false, false, false, false, true),
-		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
-			true, false, false, false, false),
-		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
-			false, true, false, false, false),
-		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
-			false, false, true, false, true),
-		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
-			false, false, false, true, true),
-		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
-			true, true, false, false, false),
-		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
-			true, false, true, false, true),
-		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
-			true, false, false, true, false),
-		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
-			true, true, true, false, false),
-		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
-			true, true, false, true, false),
+		Entry(
+			"Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation:true",
+			false,
+			false,
+			false,
+			false,
+			true,
+		),
+		Entry(
+			"Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: false}; Expect Installation: false",
+			true,
+			false,
+			false,
+			false,
+			false,
+		),
+		Entry(
+			"Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation: false",
+			false,
+			true,
+			false,
+			false,
+			false,
+		),
+		Entry(
+			"Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
+			false,
+			false,
+			true,
+			false,
+			true,
+		),
+		Entry(
+			"Given Module{Beta: false, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
+			false,
+			false,
+			false,
+			true,
+			true,
+		),
+		Entry(
+			"Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: false}; Expect Installation:  false",
+			true,
+			true,
+			false,
+			false,
+			false,
+		),
+		Entry(
+			"Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: false}; Expect Installation:  true",
+			true,
+			false,
+			true,
+			false,
+			true,
+		),
+		Entry(
+			"Given Module{Beta: true, Internal: false}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
+			true,
+			false,
+			false,
+			true,
+			false,
+		),
+		Entry(
+			"Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
+			true,
+			true,
+			true,
+			false,
+			false,
+		),
+		Entry(
+			"Given Module{Beta: true, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  false",
+			true,
+			true,
+			false,
+			true,
+			false,
+		),
 		Entry("Given Module{Beta: true, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
 			true, true, true, true, true),
-		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
-			false, true, true, false, false),
-		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
-			false, true, false, true, true),
-		Entry("Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
-			false, false, true, true, true),
+		Entry(
+			"Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: false}; Expect Installation:  false",
+			false,
+			true,
+			true,
+			false,
+			false,
+		),
+		Entry(
+			"Given Module{Beta: false, Internal: true}; Kyma{Beta: false, Internal: true}; Expect Installation:  true",
+			false,
+			true,
+			false,
+			true,
+			true,
+		),
+		Entry(
+			"Given Module{Beta: false, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
+			false,
+			false,
+			true,
+			true,
+			true,
+		),
 		Entry("Given Module{Beta: false, Internal: true}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
 			false, true, true, true, true),
 		Entry("Given Module{Beta: true, Internal: false}; Kyma{Beta: true, Internal: true}; Expect Installation:  true",
-			true, false, true, true, true))
+			true, false, true, true, true),
+	)
 })
 
 func configureKCPKyma(kymaName string, beta, internal bool) error {

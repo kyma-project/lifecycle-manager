@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	allowedManagers           = getAllowedManagers()  //nolint:gochecknoglobals // list of managers is a global configuration
-	singletonFrequencyLimiter = newFrequencyLimiter() //nolint:gochecknoglobals // singleton cache is used to prevent emitting the same log multiple times in a short period
+	allowedManagers           = getAllowedManagers()  //nolint:gochecknoglobals,revive // list of managers is a global configuration
+	singletonFrequencyLimiter = newFrequencyLimiter() //nolint:gochecknoglobals,revive // singleton cache is used to prevent emitting the same log multiple times in a short period
 )
 
 type LogCollectorEntry struct {
@@ -121,7 +121,8 @@ func (c *LogCollector) safeAddEntry(entry LogCollectorEntry) {
 	c.entries = append(c.entries, entry)
 }
 
-// compressAndBase64 compresses the input byte slice using gzip and encodes it to base64 so that it can be logged as a string.
+// compressAndBase64 compresses the input byte slice using gzip and encodes it to base64
+// so that it can be logged as a string.
 func compressAndBase64(in []byte) (string, error) {
 	var buf bytes.Buffer
 	archive := gzip.NewWriter(&buf)
@@ -142,7 +143,8 @@ func isUnknownManager(manager string) bool {
 	return !slices.Contains(allowedManagers, manager)
 }
 
-// allowedManagers returns either a list configured in the KLM_RECONCILECONFIG_KNOWN_MANAGERS environment variable or the default list.
+// allowedManagers returns either a list configured in the
+// KLM_RECONCILECONFIG_KNOWN_MANAGERS environment variable or the default list.
 // The values must be separated by semicolons and are case-sensitive!
 func getAllowedManagers() []string {
 	configured := os.Getenv(knownManagersEnvVar)

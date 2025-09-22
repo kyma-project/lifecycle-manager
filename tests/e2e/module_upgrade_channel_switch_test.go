@@ -1,13 +1,13 @@
 package e2e_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
@@ -96,7 +96,9 @@ var _ = Describe("Module Upgrade By Channel Switch", Ordered, func() {
 		})
 
 		It("Then Module stay in newer version", func() {
-			expectedErrorMessage := "module template update not allowed: ignore channel skew (from fast to regular), as a higher version (2.4.2-e2e-test) of the module was previously installed"
+			expectedErrorMessage := "module template update not allowed: " +
+				"ignore channel skew (from fast to regular), " +
+				"as a higher version (2.4.2-e2e-test) of the module was previously installed"
 
 			Eventually(ModuleCRExists).
 				WithContext(ctx).

@@ -101,7 +101,7 @@ const (
 )
 
 var (
-	buildVersion                         = "not_provided" //nolint:gochecknoglobals // used to embed static binary version during release builds
+	buildVersion                         = "not_provided" //nolint:gochecknoglobals,revive // used to embed static binary version during release builds
 	errFailedToDropStoredVersions        = errors.New("failed to drop stored versions")
 	errFailedToScheduleMetricsCleanupJob = errors.New("failed to schedule metrics cleanup job")
 )
@@ -124,8 +124,10 @@ func main() {
 
 	flagVar := flags.DefineFlagVar()
 	flag.Parse()
-	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
-		zapcore.Lock(os.Stdout)))
+	ctrl.SetLogger(
+		log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
+			zapcore.Lock(os.Stdout)),
+	)
 	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -381,12 +383,14 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies([]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-		moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
-		moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
-		moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
-	})
+	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+			moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
+			moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
+			moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
+		},
+	)
 
 	kcpClient := mgr.GetClient()
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)

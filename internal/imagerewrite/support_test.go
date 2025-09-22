@@ -75,7 +75,8 @@ const testDeploymentTwoContainers = testDeploymentSingleContainerWithEnvs + `
         imagePullPolicy: Always
 `
 
-// testDeploymentWithInitContainer is a deployment with a single container and an init container, both having environment variables set.
+// testDeploymentWithInitContainer is a deployment with a single container and an init container,
+// both having environment variables set.
 const testDeploymentWithInitContainer = testDeploymentSingleContainerWithEnvs + `
       initContainers:
       - name: init-container
@@ -96,7 +97,8 @@ const testDeploymentWithInitContainer = testDeploymentSingleContainerWithEnvs + 
         imagePullPolicy: Always
 `
 
-// testDeploymentTwoContainersWithInitContainer is a deployment with two containers and an init container, all having environment variables set.
+// testDeploymentTwoContainersWithInitContainer is a deployment with two containers and an init container,
+// all having environment variables set.
 const testDeploymentTwoContainersWithInitContainer = testDeploymentTwoContainers + `
       initContainers:
       - name: init-container
@@ -167,7 +169,8 @@ spec:
           restartPolicy: OnFailure
 `
 
-// changesComparator is used to make comparison between original and rewritten object in a YAML format easier. It compares YAMLs line-by-line, assuming that the overall structure is identical.
+// changesComparator is used to make comparison between original and rewritten object in a YAML format easier.
+// It compares YAMLs line-by-line, assuming that the overall structure is identical.
 type changesComparator struct {
 	t              *testing.T
 	originalLines  []string
@@ -178,7 +181,14 @@ type changesComparator struct {
 
 func newChangesComparator(t *testing.T, originalLines, rewrittenLines []string) *changesComparator {
 	t.Helper()
-	require.Len(t, originalLines, len(rewrittenLines), "Original lines count (%d) should equal the rewritten lines count (%d)", len(originalLines), len(rewrittenLines))
+	require.Len(
+		t,
+		originalLines,
+		len(rewrittenLines),
+		"Original lines count (%d) should equal the rewritten lines count (%d)",
+		len(originalLines),
+		len(rewrittenLines),
+	)
 
 	return &changesComparator{
 		originalLines:  originalLines,
@@ -192,11 +202,31 @@ func newChangesComparator(t *testing.T, originalLines, rewrittenLines []string) 
 func (c *changesComparator) verify(expectedChanges ...(func() *changeDefiner)) {
 	definersCount := len(expectedChanges)
 	changesCount := len(c.differences)
-	require.Len(c.t, expectedChanges, changesCount, "The number of registered changes (%d) must be equal to the number of differences between lines (%d)", definersCount, changesCount)
+	require.Len(
+		c.t,
+		expectedChanges,
+		changesCount,
+		"The number of registered changes (%d) must be equal to the number of differences between lines (%d)",
+		definersCount,
+		changesCount,
+	)
 
 	for _, lineNumber := range c.differences {
-		require.GreaterOrEqual(c.t, lineNumber, 0, "The difference position %d should be greater than or equal to 0", lineNumber)
-		require.Less(c.t, lineNumber, len(c.originalLines), "The difference position %d should be less than the number of lines in comparison (%d)", lineNumber, len(c.originalLines))
+		require.GreaterOrEqual(
+			c.t,
+			lineNumber,
+			0,
+			"The difference position %d should be greater than or equal to 0",
+			lineNumber,
+		)
+		require.Less(
+			c.t,
+			lineNumber,
+			len(c.originalLines),
+			"The difference position %d should be less than the number of lines in comparison (%d)",
+			lineNumber,
+			len(c.originalLines),
+		)
 	}
 
 	for i, cd := range expectedChanges {
@@ -207,12 +237,29 @@ func (c *changesComparator) verify(expectedChanges ...(func() *changeDefiner)) {
 		originalValueShouldContain := changeDefiner.shouldChangeFromValue
 		rewrittenValueShouldContain := changeDefiner.toValue
 
-		assert.Contains(c.t, originalLine, originalValueShouldContain, "Problem with %s\n: => Original line %q does not contain the configured value: %q", changeDefiner.description, originalLine, originalValueShouldContain)
-		assert.Contains(c.t, rewrittenLine, rewrittenValueShouldContain, "Problem with %s\n: => Rewriten line %q does not contain the configured value: %q", changeDefiner.description, rewrittenLine, rewrittenValueShouldContain)
+		assert.Contains(
+			c.t,
+			originalLine,
+			originalValueShouldContain,
+			"Problem with %s\n: => Original line %q does not contain the configured value: %q",
+			changeDefiner.description,
+			originalLine,
+			originalValueShouldContain,
+		)
+		assert.Contains(
+			c.t,
+			rewrittenLine,
+			rewrittenValueShouldContain,
+			"Problem with %s\n: => Rewriten line %q does not contain the configured value: %q",
+			changeDefiner.description,
+			rewrittenLine,
+			rewrittenValueShouldContain,
+		)
 	}
 }
 
-// changeDefiner is used to "register" a change to be verified later on. The API allows to define a change in a readable, DSL way.
+// changeDefiner is used to "register" a change to be verified later on.
+// The API allows to define a change in a readable, DSL way.
 type changeDefiner struct {
 	description           string
 	shouldChangeFromValue string
@@ -268,7 +315,8 @@ func mustYAML(obj *unstructured.Unstructured) string {
 	return nlnl(string(yamlData))
 }
 
-// diffLines compares two slices of strings line by line and returns the indices of lines that differ. Both slices must have the same length.
+// diffLines compares two slices of strings line by line and returns the indices of lines that differ.
+// Both slices must have the same length.
 func diffLines(lines1, lines2 []string) []int {
 	if len(lines1) != len(lines2) {
 		panic(fmt.Sprintf("line counts do not match: %d vs %d", len(lines1), len(lines2)))
@@ -293,7 +341,11 @@ func getFirstContainer(t *testing.T, deployment *unstructured.Unstructured) *uns
 }
 
 // setFirstContainer replaces the first container in a deployment-like resource with the provided container.
-func setFirstContainer(t *testing.T, deployment *unstructured.Unstructured, container *unstructured.Unstructured) error {
+func setFirstContainer(
+	t *testing.T,
+	deployment *unstructured.Unstructured,
+	container *unstructured.Unstructured,
+) error {
 	t.Helper()
 	containers, err := imagerewrite.GetPodContainers(deployment)
 	require.NoError(t, err, "Failed to get containers from deployment resource")
@@ -301,7 +353,8 @@ func setFirstContainer(t *testing.T, deployment *unstructured.Unstructured, cont
 	return imagerewrite.SetPodContainers(deployment, containers)
 }
 
-// reorder is a helper function to reorder the input slice to reduce the likelihood that the order of elements matters in the test.
+// reorder is a helper function to reorder the input slice to
+// reduce the likelihood that the order of elements matters in the test.
 func reorder(seed int, input []string) []string {
 	for i := range input {
 		firstIndex := i

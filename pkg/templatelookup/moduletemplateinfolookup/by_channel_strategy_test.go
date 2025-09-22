@@ -173,8 +173,12 @@ func Test_ByChannelStrategy_Lookup_WhenMoreThanOneModuleTemplateFound(t *testing
 
 	require.NotNil(t, moduleTemplateInfo)
 	require.Nil(t, moduleTemplateInfo.ModuleTemplate)
-	require.ErrorContains(t, moduleTemplateInfo.Err,
-		"no unique template could be identified: more than one module template found for module: test-module, candidates: [test-module-regular test-module-regular-2]")
+	require.ErrorContains(
+		t,
+		moduleTemplateInfo.Err,
+		"no unique template could be identified: more than one module template found for module: test-module, "+
+			"candidates: [test-module-regular test-module-regular-2]",
+	)
 }
 
 func Test_ByChannelStrategy_Lookup_WhenModuleTemplateHasNoChannel(t *testing.T) {

@@ -43,7 +43,12 @@ func (s Service) GetAccessSecretByKyma(ctx context.Context, kymaName string) (*a
 	}
 
 	if len(kubeConfigSecretList.Items) < 1 {
-		return nil, fmt.Errorf("failed to find the secret with label %s=%s: %w", shared.KymaName, kymaName, ErrAccessSecretNotFound)
+		return nil, fmt.Errorf(
+			"failed to find the secret with label %s=%s: %w",
+			shared.KymaName,
+			kymaName,
+			ErrAccessSecretNotFound,
+		)
 	}
 
 	if len(kubeConfigSecretList.Items) > 1 {

@@ -18,8 +18,8 @@ type moduleTemplateSyncWorker interface {
 	DeleteConcurrently(ctx context.Context, runtimeModules []v1beta2.ModuleTemplate) error
 }
 
-// moduleTemplateSyncWorkerFactory is a factory function for creating new moduleTemplateSyncWorker instance.
-type moduleTemplateSyncWorkerFactory func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker
+// moduleTemplateSyncWorkerFunc is a factory function for creating new moduleTemplateSyncWorker instance.
+type moduleTemplateSyncWorkerFunc func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker
 
 // moduleTemplateSyncer provides a top-level API for synchronizing ModuleTemplates from KCP to SKR.
 // It expects a ready-to-use client to the KCP and SKR cluster.
@@ -27,11 +27,13 @@ type moduleTemplateSyncer struct {
 	kcpClient           client.Client
 	skrClient           client.Client
 	settings            *Settings
-	syncWorkerFactoryFn moduleTemplateSyncWorkerFactory
+	syncWorkerFactoryFn moduleTemplateSyncWorkerFunc
 }
 
 func newModuleTemplateSyncer(kcpClient, skrClient client.Client, settings *Settings) *moduleTemplateSyncer {
-	var syncWokerFactoryFn moduleTemplateSyncWorkerFactory = func(kcpClient, skrClient client.Client, settings *Settings) moduleTemplateSyncWorker {
+	var syncWokerFactoryFn moduleTemplateSyncWorkerFunc = func(kcpClient,
+		skrClient client.Client, settings *Settings,
+	) moduleTemplateSyncWorker {
 		return newModuleTemplateConcurrentWorker(kcpClient, skrClient, settings)
 	}
 

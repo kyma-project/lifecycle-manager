@@ -14,12 +14,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 	secretrepository "github.com/kyma-project/lifecycle-manager/internal/repository/secret"
-	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate"
+	certmanagercertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/certmanager/certificate" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/config"
 	gcmcertificate "github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/certificate"
 	"github.com/kyma-project/lifecycle-manager/internal/repository/watcher/certificate/gcm/renewal"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
-	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager"
+	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/gcm"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/gateway"
@@ -28,8 +28,12 @@ import (
 )
 
 var (
-	errUnresolvedKcpAddress              = errors.New("failed to resolve KCP address, please check the gateway configuration")
-	errCertificateManagementNotSupported = errors.New("certificate management not supported, please check the certificate management configuration")
+	errUnresolvedKcpAddress = errors.New(
+		"failed to resolve KCP address, please check the gateway configuration",
+	)
+	errCertificateManagementNotSupported = errors.New(
+		"certificate management not supported, please check the certificate management configuration",
+	)
 )
 
 func ComposeSkrWebhookManager(kcpClient client.Client,

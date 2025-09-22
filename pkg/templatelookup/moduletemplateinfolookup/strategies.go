@@ -29,7 +29,9 @@ type ModuleTemplateInfoLookupStrategies struct {
 	strategies []ModuleTemplateInfoLookupStrategy
 }
 
-func NewModuleTemplateInfoLookupStrategies(strategies []ModuleTemplateInfoLookupStrategy) ModuleTemplateInfoLookupStrategies {
+func NewModuleTemplateInfoLookupStrategies(
+	strategies []ModuleTemplateInfoLookupStrategy,
+) ModuleTemplateInfoLookupStrategies {
 	return ModuleTemplateInfoLookupStrategies{strategies: strategies}
 }
 

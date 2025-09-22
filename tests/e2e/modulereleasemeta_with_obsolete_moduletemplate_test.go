@@ -16,8 +16,11 @@ var _ = Describe("ModuleReleaseMeta With Obsolete ModuleTemplate", Ordered, func
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
-	expectedErrorMessage := fmt.Sprintf("failed to get module template: ModuleTemplate.operator.kyma-project.io \"%s-%s\" not found",
-		module.Name, ModuleVersionToBeUsed)
+	expectedErrorMessage := fmt.Sprintf(
+		"failed to get module template: ModuleTemplate.operator.kyma-project.io \"%s-%s\" not found",
+		module.Name,
+		ModuleVersionToBeUsed,
+	)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)

@@ -64,8 +64,10 @@ var _ = Describe("Kyma module control", Ordered, func() {
 		kymaName = kyma.GetName()
 	})
 
-	DescribeTable("Test Manifests",
-		func(givenCondition func(client.Client, string, string) error, expectedBehavior func(client.Client, string, string) error) {
+	DescribeTable(
+		"Test Manifests",
+		func(givenCondition func(client.Client, string, string) error, 
+		expectedBehavior func(client.Client, string, string) error) {
 			Eventually(givenCondition, Timeout, Interval).
 				WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace()).
 				Should(Succeed())

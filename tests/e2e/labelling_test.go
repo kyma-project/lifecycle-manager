@@ -18,9 +18,11 @@ import (
 
 var (
 	managedSkrResources = map[types.NamespacedName]schema.GroupVersionKind{
-		{Name: "default", Namespace: RemoteNamespace}:         v1beta2.GroupVersion.WithKind("Kyma"),
-		{Name: "skr-webhook", Namespace: RemoteNamespace}:     apiappsv1.SchemeGroupVersion.WithKind("Deployment"),
-		{Name: "skr-webhook", Namespace: RemoteNamespace}:     admissionregistrationv1.SchemeGroupVersion.WithKind("ValidatingWebhookConfiguration"),
+		{Name: "default", Namespace: RemoteNamespace}:     v1beta2.GroupVersion.WithKind("Kyma"),
+		{Name: "skr-webhook", Namespace: RemoteNamespace}: apiappsv1.SchemeGroupVersion.WithKind("Deployment"),
+		{Name: "skr-webhook", Namespace: RemoteNamespace}: admissionregistrationv1.SchemeGroupVersion.WithKind(
+			"ValidatingWebhookConfiguration",
+		),
 		{Name: "skr-webhook-tls", Namespace: RemoteNamespace}: apicorev1.SchemeGroupVersion.WithKind("Secret"),
 		{Name: RemoteNamespace, Namespace: ""}:                apicorev1.SchemeGroupVersion.WithKind("Namespace"),
 	}

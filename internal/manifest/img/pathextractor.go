@@ -37,7 +37,11 @@ func NewPathExtractor() *PathExtractor {
 	return &PathExtractor{fileMutexCache: filemutex.NewMutexCache(nil)}
 }
 
-func (p PathExtractor) GetPathFromRawManifest(ctx context.Context, imageSpec v1beta2.ImageSpec, keyChain authn.Keychain) (string, error) {
+func (p PathExtractor) GetPathFromRawManifest(
+	ctx context.Context,
+	imageSpec v1beta2.ImageSpec,
+	keyChain authn.Keychain,
+) (string, error) {
 	switch imageSpec.Type {
 	case v1beta2.OciRefType:
 		return p.GetPathForFetchedLayer(ctx, imageSpec, keyChain, string(v1beta2.RawManifestLayer)+".yaml")

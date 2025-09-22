@@ -70,7 +70,7 @@ type FallbackDefault bool
  */
 func GetMaintenancePolicy(pool map[string]*[]byte, name string) (*MaintenanceWindowPolicy, error) {
 	if name == "" {
-		return nil, nil //nolint: nilnil //changing that now would break the API
+		return nil, nil //nolint:nilnil //changing that now would break the API
 	}
 
 	extName := name + ".json"
@@ -205,7 +205,7 @@ func (mws *MaintenanceWindows) LookupAvailable(opts *resolveOptions) *ResolvedWi
 }
 
 type MaintenancePolicyMatch struct {
-	GlobalAccountID Regexp `json:"globalAccountID,omitempty"` //nolint:tagliatelle //changing that now would break the API
+	GlobalAccountID Regexp `json:"globalAccountID,omitempty"` //nolint:tagliatelle,revive //changing that now would break the API
 	Plan            Regexp `json:"plan,omitempty"`
 	Region          Regexp `json:"region,omitempty"`
 	PlatformRegion  Regexp `json:"platformRegion,omitempty"`
@@ -234,7 +234,7 @@ func (mpm MaintenancePolicyMatch) Match(runtime *Runtime) bool {
 		"GlobalAccountID", "Plan",
 		"Region", "PlatformRegion",
 	} {
-		rexp := reflect.Indirect(reflect.ValueOf(mpm)).FieldByName(field).Interface().(Regexp) //nolint:forcetypeassert //we know it's a Regexp
+		rexp := reflect.Indirect(reflect.ValueOf(mpm)).FieldByName(field).Interface().(Regexp) //nolint:forcetypeassert,revive //we know it's a Regexp
 		if !rexp.IsValid() {
 			continue
 		}

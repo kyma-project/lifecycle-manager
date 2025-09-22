@@ -29,7 +29,11 @@ func TestRemoveCRFinalizer_WhenGivenManifestWithFinalizer_FinalizerShouldBeRemov
 	require.ErrorIs(t, err, finalizer.ErrRequeueRequired)
 
 	updatedManifest := &v1beta2.Manifest{}
-	err = kcpClient.Get(t.Context(), types.NamespacedName{Name: manifest.Name, Namespace: manifest.Namespace}, updatedManifest)
+	err = kcpClient.Get(
+		t.Context(),
+		types.NamespacedName{Name: manifest.Name, Namespace: manifest.Namespace},
+		updatedManifest,
+	)
 	require.NoError(t, err)
 	assert.NotContains(t, updatedManifest.GetFinalizers(), finalizer.CustomResourceManagerFinalizer)
 

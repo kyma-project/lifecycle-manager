@@ -147,7 +147,9 @@ func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstr
 	}
 
 	if networkPolicy.GetObjectMeta().GetName() == ApiServerNetworkPolicyName {
-		kcpPortInt := intstr.FromInt32(int32(rc.kcpAddress.Port)) //nolint:gosec // G115: this is not a security sensitive code, just a port number
+		kcpPortInt := intstr.FromInt32(
+			int32(rc.kcpAddress.Port), //nolint:gosec // G115: this is not a security sensitive code, just a port number
+		)
 		networkProtocol := apicorev1.ProtocolTCP
 
 		egressRule := []apinetworkv1.NetworkPolicyEgressRule{

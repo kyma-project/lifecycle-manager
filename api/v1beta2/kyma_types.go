@@ -67,7 +67,8 @@ type Module struct {
 	// Name is a unique identifier of the module.
 	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
 	//
-	// Name can only be the ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
+	// Name can only be the ModuleName label value of the module-template,
+	// e.g. operator.kyma-project.io/module-name=my-module
 	Name string `json:"name"`
 
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
@@ -85,7 +86,8 @@ type Module struct {
 	// Version is the desired version of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on this specific version.
 	// The Version and Channel are mutually exclusive options.
-	// The regular expression come from here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	// The regular expression come from here:
+	// https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
 	// json:"-" to disable installation of specific versions until decided to roll this out
 	// see https://github.com/kyma-project/lifecycle-manager/issues/1847
 	Version string `json:"-"`

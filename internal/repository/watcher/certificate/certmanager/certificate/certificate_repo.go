@@ -29,7 +29,11 @@ type Repository struct {
 	certConfig config.CertificateValues
 }
 
-func NewRepository(kcpClient client.Client, issuerName string, certConfig config.CertificateValues) (*Repository, error) {
+func NewRepository(
+	kcpClient client.Client,
+	issuerName string,
+	certConfig config.CertificateValues,
+) (*Repository, error) {
 	if certConfig.Namespace == "" {
 		return nil, certerror.ErrCertRepoConfigNamespace
 	}
