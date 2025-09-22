@@ -28,7 +28,7 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 	for _, moduleTemplate := range mandatoryModuleTemplateList.Items {
 		if moduleTemplate.DeletionTimestamp.IsZero() {
 			currentModuleTemplate := &moduleTemplate
-			moduleName := GetModuleName(currentModuleTemplate)
+			moduleName := moduleTemplate.Spec.ModuleName
 			if mandatoryModules[moduleName] != nil {
 				var err error
 				currentModuleTemplate, err = GetModuleTemplateWithHigherVersion(currentModuleTemplate,
@@ -50,54 +50,34 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 	return mandatoryModules, nil
 }
 
-func GetModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
-	if moduleTemplate.Spec.ModuleName != "" {
-		return moduleTemplate.Spec.ModuleName
+func getModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Version, error) {
+	if moduleTemplate.Spec.Version == "" {
+		return nil, fmt.Errorf("module template %s does not have a version", moduleTemplate.Name)
 	}
 
-	// https://github.com/kyma-project/lifecycle-manager/issues/2135
-	// Remove this after warden ModuleTemplate is created using modulectl
-	return moduleTemplate.Labels[shared.ModuleName]
-}
-
-func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Version, error) {
-	if moduleTemplate.Spec.Version != "" {
-		version, err := semver.NewVersion(moduleTemplate.Spec.Version)
-		if err != nil {
-			return nil, fmt.Errorf("could not parse version as a semver: %s: %w",
-				moduleTemplate.Spec.Version, err)
-		}
-		return version, nil
-	}
-
-	// https://github.com/kyma-project/lifecycle-manager/issues/2135
-	// Remove this after warden ModuleTemplate is created using modulectl
-	version, err := semver.NewVersion(moduleTemplate.Annotations[shared.ModuleVersionAnnotation])
+	version, err := semver.NewVersion(moduleTemplate.Spec.Version)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse version as a semver %s: %w",
-			moduleTemplate.Annotations[shared.ModuleVersionAnnotation], err)
+		return nil, fmt.Errorf("could not parse version as a semver: %s: %w",
+			moduleTemplate.Spec.Version, err)
 	}
 	return version, nil
+
 }
 
-func GetModuleTemplateWithHigherVersion(
-	firstModuleTemplate, secondModuleTemplate *v1beta2.ModuleTemplate,
-) (*v1beta2.ModuleTemplate,
-	error,
-) {
-	firstVersion, err := GetModuleSemverVersion(firstModuleTemplate)
+func GetModuleTemplateWithHigherVersion(first, second *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate, error) {
+	firstVersion, err := getModuleSemverVersion(first)
 	if err != nil {
 		return nil, err
 	}
 
-	secondVersion, err := GetModuleSemverVersion(secondModuleTemplate)
+	secondVersion, err := getModuleSemverVersion(second)
 	if err != nil {
 		return nil, err
 	}
 
 	if firstVersion.GreaterThan(secondVersion) {
-		return firstModuleTemplate, nil
+		return first, nil
 	}
 
-	return secondModuleTemplate, nil
+	return second, nil
 }
