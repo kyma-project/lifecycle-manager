@@ -91,6 +91,7 @@ jobs:
         with:
           repository: kyma-project/template-operator
           path: template-operator
+
       - name: Get configuration
         uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration

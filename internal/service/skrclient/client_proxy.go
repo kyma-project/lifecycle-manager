@@ -66,7 +66,7 @@ func (p *ProxyClient) RESTMapper() meta.RESTMapper {
 
 // Create implements client.Client.
 func (p *ProxyClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	if _, err := getResourceMapping(obj, p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Create(ctx, obj, opts...)
@@ -78,7 +78,7 @@ func (p *ProxyClient) Create(ctx context.Context, obj client.Object, opts ...cli
 
 // Update implements client.Client.
 func (p *ProxyClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	if _, err := getResourceMapping(obj, p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Update(ctx, obj, opts...)
@@ -90,7 +90,7 @@ func (p *ProxyClient) Update(ctx context.Context, obj client.Object, opts ...cli
 
 // Delete implements client.Client.
 func (p *ProxyClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	if _, err := getResourceMapping(obj, p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Delete(ctx, obj, opts...)
@@ -104,7 +104,7 @@ func (p *ProxyClient) Delete(ctx context.Context, obj client.Object, opts ...cli
 func (p *ProxyClient) DeleteAllOf(
 	ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	if _, err := getResourceMapping(obj, p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.DeleteAllOf(ctx, obj, opts...)
@@ -118,7 +118,7 @@ func (p *ProxyClient) DeleteAllOf(
 func (p *ProxyClient) Patch(
 	ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	if _, err := getResourceMapping(obj, p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Patch(ctx, obj, patch, opts...)
@@ -134,7 +134,7 @@ func (p *ProxyClient) Get(ctx context.Context,
 	obj client.Object,
 	opts ...client.GetOption,
 ) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	if _, err := getResourceMapping(obj, p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.Get(ctx, key, obj, opts...)
@@ -146,7 +146,7 @@ func (p *ProxyClient) Get(ctx context.Context,
 
 // List implements client.Client.
 func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...client.ListOption) error {
-	if _, err := getResourceMapping(obj, p.mapper, true); err != nil {
+	if _, err := getResourceMapping(obj, p.mapper); err != nil {
 		return fmt.Errorf("failed to get resource mapping: %w", err)
 	}
 	err := p.baseClient.List(ctx, obj, opts...)
