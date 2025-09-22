@@ -27,8 +27,12 @@ type moduleReleaseMetaConcurrentWorker struct {
 	createCRD  func(ctx context.Context) error
 }
 
-// newModuleReleaseMetaConcurrentWorker returns a new moduleReleaseMetaConcurrentWorker instance with default dependencies.
-func newModuleReleaseMetaConcurrentWorker(kcpClient, skrClient client.Client, settings *Settings) *moduleReleaseMetaConcurrentWorker {
+// newModuleReleaseMetaConcurrentWorker returns a new moduleReleaseMetaConcurrentWorker
+// instance with default dependencies.
+func newModuleReleaseMetaConcurrentWorker(
+	kcpClient, skrClient client.Client,
+	settings *Settings,
+) *moduleReleaseMetaConcurrentWorker {
 	patchDiffFn := func(ctx context.Context, obj *v1beta2.ModuleReleaseMeta) error {
 		return patchDiffModuleReleaseMeta(ctx, obj, skrClient, settings.SSAPatchOptions)
 	}
@@ -51,7 +55,10 @@ func newModuleReleaseMetaConcurrentWorker(kcpClient, skrClient client.Client, se
 
 // SyncConcurrently synchronizes ModuleReleaseMetas from KCP to SKR.
 // kcpModules are the ModuleReleaseMetas to be synced from the KCP cluster.
-func (c *moduleReleaseMetaConcurrentWorker) SyncConcurrently(ctx context.Context, kcpModules []v1beta2.ModuleReleaseMeta) error {
+func (c *moduleReleaseMetaConcurrentWorker) SyncConcurrently(
+	ctx context.Context,
+	kcpModules []v1beta2.ModuleReleaseMeta,
+) error {
 	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
@@ -123,7 +130,12 @@ func prepareModuleReleaseMetaForSSA(moduleReleaseMeta *v1beta2.ModuleReleaseMeta
 	}
 }
 
-func patchDiffModuleReleaseMeta(ctx context.Context, diff *v1beta2.ModuleReleaseMeta, skrClient client.Client, ssaPatchOptions *client.PatchOptions) error {
+func patchDiffModuleReleaseMeta(
+	ctx context.Context,
+	diff *v1beta2.ModuleReleaseMeta,
+	skrClient client.Client,
+	ssaPatchOptions *client.PatchOptions,
+) error {
 	err := skrClient.Patch(
 		ctx, diff, client.Apply, ssaPatchOptions,
 	)

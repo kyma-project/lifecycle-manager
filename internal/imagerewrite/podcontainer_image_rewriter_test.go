@@ -43,7 +43,10 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the image in the container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the image in the container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com/prod/template-operator:1.0.3"),
 		)
 	})
 
@@ -79,7 +82,10 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		cp := newChangesComparator(t, expectedLines, actualLines)
 		cp.verify(
-			valueOf("the image in the container").shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").to("image: private-registry.com/prod/template-operator:1.0.3"),
+			valueOf(
+				"the image in the container",
+			).shouldChangeFrom("image: europe-docker.pkg.dev/kyma-project/prod/template-operator:1.0.3").
+				to("image: private-registry.com/prod/template-operator:1.0.3"),
 		)
 	})
 
@@ -108,7 +114,12 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		// then
 		rewrittenYAML := mustYAML(deploymentResource)
-		assert.Equal(t, unmodifiedYAML, rewrittenYAML, "Expected no changes in the rewritten YAML") //nolint: testifylint // I want to test for equality, not for equivalence
+		assert.YAMLEq(
+			t,
+			unmodifiedYAML,
+			rewrittenYAML,
+			"Expected no changes in the rewritten YAML",
+		)
 	})
 
 	t.Run("RewriteSingleContainerWithoutImageAttribute", func(t *testing.T) {
@@ -136,6 +147,11 @@ func TestPodContainerImageRewriter(t *testing.T) {
 
 		// then
 		rewrittenYAML := mustYAML(deploymentResource)
-		assert.Equal(t, unmodifiedYAML, rewrittenYAML, "Expected no changes in the rewritten YAML") //nolint: testifylint // I want to test for equality, not for equivalence
+		assert.YAMLEq(
+			t,
+			unmodifiedYAML,
+			rewrittenYAML,
+			"Expected no changes in the rewritten YAML",
+		)
 	})
 }

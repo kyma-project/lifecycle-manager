@@ -63,7 +63,8 @@ func Test_FetchModuleInfo_When_ModuleInSpecOnly(t *testing.T) {
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "none"},
 					Enabled:                 true,
-					ValidationErrorContains: "Channel \"none\" is not allowed", ExpectedError: templatelookup.ErrInvalidModuleInSpec,
+					ValidationErrorContains: "Channel \"none\" is not allowed",
+					ExpectedError:           templatelookup.ErrInvalidModuleInSpec,
 				},
 			},
 		},
@@ -78,7 +79,8 @@ func Test_FetchModuleInfo_When_ModuleInSpecOnly(t *testing.T) {
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
 					Enabled:                 true,
-					ValidationErrorContains: "Version and channel are mutually exclusive options", ExpectedError: templatelookup.ErrInvalidModuleInSpec,
+					ValidationErrorContains: "Version and channel are mutually exclusive options",
+					ExpectedError:           templatelookup.ErrInvalidModuleInSpec,
 				},
 			},
 		},
@@ -163,7 +165,8 @@ func Test_FetchModuleInfo_When_ModuleInStatusOnly(t *testing.T) {
 				{
 					Module:                  v1beta2.Module{Name: "Module1", Channel: "regular", Version: "v1.0"},
 					Enabled:                 false,
-					ValidationErrorContains: "ModuleTemplate reference is missing", ExpectedError: templatelookup.ErrInvalidModuleInStatus,
+					ValidationErrorContains: "ModuleTemplate reference is missing",
+					ExpectedError:           templatelookup.ErrInvalidModuleInStatus,
 				},
 			},
 		},

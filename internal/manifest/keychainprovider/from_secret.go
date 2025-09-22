@@ -22,7 +22,10 @@ type FromSecretKeychainProvider struct {
 	secretName types.NamespacedName
 }
 
-func NewFromSecretKeyChainProvider(kcpClient client.Reader, secretName types.NamespacedName) *FromSecretKeychainProvider {
+func NewFromSecretKeyChainProvider(
+	kcpClient client.Reader,
+	secretName types.NamespacedName,
+) *FromSecretKeychainProvider {
 	return &FromSecretKeychainProvider{kcpClient: kcpClient, secretName: secretName}
 }
 

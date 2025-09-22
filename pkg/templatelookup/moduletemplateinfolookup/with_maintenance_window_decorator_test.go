@@ -25,7 +25,9 @@ func Test_WithMWDecorator_IsResponsible_CallsDecoratedIsResponsible(t *testing.T
 	assert.True(t, responsible)
 }
 
-func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenDecoratedLookupReturnsModuleTemplateInfoWithError(t *testing.T) {
+func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenDecoratedLookupReturnsModuleTemplateInfoWithError(
+	t *testing.T,
+) {
 	maintenanceWindow := &maintenanceWindowStub{}
 	expectedModuleTemplateInfo := templatelookup.ModuleTemplateInfo{
 		Err: errors.New("test error"),

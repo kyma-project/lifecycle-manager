@@ -248,7 +248,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.finishReconcile(ctx, manifest, metrics.ManifestReconcileFinished, manifestStatus, nil)
 }
 
-// Normally after all resources have been deleted, the manifest should be cleared as well. But when this happens, it might be the connection to the SKR is lost which prevents the manifest deletion, so the next step is try to evict the cache and hope the next reconciliation can determine if the skr kubeconfig secret is deleted or not. If the secret is deleted, then the manifest will be deleted as well.
+// Normally after all resources have been deleted, the manifest should be cleared as well.
+// But when this happens, it might be the connection to the SKR is lost which prevents the manifest deletion,
+// so the next step is try to evict the cache and hope the next reconciliation can determine
+// if the skr kubeconfig secret is deleted or not. If the secret is deleted, then the manifest will be deleted as well.
 func manifestUnderDeletingButNoSyncedResources(manifest *v1beta2.Manifest, current ResourceList) bool {
 	return !manifest.GetDeletionTimestamp().IsZero() && len(current) == 0
 }
@@ -457,7 +460,11 @@ func (r *Reconciler) pruneDiff(ctx context.Context, clnt skrclient.Client, manif
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
-		manifest.SetStatus(manifest.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
+		manifest.SetStatus(
+			manifest.GetStatus().
+				WithState(shared.StateWarning).
+				WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()),
+		)
 		r.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}

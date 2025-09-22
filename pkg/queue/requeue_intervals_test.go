@@ -77,7 +77,12 @@ func TestRequeueJitter_Apply(t *testing.T) {
 			result := jitter.Apply(testcase.interval)
 
 			if result < testcase.expectedMin || result > testcase.expectedMax {
-				t.Errorf("Apply() returned %v, expected between %v and %v", result, testcase.expectedMin, testcase.expectedMax)
+				t.Errorf(
+					"Apply() returned %v, expected between %v and %v",
+					result,
+					testcase.expectedMin,
+					testcase.expectedMax,
+				)
 			}
 		})
 	}

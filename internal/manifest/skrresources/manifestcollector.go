@@ -9,7 +9,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 )
 
-// ManifestLogCollector is a collector for remote Manifest objects. It delegates the calls to the embedded generic collector if collection is enabled for the given Manifest.
+// ManifestLogCollector is a collector for remote Manifest objects.
+// It delegates the calls to the embedded generic collector if collection is enabled for the given Manifest.
 type ManifestLogCollector struct {
 	collector *LogCollector
 	enabled   bool

@@ -51,7 +51,12 @@ type Service struct {
 	config         Config
 }
 
-func NewService(renewalService RenewalService, certRepo CertificateRepository, secretRepo SecretRepository, config Config) *Service {
+func NewService(
+	renewalService RenewalService,
+	certRepo CertificateRepository,
+	secretRepo SecretRepository,
+	config Config,
+) *Service {
 	return &Service{
 		renewalService: renewalService,
 		certRepo:       certRepo,
