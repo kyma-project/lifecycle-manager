@@ -152,7 +152,6 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
-			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithModuleCR(data).
 			WithOCM(compdescv2.SchemaVersion).
@@ -247,7 +246,6 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 			for _, module := range kyma.Spec.Modules {
 				template := builder.NewModuleTemplateBuilder().
 					WithNamespace(ControlPlaneNamespace).
-					WithLabelModuleName(module.Name).
 					WithChannel(module.Channel).
 					WithOCM(compdescv2.SchemaVersion).
 					WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()

@@ -14,9 +14,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -64,7 +65,6 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
-			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(DeleteCR, Timeout, Interval).
@@ -82,7 +82,6 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
-			WithLabelModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).
 			WithName(moduleTemplateName).Build()

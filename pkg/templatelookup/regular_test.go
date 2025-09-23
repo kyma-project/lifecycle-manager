@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"ocm.software/ocm/api/ocm/compdesc"
 	ocmmetav1 "ocm.software/ocm/api/ocm/compdesc/meta/v1"
@@ -622,7 +621,6 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 				givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 					WithName(fmt.Sprintf("%s-%s", module.Name, testModule.Version)).
 					WithModuleName(module.Name).
-					WithLabelModuleName(module.Name).
 					WithChannel(module.Channel).
 					WithDescriptor(nil).
 					WithRawDescriptor([]byte("{invalid_json}")).Build())
@@ -854,7 +852,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 						WithName(fmt.Sprintf("%s-%s", module.Name, moduleTemplateVersion)).
 						WithAnnotation(shared.ModuleVersionAnnotation, moduleTemplateVersion).
-						WithLabelModuleName(module.Name).
 						WithChannel(module.Channel).
 						WithOCM(compdescv2.SchemaVersion).Build())
 				}
@@ -923,50 +920,6 @@ func TestTemplateNameMatch(t *testing.T) {
 			},
 			want: true,
 		},
-		{
-			name: "When moduleName is empty but legacy label matches,  Then return true",
-			template: v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Labels: map[string]string{
-						shared.ModuleName: "module1",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					ModuleName: "",
-				},
-			},
-			want: true,
-		},
-		{
-			name: "When moduleName does not match and legacy label matches, " +
-				"Then return false as moduleName takes precedence over label",
-			template: v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Labels: map[string]string{
-						shared.ModuleName: "module1",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					ModuleName: "module2",
-				},
-			},
-			want: false,
-		},
-		{
-			name: "When moduleName does matches and legacy label does not match," +
-				" Then return true as moduleName takes precedence over label",
-			template: v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Labels: map[string]string{
-						shared.ModuleName: "module2",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					ModuleName: "module1",
-				},
-			},
-			want: true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -1027,7 +980,6 @@ func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersi
 	templateList.Items = append(templateList.Items, *builder.NewModuleTemplateBuilder().
 		WithName(fmt.Sprintf("%s-%s", moduleName, moduleVersion)).
 		WithModuleName(moduleName).
-		WithLabelModuleName(moduleName).
 		WithChannel(moduleChannel).
 		WithVersion(moduleVersion).
 		WithDescriptor(&types.Descriptor{

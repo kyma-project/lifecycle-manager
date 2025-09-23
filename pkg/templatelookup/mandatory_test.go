@@ -108,7 +108,7 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 
 	thirdModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("mandatory-1.0.1").
-		WithLabelModuleName("mandatory").
+		WithModuleName("mandatory").
 		WithMandatory(true).
 		WithLabel("operator.kyma-project.io/mandatory-module", "true").
 		WithVersion("1.0.1").
@@ -155,7 +155,7 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 
 	thirdModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("mandatory-1.0.1").
-		WithLabelModuleName("mandatory").
+		WithModuleName("mandatory").
 		WithMandatory(true).
 		WithLabel("operator.kyma-project.io/mandatory-module", "true").
 		WithVersion("1.0.1").

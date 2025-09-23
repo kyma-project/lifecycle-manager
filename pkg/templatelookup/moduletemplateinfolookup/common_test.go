@@ -29,7 +29,6 @@ func Test_TemplateNameMatch_WhenModuleNameFieldIsNotMatching(t *testing.T) {
 
 func Test_TemplateNameMatch_WhenNoModuleNameFieldButMatchingLabel(t *testing.T) {
 	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithLabelModuleName("test-module").
 		Build()
 
 	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "test-module")

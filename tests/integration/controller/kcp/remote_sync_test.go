@@ -40,13 +40,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithLabelModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
 	TemplateForKCPEnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithLabelModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
