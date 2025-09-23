@@ -28,7 +28,7 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 	for _, moduleTemplate := range mandatoryModuleTemplateList.Items {
 		if moduleTemplate.DeletionTimestamp.IsZero() {
 			currentModuleTemplate := &moduleTemplate
-			moduleName := GetModuleName(currentModuleTemplate)
+			moduleName := currentModuleTemplate.Spec.ModuleName
 			if mandatoryModules[moduleName] != nil {
 				var err error
 				currentModuleTemplate, err = GetModuleTemplateWithHigherVersion(currentModuleTemplate,
@@ -48,16 +48,6 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 		}
 	}
 	return mandatoryModules, nil
-}
-
-func GetModuleName(moduleTemplate *v1beta2.ModuleTemplate) string {
-	if moduleTemplate.Spec.ModuleName != "" {
-		return moduleTemplate.Spec.ModuleName
-	}
-
-	// https://github.com/kyma-project/lifecycle-manager/issues/2135
-	// Remove this after warden ModuleTemplate is created using modulectl
-	return moduleTemplate.Labels[shared.ModuleName]
 }
 
 func GetModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Version, error) {

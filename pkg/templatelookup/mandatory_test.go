@@ -48,26 +48,6 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnError_NotSemver(t *te
 	require.Nil(t, result)
 }
 
-func TestGetModuleName_withModuleName(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("warden").
-		WithLabelModuleName("warden-dev").
-		Build()
-
-	result := templatelookup.GetModuleName(moduleTemplate)
-	require.Equal(t, "warden", result)
-}
-
-func TestGetModuleName_withModuleNameLabel(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("").
-		WithLabelModuleName("warden").
-		Build()
-
-	result := templatelookup.GetModuleName(moduleTemplate)
-	require.Equal(t, "warden", result)
-}
-
 func TestGetModuleSemverVersion_WithCorrectSemVer_SpecVersion(t *testing.T) {
 	moduleTemplate := builder.NewModuleTemplateBuilder().
 		WithVersion("1.0.0-dev").
