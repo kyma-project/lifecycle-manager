@@ -2,6 +2,7 @@ package templatelookup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Masterminds/semver/v3"
@@ -11,6 +12,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
+
+var ErrVersionNotFound = errors.New("module template does not have a version")
 
 // GetMandatory returns ModuleTemplates TOs (Transfer Objects) which are marked are mandatory modules.
 func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplatesByModuleName,
@@ -52,7 +55,7 @@ func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplate
 
 func getModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Version, error) {
 	if moduleTemplate.Spec.Version == "" {
-		return nil, fmt.Errorf("module template %s does not have a version", moduleTemplate.Name)
+		return nil, fmt.Errorf("%w: %s", ErrVersionNotFound, moduleTemplate.Name)
 	}
 
 	version, err := semver.NewVersion(moduleTemplate.Spec.Version)
@@ -61,7 +64,6 @@ func getModuleSemverVersion(moduleTemplate *v1beta2.ModuleTemplate) (*semver.Ver
 			moduleTemplate.Spec.Version, err)
 	}
 	return version, nil
-
 }
 
 func GetModuleTemplateWithHigherVersion(first, second *v1beta2.ModuleTemplate) (*v1beta2.ModuleTemplate, error) {

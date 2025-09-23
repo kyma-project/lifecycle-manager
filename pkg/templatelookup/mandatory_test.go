@@ -48,7 +48,7 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnError_NotSemver(t *te
 	require.Nil(t, result)
 }
 
-// Test semver version parsing through GetModuleTemplateWithHigherVersion with spec version
+// Test semver version parsing through GetModuleTemplateWithHigherVersion with spec version.
 func TestGetModuleTemplateWithHigherVersion_WithCorrectSemVer_SpecVersion(t *testing.T) {
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("warden-1.0.0-dev").
@@ -65,7 +65,7 @@ func TestGetModuleTemplateWithHigherVersion_WithCorrectSemVer_SpecVersion(t *tes
 	require.Equal(t, firstModuleTemplate, result)
 }
 
-// Test error handling for invalid semver in spec version
+// Test error handling for invalid semver in spec version.
 func TestGetModuleTemplateWithHigherVersion_ReturnError_NotSemver_SpecVersion(t *testing.T) {
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("warden-dev").
@@ -82,7 +82,7 @@ func TestGetModuleTemplateWithHigherVersion_ReturnError_NotSemver_SpecVersion(t 
 	require.Nil(t, result)
 }
 
-// Test error handling when module template has no version
+// Test error handling when module template has no version.
 func TestGetModuleTemplateWithHigherVersion_ReturnError_NoVersion(t *testing.T) {
 	firstModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("warden-no-version").
