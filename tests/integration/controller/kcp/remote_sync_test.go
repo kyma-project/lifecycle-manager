@@ -37,19 +37,23 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	skrKyma := NewSKRKyma()
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	moduleVersion := "0.0.1" // Explicit version for both modules
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithLabelModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
+		WithVersion(moduleVersion).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
 	TemplateForKCPEnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithLabelModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
+		WithVersion(moduleVersion).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
+
 	var skrClient client.Client
 	var err error
 	BeforeAll(func() {
@@ -99,14 +103,16 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 	})
 
-	It("ModuleTemplates should be synchronized in both clusters", func() {
+	It("ModuleTemplates without ModuleReleaseMeta should NOT be synchronized", func() {
 		By("ModuleTemplate exists in KCP cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, kcpClient, moduleInKCP, kyma).
 			Should(Succeed())
-		By("ModuleTemplate exists in SKR cluster")
-		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, skrClient, moduleInKCP, skrKyma).Should(Succeed())
+
+		By("ModuleTemplate should NOT be synced to SKR cluster without ModuleReleaseMeta")
+		Consistently(ModuleTemplateExists, Timeout, Interval).
+			WithArguments(ctx, skrClient, moduleInKCP, skrKyma).
+			Should(Equal(ErrNotFound))
 
 		By("No module synced to remote Kyma")
 		Eventually(NotContainsModuleInSpec, Timeout, Interval).
@@ -114,10 +120,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(skrClient, skrKyma.GetName(), skrKyma.Namespace, moduleInKCP.Name).
 			Should(Succeed())
 
-		By("Remote Module Catalog created")
-		Eventually(ModuleTemplateExists, Timeout, Interval).
+		By("Remote Module Catalog should NOT be created without ModuleReleaseMeta")
+		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, skrClient, moduleInSKR, skrKyma).
-			Should(Succeed())
+			Should(Equal(ErrNotFound))
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(skrClient, skrKyma.GetName(), flags.DefaultRemoteSyncNamespace).
 			Should(Succeed())
