@@ -45,19 +45,22 @@ var _ = Describe("ModuleTemplate without ModuleReleaseMeta is not synced", Order
 
 			By("Then the old format ModuleTemplate exists in the KCP Cluster")
 			Eventually(func() error {
-				return ModuleTemplateExists(ctx, kcpClient, v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}, kyma)
+				module := v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}
+				return ModuleTemplateExists(ctx, kcpClient, module, kyma)
 			}).Should(Succeed())
 
 			By("But the old format ModuleTemplate should NOT be synced to the SKR Cluster")
 			Consistently(func() error {
-				return ModuleTemplateExists(ctx, skrClient, v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}, skrKyma)
+				module := v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}
+				return ModuleTemplateExists(ctx, skrClient, module, skrKyma)
 			}).ShouldNot(Succeed())
 		})
 
 		It("When enabling the old format module in Kyma spec", func() {
+			module := v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.Name, kyma.Namespace, v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}).
+				WithArguments(kcpClient, kyma.Name, kyma.Namespace, module).
 				Should(Succeed())
 
 			By("Then the module should remain in Warning state due to missing ModuleReleaseMeta")
@@ -78,9 +81,10 @@ var _ = Describe("ModuleTemplate without ModuleReleaseMeta is not synced", Order
 				WithArguments(kcpClient, kyma.Name, kyma.Namespace, oldFormatModuleName).
 				Should(Succeed())
 
+			module := v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}
 			Eventually(DeleteModuleTemplate).
 				WithContext(ctx).
-				WithArguments(kcpClient, v1beta2.Module{Name: oldFormatModuleName, Channel: v1beta2.DefaultChannel}, kyma).
+				WithArguments(kcpClient, module, kyma).
 				Should(Succeed())
 		})
 	})

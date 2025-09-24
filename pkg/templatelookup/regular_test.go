@@ -704,7 +704,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			},
 		},
 		{
-			name: "When module exits in ModuleStatus only, then return expected moduleTemplateInfo with ModuleReleaseMeta",
+			name: "When module exits in ModuleStatus only, then return expected moduleTemplateInfo with MRM",
 			kyma: builder.NewKymaBuilder().
 				WithEnabledModule(testModule).
 				WithModuleStatus(v1beta2.ModuleStatus{
