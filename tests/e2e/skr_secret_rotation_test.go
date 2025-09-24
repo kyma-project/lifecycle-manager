@@ -40,6 +40,8 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			}).Should(BeTrue())
 			testSKRAdminKubeconfigPath := os.Getenv("TEST_KUBECONFIG_PATH")
 			GinkgoWriter.Printf("testSKRAdminKubeconfigPath: %s\n", testSKRAdminKubeconfigPath)
+			wd, _ := os.Getwd()
+			GinkgoWriter.Printf("pwd: %s", wd)
 			Eventually(CreateKymaSecretWithKubeconfig).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), testSKRAdminKubeconfigPath).
