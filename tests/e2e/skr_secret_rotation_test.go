@@ -36,12 +36,10 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 
 			By("Create kyma secret with test skr admin kubeconfig")
 			testSKRAdminKubeconfigPath := testSKRAdmin + "-kubeconfig.yaml"
-			GinkgoWriter.Printf("testSKRAdminKubeconfigPath: %s\n", testSKRAdminKubeconfigPath)
-			wd, _ := os.Getwd()
-			GinkgoWriter.Printf("pwd: %s", wd)
-			Eventually(CreateKymaSecretWithKubeconfig).
+			runtimeConfig, err := os.ReadFile(testSKRAdminKubeconfigPath)
+			Eventually(CreateKymaSecret).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), testSKRAdminKubeconfigPath).
+				WithArguments(kcpClient, kyma.GetName(), runtimeConfig).
 				Should(Succeed())
 		})
 	})
