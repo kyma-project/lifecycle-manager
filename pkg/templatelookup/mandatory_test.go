@@ -21,8 +21,8 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnCorrectValue(t *testi
 
 	secondModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("warden-1.0.1-dev").
+		WithVersion("1.0.1-dev").
 		WithLabel("module-diff", "second").
-		WithAnnotation("operator.kyma-project.io/module-version", "1.0.1-dev").
 		Build()
 
 	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
@@ -48,63 +48,53 @@ func TestGetDesiredModuleTemplateForMultipleVersions_ReturnError_NotSemver(t *te
 	require.Nil(t, result)
 }
 
-func TestGetModuleName_withModuleName(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("warden").
-		WithLabelModuleName("warden-dev").
-		Build()
-
-	result := templatelookup.GetModuleName(moduleTemplate)
-	require.Equal(t, "warden", result)
-}
-
-func TestGetModuleName_withModuleNameLabel(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithModuleName("").
-		WithLabelModuleName("warden").
-		Build()
-
-	result := templatelookup.GetModuleName(moduleTemplate)
-	require.Equal(t, "warden", result)
-}
-
-func TestGetModuleSemverVersion_WithCorrectSemVer_SpecVersion(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
+// Test semver version parsing through GetModuleTemplateWithHigherVersion with spec version.
+func TestGetModuleTemplateWithHigherVersion_WithCorrectSemVer_SpecVersion(t *testing.T) {
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-1.0.0-dev").
 		WithVersion("1.0.0-dev").
 		Build()
 
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
-	require.NoError(t, err)
-	require.Equal(t, "1.0.0-dev", result.String())
-}
-
-func TestGetModuleSemverVersion_WithCorrectSemVer_VersionAnnotation(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithAnnotation("operator.kyma-project.io/module-version", "1.0.0-dev").
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-0.9.0-dev").
+		WithVersion("0.9.0-dev").
 		Build()
 
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
+	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0-dev", result.String())
+	require.Equal(t, firstModuleTemplate, result)
 }
 
-func TestGetModuleSemverVersion_ReturnError_NotSemver_SpecVersion(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
+// Test error handling for invalid semver in spec version.
+func TestGetModuleTemplateWithHigherVersion_ReturnError_NotSemver_SpecVersion(t *testing.T) {
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-dev").
 		WithVersion("dev").
 		Build()
 
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-1.0.0-dev").
+		WithVersion("1.0.0-dev").
+		Build()
+
+	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
 	require.ErrorContains(t, err, "could not parse version as a semver")
 	require.Nil(t, result)
 }
 
-func TestGetModuleSemverVersion_ReturnError_NotSemver_VersionAnnotation(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithAnnotation("operator.kyma-project.io/module-version", "dev").
+// Test error handling when module template has no version.
+func TestGetModuleTemplateWithHigherVersion_ReturnError_NoVersion(t *testing.T) {
+	firstModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-no-version").
+		Build() // No version set
+
+	secondModuleTemplate := builder.NewModuleTemplateBuilder().
+		WithName("warden-1.0.0-dev").
+		WithVersion("1.0.0-dev").
 		Build()
 
-	result, err := templatelookup.GetModuleSemverVersion(moduleTemplate)
-	require.ErrorContains(t, err, "could not parse version as a semver")
+	result, err := templatelookup.GetModuleTemplateWithHigherVersion(firstModuleTemplate, secondModuleTemplate)
+	require.ErrorContains(t, err, "does not have a version")
 	require.Nil(t, result)
 }
 
@@ -128,7 +118,7 @@ func TestGetMandatory_OneVersion(t *testing.T) {
 
 	thirdModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("mandatory-1.0.1").
-		WithLabelModuleName("mandatory").
+		WithModuleName("mandatory").
 		WithMandatory(true).
 		WithLabel("operator.kyma-project.io/mandatory-module", "true").
 		WithVersion("1.0.1").
@@ -175,7 +165,7 @@ func TestGetMandatory_MultipleVersions(t *testing.T) {
 
 	thirdModuleTemplate := builder.NewModuleTemplateBuilder().
 		WithName("mandatory-1.0.1").
-		WithLabelModuleName("mandatory").
+		WithModuleName("mandatory").
 		WithMandatory(true).
 		WithLabel("operator.kyma-project.io/mandatory-module", "true").
 		WithVersion("1.0.1").
