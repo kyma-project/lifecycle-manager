@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -112,6 +113,14 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 func CreateKymaSecret(ctx context.Context, k8sClient client.Client, kymaName string) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*skrConfig), localHostname, skrHostname)
 	return CreateAccessSecret(ctx, k8sClient, kymaName, patchedRuntimeConfig)
+}
+
+func CreateKymaSecretWithKubeconfig(ctx context.Context, k8sClient client.Client, kymaName, runtimeConfigFile string) error {
+	runtimeConfig, err := os.ReadFile(runtimeConfigFile)
+	if err != nil {
+		return err
+	}
+	return CreateAccessSecret(ctx, k8sClient, kymaName, string(runtimeConfig))
 }
 
 func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
