@@ -84,11 +84,10 @@ func (f *FakeModuleTemplateReader) Get(_ context.Context, objKey client.ObjectKe
 	return nil
 }
 
-func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
+func TestValidateTemplateMode_ForModuleTemplates(t *testing.T) {
 	tests := []struct {
 		name     string
 		template templatelookup.ModuleTemplateInfo
-		kyma     *v1beta2.Kyma
 		wantErr  error
 	}{
 		{
@@ -99,40 +98,25 @@ func TestValidateTemplateMode_ForOldModuleTemplates(t *testing.T) {
 			wantErr: templatelookup.ErrTemplateNotAllowed,
 		},
 		{
-			name: "When ModuleTemplate is internal but Kyma is not, Then result contains error",
-			template: templatelookup.ModuleTemplateInfo{
-				ModuleTemplate: builder.NewModuleTemplateBuilder().
-					WithLabel(shared.InternalLabel, "true").Build(),
-			},
-			kyma: builder.NewKymaBuilder().
-				WithLabel(shared.InternalLabel, "false").
-				Build(),
-			wantErr: templatelookup.ErrTemplateNotAllowed,
-		},
-		{
-			name: "When ModuleTemplate is beta but Kyma is not, Then result contains error",
-			template: templatelookup.ModuleTemplateInfo{
-				ModuleTemplate: builder.NewModuleTemplateBuilder().
-					WithLabel(shared.BetaLabel, "true").Build(),
-			},
-			kyma: builder.NewKymaBuilder().
-				WithLabel(shared.BetaLabel, "false").
-				Build(),
-			wantErr: templatelookup.ErrTemplateNotAllowed,
-		},
-		{
 			name: "When ModuleTemplate is mandatory, Then result contains error",
 			template: templatelookup.ModuleTemplateInfo{
 				ModuleTemplate: builder.NewModuleTemplateBuilder().
 					WithMandatory(true).Build(),
 			},
-			kyma:    builder.NewKymaBuilder().Build(),
 			wantErr: common.ErrNoTemplatesInListResult,
+		},
+		{
+			name: "When ModuleTemplate is not mandatory, Then no error",
+			template: templatelookup.ModuleTemplateInfo{
+				ModuleTemplate: builder.NewModuleTemplateBuilder().
+					WithMandatory(false).Build(),
+			},
+			wantErr: nil,
 		},
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			if got := templatelookup.ValidateTemplateMode(testCase.template, testCase.kyma); !errors.Is(got.Err,
+			if got := templatelookup.ValidateTemplateMode(testCase.template); !errors.Is(got.Err,
 				testCase.wantErr) {
 				t.Errorf("ValidateTemplateMode() = %v, want %v", got, testCase.wantErr)
 			}

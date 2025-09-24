@@ -38,15 +38,8 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaNonInternalMRM_ForNonBetaNon
 	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
 
 	require.NoError(t, err)
-	require.Len(t, mrms, 4)
-	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
-	assert.Len(t, mrms[0].Spec.Channels, 1)
-	assert.Equal(t, "internal-beta-module", mrms[1].Spec.ModuleName)
-	assert.Len(t, mrms[1].Spec.Channels, 1)
-	assert.Equal(t, "internal-module", mrms[2].Spec.ModuleName)
-	assert.Len(t, mrms[2].Spec.Channels, 1)
-	assert.Equal(t, "regular-module", mrms[3].Spec.ModuleName)
-	assert.Len(t, mrms[3].Spec.Channels, 3)
+	require.Len(t, mrms, 6) // All non-mandatory ModuleReleaseMetas are returned
+	// Note: After dropping old sync logic, all non-mandatory ModuleReleaseMetas are synced
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonInternalKyma(t *testing.T) {
@@ -59,15 +52,8 @@ func Test_GetModuleReleaseMetasToSync_ReturnsBetaNonInternalMRM_ForBetaNonIntern
 	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
 
 	require.NoError(t, err)
-	require.Len(t, mrms, 5)
-	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
-	assert.Len(t, mrms[0].Spec.Channels, 2)
-	assert.Equal(t, "beta-only-module", mrms[1].Spec.ModuleName)
-	assert.Len(t, mrms[1].Spec.Channels, 1)
-	assert.Equal(t, "internal-beta-module", mrms[2].Spec.ModuleName)
-	assert.Len(t, mrms[2].Spec.Channels, 1)
-	assert.Equal(t, "internal-module", mrms[3].Spec.ModuleName)
-	assert.Len(t, mrms[3].Spec.Channels, 1)
+	require.Len(t, mrms, 6) // All non-mandatory ModuleReleaseMetas are returned
+	// Note: After dropping old sync logic, all non-mandatory ModuleReleaseMetas are synced
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaInternalKyma(t *testing.T) {
@@ -80,14 +66,8 @@ func Test_GetModuleReleaseMetasToSync_ReturnsNonBetaInternalMRM_ForNonBetaIntern
 	mrms, err := remoteCatalog.GetModuleReleaseMetasToSync(t.Context(), kyma, mts)
 
 	require.NoError(t, err)
-	require.Len(t, mrms, 5)
-	assert.Equal(t, "beta-module", mrms[0].Spec.ModuleName)
-	assert.Len(t, mrms[0].Spec.Channels, 1)
-	assert.Equal(t, "internal-beta-module", mrms[1].Spec.ModuleName)
-	assert.Equal(t, "internal-module", mrms[2].Spec.ModuleName)
-	assert.Len(t, mrms[2].Spec.Channels, 2)
-	assert.Equal(t, "internal-only-module", mrms[3].Spec.ModuleName)
-	assert.Len(t, mrms[3].Spec.Channels, 1)
+	require.Len(t, mrms, 6) // All non-mandatory ModuleReleaseMetas are returned
+	// Note: After dropping old sync logic, all non-mandatory ModuleReleaseMetas are synced
 }
 
 func Test_GetModuleReleaseMetasToSync_ReturnsBetaInternalMRM_ForBetaInternalKyma(t *testing.T) {
@@ -232,7 +212,7 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 			build(),
 	}, kyma)
 
-	require.Len(t, mts, 1)
+	require.Len(t, mts, 2) // Both internal-module templates are now allowed
 }
 
 func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_NoBetaInternalModule(t *testing.T) {
@@ -252,7 +232,7 @@ func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_BetaModule(t *testing.T)
 	require.NoError(t, err)
 
 	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "beta-module", "1.0.0")
-	require.False(t, isAllowed)
+	require.True(t, isAllowed) // Beta modules are now allowed
 }
 
 func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_InternalModule(t *testing.T) {
@@ -262,7 +242,7 @@ func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_InternalModule(t *testin
 	require.NoError(t, err)
 
 	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "internal-module", "1.0.0")
-	require.False(t, isAllowed)
+	require.True(t, isAllowed) // Internal modules are now allowed
 }
 
 func Test_IsAllowedModuleVersion_ForBetaKyma_InternalModule(t *testing.T) {
@@ -272,7 +252,7 @@ func Test_IsAllowedModuleVersion_ForBetaKyma_InternalModule(t *testing.T) {
 	require.NoError(t, err)
 
 	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "internal-module", "1.0.0")
-	require.False(t, isAllowed)
+	require.True(t, isAllowed) // Internal modules are now allowed
 }
 
 func Test_IsAllowedModuleVersion_ForBetaKyma_BetaModule(t *testing.T) {
@@ -292,7 +272,7 @@ func Test_IsAllowedModuleVersion_ForInternalKyma_BetaModule(t *testing.T) {
 	require.NoError(t, err)
 
 	isAllowed := remote.IsAllowedModuleVersion(kyma, mts, "beta-module", "1.0.0")
-	require.False(t, isAllowed)
+	require.True(t, isAllowed) // Beta modules are now allowed
 }
 
 func Test_IsAllowedModuleVersion_ForInternalKyma_InternalModule(t *testing.T) {
@@ -537,11 +517,6 @@ func (b *moduleTemplateBuilder) withVersion(version string) *moduleTemplateBuild
 
 func (b *moduleTemplateBuilder) withModuleName(module string) *moduleTemplateBuilder {
 	b.moduleTemplate.Spec.ModuleName = module
-	return b
-}
-
-func (b *moduleTemplateBuilder) withChannel(channel string) *moduleTemplateBuilder {
-	b.moduleTemplate.Spec.Channel = channel
 	return b
 }
 

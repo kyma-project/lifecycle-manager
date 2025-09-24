@@ -77,7 +77,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			kyma,
 			moduleReleaseMeta)
 
-		templateInfo = ValidateTemplateMode(templateInfo, kyma)
+		templateInfo = ValidateTemplateMode(templateInfo)
 		if templateInfo.Err != nil {
 			templates[moduleInfo.Name] = &templateInfo
 			continue
@@ -104,17 +104,15 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 	return templates
 }
 
-func ValidateTemplateMode(template ModuleTemplateInfo,
-	kyma *v1beta2.Kyma,
-) ModuleTemplateInfo {
+func ValidateTemplateMode(template ModuleTemplateInfo) ModuleTemplateInfo {
 	if template.Err != nil {
 		return template
 	}
 
-	return validateTemplateMode(template, kyma)
+	return validateTemplateMode(template)
 }
 
-func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
+func validateTemplateMode(template ModuleTemplateInfo) ModuleTemplateInfo {
 	if template.Spec.Mandatory {
 		template.Err = fmt.Errorf("%w: for module %s in channel %s ",
 			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)
