@@ -2,9 +2,9 @@ name: Deploy template-operator With ModuleReleaseMeta
 description: Deploys a test-specific template-operator and corresponding ModuleReleaseMeta.
 inputs:
   module_version:
-    description: 'Version of the template operator to be deployed, should be aligned with the latest version released in github.'
+    description: "Version of the template operator to be deployed, should be aligned with the latest version released in github."
     required: true
-    default: '1.0.3'
+    default: "1.0.3"
 runs:
   using: composite
   steps:
@@ -112,7 +112,8 @@ runs:
         matrix.e2e-test == 'modulereleasemeta-not-allowed-installation' ||
         matrix.e2e-test == 'maintenance-windows' ||
         matrix.e2e-test == 'maintenance-windows-initial-installation' ||
-        matrix.e2e-test == 'maintenance-windows-skip'
+        matrix.e2e-test == 'maintenance-windows-skip' ||
+        matrix.e2e-test == 'simulate-skr-secret-rotation-evict-client-cache'
         }}
       shell: bash
       run: |

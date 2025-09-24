@@ -35,8 +35,9 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Create kyma secret with test skr admin kubeconfig")
-			testSKRAdminKubeconfigPath := testSKRAdmin + "-kubeconfig.yaml"
-			runtimeConfig, err := os.ReadFile(testSKRAdminKubeconfigPath)
+			testSKRAdminKubeconfigFile := testSKRAdmin + "-kubeconfig.yaml"
+			runtimeConfig, err := os.ReadFile(testSKRAdminKubeconfigFile)
+			Expect(err).NotTo(HaveOccurred())
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), string(runtimeConfig)).
