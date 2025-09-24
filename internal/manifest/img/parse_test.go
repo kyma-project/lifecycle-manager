@@ -3,6 +3,8 @@ package img_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
@@ -10,12 +12,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/stretchr/testify/require"
 )
 
-// TODO: heavy refactoring required. We probably need to mock the oci registry calls, and return a "fake" descriptor
 func TestParse(t *testing.T) {
-
 	tests := []struct {
 		name                 string
 		descriptorSourceFile string
@@ -71,5 +70,4 @@ func TestParse(t *testing.T) {
 			}
 		})
 	}
-
 }

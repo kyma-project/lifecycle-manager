@@ -50,7 +50,7 @@ func (l Layer) ConvertToImageSpec(ociRepo string) (*v1beta2.ImageSpec, error) {
 	}
 
 	return &v1beta2.ImageSpec{
-		Repo: ociRepo, //Note: this value will be used to fetch the layer from the OCI registry
+		Repo: ociRepo, // Note: we override the repo here with an explicit value
 		Name: ociImage.Name,
 		Ref:  ociImage.Ref,
 		Type: v1beta2.RefTypeMetadata(ociImage.Type),
