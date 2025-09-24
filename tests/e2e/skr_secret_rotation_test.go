@@ -23,43 +23,46 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 	testSKRAdmin := "alice"
 	testSKRAdminKubeconfigPath := testSKRAdmin + "-kubeconfig.yaml"
 	Context("Create new SKR admin user", func() {
-		cmd := exec.CommandContext(ctx, "kubectl", "config", "use-context", "k3d-skr")
-		_, err := cmd.CombinedOutput()
-		Expect(err).NotTo(HaveOccurred())
+		It("Based on k3d-skr context", func() {
+			cmd := exec.CommandContext(ctx, "kubectl", "config", "use-context", "k3d-skr")
+			_, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
 
-		cmd = exec.CommandContext(ctx, "sh", "../../scripts/tests/create-new-cluster-admin.sh", testSKRAdmin)
-		output, err := cmd.CombinedOutput()
-		GinkgoWriter.Printf("Create new SKR admin user: %s\n", output)
-		Expect(err).NotTo(HaveOccurred())
+			cmd = exec.CommandContext(ctx, "sh", "../../scripts/tests/create-new-cluster-admin.sh", testSKRAdmin)
+			output, err := cmd.CombinedOutput()
+			GinkgoWriter.Printf("Create new SKR admin user: %s\n", output)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
 	Context("Setup Kyma with test skr admin", func() {
-		By("Create kyma secret with test skr admin kubeconfig")
-		Eventually(CreateKymaSecretWithKubeconfig).
-			WithContext(ctx).
-			WithArguments(kcpClient, kyma.GetName(), testSKRAdminKubeconfigPath).
-			Should(Succeed())
-		Eventually(kcpClient.Create).
-			WithContext(ctx).
-			WithArguments(kyma).
-			Should(Succeed())
-		By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
-		Eventually(KymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
-			Should(Succeed())
-		By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
-		Eventually(CheckRemoteKymaCR).
-			WithContext(ctx).
-			WithArguments(RemoteNamespace, []v1beta2.Module{}, skrClient, shared.StateReady).
-			Should(Succeed())
-		By("And Runtime Watcher deployment is up and running in SKR", func() {
-			Eventually(CheckPodLogs).
+		It("Create kyma secret with test skr admin kubeconfig", func() {
+			Eventually(CreateKymaSecretWithKubeconfig).
 				WithContext(ctx).
-				WithArguments(RemoteNamespace, skrwebhookresources.SkrResourceName, "server",
-					"Starting server for validation endpoint", skrRESTConfig,
-					skrClient, &apimetav1.Time{Time: time.Now().Add(-5 * time.Minute)}).
+				WithArguments(kcpClient, kyma.GetName(), testSKRAdminKubeconfigPath).
 				Should(Succeed())
+			Eventually(kcpClient.Create).
+				WithContext(ctx).
+				WithArguments(kyma).
+				Should(Succeed())
+			By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
+			Eventually(CheckRemoteKymaCR).
+				WithContext(ctx).
+				WithArguments(RemoteNamespace, []v1beta2.Module{}, skrClient, shared.StateReady).
+				Should(Succeed())
+			By("And Runtime Watcher deployment is up and running in SKR", func() {
+				Eventually(CheckPodLogs).
+					WithContext(ctx).
+					WithArguments(RemoteNamespace, skrwebhookresources.SkrResourceName, "server",
+						"Starting server for validation endpoint", skrRESTConfig,
+						skrClient, &apimetav1.Time{Time: time.Now().Add(-5 * time.Minute)}).
+					Should(Succeed())
+			})
 		})
 	})
 
