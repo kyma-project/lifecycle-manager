@@ -38,7 +38,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			// 	_, ok := os.LookupEnv("TEST_KUBECONFIG_PATH")
 			// 	return ok
 			// }).Should(BeTrue())
-			testSKRAdminKubeconfigPath := os.Getenv("TEST_KUBECONFIG_PATH")
+			testSKRAdminKubeconfigPath := testSKRAdmin + "-kubeconfig.yaml"
 			GinkgoWriter.Printf("testSKRAdminKubeconfigPath: %s\n", testSKRAdminKubeconfigPath)
 			wd, _ := os.Getwd()
 			GinkgoWriter.Printf("pwd: %s", wd)
