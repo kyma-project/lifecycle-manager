@@ -51,16 +51,16 @@ func NewService(ociRepository OCIRepository) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
-	commonErrMsg := func() string {
-		return fmt.Sprintf("ocm artifact with name=%q and version=%q",
-			ocmi.Name(), ocmi.Version())
-	}
+func commonErrMsg(ocmi ocmidentity.Component) string {
+	return fmt.Sprintf("ocm artifact with name=%q and version=%q",
+		ocmi.Name(), ocmi.Version())
+}
 
+func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
 	// Fetch the image config to get the ComponentDescriptor layer info
 	configBytes, err := s.ociRepository.GetConfigFile(ctx, ocmi.Name(), ocmi.Version())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get config file for %s: %w", commonErrMsg(), err)
+		return nil, fmt.Errorf("failed to get config file for %s: %w", commonErrMsg(ocmi), err)
 	}
 
 	ocmArtifactConfig := genericocireg.ComponentDescriptorConfig{}
@@ -68,17 +68,17 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 	if err != nil {
 		return nil,
 			fmt.Errorf("failed to unmarshal config data into ComponentDescriptorConfig for %s: %w",
-				commonErrMsg(), err)
+				commonErrMsg(ocmi), err)
 	}
 
 	if ocmArtifactConfig.ComponentDescriptorLayer == nil {
-		return nil, fmt.Errorf("%w for %s", ErrLayerNil, commonErrMsg())
+		return nil, fmt.Errorf("%w for %s", ErrLayerNil, commonErrMsg(ocmi))
 	}
 
 	compDescLayerDigest := ocmArtifactConfig.ComponentDescriptorLayer.Digest
 	if string(compDescLayerDigest) == "" {
 		return nil,
-			fmt.Errorf("%w for %s", ErrLayerDigestEmpty, commonErrMsg())
+			fmt.Errorf("%w for %s", ErrLayerDigestEmpty, commonErrMsg(ocmi))
 	}
 
 	layer, err := s.ociRepository.PullLayer(ctx, ocmi.Name(), ocmi.Version(), string(compDescLayerDigest))
@@ -92,17 +92,27 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 	if err != nil {
 		return nil,
 			fmt.Errorf("failed to extract component descriptor from layer fetched from %s with digest=%q: %w",
-				commonErrMsg(), string(compDescLayerDigest), err)
+				commonErrMsg(ocmi), string(compDescLayerDigest), err)
 	}
-	descriptor, err := compdesc.Decode(compdescBytes)
+
+	descriptor, err := deserialize(compdescBytes, ocmi)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode component descriptor fetched from %s: %w",
-			commonErrMsg(), err)
+		return nil, err
 	}
 
 	return &types.Descriptor{
 		ComponentDescriptor: descriptor,
 	}, nil
+}
+
+// deserialize decodes the component descriptor from its serialized form.
+func deserialize(compdescBytes []byte, ocmi ocmidentity.Component) (*compdesc.ComponentDescriptor, error) {
+	desc, err := compdesc.Decode(compdescBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode component descriptor fetched from %s: %w",
+			commonErrMsg(ocmi), err)
+	}
+	return desc, nil
 }
 
 // SimplifiedLayer represents only necessary part of containerregistryv1.Layer to simplify testing.
@@ -209,4 +219,22 @@ func (d *defaultUntarIOHelper) Next() (*tar.Header, error) {
 
 func (d *defaultUntarIOHelper) CopyN(dst io.Writer, n int64) (int64, error) {
 	return io.CopyN(dst, d.tarReader, n) //nolint:wrapcheck // this helper should be transparent
+}
+
+// Service implementation for tests that have the descriptor in the serialized form.
+type TestSupport struct {
+	DescriptorBytes []byte
+}
+
+func (s *TestSupport) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
+	result, err := deserialize(s.DescriptorBytes, ocmi)
+	if err != nil {
+		return nil, err
+	}
+	if result.Name != ocmi.Name() || result.Version != ocmi.Version() {
+		return nil, errors.New("component descriptor not found") //nolint:err113 // no need for typed error
+	}
+	return &types.Descriptor{
+		ComponentDescriptor: result,
+	}, nil
 }
