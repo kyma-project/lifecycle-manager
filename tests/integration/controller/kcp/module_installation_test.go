@@ -54,7 +54,7 @@ var _ = Describe("Module installation", func() {
 				Eventually(expectInstallation, Timeout, Interval).WithArguments(kymaName, moduleName).Should(Succeed())
 			} else {
 				// we use Consistently here as the installation may require multiple reconciliation runs to be installed
-				// otherwise, we may get a false positive after the first reconciliation 
+				// otherwise, we may get a false positive after the first reconciliation
 				// where no module is installed yet, but in a consecutive run it will be
 				Consistently(expectNoInstallation, Timeout, Interval).WithArguments(kymaName,
 					moduleName).Should(Succeed())
