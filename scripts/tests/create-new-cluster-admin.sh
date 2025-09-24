@@ -2,8 +2,6 @@
 # create-new-cluster-admin.sh <username>
 # Example: ./create-new-cluster-admin.sh alice
 
-set -euo pipefail
-
 USER_NAME=$1
 KUBECONFIG_OUT="$1-kubeconfig.yaml"
 
