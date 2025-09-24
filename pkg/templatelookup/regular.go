@@ -115,14 +115,6 @@ func ValidateTemplateMode(template ModuleTemplateInfo,
 }
 
 func validateTemplateMode(template ModuleTemplateInfo, kyma *v1beta2.Kyma) ModuleTemplateInfo {
-	if template.IsInternal() && !kyma.IsInternal() {
-		template.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
-		return template
-	}
-	if template.IsBeta() && !kyma.IsBeta() {
-		template.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
-		return template
-	}
 	if template.Spec.Mandatory {
 		template.Err = fmt.Errorf("%w: for module %s in channel %s ",
 			common.ErrNoTemplatesInListResult, template.Name, template.DesiredChannel)

@@ -235,75 +235,6 @@ func Test_FilterAllowedModuleTemplates_ReturnsMTsThatAreReferencedInMRMAndNotMan
 	require.Len(t, mts, 1)
 }
 
-func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaNonInternalKyma(
-	t *testing.T,
-) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
-	kyma := newKymaBuilder().build()
-	mts := &v1beta2.ModuleTemplateList{}
-	err := fakeClient().List(t.Context(), mts)
-	require.NoError(t, err)
-
-	filteredMts, err := remoteCatalog.GetOldModuleTemplatesToSync(kyma, mts)
-
-	require.NoError(t, err)
-	require.Len(t, filteredMts, 2)
-	assert.Equal(t, "old-module-regular", filteredMts[0].Name)
-}
-
-func Test_GetOldModuleTemplatesToSync_ReturnsBetaNonInternalNonSyncDisabledNonMandatoryMTs_ForBetaNonInternalKyma(
-	t *testing.T,
-) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
-	kyma := newKymaBuilder().withBetaEnabled().build()
-	mts := &v1beta2.ModuleTemplateList{}
-	err := fakeClient().List(t.Context(), mts)
-	require.NoError(t, err)
-
-	filteredMts, err := remoteCatalog.GetOldModuleTemplatesToSync(kyma, mts)
-
-	require.NoError(t, err)
-	require.Len(t, filteredMts, 3)
-	assert.Equal(t, "old-beta-module-regular", filteredMts[0].Name)
-	assert.Equal(t, "old-module-regular", filteredMts[1].Name)
-}
-
-func Test_GetOldModuleTemplatesToSync_ReturnsNonBetaInternalNonSyncDisabledNonMandatoryMTs_ForNonBetaInternalKyma(
-	t *testing.T,
-) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
-	kyma := newKymaBuilder().withInternalEnabled().build()
-	mts := &v1beta2.ModuleTemplateList{}
-	err := fakeClient().List(t.Context(), mts)
-	require.NoError(t, err)
-
-	filteredMts, err := remoteCatalog.GetOldModuleTemplatesToSync(kyma, mts)
-
-	require.NoError(t, err)
-	require.Len(t, filteredMts, 3)
-	assert.Equal(t, "old-internal-module-fast", filteredMts[0].Name)
-	assert.Equal(t, "old-module-regular", filteredMts[1].Name)
-}
-
-func Test_GetOldModuleTemplatesToSync_ReturnsBetaInternalNonSyncDisabledNonMandatoryMTs_ForBetaInternalKyma(
-	t *testing.T,
-) {
-	remoteCatalog := remote.NewRemoteCatalogFromKyma(fakeClient(), nil, "kyma-system")
-	kyma := newKymaBuilder().withBetaEnabled().withInternalEnabled().build()
-	mts := &v1beta2.ModuleTemplateList{}
-	err := fakeClient().List(t.Context(), mts)
-	require.NoError(t, err)
-
-	filteredMts, err := remoteCatalog.GetOldModuleTemplatesToSync(kyma, mts)
-
-	require.NoError(t, err)
-	require.Len(t, filteredMts, 5)
-	assert.Equal(t, "old-beta-module-regular", filteredMts[0].Name)
-	assert.Equal(t, "old-internal-beta-module-fast", filteredMts[1].Name)
-	assert.Equal(t, "old-internal-module-fast", filteredMts[2].Name)
-	assert.Equal(t, "old-module-regular", filteredMts[3].Name)
-}
-
 func Test_IsAllowedModuleVersion_ForNonBetaInternalKyma_NoBetaInternalModule(t *testing.T) {
 	kyma := newKymaBuilder().build()
 	mts := &v1beta2.ModuleTemplateList{}
@@ -503,38 +434,6 @@ func moduleTemplates() v1beta2.ModuleTemplateList {
 		withBetaEnabled().
 		build()
 
-	// https://github.com/kyma-project/lifecycle-manager/issues/2096
-	// Remove these after the migration to the new ModuleTemplate format is completed.
-	mt15 := newModuleTemplateBuilder().
-		withName("old-module-regular").
-		withChannel("regular").
-		build()
-	mt16 := newModuleTemplateBuilder().
-		withName("old-beta-module-regular").
-		withChannel("regular").
-		withBetaEnabled().
-		build()
-	mt17 := newModuleTemplateBuilder().
-		withName("old-internal-module-fast").
-		withChannel("fast").
-		withInternalEnabled().
-		build()
-	mt18 := newModuleTemplateBuilder().
-		withName("old-internal-beta-module-fast").
-		withChannel("fast").
-		withBetaEnabled().
-		withInternalEnabled().
-		build()
-	mt19 := newModuleTemplateBuilder().
-		withName("old-sync-disabled-module-experimental").
-		withChannel("experimental").
-		build()
-	mt20 := newModuleTemplateBuilder().
-		withName("old-mandatory-module").
-		withChannel("regular").
-		withMandatoryEnabled().
-		build()
-
 	mts := v1beta2.ModuleTemplateList{
 		Items: []v1beta2.ModuleTemplate{
 			*mt1,
@@ -551,12 +450,6 @@ func moduleTemplates() v1beta2.ModuleTemplateList {
 			*mt12,
 			*mt13,
 			*mt14,
-			*mt15,
-			*mt16,
-			*mt17,
-			*mt18,
-			*mt19,
-			*mt20,
 		},
 	}
 

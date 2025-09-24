@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta2
 
 import (
-	"strings"
-
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -190,62 +188,14 @@ func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
-	if m.IsBeta() && !betaEnabled {
-		return false
-	}
-
-	if m.IsInternal() && !internalEnabled {
-		return false
-	}
-
-	if m.IsMandatory() {
-		return false
-	}
-
-	return true
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) IsInternal() bool {
-	if isInternal, found := m.Labels[shared.InternalLabel]; found {
-		return strings.ToLower(isInternal) == shared.EnableLabelValue
-	}
-	return false
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) GetVersion() string {
-	version := m.Spec.Version
-	if version == "" {
-		version = m.Annotations[shared.ModuleVersionAnnotation]
-	}
-	return version
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) IsBeta() bool {
-	if isBeta, found := m.Labels[shared.BetaLabel]; found {
-		return strings.ToLower(isBeta) == shared.EnableLabelValue
-	}
-	return false
+	return m.Spec.Version
 }
 
 func (m *ModuleTemplate) IsMandatory() bool {
 	return m.Spec.Mandatory
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) GetModuleName() string {
-	moduleName := m.Spec.ModuleName
-	if moduleName == "" {
-		moduleName = m.Labels[shared.ModuleName]
-	}
-	return moduleName
+	return m.Spec.ModuleName
 }
