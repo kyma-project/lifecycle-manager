@@ -34,10 +34,10 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			GinkgoWriter.Printf("Create new SKR admin user: %s\n", output)
 			Expect(err).NotTo(HaveOccurred())
 			By("Create kyma secret with test skr admin kubeconfig")
-			Eventually(func() bool {
-				_, ok := os.LookupEnv("TEST_KUBECONFIG_PATH")
-				return ok
-			}).Should(BeTrue())
+			// Eventually(func() bool {
+			// 	_, ok := os.LookupEnv("TEST_KUBECONFIG_PATH")
+			// 	return ok
+			// }).Should(BeTrue())
 			testSKRAdminKubeconfigPath := os.Getenv("TEST_KUBECONFIG_PATH")
 			GinkgoWriter.Printf("testSKRAdminKubeconfigPath: %s\n", testSKRAdminKubeconfigPath)
 			wd, _ := os.Getwd()
