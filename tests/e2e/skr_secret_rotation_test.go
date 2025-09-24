@@ -22,8 +22,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 	moduleCR := NewTestModuleCR(RemoteNamespace)
 
 	testSKRAdmin := "alice"
-	testSKRAdminKubeconfigPath := os.Getenv("TEST_KUBECONFIG_PATH")
-	GinkgoWriter.Printf("testSKRAdminKubeconfigPath: %s\n", testSKRAdminKubeconfigPath)
+
 	Context("Create new SKR admin user", func() {
 		It("Based on k3d-skr context", func() {
 			cmd := exec.CommandContext(ctx, "kubectl", "config", "use-context", "k3d-skr")
@@ -34,15 +33,18 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			output, err := cmd.CombinedOutput()
 			GinkgoWriter.Printf("Create new SKR admin user: %s\n", output)
 			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	Context("Setup Kyma with test skr admin", func() {
-		It("Create kyma secret with test skr admin kubeconfig", func() {
+			By("Create kyma secret with test skr admin kubeconfig")
+			testSKRAdminKubeconfigPath := os.Getenv("TEST_KUBECONFIG_PATH")
+			GinkgoWriter.Printf("testSKRAdminKubeconfigPath: %s\n", testSKRAdminKubeconfigPath)
 			Eventually(CreateKymaSecretWithKubeconfig).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), testSKRAdminKubeconfigPath).
 				Should(Succeed())
+		})
+	})
+
+	Context("Setup Kyma with test skr admin", func() {
+		It("Create kyma CR", func() {
 			Eventually(kcpClient.Create).
 				WithContext(ctx).
 				WithArguments(kyma).
