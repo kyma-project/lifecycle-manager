@@ -80,7 +80,7 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
 				Should(Succeed())
 
-			By("Then the ModuleReleaseMeta still exists in the SKR Cluster but only with fast channel mapped with v2")
+			By("Then the ModuleReleaseMeta still exists in the SKR Cluster with both channels (beta labels on ModuleTemplate no longer affect sync)")
 			Eventually(ModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, skrClient).
@@ -92,13 +92,13 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v1Version, skrClient).
-				Should(Equal(ErrNotExpectedChannelVersion))
+				Should(Succeed())
 
-			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			By("And the Template Operator v1 ModuleTemplate still exists in the SKR Cluster (beta labels no longer control sync)")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(skrClient, module, skrKyma).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 		})
 
 		It("When the Template Operator v2 ModuleTemplate is set to beta", func() {
@@ -112,17 +112,17 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
 				Should(Succeed())
 
-			By("Then the ModuleReleaseMeta no longer exists on the SKR Cluster")
+			By("Then the ModuleReleaseMeta still exists on the SKR Cluster (beta labels on ModuleTemplate no longer affect sync)")
 			Eventually(ModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, skrClient).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 
-			By("And the Template Operator v2 ModuleTemplate no longer exists in the SKR Cluster")
+			By("And the Template Operator v2 ModuleTemplate still exists in the SKR Cluster (beta labels no longer control sync)")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(skrClient, module, skrKyma).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 			module.Channel = v1beta2.DefaultChannel
 		})
 
@@ -155,21 +155,21 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
 				Should(Succeed())
 
-			By("Then the ModuleReleaseMeta still exists in the SKR Cluster but only with fast channel mapped with v2")
+			By("Then the ModuleReleaseMeta still exists in the SKR Cluster with both channels (internal labels on ModuleTemplate no longer affect sync)")
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, "fast", v2Version, skrClient).
 				Should(Succeed())
 			Eventually(ModuleReleaseMetaContainsCorrectChannelVersion).
 				WithContext(ctx).
-				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v2Version, skrClient).
-				Should(Equal(ErrNotExpectedChannelVersion))
+				WithArguments(module.Name, RemoteNamespace, v1beta2.DefaultChannel, v1Version, skrClient).
+				Should(Succeed())
 
-			By("And the Template Operator v1 ModuleTemplate no longer exists in the SKR Cluster")
+			By("And the Template Operator v1 ModuleTemplate still exists in the SKR Cluster (internal labels no longer control sync)")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(skrClient, module, skrKyma).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 		})
 
 		It("When the Template Operator v2 ModuleTemplate is set to internal", func() {
@@ -183,17 +183,17 @@ var _ = Describe("ModuleReleaseMeta Sync", Ordered, func() {
 				WithArguments(kcpClient, kyma.Name, kyma.Namespace).
 				Should(Succeed())
 
-			By("Then the ModuleReleaseMeta no longer exists on the SKR Cluster")
+			By("Then the ModuleReleaseMeta still exists on the SKR Cluster (internal labels on ModuleTemplate no longer affect sync)")
 			Eventually(ModuleReleaseMetaExists).
 				WithContext(ctx).
 				WithArguments(module.Name, RemoteNamespace, skrClient).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 
-			By("And the Template Operator v2 ModuleTemplate no longer exists in the SKR Cluster")
+			By("And the Template Operator v2 ModuleTemplate still exists in the SKR Cluster (internal labels no longer control sync)")
 			Eventually(ModuleTemplateExists).
 				WithContext(ctx).
 				WithArguments(skrClient, module, skrKyma).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 			module.Channel = v1beta2.DefaultChannel
 		})
 

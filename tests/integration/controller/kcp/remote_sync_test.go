@@ -37,7 +37,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	skrKyma := NewSKRKyma()
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
-	moduleVersion := "0.0.1" // Explicit version for both modules
+	moduleVersion := "0.0.1"
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
@@ -329,6 +329,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(moduleInKCP.Name).
 			WithChannel(moduleInKCP.Channel).
+			WithVersion("0.1.0").
 			WithOCM(compdescv2.SchemaVersion).
 			WithName(moduleTemplateName).Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
