@@ -119,11 +119,12 @@ func CreateKymaSecretWithKubeconfig(ctx context.Context, k8sClient client.Client
 	kymaName, runtimeConfigFile string,
 ) error {
 	runtimeConfig, err := os.ReadFile(runtimeConfigFile)
-	GinkgoWriter.Printf("CreateKymaSecretWithKubeconfig: %s, %s\n", runtimeConfig, err)
+	patchedRuntimeConfig := strings.ReplaceAll(string(runtimeConfig), localHostname, skrHostname)
+	GinkgoWriter.Printf("CreateKymaSecretWithKubeconfig: %s, %s\n", patchedRuntimeConfig, err)
 	if err != nil {
 		return err
 	}
-	return CreateAccessSecret(ctx, k8sClient, kymaName, string(runtimeConfig))
+	return CreateAccessSecret(ctx, k8sClient, kymaName, patchedRuntimeConfig)
 }
 
 func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {

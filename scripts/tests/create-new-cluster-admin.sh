@@ -62,10 +62,4 @@ kubectl create clusterrolebinding ${USER_NAME}-cluster-admin \
   --user=${USER_NAME} \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# compute absolute path to kubeconfig output (portable)
-KUBECONFIG_OUT_ABS="$(cd "$(dirname "$KUBECONFIG_OUT")" && pwd)/$(basename "$KUBECONFIG_OUT")"
-
-echo TEST_KUBECONFIG_PATH=${KUBECONFIG_OUT_ABS} >> $GITHUB_ENV
-
 echo "✅ User ${USER_NAME} created and granted cluster-admin rights."
-echo "👉 Kubeconfig written to ${KUBECONFIG_OUT_ABS}"
