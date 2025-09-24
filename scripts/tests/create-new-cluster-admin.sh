@@ -34,9 +34,12 @@ kubectl get csr ${USER_NAME} -o jsonpath='{.status.certificate}' \
   | base64 --decode > ${USER_NAME}.crt
 
 # Build kubeconfig for the new user
+TMP_CA="$(mktemp)"
+echo "${CA_DATA}" | base64 --decode > "$TMP_CA"
+
 kubectl config set-cluster ${CLUSTER_NAME} \
   --server=${CLUSTER_SERVER} \
-  --certificate-authority=<(echo ${CA_DATA} | base64 --decode) \
+  --certificate-authority="$TMP_CA" \
   --embed-certs=true \
   --kubeconfig=${KUBECONFIG_OUT}
 

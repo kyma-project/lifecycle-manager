@@ -115,7 +115,9 @@ func CreateKymaSecret(ctx context.Context, k8sClient client.Client, kymaName str
 	return CreateAccessSecret(ctx, k8sClient, kymaName, patchedRuntimeConfig)
 }
 
-func CreateKymaSecretWithKubeconfig(ctx context.Context, k8sClient client.Client, kymaName, runtimeConfigFile string) error {
+func CreateKymaSecretWithKubeconfig(ctx context.Context, k8sClient client.Client,
+	kymaName, runtimeConfigFile string,
+) error {
 	runtimeConfig, err := os.ReadFile(runtimeConfigFile)
 	if err != nil {
 		return err
