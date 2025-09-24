@@ -39,7 +39,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			runtimeConfig, err := os.ReadFile(testSKRAdminKubeconfigPath)
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), runtimeConfig).
+				WithArguments(kcpClient, kyma.GetName(), string(runtimeConfig)).
 				Should(Succeed())
 		})
 	})
