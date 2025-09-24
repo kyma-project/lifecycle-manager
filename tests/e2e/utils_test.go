@@ -119,6 +119,7 @@ func CreateKymaSecretWithKubeconfig(ctx context.Context, k8sClient client.Client
 	kymaName, runtimeConfigFile string,
 ) error {
 	runtimeConfig, err := os.ReadFile(runtimeConfigFile)
+	GinkgoWriter.Printf("CreateKymaSecretWithKubeconfig: %s, %s\n", runtimeConfig, err)
 	if err != nil {
 		return err
 	}

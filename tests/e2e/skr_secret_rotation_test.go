@@ -23,6 +23,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 
 	testSKRAdmin := "alice"
 	testSKRAdminKubeconfigPath := os.Getenv("TEST_KUBECONFIG_PATH")
+	GinkgoWriter.Printf("testSKRAdminKubeconfigPath: %s\n", testSKRAdminKubeconfigPath)
 	Context("Create new SKR admin user", func() {
 		It("Based on k3d-skr context", func() {
 			cmd := exec.CommandContext(ctx, "kubectl", "config", "use-context", "k3d-skr")
