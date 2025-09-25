@@ -56,10 +56,4 @@ kubectl config set-context ${USER_NAME}@${CLUSTER_NAME} \
 
 kubectl config use-context ${USER_NAME}@${CLUSTER_NAME} --kubeconfig=${KUBECONFIG_OUT}
 
-# 🔑 Grant cluster-admin rights
-kubectl create clusterrolebinding ${USER_NAME}-cluster-admin \
-  --clusterrole=cluster-admin \
-  --user=${USER_NAME} \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-echo "✅ User ${USER_NAME} created and granted cluster-admin rights."
+echo "✅ User ${USER_NAME} created."

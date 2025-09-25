@@ -5,15 +5,16 @@ import (
 	"os/exec"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("SKR client cache get evicted due to connection error caused by secret rotation", Ordered, func() {
@@ -32,6 +33,12 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			cmd = exec.CommandContext(ctx, "sh", "../../scripts/tests/create-new-cluster-admin.sh", testSKRAdmin)
 			output, err := cmd.CombinedOutput()
 			GinkgoWriter.Printf("Create new SKR admin user: %s\n", output)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Grand SKR admin with clusterrole=cluster-admin")
+			cmd = exec.CommandContext(ctx, "kubectl", "create", "clusterrolebinding", testSKRAdmin+"-cluster-admin",
+				"--clusterrole=cluster-admin", "--user="+testSKRAdmin)
+			_, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Create kyma secret with test skr admin kubeconfig")
@@ -74,6 +81,33 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 
 	Context("Given SKR Cluster", func() {
 		It("When Kyma Module is enabled on SKR Cluster", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
+				Should(Succeed())
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(skrClient, moduleCR).
+				Should(Succeed())
+		})
+
+		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("And KCP Kyma CR status.modules are in \"Ready\" State", func() {
+			Eventually(CheckModuleState).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).
+				Should(Succeed())
+		})
+	})
+
+	Context("Grant SKR admin user with ClusterRole=view", func() {
+		It("Delete cluster admin clusterrolebinding", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
