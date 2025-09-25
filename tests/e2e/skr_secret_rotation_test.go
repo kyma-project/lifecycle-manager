@@ -25,8 +25,8 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 
 	testSKRAdmin := "alice"
 
-	Context("Create new SKR admin user", func() {
-		It("Config Kyma Secret with SKR admin user", func() {
+	Context("Given a new SKR admin user exists", func() {
+		It("When configuring Kyma Secret with the SKR admin kubeconfig, then the secret is created and bound", func() {
 			cmd := exec.CommandContext(ctx, "kubectl", "config", "use-context", "k3d-skr")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
@@ -36,13 +36,13 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			GinkgoWriter.Printf("Create new SKR admin user: %s\n", output)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Grand SKR admin with clusterrole=cluster-admin")
+			By("Then grant the SKR admin cluster-admin privileges")
 			cmd = exec.CommandContext(ctx, "kubectl", "create", "clusterrolebinding", testSKRAdmin+"-cluster-admin",
 				"--clusterrole=cluster-admin", "--user="+testSKRAdmin)
 			_, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Create Kyma Secret with test skr admin kubeconfig")
+			By("And create the Kyma Secret using the test SKR admin kubeconfig")
 			testSKRAdminKubeconfigFile := testSKRAdmin + "-kubeconfig.yaml"
 			runtimeConfig, err := os.ReadFile(testSKRAdminKubeconfigFile)
 			Expect(err).NotTo(HaveOccurred())
@@ -53,23 +53,23 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 		})
 	})
 
-	Context("Setup Kyma with test skr admin", func() {
-		It("Create kyma CR", func() {
+	Context("When Kyma is set up using the test SKR admin", func() {
+		It("Then the Kyma CR becomes Ready on KCP and SKR and runtime watcher is running", func() {
 			Eventually(kcpClient.Create).
 				WithContext(ctx).
 				WithArguments(kyma).
 				Should(Succeed())
-			By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
+			By("Then the Kyma CR is in a Ready state on the KCP cluster")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
-			By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
+			By("And the Kyma CR is in a Ready state on the SKR cluster")
 			Eventually(CheckRemoteKymaCR).
 				WithContext(ctx).
 				WithArguments(RemoteNamespace, []v1beta2.Module{}, skrClient, shared.StateReady).
 				Should(Succeed())
-			By("And Runtime Watcher deployment is up and running in SKR", func() {
+			By("And the Runtime Watcher deployment on SKR is up and running", func() {
 				Eventually(CheckPodLogs).
 					WithContext(ctx).
 					WithArguments(RemoteNamespace, skrwebhookresources.SkrResourceName, "server",
@@ -80,8 +80,8 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 		})
 	})
 
-	Context("Given SKR Cluster", func() {
-		It("When Kyma Module is enabled on SKR Cluster", func() {
+	Context("Given the SKR cluster is available", func() {
+		It("When a Kyma Module is enabled on SKR, then the Module CR is created", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
@@ -92,14 +92,14 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+		It("Then the KCP Kyma CR remains in Ready state", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
 		})
 
-		It("And KCP Kyma CR status.modules are in \"Ready\" State", func() {
+		It("And the module status on KCP reports Ready", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).
@@ -107,13 +107,13 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 		})
 	})
 
-	Context("Reduce SKR admin user permission", func() {
-		It("Delete cluster admin clusterrolebinding", func() {
+	Context("When reducing SKR admin user permissions", func() {
+		It("When removing the cluster-admin binding, then the admin privileges are revoked", func() {
 			cmd := exec.CommandContext(ctx, "kubectl", "delete", "clusterrolebinding", testSKRAdmin+"-cluster-admin")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 		})
-		It("Grand SKR admin with clusterrole=view", func() {
+		It("Then grant only view privileges to the SKR admin user", func() {
 			cmd := exec.CommandContext(ctx, "kubectl", "create", "clusterrolebinding", testSKRAdmin+"-view",
 				"--clusterrole=view", "--user="+testSKRAdmin)
 			_, err := cmd.CombinedOutput()
@@ -121,8 +121,8 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 		})
 	})
 
-	Context("KCP Kyma CR and Manifest CR in \"Error\" State", func() {
-		It("Then KCP Kyma CR is in \"Error\" State", func() {
+	Context("Then KCP Kyma CR and Manifest CR should enter Error state due to reduced permissions", func() {
+		It("Then the KCP Kyma CR transitions to Error and stays there", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
@@ -131,7 +131,8 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
 				Should(Succeed())
-			By("And Manifest CR is in \"Error\" State")
+
+			By("And the Manifest CR reports Error state")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
@@ -145,9 +146,9 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 		})
 	})
 
-	Context("Update Kyma Secret to expect SKR client cache get renewed with default cluster admin kubeconfig", func() {
-		It("Update Kyma Secret", func() {
-			By("Delete existing Kyma Secret")
+	Context("When updating the Kyma Secret to the default cluster admin kubeconfig", func() {
+		It("When replacing the secret, then the SKR client cache should renew and controllers recover", func() {
+			By("Delete the existing Kyma Secret")
 			Eventually(DeleteAccessSecret).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
@@ -156,7 +157,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName()).
 				Should(MatchError(accessmanager.ErrAccessSecretNotFound))
-			By("Create new Kyma Secret")
+			By("Create a new Kyma Secret with the default admin kubeconfig")
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma.GetName(), string(*skrConfig)).
@@ -164,8 +165,8 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 		})
 	})
 
-	Context("KCP Kyma CR and Manifest CR in \"Ready\" State", func() {
-		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+	Context("Then KCP Kyma CR and Manifest CR should return to Ready state", func() {
+		It("Then the KCP Kyma CR becomes Ready again and remains stable", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
@@ -174,7 +175,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
-			By("And Manifest CR is in \"Ready\" State")
+			By("And the Manifest CR is Ready and remains stable")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
