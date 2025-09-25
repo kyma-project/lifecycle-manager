@@ -31,9 +31,8 @@ func TestAdd_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 }
 
 func TestGetDescriptor_OnInvalidRawDescriptor_ReturnsErr(t *testing.T) {
-	descriptorProvider := provider.NewCachedDescriptorProvider(&componentdescriptor.TestSupport{
-		RawDesc: []byte("invalid descriptor"),
-	})
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		(&componentdescriptor.FakeService{}).Register([]byte("invalid descriptor")))
 	ocmi, err := ocmidentity.New("test", "v1")
 	require.NoError(t, err)
 	_, err = descriptorProvider.GetDescriptor(*ocmi)
@@ -47,9 +46,8 @@ func TestGetDescriptor_OnEmptyCache_ReturnsDescriptorFromService(t *testing.T) {
 	var moduleTemplateFromFile v1beta2.ModuleTemplate
 	builder.ReadComponentDescriptorFromFile("v1beta2_template_operator_new_ocm.yaml", &moduleTemplateFromFile)
 
-	descriptorProvider := provider.NewCachedDescriptorProvider(&componentdescriptor.TestSupport{
-		RawDesc: moduleTemplateFromFile.Spec.Descriptor.Raw,
-	})
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		(&componentdescriptor.FakeService{}).Register(moduleTemplateFromFile.Spec.Descriptor.Raw))
 
 	ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
 	require.NoError(t, err)
@@ -68,9 +66,8 @@ func TestGetDescriptor_DoesNotUpdateCache(t *testing.T) {
 	var moduleTemplateFromFile v1beta2.ModuleTemplate
 	builder.ReadComponentDescriptorFromFile("v1beta2_template_operator_new_ocm.yaml", &moduleTemplateFromFile)
 
-	mockService := &componentdescriptor.TestSupport{
-		RawDesc: moduleTemplateFromFile.Spec.Descriptor.Raw,
-	}
+	mockService := &componentdescriptor.FakeService{}
+	mockService.Register(moduleTemplateFromFile.Spec.Descriptor.Raw)
 
 	descriptorProvider := provider.NewCachedDescriptorProvider(mockService)
 
@@ -86,8 +83,8 @@ func TestGetDescriptor_DoesNotUpdateCache(t *testing.T) {
 	assert.Equal(t, ocmi.Version(), desc.Version)
 
 	// and when
-	mockService.RawDesc = []byte("invalid descriptor") // make the service return junk data
-	_, err = descriptorProvider.GetDescriptor(*ocmi)   // should come from the service (because the cache was not updated) and fail
+	mockService.Clear().Register([]byte("invalid descriptor")) // make the service return junk data
+	_, err = descriptorProvider.GetDescriptor(*ocmi)           // should come from the service (because the cache was not updated) and fail
 
 	// then
 	require.Error(t, err)
@@ -98,9 +95,8 @@ func TestGetDescriptor_ReturnsDescriptorFromCache(t *testing.T) {
 	// given
 	var moduleTemplateFromFile v1beta2.ModuleTemplate
 	builder.ReadComponentDescriptorFromFile("v1beta2_template_operator_new_ocm.yaml", &moduleTemplateFromFile)
-	mockService := &componentdescriptor.TestSupport{
-		RawDesc: moduleTemplateFromFile.Spec.Descriptor.Raw,
-	}
+	mockService := &componentdescriptor.FakeService{}
+	mockService.Register(moduleTemplateFromFile.Spec.Descriptor.Raw)
 	descriptorProvider := provider.NewCachedDescriptorProvider(mockService)
 	ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
 	require.NoError(t, err)
@@ -109,7 +105,7 @@ func TestGetDescriptor_ReturnsDescriptorFromCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	mockService.RawDesc = []byte("invalid descriptor")            // make the service return junk data
+	mockService.Clear().Register([]byte("invalid descriptor"))    // make the service return junk data
 	descFromCache, err := descriptorProvider.GetDescriptor(*ocmi) // should come from the cache
 
 	// then
@@ -146,9 +142,8 @@ func TestGetDescriptorWithIdentity_OnValidIdentity_ReturnsDescriptor(t *testing.
 	var moduleTemplateFromFile v1beta2.ModuleTemplate
 	builder.ReadComponentDescriptorFromFile("v1beta2_template_operator_new_ocm.yaml", &moduleTemplateFromFile)
 
-	descriptorProvider := provider.NewCachedDescriptorProvider(&componentdescriptor.TestSupport{
-		RawDesc: moduleTemplateFromFile.Spec.Descriptor.Raw,
-	})
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		(&componentdescriptor.FakeService{}).Register(moduleTemplateFromFile.Spec.Descriptor.Raw))
 
 	ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
 	require.NoError(t, err)

@@ -50,11 +50,11 @@ import (
 const randomPort = "0"
 
 var (
-	kcpClient          client.Client
-	mgr                manager.Manager
-	controlPlaneEnv    *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
+	kcpClient       client.Client
+	mgr             manager.Manager
+	controlPlaneEnv *envtest.Environment
+	ctx             context.Context
+	cancel          context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {

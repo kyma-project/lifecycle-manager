@@ -125,6 +125,7 @@ func (m ModuleTemplateBuilder) WithRawDescriptor(rawDescriptor []byte) ModuleTem
 	return m
 }
 
+//TODO: Consider Removing
 func (m ModuleTemplateBuilder) WithOCM(schemaVersion compdesc.SchemaVersion) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Descriptor = ComponentDescriptorFactoryFromSchema(schemaVersion)
 	return m

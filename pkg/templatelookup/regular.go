@@ -27,7 +27,7 @@ type ModuleTemplateInfo struct {
 	//                       using Kyma 'spec.channel' or configured module channel.
 
 	ComponentIdentity *ocmidentity.Component // Identifies the OCM Component that is
-	//                                                  represented by this ModuleTemplateInfo.
+	//                                          represented by this ModuleTemplateInfo.
 }
 
 // Implements provider.OCMIProvider interface

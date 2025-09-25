@@ -221,26 +221,3 @@ func (d *defaultUntarIOHelper) Next() (*tar.Header, error) {
 func (d *defaultUntarIOHelper) CopyN(dst io.Writer, n int64) (int64, error) {
 	return io.CopyN(dst, d.tarReader, n) //nolint:wrapcheck // this helper should be transparent
 }
-
-// Service implementation for tests based on a specific descriptor.
-type TestSupport struct {
-	RawDesc   []byte
-	TypedDesc *compdesc.ComponentDescriptor
-}
-
-func (s *TestSupport) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
-	if s.TypedDesc != nil {
-		return &types.Descriptor{ComponentDescriptor: s.TypedDesc}, nil
-	}
-
-	result, err := deserialize(s.RawDesc, ocmi)
-	if err != nil {
-		return nil, err
-	}
-	if result.Name != ocmi.Name() || result.Version != ocmi.Version() {
-		return nil, errors.New("component descriptor not found") //nolint:err113 // no need for typed error
-	}
-	return &types.Descriptor{
-		ComponentDescriptor: result,
-	}, nil
-}
