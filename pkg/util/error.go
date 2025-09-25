@@ -51,9 +51,11 @@ func IsConnectionRelatedError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.Is(err,
-		syscall.ECONNREFUSED) || apierrors.IsUnauthorized(err) || apierrors.IsForbidden(err) || isNoSuchHostError(err) || errors.Is(err,
-		ErrClientUnauthorized)
+	return errors.Is(err, syscall.ECONNREFUSED) ||
+		apierrors.IsUnauthorized(err) ||
+		apierrors.IsForbidden(err) ||
+		isNoSuchHostError(err) ||
+		errors.Is(err, ErrClientUnauthorized)
 }
 
 func isNoSuchHostError(err error) bool {
