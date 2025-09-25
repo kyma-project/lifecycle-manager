@@ -11,11 +11,10 @@ import (
 )
 
 var (
-	//TODO: Remove ErrDecode if not needed anymore
-	ErrDecode       = errors.New("failed to decode to descriptor target")
-	ErrNoIdentity   = errors.New("component identity is nil")
-	ErrNameEmpty    = errors.New("component name is empty")
-	ErrVersionEmpty = errors.New("component version is empty")
+	ErrDecode             = errors.New("failed to decode to descriptor target")
+	ErrNilProvider        = errors.New("OCMIProvider is nil")
+	ErrNilIdentity        = errors.New("component identity is nil")
+	ErrNameOrVersionEmpty = errors.New("component name or version is empty")
 )
 
 type DescriptorService interface {
@@ -52,31 +51,29 @@ func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.Component) error {
 //  2. After we remove ModuleTemplate.Spec.Descriptor attribute, the remaining attributes of the
 //     ModuleTemplate doesn't provide *enough* information to uniquely identify a
 //     Component: the full OCM Component Name is missing.
-//
-// TODO: Rename to just Get
 func (c *CachedDescriptorProvider) GetDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error) {
 	return c.getDescriptor(ocmi, false)
 }
 
-// TODO: Rename to GetWithIdentityProvider
 func (c *CachedDescriptorProvider) GetDescriptorWithIdentity(ocp OCMIProvider) (*types.Descriptor, error) {
+	if ocp == nil {
+		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNilProvider)
+	}
+
 	ocmi, err := ocp.GetOCMIdentity()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get component identity from provider: %w", err)
 	}
 	if ocmi == nil {
-		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNoIdentity)
+		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNilIdentity)
 	}
 
 	return c.getDescriptor(*ocmi, false)
 }
 
 func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, updateCache bool) (*types.Descriptor, error) {
-	if ocmi.Name() == "" {
-		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrNameEmpty)
-	}
-	if ocmi.Version() == "" {
-		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrVersionEmpty)
+	if ocmi.Name() == "" || ocmi.Version() == "" {
+		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrNameOrVersionEmpty)
 	}
 	key := cache.GenerateDescriptorKey(ocmi)
 	descriptor := c.descriptorCache.Get(key)

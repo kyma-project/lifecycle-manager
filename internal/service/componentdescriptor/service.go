@@ -30,6 +30,7 @@ var (
 	ErrNotFoundInTar    = errors.New("not found in TAR archive")
 	ErrTarTooLarge      = errors.New("entry in the TAR archive is too large")
 	ErrLayerEmpty       = errors.New("layer content is empty")
+	ErrDecode           = errors.New("failed to decode component descriptor")
 )
 
 type OCIRepository interface {
@@ -109,8 +110,8 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 func deserialize(compdescBytes []byte, ocmi ocmidentity.Component) (*compdesc.ComponentDescriptor, error) {
 	desc, err := compdesc.Decode(compdescBytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode component descriptor fetched from %s: %w",
-			commonErrMsg(ocmi), err)
+		return nil, fmt.Errorf("%w fetched from %s: %w",
+			ErrDecode, commonErrMsg(ocmi), err)
 	}
 	return desc, nil
 }
@@ -221,13 +222,18 @@ func (d *defaultUntarIOHelper) CopyN(dst io.Writer, n int64) (int64, error) {
 	return io.CopyN(dst, d.tarReader, n) //nolint:wrapcheck // this helper should be transparent
 }
 
-// Service implementation for tests that have the descriptor in the serialized form.
+// Service implementation for tests based on a specific descriptor.
 type TestSupport struct {
-	DescriptorBytes []byte
+	RawDesc   []byte
+	TypedDesc *compdesc.ComponentDescriptor
 }
 
 func (s *TestSupport) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
-	result, err := deserialize(s.DescriptorBytes, ocmi)
+	if s.TypedDesc != nil {
+		return &types.Descriptor{ComponentDescriptor: s.TypedDesc}, nil
+	}
+
+	result, err := deserialize(s.RawDesc, ocmi)
 	if err != nil {
 		return nil, err
 	}

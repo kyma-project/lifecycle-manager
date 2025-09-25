@@ -58,7 +58,7 @@ func TestParse(t *testing.T) {
 			require.NoError(t, err)
 			descriptor, err := provider.NewCachedDescriptorProvider(
 				&componentdescriptor.TestSupport{
-					DescriptorBytes: moduleTemplateFromFile.Spec.Descriptor.Raw,
+					RawDesc: moduleTemplateFromFile.Spec.Descriptor.Raw,
 				}).GetDescriptor(*ocmi)
 			require.NoError(t, err)
 			layers, err := img.Parse(descriptor.ComponentDescriptor)
