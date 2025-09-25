@@ -9,6 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/service/accessmanager"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -25,7 +26,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 	testSKRAdmin := "alice"
 
 	Context("Create new SKR admin user", func() {
-		It("Based on k3d-skr context", func() {
+		It("Config Kyma Secret with SKR admin user", func() {
 			cmd := exec.CommandContext(ctx, "kubectl", "config", "use-context", "k3d-skr")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
@@ -41,7 +42,7 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 			_, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Create kyma secret with test skr admin kubeconfig")
+			By("Create Kyma Secret with test skr admin kubeconfig")
 			testSKRAdminKubeconfigFile := testSKRAdmin + "-kubeconfig.yaml"
 			runtimeConfig, err := os.ReadFile(testSKRAdminKubeconfigFile)
 			Expect(err).NotTo(HaveOccurred())
@@ -140,6 +141,49 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
 					shared.StateError).
+				Should(Succeed())
+		})
+	})
+
+	Context("Update Kyma Secret to expect SKR client cache get renewed with default cluster admin kubeconfig", func() {
+		It("Update Kyma Secret", func() {
+			By("Delete existing Kyma Secret")
+			Eventually(DeleteAccessSecret).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName()).
+				Should(Succeed())
+			Consistently(AccessSecretExists).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName()).
+				Should(MatchError(accessmanager.ErrAccessSecretNotFound))
+			By("Create new Kyma Secret")
+			Eventually(CreateKymaSecret).
+				WithContext(ctx).
+				WithArguments(kcpClient, kyma.GetName(), string(*skrConfig)).
+				Should(Succeed())
+		})
+	})
+
+	Context("KCP Kyma CR and Manifest CR in \"Ready\" State", func() {
+		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			Consistently(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				Should(Succeed())
+			By("And Manifest CR is in \"Ready\" State")
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateReady).
+				Should(Succeed())
+			Consistently(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateReady).
 				Should(Succeed())
 		})
 	})
