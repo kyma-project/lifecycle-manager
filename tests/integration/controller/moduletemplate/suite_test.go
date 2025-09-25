@@ -32,7 +32,6 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -56,7 +55,6 @@ var (
 	controlPlaneEnv    *envtest.Environment
 	ctx                context.Context
 	cancel             context.CancelFunc
-	descriptorProvider *provider.CachedDescriptorProvider
 )
 
 func TestAPIs(t *testing.T) {
@@ -100,8 +98,6 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	//TODO: Fix
-	descriptorProvider = provider.NewCachedDescriptorProvider(nil)
 	kcpClient = mgr.GetClient()
 	Eventually(CreateNamespace, Timeout, Interval).
 		WithContext(ctx).
