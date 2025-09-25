@@ -106,29 +106,40 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 		})
 	})
 
-	Context("Grant SKR admin user with ClusterRole=view", func() {
+	Context("Reduce SKR admin user permission", func() {
 		It("Delete cluster admin clusterrolebinding", func() {
-			Eventually(EnableModule).
-				WithContext(ctx).
-				WithArguments(skrClient, defaultRemoteKymaName, RemoteNamespace, module).
-				Should(Succeed())
-			Eventually(ModuleCRExists).
-				WithContext(ctx).
-				WithArguments(skrClient, moduleCR).
-				Should(Succeed())
+			cmd := exec.CommandContext(ctx, "kubectl", "delete", "clusterrolebinding", testSKRAdmin+"-cluster-admin")
+			_, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
 		})
+		It("Grand SKR admin with clusterrole=view", func() {
+			cmd := exec.CommandContext(ctx, "kubectl", "create", "clusterrolebinding", testSKRAdmin+"-view",
+				"--clusterrole=view", "--user="+testSKRAdmin)
+			_, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 
-		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+	Context("KCP Kyma CR and Manifest CR in \"Error\" State", func() {
+		It("Then KCP Kyma CR is in \"Error\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
 				Should(Succeed())
-		})
-
-		It("And KCP Kyma CR status.modules are in \"Ready\" State", func() {
-			Eventually(CheckModuleState).
+			Consistently(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateError).
+				Should(Succeed())
+			By("And Manifest CR is in \"Error\" State")
+			Eventually(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateError).
+				Should(Succeed())
+			Consistently(CheckManifestIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, kcpClient,
+					shared.StateError).
 				Should(Succeed())
 		})
 	})
