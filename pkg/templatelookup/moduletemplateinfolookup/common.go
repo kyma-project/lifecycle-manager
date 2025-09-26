@@ -6,29 +6,17 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
-	if len(template.Spec.ModuleName) > 0 {
-		return template.Spec.ModuleName == name
-	}
-
-	// Drop the legacyCondition once the label 'shared.ModuleName' is removed:
-	// https://github.com/kyma-project/lifecycle-manager/issues/1796
-	if template.Labels == nil {
-		return false
-	}
-	return template.Labels[shared.ModuleName] == name
+	return template.Spec.ModuleName == name
 }
 
-func newMoreThanOneTemplateCandidateErr(moduleName string,
-	candidateTemplates []v1beta2.ModuleTemplate,
-) error {
-	candidates := make([]string, len(candidateTemplates))
-	for i, candidate := range candidateTemplates {
+func newMoreThanOneTemplateCandidateErr(moduleName string, templates []v1beta2.ModuleTemplate) error {
+	candidates := make([]string, len(templates))
+	for i, candidate := range templates {
 		candidates[i] = candidate.GetName()
 	}
 
@@ -38,7 +26,9 @@ func newMoreThanOneTemplateCandidateErr(moduleName string,
 
 func getTemplateByVersion(ctx context.Context,
 	clnt client.Reader,
-	moduleName, moduleVersion, namespace string,
+	moduleName,
+	moduleVersion,
+	namespace string,
 ) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplate := &v1beta2.ModuleTemplate{}
 

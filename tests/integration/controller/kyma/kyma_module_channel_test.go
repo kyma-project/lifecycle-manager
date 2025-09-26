@@ -232,12 +232,14 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 var _ = Describe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	skrKyma := NewSKRKyma()
-	modules := []v1beta2.Module{{
-		ControllerName: "manifest",
-		Name:           "channel-switch",
-		Channel:        v1beta2.DefaultChannel,
-		Managed:        true,
-	}}
+	modules := []v1beta2.Module{
+		{
+			ControllerName: "manifest",
+			Name:           "channel-switch",
+			Channel:        v1beta2.DefaultChannel,
+			Managed:        true,
+		},
+	}
 	var skrClient client.Client
 	var err error
 
@@ -379,7 +381,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 			template := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
 				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
-				WithLabelModuleName(module.Name).
+				WithModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
@@ -391,7 +393,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 			template := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
 				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
-				WithLabelModuleName(module.Name).
+				WithModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
@@ -486,7 +488,7 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 	for _, module := range modules {
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
-			WithLabelModuleName(module.Name).
+			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 

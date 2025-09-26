@@ -11,12 +11,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
@@ -61,17 +59,9 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	modules := make(modulecommon.Modules, 0)
 
 	for _, template := range templates {
-		moduleName, ok := template.Labels[shared.ModuleName]
-		if !ok {
-			logf.FromContext(ctx).V(log.InfoLevel).Info("ModuleTemplate does not contain Module Name as label, "+
-				"will fallback to use ModuleTemplate name as Module name",
-				"template", template.Name)
-			moduleName = template.Name
-		}
-
 		modules = p.appendModuleWithInformation(templatelookup.ModuleInfo{
 			Module: v1beta2.Module{
-				Name:                 moduleName,
+				Name:                 template.Spec.ModuleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
 			},
 			Enabled: true,

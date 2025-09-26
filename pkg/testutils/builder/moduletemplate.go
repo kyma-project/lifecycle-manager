@@ -76,14 +76,6 @@ func (m ModuleTemplateBuilder) WithGeneration(generation int) ModuleTemplateBuil
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithLabelModuleName(moduleName string) ModuleTemplateBuilder {
-	if m.moduleTemplate.Labels == nil {
-		m.moduleTemplate.Labels = make(map[string]string)
-	}
-	m.moduleTemplate.Labels[shared.ModuleName] = moduleName
-	return m
-}
-
 func (m ModuleTemplateBuilder) WithChannel(channel string) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Channel = channel
 	return m

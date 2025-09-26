@@ -10,7 +10,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-//nolint:dupl  // similar but not duplicate
 func Test_GetVersion(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -60,60 +59,6 @@ func Test_GetVersion(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			actualVersion := testCase.m.GetVersion()
 			assert.Equal(t, testCase.expectedVersion, actualVersion)
-		})
-	}
-}
-
-//nolint:dupl  // similar but not duplicate
-func Test_GetModuleName(t *testing.T) {
-	tests := []struct {
-		name         string
-		m            *v1beta2.ModuleTemplate
-		expectedName string
-	}{
-		{
-			name: "Test GetManagerName() by label",
-			m: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Labels: map[string]string{
-						shared.ModuleName: "labelled-module",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{},
-			},
-			expectedName: "labelled-module",
-		},
-		{
-			name: "Test GetManagerName() by spec.moduleName",
-			m: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Labels: map[string]string{},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					ModuleName: "spec-module",
-				},
-			},
-			expectedName: "spec-module",
-		},
-		{
-			name: "Test GetManagerName() spec.moduleName has priority over label",
-			m: &v1beta2.ModuleTemplate{
-				ObjectMeta: apimetav1.ObjectMeta{
-					Labels: map[string]string{
-						shared.ModuleName: "labelled-module",
-					},
-				},
-				Spec: v1beta2.ModuleTemplateSpec{
-					ModuleName: "spec-module",
-				},
-			},
-			expectedName: "spec-module",
-		},
-	}
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			actualName := testCase.m.GetModuleName()
-			assert.Equal(t, testCase.expectedName, actualName)
 		})
 	}
 }

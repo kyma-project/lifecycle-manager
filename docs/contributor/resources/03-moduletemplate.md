@@ -177,7 +177,6 @@ The `requiresDowntime` field indicates whether the module requires downtime to s
 ## `operator.kyma-project.io` Labels
 
 * `operator.kyma-project.io/mandatory-module`: A boolean value. Indicates whether the module is mandatory and must be installed in all remote clusters.
-* `operator.kyma-project.io/module-name`: The module's name.
 * `operator.kyma-project.io/internal`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `internal` modules, are also synchronized with the remote cluster. The default value is `false`.
 * `operator.kyma-project.io/beta`: A boolean value. If set to `true`, the ModuleTemplate CRs labeled with the same label, so-called `beta` modules, are also synchronized with the remote cluster. The default value is `false`.
 
