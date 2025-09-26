@@ -61,7 +61,7 @@ var _ = Describe("Misconfigured Kyma Secret", Ordered, func() {
 				Should(MatchError(accessmanager.ErrAccessSecretNotFound))
 			Eventually(CreateKymaSecret).
 				WithContext(ctx).
-				WithArguments(kcpClient, kyma.GetName()).
+				WithArguments(kcpClient, kyma.GetName(), string(*skrConfig)).
 				Should(Succeed())
 		})
 
