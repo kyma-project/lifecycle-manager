@@ -35,8 +35,8 @@ var (
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-1")
 	skrKyma := NewSKRKyma()
-	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
-	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	moduleInSKR := NewTestModule("skr-module", v1beta2.DefaultChannel)
+	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
