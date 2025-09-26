@@ -190,22 +190,16 @@ func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
-	if m.IsBeta() && !betaEnabled {
-		return false
-	}
+func (m *ModuleTemplate) GetVersion() string {
+	return m.Spec.Version
+}
 
-	if m.IsInternal() && !internalEnabled {
-		return false
-	}
+func (m *ModuleTemplate) IsMandatory() bool {
+	return m.Spec.Mandatory
+}
 
-	if m.IsMandatory() {
-		return false
-	}
-
-	return true
+func (m *ModuleTemplate) GetModuleName() string {
+	return m.Spec.ModuleName
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
@@ -218,34 +212,10 @@ func (m *ModuleTemplate) IsInternal() bool {
 }
 
 // https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) GetVersion() string {
-	version := m.Spec.Version
-	if version == "" {
-		version = m.Annotations[shared.ModuleVersionAnnotation]
-	}
-	return version
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
 // Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) IsBeta() bool {
 	if isBeta, found := m.Labels[shared.BetaLabel]; found {
 		return strings.ToLower(isBeta) == shared.EnableLabelValue
 	}
 	return false
-}
-
-func (m *ModuleTemplate) IsMandatory() bool {
-	return m.Spec.Mandatory
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) GetModuleName() string {
-	moduleName := m.Spec.ModuleName
-	if moduleName == "" {
-		moduleName = m.Labels[shared.ModuleName]
-	}
-	return moduleName
 }

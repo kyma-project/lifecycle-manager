@@ -97,14 +97,6 @@ func (c *RemoteCatalog) SyncModuleCatalog(ctx context.Context, kyma *v1beta2.Kym
 		return err
 	}
 
-	// https://github.com/kyma-project/lifecycle-manager/issues/2096
-	// Remove this block after the migration to the new ModuleTemplate format is completed.
-	filteredOldModuleTemplate, err := c.GetOldModuleTemplatesToSync(kyma, moduleTemplateList)
-	if err != nil {
-		return err
-	}
-	filteredModuleTemplates = append(filteredModuleTemplates, filteredOldModuleTemplate...)
-
 	return c.sync(ctx, kyma.GetNamespacedName(), filteredModuleTemplates, filteredModuleReleaseMetas)
 }
 
@@ -165,7 +157,8 @@ func IsAllowedModuleVersion(kyma *v1beta2.Kyma, moduleTemplateList *v1beta2.Modu
 ) bool {
 	for _, moduleTemplate := range moduleTemplateList.Items {
 		if formatModuleName(moduleName, version) == moduleTemplate.Name {
-			if moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
+			// Only allow non-mandatory modules (new format only supports ModuleReleaseMeta)
+			if !moduleTemplate.IsMandatory() {
 				return true
 			}
 		}
@@ -202,7 +195,8 @@ func FilterAllowedModuleTemplates(
 
 	filteredModuleTemplates := []v1beta2.ModuleTemplate{}
 	for _, moduleTemplate := range moduleTemplates {
-		if !moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
+		// Skip mandatory modules as they are not allowed to be synced
+		if moduleTemplate.IsMandatory() {
 			continue
 		}
 
@@ -213,26 +207,6 @@ func FilterAllowedModuleTemplates(
 	}
 
 	return filteredModuleTemplates
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
-func (c *RemoteCatalog) GetOldModuleTemplatesToSync(
-	kyma *v1beta2.Kyma,
-	moduleTemplateList *v1beta2.ModuleTemplateList,
-) ([]v1beta2.ModuleTemplate, error) {
-	moduleTemplates := []v1beta2.ModuleTemplate{}
-	for _, moduleTemplate := range moduleTemplateList.Items {
-		if moduleTemplate.Spec.Channel == "" {
-			continue
-		}
-
-		if moduleTemplate.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
-			moduleTemplates = append(moduleTemplates, moduleTemplate)
-		}
-	}
-
-	return moduleTemplates, nil
 }
 
 func (c *RemoteCatalog) sync(

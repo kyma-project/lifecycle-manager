@@ -9,6 +9,5 @@ const (
 	OwnedByAnnotation         = OperatorGroup + Separator + "owned-by"
 	OwnedByFormat             = "%s/%s"
 	IsClusterScopedAnnotation = OperatorGroup + Separator + "is-cluster-scoped"
-	ModuleVersionAnnotation   = OperatorGroup + Separator + "module-version"
 	UnmanagedAnnotation       = OperatorGroup + Separator + "is-unmanaged"
 )
