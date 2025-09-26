@@ -10,9 +10,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("ModuleTemplate installation", Ordered, func() {
@@ -131,6 +132,7 @@ func givenKymaAndModuleTemplateCondition(
 		for _, module := range skrKyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
+				WithModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion)
 			if isModuleTemplateInternal {

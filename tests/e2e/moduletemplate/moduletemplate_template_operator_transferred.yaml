@@ -3,8 +3,6 @@ kind: ModuleTemplate
 metadata:
   name: template-operator-1.0.3
   namespace: kcp-system
-  labels:
-    "operator.kyma-project.io/module-name": "template-operator"
   annotations:
     "operator.kyma-project.io/is-cluster-scoped": "false"
 spec:

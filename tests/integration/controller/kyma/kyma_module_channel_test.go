@@ -381,6 +381,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 			template := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
 				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
+				WithModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
@@ -392,6 +393,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 			template := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
 				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
+				WithModuleName(module.Name).
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
@@ -486,6 +488,7 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 	for _, module := range modules {
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
+			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 

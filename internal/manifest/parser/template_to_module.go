@@ -61,7 +61,7 @@ func (p *Parser) GenerateMandatoryModulesFromTemplates(ctx context.Context,
 	for _, template := range templates {
 		modules = p.appendModuleWithInformation(templatelookup.ModuleInfo{
 			Module: v1beta2.Module{
-				Name:                 template.Name,
+				Name:                 template.Spec.ModuleName,
 				CustomResourcePolicy: v1beta2.CustomResourcePolicyCreateAndDelete,
 			},
 			Enabled: true,
