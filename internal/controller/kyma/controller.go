@@ -460,7 +460,7 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 		return ctrl.Result{}, err
 	}
 	if state == shared.StateError {
-		// In case of error state, we want to requeue with rate limiting, because the error might be persistent.
+		// Requeue with a new Error in case of Kyma error state, to enable rate limiting for that error.
 		return ctrl.Result{}, ErrKymaInErrorState
 	}
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
