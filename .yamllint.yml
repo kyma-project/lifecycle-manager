@@ -3,11 +3,9 @@ ignore: |
   /config/crd/bases/
   /config/samples/tests/crds/
   /config/samples/component-integration-installed/crd/
-  /unit-test-coverage.yaml
   lifecycle-manager/config/crd/bases/
   lifecycle-manager/config/samples/tests/crds/
   lifecycle-manager/config/samples/component-integration-installed/crd/
-  lifecycle-manager/unit-test-coverage.yaml
 #Rules config: https://yamllint.readthedocs.io/en/stable/rules.html
 rules:
   line-length:

@@ -42,9 +42,9 @@ jobs:
             "github.com/kyma-project/lifecycle-manager/maintenancewindows"
           )
           configs=(
-            "${{ github.workspace }}/codebase/unit-test-coverage.yaml"
-            "${{ github.workspace }}/unit-test-coverage-api.yaml"
-            "${{ github.workspace }}/unit-test-coverage-maintenancewindows.yaml"
+            "${{ github.workspace }}/codebase/unit-test-coverage-lifecycle-manager.yaml"
+            "${{ github.workspace }}/codebase/unit-test-coverage-api.yaml"
+            "${{ github.workspace }}/codebase/unit-test-coverage-maintenancewindows.yaml"
           )
 
           for i in "${!modules[@]}"; do
