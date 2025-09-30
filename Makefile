@@ -78,6 +78,10 @@ unittest-klm: ## Run the unit test suite.
 
 .PHONY: unittest-api
 unittest-api: ## Run the unit test suite.
+    @echo "=== unittest-api debug ==="
+    @echo "PWD: $(shell pwd)"
+    @echo "Root listing:"
+    @ls -la .
 	$(GO) test -v ./api/... -coverprofile api-cover.out
 
 .PHONY: dry-run-control-plane
