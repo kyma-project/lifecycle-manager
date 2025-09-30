@@ -78,7 +78,7 @@ unittest-klm: ## Run the unit test suite.
 
 .PHONY: unittest-api
 unittest-api: ## Run the unit test suite.
-	$(GO) test -coverprofile api-cover.out ./api/...
+	$(GO) test -v ./api/... -coverprofile api-cover.out
 
 .PHONY: dry-run-control-plane
 dry-run-control-plane: kustomize manifests
