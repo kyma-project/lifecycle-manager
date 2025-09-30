@@ -69,7 +69,7 @@ envtest-dir:
 	echo "$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)"
 
 .PHONY: test
-test: unittest-api unittest-klm manifests test-crd generate fmt vet envtest ## Run tests.
+test: unittest-maintenancewindows unittest-api unittest-klm manifests test-crd generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" $(GO) test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
 
 .PHONY: unittest-klm
@@ -78,11 +78,11 @@ unittest-klm: ## Run the unit test suite.
 
 .PHONY: unittest-api
 unittest-api: ## Run the unit test suite.
-	@echo "=== unittest-api debug ==="
-	@echo "PWD: $(shell pwd)"
-	@echo "Root listing:"
-	@ls -la .
 	cd api && $(GO) test -v ./... -coverprofile ../api-cover.out
+
+.PHONY: unittest-maintenancewindows
+unittest-maintenancewindows: ## Run the unit test suite.
+	cd maintenancewindows && $(GO) test -v ./... -coverprofile ../maintenancewindows-cover.out
 
 .PHONY: dry-run-control-plane
 dry-run-control-plane: kustomize manifests
