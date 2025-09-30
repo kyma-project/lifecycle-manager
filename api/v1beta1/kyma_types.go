@@ -94,7 +94,8 @@ type KymaStatus struct {
 	LastOperation `json:"lastOperation,omitempty"`
 
 	// State signifies current state of Kyma.
-	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
+	// Value can be one of ("Ready", "Processing", "Warning", "Error", "Deleting").
+	// Note: The requeue interval in Error State is subject to rate limiting.
 	State State `json:"state,omitempty"`
 
 	// List of status conditions to indicate the status of a ServiceInstance.

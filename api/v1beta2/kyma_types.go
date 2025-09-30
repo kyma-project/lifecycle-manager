@@ -66,9 +66,6 @@ type Module struct {
 
 	// Name is a unique identifier of the module.
 	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
-	//
-	// Name can only be the ModuleName label value of the module-template,
-	// e.g. operator.kyma-project.io/module-name=my-module
 	Name string `json:"name"`
 
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
@@ -137,7 +134,8 @@ type KymaStatus struct {
 	shared.LastOperation `json:"lastOperation,omitempty"`
 
 	// State signifies current state of Kyma.
-	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
+	// Value can be one of ("Ready", "Processing", "Warning", "Error", "Deleting").
+	// Note: The requeue interval in Error State is subject to rate limiting.
 	State shared.State `json:"state,omitempty"`
 
 	// List of status conditions to indicate the status of a ServiceInstance.

@@ -51,6 +51,7 @@ import (
 var (
 	ErrManifestsStillExist = errors.New("manifests still exist")
 	ErrInvalidKymaSpec     = errors.New("invalid kyma spec")
+	ErrKymaInErrorState    = errors.New("kyma in error state")
 )
 
 const (
@@ -454,9 +455,15 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 		}
 		return ctrl.Result{RequeueAfter: requeueInterval}, r.updateStatus(ctx, kyma, state, msg)
 	}
-
-	return ctrl.Result{RequeueAfter: requeueInterval},
-		r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
+	err := r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if state == shared.StateError {
+		// Requeue with a new Error in case of Kyma error state, to enable rate limiting for that error.
+		return ctrl.Result{}, ErrKymaInErrorState
+	}
+	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
 func checkSKRWebhookReadiness(ctx context.Context, skrClient *remote.SkrContext, kyma *v1beta2.Kyma) error {
