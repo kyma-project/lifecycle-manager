@@ -34,8 +34,11 @@ jobs:
           go-version-file: ${{ github.workspace }}/codebase/go.mod
       - name: Run the quality gate verification
         run: |
-          REPO_PATH="${{ github.workspace }}/codebase"
-
+          repo_paths=(
+            "${{ github.workspace }}/codebase"
+            "${{ github.workspace }}/codebase/api"
+            "${{ github.workspace }}/codebase/maintenancewindows"
+          )
           modules=(
             "github.com/kyma-project/lifecycle-manager"
             "github.com/kyma-project/lifecycle-manager/api"
@@ -48,8 +51,9 @@ jobs:
           )
 
           for i in "${!modules[@]}"; do
+            repo_path="${repo_paths[$i]}"
             module="${modules[$i]}"
             config="${configs[$i]}"
             echo "Running coverage_guard for module: $module using config: $config"
-            $coverage_guard --repo "$REPO_PATH" --module "$module" --config "$config"
+            $coverage_guard --repo "$repo_path" --module "$module" --config "$config"
           done
