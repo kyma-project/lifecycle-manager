@@ -6,15 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/cli-runtime/pkg/resource"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -32,6 +23,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/cli-runtime/pkg/resource"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -97,8 +95,7 @@ type Reconciler struct {
 	skrClient                  SKRClient
 }
 
-func NewFromManager(mgr manager.Manager,
-	requeueIntervals queue.RequeueIntervals,
+func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	manifestAPIClient ManifestAPIClient,
@@ -106,6 +103,9 @@ func NewFromManager(mgr manager.Manager,
 	specResolver SpecResolver,
 	clientCache SKRClientCache,
 	skrClient SKRClient,
+	kcpClient client.Client,
+	cachedManifestParser CachedManifestParser,
+	postRenderTransforms []ObjectTransform,
 	stateCheck StateCheck,
 ) *Reconciler {
 	reconciler := &Reconciler{}
@@ -119,14 +119,9 @@ func NewFromManager(mgr manager.Manager,
 	reconciler.skrClientCache = clientCache
 	reconciler.skrClient = skrClient
 
-	reconciler.cachedManifestParser = NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)
-	reconciler.kcpClient = mgr.GetClient()
-	reconciler.postRenderTransforms = []ObjectTransform{
-		ManagedByOwnedBy,
-		KymaComponentTransform,
-		DisclaimerTransform,
-		DockerImageLocalizationTransform,
-	}
+	reconciler.kcpClient = kcpClient
+	reconciler.cachedManifestParser = cachedManifestParser
+	reconciler.postRenderTransforms = postRenderTransforms
 
 	reconciler.customStateCheck = stateCheck
 	return reconciler

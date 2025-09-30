@@ -30,6 +30,8 @@ import (
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"go.uber.org/zap/zapcore"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -477,6 +479,14 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
+
+	kcpClient := mgr.GetClient()
+	cachedManifestParser := v2.NewInMemoryCachedManifestParser(v2.DefaultInMemoryParseTTL)
+	postRenderTransforms := v2.GetDefaultTransforms()
+	statefulChecker := statecheck.NewStatefulSetStateCheck()
+	deploymentChecker := statecheck.NewDeploymentStateCheck()
+	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
+
 	if err := manifest.SetupWithManager(mgr, options, queue.RequeueIntervals{
 		Success: flagVar.ManifestRequeueSuccessInterval,
 		Busy:    flagVar.ManifestRequeueBusyInterval,
@@ -488,7 +498,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 		ListenerAddr:                 flagVar.ManifestListenerAddr,
 		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
-		specResolver, clientCache, skrClient); err != nil {
+		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, postRenderTransforms,
+		customStateCheck); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

@@ -156,7 +156,10 @@ var _ = BeforeSuite(func() {
 	orphanDetectionClient := kymarepository.NewClient(kcpClient)
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
-	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
+	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	postRenderTransforms := declarativev2.GetDefaultTransforms()
+
+	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
@@ -165,6 +168,7 @@ var _ = BeforeSuite(func() {
 		manifestClient, orphanDetectionService, spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
+		kcpClient, cachedManifestParser, postRenderTransforms,
 		statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker))
 
 	err = ctrl.NewControllerManagedBy(mgr).
