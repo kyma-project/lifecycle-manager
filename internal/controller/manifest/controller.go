@@ -28,6 +28,6 @@ func NewReconciler(mgr manager.Manager,
 		specResolver,
 		skrClientCache,
 		skrClient,
-		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)),
+		statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker),
 	)
 }

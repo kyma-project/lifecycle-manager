@@ -7,7 +7,9 @@ import (
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -41,6 +43,9 @@ var (
 )
 
 const (
+	EventRecorderDefault    = "declarative.kyma-project.io/events"
+	DefaultInMemoryParseTTL = 24 * time.Hour
+
 	namespaceNotBeRemoved  = "kyma-system"
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
@@ -74,9 +79,18 @@ type SKRClient interface {
 	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
 
+type ManifestCache string
+
+type ObjectTransform = func(context.Context, Object, []*unstructured.Unstructured) error
+
 type Reconciler struct {
 	queue.RequeueIntervals
-	*Options
+	client.Client
+	ManifestParser
+	record.EventRecorder
+
+	CustomStateCheck     StateCheck
+	PostRenderTransforms []ObjectTransform
 
 	ManifestMetrics            *metrics.ManifestMetrics
 	MandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
@@ -91,8 +105,7 @@ type Reconciler struct {
 func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals, metrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics, manifestAPIClient ManifestAPIClient,
 	orphanDetectionClient orphan.DetectionRepository, specResolver SpecResolver, clientCache SKRClientCache,
-	skrClient SKRClient,
-	options ...Option,
+	skrClient SKRClient, stateCheck StateCheck,
 ) *Reconciler {
 	reconciler := &Reconciler{}
 	reconciler.ManifestMetrics = metrics
@@ -104,7 +117,18 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 	reconciler.orphanDetectionService = orphan.NewDetectionService(orphanDetectionClient)
 	reconciler.skrClientCache = clientCache
 	reconciler.skrClient = skrClient
-	reconciler.Options = DefaultOptions().Apply(WithManager(mgr)).Apply(options...)
+
+	reconciler.ManifestParser = NewInMemoryManifestCache(DefaultInMemoryParseTTL)
+	reconciler.EventRecorder = mgr.GetEventRecorderFor(EventRecorderDefault)
+	reconciler.Client = mgr.GetClient()
+	reconciler.PostRenderTransforms = []ObjectTransform{
+		ManagedByOwnedBy,
+		KymaComponentTransform,
+		DisclaimerTransform,
+		DockerImageLocalizationTransform,
+	}
+
+	reconciler.CustomStateCheck = stateCheck
 	return reconciler
 }
 
@@ -364,7 +388,8 @@ func (r *Reconciler) renderResources(ctx context.Context, skrClient skrclient.Cl
 	return target, current, nil
 }
 
-func ensureModuleCRsAllDeleted(ctx context.Context, skrClient skrclient.Client, manifest *v1beta2.Manifest) (bool,
+func ensureModuleCRsAllDeleted(ctx context.Context, skrClient skrclient.Client, manifest *v1beta2.Manifest) (
+	bool,
 	error,
 ) {
 	if err := modulecr.NewClient(skrClient).CheckModuleCRsDeletion(ctx, manifest); err != nil {
@@ -407,7 +432,8 @@ func (r *Reconciler) syncManifestState(ctx context.Context, skrClient skrclient.
 
 func (r *Reconciler) checkManagerState(ctx context.Context, clnt skrclient.Client,
 	target []*resource.Info,
-) (shared.State,
+) (
+	shared.State,
 	error,
 ) {
 	managerReadyCheck := r.CustomStateCheck

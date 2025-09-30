@@ -163,7 +163,7 @@ var _ = BeforeSuite(func() {
 		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
-		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)))
+		statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

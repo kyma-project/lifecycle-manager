@@ -162,7 +162,7 @@ var _ = BeforeSuite(func() {
 		spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
-		declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()),
+		declarativev2.NewExistsStateCheck(),
 	)
 
 	err = ctrl.NewControllerManagedBy(mgr).
