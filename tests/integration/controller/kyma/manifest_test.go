@@ -250,20 +250,6 @@ var _ = Describe("Modules can only be referenced via module name", Ordered, func
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
 	RegisterDefaultLifecycleForKyma(kyma)
 
-	Context("When operator is referenced just by the label name", func() {
-		It("returns the expected operator", func() {
-			Eventually(ModuleTemplateExists).
-				WithContext(ctx).
-				WithArguments(kcpClient, moduleReferencedWithLabel, kyma).
-				Should(Succeed())
-
-			moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, moduleReferencedWithLabel, kyma)
-			Expect(err).ToNot(HaveOccurred())
-			foundModuleName := moduleTemplate.Labels[shared.ModuleName]
-			Expect(foundModuleName).To(Equal(moduleReferencedWithLabel.Name))
-		})
-	})
-
 	Context("When operator is referenced by Namespace/Name", func() {
 		It("cannot find the operator", func() {
 			Eventually(ModuleTemplateExists).

@@ -26,20 +26,3 @@ func Test_TemplateNameMatch_WhenModuleNameFieldIsNotMatching(t *testing.T) {
 	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "module")
 	assert.False(t, isNameMatching)
 }
-
-func Test_TemplateNameMatch_WhenNoModuleNameFieldButMatchingLabel(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		WithLabelModuleName("test-module").
-		Build()
-
-	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "test-module")
-	assert.True(t, isNameMatching)
-}
-
-func Test_TemplateNameMatch_WhenNoModuleNameFieldAndNoMatchingLabel(t *testing.T) {
-	moduleTemplate := builder.NewModuleTemplateBuilder().
-		Build()
-
-	isNameMatching := moduletemplateinfolookup.TemplateNameMatch(moduleTemplate, "test-module")
-	assert.False(t, isNameMatching)
-}
