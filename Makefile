@@ -82,7 +82,7 @@ unittest-api: ## Run the unit test suite.
 	@echo "PWD: $(shell pwd)"
 	@echo "Root listing:"
 	@ls -la .
-	cd api && $(GO) test -v ./api/... -coverprofile api-cover.out
+	cd api && $(GO) test -v ./... -coverprofile ../api-cover.out
 
 .PHONY: dry-run-control-plane
 dry-run-control-plane: kustomize manifests
