@@ -9,7 +9,6 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -87,7 +86,6 @@ type Reconciler struct {
 	queue.RequeueIntervals
 	client.Client
 	ManifestParser
-	record.EventRecorder
 
 	CustomStateCheck     StateCheck
 	PostRenderTransforms []ObjectTransform
@@ -119,7 +117,6 @@ func NewFromManager(mgr manager.Manager, requeueIntervals queue.RequeueIntervals
 	reconciler.skrClient = skrClient
 
 	reconciler.ManifestParser = NewInMemoryManifestCache(DefaultInMemoryParseTTL)
-	reconciler.EventRecorder = mgr.GetEventRecorderFor(EventRecorderDefault)
 	reconciler.Client = mgr.GetClient()
 	reconciler.PostRenderTransforms = []ObjectTransform{
 		ManagedByOwnedBy,
