@@ -59,7 +59,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
@@ -481,8 +481,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 
 	kcpClient := mgr.GetClient()
-	cachedManifestParser := v2.NewInMemoryCachedManifestParser(v2.DefaultInMemoryParseTTL)
-	postRenderTransforms := v2.GetDefaultTransforms()
+	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	postRenderTransforms := declarativev2.GetDefaultTransforms()
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
