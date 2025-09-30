@@ -30,6 +30,7 @@ import (
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"go.uber.org/zap/zapcore"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -472,6 +473,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
+	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
@@ -485,7 +487,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	}, manifest.SetupOptions{
 		ListenerAddr:                 flagVar.ManifestListenerAddr,
 		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionClient,
+	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
 		specResolver, clientCache, skrClient); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)

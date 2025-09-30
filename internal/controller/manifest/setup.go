@@ -26,7 +26,6 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
@@ -45,7 +44,7 @@ func SetupWithManager(mgr manager.Manager,
 	manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	manifestClient declarativev2.ManifestAPIClient,
-	orphanDetectionClient orphan.DetectionRepository,
+	orphanDetectionService declarativev2.OrphanDetectionService,
 	specResolver *spec.Resolver,
 	skrClientCache declarativev2.SKRClientCache,
 	skrClient declarativev2.SKRClient,
@@ -94,7 +93,7 @@ func SetupWithManager(mgr manager.Manager,
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
 		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
-			orphanDetectionClient, specResolver, skrClientCache, skrClient)); err != nil {
+			orphanDetectionService, specResolver, skrClientCache, skrClient)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 
