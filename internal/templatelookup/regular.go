@@ -11,7 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup/common"
 )
 
 var (
@@ -21,6 +21,7 @@ var (
 		"waiting for next maintenance window to update module version",
 	)
 	ErrFailedToDetermineIfMaintenanceWindowIsActive = errors.New("failed to determine if maintenance window is active")
+	ErrModuleReleaseMetaNotFound                    = errors.New("ModuleReleaseMeta not found for module")
 )
 
 type MaintenanceWindow interface {
@@ -149,7 +150,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		// If ModuleReleaseMeta doesn't exist, we can't proceed with template lookup
 		if moduleReleaseMeta == nil {
 			templates[moduleInfo.Name] = &ModuleTemplateInfo{
-				Err: fmt.Errorf("ModuleReleaseMeta not found for module %s", moduleInfo.Name),
+				Err: fmt.Errorf("%w: %s", ErrModuleReleaseMetaNotFound, moduleInfo.Name),
 			}
 			continue
 		}

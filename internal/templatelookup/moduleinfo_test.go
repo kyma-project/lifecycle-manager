@@ -8,7 +8,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup"
 )
 
 func Test_FetchModuleInfo_When_EmptySpecAndStatus(t *testing.T) {

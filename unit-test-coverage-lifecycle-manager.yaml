@@ -44,5 +44,4 @@ packages:
   internal/util/collections: 87
   pkg/module/sync: 10
   pkg/templatelookup: 87
-  pkg/templatelookup/moduletemplateinfolookup: 98
   pkg/watcher: 10

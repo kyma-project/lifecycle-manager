@@ -80,10 +80,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"

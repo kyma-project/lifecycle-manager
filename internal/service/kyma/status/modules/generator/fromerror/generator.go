@@ -5,8 +5,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup/common"
 )
 
 var errFunctionCalledWitNilError = errors.New("can not generate a modulestatus without error")
