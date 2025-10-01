@@ -56,7 +56,6 @@ bin/*
 # Vendor
 vendor/
 
-cover.out
 *.swp
 
 # Ignore sqlite db files
@@ -67,7 +66,7 @@ cover.out
 *.wip
 
 # Ignore coverage output file
-coverage.out
+*.out
 
 # Ignore backup files
 *.bak
