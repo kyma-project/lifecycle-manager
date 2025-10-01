@@ -187,3 +187,7 @@ module-transferred-to-another-oci-registry:
 fips-mode-metric:
 	$(GO_TEST) "FIPS Mode metric"
 
+simulate-skr-secret-rotation-evict-client-cache:
+	$(GO_TEST) "SKR client cache get evicted due to connection error caused by secret rotation"
+  
+
