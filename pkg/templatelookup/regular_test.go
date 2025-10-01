@@ -16,7 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-// TestSetup provides a simplified way to create test scenarios for templatelookup
+// TestSetup provides a simplified way to create test scenarios for templatelookup.
 type TestSetup struct {
 	moduleTemplate    *v1beta2.ModuleTemplate
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta
@@ -24,7 +24,7 @@ type TestSetup struct {
 	client            client.Client
 }
 
-// NewTestSetup creates a new test setup with sensible defaults
+// NewTestSetup creates a new test setup with sensible defaults.
 func NewTestSetup() *TestSetup {
 	scheme := machineryruntime.NewScheme()
 	_ = v1beta2.AddToScheme(scheme)
@@ -34,7 +34,7 @@ func NewTestSetup() *TestSetup {
 	}
 }
 
-// WithMandatoryModule sets up a mandatory module scenario
+// WithMandatoryModule sets up a mandatory module scenario.
 func (ts *TestSetup) WithMandatoryModule(moduleName, version string) *TestSetup {
 	ts.moduleTemplate = builder.NewModuleTemplateBuilder().
 		WithName(moduleName + "-" + version).
@@ -57,7 +57,7 @@ func (ts *TestSetup) WithMandatoryModule(moduleName, version string) *TestSetup 
 	return ts
 }
 
-// WithChannelModule sets up a channel-based module scenario
+// WithChannelModule sets up a channel-based module scenario.
 func (ts *TestSetup) WithChannelModule(moduleName, channel, version string) *TestSetup {
 	ts.moduleTemplate = builder.NewModuleTemplateBuilder().
 		WithName(moduleName + "-" + version).
@@ -81,7 +81,7 @@ func (ts *TestSetup) WithChannelModule(moduleName, channel, version string) *Tes
 	return ts
 }
 
-// WithMissingTemplate creates a scenario where the module template doesn't exist
+// WithMissingTemplate creates a scenario where the module template doesn't exist.
 func (ts *TestSetup) WithMissingTemplate(moduleName, channel, version string) *TestSetup {
 	// Only create ModuleReleaseMeta, no ModuleTemplate
 	ts.moduleReleaseMeta = builder.NewModuleReleaseMetaBuilder().
@@ -99,7 +99,7 @@ func (ts *TestSetup) WithMissingTemplate(moduleName, channel, version string) *T
 	return ts
 }
 
-// Build creates the client with all configured objects and returns it
+// Build creates the client with all configured objects and returns it.
 func (ts *TestSetup) Build() client.Client {
 	scheme := machineryruntime.NewScheme()
 	_ = v1beta2.AddToScheme(scheme)
@@ -121,7 +121,7 @@ func (ts *TestSetup) Build() client.Client {
 		Build()
 }
 
-// GetModuleInfo returns a ModuleInfo for testing
+// GetModuleInfo returns a ModuleInfo for testing.
 func (ts *TestSetup) GetModuleInfo(moduleName string) *templatelookup.ModuleInfo {
 	return &templatelookup.ModuleInfo{
 		Module: v1beta2.Module{
@@ -130,18 +130,19 @@ func (ts *TestSetup) GetModuleInfo(moduleName string) *templatelookup.ModuleInfo
 	}
 }
 
-// GetKyma returns the configured Kyma object
+// GetKyma returns the configured Kyma object.
 func (ts *TestSetup) GetKyma() *v1beta2.Kyma {
 	return ts.kyma
 }
 
-// GetModuleReleaseMeta returns the configured ModuleReleaseMeta
+// GetModuleReleaseMeta returns the configured ModuleReleaseMeta.
 func (ts *TestSetup) GetModuleReleaseMeta() *v1beta2.ModuleReleaseMeta {
 	return ts.moduleReleaseMeta
 }
 
-// ExecuteLookupModuleTemplate is a simplified test helper for LookupModuleTemplate
+// ExecuteLookupModuleTemplate is a simplified test helper for LookupModuleTemplate.
 func ExecuteLookupModuleTemplate(t *testing.T, setup *TestSetup, moduleName string) templatelookup.ModuleTemplateInfo {
+	t.Helper()
 	client := setup.Build()
 	moduleInfo := setup.GetModuleInfo(moduleName)
 	kyma := setup.GetKyma()
@@ -150,7 +151,7 @@ func ExecuteLookupModuleTemplate(t *testing.T, setup *TestSetup, moduleName stri
 	return templatelookup.LookupModuleTemplate(t.Context(), client, moduleInfo, kyma, moduleReleaseMeta)
 }
 
-// TestLookupModuleTemplate covers the core LookupModuleTemplate functionality
+// TestLookupModuleTemplate covers the core LookupModuleTemplate functionality.
 func TestLookupModuleTemplate(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -188,28 +189,28 @@ func TestLookupModuleTemplate(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setup := tt.setupFunc()
-			result := ExecuteLookupModuleTemplate(t, setup, tt.moduleName)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			setup := testCase.setupFunc()
+			result := ExecuteLookupModuleTemplate(t, setup, testCase.moduleName)
 
-			if tt.expectError {
-				assert.Error(t, result.Err)
+			if testCase.expectError {
+				require.Error(t, result.Err)
 			} else {
-				assert.NoError(t, result.Err)
+				require.NoError(t, result.Err)
 			}
 
-			if tt.expectNil {
+			if testCase.expectNil {
 				assert.Nil(t, result.ModuleTemplate)
 			} else {
 				assert.NotNil(t, result.ModuleTemplate)
-				assert.Contains(t, result.ModuleTemplate.Name, tt.moduleName)
+				assert.Contains(t, result.Name, testCase.moduleName)
 			}
 		})
 	}
 }
 
-// TestValidateTemplateMode covers template validation logic
+// TestValidateTemplateMode covers template validation logic.
 func TestValidateTemplateMode(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -257,15 +258,15 @@ func TestValidateTemplateMode(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := templatelookup.ValidateTemplateMode(tt.template, tt.kyma)
-			require.ErrorIs(t, result.Err, tt.wantErr)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := templatelookup.ValidateTemplateMode(testCase.template, testCase.kyma)
+			require.ErrorIs(t, result.Err, testCase.wantErr)
 		})
 	}
 }
 
-// TestTemplateNameMatch covers the template name matching utility
+// TestTemplateNameMatch covers the template name matching utility.
 func TestTemplateNameMatch(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -293,15 +294,15 @@ func TestTemplateNameMatch(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			template := v1beta2.ModuleTemplate{
 				Spec: v1beta2.ModuleTemplateSpec{
-					ModuleName: tt.templateName,
+					ModuleName: testCase.templateName,
 				},
 			}
-			result := templatelookup.TemplateNameMatch(&template, tt.targetName)
-			assert.Equal(t, tt.want, result)
+			result := templatelookup.TemplateNameMatch(&template, testCase.targetName)
+			assert.Equal(t, testCase.want, result)
 		})
 	}
 }

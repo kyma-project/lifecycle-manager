@@ -52,15 +52,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
 	_ "ocm.software/ocm/api/ocm"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -161,13 +161,7 @@ var _ = BeforeSuite(func() {
 			flags.DefaultRemoteSyncNamespace),
 		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
 		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-				})),
+		TemplateLookup:      templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, nil),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())

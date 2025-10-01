@@ -69,6 +69,18 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
+
+		// Also delete the corresponding ModuleReleaseMeta
+		moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+			WithNamespace(ControlPlaneNamespace).
+			WithName(module.Name).
+			WithModuleName(module.Name).
+			WithSingleModuleChannelAndVersions(module.Channel,
+				module.Channel). // Use channel as version for integration tests
+			Build()
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, moduleReleaseMeta).Should(Succeed())
 	}
 }
 
@@ -83,6 +95,19 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		Eventually(CreateCR, Timeout, Interval).WithContext(ctx).
 			WithArguments(kcpClient, template).
 			Should(Succeed())
+
+		// Create corresponding ModuleReleaseMeta for proper templatelookup behavior
+		moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+			WithNamespace(ControlPlaneNamespace).
+			WithName(module.Name).
+			WithModuleName(module.Name).
+			WithSingleModuleChannelAndVersions(module.Channel,
+				module.Channel). // Use channel as version for integration tests
+			Build()
+		Eventually(CreateCR, Timeout, Interval).WithContext(ctx).
+			WithArguments(kcpClient, moduleReleaseMeta).
+			Should(Succeed())
+
 		managedModule := NewTestModuleWithFixName(module.Name, module.Channel, "")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, kcpClient, managedModule, kyma).
@@ -95,6 +120,17 @@ func DeployMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client)
 	Eventually(CreateCR, Timeout, Interval).
 		WithContext(ctx).
 		WithArguments(kcpClient, mandatoryTemplate).Should(Succeed())
+
+	// Create corresponding ModuleReleaseMeta for mandatory module
+	mandatoryModuleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+		WithNamespace(ControlPlaneNamespace).
+		WithName("mandatory-template-operator").
+		WithModuleName("mandatory-template-operator").
+		WithMandatory(mandatoryChannel). // Use channel as mandatory version
+		Build()
+	Eventually(CreateCR, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, mandatoryModuleReleaseMeta).Should(Succeed())
 }
 
 func DeleteMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client) {
@@ -102,6 +138,17 @@ func DeleteMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client)
 	Eventually(DeleteCR, Timeout, Interval).
 		WithContext(ctx).
 		WithArguments(kcpClient, mandatoryTemplate).Should(Succeed())
+
+	// Also delete the corresponding ModuleReleaseMeta
+	mandatoryModuleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
+		WithNamespace(ControlPlaneNamespace).
+		WithName("mandatory-template-operator").
+		WithModuleName("mandatory-template-operator").
+		WithMandatory(mandatoryChannel).
+		Build()
+	Eventually(DeleteCR, Timeout, Interval).
+		WithContext(ctx).
+		WithArguments(kcpClient, mandatoryModuleReleaseMeta).Should(Succeed())
 }
 
 func createModuleTemplateName(module v1beta2.Module) string {

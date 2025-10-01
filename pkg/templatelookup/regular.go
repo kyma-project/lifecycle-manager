@@ -146,6 +146,14 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 
+		// If ModuleReleaseMeta doesn't exist, we can't proceed with template lookup
+		if moduleReleaseMeta == nil {
+			templates[moduleInfo.Name] = &ModuleTemplateInfo{
+				Err: fmt.Errorf("ModuleReleaseMeta not found for module %s", moduleInfo.Name),
+			}
+			continue
+		}
+
 		templateInfo := t.lookupModuleTemplateWithMaintenanceWindow(ctx,
 			&moduleInfo,
 			kyma,
@@ -178,7 +186,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 	return templates
 }
 
-// lookupModuleTemplateWithMaintenanceWindow performs the core lookup and applies maintenance window logic
+// lookupModuleTemplateWithMaintenanceWindow performs the core lookup and applies maintenance window logic.
 func (t *TemplateLookup) lookupModuleTemplateWithMaintenanceWindow(ctx context.Context,
 	moduleInfo *ModuleInfo,
 	kyma *v1beta2.Kyma,
@@ -307,7 +315,7 @@ func filterVersion(version *semver.Version) *semver.Version {
 	return filteredVersion
 }
 
-// TemplateNameMatch checks if a module template matches the given name
+// TemplateNameMatch checks if a module template matches the given name.
 func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
 	return template.Spec.ModuleName == name
 }
