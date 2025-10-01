@@ -1,0 +1,18 @@
+name: "Create Release For Maintenancewindows Module"
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic version to release (e.g. 1.2.3 or v1.2.3)"
+        required: true
+
+jobs:
+  call-create-release:
+    uses: ./.github/workflows/create-release-go-module.yml
+    with:
+      version: ${{ github.event.inputs.version }}
+      module: github.com/kyma-project/lifecycle-manager/maintenancewindows
+      module_dir: maintenancewindows
+      go_version_file: maintenancewindows/go.mod
+      go_sum_file: maintenancewindows/go.sum
+    secrets: inherit
