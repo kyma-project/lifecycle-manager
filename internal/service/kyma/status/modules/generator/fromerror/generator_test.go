@@ -13,7 +13,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
 func TestGenerateModuleStatusFromError_WhenCalledWithAnyOtherError_ReturnsDefaultNewStatusWithStateError(t *testing.T) {
@@ -50,7 +49,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowActiveErro
 	someChannel := "some-channel"
 	someFQDN := "some-fqdn"
 	status := createStatus()
-	templateError := moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow
+	templateError := templatelookup.ErrWaitingForNextMaintenanceWindow
 
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
 
@@ -75,7 +74,7 @@ func TestGenerateModuleStatusFromError_WhenCalledWithMaintenanceWindowUnknownErr
 	someChannel := "some-channel"
 	someFQDN := "some-fqdn"
 	status := createStatus()
-	templateError := moduletemplateinfolookup.ErrFailedToDetermineIfMaintenanceWindowIsActive
+	templateError := templatelookup.ErrFailedToDetermineIfMaintenanceWindowIsActive
 
 	result, err := fromerror.GenerateModuleStatusFromError(templateError, someModuleName, someChannel, someFQDN, status)
 
