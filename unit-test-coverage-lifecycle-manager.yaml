@@ -39,7 +39,7 @@ packages:
   internal/service/watcher/chartreader: 100
   internal/service/watcher/gateway: 94
   internal/service/watcher/resources: 82
-  internal/service/skrclient:  35
+  internal/service/skrclient: 35
 
   internal/util/collections: 87
   pkg/module/sync: 10

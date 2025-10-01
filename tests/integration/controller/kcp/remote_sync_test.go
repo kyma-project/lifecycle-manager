@@ -320,6 +320,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	var err error
 	BeforeAll(func() {
 		template := builder.NewModuleTemplateBuilder().
+			WithName(moduleInKCP.Name).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(moduleInKCP.Name).
 			WithChannel(moduleInKCP.Channel).
