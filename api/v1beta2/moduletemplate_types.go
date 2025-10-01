@@ -239,13 +239,3 @@ func (m *ModuleTemplate) IsBeta() bool {
 func (m *ModuleTemplate) IsMandatory() bool {
 	return m.Spec.Mandatory
 }
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) GetModuleName() string {
-	moduleName := m.Spec.ModuleName
-	if moduleName == "" {
-		moduleName = m.Labels[shared.ModuleName]
-	}
-	return moduleName
-}

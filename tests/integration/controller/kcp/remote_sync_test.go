@@ -35,18 +35,18 @@ var (
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-1")
 	skrKyma := NewSKRKyma()
-	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
-	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	moduleInSKR := NewTestModule("skr-module", v1beta2.DefaultChannel)
+	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithLabelModuleName(moduleInSKR.Name).
+		WithModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
 	TemplateForKCPEnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithLabelModuleName(moduleInKCP.Name).
+		WithModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
@@ -230,7 +230,7 @@ func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
 
 var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-2")
-	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleInKCP)
 	skrKyma := NewSKRKyma()
 	var skrClient client.Client
