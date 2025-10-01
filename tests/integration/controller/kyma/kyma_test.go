@@ -244,7 +244,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 				WithContext(ctx).WithArguments(skrClient, skrKyma).Should(Succeed())
 		})
 
-		It("Should deploy ModuleTemplate", func() {
+		It("Should deploy ModuleTemplate test", func() {
 			for _, module := range kyma.Spec.Modules {
 				template := builder.NewModuleTemplateBuilder().
 					WithNamespace(ControlPlaneNamespace).
