@@ -49,7 +49,7 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 		By("When a KCP Kyma CR is created on the KCP cluster")
 		Eventually(CreateKymaSecret).
 			WithContext(ctx).
-			WithArguments(kcpClient, kyma.GetName()).
+			WithArguments(kcpClient, kyma.GetName(), string(*skrConfig)).
 			Should(Succeed())
 		Eventually(kcpClient.Create).
 			WithContext(ctx).
@@ -109,8 +109,9 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 	return CRExists(resourceCR, err)
 }
 
-func CreateKymaSecret(ctx context.Context, k8sClient client.Client, kymaName string) error {
-	patchedRuntimeConfig := strings.ReplaceAll(string(*skrConfig), localHostname, skrHostname)
+func CreateKymaSecret(ctx context.Context, k8sClient client.Client, kymaName, runtimeConfig string) error {
+	patchedRuntimeConfig := strings.ReplaceAll(runtimeConfig, localHostname, skrHostname)
+	GinkgoWriter.Printf("CreateKymaSecret: %s\n", patchedRuntimeConfig)
 	return CreateAccessSecret(ctx, k8sClient, kymaName, patchedRuntimeConfig)
 }
 

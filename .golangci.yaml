@@ -21,6 +21,7 @@ linters:
       # Default: []
       exclusions:
         - "ResourceList.append"
+        - "Regexp.UnmarshalJSON"
         - "*.DeepCopyInto"
         - "*.DeepCopy"
         - "*.DeepCopyObject"
