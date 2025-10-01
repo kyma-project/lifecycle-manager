@@ -15,9 +15,18 @@ import (
 )
 
 var (
-	ErrTemplateNotAllowed       = errors.New("module template not allowed")
-	ErrTemplateUpdateNotAllowed = errors.New("module template update not allowed")
+	ErrTemplateNotAllowed              = errors.New("module template not allowed")
+	ErrTemplateUpdateNotAllowed        = errors.New("module template update not allowed")
+	ErrWaitingForNextMaintenanceWindow = errors.New(
+		"waiting for next maintenance window to update module version",
+	)
+	ErrFailedToDetermineIfMaintenanceWindowIsActive = errors.New("failed to determine if maintenance window is active")
 )
+
+type MaintenanceWindow interface {
+	IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma) bool
+	IsActive(kyma *v1beta2.Kyma) (bool, error)
+}
 
 type ModuleTemplateInfo struct {
 	*v1beta2.ModuleTemplate
@@ -26,33 +35,98 @@ type ModuleTemplateInfo struct {
 	DesiredChannel string
 }
 
-type ModuleTemplateInfoLookupStrategy interface {
-	Lookup(ctx context.Context,
-		moduleInfo *ModuleInfo,
-		kyma *v1beta2.Kyma,
-		moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
-	) ModuleTemplateInfo
-}
-
 type TemplateLookup struct {
 	client.Reader
 
-	descriptorProvider               *provider.CachedDescriptorProvider
-	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy
+	descriptorProvider *provider.CachedDescriptorProvider
+	maintenanceWindow  MaintenanceWindow
 }
 
 func NewTemplateLookup(reader client.Reader,
 	descriptorProvider *provider.CachedDescriptorProvider,
-	moduleTemplateInfoLookupStrategy ModuleTemplateInfoLookupStrategy,
+	maintenanceWindow MaintenanceWindow,
 ) *TemplateLookup {
 	return &TemplateLookup{
-		Reader:                           reader,
-		descriptorProvider:               descriptorProvider,
-		moduleTemplateInfoLookupStrategy: moduleTemplateInfoLookupStrategy,
+		Reader:             reader,
+		descriptorProvider: descriptorProvider,
+		maintenanceWindow:  maintenanceWindow,
 	}
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
+
+// LookupModuleTemplate looks up the module template via the module release meta.
+// In production, moduleReleaseMeta is guaranteed to exist for valid modules.
+func LookupModuleTemplate(ctx context.Context,
+	clnt client.Reader,
+	moduleInfo *ModuleInfo,
+	kyma *v1beta2.Kyma,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) ModuleTemplateInfo {
+	moduleTemplateInfo := ModuleTemplateInfo{}
+	moduleTemplateInfo.DesiredChannel = getDesiredChannel(moduleInfo.Channel, kyma.Spec.Channel)
+
+	var desiredModuleVersion string
+	var err error
+	if moduleReleaseMeta.Spec.Mandatory != nil {
+		desiredModuleVersion, err = GetMandatoryVersionForModule(moduleReleaseMeta)
+	} else {
+		desiredModuleVersion, err = GetChannelVersionForModule(moduleReleaseMeta,
+			moduleTemplateInfo.DesiredChannel)
+	}
+	if err != nil {
+		moduleTemplateInfo.Err = err
+		return moduleTemplateInfo
+	}
+
+	template, err := getTemplateByVersion(ctx,
+		clnt,
+		moduleInfo.Name,
+		desiredModuleVersion,
+		kyma.Namespace)
+	if err != nil {
+		moduleTemplateInfo.Err = err
+		return moduleTemplateInfo
+	}
+
+	moduleTemplateInfo.ModuleTemplate = template
+	return moduleTemplateInfo
+}
+
+// getDesiredChannel determines the desired channel based on module-specific channel or global channel.
+func getDesiredChannel(moduleChannel, globalChannel string) string {
+	var desiredChannel string
+
+	switch {
+	case moduleChannel != "":
+		desiredChannel = moduleChannel
+	case globalChannel != "":
+		desiredChannel = globalChannel
+	default:
+		desiredChannel = v1beta2.DefaultChannel
+	}
+
+	return desiredChannel
+}
+
+func getTemplateByVersion(ctx context.Context,
+	clnt client.Reader,
+	moduleName,
+	moduleVersion,
+	namespace string,
+) (*v1beta2.ModuleTemplate, error) {
+	moduleTemplate := &v1beta2.ModuleTemplate{}
+
+	moduleTemplateName := fmt.Sprintf("%s-%s", moduleName, moduleVersion)
+	if err := clnt.Get(ctx, client.ObjectKey{
+		Name:      moduleTemplateName,
+		Namespace: namespace,
+	}, moduleTemplate); err != nil {
+		return nil, fmt.Errorf("failed to get module template: %w", err)
+	}
+
+	return moduleTemplate, nil
+}
 
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
@@ -72,7 +146,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 
-		templateInfo := t.moduleTemplateInfoLookupStrategy.Lookup(ctx,
+		templateInfo := t.lookupModuleTemplateWithMaintenanceWindow(ctx,
 			&moduleInfo,
 			kyma,
 			moduleReleaseMeta)
@@ -102,6 +176,42 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		templates[moduleInfo.Name] = &templateInfo
 	}
 	return templates
+}
+
+// lookupModuleTemplateWithMaintenanceWindow performs the core lookup and applies maintenance window logic
+func (t *TemplateLookup) lookupModuleTemplateWithMaintenanceWindow(ctx context.Context,
+	moduleInfo *ModuleInfo,
+	kyma *v1beta2.Kyma,
+	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+) ModuleTemplateInfo {
+	// First perform the standard lookup
+	moduleTemplateInfo := LookupModuleTemplate(ctx, t.Reader, moduleInfo, kyma, moduleReleaseMeta)
+
+	// If lookup failed or no maintenance window configured, return as-is
+	if moduleTemplateInfo.ModuleTemplate == nil || moduleTemplateInfo.Err != nil || t.maintenanceWindow == nil {
+		return moduleTemplateInfo
+	}
+
+	// Check if maintenance window is required for this module template
+	if !t.maintenanceWindow.IsRequired(moduleTemplateInfo.ModuleTemplate, kyma) {
+		return moduleTemplateInfo
+	}
+
+	// Check if maintenance window is currently active
+	active, err := t.maintenanceWindow.IsActive(kyma)
+	if err != nil {
+		moduleTemplateInfo.Err = fmt.Errorf("%w: %w", ErrFailedToDetermineIfMaintenanceWindowIsActive, err)
+		moduleTemplateInfo.ModuleTemplate = nil
+		return moduleTemplateInfo
+	}
+
+	if !active {
+		moduleTemplateInfo.Err = ErrWaitingForNextMaintenanceWindow
+		moduleTemplateInfo.ModuleTemplate = nil
+		return moduleTemplateInfo
+	}
+
+	return moduleTemplateInfo
 }
 
 func ValidateTemplateMode(template ModuleTemplateInfo,
@@ -195,4 +305,9 @@ func filterVersion(version *semver.Version) *semver.Version {
 	filteredVersion, _ := semver.NewVersion(fmt.Sprintf("%d.%d.%d",
 		version.Major(), version.Minor(), version.Patch()))
 	return filteredVersion
+}
+
+// TemplateNameMatch checks if a module template matches the given name
+func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
+	return template.Spec.ModuleName == name
 }
