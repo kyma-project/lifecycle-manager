@@ -29,9 +29,6 @@ import (
 const (
 	version1 = "1.0.1"
 	version2 = "2.2.0"
-	version3 = "3.0.3"
-
-	versionUpgradeErr = "as a higher version (" + version3 + ") of the module was previously installed"
 )
 
 type FakeModuleTemplateReader struct {
@@ -529,48 +526,6 @@ func TestTemplateNameMatch(t *testing.T) {
 	}
 }
 
-type getRegularTemplatesTestCases []struct {
-	name            string
-	kyma            *v1beta2.Kyma
-	wantVersion     string
-	wantChannel     string
-	wantErrContains string
-}
-
-func executeGetRegularTemplatesTestCases(t *testing.T,
-	testCases getRegularTemplatesTestCases,
-	availableModuleTemplates v1beta2.ModuleTemplateList,
-	availableModuleReleaseMetas v1beta2.ModuleReleaseMetaList,
-	moduleToInstall v1beta2.Module,
-) {
-	t.Helper()
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			reader := NewFakeModuleTemplateReader(availableModuleTemplates, availableModuleReleaseMetas)
-			lookup := templatelookup.NewTemplateLookup(
-				reader,
-				provider.NewCachedDescriptorProvider(),
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-					[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-						moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-					},
-				),
-			)
-			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
-			assert.Len(t, got, 1)
-			for key, module := range got {
-				assert.Equal(t, key, moduleToInstall.Name)
-				if testCase.wantErrContains != "" {
-					assert.Contains(t, module.Err.Error(), testCase.wantErrContains)
-				} else {
-					assert.Equal(t, testCase.wantChannel, module.DesiredChannel)
-					assert.Equal(t, testCase.wantVersion, module.Spec.Version)
-				}
-			}
-		})
-	}
-}
-
 func generateModuleTemplateListWithModule(moduleName, moduleChannel, moduleVersion string) v1beta2.ModuleTemplateList {
 	templateList := v1beta2.ModuleTemplateList{}
 	templateList.Items = append(templateList.Items, *builder.NewModuleTemplateBuilder().
@@ -618,8 +573,4 @@ func (mtlb *ModuleTemplateListBuilder) Build() v1beta2.ModuleTemplateList {
 	return v1beta2.ModuleTemplateList{
 		Items: mtlb.ModuleTemplates,
 	}
-}
-
-func moduleToInstallByVersion(moduleName, moduleVersion string) v1beta2.Module {
-	return testutils.NewTestModuleWithChannelVersion(moduleName, "", moduleVersion)
 }
