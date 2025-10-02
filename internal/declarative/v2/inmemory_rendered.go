@@ -13,29 +13,29 @@ import (
 
 const ManifestFilePrefix = "manifest"
 
-type ManifestParser interface {
+type CachedManifestParser interface {
 	Parse(spec *Spec) (internal.ManifestResources, error)
 	EvictCache(spec *Spec)
 }
 
-type InMemoryManifestCache struct {
+type InMemoryCachedManifestParser struct {
 	*ttlcache.Cache[string, internal.ManifestResources]
 
 	TTL time.Duration
 }
 
-func NewInMemoryManifestCache(ttl time.Duration) *InMemoryManifestCache {
+func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryCachedManifestParser {
 	cache := ttlcache.New[string, internal.ManifestResources]()
 	go cache.Start()
-	return &InMemoryManifestCache{Cache: cache, TTL: ttl}
+	return &InMemoryCachedManifestParser{Cache: cache, TTL: ttl}
 }
 
-func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
+func (c *InMemoryCachedManifestParser) EvictCache(spec *Spec) {
 	key := generateCacheKey(spec)
 	c.Delete(key)
 }
 
-func (c *InMemoryManifestCache) Parse(spec *Spec,
+func (c *InMemoryCachedManifestParser) Parse(spec *Spec,
 ) (internal.ManifestResources, error) {
 	key := generateCacheKey(spec)
 
