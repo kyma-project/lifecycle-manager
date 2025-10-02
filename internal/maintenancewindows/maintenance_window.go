@@ -92,7 +92,7 @@ func (MaintenanceWindow) IsRequired(moduleTemplate *v1beta2.ModuleTemplate, kyma
 	}
 
 	// module already installed in this version => no need for maintenance window
-	return moduleStatus.Version != moduleTemplate.GetVersion()
+	return moduleStatus.Version != moduleTemplate.Spec.Version
 }
 
 // IsActive determines if a maintenance window is currently active.
