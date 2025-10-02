@@ -78,11 +78,11 @@ unittest-klm: ## Run the unit test suite.
 
 .PHONY: unittest-api
 unittest-api: ## Run the unit test suite.
-	cd api && $(GO) test -v ./... -coverprofile ../api-cover.out
+	cd api && make test
 
 .PHONY: unittest-maintenancewindows
 unittest-maintenancewindows: ## Run the unit test suite.
-	cd maintenancewindows && $(GO) test -v ./... -coverprofile ../maintenancewindows-cover.out
+	cd maintenancewindows && make test
 
 .PHONY: dry-run-control-plane
 dry-run-control-plane: kustomize manifests

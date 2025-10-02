@@ -1,0 +1,79 @@
+name: "Create Release For Module (reusable)"
+on:
+    workflow_call:
+        inputs:
+            version:
+                required: true
+                type: string
+            module:
+                required: true
+                type: string
+            module_dir:
+                required: true
+                type: string
+            go_version_file:
+                required: true
+                type: string
+            go_sum_file:
+                required: true
+                type: string
+
+jobs:
+    release-listener:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Go
+              uses: actions/setup-go@v6
+              with:
+                  go-version-file: ${{ inputs.go_version_file }}
+                  cache-dependency-path: ${{ inputs.go_sum_file }}
+
+            - name: Get configuration
+              uses: ./.github/actions/configuration
+              id: configuration
+
+            - name: Validate & normalize version
+              id: normalize
+              run: |
+                  raw="${{ inputs.version }}"
+                  ver="${raw#v}"
+                  if [[ ! "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                    echo "Invalid version: $raw. Must be semver X.Y.Z"
+                    exit 1
+                  fi
+                  tag="${{ inputs.module_dir }}/v${ver}"
+                  echo "VERSION=${ver}" >> "$GITHUB_ENV"
+                  echo "TAG=${tag}" >> "$GITHUB_ENV"
+                  echo "Normalized to tag: ${tag}"
+
+            - name: Ensure tag does not already exist
+              run: |
+                  if git ls-remote --tags origin "refs/tags/${{ env.TAG }}" | grep -q "${{ env.TAG }}"; then
+                    echo "Tag ${{ env.TAG }} already exists in origin"
+                    exit 1
+                  fi
+              env:
+                  TAG: ${{ env.TAG }}
+
+            - name: "Run tests for module"
+              working-directory: ./${{ inputs.module_dir }}
+              run: |
+                  make test
+                  make build-verbose
+
+            - name: Create and push git tag
+              env:
+                  TAG: ${{ env.TAG }}
+              run: |
+                  git tag -a "${TAG}" -m "Release ${TAG}"
+                  git push origin "${TAG}"
+
+            - name: Output release info
+              run: echo "Released module=${{ inputs.module }} tag=${{ env.TAG }} version=${{ env.VERSION }}"
