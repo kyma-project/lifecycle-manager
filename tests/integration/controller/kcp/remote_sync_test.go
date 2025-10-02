@@ -35,9 +35,14 @@ var (
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-1")
 	skrKyma := NewSKRKyma()
-	moduleInSKR := NewTestModule("skr-module", v1beta2.DefaultChannel)
-	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
+	moduleInSKR := NewTestModuleWithChannelVersion("skr-module", v1beta2.DefaultChannel, "0.1.0")
+	moduleInKCP := NewTestModuleWithChannelVersion("kcp-module", v1beta2.DefaultChannel, "0.1.0")
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
+	ModuleReleaseMetaKcp := builder.NewModuleReleaseMetaBuilder().
+		WithNamespace(ControlPlaneNamespace).
+		WithName(moduleInKCP.Name).
+		WithModuleName(moduleInKCP.Name).
+		WithSingleModuleChannelAndVersions(moduleInKCP.Channel, moduleInKCP.Version).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleInSKR.Name).
@@ -96,6 +101,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(CreateModuleTemplate, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, TemplateForSKREnabledModule).
+			Should(Succeed())
+	})
+
+	It("KCP ModuleReleaseMeta should be created", func() {
+		Eventually(CreateModuleReleaseMeta, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, ModuleReleaseMetaKcp).
 			Should(Succeed())
 	})
 
