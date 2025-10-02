@@ -11,6 +11,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
@@ -166,4 +167,40 @@ func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
 	return fake.NewClientBuilder().WithScheme(scheme).WithLists(mts).Build()
+}
+
+type moduleInfoBuilder struct {
+	moduleInfo *templatelookup.ModuleInfo
+}
+
+func newModuleInfoBuilder() moduleInfoBuilder {
+	return moduleInfoBuilder{
+		moduleInfo: &templatelookup.ModuleInfo{
+			Module: v1beta2.Module{},
+		},
+	}
+}
+
+func (b moduleInfoBuilder) WithName(name string) moduleInfoBuilder {
+	b.moduleInfo.Name = name
+	return b
+}
+
+func (b moduleInfoBuilder) WithVersion(version string) moduleInfoBuilder {
+	b.moduleInfo.Version = version
+	return b
+}
+
+func (b moduleInfoBuilder) WithChannel(channel string) moduleInfoBuilder {
+	b.moduleInfo.Channel = channel
+	return b
+}
+
+func (b moduleInfoBuilder) Enabled() moduleInfoBuilder {
+	b.moduleInfo.Enabled = true
+	return b
+}
+
+func (b moduleInfoBuilder) Build() *templatelookup.ModuleInfo {
+	return b.moduleInfo
 }
