@@ -272,15 +272,15 @@ func (r *Regexp) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *Regexp) MatchString(s string) bool {
+func (r Regexp) MatchString(s string) bool {
 	return r.Regexp.MatchString(s)
 }
 
-func (r *Regexp) IsValid() bool {
+func (r Regexp) IsValid() bool {
 	return r.Regexp != nil
 }
 
-func (r *Regexp) String() string {
+func (r Regexp) String() string {
 	return r.Str
 }
 
