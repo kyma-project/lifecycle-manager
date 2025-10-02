@@ -11,9 +11,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -33,13 +32,6 @@ func GetModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) (*v1beta2.ModuleTemplate, error) {
-	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(clnt),
-			moduletemplateinfolookup.NewByChannelStrategy(clnt),
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(clnt),
-		},
-	)
 	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}
@@ -49,7 +41,8 @@ func GetModuleTemplate(ctx context.Context,
 		return nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
 	}
 
-	templateInfo := moduleTemplateInfoLookupStrategies.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
+	// Use the lookupModuleTemplate function directly since it's now in the same package
+	templateInfo := templatelookup.LookupModuleTemplate(ctx, clnt, &availableModule, kyma, moduleReleaseMeta)
 
 	if templateInfo.Err != nil {
 		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)

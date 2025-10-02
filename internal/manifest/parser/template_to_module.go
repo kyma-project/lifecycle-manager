@@ -15,8 +15,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
 var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.AccessSpec to *ociartifact.AccessSpec")

@@ -5,9 +5,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/internal/templatelookup/common"
 )
 
 var errFunctionCalledWitNilError = errors.New("can not generate a modulestatus without error")
@@ -54,11 +53,11 @@ func GenerateModuleStatusFromError(err error, moduleName, desiredChannel, fqdn s
 }
 
 func errorIsWaitingForMaintenanceWindow(err error) bool {
-	return errors.Is(err, moduletemplateinfolookup.ErrWaitingForNextMaintenanceWindow)
+	return errors.Is(err, templatelookup.ErrWaitingForNextMaintenanceWindow)
 }
 
 func errorIsMaintenanceWindowUnknown(err error) bool {
-	return errors.Is(err, moduletemplateinfolookup.ErrFailedToDetermineIfMaintenanceWindowIsActive)
+	return errors.Is(err, templatelookup.ErrFailedToDetermineIfMaintenanceWindowIsActive)
 }
 
 func errorIsForbiddenTemplateUpdate(err error) bool {
