@@ -98,7 +98,7 @@ func TestGetDescriptor_OnEmptyCache_AddsDescriptorFromTemplate(t *testing.T) {
 	}
 	template := builder.NewModuleTemplateBuilder().WithVersion("1.0.0").WithDescriptor(expected).Build()
 
-	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.GetVersion())
+	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.Spec.Version)
 	entry := descriptorCache.Get(key)
 	assert.Nil(t, entry)
 

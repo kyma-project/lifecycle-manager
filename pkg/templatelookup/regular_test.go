@@ -852,7 +852,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					givenTemplateList.Items = append(givenTemplateList.Items, *builder.NewModuleTemplateBuilder().
 						WithName(fmt.Sprintf("%s-%s", module.Name, moduleTemplateVersion)).
 						WithModuleName(module.Name).
-						WithAnnotation(shared.ModuleVersionAnnotation, moduleTemplateVersion).
+						WithVersion(moduleTemplateVersion).
 						WithChannel(module.Channel).
 						WithOCM(compdescv2.SchemaVersion).Build())
 				}
