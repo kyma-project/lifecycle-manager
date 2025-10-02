@@ -385,8 +385,6 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
 		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
-			moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
 			moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
 				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
 		},

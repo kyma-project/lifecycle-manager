@@ -60,3 +60,18 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	moduleTemplateInfo.ModuleTemplate = template
 	return moduleTemplateInfo
 }
+
+func getDesiredChannel(moduleChannel, globalChannel string) string {
+	var desiredChannel string
+
+	switch {
+	case moduleChannel != "":
+		desiredChannel = moduleChannel
+	case globalChannel != "":
+		desiredChannel = globalChannel
+	default:
+		desiredChannel = v1beta2.DefaultChannel
+	}
+
+	return desiredChannel
+}
