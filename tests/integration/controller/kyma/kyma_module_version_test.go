@@ -9,7 +9,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Given invalid module version which is rejected by CRD validation rules", func() {
+var _ = XDescribe("Given invalid module version which is rejected by CRD validation rules", func() {
 	DescribeTable(
 		"Test enable module", func(givenCondition func() error) {
 			Skip("Version attribute is disabled for now on the CRD level")

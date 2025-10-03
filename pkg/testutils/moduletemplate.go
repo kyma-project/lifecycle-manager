@@ -70,7 +70,7 @@ func GetModuleTemplateInfo(ctx context.Context,
 	templateInfo := moduleTemplateInfoLookupStrategies.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
 
 	if templateInfo.Err != nil {
-		return nil, nil, fmt.Errorf("get module template: %w", templateInfo.Err)
+		return nil, nil, fmt.Errorf("failed to get module template: %w", templateInfo.Err)
 	}
 
 	ocmIdentity, err := templateInfo.GetOCMIdentity()

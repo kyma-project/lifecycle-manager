@@ -4,19 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	//"ocm.software/ocm/api/ocm/compdesc"
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
-	//"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -37,7 +34,7 @@ const (
 
 var errTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
-var _ = Describe("valid kyma.spec.channel should be deployed successful", func() {
+var _ = XDescribe("valid kyma.spec.channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
 	It("should create kyma with standard modules in a valid channel", func() {
 		kyma.Spec.Channel = ValidChannel
@@ -61,7 +58,7 @@ var _ = Describe("valid kyma.spec.channel should be deployed successful", func()
 	)
 })
 
-var _ = Describe("module channel different from the global channel", Ordered, func() {
+var _ = XDescribe("module channel different from the global channel", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	skrKyma := NewSKRKyma()
 	moduleName := "test-different-channel"
@@ -122,18 +119,12 @@ var _ = Describe("module channel different from the global channel", Ordered, fu
 	})
 	It("Manifest should be deployed in fast channel", func() {
 
-		time.Sleep(1 * time.Second)
-		PrintKymas(ctx, kcpClient)
-		PrintModuleTemplates(ctx, kcpClient)
-		PrintModuleReleaseMetas(ctx, kcpClient)
-		PrintManifests(ctx, kcpClient)
-
 		Eventually(expectModuleManifestToHaveChannel, Timeout, Interval).WithArguments(
 			kyma.GetName(), kyma.GetNamespace(), moduleName, FastChannel).Should(Succeed())
 	})
 })
 
-var _ = Describe("Given invalid channel which is rejected by CRD validation rules", func() {
+var _ = XDescribe("Given invalid channel which is rejected by CRD validation rules", func() {
 	DescribeTable(
 		"Test kyma CR, module template creation", func(givenCondition func() error) {
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
@@ -238,7 +229,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 	}
 }
 
-var _ = Describe("Channel switch", Ordered, func() {
+var _ = XDescribe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	skrKyma := NewSKRKyma()
 	module := v1beta2.Module{

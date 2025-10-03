@@ -10,7 +10,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = PDescribe("Given kyma CR with invalid module enabled", Ordered, func() {
+var _ = Describe("Given kyma CR with invalid module enabled", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	skrKyma := NewSKRKyma()
 	var skrClient client.Client

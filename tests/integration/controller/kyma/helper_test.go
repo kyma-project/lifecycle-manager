@@ -96,6 +96,14 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, version)
 
 		managedModule := NewTestModuleWithFixName(module.Name, module.Channel, "")
+		//time.Sleep(3 * time.Second)
+		//PrintKymas(ctx, kcpClient)
+		//PrintModuleTemplates(ctx, kcpClient)
+		//PrintModuleReleaseMetas(ctx, kcpClient)
+		//PrintManifests(ctx, kcpClient)
+		//fmt.Printf("managedModule: %+v\n", managedModule)
+		//fmt.Printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+
 		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, kcpClient, managedModule, kyma).
 			Should(Succeed())
