@@ -24,7 +24,7 @@ var (
 	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
-var _ = XDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
+var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
 	testCases := []struct {
 		enableStatement  string
 		disableStatement string
@@ -141,7 +141,7 @@ var _ = XDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec
 	}
 })
 
-var _ = XDescribe("Kyma skip Reconciliation", Ordered, func() {
+var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("skr-module-update", v1beta2.DefaultChannel)
 	const moduleVersion = "0.0.1"
@@ -233,7 +233,7 @@ var _ = XDescribe("Kyma skip Reconciliation", Ordered, func() {
 	})
 })
 
-var _ = XDescribe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty for cluster scoped modules", Ordered,
+var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty for cluster scoped modules", Ordered,
 	func() {
 		kyma := NewTestKyma("kyma")
 		skrKyma := NewSKRKyma()

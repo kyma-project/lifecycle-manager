@@ -34,7 +34,7 @@ const (
 
 var errTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
-var _ = XDescribe("valid kyma.spec.channel should be deployed successful", func() {
+var _ = Describe("valid kyma.spec.channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
 	It("should create kyma with standard modules in a valid channel", func() {
 		kyma.Spec.Channel = ValidChannel
@@ -58,7 +58,7 @@ var _ = XDescribe("valid kyma.spec.channel should be deployed successful", func(
 	)
 })
 
-var _ = XDescribe("module channel different from the global channel", Ordered, func() {
+var _ = Describe("module channel different from the global channel", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	skrKyma := NewSKRKyma()
 	moduleName := "test-different-channel"
@@ -124,7 +124,7 @@ var _ = XDescribe("module channel different from the global channel", Ordered, f
 	})
 })
 
-var _ = XDescribe("Given invalid channel which is rejected by CRD validation rules", func() {
+var _ = Describe("Given invalid channel which is rejected by CRD validation rules", func() {
 	DescribeTable(
 		"Test kyma CR, module template creation", func(givenCondition func() error) {
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
@@ -229,7 +229,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 	}
 }
 
-var _ = XDescribe("Channel switch", Ordered, func() {
+var _ = Describe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	skrKyma := NewSKRKyma()
 	module := v1beta2.Module{

@@ -34,7 +34,7 @@ var (
 	ErrInvalidManifest         = errors.New("invalid ManifestResource")
 )
 
-var _ = XDescribe("Update Manifest CR", Ordered, func() {
+var _ = Describe("Update Manifest CR", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -109,7 +109,7 @@ func expectManifestSpecDataEquals(kymaName, kymaNamespace, value string) func() 
 	}
 }
 
-var _ = XDescribe("Manifest.Spec is rendered correctly", Ordered, func() {
+var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -162,7 +162,7 @@ var _ = XDescribe("Manifest.Spec is rendered correctly", Ordered, func() {
 	})
 })
 
-var _ = XDescribe("Manifest.Spec is reset after manual update", Ordered, func() {
+var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	const updateRepositoryURL = "registry.docker.io/kyma-project/component-descriptors"
 
 	kyma := NewTestKyma("kyma")
@@ -229,7 +229,7 @@ var _ = XDescribe("Manifest.Spec is reset after manual update", Ordered, func() 
 	})
 })
 
-var _ = XDescribe("Test Reconciliation Skip label for Manifest", Ordered, func() {
+var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	module := NewTestModule("skip-reconciliation-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -257,7 +257,7 @@ var _ = XDescribe("Test Reconciliation Skip label for Manifest", Ordered, func()
 	})
 })
 
-var _ = XDescribe("Modules can only be referenced via module name", Ordered, func() {
+var _ = Describe("Modules can only be referenced via module name", Ordered, func() {
 	kyma := NewTestKyma("random-kyma")
 
 	moduleReferencedWithLabel := NewTestModule("random-module", v1beta2.DefaultChannel)
