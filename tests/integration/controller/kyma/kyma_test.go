@@ -144,17 +144,18 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("skr-module-update", v1beta2.DefaultChannel)
+	const moduleVersion = "0.0.1"
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
-
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("Should deploy ModuleTemplate", func() {
 		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 		template := builder.NewModuleTemplateBuilder().
+			WithName(module.Name+"-"+moduleVersion).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(module.Name).
-			WithChannel(module.Channel).
+			WithVersion(moduleVersion).
 			WithModuleCR(data).
 			WithOCM(compdescv2.SchemaVersion).
 			WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
@@ -163,7 +164,18 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			Should(Succeed())
 	})
 
+	It("Should deploy ModuleReleaseMeta", func() {
+		moduleReleaseMeta := ConfigureKCPModuleReleaseMeta(module.Name, module.Channel, moduleVersion)
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(moduleReleaseMeta).
+			Should(Succeed())
+
+		//descriptor is required to create Manifest
+		registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, moduleVersion)
+	})
+
 	It("Mark Kyma as skip Reconciliation", func() {
+
 		By("CR created", func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(ManifestExists, Timeout, Interval).
@@ -226,6 +238,8 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		kyma := NewTestKyma("kyma")
 		skrKyma := NewSKRKyma()
 		module := NewTestModule("test-module", v1beta2.DefaultChannel)
+
+		const moduleVersion = "0.0.2"
 		kyma.Spec.Modules = append(
 			kyma.Spec.Modules, module)
 		var skrClient client.Client
@@ -247,9 +261,10 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		It("Should deploy ModuleTemplate", func() {
 			for _, module := range kyma.Spec.Modules {
 				template := builder.NewModuleTemplateBuilder().
+					WithName(module.Name+"-"+moduleVersion).
 					WithNamespace(ControlPlaneNamespace).
 					WithModuleName(module.Name).
-					WithChannel(module.Channel).
+					WithVersion(moduleVersion).
 					WithOCM(compdescv2.SchemaVersion).
 					WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
 				Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
@@ -258,10 +273,20 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 			}
 		})
 
+		It("Should deploy ModuleReleaseMeta", func() {
+			moduleReleaseMeta := ConfigureKCPModuleReleaseMeta(module.Name, module.Channel, moduleVersion)
+			Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+				WithArguments(moduleReleaseMeta).
+				Should(Succeed())
+
+			//descriptor is required to create Manifest
+			registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, moduleVersion)
+		})
+
 		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
 			emptyNamespace := ""
 			By("ensuring empty Module Status Resource Namespace in KCP")
-			Eventually(expectKymaModuleStatusWithNamespace).
+			Eventually(expectKymaModuleStatusWithNamespace, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma, emptyNamespace).
 				Should(Succeed())

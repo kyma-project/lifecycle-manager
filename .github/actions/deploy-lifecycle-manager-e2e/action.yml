@@ -21,6 +21,45 @@ runs:
         else
           echo "E2E_KUSTOMIZE_DIR=config/watcher_local_test" >> $GITHUB_ENV
         fi
+    - name: Patch local OCI registry host
+      if: ${{ matrix.e2e-test != 'oci-reg-cred-secret' && matrix.e2e-test != 'module-transferred-to-another-oci-registry' }}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --oci-registry-host=http://k3d-kcp-registry.localhost:5000" >> oci_registry_host.yaml
+        cat oci_registry_host.yaml
+        kustomize edit add patch --path oci_registry_host.yaml --kind Deployment
+        popd
+    - name: Patch remote OCI registry host
+      if: ${{ matrix.e2e-test == 'module-transferred-to-another-oci-registry' }}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --oci-registry-host=https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/restricted-market" >> oci_registry_host.yaml
+        cat oci_registry_host.yaml
+        kustomize edit add patch --path oci_registry_host.yaml --kind Deployment
+        popd
+    - name: Patch private OCI registry secret
+      if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --oci-registry-cred-secret=private-oci-reg-creds" >> oci_registry_host.yaml
+        cat oci_registry_host.yaml
+        kustomize edit add patch --path oci_registry_host.yaml --kind Deployment
+        popd
     - name: Patch purge finalizer flags
       if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
       working-directory: lifecycle-manager
@@ -147,14 +186,6 @@ runs:
           value: --istio-gateway-secret-requeue-success-interval=5s" >> legacy-secret-rotation.yaml
         cat legacy-secret-rotation.yaml
         kustomize edit add patch --path legacy-secret-rotation.yaml --kind Deployment
-        popd
-    - name: Use private OCI registry credentials
-      if: ${{matrix.e2e-test == 'oci-reg-cred-secret'}}
-      working-directory: lifecycle-manager
-      shell: bash
-      run: |
-        pushd ${E2E_KUSTOMIZE_DIR}
-        sed -i 's|value: --oci-registry-host=europe-docker.pkg.dev/kyma-project/kyma-modules|value: --oci-registry-cred-secret=private-oci-reg-creds|' kustomization.yaml
         popd
     - name: Create and use maintenance window policy
       if: ${{matrix.e2e-test == 'maintenance-windows' ||

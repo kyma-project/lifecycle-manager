@@ -55,7 +55,7 @@ func GetModuleReleaseMeta(ctx context.Context, moduleName, namespace string,
 		Name:      moduleName,
 	}, mrm)
 	if err != nil {
-		return nil, fmt.Errorf("get kyma: %w", err)
+		return nil, fmt.Errorf("failed to get ModuleReleaseMeta with name %q in namespace %q: %w", moduleName, namespace, err)
 	}
 	return mrm, nil
 }

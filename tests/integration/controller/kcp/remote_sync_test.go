@@ -15,6 +15,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -33,25 +35,34 @@ var (
 )
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
+	var err error
 	kyma := NewTestKyma("kyma-1")
 	skrKyma := NewSKRKyma()
-	moduleInSKR := NewTestModule("skr-module", v1beta2.DefaultChannel)
-	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
+	moduleInSKR := NewTestModule("skrmodule", v1beta2.DefaultChannel)
+	moduleInKCP := NewTestModule("kcpmodule", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
+	moduleInSKROCMName := "kyma-project.io/module" + "/" + moduleInSKR.Name //TODO: extract constant
+	moduleInSKROCM := ocmidentity.MustNew(moduleInSKROCMName, moduleVersion)
+	moduleInKCPOCMName := "kyma-project.io/module" + "/" + moduleInKCP.Name //TODO: extract constant
+
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
+		WithName(fmt.Sprintf("%s-%s", moduleInSKR.Name, moduleVersion)).
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
+		WithVersion(moduleVersion).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
+
 	TemplateForKCPEnabledModule := builder.NewModuleTemplateBuilder().
+		WithName(fmt.Sprintf("%s-%s", moduleInKCP.Name, moduleVersion)).
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
+		WithVersion(moduleVersion).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
 	var skrClient client.Client
-	var err error
 	BeforeAll(func() {
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
@@ -141,6 +152,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 	})
 
+	It("ModuleReleaseMeta should be created in KCP", func() {
+		registerDescriptor(moduleInSKROCMName, moduleVersion)
+		Eventually(configureKCPModuleReleaseMeta, Timeout, Interval).WithArguments(moduleInSKR.Name).Should(Succeed())
+		registerDescriptor(moduleInKCPOCMName, moduleVersion)
+		Eventually(configureKCPModuleReleaseMeta, Timeout, Interval).WithArguments(moduleInKCP.Name).Should(Succeed())
+	})
+
 	It("Enable module in SKR Kyma CR", func() {
 		By("add module to remote Kyma")
 		Eventually(EnableModule, Timeout, Interval).
@@ -165,8 +183,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(kcpClient, kyma.GetName(), kyma.GetNamespace(), moduleInSKR.Name, shared.StateReady).
 			Should(Succeed())
 
-		By("ModuleTemplate descriptor should be saved in cache")
-		Expect(IsDescriptorCached(TemplateForSKREnabledModule)).Should(BeTrue())
+		By("component descriptor should be saved in cache")
+		Expect(IsDescriptorCached(*moduleInSKROCM)).Should(BeTrue())
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
@@ -222,25 +240,55 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 })
 
-func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
-	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.GetVersion())
-	result := descriptorProvider.DescriptorCache.Get(key)
-	return result != nil
+// IsDescriptorCached checks if the descriptor is in the cache.
+// It temporarily stops the underlying DescriptorService to ensure the cache is used
+// instead of DescriptorService lookup.
+func IsDescriptorCached(ocmi ocmidentity.Component) bool {
+	descProviderService.Stop()
+	defer descProviderService.Resume()
+	result, err := descriptorProvider.GetDescriptor(ocmi)
+	return err == nil && result != nil
 }
 
 var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
-	kyma := NewTestKyma("kyma-2")
-	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
-	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleInKCP)
-	skrKyma := NewSKRKyma()
 	var skrClient client.Client
 	var err error
+
+	kyma := NewTestKyma("kyma-2")
+	skrKyma := NewSKRKyma()
+	moduleInKCP := NewTestModule("kcpmodule", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleInKCP)
+
+	moduleInKCPOCMName := "kyma-project.io/module" + "/" + moduleInKCP.Name //TODO: extract constant
+	//moduleInKCPidentity := ocmidentity.MustNew(moduleInKCPOCMName, moduleVersion)
+
+	templateForModuleInKCP := builder.NewModuleTemplateBuilder().
+		WithName(fmt.Sprintf("%s-%s", moduleInKCP.Name, moduleVersion)).
+		WithNamespace(ControlPlaneNamespace).
+		WithModuleName(moduleInKCP.Name).
+		WithChannel(moduleInKCP.Channel).
+		WithVersion(moduleVersion).
+		WithOCM(compdescv2.SchemaVersion).Build()
+
 	registerControlPlaneLifecycleForKyma(kyma)
 	BeforeAll(func() {
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err
 		}, Timeout, Interval).Should(Succeed())
+	})
+
+	It("ModuleTemplate for default module should be created in KCP", func() {
+		Eventually(CreateModuleTemplate, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, templateForModuleInKCP).
+			Should(Succeed())
+	})
+
+	It("ModuleReleaseMeta should be created in KCP", func() {
+		registerDescriptor(moduleInKCPOCMName, moduleVersion)
+		Eventually(configureKCPModuleReleaseMeta, Timeout, Interval).
+			WithArguments(moduleInKCP.Name).Should(Succeed())
 	})
 
 	It("Kyma CR default module list should be copied to remote Kyma", func() {

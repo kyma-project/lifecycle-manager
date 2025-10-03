@@ -2,8 +2,8 @@ packages:
   internal/controller: 100
   internal/controller/istiogatewaysecret: 28
   internal/crd: 92
-  internal/descriptor/cache: 88
-  internal/descriptor/provider: 66
+  internal/descriptor/cache: 90
+  internal/descriptor/provider: 100
   internal/event: 100
   internal/gatewaysecret/cabundle: 100
   internal/gatewaysecret/legacy: 100

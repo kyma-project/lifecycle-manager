@@ -10,7 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
@@ -28,11 +28,29 @@ func CreateModuleTemplate(ctx context.Context,
 	return nil
 }
 
-func GetModuleTemplate(ctx context.Context,
+// Review Note: I changed the return type of this function for a reason.
+// Previously thre returned ModuleTemplate instance was enough to also get the OCM descriptor,
+// as it was embedded in the ModuleTemplate.
+// For an example, look how the "ReadModuleVersionFromModuleTemplate" function was making use of
+// this data (before current changes).
+// Now, in order to find an OCM descriptor, or at least an OCM identitfier for the given ModuleTemplate,
+// we cannot rely on the ModuleTemplate instance alone.
+// But there are some callers of this function that still need this information,
+// for example: the mentioned "ReadModuleVersionFromModuleTemplate" function.
+// What can we do to support these callers?
+// Please note that although ModuleTemplate does not provide ComponentDescriptor anymore
+// (or rather we don't want to use it anymore), the ModuleTemplateInfo object
+// contains the data we need: the ModuleTemplateInfo implements the OCMIdentity interface.
+// And the good news is: we *have* a ready to use ModuleTemplateInfo instance here.
+// Thus it's a natural choice to make use of this instance (as we have it anyway).
+// The change in signature is on purpose: it forces the compiler
+// to return errors in all places where this function is used - and because of that,
+// ensures that I fixed the code in all of these places.
+func GetModuleTemplateInfo(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
-) (*v1beta2.ModuleTemplate, error) {
+) (*v1beta2.ModuleTemplate, *ocmidentity.Component, error) {
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
 		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 			moduletemplateinfolookup.NewByVersionStrategy(clnt),
@@ -46,15 +64,17 @@ func GetModuleTemplate(ctx context.Context,
 
 	moduleReleaseMeta, err := GetModuleReleaseMeta(ctx, module.Name, kyma.Namespace, clnt)
 	if !meta.IsNoMatchError(err) && client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
+		return nil, nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
 	}
 
 	templateInfo := moduleTemplateInfoLookupStrategies.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
 
 	if templateInfo.Err != nil {
-		return nil, fmt.Errorf("get module template: %w", templateInfo.Err)
+		return nil, nil, fmt.Errorf("failed to get module template: %w", templateInfo.Err)
 	}
-	return templateInfo.ModuleTemplate, nil
+
+	ocmIdentity, err := templateInfo.GetOCMIdentity()
+	return templateInfo.ModuleTemplate, ocmIdentity, err
 }
 
 func ModuleTemplateExists(ctx context.Context,
@@ -62,7 +82,7 @@ func ModuleTemplateExists(ctx context.Context,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	moduleTemplate, _, err := GetModuleTemplateInfo(ctx, clnt, module, kyma)
 	if moduleTemplate == nil || errors.Is(err, common.ErrNoTemplatesInListResult) {
 		return ErrNotFound
 	}
@@ -103,9 +123,12 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	newValue string,
 	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	moduleTemplate, _, err := GetModuleTemplateInfo(ctx, clnt, module, kyma)
 	if err != nil {
 		return err
+	}
+	if moduleTemplate == nil {
+		return fmt.Errorf("%w: moduleTemplate is nil", ErrNotFound)
 	}
 	if moduleTemplate.Spec.Data == nil {
 		return ErrManifestResourceIsNil
@@ -120,9 +143,12 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 func SetModuleTemplateBetaLabel(ctx context.Context, clnt client.Client, module v1beta2.Module,
 	kyma *v1beta2.Kyma, betaValue bool,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	moduleTemplate, _, err := GetModuleTemplateInfo(ctx, clnt, module, kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get module template: %w", err)
+	}
+	if moduleTemplate == nil {
+		return fmt.Errorf("%w: moduleTemplate is nil", ErrNotFound)
 	}
 
 	if moduleTemplate.Labels == nil {
@@ -145,9 +171,12 @@ func SetModuleTemplateBetaLabel(ctx context.Context, clnt client.Client, module 
 func SetModuleTemplateInternalLabel(ctx context.Context, clnt client.Client, module v1beta2.Module,
 	kyma *v1beta2.Kyma, internalValue bool,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	moduleTemplate, _, err := GetModuleTemplateInfo(ctx, clnt, module, kyma)
 	if err != nil {
 		return fmt.Errorf("failed to get module template: %w", err)
+	}
+	if moduleTemplate == nil {
+		return fmt.Errorf("%w: moduleTemplate is nil", ErrNotFound)
 	}
 
 	if moduleTemplate.Labels == nil {
@@ -197,7 +226,7 @@ func DeleteModuleTemplate(ctx context.Context,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	moduleTemplate, _, err := GetModuleTemplateInfo(ctx, clnt, module, kyma)
 	if util.IsNotFound(err) {
 		return nil
 	}
@@ -209,21 +238,39 @@ func DeleteModuleTemplate(ctx context.Context,
 	return nil
 }
 
+// TODO: Rename to GetOCMVersionForModule
 func ReadModuleVersionFromModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) (string, error) {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	_, ocmIdentity, err := GetModuleTemplateInfo(ctx, clnt, module, kyma)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch ModuleTemplate: %w", err)
 	}
+	if ocmIdentity == nil {
+		return "", fmt.Errorf("failed to get OCM identity: %w", ErrNotFound)
+	}
+	return ocmIdentity.Version(), nil
+}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider()
-	ocmDesc, err := descriptorProvider.GetDescriptor(moduleTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to get descriptor: %w", err)
+// TODO: Remove
+func validateModuleReleaseMeta(mrm *v1beta2.ModuleReleaseMeta, expectedName, expectedVersion string) error {
+	if mrm.Spec.ModuleName != expectedName {
+		return fmt.Errorf("unexpected ModuleReleaseMeta %s: module name mismatch: expected %s, got %s", mrm.GetName(), expectedName, mrm.Spec.ModuleName)
 	}
 
-	return ocmDesc.Version, nil
+	if mrm.Spec.Mandatory != nil {
+		if mrm.Spec.Mandatory.Version != expectedVersion {
+			return fmt.Errorf("unexpected ModuleReleaseMeta %s: mandatory version mismatch: expected %s, got %s", mrm.GetName(), expectedVersion, mrm.Spec.Mandatory.Version)
+		}
+		return nil
+	}
+
+	for _, channel := range mrm.Spec.Channels {
+		if channel.Version == expectedVersion {
+			return nil
+		}
+	}
+	return fmt.Errorf("unexpected ModuleReleaseMeta %s: version %s not found in channels mapping", mrm.GetName(), expectedVersion)
 }

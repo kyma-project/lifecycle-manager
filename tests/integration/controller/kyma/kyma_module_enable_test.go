@@ -74,6 +74,6 @@ func givenKymaWithModule(
 	}
 	Eventually(SyncKyma, Timeout, Interval).
 		WithContext(ctx).WithArguments(kcpClient, kcpKyma).Should(Succeed())
-	DeployModuleTemplates(ctx, kcpClient, kcpKyma)
+	DeployModuleTemplates(ctx, kcpClient, kcpKyma, "fixme")
 	return nil
 }
