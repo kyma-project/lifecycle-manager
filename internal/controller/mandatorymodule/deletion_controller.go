@@ -18,7 +18,6 @@ package mandatorymodule
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -50,26 +49,6 @@ type DeletionReconciler struct {
 	DescriptorProvider *provider.CachedDescriptorProvider
 }
 
-// TODO: This function is a duplicate, we should use some common implementation.
-func (r *DeletionReconciler) FindMRMForTemplate(ctx context.Context,
-	template *v1beta2.ModuleTemplate,
-) (*v1beta2.ModuleReleaseMeta, error) {
-	if template == nil {
-		return nil, errors.New("template is nil")
-	}
-
-	key := client.ObjectKey{
-		Name:      template.Spec.ModuleName,
-		Namespace: template.Namespace,
-	}
-	obj := &v1beta2.ModuleReleaseMeta{}
-	if err := r.Get(ctx, key, obj); err != nil {
-		return nil, fmt.Errorf("failed to get ModuleReleaseMeta %s: %w", key.String(), err)
-	}
-
-	return obj, nil
-}
-
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
@@ -98,8 +77,8 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
-	mrm, err := r.FindMRMForTemplate(ctx, template)
-	if err == nil {
+	mrm, err := r.GetModuleReleaseMeta(ctx, template.Spec.ModuleName, template.Namespace)
+	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to find ModuleReleaseMeta for Mandatory Module %s: %w",
 			template.Name, err)
 	}
@@ -178,4 +157,17 @@ func filterManifestsByComponentIdentity(manifests []v1beta2.Manifest,
 		}
 	}
 	return filteredManifests
+}
+
+// TODO: Probably duplicated code
+func (r *DeletionReconciler) GetModuleReleaseMeta(ctx context.Context, moduleName, namespace string) (*v1beta2.ModuleReleaseMeta, error) {
+	mrm := &v1beta2.ModuleReleaseMeta{}
+	err := r.Get(ctx, client.ObjectKey{
+		Name:      moduleName,
+		Namespace: namespace,
+	}, mrm)
+	if err != nil {
+		return nil, err
+	}
+	return mrm, nil
 }

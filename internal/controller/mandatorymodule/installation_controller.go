@@ -115,7 +115,7 @@ func (r *InstallationReconciler) extendWithOCMIdentities(ctx context.Context, te
 			continue
 		}
 
-		mrm, err := r.LookupModuleReleaseMeta(ctx, template.Spec.ModuleName, template.Namespace)
+		mrm, err := r.GetModuleReleaseMeta(ctx, template.Spec.ModuleName, template.Namespace)
 		if client.IgnoreNotFound(err) != nil { // errors other than NotFound
 			template.Err = fmt.Errorf("failed getting ModuleReleaseMeta for module %s in namespace %s: %w",
 				template.Spec.ModuleName, template.Namespace, err)
@@ -147,7 +147,7 @@ func (r *InstallationReconciler) extendWithOCMIdentities(ctx context.Context, te
 }
 
 // TODO: Probably duplicated code
-func (r *InstallationReconciler) LookupModuleReleaseMeta(ctx context.Context, moduleName, namespace string) (*v1beta2.ModuleReleaseMeta, error) {
+func (r *InstallationReconciler) GetModuleReleaseMeta(ctx context.Context, moduleName, namespace string) (*v1beta2.ModuleReleaseMeta, error) {
 	mrm := &v1beta2.ModuleReleaseMeta{}
 	err := r.Get(ctx, client.ObjectKey{
 		Name:      moduleName,
