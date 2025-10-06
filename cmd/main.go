@@ -59,6 +59,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge"
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
@@ -67,6 +68,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/keychainprovider"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/manifestclient"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/statecheck"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
@@ -77,6 +79,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
@@ -472,9 +475,17 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	manifestClient := manifestclient.NewManifestClient(event, mgr.GetClient())
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
+	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr, flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService()
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
+
+	kcpClient := mgr.GetClient()
+	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+	statefulChecker := statecheck.NewStatefulSetStateCheck()
+	deploymentChecker := statecheck.NewDeploymentStateCheck()
+	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
+
 	if err := manifest.SetupWithManager(mgr, options, queue.RequeueIntervals{
 		Success: flagVar.ManifestRequeueSuccessInterval,
 		Busy:    flagVar.ManifestRequeueBusyInterval,
@@ -485,8 +496,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	}, manifest.SetupOptions{
 		ListenerAddr:                 flagVar.ManifestListenerAddr,
 		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionClient,
-		specResolver, clientCache, skrClient); err != nil {
+	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
+		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
