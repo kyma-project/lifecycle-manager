@@ -11,13 +11,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithChannel("regular").Enabled().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil)
 
@@ -27,7 +26,7 @@ func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 }
 
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithVersion("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithVersion("regular").Enabled().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil)
 
@@ -37,7 +36,7 @@ func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleRelea
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
@@ -72,7 +71,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleReturnsError(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
@@ -106,7 +105,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleRetu
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsError(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
@@ -133,7 +132,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsErr
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_ReturnsModuleTemplateInfo(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
@@ -167,40 +166,4 @@ func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
 	return fake.NewClientBuilder().WithScheme(scheme).WithLists(mts).Build()
-}
-
-type moduleInfoBuilder struct {
-	moduleInfo *templatelookup.ModuleInfo
-}
-
-func newModuleInfoBuilder() moduleInfoBuilder {
-	return moduleInfoBuilder{
-		moduleInfo: &templatelookup.ModuleInfo{
-			Module: v1beta2.Module{},
-		},
-	}
-}
-
-func (b moduleInfoBuilder) WithName(name string) moduleInfoBuilder {
-	b.moduleInfo.Name = name
-	return b
-}
-
-func (b moduleInfoBuilder) WithVersion(version string) moduleInfoBuilder {
-	b.moduleInfo.Version = version
-	return b
-}
-
-func (b moduleInfoBuilder) WithChannel(channel string) moduleInfoBuilder {
-	b.moduleInfo.Channel = channel
-	return b
-}
-
-func (b moduleInfoBuilder) Enabled() moduleInfoBuilder {
-	b.moduleInfo.Enabled = true
-	return b
-}
-
-func (b moduleInfoBuilder) Build() *templatelookup.ModuleInfo {
-	return b.moduleInfo
 }
