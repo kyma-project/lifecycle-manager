@@ -28,15 +28,16 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          path: lifecycle-manager
 
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: ${{ inputs.go_version_file }}
-          cache-dependency-path: ${{ inputs.go_sum_file }}
+          go-version-file: ./lifecycle-manager/${{ inputs.go_version_file }}
+          cache-dependency-path: ./lifecycle-manager/${{ inputs.go_sum_file }}
 
       - name: Get configuration
-        uses: ./.github/actions/configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
         id: configuration
 
       - name: Validate & normalize version
@@ -63,7 +64,7 @@ jobs:
           TAG: ${{ env.TAG }}
 
       - name: "Run tests for module"
-        working-directory: ./${{ inputs.module_dir }}
+        working-directory: ./lifecycle-manager/${{ inputs.module_dir }}
         run: |
           make test
           make build-verbose
