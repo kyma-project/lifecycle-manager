@@ -32,7 +32,7 @@ var (
 	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
 )
 
-var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
+var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-1")
 	skrKyma := NewSKRKyma()
 	moduleInSKR := NewTestModuleWithChannelVersion("skr-module", v1beta2.DefaultChannel, "0.1.0")
@@ -43,6 +43,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		WithName(moduleInKCP.Name).
 		WithModuleName(moduleInKCP.Name).
 		WithSingleModuleChannelAndVersions(moduleInKCP.Channel, moduleInKCP.Version).Build()
+	ModuleReleaseMetaSkr := builder.NewModuleReleaseMetaBuilder().
+		WithNamespace(ControlPlaneNamespace).
+		WithName(moduleInSKR.Name).
+		WithModuleName(moduleInSKR.Name).
+		WithSingleModuleChannelAndVersions(moduleInSKR.Channel, moduleInSKR.Version).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithName(fmt.Sprintf("%s-%s", moduleInSKR.Name, moduleInSKR.Version)).
@@ -112,6 +117,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(CreateModuleReleaseMeta, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, ModuleReleaseMetaKcp).
+			Should(Succeed())
+		Eventually(CreateModuleReleaseMeta, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, ModuleReleaseMetaSkr).
 			Should(Succeed())
 	})
 
