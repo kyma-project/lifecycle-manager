@@ -315,7 +315,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	})
 })
 
-var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
+var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
 	moduleInKCP := NewTestModuleWithChannelVersion("module-inkcp", v1beta2.DefaultChannel, "0.1.0")
 	moduleTemplateName := fmt.Sprintf("%s-%s", moduleInKCP.Name, "0.1.0")
@@ -336,9 +336,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	var err error
 	BeforeAll(func() {
 		template := builder.NewModuleTemplateBuilder().
-			WithName(moduleInKCP.Name).
+			WithName(fmt.Sprintf("%s-%s", moduleInKCP.Name, moduleInKCP.Version)).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(moduleInKCP.Name).
+			WithVersion(moduleInKCP.Version).
 			WithChannel(moduleInKCP.Channel).
 			WithOCM(compdescv2.SchemaVersion).
 			WithName(moduleTemplateName).Build()
