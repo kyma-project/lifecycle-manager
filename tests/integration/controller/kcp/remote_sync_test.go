@@ -315,7 +315,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	})
 })
 
-var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
+var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
 	moduleInKCP := NewTestModuleWithChannelVersion("module-inkcp", v1beta2.DefaultChannel, "0.1.0")
 	moduleTemplateName := fmt.Sprintf("%s-%s", moduleInKCP.Name, "0.1.0")
