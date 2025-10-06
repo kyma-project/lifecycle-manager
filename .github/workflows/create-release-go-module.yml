@@ -36,7 +36,7 @@ jobs:
           cache-dependency-path: ${{ inputs.go_sum_file }}
 
       - name: Get configuration
-        uses: ./.github/actions/configuration
+        uses: ./.github/actions/get-configuration
         id: configuration
 
       - name: Validate & normalize version
