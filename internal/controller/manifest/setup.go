@@ -26,7 +26,6 @@ import (
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
@@ -45,10 +44,13 @@ func SetupWithManager(mgr manager.Manager,
 	manifestMetrics *metrics.ManifestMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	manifestClient declarativev2.ManifestAPIClient,
-	orphanDetectionClient orphan.DetectionRepository,
+	orphanDetectionService declarativev2.OrphanDetectionService,
 	specResolver *spec.Resolver,
 	skrClientCache declarativev2.SKRClientCache,
 	skrClient declarativev2.SKRClient,
+	kcpClient client.Client,
+	cachedManifestParser declarativev2.CachedManifestParser,
+	customStateCheck declarativev2.StateCheck,
 ) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
@@ -93,8 +95,9 @@ func SetupWithManager(mgr manager.Manager,
 				predicate.LabelChangedPredicate{}))).
 		WatchesRawSource(skrEventChannel).
 		WithOptions(opts).
-		Complete(NewReconciler(mgr, requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
-			orphanDetectionClient, specResolver, skrClientCache, skrClient)); err != nil {
+		Complete(declarativev2.NewReconciler(requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
+			orphanDetectionService, specResolver, skrClientCache, skrClient, kcpClient, cachedManifestParser,
+			customStateCheck)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 
