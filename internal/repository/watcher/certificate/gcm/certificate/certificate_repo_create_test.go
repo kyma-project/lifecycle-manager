@@ -3,6 +3,7 @@ package certificate_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -95,6 +96,60 @@ func TestCreate_ClientReturnsAnError_ReturnsError(t *testing.T) {
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Contains(t, err.Error(), "failed to patch certificate")
 	assert.True(t, clientStub.called)
+}
+
+// temporary workaround to be reverted in https://github.com/kyma-project/lifecycle-manager/issues/2788
+func TestCreate_ClientCallWithoutRenewBeforeSucceeds_Returns(t *testing.T) {
+	expectedCertificate := &gcertv1alpha1.Certificate{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       gcertv1alpha1.CertificateKind,
+			APIVersion: gcertv1alpha1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      certName,
+			Namespace: certNamespace,
+		},
+		Spec: gcertv1alpha1.CertificateSpec{
+			CommonName:   &certCommonName,
+			Duration:     &apimetav1.Duration{Duration: certDuration},
+			DNSNames:     certDNSNames,
+			SecretName:   &certName,
+			SecretLabels: certificate.GetCertificateLabels(),
+			IssuerRef: &gcertv1alpha1.IssuerRef{
+				Name:      issuerName,
+				Namespace: issuerNamespace,
+			},
+			PrivateKey: &gcertv1alpha1.CertificatePrivateKey{
+				Algorithm: &rsaKeyAlgorithm,
+				Size:      &certKeySize,
+			},
+		},
+	}
+
+	clientStub := &patchClientStub{}
+	certificateRepository, err := gcmcertificate.NewRepository(
+		clientStub,
+		issuerName,
+		issuerNamespace,
+		config.CertificateValues{
+			Duration:    certDuration,
+			RenewBefore: time.Duration(0),
+			KeySize:     int(certKeySize),
+			Namespace:   certNamespace,
+		},
+	)
+	require.NoError(t, err)
+
+	err = certificateRepository.Create(t.Context(),
+		certName,
+		certCommonName,
+		certDNSNames,
+	)
+
+	require.NoError(t, err)
+	assert.True(t, clientStub.called)
+	assert.NotNil(t, clientStub.object)
+	assert.Equal(t, expectedCertificate, clientStub.object)
 }
 
 type patchClientStub struct {
