@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
 	"strings"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -222,4 +223,8 @@ func (m *ModuleTemplate) IsBeta() bool {
 
 func (m *ModuleTemplate) IsMandatory() bool {
 	return m.Spec.Mandatory
+}
+
+func CreateModuleTemplateName(moduleName, version string) string {
+	return fmt.Sprintf("%s-%s", moduleName, version)
 }

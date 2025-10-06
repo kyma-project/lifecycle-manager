@@ -32,7 +32,7 @@ var (
 	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
 )
 
-var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
+var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-1")
 	skrKyma := NewSKRKyma()
 	moduleInSKR := NewTestModuleWithChannelVersion("skr-module", v1beta2.DefaultChannel, "0.1.0")
@@ -50,7 +50,7 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 		WithSingleModuleChannelAndVersions(moduleInSKR.Channel, moduleInSKR.Version).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithName(fmt.Sprintf("%s-%s", moduleInSKR.Name, moduleInSKR.Version)).
+		WithName(v1beta2.CreateModuleTemplateName(moduleInSKR.Name, moduleInSKR.Version)).
 		WithModuleName(moduleInSKR.Name).
 		WithVersion(moduleInSKR.Version).
 		WithChannel(moduleInSKR.Channel).
@@ -58,7 +58,7 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 		WithOCM(compdescv2.SchemaVersion).Build()
 	TemplateForKCPEnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithName(fmt.Sprintf("%s-%s", moduleInKCP.Name, moduleInKCP.Version)).
+		WithName(v1beta2.CreateModuleTemplateName(moduleInKCP.Name, moduleInKCP.Version)).
 		WithModuleName(moduleInKCP.Name).
 		WithVersion(moduleInKCP.Version).
 		WithChannel(moduleInKCP.Channel).
@@ -327,7 +327,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
 	moduleInKCP := NewTestModuleWithChannelVersion("module-inkcp", v1beta2.DefaultChannel, "0.1.0")
-	moduleTemplateName := fmt.Sprintf("%s-%s", moduleInKCP.Name, "0.1.0")
+	moduleTemplateName := v1beta2.CreateModuleTemplateName(moduleInKCP.Name, "0.1.0")
 
 	moduleReleaseMetaInKCP := builder.NewModuleReleaseMetaBuilder().
 		WithName("modulereleasemeta-inkcp").
@@ -345,7 +345,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	var err error
 	BeforeAll(func() {
 		template := builder.NewModuleTemplateBuilder().
-			WithName(fmt.Sprintf("%s-%s", moduleInKCP.Name, moduleInKCP.Version)).
+			WithName(v1beta2.CreateModuleTemplateName(moduleInKCP.Name, moduleInKCP.Version)).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(moduleInKCP.Name).
 			WithVersion(moduleInKCP.Version).
