@@ -4,9 +4,11 @@ APP_NAME = lifecycle-manager
 IMG_REPO := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)
 IMG_NAME := $(IMG_REPO)/$(APP_NAME)
 IMG := $(IMG_NAME):$(DOCKER_TAG)
+BUILD_VERSION := from_makefile
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.28.0
+ENVTEST_K8S_VERSION = $(shell yq e '.envtest_k8s' ./versions.yaml)
+ENVTEST_VERSION = $(shell yq e '.envtest' ./versions.yaml)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -20,6 +22,9 @@ endif
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
+
+# Go command with FIPS140 Module enabled
+GO := GOFIPS140=v1.0.0 go
 
 .PHONY: all
 all: build
@@ -45,7 +50,7 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=controller-manager crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases output:rbac:dir=config/rbac/common
 
 .PHONY: test-crd
 test-crd: controller-gen ## Generate crd for test
@@ -64,15 +69,20 @@ envtest-dir:
 	echo "$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)"
 
 .PHONY: test
-test: manifests test-crd generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./... | grep -v /tests/e2e_test` -coverprofile cover.out
+test: unittest-maintenancewindows unittest-api unittest-klm manifests test-crd generate fmt vet envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" $(GO) test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
 
-.PHONY: dry-run
-dry-run: kustomize manifests
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	mkdir -p dry-run
-	$(KUSTOMIZE) build config/default > dry-run/manifests.yaml
+.PHONY: unittest-klm
+unittest-klm: ## Run the unit test suite.
+	$(GO) test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
 
+.PHONY: unittest-api
+unittest-api: ## Run the unit test suite.
+	cd api && make test
+
+.PHONY: unittest-maintenancewindows
+unittest-maintenancewindows: ## Run the unit test suite.
+	cd maintenancewindows && make test
 
 .PHONY: dry-run-control-plane
 dry-run-control-plane: kustomize manifests
@@ -84,11 +94,11 @@ dry-run-control-plane: kustomize manifests
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager cmd/main.go cmd/flags.go
+	$(GO) build -ldflags="-X 'main.buildVersion=${BUILD_VERSION}'" -o bin/manager cmd/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./cmd/main.go ./cmd/flags.go
+	go run ./cmd/main.go
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
@@ -115,24 +125,19 @@ install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-.PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
-	
-.PHONY: lt-deploy
-lt-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/load_test | kubectl apply -f -
-
 .PHONY: local-deploy-with-watcher
-local-deploy-with-watcher: generate kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+local-deploy-with-watcher: generate kustomize ## Deploy the controller locally with the watcher component using cert-manager for certificate management.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/watcher_local_test | kubectl apply -f -
 
+.PHONY: local-deploy-with-watcher-gcm
+local-deploy-with-watcher-gcm: generate kustomize ## Deploy the controller locally with the watcher component using Gardener's cert-manager for certificate management.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/watcher_local_test_gcm | kubectl apply -f -
+
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/control-plane | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 ## Location to install dependencies to
 LOCALBIN ?= $(shell pwd)/bin
@@ -147,32 +152,43 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.1.1
-CONTROLLER_TOOLS_VERSION ?= v0.13.0
-GOLANG_CI_LINT_VERSION ?= v1.55.0
+KUSTOMIZE_VERSION ?= v$(shell yq e '.kustomize' ./versions.yaml)
+CONTROLLER_TOOLS_VERSION ?= v$(shell yq e '.controllerTools' ./versions.yaml)
+GOLANG_CI_LINT_VERSION ?= v$(shell yq e '.golangciLint' ./versions.yaml)
+
+## Tool Install Targets
+
+.PHONY: install-golangci-lint
+install-golangci-lint:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANG_CI_LINT_VERSION)
+
+## Tool Execution Targets
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	GOBIN=$(LOCALBIN) $(GO) install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(ENVTEST_VERSION)
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
 
 .PHONY: lint
-lint: ## Run golangci-lint against code.
-	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
+lint: install-golangci-lint ## Run golangci-lint against code.
 	$(LOCALBIN)/golangci-lint run --verbose -c .golangci.yaml
+	pushd api; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
+	pushd maintenancewindows; $(LOCALBIN)/golangci-lint run --verbose -c ../.golangci.yaml; popd
 
-
+.PHONY: lint-yaml
+lint-yaml: ## Run yamllint against repository. Assumes yamllint is installed. Install via 'brew install yamllint' or 'pip install yamllint'.
+	yamllint -c .yamllint.yml --no-warnings  .

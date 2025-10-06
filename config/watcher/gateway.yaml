@@ -1,9 +1,8 @@
-# Use this Gateway for setup with watcher enabled if there is no istio gateway configured
+# Use this Gateway for setup with enabled watcher if there is no istio gateway configured
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: lifecycle-manager-watcher-gateway
-  namespace: system
+  name: watcher
   labels:
     operator.kyma-project.io/watcher-gateway: default
   annotations:
@@ -21,5 +20,7 @@ spec:
         number: 443
         protocol: HTTPS
       tls:
-        credentialName: klm-watcher-root-secret
+        credentialName: klm-istio-gateway
         mode: MUTUAL
+        minProtocolVersion: TLSV1_3
+        maxProtocolVersion: TLSV1_3

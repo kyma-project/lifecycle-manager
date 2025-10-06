@@ -1,0 +1,16 @@
+# defines the versions of the tools used in the project
+certManager: "1.18.1"
+gardenerCertManager: "0.18.0"
+controllerTools: "0.18.0"
+docker: "27.5.1"
+go: "1.25.1"
+golangciLint: "2.4.0"
+istio: "1.27.1"
+k3d: "5.8.3"
+k8s: "1.32.2" # kubernetes version used in e2e tests
+envtest_k8s: "1.32.0" # kubernetes version used in integration tests
+kubectl: "1.31.3"
+kustomize: "5.4.3"
+modulectl: "1.2.2"
+yq: "4.45.1"
+envtest: "0.21"

@@ -1,0 +1,103 @@
+name: "Check Pipeline Changes"
+
+permissions:
+  pull-requests: write
+
+on:
+  pull_request_target: { }
+
+jobs:
+  check-pipeline-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get list of changed files
+        id: changed-files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+            // Define the pipeline-related paths to watch
+            const pathsToCheck = [
+              ".github/actions",
+              ".github/workflows/test-e2e.yml",
+              ".github/workflows/test-e2e-with-modulereleasemeta.yml",
+              ".github/scripts",
+              "scripts/tests",
+              "versions.yaml"
+            ];
+            const pipelineFiles = files.filter(file =>
+              pathsToCheck.some(path => file.filename === path || file.filename.startsWith(path + '/'))
+            );
+            core.setOutput('pipelineFiles', pipelineFiles.map(file => file.filename).join(','));
+
+      - name: Evaluate Pipeline Changes
+        id: eval-changes
+        run: |
+          echo "Changed pipeline-related files:"
+          echo "${{ steps.changed-files.outputs.pipelineFiles }}" | tr ',' '\n'
+          if [ -n "${{ steps.changed-files.outputs.pipelineFiles }}" ]; then
+            echo "⚠️ Pipeline-related changes detected!"
+            echo "pipeline_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No pipeline-related changes detected."
+            echo "pipeline_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if 'pipeline-changed' Label Exists
+        id: check-pipeline-label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = 'pipeline-changed';
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            return labels.some(label => label.name === labelName);
+          result-encoding: string
+
+      - name: Add PR Comment & Label if Pipeline Changes Detected
+        if: steps.eval-changes.outputs.pipeline_changed == 'true' && steps.check-pipeline-label.outputs.result != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: "⚠️ **Pipeline-related file changes detected!** Please review if related updates (e.g. manifest generation or workflow adjustments) are required."
+            });
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ["pipeline-changed"]
+            });
+
+      - name: Remove 'pipeline-changed' Label if No Changes Detected
+        if: steps.eval-changes.outputs.pipeline_changed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = 'pipeline-changed';
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            if (labels.some(label => label.name === labelName)) {
+              console.log(`Label "${labelName}" found, removing it.`);
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                name: labelName,
+              });
+            } else {
+              console.log(`Label "${labelName}" not found, skipping removal.`);
+            }

@@ -3,14 +3,13 @@ kind: Service
 metadata:
   labels:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io
-  name: metrics-service
-  namespace: system
+  name: controller-manager-metrics
 spec:
   ports:
-  - name: metrics
-    port: 8080
-    protocol: TCP
-    appProtocol: http
-    targetPort: metrics
+    - name: metrics
+      port: 8080
+      protocol: TCP
+      appProtocol: http
+      targetPort: metrics
   selector:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io

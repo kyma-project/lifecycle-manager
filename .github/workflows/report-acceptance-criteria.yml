@@ -1,6 +1,8 @@
 name: Report Acceptance Criteria
 run-name: Generate AC coverage report
 
+permissions: { }
+
 # The report generation is performed ad hoc via manual invocation.
 on: workflow_dispatch
 
@@ -25,4 +27,4 @@ jobs:
         run: |
           chmod a+x $highlighter
       - name: Genarate a report
-        run: cd ${{ github.workspace }}/tests/e2e_test && make e2e-coverage | $highlighter $glossaryURL
+        run: cd ${{ github.workspace }}/tests/e2e && make e2e-coverage | $highlighter $glossaryURL

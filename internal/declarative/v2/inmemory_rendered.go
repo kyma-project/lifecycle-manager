@@ -11,38 +11,37 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
-const (
-	ManifestFilePrefix = "manifest"
-)
+const ManifestFilePrefix = "manifest"
 
-type ManifestParser interface {
+type CachedManifestParser interface {
 	Parse(spec *Spec) (internal.ManifestResources, error)
 	EvictCache(spec *Spec)
 }
 
-func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
+type InMemoryCachedManifestParser struct {
+	*ttlcache.Cache[string, internal.ManifestResources]
+
+	TTL time.Duration
+}
+
+func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryCachedManifestParser {
 	cache := ttlcache.New[string, internal.ManifestResources]()
 	go cache.Start()
-	return &InMemoryManifestCache{Cache: cache, TTL: ttl}
+	return &InMemoryCachedManifestParser{Cache: cache, TTL: ttl}
 }
 
-func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
+func (c *InMemoryCachedManifestParser) EvictCache(spec *Spec) {
 	key := generateCacheKey(spec)
-	c.Cache.Delete(key)
+	c.Delete(key)
 }
 
-type InMemoryManifestCache struct {
-	TTL time.Duration
-	*ttlcache.Cache[string, internal.ManifestResources]
-}
-
-func (c *InMemoryManifestCache) Parse(spec *Spec,
+func (c *InMemoryCachedManifestParser) Parse(spec *Spec,
 ) (internal.ManifestResources, error) {
 	key := generateCacheKey(spec)
 
 	var err error
-	item := c.Cache.Get(key)
-	resources := internal.ManifestResources{}
+	item := c.Get(key)
+	var resources internal.ManifestResources
 	if item != nil {
 		resources = item.Value()
 	} else {
@@ -50,7 +49,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 		if err != nil {
 			return internal.ManifestResources{}, fmt.Errorf("failed to parse manifest objects: %w", err)
 		}
-		c.Cache.Set(key, resources, c.TTL)
+		c.Set(key, resources, c.TTL)
 	}
 	copied := &internal.ManifestResources{
 		Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),
@@ -62,6 +61,5 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 }
 
 func generateCacheKey(spec *Spec) string {
-	file := filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
-	return fmt.Sprintf("%s-%s", file, spec.Mode)
+	return filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
 }

@@ -1,0 +1,103 @@
+{
+  "rules": [
+    {
+      "match": {
+        "plan": "trial|free"
+      },
+      "windows": [
+        {
+          "days": [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun"
+          ],
+          "begin": "01:00:00Z",
+          "end": "01:00:00Z"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "europe|eu-|uksouth"
+      },
+      "windows": [
+        {
+          "begin": "2024-10-10T20:00:00Z",
+          "end": "2024-10-11T00:00:00Z"
+        },
+        {
+          "begin": "2024-12-08T20:00:00Z",
+          "end": "2024-12-09T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "match": {
+        "globalAccountId": "sup-er-ga-case",
+        "platformRegion": "super-mario"
+      },
+      "windows": [
+        {
+          "begin": "2024-10-10T20:00:00Z",
+          "end": "2024-10-11T00:00:00Z"
+        },
+        {
+          "begin": "2024-12-08T20:00:00Z",
+          "end": "2024-12-09T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "asia|japan|australia|ap-"
+      },
+      "windows": [
+        {
+          "begin": "2024-10-15T13:00:00Z",
+          "end": "2024-10-15T17:00:00Z"
+        },
+        {
+          "begin": "2024-12-13T13:00:00Z",
+          "end": "2024-12-13T17:00:00Z"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "europe|eu-|uksouth"
+      },
+      "windows": [
+        {
+          "begin": "2024-12-18T20:00:00Z",
+          "end": "2024-12-19T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "match": {
+        "region": "centralus|eastus|westus|northamerica|southamerica|us-|ca-|sa-"
+      },
+      "windows": [
+        {
+          "begin": "2024-10-20T04:00:00Z",
+          "end": "2024-10-20T08:00:00Z"
+        },
+        {
+          "begin": "2024-12-20T04:00:00Z",
+          "end": "2024-12-13T08:00:00Z"
+        }
+      ]
+    }
+  ],
+  "default": {
+    "days": [
+      "Sat"
+    ],
+    "timeBegin": "20:00:00Z",
+    "timeEnd": "00:00:00Z"
+  }
+}

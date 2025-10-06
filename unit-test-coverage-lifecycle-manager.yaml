@@ -1,0 +1,48 @@
+packages:
+  internal/controller: 100
+  internal/controller/istiogatewaysecret: 28
+  internal/crd: 92
+  internal/descriptor/cache: 88
+  internal/descriptor/provider: 66
+  internal/event: 100
+  internal/gatewaysecret/cabundle: 100
+  internal/gatewaysecret/legacy: 100
+  internal/imagerewrite: 82
+  internal/istio: 63
+  internal/manifest/filemutex: 100
+  internal/manifest/finalizer: 17
+  internal/manifest/img: 65
+  internal/manifest/keychainprovider: 76
+  internal/manifest/labelsremoval: 100
+  internal/manifest/manifestclient: 5
+  internal/manifest/modulecr: 50
+  internal/manifest/skrresources: 20
+  internal/manifest/statecheck: 71
+  internal/maintenancewindows: 87
+  internal/pkg/resources: 91
+  internal/remote: 30
+
+  internal/repository/kyma: 100
+  internal/repository/watcher/certificate: 100
+  internal/repository/watcher/certificate/certmanager/certificate: 100
+  internal/repository/watcher/certificate/gcm/certificate: 98
+  internal/repository/watcher/certificate/gcm/renewal: 100
+  internal/repository/secret: 94
+
+  internal/service/kyma/status/modules/generator: 100
+  internal/service/kyma/status/modules/generator/fromerror: 100
+  internal/service/manifest/orphan: 100
+  internal/service/watcher/certificate: 98
+  internal/service/watcher/certificate/renewal/certmanager: 100
+  internal/service/watcher/certificate/renewal/gcm: 100
+  internal/service/watcher/certificate/secret/data: 100
+  internal/service/watcher/chartreader: 100
+  internal/service/watcher/gateway: 94
+  internal/service/watcher/resources: 82
+  internal/service/skrclient: 35
+
+  internal/util/collections: 87
+  pkg/module/sync: 10
+  pkg/templatelookup: 87
+  pkg/templatelookup/moduletemplateinfolookup: 98
+  pkg/watcher: 10

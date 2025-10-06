@@ -1,0 +1,13 @@
+name: Switch kubectl context
+description: Switches kubectl to use the context with the provided name.
+inputs:
+  context_name:
+    description: The name of the context to use.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Configure kubectl
+      shell: bash
+      run: |
+        kubectl config use-context ${{ inputs.context_name }}

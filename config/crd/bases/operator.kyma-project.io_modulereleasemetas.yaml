@@ -1,0 +1,119 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: modulereleasemetas.operator.kyma-project.io
+spec:
+  group: operator.kyma-project.io
+  names:
+    kind: ModuleReleaseMeta
+    listKind: ModuleReleaseMetaList
+    plural: modulereleasemetas
+    shortNames:
+    - mrm
+    singular: modulereleasemeta
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1beta2
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ModuleReleaseMetaSpec defines the channel-version assignments
+              for a module.
+            properties:
+              beta:
+                default: false
+                description: |-
+                  Beta indicates if the module is in beta state. Beta modules are only available for beta Kymas.
+                  Deprecated: This field is deprecated and will be removed in the upcoming API version.
+                type: boolean
+              channels:
+                description: Channels is the list of module channels with their corresponding
+                  versions.
+                items:
+                  properties:
+                    channel:
+                      description: Channel is the module channel.
+                      maxLength: 32
+                      minLength: 3
+                      pattern: ^[a-z]+$
+                      type: string
+                    version:
+                      description: Version is the module version of the corresponding
+                        module channel.
+                      maxLength: 32
+                      pattern: ^((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[a-zA-Z-][0-9a-zA-Z-]*)?)?$
+                      type: string
+                  required:
+                  - channel
+                  - version
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - channel
+                x-kubernetes-list-type: map
+              internal:
+                default: false
+                description: |-
+                  Internal indicates if the module is internal. Internal modules are only available for internal Kymas.
+                  Deprecated: This field is deprecated and will be removed in the upcoming API version.
+                type: boolean
+              mandatory:
+                description: Mandatory specifies a version for the mandatory module.
+                properties:
+                  version:
+                    description: Version is the mandatory module version in semantic
+                      version format.
+                    minLength: 1
+                    pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+                    type: string
+                required:
+                - version
+                type: object
+              moduleName:
+                description: ModuleName is the name of the Module.
+                maxLength: 64
+                pattern: ^([a-z]{3,}(-[a-z]{3,})*)?$
+                type: string
+              ocmComponentName:
+                description: |-
+                  OcmComponentName is the name of the OCM component that this module belongs to.
+                  https://github.com/open-component-model/ocm/blob/4473dacca406e4c84c0ac5e6e14393c659384afc/resources/component-descriptor-v2-schema.yaml#L40
+                maxLength: 255
+                pattern: ^[a-z][-a-z0-9]*([.][a-z][-a-z0-9]*)*[.][a-z]{2,}(/[a-z][-a-z0-9_]*([.][a-z][-a-z0-9_]*)*)+$
+                type: string
+            required:
+            - moduleName
+            type: object
+            x-kubernetes-validations:
+            - message: exactly one of 'mandatory' or 'channels' must be specified
+              rule: (has(self.mandatory) && !has(self.channels)) || (!has(self.mandatory)
+                && has(self.channels))
+        type: object
+    served: true
+    storage: true
+    subresources: {}

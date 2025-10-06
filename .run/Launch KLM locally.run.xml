@@ -1,0 +1,19 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Launch KLM locally" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="lifecycle-manager" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="--enable-kcp-watcher --skr-watcher-image-tag=1.2.3"/>
+    <envs>
+      <env name="KUBECONFIG" value="$USER_HOME$/.k3d/kcp-local.yaml" />
+    </envs>
+    <kind value="FILE" />
+    <package value="$PROJECT_DIR$/cmd/main.go" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/cmd/main.go" />
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Create New Test Clusters" run_configuration_type="ShConfigurationType" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Install CRDs" run_configuration_type="ShConfigurationType" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Install Watcher Resources For Local KLM" run_configuration_type="ShConfigurationType" />
+    </method>
+  </configuration>
+</component>

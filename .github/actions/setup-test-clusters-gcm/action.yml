@@ -1,0 +1,27 @@
+name: Setup test clusters
+description: Creates and configures the KCP and SKR clusters.
+inputs:
+  k8s_version:
+    description: The version of k8s to use. For example, 1.28.7
+    required: true
+  gardener_cert_manager_version:
+    description: The version of gardener cert-manager to deploy. For example, 0.17.5.
+    required: true
+  gardener_cert_manager_renewal_window:
+    description: The duration before the certificate expiration when the renewal should be triggered. Default is 720h.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: create-test-clusters
+      shell: bash
+      run: |
+        ./lifecycle-manager/scripts/tests/create_test_clusters.sh --k8s-version ${{ inputs.k8s_version }} \
+          --gardener-cert-manager-version ${{ inputs.gardener_cert_manager_version }} \
+          --gardener-cert-manager-renewal-window ${{ inputs.gardener_cert_manager_renewal_window }}
+
+    - uses: ./lifecycle-manager/.github/actions/export-kubeconfigs
+
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp

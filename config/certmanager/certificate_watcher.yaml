@@ -1,0 +1,58 @@
+# The following manifests contain a self-signed issuer CR and a certificate CR.
+# More document can be found at https://docs.cert-manager.io
+# WARNING: Targets CertManager v1.0. Check https://cert-manager.io/docs/installation/upgrading/ for breaking changes.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: watcher-root
+  namespace: istio-system
+spec:
+  selfSigned: { }
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: watcher-serving
+  namespace: istio-system
+spec:
+  dnsNames:
+    - 'listener.kyma.cloud.sap' # this dnsName should be overwritten based on deployment environment, i.e. listener.dev.kyma.cloud.sap
+  isCA: true
+  commonName: klm-watcher-selfsigned-ca
+  subject:
+    organizationalUnits:
+      - "BTP Kyma Runtime"
+    organizations:
+      - "SAP SE"
+    localities:
+      - "Walldorf"
+    provinces:
+      - "Baden-Württemberg"
+    countries:
+      - "DE"
+  secretName: klm-watcher # this secret will not be prefixed, since it's not managed by kustomize
+  secretTemplate:
+    labels:
+      operator.kyma-project.io/managed-by: "lifecycle-manager"
+  privateKey:
+    rotationPolicy: Always
+    algorithm: RSA
+    size: 4096
+  issuerRef:
+    name: watcher-root
+    kind: Issuer
+    group: cert-manager.io
+  duration: 2160h # 90d
+  renewBefore: 1464h # 61d
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    operator.kyma-project.io/purpose: "klm-watcher-cert-manager"
+    operator.kyma-project.io/managed-by: "lifecycle-manager"
+  name: watcher-selfsigned
+  namespace: istio-system
+spec:
+  ca:
+    secretName: klm-watcher

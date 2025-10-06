@@ -1,0 +1,39 @@
+name: Deploy lifecycle-manager
+description: Deploys lifecycle-manager.
+inputs:
+  klm_version_tag:
+    description: The version tag for the KLM image. For example, PR-123.
+    required: true
+  klm_image_repo:
+    description: The repository for the KLM image. For example, dev.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp
+    - name: Deploy LM local testing kustomize
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
+          E2E_MAKE_TARGET=local-deploy-with-watcher-gcm
+        else
+          E2E_MAKE_TARGET=local-deploy-with-watcher
+        fi
+        maxRetry=5
+        for retry in $(seq 1 $maxRetry)
+        do
+          if make "$E2E_MAKE_TARGET" IMG=europe-docker.pkg.dev/kyma-project/${{ inputs.klm_image_repo }}/lifecycle-manager:${{ inputs.klm_version_tag }}; then
+            kubectl wait pods -n kcp-system -l app.kubernetes.io/name=lifecycle-manager --for condition=Ready --timeout=150s
+            echo "KLM deployed successfully"
+            exit 0
+          elif [[ $retry -lt $maxRetry ]]; then
+            echo "Deploy encountered some error, will retry after 20 seconds"
+            sleep 20
+          else
+            echo "KLM deployment failed"
+            exit 1
+          fi
+        done

@@ -1,0 +1,11 @@
+with-expecter: true
+dir: "{{.InterfaceDir}}/testutils"
+mockname: "{{.InterfaceName}}Mock"
+outpkg: "testutils"
+filename: "mock_{{.InterfaceName}}.go"
+inpackage: true
+issue-845-fix: true
+packages:
+  github.com/kyma-project/lifecycle-manager/internal/gatewaysecret:
+    interfaces:
+      Client:

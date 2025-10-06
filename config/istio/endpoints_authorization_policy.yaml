@@ -1,0 +1,17 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: controller-manager
+spec:
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            paths:
+              - /metrics
+              - /v2*
+              - /convert*
+              - /mutate*
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: lifecycle-manager.kyma-project.io

@@ -15,19 +15,6 @@ resources:
     namespaced: true
   domain: kyma-project.io
   group: operator
-  kind: Manifest
-  path: github.com/kyma-project/module-manager/api/v1beta1
-  version: v1beta1
-  webhooks:
-    conversion: true
-    defaulting: true
-    validation: true
-    webhookVersion: v1
-- api:
-    crdVersion: v1
-    namespaced: true
-  domain: kyma-project.io
-  group: operator
   kind: Kyma
   path: github.com/kyma-project/lifecycle-manager/api/v1beta1
   version: v1beta1
@@ -102,6 +89,17 @@ resources:
   domain: kyma-project.io
   group: operator
   kind: Watcher
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta2
+  version: v1beta2
+  webhooks:
+    conversion: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: ModuleReleaseMeta
   path: github.com/kyma-project/lifecycle-manager/api/v1beta2
   version: v1beta2
   webhooks:

@@ -21,7 +21,6 @@
 atlassian-ide-plugin.xml
 
 ## VSCode
-**/*.vscode
 **/*.devcontainer*
 
 ### OSX template
@@ -57,7 +56,6 @@ bin/*
 # Vendor
 vendor/
 
-cover.out
 *.swp
 
 # Ignore sqlite db files
@@ -68,7 +66,7 @@ cover.out
 *.wip
 
 # Ignore coverage output file
-coverage.out
+*.out
 
 # Ignore backup files
 *.bak
@@ -81,7 +79,6 @@ out.txt
 # ignore vscode delve debug binary
 **/__debug_bin
 
-.run/
 /config/crd/bases/operator.kyma-project.io*
 .test.env
 **/**.code-workspace

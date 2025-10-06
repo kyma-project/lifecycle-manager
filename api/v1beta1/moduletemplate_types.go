@@ -17,10 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.
@@ -30,12 +29,12 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 ModuleTemplate is deprecated. Use v1beta2 instead."
-//+kubebuilder:storageversion
+// +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 ModuleTemplate is deprecated. Use v1beta2 instead."
+// +kubebuilder:unservedversion
 
 type ModuleTemplate struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
 }
@@ -44,10 +43,17 @@ type ModuleTemplate struct {
 type ModuleTemplateSpec struct {
 	// Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
 	// to a target channel. It has to be provided at any given time.
-	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// Deprecated: This field is deprecated and will be removed in a future release.
+	// +optional
+	// +kubebuilder:deprecatedversion
+	// +kubebuilder:validation:Pattern:=`^$|^[a-z]{3,}$`
 	// +kubebuilder:validation:MaxLength:=32
-	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
+
+	// Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
+	// its configuration in all runtime clusters.
+	// +optional
+	Mandatory bool `json:"mandatory"`
 
 	// Data is the default set of attributes that are used to generate the Module. It contains a default set of values
 	// for a given channel, and is thus different from default values allocated during struct parsing of the Module.
@@ -55,8 +61,8 @@ type ModuleTemplateSpec struct {
 	// downstream modules as it is considered a set of default values. This means that an update of the data block
 	// will only propagate to new Modules created form ModuleTemplate, not any existing Module.
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
 	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
@@ -69,23 +75,39 @@ type ModuleTemplateSpec struct {
 	// This means for upgrades of the Descriptor, downstream controllers will also update the dependant modules
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
-	Descriptor runtime.RawExtension `json:"descriptor"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
 	Target Target `json:"target"`
 
-	CustomStateCheck []*v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
+
+	// RequiresDowntime indicates whether the module requires downtime in support of maintenance windows during module upgrades.
+	// +optional
+	RequiresDowntime bool `json:"requiresDowntime,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+type CustomStateCheck struct {
+	// JSONPath specifies the JSON path to the state variable in the Module CR
+	JSONPath string `json:"jsonPath" yaml:"jsonPath"`
+
+	// Value is the value at the JSONPath for which the Module CR state should map with MappedState
+	Value string `json:"value" yaml:"value"`
+
+	// MappedState is the Kyma CR State
+	MappedState State `json:"mappedState" yaml:"mappedState"`
+}
+
+// +kubebuilder:object:root=true
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ModuleTemplate `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+
+	Items []ModuleTemplate `json:"items"`
 }
 
 // Target serves as a potential Installation Hint for the Controller to determine which Client to use for installation.
@@ -97,7 +119,7 @@ const (
 	TargetControlPlane Target = "control-plane"
 )
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers ModuleTemplate CRD on startup
 func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &v1beta2.Descriptor{})
+	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }

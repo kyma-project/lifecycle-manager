@@ -28,7 +28,7 @@ func TestParseManifestToObjects(t *testing.T) {
 		{
 			"test template operator manifest, expect no error",
 			"template-operator-manifest.yaml",
-			14,
+			13,
 			assert.NoError,
 		},
 		{
@@ -51,7 +51,6 @@ func TestParseManifestToObjects(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := internal.ParseManifestToObjects(filepath.Join(testSamplesDir, testCase.manifestFile))
@@ -59,8 +58,7 @@ func TestParseManifestToObjects(t *testing.T) {
 				fmt.Sprintf("ParseManifestToObjects(%v)", testCase.manifestFile)) {
 				return
 			}
-			assert.Lenf(t, got.Items, testCase.expectedResources,
-				fmt.Sprintf("ParseManifestToObjects(%v)", testCase.manifestFile))
+			assert.Lenf(t, got.Items, testCase.expectedResources, "ParseManifestToObjects(%v)", testCase.manifestFile)
 		})
 	}
 }

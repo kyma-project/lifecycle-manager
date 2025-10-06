@@ -1,0 +1,17 @@
+name: Install k3d
+description: Downloads k3d and installs it locally.
+inputs:
+  k3d_version:
+    description: The version of k3d to install. For example, 5.6.0.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install k3d
+      shell: bash
+      run: |
+        mkdir -p ./k3d/bin
+        curl -L -s https://github.com/k3d-io/k3d/releases/download/v${{ inputs.k3d_version }}/k3d-linux-amd64 -o k3d-linux
+        chmod +x k3d-linux
+        mv k3d-linux ./k3d/bin/k3d
+        echo "$(pwd)/k3d/bin" >> $GITHUB_PATH
