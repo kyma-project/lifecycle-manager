@@ -1,0 +1,14 @@
+name: Setup HTTPS server
+description: Setup an HTTPS server to serve the template operator manifest file.
+inputs:
+  directory_name:
+    description: The name of the directory which contains the manifest file to serve.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Serve HTTPs server
+      working-directory: ./lifecycle-manager
+      shell: bash
+      run: |
+        ./scripts/tests/setup_https_server.sh ${{ inputs.directory_name }}

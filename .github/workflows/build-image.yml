@@ -1,0 +1,53 @@
+name: Build Image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Additional tag for built image'
+        required: false
+        type: string
+        default: ""
+  pull_request_target:
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
+
+permissions:
+  id-token: write # This is required for requesting the JWT token
+  contents: read # This is required for actions/checkout
+
+jobs:
+  get-custom-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.get_custom_tags.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get tags
+        id: get_custom_tags
+        run: |
+          tags=""
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            tags="latest"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            tags="${{ inputs.tag }}"
+          elif [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            tags="${{ github.event.pull_request.head.sha }}"
+          fi
+          echo "Using custom tags: '$tags'"
+          echo "tags=$tags" >> $GITHUB_OUTPUT
+  build-image:
+    needs: get-custom-tags
+    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
+    with:
+      name: lifecycle-manager
+      dockerfile: Dockerfile
+      context: .
+      platforms: |
+        linux/amd64
+      # tags are additional tags that will be added to the image on top of the default ones
+      # default tags are documented here: https://github.com/kyma-project/test-infra/tree/main/cmd/image-builder#default-tags
+      tags: ${{ needs.get-custom-tags.outputs.tags }}

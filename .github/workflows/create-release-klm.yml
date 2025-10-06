@@ -1,0 +1,94 @@
+name: "Create Release For KLM Image"
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Release name"
+        default: ""
+        required: true
+      since:
+        description: "Changelog since"
+        default: ""
+        required: false
+
+env:
+  IMAGE_REPO: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
+  CODE_REPOSITORY: kyma-project/lifecycle-manager
+
+jobs:
+  validate-release:
+    name: Validate release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate the release tag
+        run: ./.github/scripts/release/validate_release_tag.sh ${{ github.event.inputs.name }}
+      - name: Check if release doesn't exist yet
+        run: ./.github/scripts/release/get_release_by_tag.sh ${{ github.event.inputs.name }} ${{ secrets.GITHUB_TOKEN }}
+  draft-release:
+    name: Create draft release
+    runs-on: ubuntu-latest
+    needs: validate-release
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/release/create_changelog.sh ${{ github.event.inputs.name }} ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ github.event.inputs.since }}
+      - name: Draft release
+        id: draft-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_ID=$(./.github/scripts/release/draft_release.sh ${{ github.event.inputs.name }})
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+      - name: Create tag
+        run: |
+          git tag ${{ github.event.inputs.name }}
+          git push origin ${{ github.event.inputs.name }} --tags
+    outputs:
+      release_id: ${{ steps.draft-release.outputs.release_id }}
+  builds:
+    needs: draft-release
+    uses: ./.github/workflows/build-image.yml
+    with:
+      tag: "${{ github.event.inputs.name }}"
+    permissions:
+      contents: read
+      id-token: write
+  publish_release:
+    name: Publish release
+    needs: [validate-release, draft-release, builds]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for the Docker image
+        timeout-minutes: 20
+        env:
+          ITERATIONS: 40
+          SLEEP_SECONDS: 30
+        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE_REPO }}:${{ github.event.inputs.name }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS }}
+      - name: Publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/release/publish_release.sh ${{ needs.draft-release.outputs.release_id }}

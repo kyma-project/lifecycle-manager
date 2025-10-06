@@ -1,14 +1,14 @@
-//nolint:testpackage
-package v2
+package v2_test
 
 import (
-	"context"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 type testObj struct{ *unstructured.Unstructured }
@@ -16,18 +16,18 @@ type testObj struct{ *unstructured.Unstructured }
 func (t testObj) GetStatus() shared.Status { panic("status not supported in test object") }
 func (t testObj) SetStatus(shared.Status)  { panic("status not supported in test object") }
 
-//nolint:funlen
 func Test_defaultTransforms(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name string
-		ObjectTransform
+		declarativev2.ObjectTransform
+
+		name      string
 		resources []*unstructured.Unstructured
 		wantErr   assert.ErrorAssertionFunc
 	}{
 		{
-			"empty disclaimerTransform",
-			disclaimerTransform,
+			declarativev2.DisclaimerTransform,
+			"empty DisclaimerTransform",
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -35,8 +35,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"empty kymaComponentTransform",
-			kymaComponentTransform,
+			declarativev2.KymaComponentTransform,
+			"empty KymaComponentTransform",
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -44,8 +44,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"empty managedByDeclarativeV2",
-			managedByDeclarativeV2,
+			declarativev2.ManagedByOwnedBy,
+			"empty WatchedByManagedByOwnedBy",
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -53,24 +53,25 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"simple disclaimerTransform",
-			disclaimerTransform,
+			declarativev2.DisclaimerTransform,
+			"simple DisclaimerTransform",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				assert.NoError(testingT, err) //nolint:testifylint
+				require.NoError(t, err)
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
 				unstruct := unstructs[0]
 				assert.NotEmpty(testingT, unstruct)
 				assert.NotNil(testingT, unstruct.GetAnnotations())
-				assert.Contains(testingT, unstruct.GetAnnotations(), DisclaimerAnnotation)
-				assert.Equal(testingT, disclaimerAnnotationValue, unstruct.GetAnnotations()[DisclaimerAnnotation])
+				assert.Contains(testingT, unstruct.GetAnnotations(), declarativev2.DisclaimerAnnotation)
+				assert.Equal(testingT, declarativev2.DisclaimerAnnotationValue,
+					unstruct.GetAnnotations()[declarativev2.DisclaimerAnnotation])
 				return true
 			},
 		},
 		{
-			"simple kymaComponentTransform",
-			kymaComponentTransform,
+			declarativev2.KymaComponentTransform,
+			"simple KymaComponentTransform",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -86,8 +87,8 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
-			"simple managedByDeclarativeV2",
-			managedByDeclarativeV2,
+			declarativev2.ManagedByOwnedBy,
+			"simple WatchedByManagedByOwnedBy",
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
 				require.NoError(t, err)
@@ -96,20 +97,22 @@ func Test_defaultTransforms(t *testing.T) {
 				unstruct := unstructs[0]
 				assert.NotEmpty(testingT, unstruct)
 				assert.NotNil(testingT, unstruct.GetLabels())
-				assert.Contains(testingT, unstruct.GetLabels(), ManagedByLabel)
-				assert.Equal(testingT, managedByLabelValue, unstruct.GetLabels()[ManagedByLabel])
+				assert.NotNil(testingT, unstruct.GetAnnotations())
+				assert.Contains(testingT, unstruct.GetLabels(), shared.ManagedBy)
+				assert.Contains(testingT, unstruct.GetAnnotations(), shared.OwnedByAnnotation)
+				assert.Equal(testingT, shared.ManagedByLabelValue,
+					unstruct.GetLabels()[shared.ManagedBy])
 				return true
 			},
 		},
 	}
 	for _, testCase := range tests {
-		testCase := testCase
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
 				obj := &testObj{Unstructured: &unstructured.Unstructured{}}
 				obj.SetName("test-object")
-				err := testCase.ObjectTransform(context.Background(), obj, testCase.resources)
+				err := testCase.ObjectTransform(t.Context(), obj, testCase.resources)
 				testCase.wantErr(
 					t, err, testCase.resources,
 				)

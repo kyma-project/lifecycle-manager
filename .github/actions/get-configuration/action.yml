@@ -1,0 +1,67 @@
+name: Get configuration
+description: Defines configuration variables such as versions read from the versions.yaml file. Exposes globally needed environment variables.
+outputs:
+  k8s_version:
+    description: The version of k8s to use. For example, 1.28.7.
+    value: ${{ steps.define-variables.outputs.k8s_version }}
+  istio_version:
+    description: The version of Istio to install. For example, 1.20.3.
+    value: ${{ steps.define-variables.outputs.istio_version }}
+  k3d_version:
+    description: The version of k3d to install. For example, 5.6.0.
+    value: ${{ steps.define-variables.outputs.k3d_version }}
+  modulectl_version:
+    description: The version of modulectl to install. For example, 1.0.0.
+    value: ${{ steps.define-variables.outputs.modulectl_version }}
+  cert_manager_version:
+    description: The version of cert-manager to deploy. For example, 1.13.3.
+    value: ${{ steps.define-variables.outputs.cert_manager_version }}
+  gardener_cert_manager_version:
+    description: The version of gardener cert-manager to deploy. For example, 0.17.5.
+    value: ${{ steps.define-variables.outputs.gardener_cert_manager_version }}
+  golangci_lint_version:
+    description: The version of golangci-lint to use. For example, 1.60.3.
+    value: ${{ steps.define-variables.outputs.golangci_lint_version }}
+  klm_version_tag:
+    description: The version tag for the KLM image. For example, PR-123.
+    value: ${{ steps.define-variables.outputs.klm_version_tag }}
+  klm_image_repo:
+    description: The repository for the KLM image. For example, dev.
+    value: ${{ steps.define-variables.outputs.klm_image_repo }}
+runs:
+  using: composite
+  steps:
+    - name: Install yq
+      uses: ./lifecycle-manager/.github/actions/install-yq
+      with:
+        yq_version: 4.45.1
+    - name: Define variables
+      id: define-variables
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        echo "istio_version=$(yq e '.istio' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "k3d_version=$(yq e '.k3d' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "modulectl_version=$(yq e '.modulectl' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "cert_manager_version=$(yq e '.certManager' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "gardener_cert_manager_version=$(yq e '.gardenerCertManager' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "golangci_lint_version=$(yq e '.golangciLint' versions.yaml)" >> $GITHUB_OUTPUT
+
+        if [[ -n "${{ github.event.pull_request.number }}" ]]; then
+          echo "klm_version_tag=PR-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          echo "klm_image_repo=dev" >> $GITHUB_OUTPUT
+          echo "k8s_version=$(yq e '.k8s' versions.yaml)" >> $GITHUB_OUTPUT
+        else
+          # Manually executed workflow should use the latest image of main branch
+          echo "klm_version_tag=latest" >> $GITHUB_OUTPUT
+          echo "klm_image_repo=prod" >> $GITHUB_OUTPUT
+          if [[ -n "${{ github.event.inputs.k8s_version }}" ]]; then
+            echo "k8s_version=${{ github.event.inputs.k8s_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "k8s_version=$(yq e '.k8s' versions.yaml)" >> $GITHUB_OUTPUT
+          fi
+        fi
+    - name: Expose environment variables
+      shell: bash
+      run: |
+        echo "GOSUMDB=off" >> $GITHUB_ENV

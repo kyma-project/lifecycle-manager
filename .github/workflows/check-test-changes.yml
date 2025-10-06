@@ -1,0 +1,52 @@
+name: Check for Test Changes
+
+permissions: { }
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  check-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get list of changed files
+        id: changed-files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const goFiles = files.filter(file => file.filename.endsWith('.go') && !file.filename.endsWith('_test.go'));
+            const testFiles = files.filter(file => file.filename.endsWith('_test.go'));
+
+            core.setOutput('goFiles', goFiles.map(file => file.filename).join(','));
+            core.setOutput('testFiles', testFiles.map(file => file.filename).join(','));
+
+      - name: Check for test changes
+        run: |
+          echo "Number of go files changed:"
+          echo "${{ steps.changed-files.outputs.goFiles }}" | tr ',' '\n' | grep -v '^$' | wc -l
+          echo "Number of test files changed:"
+          echo "${{ steps.changed-files.outputs.testFiles }}" | tr ',' '\n' | grep -v '^$' | wc -l
+          if [ "${{ steps.changed-files.outputs.goFiles }}" != "" ] && [ "${{ steps.changed-files.outputs.testFiles }}" == "" ]; then
+            echo "There are changes to .go files but no changes to _test.go files."
+            exit 1
+          else
+            echo "Test files changed:"
+            echo "${{ steps.changed-files.outputs.testFiles }}" | tr ',' '\n'
+          fi

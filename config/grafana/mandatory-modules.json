@@ -1,0 +1,235 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "This dashboard shows an overview of all the mandatory modules on the SKR.",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 68,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 8,
+      "panels": [],
+      "title": "Warden",
+      "type": "row"
+    },
+    {
+      "datasource": "VictoriaMetrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.31",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (runtime:apiserver:available))",
+          "format": "time_series",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "SKR Count",
+          "refId": "SKR Count"
+        },
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (kube_deployment_spec_replicas{deployment=~\"warden-.*\"})) / count(group by (shoot) (runtime:apiserver:available)) * 100",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "SKR(s) with Warden Deployment",
+          "refId": "SKR(s) with Warden Deployment"
+        },
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (kube_deployment_spec_replicas{deployment=~\"warden-.*\"}))",
+          "format": "time_series",
+          "hide": false,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "SKR Warden Deployment Count",
+          "refId": "SKR Warden Deployment Count"
+        }
+      ],
+      "title": "Warden Usage",
+      "type": "stat"
+    },
+    {
+      "datasource": "VictoriaMetrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "filterable": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 2,
+      "options": {
+        "showHeader": true
+      },
+      "pluginVersion": "7.5.31",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count by (image) (group by (image, shoot) (kube_pod_container_info{namespace=\"kyma-system\", pod=~\"warden-.*\", container=~\"(admission)|(operator)\"}))",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{image}}",
+          "refId": "Warden Images on Shoots"
+        }
+      ],
+      "title": "Warden Images on Shoots",
+      "type": "table"
+    },
+    {
+      "datasource": "VictoriaMetrics",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.31",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count(group by (shoot) (kube_deployment_status_replicas_unavailable{deployment=~\"warden-.*\"})) OR on() vector(0)",
+          "format": "table",
+          "interval": "",
+          "legendFormat": "Unready Warden Deployments",
+          "refId": "Unready Warden Deployments"
+        }
+      ],
+      "title": "Unready Warden Deployments",
+      "type": "stat"
+    }
+  ],
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Lifecycle Manager Mandatory Modules",
+  "uid": "c02Agu8Sz",
+  "version": 21
+}

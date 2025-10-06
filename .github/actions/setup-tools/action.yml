@@ -1,0 +1,40 @@
+name: Setup tools
+description: Downloads, installs and configures all the tools needed to setup and run the tests.
+inputs:
+  k8s_version:
+    description: The version of Kubernetes to install. For example, 1.28.7.
+    required: true
+  istio_version:
+    description: The version of Istio to install. For example, 1.20.3.
+    required: true
+  k3d_version:
+    description: The version of k3d to install. For example, 5.6.0.
+    required: true
+  modulectl_version:
+    description: The version of modulectl to install. For example, 1.0.0.
+    required: true
+  go-version-file:
+    description: The path to the Go version file.
+    required: true
+  cache-dependency-path:
+    description: The path to the Go dependency file.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: ./lifecycle-manager/.github/actions/install-kubectl
+      with:
+        k8s_version: ${{ inputs.k8s_version }}
+    - uses: ./lifecycle-manager/.github/actions/install-istioctl
+      with:
+        istio_version: ${{ inputs.istio_version }}
+    - uses: ./lifecycle-manager/.github/actions/install-modulectl
+      with:
+        modulectl_version: ${{ inputs.modulectl_version }}
+    - uses: ./lifecycle-manager/.github/actions/install-k3d
+      with:
+        k3d_version: ${{ inputs.k3d_version }}
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ inputs.go-version-file }}
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}

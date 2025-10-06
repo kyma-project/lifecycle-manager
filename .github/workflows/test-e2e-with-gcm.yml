@@ -1,0 +1,111 @@
+name: TestSuite E2E with Gardener CertManager
+
+permissions: { }
+
+on:
+  workflow_dispatch:
+    inputs:
+      k8s_version:
+        description: "With Kubernetes version (format: X.Y.Z)"
+        required: false
+  pull_request:
+    types: [ opened, edited, synchronize, reopened, ready_for_review ]
+
+jobs:
+  wait-for-image-build:
+    name: Wait for image build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set Image
+        run: |
+          if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+            echo "IMAGE=europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          else
+            # Manually executed workflow should use the latest image of main branch
+            echo "IMAGE=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest" >> $GITHUB_ENV
+          fi
+      - name: Wait for the Docker image
+        timeout-minutes: 20
+        env:
+          ITERATIONS: 40
+          SLEEP_SECONDS: 30
+        run: ./.github/scripts/release/wait_for_image.sh ${{ env.IMAGE }} ${{ env.ITERATIONS }} ${{ env.SLEEP_SECONDS}}
+  e2e-tests:
+    name: E2E With Gardener CertManager
+    needs: wait-for-image-build
+    strategy:
+      fail-fast: false
+      matrix:
+        e2e-test:
+          - watcher-enqueue
+          - legacy-istio-gateway-secret-rotation-gcm
+          - modulereleasemeta-watch-trigger
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v4
+        with:
+          path: lifecycle-manager
+      - name: Checkout template-operator
+        uses: actions/checkout@v4
+        with:
+          repository: kyma-project/template-operator
+          path: template-operator
+      - name: Get configuration
+        uses: ./lifecycle-manager/.github/actions/get-configuration
+        id: configuration
+      - name: Setup tools
+        uses: ./lifecycle-manager/.github/actions/setup-tools
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          istio_version: ${{ steps.configuration.outputs.istio_version }}
+          k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
+          go-version-file: lifecycle-manager/go.mod
+          cache-dependency-path: lifecycle-manager/go.sum
+      - name: Setup Gardener CertManager Variables
+        run: |
+          echo "E2E_USE_GARDENER_CERT_MANAGER=1" >> $GITHUB_ENV
+          echo "E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW=720h1m" >> $GITHUB_ENV
+      - name: Setup test clusters
+        uses: ./lifecycle-manager/.github/actions/setup-test-clusters-gcm
+        with:
+          k8s_version: ${{ steps.configuration.outputs.k8s_version }}
+          gardener_cert_manager_version: ${{ steps.configuration.outputs.gardener_cert_manager_version }}
+          gardener_cert_manager_renewal_window: ${{ env.E2E_GARDENER_CERT_MANAGER_RENEWAL_WINDOW }}
+      - name: Deploy lifecycle-manager
+        uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager-e2e
+        with:
+          klm_version_tag: ${{ steps.configuration.outputs.klm_version_tag }}
+          klm_image_repo: ${{ steps.configuration.outputs.klm_image_repo }}
+      - name: Deploy template-operator
+        uses: ./lifecycle-manager/.github/actions/deploy-template-operator-with-modulereleasemeta
+        env:
+          ModuleDeploymentName: template-operator-controller-manager
+          ModuleDeploymentNameInNewerVersion: template-operator-v2-controller-manager
+          ModuleDeploymentNameInOlderVersion: template-operator-v1-controller-manager
+          NewerVersion: 2.4.2-e2e-test
+          OlderVersion: 1.1.1-e2e-test
+          OlderVersionForMandatoryModule: 1.1.0-smoke-test
+          NewerVersionForMandatoryModule: 2.4.1-smoke-test
+          VersionForStatefulSetInWarning: 1.0.0-warning-statefulset
+          VersionForDeploymentInWarning: 1.0.0-warning-deployment
+          VersionForMisconfiguredDeploymentImage: 1.0.0-misconfigured-deployment
+          VersionForMisconfiguredStatefulSetImage: 1.0.0-misconfigured-statefulset
+          VersionForNoDefaultCR: 1.0.0-no-default-cr
+          MisconfiguredModuleName: template-operator-misconfigured
+          ModuleName: template-operator
+      - name: Run '${{ matrix.e2e-test }}' test
+        working-directory: lifecycle-manager
+        run: |
+          make -C tests/e2e ${{ matrix.e2e-test }}
+      - name: Post debug
+        if: always()
+        run: ./lifecycle-manager/.github/scripts/debug/teardown.sh
+        continue-on-error: true

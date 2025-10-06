@@ -17,37 +17,102 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Manifest is deprecated. Use v1beta2 instead."
-//+kubebuilder:storageversion
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Manifest is deprecated. Use v1beta2 instead."
+// +kubebuilder:unservedversion
 
 // Manifest is the Schema for the manifests API.
 type Manifest struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   v1beta2.ManifestSpec `json:"spec,omitempty"`
-	Status shared.Status        `json:"status,omitempty"`
+	Spec   ManifestSpec `json:"spec,omitempty"`
+	Status Status       `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// ManifestSpec defines the desired state of Manifest.
+type ManifestSpec struct {
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
+
+	// Remote indicates if Manifest should be installed on a remote cluster
+	Remote bool `json:"remote"`
+
+	// Version specifies current Resource version
+	// +optional
+	Version string `json:"version,omitempty"`
+
+	// Config specifies OCI image configuration for Manifest
+	Config *ImageSpec `json:"config,omitempty"`
+
+	// Install specifies a list of installations for Manifest
+	Install InstallInfo `json:"install"`
+
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
+	// +nullable
+	// Resource specifies a resource to be watched for state updates
+	Resource *unstructured.Unstructured `json:"resource,omitempty"`
+}
+
+// InstallInfo defines installation information.
+type InstallInfo struct {
+	// Source in the ImageSpec format
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Source machineryruntime.RawExtension `json:"source"`
+
+	// Name specifies a unique install name for Manifest
+	Name string `json:"name"`
+}
+
+// ImageSpec defines OCI Image specifications.
+// +k8s:deepcopy-gen=true
+type ImageSpec struct {
+	// Repo defines the Image repo
+	Repo string `json:"repo,omitempty"`
+
+	// Name defines the Image name
+	Name string `json:"name,omitempty"`
+
+	// Ref is either a sha value, tag or version
+	Ref string `json:"ref,omitempty"`
+
+	// Type specifies the type of installation specification
+	// that could be provided as part of a custom resource.
+	// This time is used in codec to successfully decode from raw extensions.
+	// +kubebuilder:validation:Enum=helm-chart;oci-ref;"kustomize";""
+	Type RefTypeMetadata `json:"type,omitempty"`
+
+	// Deprecated: Field will be removed soon and is not supported anymore.
+	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
+}
+
+type RefTypeMetadata string
+
+const (
+	OciRefType RefTypeMetadata = "oci-ref"
+	OciDirType RefTypeMetadata = "oci-dir"
+)
+
+// +kubebuilder:object:root=true
 
 // ManifestList contains a list of Manifest.
 type ManifestList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Manifest `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+
+	Items []Manifest `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
 	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
 }

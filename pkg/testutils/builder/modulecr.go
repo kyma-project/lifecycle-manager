@@ -3,7 +3,7 @@ package builder
 import (
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -16,9 +16,9 @@ func NewModuleCRBuilder() ModuleCRBuilder {
 	moduleCR := &unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(
 		schema.GroupVersionKind{
-			Group:   v1beta2.GroupVersion.Group,
-			Version: "v1alpha1",
-			Kind:    "Sample",
+			Group:   templatev1alpha1.GroupVersion.Group,
+			Version: templatev1alpha1.GroupVersion.Version,
+			Kind:    string(templatev1alpha1.SampleKind),
 		},
 	)
 	builder := ModuleCRBuilder{moduleCR: moduleCR}

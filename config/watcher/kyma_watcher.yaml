@@ -1,0 +1,39 @@
+apiVersion: operator.kyma-project.io/v1beta2
+kind: Watcher
+metadata:
+  name: watcher
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+spec:
+  labelsToWatch:
+    "operator.kyma-project.io/watched-by": "kyma"
+  resourceToWatch:
+    group: operator.kyma-project.io
+    version: "*"
+    resource: kymas
+  field: "spec"
+  serviceInfo:
+    name: klm-controller-manager-events
+    port: 8082
+    namespace: kcp-system
+  gateway:
+    selector:
+      matchLabels:
+        "operator.kyma-project.io/watcher-gateway": "default"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: controller-manager-events
+spec:
+  selector:
+    app.kubernetes.io/name: lifecycle-manager
+  ports:
+    - protocol: TCP
+      name: klm
+      port: 8082
+      targetPort: 8082
+    - protocol: TCP
+      name: kmm
+      port: 8083
+      targetPort: 8083

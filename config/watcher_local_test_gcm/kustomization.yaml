@@ -1,0 +1,159 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namePrefix: klm-
+commonLabels:
+  app.kubernetes.io/instance: kcp-lifecycle-manager
+  app.kubernetes.io/name: lifecycle-manager
+  app.kubernetes.io/created-by: argo-cd
+  app.kubernetes.io/part-of: kcp
+  app.kubernetes.io/managed-by: kustomize
+images:
+  - name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
+generatorOptions:
+  disableNameSuffixHash: true
+resources:
+  - namespace.yaml
+  - ../manager
+components:
+  - ../crd
+  - ../rbac
+  - ../istio
+  - ../watcher
+  - ../webhook
+  - ../gardener-certmanager
+  - ../maintenance_windows
+patches:
+  - path: patches/deployment_resources.yaml
+  - path: patches/unique_deployment_webhook_patch.yaml
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-frequency=1000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-qps=1000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cache-sync-timeout=60m
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-max-delay=30s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-base-delay=5s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --is-kyma-managed
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-success-interval=20s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --manifest-requeue-success-interval=5s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --log-level=9
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --additional-dns-names=localhost,127.0.0.1,host.k3d.internal
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --listener-port-overwrite=9443
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-lease-duration=20s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-renew-deadline=15s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --leader-election-retry-period=3s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --oci-registry-host=europe-docker.pkg.dev/kyma-project/kyma-modules
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cert-management=cert.gardener.cloud/v1alpha1
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-issuer-namespace=default
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --self-signed-cert-duration=1441h
+  - target:
+      kind: ConfigMap
+      name: dashboard-(overview|status|watcher|mandatory-modules)
+      version: v1
+    patch: |-
+      - op: add
+        path: /metadata/labels
+        value: { }
+      - op: add
+        path: /metadata/labels/grafana_dashboard
+        value: "1"
+  - target:
+      group: security.istio.io
+      version: v1beta1
+      kind: AuthorizationPolicy
+      name: controller-manager
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: kcp-system
+  - target:
+      group: networking.istio.io
+      version: v1beta1
+      kind: Gateway
+      name: watcher
+    patch: |-
+      - op: replace
+        path: /spec/servers/0/hosts/0
+        value: "host.k3d.internal"
+  - target:
+      group: cert.gardener.cloud
+      version: v1alpha1
+      kind: Certificate
+      name: watcher-serving
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: "localhost"
+      - op: add
+        path: /spec/dnsNames/1
+        value: "host.k3d.internal"
+      - op: add
+        path: /spec/dnsNames/2
+        value: "skr.cluster.local"
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: PrefixSuffixTransformer
+    metadata:
+      name: add-klm-prefix-to-resources
+    prefix: klm-
+    fieldSpecs:
+    - path: subjects/name
+      kind: RoleBinding
+    - path: subjects/name
+      kind: ClusterRoleBinding
+    - path: spec/issuerRef/name
+      kind: Certificate
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: add-resources-to-kcp-system
+      namespace: kcp-system
+    unsetOnly: true
+    setRoleBindingSubjects: allServiceAccounts

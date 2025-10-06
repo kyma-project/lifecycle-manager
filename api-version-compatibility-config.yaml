@@ -1,0 +1,34 @@
+# The configuration file is used by the GitHub Actions workflow defined in .github/workflows/check-api-compatibility.yaml.
+# It is used to define exclusions when comparing different versions of CRD schemas and
+# specifies the fields that should be excluded from the comparison for each version of a CRD.
+# The structure of the file is as follows:
+#
+# <crd-filename>:
+#   exclusions:
+#     <version>:
+#       - <exclusion-path> (may be a yq operator without spaces)
+
+operator.kyma-project.io_kymas.yaml:
+  exclusions:
+    v1beta1:
+      - .spec.properties.sync
+    v1beta2:
+      - .spec.properties.modules.x-kubernetes-list-map-keys
+      - .spec.properties.modules.x-kubernetes-list-type
+operator.kyma-project.io_moduletemplates.yaml:
+  exclusions:
+    v1beta1:
+      - .spec.properties.target
+      - .spec.required[]|select(.=="target")
+    v1beta2:
+      - .spec.properties.version
+      - .spec.properties.moduleName
+      - .spec.properties.customStateCheck.description
+      - .spec.properties.resources
+      - .spec.properties.info
+      - .spec.properties.manager
+      - .spec.properties.associatedResources
+operator.kyma-project.io_manifests.yaml:
+  exclusions:
+    v1beta2:
+      - .spec.properties.localizedImages

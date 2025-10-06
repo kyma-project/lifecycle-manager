@@ -1,0 +1,22 @@
+name: Setup test clusters
+description: Creates and configures the KCP and SKR clusters.
+inputs:
+  k8s_version:
+    description: The version of k8s to use. For example, 1.28.7
+    required: true
+  cert_manager_version:
+    description: The version of cert-manager to depoy. For example, 1.13.3.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: create-test-clusters
+      shell: bash
+      run: |
+        ./lifecycle-manager/scripts/tests/create_test_clusters.sh --k8s-version ${{ inputs.k8s_version }} --cert-manager-version ${{ inputs.cert_manager_version }}
+
+    - uses: ./lifecycle-manager/.github/actions/export-kubeconfigs
+
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp

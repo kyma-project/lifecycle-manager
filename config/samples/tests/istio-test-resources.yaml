@@ -1,8 +1,8 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: lifecycle-manager-watcher-gateway
-  namespace: default
+  name: klm-watcher
+  namespace: kcp-system
   labels:
     operator.kyma-project.io/watcher-gateway: default
 spec:

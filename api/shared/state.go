@@ -1,6 +1,6 @@
 package shared
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;"";Warning
+// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;"";Warning;Unmanaged
 type State string
 
 // Valid States.
@@ -21,6 +21,8 @@ const (
 	// StateWarning signifies specified resource has been deployed, but cannot be used due to misconfiguration,
 	// usually it means that user interaction is required.
 	StateWarning State = "Warning"
+
+	StateUnmanaged State = "Unmanaged"
 )
 
 // IsSupportedState These states will be used by module CR.
@@ -32,6 +34,14 @@ func (state State) IsSupportedState() bool {
 		state == StateWarning
 }
 
-func AllStates() []State {
+func AllKymaStates() []State {
 	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
+}
+
+func AllMandatoryModuleStates() []State {
+	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
+}
+
+func AllModuleStates() []State {
+	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning, StateUnmanaged}
 }

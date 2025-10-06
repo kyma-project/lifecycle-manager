@@ -1,0 +1,175 @@
+name: Deploy lifecycle-manager E2E
+description: Applies E2E test-specific patches to the lifecycle-manager kustomize and deploys it.
+inputs:
+  klm_version_tag:
+    description: The version tag for the KLM image. For example, PR-123.
+    required: true
+  klm_image_repo:
+    description: The repository for the KLM image. For example, dev.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp
+    - name: Set Kustomize Directory
+      shell: bash
+      run: |
+        if [[ -n "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
+          echo "E2E_KUSTOMIZE_DIR=config/watcher_local_test_gcm" >> $GITHUB_ENV
+        else
+          echo "E2E_KUSTOMIZE_DIR=config/watcher_local_test" >> $GITHUB_ENV
+        fi
+    - name: Patch purge finalizer flags
+      if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --enable-purge-finalizer=true
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+        cat purge_finalizer.yaml
+        kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+        popd
+    - name: Patch metrics cleanup interval
+      if: ${{ matrix.e2e-test == 'kyma-metrics' }}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --metrics-cleanup-interval=1" >> metrics_cleanup.yaml
+        cat metrics_cleanup.yaml
+        kustomize edit add patch --path metrics_cleanup.yaml --kind Deployment
+        popd
+    - name: Patch self signed certificate lifetime
+      if: ${{matrix.e2e-test == 'self-signed-certificate-rotation'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        if [[ -z "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-duration=1h
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-before=59m
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+        fi
+        cat self-signed-cert.yaml
+        kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
+        popd
+    - name: Patch requeue intervals
+      if: ${{ matrix.e2e-test == 'modulereleasemeta-watch-trigger'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/args/16
+          value: --kyma-requeue-success-interval=1h
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --kyma-requeue-warning-interval=1h
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --kyma-requeue-error-interval=1h
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --kyma-requeue-busy-interval=1s" >> requeue-interval-patch.yaml
+        cat requeue-interval-patch.yaml
+        kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
+        popd
+    - name: Patch KLM deployment for watcher zero downtime
+      if: ${{matrix.e2e-test == 'watcher-zero-downtime'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: replace
+          path: /spec/template/spec/containers/0/args/16
+          value: --kyma-requeue-success-interval=10s
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --istio-gateway-cert-switch-before-expiration-time=58m30s
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --istio-gateway-secret-requeue-success-interval=6s" >> requeue-interval-patch.yaml
+        cat requeue-interval-patch.yaml
+        kustomize edit add patch --path requeue-interval-patch.yaml --kind Deployment
+        popd
+    - name: Patch CA certificate renewBefore
+      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
+        matrix.e2e-test == 'watcher-zero-downtime'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        if [[ -z "${E2E_USE_GARDENER_CERT_MANAGER}" ]]; then
+        echo \
+        "- op: replace
+          path: /spec/renewBefore
+          value: 59m
+        - op: replace
+          path: /spec/duration
+          value: 1h">> certificate_renewal.yaml
+        cat certificate_renewal.yaml
+        kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving
+        fi
+        popd
+    - name: Use legacy istio gateway secret rotation strategy
+      if: ${{matrix.e2e-test == 'legacy-istio-gateway-secret-rotation' ||
+        matrix.e2e-test == 'legacy-istio-gateway-secret-rotation-gcm'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --legacy-strategy-for-istio-gateway-secret=true
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --istio-gateway-secret-requeue-success-interval=5s" >> legacy-secret-rotation.yaml
+        cat legacy-secret-rotation.yaml
+        kustomize edit add patch --path legacy-secret-rotation.yaml --kind Deployment
+        popd
+    - name: Use private OCI registry credentials
+      if: ${{matrix.e2e-test == 'oci-reg-cred-secret'}}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        sed -i 's|value: --oci-registry-host=europe-docker.pkg.dev/kyma-project/kyma-modules|value: --oci-registry-cred-secret=private-oci-reg-creds|' kustomization.yaml
+        popd
+    - name: Create and use maintenance window policy
+      if: ${{matrix.e2e-test == 'maintenance-windows' ||
+        matrix.e2e-test == 'maintenance-windows-initial-installation' ||
+        matrix.e2e-test == 'maintenance-windows-skip'}}
+      uses: ./lifecycle-manager/.github/actions/generate-maintenance-window-config-e2e
+      with:
+        output_file_path: ./lifecycle-manager/config/maintenance_windows/policy.json
+    - name: Deploy LM local testing kustomize
+      uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
+      with:
+        klm_version_tag: ${{ inputs.klm_version_tag }}
+        klm_image_repo: ${{ inputs.klm_image_repo }}
+    - name: Expose Metrics Endpoint
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        kubectl patch svc klm-controller-manager-metrics -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system

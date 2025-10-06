@@ -1,0 +1,15 @@
+name: Install istioctl
+description: Downloads istioctl and installs it locally.
+inputs:
+  istio_version:
+    description: The version of istioctl to install. For example, 1.20.3.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install istioctl
+      shell: bash
+      run: |
+        curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${{ inputs.istio_version }} TARGET_ARCH=x86_64 sh -
+        chmod +x istio-${{ inputs.istio_version }}/bin/istioctl
+        echo "$(pwd)/istio-${{ inputs.istio_version }}/bin" >> $GITHUB_PATH

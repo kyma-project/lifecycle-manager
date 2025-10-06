@@ -3,12 +3,14 @@ package shared
 import (
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Status defines the observed state of CustomObject.
 // +k8s:deepcopy-gen=true
 type Status struct {
+	LastOperation `json:"lastOperation,omitempty"`
+
 	// State signifies current state of CustomObject.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
 	// +kubebuilder:validation:Required
@@ -18,14 +20,13 @@ type Status struct {
 	// If all Conditions are met, the State is expected to be in StateReady.
 	// +listType=map
 	// +listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchMergeKey:"type" patchStrategy:"merge"`
+	Conditions []apimetav1.Condition `json:"conditions,omitempty" patchMergeKey:"type" patchStrategy:"merge"`
 
 	// Synced determine a list of Resources that are currently actively synced.
 	// All resources that are synced are considered for orphan removal on configuration changes,
 	// and it is used to determine effective differences from one state to the next.
 	// +listType=atomic
-	Synced        []Resource `json:"synced,omitempty"`
-	LastOperation `json:"lastOperation,omitempty"`
+	Synced []Resource `json:"synced,omitempty"`
 }
 
 func (s Status) WithState(state State) Status {
@@ -34,11 +35,11 @@ func (s Status) WithState(state State) Status {
 }
 
 func (s Status) WithErr(err error) Status {
-	s.LastOperation = LastOperation{Operation: err.Error(), LastUpdateTime: metav1.NewTime(time.Now())}
+	s.LastOperation = LastOperation{Operation: err.Error(), LastUpdateTime: apimetav1.NewTime(time.Now())}
 	return s
 }
 
 func (s Status) WithOperation(operation string) Status {
-	s.LastOperation = LastOperation{Operation: operation, LastUpdateTime: metav1.NewTime(time.Now())}
+	s.LastOperation = LastOperation{Operation: operation, LastUpdateTime: apimetav1.NewTime(time.Now())}
 	return s
 }

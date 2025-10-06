@@ -2,85 +2,92 @@ package v2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/imagerewrite"
+	"github.com/kyma-project/lifecycle-manager/internal/util/collections"
 )
 
 const (
-	OperatorName   = "module-manager"
-	OperatorPrefix = "operator.kyma-project.io"
-	Separator      = "/"
-
-	ManagedByLabel      = OperatorPrefix + Separator + "managed-by"
-	managedByLabelValue = "declarative-v2"
-
-	DisclaimerAnnotation      = OperatorPrefix + Separator + "managed-by-reconciler-disclaimer"
-	disclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
+	DisclaimerAnnotation      = shared.OperatorGroup + shared.Separator + "managed-by-reconciler-disclaimer"
+	DisclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
-
-	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
-
-	// OwnedByAnnotation defines the resource managing the resource. Differing from ManagedBy
-	// in that it does not reference controllers. Used by the runtime-watcher to determine the
-	// corresponding CR in KCP.
-	OwnedByAnnotation = OperatorPrefix + Separator + "owned-by"
-	OwnedByFormat     = "%s/%s"
+	OwnedByFormat = "%s/%s"
 )
 
-func disclaimerTransform(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
+var ErrInvalidManifestType = errors.New("invalid object type, expected *v1beta2.Manifest")
+
+func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
 		annotations := resource.GetAnnotations()
 		if annotations == nil {
 			annotations = make(map[string]string)
 		}
-		annotations[DisclaimerAnnotation] = disclaimerAnnotationValue
+		annotations[DisclaimerAnnotation] = DisclaimerAnnotationValue
 		resource.SetAnnotations(annotations)
 	}
 	return nil
 }
 
-func kymaComponentTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+// DockerImageLocalizationTransform rewrites Docker images in the provided resources
+// according to the Spec.LocalizedImages field in the Manifest object.
+func DockerImageLocalizationTransform(ctx context.Context, obj Object, resources []*unstructured.Unstructured) error {
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return fmt.Errorf("%T: %w", obj, ErrInvalidManifestType)
+	}
+
+	if len(manifest.Spec.LocalizedImages) == 0 {
+		return nil // No images to rewrite
+	}
+
+	localizedImages, err := imagerewrite.AsImageReferences(manifest.Spec.LocalizedImages)
+	if err != nil {
+		return fmt.Errorf("failed to parse localized images: %w", err)
+	}
+
+	rewriter := (&imagerewrite.ResourceRewriter{}).WithRewriters(
+		&imagerewrite.PodContainerImageRewriter{},
+		&imagerewrite.PodContainerEnvsRewriter{},
+	)
+
 	for _, resource := range resources {
-		lbls := resource.GetLabels()
-		if lbls == nil {
-			lbls = make(map[string]string)
+		if err = rewriter.ReplaceImages(resource, localizedImages); err != nil {
+			return fmt.Errorf(
+				"failed to rewrite images in resource %s/%s: %w",
+				resource.GetNamespace(),
+				resource.GetName(),
+				err,
+			)
 		}
-		lbls["app.kubernetes.io/component"] = obj.GetName()
-		lbls["app.kubernetes.io/part-of"] = "Kyma"
-		resource.SetLabels(lbls)
 	}
 	return nil
 }
 
-func managedByDeclarativeV2(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
+func KymaComponentTransform(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
-		lbls := resource.GetLabels()
-		if lbls == nil {
-			lbls = make(map[string]string)
-		}
-		// legacy managed by value
-		lbls[ManagedByLabel] = managedByLabelValue
-		resource.SetLabels(lbls)
+		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
+			"app.kubernetes.io/component": obj.GetName(),
+			"app.kubernetes.io/part-of":   "Kyma",
+		}))
 	}
 	return nil
 }
 
-func watchedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+func ManagedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
-		lbls := resource.GetLabels()
-		if lbls == nil {
-			lbls = make(map[string]string)
-		}
-		// legacy managed by value
-		lbls[WatchedByLabel] = OperatorName
+		resource.SetLabels(collections.MergeMapsSilent(resource.GetLabels(), map[string]string{
+			shared.ManagedBy: shared.ManagedByLabelValue,
+		}))
 
-		annotations := resource.GetAnnotations()
-		if annotations == nil {
-			annotations = make(map[string]string)
-		}
-		annotations[OwnedByAnnotation] = fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName())
-		resource.SetLabels(lbls)
+		resource.SetAnnotations(collections.MergeMapsSilent(resource.GetAnnotations(), map[string]string{
+			shared.OwnedByAnnotation: fmt.Sprintf(OwnedByFormat, obj.GetNamespace(), obj.GetName()),
+		}))
 	}
 	return nil
 }

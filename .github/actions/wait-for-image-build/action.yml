@@ -1,0 +1,34 @@
+name: Wait for image build
+description: Waits for the image to be built. Exits with error if not built within the given timeout.
+inputs:
+  token:
+    description: The GitHub token to use for making API requests.
+    required: true
+  statusName:
+    description: The name of the GitHub status check to wait for. For example, `build` or `deploy`.
+    required: true
+  timeoutSeconds:
+    description: The number of seconds to wait for the status check to complete.
+    required: false
+    default: "1200"
+  intervalSeconds:
+    description: The number of seconds to wait before each poll of the GitHub API.
+    required: false
+    default: "10"
+runs:
+  using: composite
+  steps:
+    - name: Wait for image build
+      id: wait-for-build
+      with:
+        token: ${{ inputs.token }}
+        statusName: ${{ inputs.statusName }}
+        timeoutSeconds: ${{ inputs.timeoutSeconds }}
+        intervalSeconds: ${{ inputs.intervalSeconds }}
+      uses: autotelic/action-wait-for-status-check@v1
+    - name: Exit if build failed
+      if: steps.wait-for-build.outputs.state != 'success'
+      shell: bash
+      run: |
+        echo "Image build did not succeed!"
+        exit 1

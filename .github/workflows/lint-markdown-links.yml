@@ -1,6 +1,8 @@
 name: Lint Markdown Links
 run-name: ${{github.event.pull_request.title}}
 
+permissions: { }
+
 on:
   pull_request:
   schedule:
@@ -12,12 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+      # Relates to version 1.0.15. Sha is used as this is this is the allow-listed value
+      - uses: gaurav-nelson/github-action-markdown-link-check@d53a906aa6b22b8979d33bc86170567e619495ec
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'no'
           config-file: '.mlc.config.json'
           folder-path: '.'
           max-depth: -1
-          check-modified-files-only: 'yes'
+          check-modified-files-only: 'no'
           base-branch: 'main'

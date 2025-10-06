@@ -77,7 +77,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -92,7 +92,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"2..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-controller-manager-metrics\", code=~\"2..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -105,7 +105,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"3..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-controller-manager-metrics\", code=~\"3..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -118,7 +118,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"4..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-controller-manager-metrics\", code=~\"4..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -131,7 +131,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"5..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-controller-manager-metrics\", code=~\"5..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -215,7 +215,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -230,7 +230,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "process_resident_memory_bytes{job=\"klm-metrics-service\"}",
+          "expr": "process_resident_memory_bytes{job=\"klm-controller-manager-metrics\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "Lifecycle Manager",
@@ -315,7 +315,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -330,7 +330,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(process_cpu_seconds_total{job=\"klm-metrics-service\"}[$__rate_interval])",
+          "expr": "rate(process_cpu_seconds_total{job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{job}}",
           "refId": "A"
@@ -460,38 +460,13 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue\"}[$__rate_interval])) by (controller)",
+          "expr": "rate(controller_runtime_reconcile_total{controller=~\"kyma|watcher|purge|manifest|mandatory-module-installation|mandatory-module-deletion\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "requeue",
+          "legendFormat": "{{controller }} - {{result}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"requeue_after\"}[$__rate_interval])) by (controller)",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "requeue_after",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"kyma\", result=\"success\"}[$__rate_interval])) by (controller)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "success",
-          "refId": "C"
         }
       ],
       "title": "Lifecycle Manager Controller Runtime Reconcile Success",
@@ -572,26 +547,116 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_errors_total{controller=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_errors_total{controller=~\"kyma|watcher|purge|manifest|mandatory-module-installation|mandatory-module-deletion\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_errors_total{controller=\"manifest\"}[$__rate_interval])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{controller}}",
-          "refId": "B"
         }
       ],
       "title": "Operator Controller Runtime Reconcile Errors",
       "type": "timeseries"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "decimals": null,
+      "description": "How many times Kyma was requeued due to specific reasons",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "hiddenSeries": false,
+      "id": 82,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.35",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rate(lifecycle_mgr_requeue_reason_total)[$__rate_interval]",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{requeue_reason}} - {{requeue_type}}",
+          "refId": "kyma_under_deletion_with_no_access_secret"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Kyma Requeue Reason",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:152",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:153",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "aliasColors": {},
@@ -610,7 +675,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 30
       },
       "hiddenSeries": false,
       "id": 43,
@@ -634,7 +699,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -649,7 +714,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -660,7 +725,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"kyma\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"kyma\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"kyma\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
@@ -732,7 +797,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 37
       },
       "id": 44,
       "options": {
@@ -748,7 +813,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "targets": [
         {
           "datasource": {
@@ -756,7 +821,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{controller=\"kyma\"})",
+          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{container=\"manager\",controller=\"kyma\"})",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -767,7 +832,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{controller=\"manifest\"})",
+          "expr": "sum by (controller) (controller_runtime_max_concurrent_reconciles{container=\"manager\",controller=\"manifest\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
@@ -831,7 +896,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 37
       },
       "id": 45,
       "options": {
@@ -855,7 +920,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "controller_runtime_active_workers{controller=\"kyma\"}",
+          "expr": "controller_runtime_active_workers{controller=\"kyma\",job=\"klm-controller-manager-metrics\"}",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -866,7 +931,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "controller_runtime_active_workers{controller=\"manifest\"}",
+          "expr": "controller_runtime_active_workers{controller=\"manifest\",job=\"klm-controller-manager-metrics\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
@@ -883,7 +948,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 45
       },
       "id": 7,
       "panels": [],
@@ -944,7 +1009,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 46
       },
       "id": 5,
       "options": {
@@ -968,7 +1033,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_longest_running_processor_seconds{job=\"klm-metrics-service\"}",
+          "expr": "workqueue_longest_running_processor_seconds{job=\"klm-controller-manager-metrics\"}",
           "interval": "",
           "legendFormat": "{{job}}",
           "refId": "A"
@@ -1028,7 +1093,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 46
       },
       "id": 20,
       "options": {
@@ -1051,7 +1116,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_unfinished_work_seconds{job=\"klm-metrics-service\"}",
+          "expr": "workqueue_unfinished_work_seconds{job=\"klm-controller-manager-metrics\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "{{job}}",
@@ -1078,7 +1143,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 54
       },
       "hiddenSeries": false,
       "id": 31,
@@ -1102,7 +1167,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1117,7 +1182,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"manifest\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"manifest\"}[$__rate_interval])",
+          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"manifest\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"manifest\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{name}}",
           "refId": "A"
@@ -1128,7 +1193,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"kyma\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"kyma\"}[$__rate_interval])",
+          "expr": "  rate(workqueue_queue_duration_seconds_sum{name=\"kyma\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])\n/\n  rate(workqueue_queue_duration_seconds_count{name=\"kyma\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1188,7 +1253,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 61
       },
       "hiddenSeries": false,
       "id": 46,
@@ -1212,7 +1277,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1227,7 +1292,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"manifest\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"manifest\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"manifest\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{name}}",
           "refId": "A"
@@ -1238,7 +1303,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"kyma\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(workqueue_work_duration_seconds_sum{name=\"kyma\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])\n/\nrate(workqueue_work_duration_seconds_count{name=\"kyma\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1298,7 +1363,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 29,
@@ -1322,7 +1387,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1337,7 +1402,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_depth{name=\"manifest\"}",
+          "expr": "workqueue_depth{name=\"manifest\",job=\"klm-controller-manager-metrics\"}",
           "interval": "",
           "legendFormat": "{{name}}",
           "refId": "A"
@@ -1348,7 +1413,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_depth{name=\"kyma\"}",
+          "expr": "workqueue_depth{name=\"kyma\",job=\"klm-controller-manager-metrics\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1411,7 +1476,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 75
       },
       "hiddenSeries": false,
       "id": 27,
@@ -1435,7 +1500,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1450,7 +1515,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(workqueue_adds_total{name=\"manifest\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_adds_total{name=\"manifest\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])) by (name)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1463,7 +1528,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(workqueue_adds_total{name=\"kyma\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_adds_total{name=\"kyma\",job=\"klm-controller-manager-metrics\"}[$__rate_interval])) by (name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1513,89 +1578,12 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 69
+        "y": 82
       },
-      "id": 50,
+      "id": 78,
       "panels": [],
-      "title": "Listener",
+      "title": "Certificate",
       "type": "row"
-    },
-    {
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 24,
-        "x": 0,
-        "y": 70
-      },
-      "id": 48,
-      "options": {
-        "graph": {},
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "increase(watcher_listener_requests_total[1m])",
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Pod: {{pod}}",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Requests per Minute",
-      "type": "timeseries"
     },
     {
       "aliasColors": {},
@@ -1603,30 +1591,29 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "description": "Indicates the self-signed Certificate of related Kyma is not renewed yet",
       "fieldConfig": {
-        "defaults": {
-          "unit": "s"
-        },
+        "defaults": {},
         "overrides": []
       },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 9,
-        "w": 12,
+        "h": 7,
+        "w": 24,
         "x": 0,
-        "y": 79
+        "y": 83
       },
       "hiddenSeries": false,
-      "id": 52,
+      "id": 80,
       "legend": {
-        "avg": true,
+        "avg": false,
         "current": false,
-        "max": true,
+        "max": false,
         "min": false,
         "show": true,
         "total": false,
-        "values": true
+        "values": false
       },
       "lines": true,
       "linewidth": 1,
@@ -1635,7 +1622,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1646,11 +1633,9 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "watcher_listener_request_duration",
-          "format": "time_series",
-          "instant": false,
+          "expr": "lifecycle_mgr_self_signed_cert_not_renew{service=\"klm-controller-manager-metrics\"}",
           "interval": "",
-          "legendFormat": "Pod: {{pod}}",
+          "legendFormat": "{{kyma_name}}",
           "refId": "A"
         }
       ],
@@ -1658,9 +1643,9 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Request Duration",
+      "title": "Self-signed Certificate Not Renew",
       "tooltip": {
-        "shared": false,
+        "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
@@ -1674,7 +1659,7 @@
       },
       "yaxes": [
         {
-          "format": "s",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1696,165 +1681,13 @@
       }
     },
     {
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 5
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 79
-      },
-      "id": 54,
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "text": {}
-      },
-      "pluginVersion": "",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "watcher_listener_inflight_requests",
-          "interval": "",
-          "legendFormat": "Pod: {{pod}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Pending Requests",
-      "type": "gauge"
-    },
-    {
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 5
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 88
-      },
-      "id": 56,
-      "options": {
-        "graph": {},
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "increase(watcher_listener_request_errors_total[1m])",
-          "interval": "",
-          "legendFormat": "Total Failed Requests",
-          "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(watcher_listener_exceeding_size_limit_requests_total[1m])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Failed Requests due to Size Limit",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "increase(watcher_listener_failed_verification_requests_total[1m])",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Failed Requests due to Verification Error",
-          "refId": "C"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Failed Requests per Minute",
-      "type": "timeseries"
-    },
-    {
       "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 90
       },
       "id": 62,
       "panels": [],
@@ -1877,7 +1710,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 97
+        "y": 91
       },
       "hiddenSeries": false,
       "id": 58,
@@ -1897,7 +1730,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1915,7 +1748,9 @@
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "Purge Duration Seconds",
       "tooltip": {
         "shared": false,
@@ -1956,63 +1791,98 @@
       }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": null,
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
+        "defaults": {},
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 97
+        "y": 91
       },
+      "hiddenSeries": false,
       "id": 64,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
-      "pluginVersion": "",
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.35",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_purgectrl_requests_total",
+          "expr": "rate(lifecycle_mgr_purgectrl_requests_total{service=\"klm-controller-manager-metrics\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Purge Count",
-      "type": "stat"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "aliasColors": {},
@@ -2030,7 +1900,7 @@
         "h": 11,
         "w": 24,
         "x": 0,
-        "y": 105
+        "y": 99
       },
       "hiddenSeries": false,
       "id": 66,
@@ -2050,7 +1920,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.35",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2061,14 +1931,16 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_purgectrl_error{err_reason=\"CleanupError\"} == 1",
+          "expr": "lifecycle_mgr_purgectrl_error{err_reason=\"CleanupError\"}",
           "interval": "",
           "legendFormat": "{{err_reason}} Kyma: {{kyma_name}} ShootID: {{shoot}} InstanceID: {{instance_id}}",
           "refId": "A"
         }
       ],
       "thresholds": [],
+      "timeFrom": null,
       "timeRegions": [],
+      "timeShift": null,
       "title": "Purge Errors",
       "tooltip": {
         "shared": true,
@@ -2105,6 +1977,100 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 110
+      },
+      "id": 84,
+      "panels": [],
+      "title": "Maintenance Windows",
+      "type": "row"
+    },
+    {
+      "datasource": null,
+      "description": "Indicates whether the KLM successfully read the maintenance policy file from the mounted ConfigMap.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "from": "",
+              "id": 1,
+              "text": "Failed",
+              "to": "",
+              "type": 1,
+              "value": "0"
+            },
+            {
+              "from": "",
+              "id": 2,
+              "text": "Success",
+              "to": "",
+              "type": 1,
+              "value": "1"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 111
+      },
+      "id": 86,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.35",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "lifecycle_mgr_maintenance_window_config_read_success",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Maintenance Window Configuration Read Status",
+      "type": "stat"
     }
   ],
   "refresh": "",
@@ -2115,7 +2081,7 @@
     "list": []
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},

@@ -1,0 +1,94 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // use task "Deploy Kyma" with "localhost" option
+      "name": "Launch KLM",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${cwd}/cmd/main.go",
+      "args": [],
+      "env": {
+        "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+        "ENABLE_WEBHOOKS": "false"
+      },
+      "preLaunchTask": "Install CRDs"
+    },
+    {
+      "name": "Launch KLM Integration Tests - Package of current file",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "args": ["-test.v", "-ginkgo.flake-attempts=10"],
+      "env": {
+        // make sure you added the following to your VSCODE settings.json
+        "KUBEBUILDER_ASSETS": "${config:go.testEnvVars.KUBEBUILDER_ASSETS}"
+      },
+    },
+    {
+      "name": "Launch KLM E2E Test",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/tests/e2e",
+      "args": ["-test.timeout", "20m", "-ginkgo.v", "-ginkgo.focus", "${input:e2eTestTargetName}"],
+      "env": {
+        "KCP_KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml",
+        "SKR_KUBECONFIG": "${env:HOME}/.k3d/skr-local.yaml",
+      }
+    },
+  ],
+  "inputs": [
+    {
+      // not all of the options work OOTB, see deploy-lifecycle-manager-e2e action.yaml for specific patches
+      "id": "e2eTestTargetName",
+      "type": "pickString",
+      "description": "E2E test target name",
+      "options": [
+        "KCP Kyma CR Deprovision With Foreground Propagation After SKR Cluster Removal",
+        "KCP Kyma CR Deprovision With Background Propagation After SKR Cluster Removal",
+        "Manage Module Metrics",
+        "Mandatory Module Metrics",
+        "Mandatory Module With Old Naming Pattern Metrics",
+        "Enqueue Event from Watcher",
+        "Module Status Decoupling With StatefulSet",
+        "Module Status Decoupling With Deployment",
+        "Module Without Default CR",
+        "Module Keep Consistent After Deploy",
+        "Mandatory Module Installation and Deletion",
+        "Mandatory Module With Old Naming Pattern Installation and Deletion",
+        "Non Blocking Kyma Module Deletion",
+        "Manifest Skip Reconciliation Label",
+        "Kyma Module Upgrade Under Deletion",
+        "Kyma Module with ModuleReleaseMeta Upgrade Under Deletion",
+        "Unmanaging Kyma Module",
+        "Purge Controller",
+        "Purge Metrics",
+        "Module Upgrade By Channel Switch",
+        "Module Upgrade By New Version",
+        "Module with ModuleReleaseMeta Upgrade By New Version",
+        "Module Install By Version",
+        "CA Certificate Rotation",
+        "Istio Gateway Secret Rotation",
+        "Self Signed Certificate Rotation",
+        "Misconfigured Kyma Secret",
+        "RBAC Privileges",
+        "OCM Format Module Template",
+        "ModuleReleaseMeta With Obsolete ModuleTemplate",
+        "ModuleReleaseMeta Watch Trigger",
+        "ModuleReleaseMeta Sync",
+        "KCP Kyma Module status on SKR connection lost",
+        "ModuleReleaseMeta Not Allowed Installation",
+        "Labelling SKR resources",
+        "Maintenance Windows - Wait for Maintenance Window",
+        "Maintenance Windows - No Wait for Maintenance Window on Initial Installation",
+        "Maintenance Windows - No Wait for Maintenance Widnow on Skip"
+      ]
+    },
+  ]
+}

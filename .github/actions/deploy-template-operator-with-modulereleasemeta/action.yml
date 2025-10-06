@@ -1,0 +1,217 @@
+name: Deploy template-operator With ModuleReleaseMeta
+description: Deploys a test-specific template-operator and corresponding ModuleReleaseMeta.
+inputs:
+  module_version:
+    description: "Version of the template operator to be deployed, should be aligned with the latest version released in github."
+    required: true
+    default: "1.0.3"
+runs:
+  using: composite
+  steps:
+    - uses: ./lifecycle-manager/.github/actions/switch-kubectl-context
+      with:
+        context_name: k3d-kcp
+    - name: Setup HTTPS server for the manifest file
+      uses: ./lifecycle-manager/.github/actions/setup-https-server
+      with:
+        directory_name: ../template-operator
+    - name: Copy generate moduletemplate script to template-operator directory
+      working-directory: template-operator
+      shell: bash
+      run: |
+        cp ../lifecycle-manager/scripts/tests/deploy_moduletemplate.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_modulereleasemeta.sh .
+        cp ../lifecycle-manager/scripts/tests/deploy_mandatory_modulereleasemeta.sh .
+    - name: Create and apply Template Operator ModuleTemplate from the latest release
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
+        matrix.e2e-test != 'mandatory-module-metrics' &&
+        matrix.e2e-test != 'watcher-zero-downtime' &&
+        matrix.e2e-test != 'oci-reg-cred-secret'
+        }}
+      shell: bash
+      run: |
+        modulectl create --config-file ./module-config.yaml --registry http://localhost:5111 --insecure
+        sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+    - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInOlderVersion
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
+        matrix.e2e-test != 'mandatory-module-metrics' &&
+        matrix.e2e-test != 'watcher-zero-downtime' &&
+        matrix.e2e-test != 'oci-reg-cred-secret'
+        }}
+      shell: bash
+      run: |
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersion }}
+    - name: Create and apply Template Operator ModuleTemplate with ModuleDeploymentNameInNewerVersion
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test != 'mandatory-module' &&
+        matrix.e2e-test != 'mandatory-module-metrics' &&
+        matrix.e2e-test != 'watcher-zero-downtime' &&
+        matrix.e2e-test != 'oci-reg-cred-secret'
+        }}
+      shell: bash
+      run: |
+        INCLUDE_DEFAULT_CR=true
+        MANDATORY=false
+        DEPLOY_MODULETEMPLATE=true
+        if [[ "${{ matrix.e2e-test }}" == "maintenance-windows" ]] ||
+           [[ "${{ matrix.e2e-test }}" == "maintenance-windows-initial-installation" ]] ||
+           [[ "${{ matrix.e2e-test }}" == "maintenance-windows-skip" ]]; then
+          REQUIRE_DOWNTIME=true
+        else
+          REQUIRE_DOWNTIME=false
+        fi
+
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersion }} $INCLUDE_DEFAULT_CR $MANDATORY $DEPLOY_MODULETEMPLATE $REQUIRE_DOWNTIME
+    - name: Create and apply Template Operator ModuleTemplate in private registry
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
+      shell: bash
+      run: |
+        modulectl create --config-file ./module-config.yaml --registry http://k3d-private-oci-reg.localhost:5001 --registry-credentials myuser:mypass --insecure
+        sed -i 's/k3d-private-oci-reg.localhost:5001/private-oci-reg.localhost:5000/g' ./template.yaml
+        kubectl get crds
+        kubectl apply -f template.yaml
+    - name: Create and apply ModuleReleaseMeta from the latest release
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'kyma-metrics' ||
+        matrix.e2e-test == 'non-blocking-deletion' ||
+        matrix.e2e-test == 'purge-controller' ||
+        matrix.e2e-test == 'purge-metrics' ||
+        matrix.e2e-test == 'kyma-deprovision-with-foreground-propagation' ||
+        matrix.e2e-test == 'kyma-deprovision-with-background-propagation' ||
+        matrix.e2e-test == 'module-consistency' ||
+        matrix.e2e-test == 'skip-manifest-reconciliation' ||
+        matrix.e2e-test == 'misconfigured-kyma-secret' ||
+        matrix.e2e-test == 'unmanage-module' ||
+        matrix.e2e-test == 'modulereleasemeta-watch-trigger' ||
+        matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' ||
+        matrix.e2e-test == 'labelling' ||
+        matrix.e2e-test == 'module-deletion-with-multiple-crs-ignore-policy' ||
+        matrix.e2e-test == 'module-deletion-with-multiple-crs-create-and-delete-policy' ||
+        matrix.e2e-test == 'oci-reg-cred-secret' ||
+        matrix.e2e-test == 'module-transferred-to-another-oci-registry'
+        }}
+      shell: bash
+      run: |
+        kubectl apply -f module-release-meta.yaml
+    - name: Create and apply ModuleReleaseMeta for regular and fast channels
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-upgrade-channel-switch' ||
+        matrix.e2e-test == 'modulereleasemeta-module-upgrade-new-version' ||
+        matrix.e2e-test == 'modulereleasemeta-upgrade-under-deletion' ||
+        matrix.e2e-test == 'modulereleasemeta-sync' ||
+        matrix.e2e-test == 'module-status-on-skr-connection-lost' ||
+        matrix.e2e-test == 'modulereleasemeta-not-allowed-installation' ||
+        matrix.e2e-test == 'maintenance-windows' ||
+        matrix.e2e-test == 'maintenance-windows-initial-installation' ||
+        matrix.e2e-test == 'maintenance-windows-skip' ||
+        matrix.e2e-test == 'simulate-skr-secret-rotation-evict-client-cache'
+        }}
+      shell: bash
+      run: |
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ env.OlderVersion }}
+
+    - name: Create and apply Template Operator Module as Mandatory Module
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'mandatory-module' ||
+        matrix.e2e-test == 'mandatory-module-metrics'
+        }}
+      shell: bash
+      run: |
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true
+        ./deploy_mandatory_modulereleasemeta.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }}
+
+    - name: Create ModuleTemplate in a new version for Mandatory module
+      if: ${{ matrix.e2e-test == 'mandatory-module'}}
+      working-directory: template-operator
+      shell: bash
+      run: |
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true false
+        cp template.yaml ../lifecycle-manager/tests/e2e/mandatory_template_v2.yaml
+    - name: Create and apply ModuleReleaseMeta Template Operator with newer version in fast channel and older version in regular channel
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+      shell: bash
+      run: |
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} fast:${{ env.NewerVersion }} regular:${{ inputs.module_version }}
+    - name: Create ModuleTemplate and ModuleReleaseMeta for Module Status test with Deployment
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-deployment'}}
+      shell: bash
+      run: |
+        # Create and apply ModuleReleaseMeta with version when deployment is in warning state
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForDeploymentInWarning }}
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForDeploymentInWarning }}
+
+        # Create and apply ModuleReleaseMeta with version when deployment is misconfigured
+        make build-manifests
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].image) = "non-working/path:001"' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.progressDeadlineSeconds) = 60' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].livenessProbe) = {
+          "httpGet": {"path": "/healthz", "port": 8081},
+          "initialDelaySeconds": 5, "periodSeconds": 5, "failureThreshold": 1
+        }' -i template-operator.yaml
+        yq eval '(. | select(.kind == "Deployment") | .spec.template.spec.containers[0].readinessProbe) = {
+          "httpGet": {"path": "/readyz", "port": 8081},
+          "initialDelaySeconds": 5, "periodSeconds": 5, "failureThreshold": 1
+        }' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredDeploymentImage }}
+        ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredDeploymentImage }}
+    - name: Create ModuleTemplate and ModuleReleaseMeta for Module Status test with StatefulSet
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-status-decoupling-with-statefulset'}}
+      shell: bash
+      run: |
+        # Create and apply ModuleReleaseMeta with version when statefulset is in warning state
+        make build-statefulset-manifests
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].args) = ["--leader-elect", "--final-state=Warning", "--final-deletion-state=Warning"]' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForStatefulSetInWarning }}
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForStatefulSetInWarning }}
+
+        # Create and apply ModuleReleaseMeta with version when statefulset is misconfigured
+        make build-statefulset-manifests
+        yq eval '(. | select(.kind == "StatefulSet") | .spec.template.spec.containers[0].image) = "non-working/path:002"' -i template-operator.yaml
+        ./deploy_moduletemplate.sh ${{ env.MisconfiguredModuleName }} ${{ env.VersionForMisconfiguredStatefulSetImage }}
+        ./deploy_modulereleasemeta.sh ${{ env.MisconfiguredModuleName }} regular:${{ env.VersionForMisconfiguredStatefulSetImage }}
+    - name: Create Template Operator Module without default CR and apply ModuleReleaseMeta
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
+      shell: bash
+      run: |
+        make build-manifests
+        ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.VersionForNoDefaultCR }} false
+        ./deploy_modulereleasemeta.sh ${{ env.ModuleName }} regular:${{ env.VersionForNoDefaultCR }}
+    - name: Apply ModuleReleaseMeta with ModuleTemplate with name <modulename>-<channel>
+      working-directory: template-operator
+      if: ${{ matrix.e2e-test == 'modulereleasemeta-with-obsolete-moduletemplate' }}
+      shell: bash
+      run: |
+        # Export the existing ModuleTemplate
+        kubectl get moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system -oyaml > template.yaml
+
+        # Delete the ModuleTemplate in cluster with name <modulename>-<version>
+        kubectl delete moduletemplate ${{ env.ModuleName }}-${{ inputs.module_version }} -n kcp-system
+
+        # Create ModuleTemplate with name <modulename>-<channel>
+        sed -i 's/${{ env.ModuleName }}-${{ inputs.module_version }}/template-operator-regular/g' ./template.yaml
+        kubectl apply -f template.yaml
+    - name: Apply ModuleTemplate for the template-operator Module transferred to another public OCI registry (uses manually created ModuleTemplate)
+      working-directory: lifecycle-manager
+      if: ${{ matrix.e2e-test == 'module-transferred-to-another-oci-registry' }}
+      shell: bash
+      run: |
+        kubectl apply -f tests/e2e/moduletemplate/moduletemplate_template_operator_transferred.yaml

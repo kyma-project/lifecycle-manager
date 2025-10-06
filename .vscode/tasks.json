@@ -1,0 +1,164 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Create New Test Clusters",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+      "dependsOn": ["Delete Test Clusters"],
+      "args": [
+        "--k8s-version", "${input:k8sVersion}",
+        "--cert-manager-version", "${input:certManagerVersion}"
+        ]
+    },
+    {
+      "label": "Delete Test Clusters",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/clusters_cleanup.sh"
+    },
+    {
+      "label": "Ensure Test Clusters",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/create_test_clusters.sh",
+      "args": [
+        "--k8s-version", "${input:k8sVersion}",
+        "--cert-manager-version", "${input:certManagerVersion}"
+        ]
+    },
+    // re-run if encountering error that the watcher CRD is missing
+    {
+      "label": "Deploy KLM from sources",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/deploy_klm_from_sources.sh"
+    },
+    // re-run if encountering error that the watcher CRD is missing
+    {
+      "label": "Deploy KLM from registry",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/deploy_klm_from_registry.sh --image-registry ${input:klmImageRegistry} --image-tag ${input:klmImageTag}"
+    },
+    {
+      "label": "Deploy template-operator",
+      "type": "shell",
+      "command": "kubectl apply -f ${cwd}/tests/e2e/moduletemplate/${input:templateOperatorVersion}",
+      "options": {
+        "env": {
+          "KUBECONFIG": "${env:HOME}/.k3d/kcp-local.yaml"
+        }
+      }
+    },
+    {
+      "label": "Deploy kyma",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/deploy_kyma.sh ${input:skrHost}"
+    },
+    {
+      "label": "Un-Deploy kyma",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/undeploy_kyma.sh"
+    },
+    {
+      "label": "E2E Tests",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/e2e.sh ${input:e2eTestTarget}",
+      "group": {
+        "kind": "test"
+      }
+    },
+    {
+      "label": "Install CRDs",
+      "type": "shell",
+      "command": "${cwd}/scripts/tests/install_crds.sh"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "k8sVersion",
+      "type": "command",
+      "command": "shellCommand.execute",
+      "args": {
+        "command": "yq e '.k8s' ./versions.yaml",
+        "cwd": "${workspaceFolder}",
+        "useSingleResult": true
+      }
+    },
+    {
+      "id": "certManagerVersion",
+      "type": "command",
+      "command": "shellCommand.execute",
+      "args": {
+        "command": "yq e '.certManager' ./versions.yaml",
+        "cwd": "${workspaceFolder}",
+        "useSingleResult": true
+      }
+    },
+    {
+      // not all of the options work OOTB, see deploy-lifecycle-manager-e2e action.yaml for specific patches
+      "id": "e2eTestTarget",
+      "type": "pickString",
+      "description": "E2E test target",
+      "options": [
+        "watcher-enqueue",
+        "rbac-privileges",
+        "kyma-deprovision-with-foreground-propagation",
+        "kyma-deprovision-with-background-propagation",
+        "module-status-decoupling-with-statefulset",
+        "module-status-decoupling-with-deployment",
+        "kyma-metrics",
+        "module-without-default-cr",
+        "module-consistency",
+        "non-blocking-deletion",
+        "purge-controller",
+        "purge-metrics",
+        "module-upgrade-channel-switch",
+        "unmanage-module",
+        "skip-manifest-reconciliation",
+        "self-signed-certificate-rotation",
+        "misconfigured-kyma-secret",
+        "modulereleasemeta-sync",
+        "modulereleasemeta-not-allowed-installation",
+        "labelling",
+        "maintenance-windows",
+        "maintenance-windows-initial-installation",
+        "maintenance-windows-skip"
+      ]
+    },
+    {
+      "id": "templateOperatorVersion",
+      "type": "pickString",
+      "description": "Template-operator manifest",
+      "options": [
+        "mandatory_moduletemplate_template_operator_v1.yaml",
+        "mandatory_moduletemplate_template_operator_v2.yaml",
+        "moduletemplate_template_operator_regular_new_ocm.yaml",
+        "moduletemplate_template_operator_v1_regular.yaml",
+        "moduletemplate_template_operator_v2_fast.yaml",
+        "moduletemplate_template_operator_v2_regular_new_version.yaml"
+      ]
+    },
+    {
+      "id": "klmImageRegistry",
+      "type": "pickString",
+      "description": "Registry of KLM image",
+      "options": ["dev", "prod"]
+    },
+    {
+      "id": "klmImageTag",
+      "type": "promptString",
+      "description": "Tag of the KLM image, e.g. 'latest'"
+    },
+    {
+      "id": "skrHost",
+      "type": "pickString",
+      "description": "Host of the SKR",
+      "options": [
+        // use host.k3d.internal when deploying KLM into the cluster
+        "host.k3d.internal",
+        // use localhost when running KLM locally on the machine
+        "localhost"
+      ]
+    }
+  ]
+}

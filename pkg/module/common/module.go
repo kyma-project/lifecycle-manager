@@ -3,78 +3,75 @@ package common
 import (
 	"fmt"
 	"hash/fnv"
-	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
 type (
 	Modules []*Module
 	Module  struct {
-		ModuleName string
-		FQDN       string
-		Version    string
-		Template   *channel.ModuleTemplateTO
-		client.Object
+		ModuleName   string
+		FQDN         string
+		TemplateInfo *templatelookup.ModuleTemplateInfo
+		Manifest     *v1beta2.Manifest
+		Enabled      bool
+		IsUnmanaged  bool
 	}
 )
 
 func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
 		"fqdn", m.FQDN,
-		"module", m.GetName(),
-		"channel", m.Template.Spec.Channel,
-		"templateGeneration", m.Template.GetGeneration(),
+		"module", m.Manifest.GetName(),
+		"channel", m.TemplateInfo.Spec.Channel,
+		"templateGeneration", m.TemplateInfo.GetGeneration(),
 	)
 }
 
-func (m *Module) ApplyLabelsAndAnnotations(
-	kyma *v1beta2.Kyma,
-) {
-	lbls := m.GetLabels()
+func (m *Module) ApplyDefaultMetaToManifest(kyma *v1beta2.Kyma) {
+	lbls := m.Manifest.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
-	lbls[v1beta2.KymaName] = kyma.Name
-
-	templateLabels := m.Template.GetLabels()
+	lbls[shared.KymaName] = kyma.Name
+	templateLabels := m.TemplateInfo.GetLabels()
 	if templateLabels != nil {
-		lbls[v1beta2.ControllerName] = m.Template.GetLabels()[v1beta2.ControllerName]
+		lbls[shared.ControllerName] = m.TemplateInfo.GetLabels()[shared.ControllerName]
 	}
-	lbls[v1beta2.ChannelLabel] = m.Template.Spec.Channel
-	lbls[v1beta2.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
-	lbls[v1beta2.ManagedBy] = v1beta2.OperatorName
+	lbls[shared.ModuleName] = m.ModuleName
 
-	m.SetLabels(lbls)
+	if !m.TemplateInfo.IsMandatory() {
+		lbls[shared.ChannelLabel] = m.TemplateInfo.DesiredChannel
+	}
 
-	anns := m.GetAnnotations()
+	lbls[shared.ManagedBy] = shared.OperatorName
+	if m.TemplateInfo.Spec.Mandatory {
+		lbls[shared.IsMandatoryModule] = shared.EnableLabelValue
+	}
+	m.Manifest.SetLabels(lbls)
+
+	anns := m.Manifest.GetAnnotations()
 	if anns == nil {
 		anns = make(map[string]string)
 	}
-	anns[v1beta2.FQDN] = m.FQDN
-	m.SetAnnotations(anns)
-}
-
-func (m *Module) IsRemoteModuleTemplate(kyma *v1beta2.Kyma) bool {
-	for _, module := range kyma.Spec.Modules {
-		if module.Name == m.ModuleName {
-			return module.RemoteModuleTemplateRef != ""
-		}
+	anns[shared.FQDN] = m.FQDN
+	if m.IsUnmanaged {
+		anns[shared.UnmanagedAnnotation] = shared.EnableLabelValue
 	}
-
-	return false
+	m.Manifest.SetAnnotations(anns)
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
-	if m.GetOwnerReferences() == nil {
+	if m.Manifest.GetOwnerReferences() == nil {
 		return false
 	}
-	for _, owner := range m.GetOwnerReferences() {
+	for _, owner := range m.Manifest.GetOwnerReferences() {
 		if owner.Name == ownerName {
 			return true
 		}

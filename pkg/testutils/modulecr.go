@@ -5,17 +5,25 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	appsv1 "k8s.io/api/apps/v1"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
-	TestModuleCRName = "sample-yaml"
+	TestModuleCRName                   = "sample-yaml"
+	TestModuleName                     = "template-operator"
+	TestModuleResourceNamespace        = "template-operator-system"
+	ModuleResourceName                 = "template-operator-controller-manager"
+	ModuleServiceAccountName           = "template-operator-controller-manager"
+	ModuleManagedCRName                = "template-operator-managed-resource"
+	ModuleDeploymentNameInNewerVersion = "template-operator-v2-controller-manager"
+	ModuleDeploymentNameInOlderVersion = "template-operator-v1-controller-manager"
 )
 
 var (
@@ -39,9 +47,25 @@ func NewTestModuleCR(namespace string) *unstructured.Unstructured {
 		WithNamespace(namespace).Build()
 }
 
+func CreateModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	moduleCR := builder.NewModuleCRBuilder().
+		WithName(name).
+		WithNamespace(namespace).Build()
+
+	return clnt.Create(ctx, moduleCR)
+}
+
+func DeleteModuleCR(ctx context.Context, name, namespace string, clnt client.Client) error {
+	moduleCR := builder.NewModuleCRBuilder().
+		WithName(name).
+		WithNamespace(namespace).Build()
+
+	return clnt.Delete(ctx, moduleCR)
+}
+
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	exists, err := DeletionTimeStampExists(ctx, "operator.kyma-project.io", "v1alpha1",
-		"Sample", name, namespace, clnt)
+	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, templatev1alpha1.GroupVersion.Version,
+		string(templatev1alpha1.SampleKind), name, namespace, clnt)
 	if err != nil {
 		return err
 	}
@@ -53,8 +77,8 @@ func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string,
 }
 
 func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	exists, err := DeletionTimeStampExists(ctx, "operator.kyma-project.io", "v1alpha1",
-		"Sample", name, namespace, clnt)
+	exists, err := DeletionTimeStampExists(ctx, shared.OperatorGroup, templatev1alpha1.GroupVersion.Version,
+		string(templatev1alpha1.SampleKind), name, namespace, clnt)
 	if err != nil {
 		return err
 	}
@@ -126,18 +150,4 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 	return state == string(expectedState)
-}
-
-func ModuleDeploymentExists(ctx context.Context,
-	clnt client.Client,
-	namespace string,
-	deploymentName string,
-) bool {
-	var deployment appsv1.Deployment
-	err := clnt.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      deploymentName,
-	}, &deployment)
-
-	return err == nil && deployment.Status.AvailableReplicas != 0
 }

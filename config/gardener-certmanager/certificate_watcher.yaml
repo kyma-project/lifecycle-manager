@@ -1,0 +1,43 @@
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: watcher-root
+  namespace: default
+spec:
+  selfSigned: { }
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: watcher-serving
+  namespace: istio-system
+spec:
+  dnsNames:
+    - 'listener.kyma.cloud.sap' # this dnsName should be overwritten based on deployment environment, i.e. listener.dev.kyma.cloud.sap
+  isCA: true
+  commonName: klm-watcher-selfsigned-ca
+  secretName: klm-watcher # this secret will not be prefixed, since it's not managed by kustomize
+  secretLabels:
+    operator.kyma-project.io/managed-by: "lifecycle-manager"
+  privateKey:
+    algorithm: RSA
+    size: 4096
+  issuerRef:
+    name: watcher-root
+    namespace: default
+  duration: 2160h # 90d
+  renewBefore: 1464h # 61d
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  labels:
+    operator.kyma-project.io/purpose: "klm-watcher-cert-manager"
+    operator.kyma-project.io/managed-by: "lifecycle-manager"
+  name: watcher-selfsigned
+  namespace: default
+spec:
+  ca:
+    privateKeySecretRef:
+      name: klm-watcher
+      namespace: istio-system

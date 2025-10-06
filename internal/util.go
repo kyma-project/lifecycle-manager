@@ -4,14 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/resource"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 const (
@@ -57,28 +51,4 @@ func getID(item *unstructured.Unstructured) string {
 		item.GetNamespace(), item.GetName(),
 		item.GroupVersionKind().Group, item.GroupVersionKind().Version, item.GroupVersionKind().Kind,
 	}, "/")
-}
-
-func GetResourceLabel(resource client.Object, labelName string) (string, error) {
-	resourceLables := resource.GetLabels()
-	labelValue, ok := resourceLables[labelName]
-	if !ok {
-		return "", &types.LabelNotFoundError{
-			Resource:  resource,
-			LabelName: labelValue,
-		}
-	}
-	return labelValue, nil
-}
-
-func GetCacheOptions(labelSelector labels.Set) cache.Options {
-	return cache.Options{
-		ByObject: map[client.Object]cache.ByObject{
-			&v1.Secret{}: {
-				Label: labels.SelectorFromSet(
-					labelSelector,
-				),
-			},
-		},
-	}
 }

@@ -1,0 +1,16 @@
+name: Install yq
+description: Downloads yq and installs it locally.
+inputs:
+  yq_version:
+    description: The version of yq to install. For example, 4.45.1.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install yq
+      shell: bash
+      run: |
+        mkdir -p ./yq/bin
+        wget https://github.com/mikefarah/yq/releases/${{ inputs.yq_version }}/download/yq_linux_amd64 -o ./yq/bin/yq &&\
+        chmod +x ./yq/bin/yq
+        echo "$(pwd)/yq/bin" >> $GITHUB_PATH
