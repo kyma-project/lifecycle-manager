@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
 	"strings"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -190,8 +191,6 @@ func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	if m.IsBeta() && !betaEnabled {
 		return false
@@ -208,8 +207,6 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	return true
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) IsInternal() bool {
 	if isInternal, found := m.Labels[shared.InternalLabel]; found {
 		return strings.ToLower(isInternal) == shared.EnableLabelValue
@@ -217,18 +214,6 @@ func (m *ModuleTemplate) IsInternal() bool {
 	return false
 }
 
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Refactor this function to drop the label fallback after the migration to the new ModuleTemplate format is completed.
-func (m *ModuleTemplate) GetVersion() string {
-	version := m.Spec.Version
-	if version == "" {
-		version = m.Annotations[shared.ModuleVersionAnnotation]
-	}
-	return version
-}
-
-// https://github.com/kyma-project/lifecycle-manager/issues/2096
-// Remove this function after the migration to the new ModuleTemplate format is completed.
 func (m *ModuleTemplate) IsBeta() bool {
 	if isBeta, found := m.Labels[shared.BetaLabel]; found {
 		return strings.ToLower(isBeta) == shared.EnableLabelValue
@@ -238,4 +223,8 @@ func (m *ModuleTemplate) IsBeta() bool {
 
 func (m *ModuleTemplate) IsMandatory() bool {
 	return m.Spec.Mandatory
+}
+
+func CreateModuleTemplateName(moduleName, version string) string {
+	return fmt.Sprintf("%s-%s", moduleName, version)
 }
