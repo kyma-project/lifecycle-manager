@@ -66,11 +66,10 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithArguments(RemoteNamespace, []v1beta2.Module{}, skrClient, shared.StateReady).
 			Should(Succeed())
 		By("And Runtime Watcher deployment is up and running in SKR", func() {
-			Eventually(CheckPodLogs).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments(RemoteNamespace, skrwebhookresources.SkrResourceName, "server",
-					"Starting server for validation endpoint", skrRESTConfig,
-					skrClient, &apimetav1.Time{Time: time.Now().Add(-5 * time.Minute)}).
+				WithArguments(skrClient, skrwebhookresources.SkrResourceName,
+					RemoteNamespace).
 				Should(Succeed())
 		})
 	})
