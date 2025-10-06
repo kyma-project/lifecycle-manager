@@ -3,9 +3,6 @@ package e2e_test
 import (
 	"os"
 	"os/exec"
-	"time"
-
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -70,11 +67,10 @@ var _ = Describe("SKR client cache get evicted due to connection error caused by
 				WithArguments(RemoteNamespace, []v1beta2.Module{}, skrClient, shared.StateReady).
 				Should(Succeed())
 			By("And the Runtime Watcher deployment on SKR is up and running", func() {
-				Eventually(CheckPodLogs).
+				Eventually(DeploymentIsReady).
 					WithContext(ctx).
-					WithArguments(RemoteNamespace, skrwebhookresources.SkrResourceName, "server",
-						"Starting server for validation endpoint", skrRESTConfig,
-						skrClient, &apimetav1.Time{Time: time.Now().Add(-5 * time.Minute)}).
+					WithArguments(skrClient, skrwebhookresources.SkrResourceName,
+						RemoteNamespace).
 					Should(Succeed())
 			})
 		})
