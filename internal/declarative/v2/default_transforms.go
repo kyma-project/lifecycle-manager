@@ -22,15 +22,6 @@ const (
 
 var ErrInvalidManifestType = errors.New("invalid object type, expected *v1beta2.Manifest")
 
-func GetDefaultTransforms() []ObjectTransform {
-	return []ObjectTransform{
-		ManagedByOwnedBy,
-		KymaComponentTransform,
-		DisclaimerTransform,
-		DockerImageLocalizationTransform,
-	}
-}
-
 func DisclaimerTransform(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
 		annotations := resource.GetAnnotations()

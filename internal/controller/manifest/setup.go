@@ -50,7 +50,6 @@ func SetupWithManager(mgr manager.Manager,
 	skrClient declarativev2.SKRClient,
 	kcpClient client.Client,
 	cachedManifestParser declarativev2.CachedManifestParser,
-	postRenderTransforms []declarativev2.ObjectTransform,
 	customStateCheck declarativev2.StateCheck,
 ) error {
 	var verifyFunc watcherevent.Verify
@@ -98,7 +97,7 @@ func SetupWithManager(mgr manager.Manager,
 		WithOptions(opts).
 		Complete(declarativev2.NewReconciler(requeueIntervals, manifestMetrics, mandatoryModulesMetrics, manifestClient,
 			orphanDetectionService, specResolver, skrClientCache, skrClient, kcpClient, cachedManifestParser,
-			postRenderTransforms, customStateCheck)); err != nil {
+			customStateCheck)); err != nil {
 		return fmt.Errorf("failed to setup manager for manifest controller: %w", err)
 	}
 

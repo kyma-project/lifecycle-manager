@@ -152,7 +152,6 @@ var _ = BeforeSuite(func() {
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
-	postRenderTransforms := declarativev2.GetDefaultTransforms()
 
 	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
@@ -163,8 +162,7 @@ var _ = BeforeSuite(func() {
 		manifestClient, orphanDetectionService, spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
-		kcpClient, cachedManifestParser, postRenderTransforms,
-		declarativev2.NewExistsStateCheck())
+		kcpClient, cachedManifestParser, declarativev2.NewExistsStateCheck())
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

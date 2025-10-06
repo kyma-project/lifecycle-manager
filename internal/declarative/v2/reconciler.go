@@ -82,9 +82,7 @@ type Reconciler struct {
 	requeueIntervals     queue.RequeueIntervals
 	kcpClient            client.Client
 	cachedManifestParser CachedManifestParser
-
 	customStateCheck     StateCheck
-	postRenderTransforms []ObjectTransform
 
 	manifestMetrics            *metrics.ManifestMetrics
 	mandatoryModuleMetrics     *metrics.MandatoryModulesMetrics
@@ -106,7 +104,6 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	skrClient SKRClient,
 	kcpClient client.Client,
 	cachedManifestParser CachedManifestParser,
-	postRenderTransforms []ObjectTransform,
 	stateCheck StateCheck,
 ) *Reconciler {
 	reconciler := &Reconciler{}
@@ -122,7 +119,6 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 
 	reconciler.kcpClient = kcpClient
 	reconciler.cachedManifestParser = cachedManifestParser
-	reconciler.postRenderTransforms = postRenderTransforms
 
 	reconciler.customStateCheck = stateCheck
 	return reconciler
@@ -453,7 +449,14 @@ func (r *Reconciler) renderTargetResources(ctx context.Context,
 		return nil, err
 	}
 
-	for _, transform := range r.postRenderTransforms {
+	transforms := []ObjectTransform{
+		ManagedByOwnedBy,
+		KymaComponentTransform,
+		DisclaimerTransform,
+		DockerImageLocalizationTransform,
+	}
+
+	for _, transform := range transforms {
 		if err := transform(ctx, manifest, targetResources.Items); err != nil {
 			return nil, err
 		}

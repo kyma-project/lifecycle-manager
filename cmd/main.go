@@ -482,7 +482,6 @@ func setupManifestReconciler(mgr ctrl.Manager,
 
 	kcpClient := mgr.GetClient()
 	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
-	postRenderTransforms := declarativev2.GetDefaultTransforms()
 	statefulChecker := statecheck.NewStatefulSetStateCheck()
 	deploymentChecker := statecheck.NewDeploymentStateCheck()
 	customStateCheck := statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)
@@ -498,8 +497,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 		ListenerAddr:                 flagVar.ManifestListenerAddr,
 		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
-		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, postRenderTransforms,
-		customStateCheck); err != nil {
+		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
