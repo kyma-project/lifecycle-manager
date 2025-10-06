@@ -70,6 +70,7 @@ jobs:
           make build-verbose
 
       - name: Create and push git tag
+        working-directory: ./lifecycle-manager
         env:
           TAG: ${{ env.TAG }}
         run: |
