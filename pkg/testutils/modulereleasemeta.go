@@ -14,6 +14,17 @@ import (
 
 var ErrNotExpectedChannelVersion = errors.New("channel-version pair not found")
 
+func CreateModuleReleaseMeta(ctx context.Context,
+	clnt client.Client,
+	mrm *v1beta2.ModuleReleaseMeta,
+) error {
+	mrm.SetResourceVersion("") // must be reset to enable retries
+	if err := clnt.Create(ctx, mrm); client.IgnoreAlreadyExists(err) != nil {
+		return fmt.Errorf("creating ModuleReleaseMeta failed: %w", err)
+	}
+	return nil
+}
+
 func UpdateChannelVersionInModuleReleaseMeta(ctx context.Context, clnt client.Client,
 	moduleName, namespace, channel, version string,
 ) error {

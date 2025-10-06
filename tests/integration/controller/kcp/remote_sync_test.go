@@ -35,18 +35,32 @@ var (
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-1")
 	skrKyma := NewSKRKyma()
-	moduleInSKR := NewTestModule("skr-module", v1beta2.DefaultChannel)
-	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
+	moduleInSKR := NewTestModuleWithChannelVersion("skr-module", v1beta2.DefaultChannel, "0.1.0")
+	moduleInKCP := NewTestModuleWithChannelVersion("kcp-module", v1beta2.DefaultChannel, "0.1.0")
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
+	ModuleReleaseMetaKcp := builder.NewModuleReleaseMetaBuilder().
+		WithNamespace(ControlPlaneNamespace).
+		WithName(moduleInKCP.Name).
+		WithModuleName(moduleInKCP.Name).
+		WithSingleModuleChannelAndVersions(moduleInKCP.Channel, moduleInKCP.Version).Build()
+	ModuleReleaseMetaSkr := builder.NewModuleReleaseMetaBuilder().
+		WithNamespace(ControlPlaneNamespace).
+		WithName(moduleInSKR.Name).
+		WithModuleName(moduleInSKR.Name).
+		WithSingleModuleChannelAndVersions(moduleInSKR.Channel, moduleInSKR.Version).Build()
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
+		WithName(v1beta2.CreateModuleTemplateName(moduleInSKR.Name, moduleInSKR.Version)).
 		WithModuleName(moduleInSKR.Name).
+		WithVersion(moduleInSKR.Version).
 		WithChannel(moduleInSKR.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
 	TemplateForKCPEnabledModule := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
+		WithName(v1beta2.CreateModuleTemplateName(moduleInKCP.Name, moduleInKCP.Version)).
 		WithModuleName(moduleInKCP.Name).
+		WithVersion(moduleInKCP.Version).
 		WithChannel(moduleInKCP.Channel).
 		WithModuleCR(defaultCR).
 		WithOCM(compdescv2.SchemaVersion).Build()
@@ -96,6 +110,17 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(CreateModuleTemplate, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, TemplateForSKREnabledModule).
+			Should(Succeed())
+	})
+
+	It("KCP ModuleReleaseMeta should be created", func() {
+		Eventually(CreateModuleReleaseMeta, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, ModuleReleaseMetaKcp).
+			Should(Succeed())
+		Eventually(CreateModuleReleaseMeta, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, ModuleReleaseMetaSkr).
 			Should(Succeed())
 	})
 
@@ -223,7 +248,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 })
 
 func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
-	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.GetVersion())
+	key := descriptorProvider.GenerateDescriptorKey(template.Name, template.Spec.Version)
 	result := descriptorProvider.DescriptorCache.Get(key)
 	return result != nil
 }
@@ -302,7 +327,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
 	moduleInKCP := NewTestModuleWithChannelVersion("module-inkcp", v1beta2.DefaultChannel, "0.1.0")
-	moduleTemplateName := fmt.Sprintf("%s-%s", moduleInKCP.Name, "0.1.0")
+	moduleTemplateName := v1beta2.CreateModuleTemplateName(moduleInKCP.Name, "0.1.0")
 
 	moduleReleaseMetaInKCP := builder.NewModuleReleaseMetaBuilder().
 		WithName("modulereleasemeta-inkcp").
@@ -320,9 +345,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	var err error
 	BeforeAll(func() {
 		template := builder.NewModuleTemplateBuilder().
-			WithName(moduleInKCP.Name).
+			WithName(v1beta2.CreateModuleTemplateName(moduleInKCP.Name, moduleInKCP.Version)).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(moduleInKCP.Name).
+			WithVersion(moduleInKCP.Version).
 			WithChannel(moduleInKCP.Channel).
 			WithOCM(compdescv2.SchemaVersion).
 			WithName(moduleTemplateName).Build()
