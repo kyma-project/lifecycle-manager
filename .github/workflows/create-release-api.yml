@@ -1,10 +1,12 @@
-name: "Create Release For Lifecycle Manager API Module"
+name: "Create Release For KLM API Module"
 on:
   workflow_dispatch:
     inputs:
       version:
         description: "Semantic version to release (e.g. 1.2.3 or v1.2.3)"
         required: true
+permissions:
+  contents: write
 
 jobs:
   call-create-release:
