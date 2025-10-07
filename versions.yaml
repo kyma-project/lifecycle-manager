@@ -5,7 +5,7 @@ controllerTools: "0.18.0"
 docker: "27.5.1"
 go: "1.25.1"
 golangciLint: "2.4.0"
-istio: "1.27.1"
+istio: "1.26.4" # https://github.com/kyma-project/lifecycle-manager/issues/2797
 k3d: "5.8.3"
 k8s: "1.32.2" # kubernetes version used in e2e tests
 envtest_k8s: "1.32.0" # kubernetes version used in integration tests
