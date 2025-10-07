@@ -25,6 +25,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -148,18 +149,20 @@ var _ = BeforeSuite(func() {
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
 	orphanDetectionClient := kymarepository.NewClient(kcpClient)
+	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
+	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
 
-	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
+	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
 		Warning: 1 * time.Second,
 	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
+		manifestClient, orphanDetectionService, spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
-		declarativev2.WithCustomStateCheck(declarativev2.NewExistsStateCheck()))
+		kcpClient, cachedManifestParser, declarativev2.NewExistsStateCheck())
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).

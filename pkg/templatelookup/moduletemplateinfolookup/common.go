@@ -21,7 +21,7 @@ func getTemplateByVersion(ctx context.Context,
 ) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplate := &v1beta2.ModuleTemplate{}
 
-	moduleTemplateName := fmt.Sprintf("%s-%s", moduleName, moduleVersion)
+	moduleTemplateName := v1beta2.CreateModuleTemplateName(moduleName, moduleVersion)
 	if err := clnt.Get(ctx, client.ObjectKey{
 		Name:      moduleTemplateName,
 		Namespace: namespace,

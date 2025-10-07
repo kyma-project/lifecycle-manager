@@ -1,4 +1,4 @@
-name: "Create release"
+name: "Create Release For KLM Image"
 
 permissions:
   id-token: write
@@ -72,7 +72,7 @@ jobs:
       id-token: write
   publish_release:
     name: Publish release
-    needs: [ validate-release, draft-release, builds ]
+    needs: [validate-release, draft-release, builds]
     runs-on: ubuntu-latest
     permissions:
       contents: write

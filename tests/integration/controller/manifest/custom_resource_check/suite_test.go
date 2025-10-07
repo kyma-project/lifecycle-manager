@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
+	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
@@ -153,17 +154,20 @@ var _ = BeforeSuite(func() {
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	manifestClient := manifestclient.NewManifestClient(testEventRec, kcpClient)
 	orphanDetectionClient := kymarepository.NewClient(kcpClient)
+	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	accessManagerService := testskrcontext.NewFakeAccessManagerService(testEnv, cfg)
-	reconciler = declarativev2.NewFromManager(mgr, queue.RequeueIntervals{
+	cachedManifestParser := declarativev2.NewInMemoryCachedManifestParser(declarativev2.DefaultInMemoryParseTTL)
+
+	reconciler = declarativev2.NewReconciler(queue.RequeueIntervals{
 		Success: 1 * time.Second,
 		Busy:    1 * time.Second,
 		Error:   1 * time.Second,
 		Warning: 1 * time.Second,
 	}, metrics.NewManifestMetrics(metrics.NewSharedMetrics()), metrics.NewMandatoryModulesMetrics(),
-		manifestClient, orphanDetectionClient, spec.NewResolver(keyChainLookup, extractor),
+		manifestClient, orphanDetectionService, spec.NewResolver(keyChainLookup, extractor),
 		skrclientcache.NewService(),
 		skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService),
-		declarativev2.WithCustomStateCheck(statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker)))
+		kcpClient, cachedManifestParser, statecheck.NewManagerStateCheck(statefulChecker, deploymentChecker))
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
