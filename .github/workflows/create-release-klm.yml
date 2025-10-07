@@ -1,4 +1,4 @@
-name: "Create Release For Lifecycle Manager Image"
+name: "Create Release For KLM Image"
 
 permissions:
   id-token: write
