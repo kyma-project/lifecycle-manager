@@ -14,6 +14,8 @@ import (
 // Checking compliance with the interface methods implemented below.
 var _ client.Client = &SKRClient{}
 
+var NotImplementedError = fmt.Errorf("not implemented")
+
 // ProxyClient holds information required to proxy Client requests to verify RESTMapper integrity.
 // During the proxy, the underlying mapper verifies mapping for the calling resource.
 // If not available and NoMatchesKind error occurs, the mappings are reset (if type meta.ResettableRESTMapper).
@@ -154,6 +156,12 @@ func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...c
 		return fmt.Errorf("failed to fetch object for [%v]: %w", obj, err)
 	}
 	return nil
+}
+
+// Apply implements client.Apply
+// Will be implemented in https://github.com/kyma-project/lifecycle-manager/issues/2707
+func (p *ProxyClient) Apply(ctx context.Context, applyConfig machineryruntime.ApplyConfiguration, opts ...client.ApplyOption) error {
+	return NotImplementedError
 }
 
 // Status implements client.StatusClient.
