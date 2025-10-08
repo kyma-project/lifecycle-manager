@@ -113,12 +113,12 @@ func TestDockerImageReference(t *testing.T) {
 			{
 				name:        "Missing colon in image reference",
 				strValue:    "example.com/myapp/myimage",
-				expectedErr: imagerewrite.ErrMissingColonInImageReference,
+				expectedErr: imagerewrite.ErrInvalidImageReference,
 			},
 			{
 				name:        "Missing slash in image reference",
 				strValue:    "example.commyappmyimage:1.2.3",
-				expectedErr: imagerewrite.ErrMissingSlashInImageReference,
+				expectedErr: imagerewrite.ErrInvalidImageReference,
 			},
 		}
 		for _, tcase := range testCases {
@@ -147,8 +147,9 @@ func TestDockerImageReference(t *testing.T) {
 				strValue: "example.com/myapp/myimage:1.2.3",
 			},
 			{
-				name:     "Image with digest",
-				strValue: "example.com/myapp/myimage:1.2.3@sha256:837eb50a66bc0915d1986d376920c40b047f5ba2091aa5",
+				name: "Image with digest",
+				strValue: "example.com/myapp/myimage:1.2.3" +
+					"@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			},
 		}
 

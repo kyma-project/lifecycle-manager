@@ -44,7 +44,7 @@ type DockerImageReference struct {
 }
 
 /*
-	Regex matches:
+	This Regex matches:
 
 1. prefix@sha256:checksum
 2. prefix:version
@@ -54,8 +54,10 @@ var ociImagePattern = regexp.MustCompile(
 	`\b` +
 		`(?P<host>[\w\-\.]+(?::\d+)?(?:/[\w\-\.]+)*)/` +
 		`(?P<name>[\w\-\.]+)` +
-		`(?::(?P<tag>[\w\.\-]+))?` +
-		`(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))?` +
+		`(?:` +
+		`(?::(?P<tag>[\w\.\-]+))(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))?|` +
+		`(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))` +
+		`)` +
 		`\b`,
 )
 
@@ -68,9 +70,11 @@ func NewDockerImageReference(val string) (*DockerImageReference, error) {
 	}
 	result := map[string]string{}
 	for i, name := range ociImagePattern.SubexpNames() {
-		if name != "" {
-			result[name] = matches[i]
+		if matches[i] == "" {
+			// Skip empty captures because there are two "digest" groups and only one will match.
+			continue
 		}
+		result[name] = matches[i]
 	}
 
 	res.HostAndPath = result["host"]
