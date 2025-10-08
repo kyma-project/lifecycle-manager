@@ -161,7 +161,7 @@ func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...c
 
 // NOT IMPLEMENTED YET.
 // Returns error implemented in https://github.com/kyma-project/lifecycle-manager/issues/2707.
-func (_ *ProxyClient) Apply(_ context.Context, _ machineryruntime.ApplyConfiguration, _ ...client.ApplyOption) error {
+func (p *ProxyClient) Apply(_ context.Context, _ machineryruntime.ApplyConfiguration, _ ...client.ApplyOption) error {
 	return ErrNotImplemented
 }
 
