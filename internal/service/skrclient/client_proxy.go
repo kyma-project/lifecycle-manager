@@ -2,6 +2,7 @@ package skrclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -14,7 +15,7 @@ import (
 // Checking compliance with the interface methods implemented below.
 var _ client.Client = &SKRClient{}
 
-var ErrNotImplemented = fmt.Errorf("not implemented")
+var ErrNotImplemented = errors.New("not implemented")
 
 // ProxyClient holds information required to proxy Client requests to verify RESTMapper integrity.
 // During the proxy, the underlying mapper verifies mapping for the calling resource.
