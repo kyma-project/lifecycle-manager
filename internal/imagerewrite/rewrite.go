@@ -3,6 +3,7 @@ package imagerewrite
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -42,25 +43,39 @@ type DockerImageReference struct {
 	Digest      string
 }
 
+// Regex matches:
+// 1. prefix@sha256:checksum
+// 2. prefix:version
+// 3. prefix:version@sha256:checksum
+var ociImagePattern = regexp.MustCompile(`\b(?P<host>[\w\-\.]+(?::\d+)?(?:/[\w\-\.]+)*)/(?P<name>[\w\-\.]+)(?::(?P<tag>[\w\.\-]+))?(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))?\b`)
+
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
 	res := &DockerImageReference{}
 
-	// split on last forward slash to separate host and path from image and tag
-	lastSep := strings.LastIndex(val, "/")
-	if lastSep == -1 {
-		return nil, fmt.Errorf("parsing %q: %w", val, ErrMissingSlashInImageReference)
+	matches := ociImagePattern.FindStringSubmatch(val)
+	if matches == nil {
+		return nil, ErrInvalidImageReference
 	}
-	res.HostAndPath = val[:lastSep]
-	nameAndTagAndDigest := val[lastSep+1:]
-	mayHaveDigest := strings.Split(nameAndTagAndDigest, "@")
-
-	if !strings.Contains(mayHaveDigest[0], ":") {
-		return nil, fmt.Errorf("parsing %q: %w", val, ErrMissingColonInImageReference)
+	names := ociImagePattern.SubexpNames()
+	result := make(map[string]string)
+	for i, name := range names {
+		if i != 0 && name != "" {
+			result[name] = matches[i]
+		}
 	}
-	res.NameAndTag = NameAndTag(mayHaveDigest[0]) // The first part is always the name and tag
 
-	if len(mayHaveDigest) > 1 {
-		res.Digest = mayHaveDigest[1] // The second part is the digest, if present
+	res.HostAndPath = result["host"]
+	imageName := result["name"]
+	tag := result["tag"]
+
+	if tag != "" {
+		res.NameAndTag = NameAndTag(imageName + ":" + tag)
+	} else {
+		res.NameAndTag = NameAndTag(imageName)
+	}
+
+	if digest := result["digest"]; digest != "" {
+		res.Digest = digest
 	}
 
 	return res, nil

@@ -18,10 +18,13 @@ func TestDockerImageReference(t *testing.T) {
 		imageRefs, err := imagerewrite.AsImageReferences([]string{
 			"example.com/myapp/myimage:1.2.3",
 			"example.com/myapp/myimage:1.2.3@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
+			"example.com/myapp/myimage@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			"example.com:5000/myapp/myimage:3.2.1",
-			"example.com:5000/myapp/myimage:3.2.1@sha256:c140c4dcdfe38aa7b462d9173ff4bad8fbfbb4819c5d9398c53c50abec7",
+			"example.com:5000/myapp/myimage:3.2.1@sha256:9a1de2363c531f585a01e185095498d700fcd10fc8801577e5e4e262832dd3cd",
+			"example.com:5000/myapp/myimage@sha256:9a1de2363c531f585a01e185095498d700fcd10fc8801577e5e4e262832dd3cd",
 			"localhost:5111/myimage:5.4.3",
 			"localhost:5111/myimage:5.4.3@sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
+			"localhost:5111/myimage@sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
 		})
 
 		// then
@@ -46,6 +49,12 @@ func TestDockerImageReference(t *testing.T) {
 				expectedDigest:      "sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			},
 			{
+				name:                "Image without port and tag and with digest",
+				expectedHostAndPath: "example.com/myapp",
+				expectedNameAndTag:  "myimage",
+				expectedDigest:      "sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
+			},
+			{
 				name:                "Image with port and no digest",
 				expectedHostAndPath: "example.com:5000/myapp",
 				expectedNameAndTag:  "myimage:3.2.1",
@@ -55,7 +64,13 @@ func TestDockerImageReference(t *testing.T) {
 				name:                "Image with port and digest",
 				expectedHostAndPath: "example.com:5000/myapp",
 				expectedNameAndTag:  "myimage:3.2.1",
-				expectedDigest:      "sha256:c140c4dcdfe38aa7b462d9173ff4bad8fbfbb4819c5d9398c53c50abec7",
+				expectedDigest:      "sha256:9a1de2363c531f585a01e185095498d700fcd10fc8801577e5e4e262832dd3cd",
+			},
+			{
+				name:                "Image with port and without tag and digest",
+				expectedHostAndPath: "example.com:5000/myapp",
+				expectedNameAndTag:  "myimage",
+				expectedDigest:      "sha256:9a1de2363c531f585a01e185095498d700fcd10fc8801577e5e4e262832dd3cd",
 			},
 			{
 				name:                "Image with localhost and no digest",
@@ -67,6 +82,12 @@ func TestDockerImageReference(t *testing.T) {
 				name:                "Image with localhost and digest",
 				expectedHostAndPath: "localhost:5111",
 				expectedNameAndTag:  "myimage:5.4.3",
+				expectedDigest:      "sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
+			},
+			{
+				name:                "Image with localhost and digest without tag",
+				expectedHostAndPath: "localhost:5111",
+				expectedNameAndTag:  "myimage",
 				expectedDigest:      "sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
 			},
 		}
