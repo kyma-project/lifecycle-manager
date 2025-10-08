@@ -56,10 +56,9 @@ func NewDockerImageReference(val string) (*DockerImageReference, error) {
 	if matches == nil {
 		return nil, ErrInvalidImageReference
 	}
-	names := ociImagePattern.SubexpNames()
-	result := make(map[string]string)
-	for i, name := range names {
-		if i != 0 && name != "" {
+	result := map[string]string{}
+	for i, name := range ociImagePattern.SubexpNames() {
+		if name != "" {
 			result[name] = matches[i]
 		}
 	}
