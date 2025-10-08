@@ -10,15 +10,7 @@ import (
 )
 
 var (
-	ErrInvalidImageReference        = errors.New("invalid docker image reference")
-	ErrMissingSlashInImageReference = fmt.Errorf(
-		"%w: missing '/' separator between registry host and image name",
-		ErrInvalidImageReference,
-	)
-	ErrMissingColonInImageReference = fmt.Errorf(
-		"%w: missing ':' separator between image name and tag",
-		ErrInvalidImageReference,
-	)
+	ErrInvalidImageReference               = errors.New("invalid docker image reference")
 	ErrFindingImageInPodContainer          = errors.New("error finding image in pod container")
 	ErrFindingEnvVarsInPodContainer        = errors.New("error finding env vars in pod container")
 	ErrUnexpectedEnvVarType                = errors.New("unexpected environment variable type")
@@ -43,13 +35,7 @@ type DockerImageReference struct {
 	Digest      string
 }
 
-/*
-	This Regex matches:
-
-1. prefix@sha256:checksum
-2. prefix:version
-3. prefix:version@sha256:checksum
-*/
+// Regex matches prefix@sha256:checksum, prefix:version, and prefix:version@sha256:checksum.
 var ociImagePattern = regexp.MustCompile(
 	`\b` +
 		`(?P<host>[\w\-\.]+(?::\d+)?(?:/[\w\-\.]+)*)/` +
