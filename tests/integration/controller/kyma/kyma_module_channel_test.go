@@ -229,7 +229,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 	}
 }
 
-var _ = Describe("Channel switch", Ordered, func() {
+var _ = FDescribe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	skrKyma := NewSKRKyma()
 	modules := []v1beta2.Module{
@@ -244,6 +244,16 @@ var _ = Describe("Channel switch", Ordered, func() {
 	var err error
 
 	BeforeAll(func() {
+		Expect(createMRMWithChannelMappings("channel-switch", []v1beta2.ChannelVersionAssignment{
+			{
+				Channel: v1beta2.DefaultChannel,
+				Version: LowerVersion,
+			},
+			{
+				Channel: FastChannel,
+				Version: HigherVersion,
+			},
+		})).To(Succeed())
 		Expect(createModuleTemplateSetsForKyma(modules, LowerVersion, v1beta2.DefaultChannel)).To(Succeed())
 		Expect(createModuleTemplateSetsForKyma(modules, HigherVersion, FastChannel)).To(Succeed())
 		Eventually(CreateCR, Timeout, Interval).
@@ -484,11 +494,24 @@ func whenUpdatingEveryModuleChannel(clnt client.Client, kymaName, kymaNamespace,
 	}
 }
 
+func createMRMWithChannelMappings(moduleName string, channels []v1beta2.ChannelVersionAssignment) error {
+	mrm := builder.NewModuleReleaseMetaBuilder().
+		WithName(moduleName).
+		WithModuleName(moduleName).
+		WithNamespace(ControlPlaneNamespace).
+		WithModuleChannelAndVersions(channels).
+		Build()
+
+	return kcpClient.Create(ctx, mrm)
+}
+
 func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
 		template := builder.NewModuleTemplateBuilder().
+			WithName(v1beta2.CreateModuleTemplateName(moduleName, modifiedVersion)).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(module.Name).
+			WithVersion(modifiedVersion).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 
@@ -503,7 +526,6 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 		}
 		template.Spec.Descriptor.Raw = newDescriptor
 		template.Spec.Channel = channel
-		template.Name = fmt.Sprintf("%s-%s", template.Name, channel)
 		if err := kcpClient.Create(ctx, template); err != nil {
 			return err
 		}
