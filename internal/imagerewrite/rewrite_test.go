@@ -20,7 +20,8 @@ func TestDockerImageReference(t *testing.T) {
 			"example.com/myapp/myimage:1.2.3@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			"example.com/myapp/myimage@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			"example.com:5000/myapp/myimage:3.2.1",
-			"example.com:5000/myapp/myimage:3.2.1@sha256:9a1de2363c531f585a01e185095498d700fcd10fc8801577e5e4e262832dd3cd",
+			"example.com:5000/myapp/myimage:3.2.1" +
+				"@sha256:9a1de2363c531f585a01e185095498d700fcd10fc8801577e5e4e262832dd3cd",
 			"example.com:5000/myapp/myimage@sha256:9a1de2363c531f585a01e185095498d700fcd10fc8801577e5e4e262832dd3cd",
 			"localhost:5111/myimage:5.4.3",
 			"localhost:5111/myimage:5.4.3@sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
