@@ -508,7 +508,7 @@ func createMRMWithChannelMappings(moduleName string, channels []v1beta2.ChannelV
 func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
 		template := builder.NewModuleTemplateBuilder().
-			WithName(v1beta2.CreateModuleTemplateName(moduleName, modifiedVersion)).
+			WithName(v1beta2.CreateModuleTemplateName(module.Name, modifiedVersion)).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(module.Name).
 			WithVersion(modifiedVersion).
