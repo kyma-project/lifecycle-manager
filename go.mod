@@ -17,9 +17,6 @@ require (
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.4.0
-	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
-	github.com/kyma-project/lifecycle-manager/maintenancewindows v0.0.0-20250113095044-41115399d588
-	github.com/kyma-project/runtime-watcher/listener v1.0.0
 	github.com/onsi/ginkgo/v2 v2.26.0
 	github.com/onsi/gomega v1.38.2
 	github.com/prometheus/client_golang v1.23.2
@@ -31,6 +28,12 @@ require (
 	ocm.software/ocm v0.29.1
 	sigs.k8s.io/controller-runtime v0.22.2
 	sigs.k8s.io/yaml v1.6.0
+)
+
+require (
+	github.com/kyma-project/lifecycle-manager/api v1.0.0
+	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
+	github.com/kyma-project/runtime-watcher/listener v1.0.0
 )
 
 require (
