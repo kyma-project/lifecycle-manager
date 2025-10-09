@@ -16,6 +16,9 @@ func TestDockerImageReference(t *testing.T) {
 		t.Parallel()
 		// given
 		imageRefs, err := imagerewrite.AsImageReferences([]string{
+			"myimage:1.2.3",
+			"myimage:1.2.3@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
+			"myimage@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			"example.com/myapp/myimage:1.2.3",
 			"example.com/myapp/myimage:1.2.3@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			"example.com/myapp/myimage@sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
@@ -37,6 +40,24 @@ func TestDockerImageReference(t *testing.T) {
 			expectedNameAndTag  string
 			expectedDigest      string
 		}{
+			{
+				name:                "Image without host and no digest",
+				expectedHostAndPath: "",
+				expectedNameAndTag:  "myimage:1.2.3",
+				expectedDigest:      "",
+			},
+			{
+				name:                "Image without host with digest",
+				expectedHostAndPath: "",
+				expectedNameAndTag:  "myimage:1.2.3",
+				expectedDigest:      "sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
+			},
+			{
+				name:                "Image without host and tag and with digest",
+				expectedHostAndPath: "",
+				expectedNameAndTag:  "myimage",
+				expectedDigest:      "sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
+			},
 			{
 				name:                "Image without port and no digest",
 				expectedHostAndPath: "example.com/myapp",
