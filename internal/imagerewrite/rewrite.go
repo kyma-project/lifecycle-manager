@@ -37,14 +37,13 @@ type DockerImageReference struct {
 
 // Regex matches prefix@sha256:checksum, prefix:version, and prefix:version@sha256:checksum.
 var ociImagePattern = regexp.MustCompile(
-	`\b` +
-		`(?:(?P<host>[\w\-.]+(?::\d+)?(?:/[\w\-.]+)*)/)?` +
-		`(?P<name>[\w\-.]+)` +
+	`^(?:(?P<host>[\w.-]+(?::\d+)?(?:/[\w-]+)*)/)?` +
+		`(?P<name>[a-z0-9]+(?:[_-][a-z0-9]+)*)` +
 		`(?:` +
 		`(?::(?P<tag>[\w.\-]+))(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))?|` +
-		`(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))` +
-		`)?` +
-		`\b`,
+		`@(?P<digest>sha256:[a-fA-F0-9]{64})` +
+		`)` +
+		`$`,
 )
 
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
