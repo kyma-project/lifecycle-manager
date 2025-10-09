@@ -98,22 +98,10 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 					Should(Succeed())
 			})
 			By("checking the state to be Warning in KCP", func() {
-				testFn := func(ctx context.Context) error {
-					PrintKymas(ctx, kcpClient)
-					//PrintModuleTemplates(ctx, kcpClient)
-					//PrintModuleReleaseMetas(ctx, kcpClient)
-					PrintManifests(ctx, kcpClient)
-					return KymaIsInState(ctx, kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning)
-				}
-
-				Eventually(testFn, Timeout, Interval).
+				Eventually(KymaIsInState, Timeout, Interval).
 					WithContext(ctx).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
 					Should(Succeed())
-				// Temporarily disabled due to flakiness
-				//Eventually(KymaIsInState, Timeout, Interval).
-				//	WithContext(ctx).
-				//	WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateWarning).
-				//	Should(Succeed())
 			})
 			By("checking the state to be Warning in SKR", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
