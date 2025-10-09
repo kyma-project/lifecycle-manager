@@ -108,7 +108,7 @@ func expectManifestSpecDataEquals(kymaName, kymaNamespace, value string) func() 
 	}
 }
 
-var _ = PDescribe("Manifest.Spec is rendered correctly", Ordered, func() {
+var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -164,7 +164,7 @@ var _ = PDescribe("Manifest.Spec is rendered correctly", Ordered, func() {
 	})
 })
 
-var _ = PDescribe("Manifest.Spec is reset after manual update", Ordered, func() {
+var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	const updateRepositoryURL = "registry.docker.io/kyma-project/component-descriptors"
 
 	kyma := NewTestKyma("kyma")
@@ -225,7 +225,7 @@ var _ = PDescribe("Manifest.Spec is reset after manual update", Ordered, func() 
 	})
 })
 
-var _ = PDescribe("Test Reconciliation Skip label for Manifest", Ordered, func() {
+var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	module := NewTestModule("skip-reconciliation-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -253,7 +253,7 @@ var _ = PDescribe("Test Reconciliation Skip label for Manifest", Ordered, func()
 	})
 })
 
-var _ = PDescribe("Modules can only be referenced via module name", Ordered, func() {
+var _ = Describe("Modules can only be referenced via module name", Ordered, func() {
 	kyma := NewTestKyma("random-kyma")
 
 	moduleReferencedWithLabel := NewTestModule("random-module", v1beta2.DefaultChannel)
