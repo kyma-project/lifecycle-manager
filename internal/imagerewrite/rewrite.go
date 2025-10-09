@@ -3,21 +3,14 @@ package imagerewrite
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var (
-	ErrInvalidImageReference        = errors.New("invalid docker image reference")
-	ErrMissingSlashInImageReference = fmt.Errorf(
-		"%w: missing '/' separator between registry host and image name",
-		ErrInvalidImageReference,
-	)
-	ErrMissingColonInImageReference = fmt.Errorf(
-		"%w: missing ':' separator between image name and tag",
-		ErrInvalidImageReference,
-	)
+	ErrInvalidImageReference               = errors.New("invalid docker image reference")
 	ErrFindingImageInPodContainer          = errors.New("error finding image in pod container")
 	ErrFindingEnvVarsInPodContainer        = errors.New("error finding env vars in pod container")
 	ErrUnexpectedEnvVarType                = errors.New("unexpected environment variable type")
@@ -42,25 +35,45 @@ type DockerImageReference struct {
 	Digest      string
 }
 
+// Regex matches prefix@sha256:checksum, prefix:version, and prefix:version@sha256:checksum.
+var ociImagePattern = regexp.MustCompile(
+	`^(?:(?P<host>[\w.-]+(?::\d+)?(?:/[\w-]+)*)/)?` +
+		`(?P<name>[a-z0-9]+(?:[_-][a-z0-9]+)*)` +
+		`(?:` +
+		`(?::(?P<tag>[\w.\-]+))(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))?|` +
+		`@(?P<digest>sha256:[a-fA-F0-9]{64})` +
+		`)` +
+		`$`,
+)
+
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
 	res := &DockerImageReference{}
 
-	// split on last forward slash to separate host and path from image and tag
-	lastSep := strings.LastIndex(val, "/")
-	if lastSep == -1 {
-		return nil, fmt.Errorf("parsing %q: %w", val, ErrMissingSlashInImageReference)
+	matches := ociImagePattern.FindStringSubmatch(val)
+	if matches == nil {
+		return nil, ErrInvalidImageReference
 	}
-	res.HostAndPath = val[:lastSep]
-	nameAndTagAndDigest := val[lastSep+1:]
-	mayHaveDigest := strings.Split(nameAndTagAndDigest, "@")
-
-	if !strings.Contains(mayHaveDigest[0], ":") {
-		return nil, fmt.Errorf("parsing %q: %w", val, ErrMissingColonInImageReference)
+	result := map[string]string{}
+	for i, name := range ociImagePattern.SubexpNames() {
+		if matches[i] == "" {
+			// Skip empty captures because there are two "digest" groups and only one will match.
+			continue
+		}
+		result[name] = matches[i]
 	}
-	res.NameAndTag = NameAndTag(mayHaveDigest[0]) // The first part is always the name and tag
 
-	if len(mayHaveDigest) > 1 {
-		res.Digest = mayHaveDigest[1] // The second part is the digest, if present
+	res.HostAndPath = result["host"]
+	imageName := result["name"]
+	tag := result["tag"]
+
+	if tag != "" {
+		res.NameAndTag = NameAndTag(imageName + ":" + tag)
+	} else {
+		res.NameAndTag = NameAndTag(imageName)
+	}
+
+	if digest := result["digest"]; digest != "" {
+		res.Digest = digest
 	}
 
 	return res, nil
