@@ -229,7 +229,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 	}
 }
 
-var _ = FDescribe("Channel switch", Ordered, func() {
+var _ = Describe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	skrKyma := NewSKRKyma()
 	modules := []v1beta2.Module{
