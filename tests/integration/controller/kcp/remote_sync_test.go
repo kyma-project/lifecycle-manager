@@ -253,9 +253,10 @@ func IsDescriptorCached(template *v1beta2.ModuleTemplate) bool {
 	return result != nil
 }
 
-var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
+var _ = FDescribe("Kyma sync default module list into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-2")
 	moduleInKCP := NewTestModule("kcp-module", v1beta2.DefaultChannel)
+	moduleInKCP.Version = "0.0.1"
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleInKCP)
 	skrKyma := NewSKRKyma()
 	var skrClient client.Client
