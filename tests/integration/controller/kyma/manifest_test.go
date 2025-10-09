@@ -15,7 +15,6 @@ import (
 	"ocm.software/ocm/api/ocm/cpi"
 	"ocm.software/ocm/api/ocm/extensions/accessmethods/localblob"
 	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,7 +33,7 @@ var (
 	ErrInvalidManifest         = errors.New("invalid ManifestResource")
 )
 
-var _ = PDescribe("Update Manifest CR", Ordered, func() {
+var _ = Describe("Update Manifest CR", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -65,12 +64,6 @@ var _ = PDescribe("Update Manifest CR", Ordered, func() {
 			Should(Succeed())
 
 		By("Update Module Template spec.data")
-		moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
-		err := kcpClient.Get(ctx, client.ObjectKey{
-			Name:      createModuleTemplateName(module, "1.0.1"),
-			Namespace: kyma.GetNamespace(),
-		}, moduleTemplateInCluster)
-		Expect(err).ToNot(HaveOccurred())
 
 		data := unstructured.Unstructured{}
 		data.SetGroupVersionKind(schema.GroupVersionKind{
@@ -81,11 +74,17 @@ var _ = PDescribe("Update Manifest CR", Ordered, func() {
 		data.Object["spec"] = map[string]interface{}{
 			"initKey": "valueUpdated",
 		}
-		moduleTemplateInCluster.Spec.Data = &data
 
-		Eventually(kcpClient.Update, Timeout, Interval).
+		updateFn := func(moduleTemplateInCluster *v1beta2.ModuleTemplate) error {
+			moduleTemplateInCluster.Spec.Data = &data
+			return nil
+		}
+		mtName := createModuleTemplateName(module, "1.0.1")
+		mtNamespace := kyma.GetNamespace()
+
+		Eventually(UpdateModuleTemplateWithFunc, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(moduleTemplateInCluster).
+			WithArguments(kcpClient, mtName, mtNamespace, updateFn).
 			Should(Succeed())
 
 		By("CR updated with new value in spec.resource.spec")
