@@ -242,12 +242,11 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 var _ = Describe("Modules can only be referenced via module name", Ordered, func() {
 	kyma := NewTestKyma("random-kyma")
 
-	moduleReferencedWithLabel := NewTestModule("random-module", v1beta2.DefaultChannel)
 	moduleReferencedWithNamespacedName := NewTestModule(
-		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
-	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module",
-		v1beta2.DefaultChannel, "")
-	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
+		v1beta2.DefaultChannel+shared.Separator+"random-module"+"-0.0.1", v1beta2.DefaultChannel)
+	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module"+"-0.0.1",
+		v1beta2.DefaultChannel, "0.0.1")
+	kyma.Spec.Modules = append(kyma.Spec.Modules)
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	Context("When operator is referenced by Namespace/Name", func() {
