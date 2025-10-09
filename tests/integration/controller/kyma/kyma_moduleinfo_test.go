@@ -95,7 +95,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 			updateManifestStateWrapper(),
 			modulesHaveReadyStatus),
 		Entry("When remove module in spec, expect number of Manifests matches spec.modules",
-			removeModule(),
+			removeAllModules(),
 			expectCorrectNumberOfModuleStatus),
 	)
 })
@@ -147,11 +147,12 @@ func modulesHaveReadyStatus(skrClient client.Client, kymaName string, kymaNamesp
 	return nil
 }
 
-func removeModule() func(client.Client, string, string) error {
+func removeAllModules() func(client.Client, string, string) error {
 	return func(skrClient client.Client, kymaName, kymaNamespace string) error {
-		createdKyma, err := GetKyma(ctx, skrClient, kymaName, kymaNamespace)
-		Expect(err).ShouldNot(HaveOccurred())
-		createdKyma.Spec.Modules = []v1beta2.Module{}
-		return skrClient.Update(ctx, createdKyma)
+		updateFn := func(kyma *v1beta2.Kyma) error {
+			kyma.Spec.Modules = []v1beta2.Module{}
+			return nil
+		}
+		return UpdateKymaWithFunc(ctx, skrClient, kymaName, kymaNamespace, updateFn)
 	}
 }
