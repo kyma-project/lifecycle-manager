@@ -204,8 +204,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 
 	fakeService := &componentdescriptor.FakeService{}
 	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService) // cache backed up by a fake service
-	registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(testModule.Name), version1)
-	registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(testModule.Name), version2)
+	err := registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(testModule.Name), version1)
+	require.NoError(t, err)
+	err = registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(testModule.Name), version2)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name                       string
