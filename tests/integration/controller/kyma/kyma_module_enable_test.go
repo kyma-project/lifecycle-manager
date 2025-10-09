@@ -10,6 +10,10 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
+const (
+	ver110 = "1.1.0"
+)
+
 var _ = PDescribe("Given kyma CR with invalid module enabled", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	skrKyma := NewSKRKyma()
@@ -74,6 +78,6 @@ func givenKymaWithModule(
 	}
 	Eventually(SyncKyma, Timeout, Interval).
 		WithContext(ctx).WithArguments(kcpClient, kcpKyma).Should(Succeed())
-	DeployModuleTemplates(ctx, kcpClient, kcpKyma, "fixme")
+	DeployModuleTemplates(ctx, kcpClient, kcpKyma, ver110, nil) //TODO: Fix nil tracker!
 	return nil
 }

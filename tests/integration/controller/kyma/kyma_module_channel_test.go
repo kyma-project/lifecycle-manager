@@ -33,6 +33,7 @@ const (
 
 var errTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
+// TODO: These look safe to enable
 var _ = PDescribe("valid kyma.spec.channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
 	It("should create kyma with standard modules in a valid channel", func() {

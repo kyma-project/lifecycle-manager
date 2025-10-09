@@ -16,6 +16,10 @@ import (
 
 var ErrModuleNumberMismatch = errors.New("Spec.Modules number not match with Status.Modules")
 
+const (
+	ver123 = "1.2.3"
+)
+
 var (
 	kymaName   = "kyma"
 	moduleName = "module"
@@ -28,6 +32,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 	var skrClient client.Client
 	var err error
 
+	objTracker := &deletionTracker{}
 	BeforeAll(func() {
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
@@ -42,7 +47,8 @@ var _ = Describe("Kyma module control", Ordered, func() {
 					Modules: []v1beta2.Module{module},
 				},
 			},
-			"1.2.3",
+			ver123,
+			objTracker,
 		)
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
@@ -67,6 +73,10 @@ var _ = Describe("Kyma module control", Ordered, func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(objTracker.tryDeleteAll, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient).
+			Should(Succeed())
 	})
 	BeforeEach(func() {
 		Eventually(SyncKyma, Timeout, Interval).
