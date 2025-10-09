@@ -1406,8 +1406,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/kyma-project/runtime-watcher/listener v1.0.0 h1:zOtm1981uKASQVotvoy5YDosZF0UGGb2AVWrPMK5wZk=
 github.com/kyma-project/runtime-watcher/listener v1.0.0/go.mod h1:9OUBXT2bQ836wv8SBIYJ0nECuKXqlJYXP+8AJ8cWR7Q=
-github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c h1:alsRB1f5TaNNOCg8f1DEI/74lk5lpq6bbNmi8PZpFxI=
-github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c/go.mod h1:WpDVtbu62bjMTNY2kWThlw6iffWRrG3zERdRwZHnwv8=
+github.com/kyma-project/template-operator/api v1.0.0 h1:tIQ83GfmVdmWVBRLYTOHTZJ45j32quYRUcmyhyWn5+s=
+github.com/kyma-project/template-operator/api v1.0.0/go.mod h1:kdlviF9ugZf2VHw09QzVfQ8PQfrA1Sxp2RyghWMdBEQ=
 github.com/letsencrypt/boulder v0.0.0-20241010192615-6692160cedfa h1:/kPrcWfMENmWJh9AceGWaTJ0QBS3OyCDENx2vI71T8k=
 github.com/letsencrypt/boulder v0.0.0-20241010192615-6692160cedfa/go.mod h1:D28pusRAxf40EQHz8scPN238sxgzUViT7pklzw+NGWY=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de h1:9TO3cAIGXtEhnIaL+V+BEER86oLrvS+kWobKpbJuye0=

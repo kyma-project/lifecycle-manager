@@ -8,6 +8,13 @@ replace (
 )
 
 require (
+	github.com/kyma-project/lifecycle-manager/api v1.0.0
+	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
+	github.com/kyma-project/runtime-watcher/listener v1.0.0
+	github.com/kyma-project/template-operator/api v1.0.0
+)
+
+require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/cert-manager/cert-manager v1.18.2
 	github.com/gardener/cert-management v0.18.0
@@ -31,19 +38,12 @@ require (
 )
 
 require (
-	github.com/kyma-project/lifecycle-manager/api v1.0.0
-	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
-	github.com/kyma-project/runtime-watcher/listener v1.0.0
-)
-
-require (
 	istio.io/api v1.27.1
 	istio.io/client-go v1.27.1
 )
 
 require (
 	github.com/go-co-op/gocron v1.37.0
-	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.2
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
