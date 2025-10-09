@@ -35,6 +35,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_happypath(t *testing.T) { //nolint:du
 	skrClient := fake.NewClientBuilder().
 		WithObjects(&mrmSKR2, &mrmSKR3, &mrmSKR4).
 		WithScheme(scheme).
+		WithReturnManagedFields().
 		Build()
 
 	onSyncConcurrentlyFn := func(_ context.Context, kcpModules []v1beta2.ModuleReleaseMeta) {
@@ -95,6 +96,7 @@ func TestModuleReleaseMetaSyncer_SyncToSKR_nilList(t *testing.T) {
 	skrClient := fake.NewClientBuilder().
 		WithObjects(&mtSKR2, &mtSKR3, &mtSKR4).
 		WithScheme(scheme).
+		WithReturnManagedFields().
 		Build()
 
 	// onSyncConcurrentlyFn "pretends" to be the moduleReleaseMetaConcurrentWorker.SyncConcurrently
@@ -149,7 +151,10 @@ func moduleReleaseMeta(name, namespace string) v1beta2.ModuleReleaseMeta {
 			Namespace: namespace,
 			ManagedFields: []apimetav1.ManagedFieldsEntry{
 				{
-					Manager: moduleCatalogSyncFieldManager,
+					Manager:    moduleCatalogSyncFieldManager,
+					Operation:  apimetav1.ManagedFieldsOperationApply,
+					APIVersion: v1beta2.GroupVersion.String(),
+					FieldsType: "FieldsV1",
 				},
 			},
 		},
