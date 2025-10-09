@@ -115,7 +115,6 @@ func DeployMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client,
 func newMandatoryModuleTemplate(moduleName, version string) *v1beta2.ModuleTemplate {
 	return builder.NewModuleTemplateBuilder().
 		WithName(v1beta2.CreateModuleTemplateName(moduleName, version)).
-		//WithName(v1beta2.CreateModuleTemplateName("mandatory-template-operator",version)). //TODO: Remove
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
 		WithVersion(version).
