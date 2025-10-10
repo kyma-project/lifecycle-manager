@@ -117,6 +117,29 @@ func DeleteKyma(ctx context.Context,
 	return nil
 }
 
+// UpdateKymaWithFunc uses the provided function to update the Kyma resource.
+// This function is intended to be used with "Eventually" assertions in tests.
+// The provided updateFn should modify the Kyma resource in place and return an error if the modification fails.
+// UpdateKymaWithFunc always fetches the latest version of the Kyma resource before applying changes
+// to make sure the update is based on the most recent state.
+func UpdateKymaWithFunc(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace string, updateFn func(kyma *v1beta2.Kyma) error,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return fmt.Errorf("UpdateKymaWithFunc GetKyma: %w", err)
+	}
+	err = updateFn(kyma)
+	if err != nil {
+		return err
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("UpdateKymaWithFunc client.Update: %w", err)
+	}
+	return nil
+}
+
 func KymaHasDeletionTimestamp(ctx context.Context,
 	clnt client.Client,
 	kymaName string,

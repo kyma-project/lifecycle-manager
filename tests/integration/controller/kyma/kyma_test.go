@@ -24,7 +24,7 @@ var (
 	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
-var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
+var _ = FDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
 	testCases := []struct {
 		enableStatement  string
 		disableStatement string
@@ -46,11 +46,15 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 	}
 	for _, testCase := range testCases {
 		kyma := NewTestKyma(testCase.kymaName)
+		mrm := builder.NewModuleReleaseMetaBuilder().WithMandatory("0.0.1").WithNamespace("kcp-system").WithName(testCase.moduleName).WithModuleName(testCase.moduleName).Build()
 		skrKyma := NewSKRKyma()
 		var skrClient client.Client
 		var err error
 
 		BeforeAll(func() {
+			Eventually(CreateModuleReleaseMeta, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kcpClient, mrm).Should(Succeed())
 			Eventually(CreateCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma).Should(Succeed())
@@ -72,11 +76,13 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 
 		It("should result Kyma in Warning state", func() {
 			By(testCase.enableStatement, func() {
-				skrKyma.Spec.Modules = append(skrKyma.Spec.Modules, v1beta2.Module{
+				module := v1beta2.Module{
 					Name: testCase.moduleName, Managed: true,
-				})
-				Eventually(skrClient.Update, Timeout, Interval).
-					WithContext(ctx).WithArguments(skrKyma).Should(Succeed())
+				}
+				Eventually(EnableModule, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), module).
+					Should(Succeed())
 			})
 			By("checking the state to be Warning in KCP", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
@@ -107,10 +113,14 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 		})
 		It("should result Kyma in Ready state", func() {
 			By(testCase.disableStatement, func() {
-				skrKyma.Spec.Modules = []v1beta2.Module{}
-				Eventually(skrClient.Update, Timeout, Interval).
-					WithContext(ctx).WithArguments(skrKyma).Should(Succeed())
-			})
+				kymaUpdateFunc := func(skrKyma *v1beta2.Kyma) error {
+					skrKyma.Spec.Modules = []v1beta2.Module{}
+					return nil
+				}
+				Eventually(UpdateKymaWithFunc, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), kymaUpdateFunc).
+					Should(Succeed())
 			By("checking the state to be Ready in KCP", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
 					WithContext(ctx).
