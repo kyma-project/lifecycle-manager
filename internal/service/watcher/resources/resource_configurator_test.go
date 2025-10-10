@@ -22,6 +22,62 @@ func toUnstructured(obj interface{}) *unstructured.Unstructured {
 	return &unstructured.Unstructured{Object: m}
 }
 
+func TestResourceConfigurator_ConfigureDeployment_SetsGODEBUG(t *testing.T) {
+	expectedEnvValue := "dummyvalue"
+	expectedEnvName := "GODEBUG"
+	t.Setenv(expectedEnvName, expectedEnvValue)
+
+	testDeploy := toUnstructured(&apiappsv1.Deployment{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:   "dbg-deploy",
+			Labels: map[string]string{"dbg": "true"},
+		},
+		Spec: apiappsv1.DeploymentSpec{
+			Template: apicorev1.PodTemplateSpec{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Labels: map[string]string{"app": "dbg"},
+				},
+				Spec: apicorev1.PodSpec{
+					Containers: []apicorev1.Container{
+						{
+							Name:  "main",
+							Image: "old-image",
+						},
+					},
+				},
+			},
+		},
+	})
+
+	configurator := skrwebhookresources.NewResourceConfigurator(
+		"",
+		"",
+		"100m",
+		"128Mi",
+		skrwebhookresources.KCPAddr{Hostname: "dbg-host", Port: 4242},
+	)
+	configurator.SetSecretResVer("v1")
+
+	got, err := configurator.ConfigureDeployment(testDeploy)
+	if err != nil {
+		t.Fatalf("ConfigureDeployment() returned error: %v", err)
+	}
+
+	found := false
+	for _, env := range got.Spec.Template.Spec.Containers[0].Env {
+		if env.Name == expectedEnvName {
+			if env.Value != expectedEnvValue {
+				t.Fatalf("GODEBUG value = %q, want %q", env.Value, expectedEnvValue)
+			}
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("GODEBUG env not found in container env: %+v", got.Spec.Template.Spec.Containers[0].Env)
+	}
+}
+
 //nolint:gocognit // test case is complex
 func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 	kcpAddr := skrwebhookresources.KCPAddr{Hostname: "test-host", Port: 8080}

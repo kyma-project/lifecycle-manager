@@ -29,6 +29,7 @@ components:
 patches:
   - path: patches/deployment_resources.yaml
   - path: patches/unique_deployment_webhook_patch.yaml
+  - path: patches/fips_only_mode.yaml
   - target:
       kind: Deployment
     patch: |-

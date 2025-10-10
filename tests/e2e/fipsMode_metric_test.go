@@ -12,10 +12,10 @@ import (
 var _ = Describe("FIPS Mode metric", Ordered, func() {
 	Context("Given KCP Cluster", func() {
 		It("When KLM is initialized", func() {
-			By("Then fipsMode metrics is set to \"enabled\"")
+			By("Then fipsMode metrics is set to \"FipsModeOnly\"")
 			Eventually(GetFipsModeGauge).
 				WithContext(ctx).
-				Should(Equal(metrics.FipsModeOn))
+				Should(Equal(metrics.FipsModeOnly))
 		})
 	})
 })
