@@ -46,7 +46,12 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 	}
 	for _, testCase := range testCases {
 		kyma := NewTestKyma(testCase.kymaName)
-		mrm := builder.NewModuleReleaseMetaBuilder().WithMandatory("0.0.1").WithNamespace("kcp-system").WithName(testCase.moduleName).WithModuleName(testCase.moduleName).Build()
+		mrm := builder.NewModuleReleaseMetaBuilder().
+			WithMandatory("0.0.1").
+			WithNamespace("kcp-system").
+			WithName(testCase.moduleName).
+			WithModuleName(testCase.moduleName).
+			Build()
 		skrKyma := NewSKRKyma()
 		var skrClient client.Client
 		var err error
