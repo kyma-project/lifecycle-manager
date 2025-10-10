@@ -8,6 +8,13 @@ replace (
 )
 
 require (
+	github.com/kyma-project/lifecycle-manager/api v1.0.0
+	github.com/kyma-project/lifecycle-manager/maintenancewindows v1.0.0
+	github.com/kyma-project/runtime-watcher/listener v1.0.0
+	github.com/kyma-project/template-operator/api v1.0.0
+)
+
+require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/cert-manager/cert-manager v1.18.2
 	github.com/gardener/cert-management v0.18.0
@@ -17,9 +24,6 @@ require (
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20231202142526-55ffb0092afd
 	github.com/jellydator/ttlcache/v3 v3.4.0
-	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
-	github.com/kyma-project/lifecycle-manager/maintenancewindows v0.0.0-20250113095044-41115399d588
-	github.com/kyma-project/runtime-watcher/listener v1.0.0
 	github.com/onsi/ginkgo/v2 v2.26.0
 	github.com/onsi/gomega v1.38.2
 	github.com/prometheus/client_golang v1.23.2
@@ -40,7 +44,6 @@ require (
 
 require (
 	github.com/go-co-op/gocron v1.37.0
-	github.com/kyma-project/template-operator/api v0.0.0-20240404131948-52c84f14e73c
 	github.com/prometheus/client_model v0.6.2
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
