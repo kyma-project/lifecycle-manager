@@ -239,36 +239,6 @@ var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() 
 	})
 })
 
-var _ = Describe("Modules can only be referenced via module name", Ordered, func() {
-	kyma := NewTestKyma("random-kyma")
-
-	moduleReferencedWithLabel := NewTestModule("random-module", v1beta2.DefaultChannel)
-	moduleReferencedWithNamespacedName := NewTestModule(
-		v1beta2.DefaultChannel+shared.Separator+"random-module", v1beta2.DefaultChannel)
-	moduleReferencedWithFQDN := NewTestModuleWithFixName("kyma-project.io/module/"+"random-module",
-		v1beta2.DefaultChannel, "")
-	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleReferencedWithLabel)
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	Context("When operator is referenced by Namespace/Name", func() {
-		It("cannot find the operator", func() {
-			Eventually(ModuleTemplateExists).
-				WithContext(ctx).
-				WithArguments(kcpClient, moduleReferencedWithNamespacedName, kyma).
-				Should(Equal(ErrNotFound))
-		})
-	})
-
-	Context("When operator is referenced by FQDN", func() {
-		It("cannot find the operator", func() {
-			Eventually(ModuleTemplateExists).
-				WithContext(ctx).
-				WithArguments(kcpClient, moduleReferencedWithFQDN, kyma).
-				Should(Equal(ErrNotFound))
-		})
-	})
-})
-
 func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	for _, r := range reslist {
 		if r.Name == string(v1beta2.RawManifestLayer) {

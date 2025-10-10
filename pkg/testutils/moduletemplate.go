@@ -35,8 +35,6 @@ func GetModuleTemplate(ctx context.Context,
 ) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
 		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(clnt),
-			moduletemplateinfolookup.NewByChannelStrategy(clnt),
 			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(clnt),
 		},
 	)
