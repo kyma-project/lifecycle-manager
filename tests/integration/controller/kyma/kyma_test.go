@@ -24,7 +24,7 @@ var (
 	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
-var _ = FDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
+var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
 	testCases := []struct {
 		enableStatement  string
 		disableStatement string
@@ -113,14 +113,10 @@ var _ = FDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec
 		})
 		It("should result Kyma in Ready state", func() {
 			By(testCase.disableStatement, func() {
-				kymaUpdateFunc := func(skrKyma *v1beta2.Kyma) error {
-					skrKyma.Spec.Modules = []v1beta2.Module{}
-					return nil
-				}
-				Eventually(UpdateKymaWithFunc, Timeout, Interval).
-					WithContext(ctx).
-					WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), kymaUpdateFunc).
-					Should(Succeed())
+				skrKyma.Spec.Modules = []v1beta2.Module{}
+				Eventually(skrClient.Update, Timeout, Interval).
+					WithContext(ctx).WithArguments(skrKyma).Should(Succeed())
+			})
 			By("checking the state to be Ready in KCP", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
 					WithContext(ctx).
