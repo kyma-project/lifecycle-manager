@@ -21,9 +21,6 @@ spec:
       containers:
         - command:
             - /manager
-          env:
-            - name: GODEBUG
-              value: fips140=only,tlsmlkem=0
           args:
             - --leader-elect
           image: controller:latest

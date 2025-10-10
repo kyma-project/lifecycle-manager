@@ -53,8 +53,6 @@ spec:
       containers:
         - name: server
           env:
-            - name: GODEBUG
-              value: fips140=only,tlsmlkem=0
             - name: POD_NAME
               valueFrom:
                 fieldRef:
