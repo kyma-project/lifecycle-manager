@@ -15,6 +15,7 @@ import (
 
 var ErrVersionNotFound = errors.New("module template does not have a version")
 
+// TODO: This for sure doesn't contain OCMI
 // GetMandatory returns ModuleTemplates TOs (Transfer Objects) which are marked are mandatory modules.
 func GetMandatory(ctx context.Context, kymaClient client.Reader) (ModuleTemplatesByModuleName,
 	error,

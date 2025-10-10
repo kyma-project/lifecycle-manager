@@ -2,6 +2,7 @@ package kyma_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -17,6 +18,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
+)
+
+const (
+	ver111 = "1.1.1"
 )
 
 var (
@@ -25,6 +31,9 @@ var (
 )
 
 var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
+	mandatoryModuleName := "mandatory-" + random.Name()
+	objTracker := &deletionTracker{}
+
 	testCases := []struct {
 		enableStatement  string
 		disableStatement string
@@ -35,13 +44,13 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 			enableStatement:  "enabling one mandatory Module",
 			disableStatement: "disabling mandatory Module",
 			kymaName:         "mandatory-module-kyma",
-			moduleName:       "mandatory-template-operator",
+			moduleName:       mandatoryModuleName,
 		},
 		{
 			enableStatement:  "enabling one non-existing Module",
 			disableStatement: "disabling non-existent Module",
 			kymaName:         "non-existing-module-kyma",
-			moduleName:       "non-existent-module",
+			moduleName:       "non-existing-" + random.Name(),
 		},
 	}
 	for _, testCase := range testCases {
@@ -49,7 +58,6 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 		skrKyma := NewSKRKyma()
 		var skrClient client.Client
 		var err error
-
 		BeforeAll(func() {
 			Eventually(CreateCR, Timeout, Interval).
 				WithContext(ctx).
@@ -58,11 +66,20 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 				skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 				return err
 			}, Timeout, Interval).Should(Succeed())
+
+			// Deploy Mandatory ModuleTemplate so that "enabling one mandatory Module" test makes sense.
+			DeployMandatoryModuleTemplate(ctx, kcpClient, mandatoryModuleName, ver111, objTracker)
 		})
 		AfterAll(func() {
 			Eventually(DeleteCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma).Should(Succeed())
+
+			// Clean up other resources created during the test
+			Eventually(objTracker.tryDeleteAll, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kcpClient).
+				Should(Succeed())
 		})
 
 		BeforeEach(func() {
@@ -72,11 +89,13 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 
 		It("should result Kyma in Warning state", func() {
 			By(testCase.enableStatement, func() {
-				skrKyma.Spec.Modules = append(skrKyma.Spec.Modules, v1beta2.Module{
+				module := v1beta2.Module{
 					Name: testCase.moduleName, Managed: true,
-				})
-				Eventually(skrClient.Update, Timeout, Interval).
-					WithContext(ctx).WithArguments(skrKyma).Should(Succeed())
+				}
+				Eventually(EnableModule, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), module).
+					Should(Succeed())
 			})
 			By("checking the state to be Warning in KCP", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
@@ -107,9 +126,14 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 		})
 		It("should result Kyma in Ready state", func() {
 			By(testCase.disableStatement, func() {
-				skrKyma.Spec.Modules = []v1beta2.Module{}
-				Eventually(skrClient.Update, Timeout, Interval).
-					WithContext(ctx).WithArguments(skrKyma).Should(Succeed())
+				kymaUpdateFunc := func(skrKyma *v1beta2.Kyma) error {
+					skrKyma.Spec.Modules = []v1beta2.Module{}
+					return nil
+				}
+				Eventually(UpdateKymaWithFunc, Timeout, Interval).
+					WithContext(ctx).
+					WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), kymaUpdateFunc).
+					Should(Succeed())
 			})
 			By("checking the state to be Ready in KCP", func() {
 				Eventually(KymaIsInState, Timeout, Interval).
@@ -144,17 +168,18 @@ var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.
 var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("skr-module-update", v1beta2.DefaultChannel)
+	const moduleVersion = "0.0.1"
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
-
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("Should deploy ModuleTemplate", func() {
 		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 		template := builder.NewModuleTemplateBuilder().
+			WithName(module.Name+"-"+moduleVersion).
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(module.Name).
-			WithChannel(module.Channel).
+			WithVersion(moduleVersion).
 			WithModuleCR(data).
 			WithOCM(compdescv2.SchemaVersion).
 			WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
@@ -163,7 +188,18 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			Should(Succeed())
 	})
 
+	It("Should deploy ModuleReleaseMeta", func() {
+		moduleReleaseMeta := ConfigureKCPModuleReleaseMeta(module.Name, module.Channel, moduleVersion)
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(moduleReleaseMeta).
+			Should(Succeed())
+
+		// descriptor is required to create Manifest
+		registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, moduleVersion)
+	})
+
 	It("Mark Kyma as skip Reconciliation", func() {
+
 		By("CR created", func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(ManifestExists, Timeout, Interval).
@@ -226,6 +262,8 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		kyma := NewTestKyma("kyma")
 		skrKyma := NewSKRKyma()
 		module := NewTestModule("test-module", v1beta2.DefaultChannel)
+
+		const moduleVersion = "0.0.2"
 		kyma.Spec.Modules = append(
 			kyma.Spec.Modules, module)
 		var skrClient client.Client
@@ -247,9 +285,10 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		It("Should deploy ModuleTemplate", func() {
 			for _, module := range kyma.Spec.Modules {
 				template := builder.NewModuleTemplateBuilder().
+					WithName(module.Name+"-"+moduleVersion).
 					WithNamespace(ControlPlaneNamespace).
 					WithModuleName(module.Name).
-					WithChannel(module.Channel).
+					WithVersion(moduleVersion).
 					WithOCM(compdescv2.SchemaVersion).
 					WithAnnotation(shared.IsClusterScopedAnnotation, shared.EnableLabelValue).Build()
 				Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
@@ -258,10 +297,20 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 			}
 		})
 
+		It("Should deploy ModuleReleaseMeta", func() {
+			moduleReleaseMeta := ConfigureKCPModuleReleaseMeta(module.Name, module.Channel, moduleVersion)
+			Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+				WithArguments(moduleReleaseMeta).
+				Should(Succeed())
+
+			// descriptor is required to create Manifest
+			registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, moduleVersion)
+		})
+
 		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
 			emptyNamespace := ""
 			By("ensuring empty Module Status Resource Namespace in KCP")
-			Eventually(expectKymaModuleStatusWithNamespace).
+			Eventually(expectKymaModuleStatusWithNamespace, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kcpClient, kyma, emptyNamespace).
 				Should(Succeed())
@@ -315,4 +364,70 @@ func expectKymaModuleStatusWithNamespace(ctx context.Context, clnt client.Client
 	}
 
 	return nil
+}
+
+func PrintModuleTemplates(ctx context.Context, clnt client.Client) {
+	fmt.Printf("\n#### ModuleTemplates: ##########################################################\n")
+	moduletemplates := v1beta2.ModuleTemplateList{}
+	if err := clnt.List(ctx, &moduletemplates); err != nil {
+		fmt.Printf("%s", fmt.Errorf("while listing ModuleTemplates: %w", err))
+	}
+	for idx, mtemplate := range moduletemplates.Items {
+		fmt.Printf("ModuleTemplate %d: name: %s, spec.moduleName: %q, spec.version: %q\n",
+			idx, mtemplate.Name, mtemplate.Spec.ModuleName, mtemplate.Spec.Version)
+	}
+	fmt.Printf("################################################################################\n")
+}
+
+func PrintModuleReleaseMetas(ctx context.Context, clnt client.Client) {
+	fmt.Printf("\n#### ModuleReleaseMetas: #######################################################\n")
+	modulereleasemetas := v1beta2.ModuleReleaseMetaList{}
+	if err := clnt.List(ctx, &modulereleasemetas); err != nil {
+		fmt.Printf("%s", fmt.Errorf("while listing ModuleReleaseMetas: %w", err))
+	}
+	for idx, mrm := range modulereleasemetas.Items {
+		fmt.Printf("ModuleReleaseMeta %d: name: %s, spec.moduleName: %#v, spec.ocmComponentName: %s, channel mapping:",
+			idx, mrm.Name, mrm.Spec.ModuleName, mrm.Spec.OcmComponentName)
+		for _, mapping := range mrm.Spec.Channels {
+			fmt.Printf(" %s->%s;", mapping.Channel, mapping.Version)
+		}
+		fmt.Println()
+	}
+	fmt.Printf("################################################################################\n")
+}
+
+func PrintManifests(ctx context.Context, clnt client.Client) {
+	fmt.Printf("\n#### Manifests: ################################################################\n")
+	manifests := v1beta2.ManifestList{}
+	if err := clnt.List(ctx, &manifests); err != nil {
+		fmt.Printf("%s", fmt.Errorf("while listing Manifests: %w", err))
+	}
+	for idx, manifest := range manifests.Items {
+		fmt.Printf("Manifest %d: name: %s, spec.config: %#v, status.operation: %s\n",
+			idx, manifest.Name, manifest.Spec.Config, manifest.Status.Operation)
+		ser, _ := json.MarshalIndent(manifest, " ==> ", "  ")
+		fmt.Printf("\nManifest %d: %s\n", idx, string(ser))
+	}
+	fmt.Printf("################################################################################\n")
+}
+
+func PrintKymas(ctx context.Context, clnt client.Client) {
+	fmt.Printf("\n#### Kymas: ####################################################################\n")
+	kymas := v1beta2.KymaList{}
+	if err := clnt.List(ctx, &kymas); err != nil {
+		fmt.Printf("%s", fmt.Errorf("while listing Kymas: %w", err))
+	}
+	for idx, kyma := range kymas.Items {
+		modules := []string{}
+		for _, m := range kyma.Spec.Modules {
+			modules = append(modules, m.Name)
+		}
+		fmt.Printf("Kyma %d: name: %s, spec.modules: %v, status.state: %s, status.operation: %s\n",
+			idx, kyma.Name, modules, kyma.Status.State, kyma.Status.Operation)
+
+		kyma.SetManagedFields(nil) // remove managed fields to reduce the output size
+		ser, _ := json.MarshalIndent(kyma, " ==> ", "  ")
+		fmt.Printf("\nKyma %d: %s\n", idx, string(ser))
+	}
+	fmt.Printf("################################################################################\n")
 }

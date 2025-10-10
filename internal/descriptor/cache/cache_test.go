@@ -15,7 +15,7 @@ func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
 	descriptorCache := cache.NewDescriptorCache()
 	key := "key 1"
 
-	actual := descriptorCache.Get(key)
+	actual := descriptorCache.Get(cache.DescriptorKey(key))
 
 	assert.Nil(t, actual)
 }
@@ -32,9 +32,9 @@ func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
 	}
 	desc1 := &types.Descriptor{ComponentDescriptor: ocmDesc1}
 
-	descriptorCache.Set(key1, desc1)
+	descriptorCache.Set(cache.DescriptorKey(key1), desc1)
 
-	assertDescriptorEqual(t, desc1, descriptorCache.Get(key1))
+	assertDescriptorEqual(t, desc1, descriptorCache.Get(cache.DescriptorKey(key1)))
 }
 
 func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
@@ -53,15 +53,15 @@ func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
 			},
 		},
 	}
-	descriptorCache.Set(originalKey, originalValue)
-	assertDescriptorNotEqual(t, newValue, descriptorCache.Get(originalKey))
-	assert.Nil(t, descriptorCache.Get(newKey))
+	descriptorCache.Set(cache.DescriptorKey(originalKey), originalValue)
+	assertDescriptorNotEqual(t, newValue, descriptorCache.Get(cache.DescriptorKey(originalKey)))
+	assert.Nil(t, descriptorCache.Get(cache.DescriptorKey(newKey)))
 
-	descriptorCache.Set(newKey, newValue)
-	descriptorCache.Set(originalKey, newValue)
+	descriptorCache.Set(cache.DescriptorKey(newKey), newValue)
+	descriptorCache.Set(cache.DescriptorKey(originalKey), newValue)
 
-	assertDescriptorEqual(t, newValue, descriptorCache.Get(newKey))
-	assertDescriptorEqual(t, newValue, descriptorCache.Get(originalKey))
+	assertDescriptorEqual(t, newValue, descriptorCache.Get(cache.DescriptorKey(newKey)))
+	assertDescriptorEqual(t, newValue, descriptorCache.Get(cache.DescriptorKey(originalKey)))
 }
 
 func assertDescriptorEqual(t *testing.T, expected, actual *types.Descriptor) {
