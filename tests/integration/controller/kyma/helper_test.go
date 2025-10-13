@@ -28,6 +28,7 @@ const (
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 	BeforeAll(func() {
+		DeployModuleReleaseMetas(ctx, kcpClient, kyma)
 		DeployMandatoryModuleTemplate(ctx, kcpClient)
 		DeployModuleTemplates(ctx, kcpClient, kyma)
 	})
@@ -36,6 +37,25 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 		DeleteModuleTemplates(ctx, kcpClient, kyma)
 		DeleteMandatoryModuleTemplate(ctx, kcpClient)
 	})
+}
+
+func DeployModuleReleaseMetas(ctx2 context.Context, c client.Client, kyma *v1beta2.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		mrmBuilder := builder.NewModuleReleaseMetaBuilder().
+			WithName(module.Name).
+			WithModuleName(module.Name).
+			WithNamespace(ControlPlaneNamespace)
+		if module.Version != "" {
+			mrmBuilder.WithSingleModuleChannelAndVersions("regular", module.Version)
+		} else {
+			mrmBuilder.WithSingleModuleChannelAndVersions("regular", "0.0.1")
+		}
+		mrm := mrmBuilder.Build()
+
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx2).
+			WithArguments(c, mrm).Should(Succeed())
+	}
 }
 
 func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
@@ -78,12 +98,13 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 			WithName(createModuleTemplateName(module)).
 			WithModuleName(module.Name).
 			WithNamespace(ControlPlaneNamespace).
+			WithVersion(module.Version).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(CreateCR, Timeout, Interval).WithContext(ctx).
 			WithArguments(kcpClient, template).
 			Should(Succeed())
-		managedModule := NewTestModuleWithFixName(module.Name, module.Channel, "")
+		managedModule := NewTestModuleWithFixName(module.Name, module.Channel, module.Version)
 		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, kcpClient, managedModule, kyma).
 			Should(Succeed())
@@ -105,14 +126,18 @@ func DeleteMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client)
 }
 
 func createModuleTemplateName(module v1beta2.Module) string {
-	return fmt.Sprintf("%s-%s", module.Name, module.Channel)
+	if module.Version == "" {
+		module.Version = "0.0.1"
+	}
+	return fmt.Sprintf("%s-%s", module.Name, module.Version)
 }
 
 func newMandatoryModuleTemplate() *v1beta2.ModuleTemplate {
 	return builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithName("mandatory-template").
+		WithName("mandatory-template-0.0.1").
 		WithModuleName("mandatory-template-operator").
+		WithVersion("0.0.1").
 		WithChannel(mandatoryChannel).
 		WithMandatory(true).
 		WithOCM(compdescv2.SchemaVersion).Build()

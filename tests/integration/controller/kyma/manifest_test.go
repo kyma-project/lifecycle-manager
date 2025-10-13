@@ -112,6 +112,7 @@ func expectManifestSpecDataEquals(kymaName, kymaNamespace, value string) func() 
 var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
+	module.Version = "0.0.1"
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
 
