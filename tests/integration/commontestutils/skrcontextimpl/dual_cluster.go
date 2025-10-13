@@ -24,11 +24,12 @@ var (
 // Bug fix: previously a new environment was started per Kyma and the old one wasn't stopped,
 // leaking api-server/etcd processes. Now we only create it once and keep the returned rest.Config.
 type DualClusterFactory struct {
-    clients     sync.Map // kymaName -> *remote.ConfigAndClient
-    scheme      *machineryruntime.Scheme
-    event       event.Event
-    skrEnv      *envtest.Environment
-    restConfig  *rest.Config
+	clients    sync.Map // kymaName -> *remote.ConfigAndClient
+	scheme     *machineryruntime.Scheme
+	event      event.Event
+	skrEnv     *envtest.Environment
+	restConfig *rest.Config
+	client     *remote.ConfigAndClient // single shared client
 }
 
 func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *DualClusterFactory {
@@ -40,35 +41,38 @@ func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *
 }
 
 func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) error {
-    if _, ok := f.clients.Load(kyma.Name); ok {
-        return nil
-    }
-    // Start environment only once.
-    if f.skrEnv == nil {
-        f.skrEnv = &envtest.Environment{ErrorIfCRDPathMissing: true}
-        cfg, err := f.skrEnv.Start()
-        if err != nil {
-            return err
-        }
-        if cfg == nil {
-            return ErrEmptyRestConfig
-        }
-        f.restConfig = cfg
-    }
-    // For each new Kyma we create a new admin user & client (cheap) against the same env.
-    authUser, err := f.skrEnv.AddUser(envtest.User{
-        Name:   "skr-admin-account",
-        Groups: []string{"system:masters"},
-    }, f.restConfig)
-    if err != nil {
-        return err
-    }
-    skrClient, err := client.New(authUser.Config(), client.Options{Scheme: f.scheme})
-    if err != nil {
-        return err
-    }
-    f.clients.Store(kyma.Name, remote.NewClientWithConfig(skrClient, authUser.Config()))
-    return nil
+	if _, ok := f.clients.Load(kyma.Name); ok {
+		return nil
+	}
+	// Start environment & build shared client once.
+	if f.client == nil {
+		if f.skrEnv == nil {
+			f.skrEnv = &envtest.Environment{ErrorIfCRDPathMissing: true}
+			cfg, err := f.skrEnv.Start()
+			if err != nil {
+				return err
+			}
+			if cfg == nil {
+				return ErrEmptyRestConfig
+			}
+			f.restConfig = cfg
+		}
+		// single admin user & client
+		authUser, err := f.skrEnv.AddUser(envtest.User{
+			Name:   "skr-admin-account",
+			Groups: []string{"system:masters"},
+		}, f.restConfig)
+		if err != nil {
+			return err
+		}
+		skrClient, err := client.New(authUser.Config(), client.Options{Scheme: f.scheme})
+		if err != nil {
+			return err
+		}
+		f.client = remote.NewClientWithConfig(skrClient, authUser.Config())
+	}
+	f.clients.Store(kyma.Name, f.client)
+	return nil
 }
 
 func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
@@ -92,11 +96,12 @@ func (f *DualClusterFactory) GetSkrEnv() *envtest.Environment {
 }
 
 func (f *DualClusterFactory) Stop() error {
-    if f.skrEnv == nil {
-        return nil
-    }
-    err := f.skrEnv.Stop()
-    f.skrEnv = nil
-    f.restConfig = nil
-    return err
+	if f.skrEnv == nil {
+		return nil
+	}
+	err := f.skrEnv.Stop()
+	f.skrEnv = nil
+	f.restConfig = nil
+	f.client = nil
+	return err
 }
