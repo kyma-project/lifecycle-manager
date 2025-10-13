@@ -28,9 +28,9 @@ packages:
   internal/repository/watcher/certificate/gcm/certificate: 98
   internal/repository/watcher/certificate/gcm/renewal: 100
   internal/repository/secret: 94
-  internal/repository/manifest: 50
-  internal/repository/moduletemplate: 50
-  internal/repository/modulereleasemeta: 50
+  internal/repository/manifest: 100
+  internal/repository/moduletemplate: 100
+  internal/repository/modulereleasemeta: 100
 
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
