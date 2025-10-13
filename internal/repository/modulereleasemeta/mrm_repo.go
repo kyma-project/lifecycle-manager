@@ -3,9 +3,9 @@ package modulereleasemeta
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -27,8 +27,7 @@ func (r *Repository) EnsureFinalizer(ctx context.Context, mrmName string, finali
 	if err != nil {
 		return err
 	}
-	if !slices.Contains(mrm.Finalizers, finalizer) {
-		mrm.Finalizers = append(mrm.Finalizers, finalizer)
+	if updated := controllerutil.AddFinalizer(mrm, finalizer); updated {
 		if err := r.clnt.Update(ctx, mrm); err != nil {
 			return fmt.Errorf("failed to add finalizer to ModuleReleaseMeta %s: %w", mrmName, err)
 		}
@@ -41,9 +40,10 @@ func (r *Repository) RemoveFinalizer(ctx context.Context, mrmName string, finali
 	if err != nil {
 		return err
 	}
-	mrm.Finalizers = slices.DeleteFunc(mrm.Finalizers, func(s string) bool { return s == finalizer })
-	if err := r.clnt.Update(ctx, mrm); err != nil {
-		return fmt.Errorf("failed to remove finalizer from ModuleReleaseMeta %s: %w", mrmName, err)
+	if updated := controllerutil.RemoveFinalizer(mrm, finalizer); updated {
+		if err := r.clnt.Update(ctx, mrm); err != nil {
+			return fmt.Errorf("failed to remove finalizer from ModuleReleaseMeta %s: %w", mrmName, err)
+		}
 	}
 	return nil
 }

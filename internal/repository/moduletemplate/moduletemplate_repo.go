@@ -3,9 +3,9 @@ package moduletemplate
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -37,8 +37,7 @@ func (r *Repository) EnsureFinalizer(ctx context.Context, moduleTemplateName str
 	if err != nil {
 		return err
 	}
-	if !slices.Contains(moduleTemplate.Finalizers, finalizer) {
-		moduleTemplate.Finalizers = append(moduleTemplate.Finalizers, finalizer)
+	if updated := controllerutil.AddFinalizer(moduleTemplate, finalizer); updated {
 		if err := r.clnt.Update(ctx, moduleTemplate); err != nil {
 			return fmt.Errorf("failed to add finalizer to ModuleTemplate %s: %w", moduleTemplateName, err)
 		}
@@ -51,10 +50,10 @@ func (r *Repository) RemoveFinalizer(ctx context.Context, moduleTemplateName str
 	if err != nil {
 		return err
 	}
-	moduleTemplate.Finalizers = slices.DeleteFunc(moduleTemplate.Finalizers,
-		func(s string) bool { return s == finalizer })
-	if err := r.clnt.Update(ctx, moduleTemplate); err != nil {
-		return fmt.Errorf("failed to remove finalizer from ModuleTemplate %s: %w", moduleTemplateName, err)
+	if updated := controllerutil.RemoveFinalizer(moduleTemplate, finalizer); updated {
+		if err := r.clnt.Update(ctx, moduleTemplate); err != nil {
+			return fmt.Errorf("failed to remove finalizer from ModuleTemplate %s: %w", moduleTemplateName, err)
+		}
 	}
 	return nil
 }
