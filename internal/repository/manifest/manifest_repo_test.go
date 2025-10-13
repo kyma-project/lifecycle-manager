@@ -122,14 +122,14 @@ func TestRepository_ListAllForModule(t *testing.T) {
 	t.Run("successfully lists all manifests for module", func(t *testing.T) {
 		expectedManifests := []v1beta2.Manifest{
 			{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      "manifest1",
 					Namespace: testNamespace,
 					Labels:    map[string]string{shared.ModuleName: testModuleName},
 				},
 			},
 			{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      "manifest2",
 					Namespace: testNamespace,
 					Labels:    map[string]string{shared.ModuleName: testModuleName},

@@ -44,7 +44,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 
 	t.Run("adds finalizer when not present", func(t *testing.T) {
 		mrm := &v1beta2.ModuleReleaseMeta{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:       testMRMName,
 				Namespace:  testNamespace,
 				Finalizers: []string{},
@@ -63,7 +63,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 
 	t.Run("does not update when finalizer already present", func(t *testing.T) {
 		mrm := &v1beta2.ModuleReleaseMeta{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:       testMRMName,
 				Namespace:  testNamespace,
 				Finalizers: []string{testFinalizer},
@@ -94,7 +94,7 @@ func TestRepository_EnsureFinalizer(t *testing.T) {
 
 	t.Run("returns error when update fails", func(t *testing.T) {
 		mrm := &v1beta2.ModuleReleaseMeta{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:       testMRMName,
 				Namespace:  testNamespace,
 				Finalizers: []string{},
@@ -122,7 +122,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 
 	t.Run("removes finalizer when present", func(t *testing.T) {
 		mrm := &v1beta2.ModuleReleaseMeta{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:       testMRMName,
 				Namespace:  testNamespace,
 				Finalizers: []string{testFinalizer},
@@ -141,7 +141,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 
 	t.Run("does not update when finalizer not present", func(t *testing.T) {
 		mrm := &v1beta2.ModuleReleaseMeta{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:       testMRMName,
 				Namespace:  testNamespace,
 				Finalizers: []string{},
@@ -172,7 +172,7 @@ func TestRepository_RemoveFinalizer(t *testing.T) {
 
 	t.Run("returns error when update fails", func(t *testing.T) {
 		mrm := &v1beta2.ModuleReleaseMeta{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:       testMRMName,
 				Namespace:  testNamespace,
 				Finalizers: []string{testFinalizer},
@@ -199,7 +199,7 @@ func TestRepository_Get(t *testing.T) {
 
 	t.Run("returns MRM when successful", func(t *testing.T) {
 		expectedMRM := &v1beta2.ModuleReleaseMeta{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      testMRMName,
 				Namespace: testNamespace,
 			},
