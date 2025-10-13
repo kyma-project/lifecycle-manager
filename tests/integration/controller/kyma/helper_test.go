@@ -39,7 +39,7 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 }
 
-func DeployModuleReleaseMetas(ctx2 context.Context, c client.Client, kyma *v1beta2.Kyma) {
+func DeployModuleReleaseMetas(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		mrmBuilder := builder.NewModuleReleaseMetaBuilder().
 			WithName(module.Name).
@@ -53,8 +53,8 @@ func DeployModuleReleaseMetas(ctx2 context.Context, c client.Client, kyma *v1bet
 		mrm := mrmBuilder.Build()
 
 		Eventually(CreateCR, Timeout, Interval).
-			WithContext(ctx2).
-			WithArguments(c, mrm).Should(Succeed())
+			WithContext(ctx).
+			WithArguments(clnt, mrm).Should(Succeed())
 	}
 }
 
