@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 
 	apiappsv1 "k8s.io/api/apps/v1"
@@ -44,6 +45,7 @@ var (
 const (
 	// PodRestartLabelKey is used to trigger a rolling update of the watcher pod when the SKR's certificate changes.
 	PodRestartLabelKey             = shared.OperatorGroup + shared.Separator + "pod-restart-trigger"
+	goDebugEnvName                 = "GODEBUG"
 	kcpAddressEnvName              = "KCP_ADDR"
 	ApiServerNetworkPolicyName     = "kyma-project.io--watcher-to-apiserver"
 	SeedToWatcherNetworkPolicyName = "kyma-project.io--seed-to-watcher"
@@ -136,6 +138,12 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 		shared.ManagedBy: shared.ManagedByLabelValue,
 	}))
 
+	goDebug, ok := os.LookupEnv(goDebugEnvName)
+	if ok && goDebug != "" {
+		deployment.Spec.Template.Spec.Containers[0].Env = append(
+			deployment.Spec.Template.Spec.Containers[0].Env,
+			apicorev1.EnvVar{Name: goDebugEnvName, Value: goDebug})
+	}
 	return deployment, nil
 }
 
