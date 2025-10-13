@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 
@@ -14,6 +15,9 @@ import (
 )
 
 var _ = Describe("FIPS Mode metric", Ordered, func() {
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
+	InitEmptyKymaBeforeAll(kyma)
+
 	Context("Given KCP Cluster", func() {
 		It("When KLM is initialized", func() {
 			By("Then fipsMode metrics is set to \"FipsModeOnly\"")
