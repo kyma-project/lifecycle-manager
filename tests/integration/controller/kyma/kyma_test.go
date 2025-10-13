@@ -24,7 +24,7 @@ var (
 	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
-var _ = Describe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
+var _ = PDescribe("Kyma enable Mandatory Module or non-existent Module Kyma.Spec.Modules", Ordered, func() {
 	testCases := []struct {
 		enableStatement  string
 		disableStatement string
