@@ -1,7 +1,7 @@
 package e2e_test
 
 import (
-	"fmt"
+	"errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -44,7 +44,7 @@ var _ = Describe("FIPS Mode metric", Ordered, func() {
 						}
 					}
 				}
-				return fmt.Errorf("GODEBUG env not found in the webhook deployment")
+				return errors.New("GODEBUG env not found in the webhook deployment")
 			}).Should(Succeed())
 		})
 	})
