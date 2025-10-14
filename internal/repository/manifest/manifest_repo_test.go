@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +39,7 @@ func (c *clientStub) DeleteAllOf(_ context.Context, obj client.Object, opts ...c
 			c.capturedNamespace = string(nsOpt)
 		}
 		if labelOpt, ok := opt.(client.MatchingLabels); ok {
-			c.capturedLabels = map[string]string(labelOpt)
+			c.capturedLabels = labelOpt
 		}
 	}
 
@@ -53,7 +54,7 @@ func (c *clientStub) List(_ context.Context, list client.ObjectList, opts ...cli
 			c.capturedNamespace = string(nsOpt)
 		}
 		if labelOpt, ok := opt.(client.MatchingLabels); ok {
-			c.capturedLabels = map[string]string(labelOpt)
+			c.capturedLabels = labelOpt
 		}
 	}
 
@@ -70,8 +71,8 @@ func (c *clientStub) List(_ context.Context, list client.ObjectList, opts ...cli
 
 func TestRepository_DeleteAllForModule(t *testing.T) {
 	ctx := context.Background()
-	testNamespace := "test-namespace"
-	testModuleName := "test-module"
+	testNamespace := random.Name()
+	testModuleName := random.Name()
 
 	t.Run("successfully deletes all manifests for module", func(t *testing.T) {
 		stub := &clientStub{}
@@ -100,24 +101,12 @@ func TestRepository_DeleteAllForModule(t *testing.T) {
 		require.Equal(t, testNamespace, stub.capturedNamespace)
 		require.Equal(t, testModuleName, stub.capturedLabels[shared.ModuleName])
 	})
-
-	t.Run("uses correct module name in label selector", func(t *testing.T) {
-		differentModuleName := "different-module-name"
-		stub := &clientStub{}
-		repo := manifest.NewRepository(stub, testNamespace)
-
-		err := repo.DeleteAllForModule(ctx, differentModuleName)
-
-		require.NoError(t, err)
-		require.True(t, stub.deleteAllOfCalled)
-		require.Equal(t, differentModuleName, stub.capturedLabels[shared.ModuleName])
-	})
 }
 
 func TestRepository_ListAllForModule(t *testing.T) {
 	ctx := context.Background()
-	testNamespace := "test-namespace"
-	testModuleName := "test-module"
+	testNamespace := random.Name()
+	testModuleName := random.Name()
 
 	t.Run("successfully lists all manifests for module", func(t *testing.T) {
 		expectedMetadata := []apimetav1.PartialObjectMetadata{
@@ -177,17 +166,5 @@ func TestRepository_ListAllForModule(t *testing.T) {
 		require.True(t, stub.listCalled)
 		require.Equal(t, testNamespace, stub.capturedNamespace)
 		require.Equal(t, testModuleName, stub.capturedLabels[shared.ModuleName])
-	})
-
-	t.Run("uses correct module name in label selector", func(t *testing.T) {
-		differentModuleName := "another-module-name"
-		stub := &clientStub{partialObjectMetadata: []apimetav1.PartialObjectMetadata{}}
-		repo := manifest.NewRepository(stub, testNamespace)
-
-		_, err := repo.ListAllForModule(ctx, differentModuleName)
-
-		require.NoError(t, err)
-		require.True(t, stub.listCalled)
-		require.Equal(t, differentModuleName, stub.capturedLabels[shared.ModuleName])
 	})
 }
