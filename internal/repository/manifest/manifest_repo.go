@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -31,8 +32,11 @@ func (r *Repository) DeleteAllForModule(ctx context.Context, moduleName string) 
 	return nil
 }
 
-func (r *Repository) ListAllForModule(ctx context.Context, moduleName string) ([]v1beta2.Manifest, error) {
-	var manifestList v1beta2.ManifestList
+func (r *Repository) ListAllForModule(ctx context.Context, moduleName string) (
+	[]apimetav1.PartialObjectMetadata, error) {
+	var manifestList apimetav1.PartialObjectMetadataList
+	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind("ManifestList"))
+
 	if err := r.clnt.List(ctx, &manifestList, client.InNamespace(r.namespace),
 		client.MatchingLabels{shared.ModuleName: moduleName}); err != nil {
 		return nil, fmt.Errorf("failed to list Manifests for module %s: %w", moduleName, err)

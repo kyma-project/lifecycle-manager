@@ -26,7 +26,7 @@ type clientStub struct {
 	capturedLabels     map[string]string
 	capturedObjectType client.Object
 
-	manifests []v1beta2.Manifest
+	partialObjectMetadata []apimetav1.PartialObjectMetadata
 }
 
 func (c *clientStub) DeleteAllOf(_ context.Context, obj client.Object, opts ...client.DeleteAllOfOption) error {
@@ -61,8 +61,8 @@ func (c *clientStub) List(_ context.Context, list client.ObjectList, opts ...cli
 		return c.listErr
 	}
 
-	if manifestList, ok := list.(*v1beta2.ManifestList); ok {
-		manifestList.Items = c.manifests
+	if partialList, ok := list.(*apimetav1.PartialObjectMetadataList); ok {
+		partialList.Items = c.partialObjectMetadata
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func TestRepository_ListAllForModule(t *testing.T) {
 	testModuleName := "test-module"
 
 	t.Run("successfully lists all manifests for module", func(t *testing.T) {
-		expectedManifests := []v1beta2.Manifest{
+		expectedMetadata := []apimetav1.PartialObjectMetadata{
 			{
 				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      "manifest1",
@@ -137,21 +137,21 @@ func TestRepository_ListAllForModule(t *testing.T) {
 			},
 		}
 
-		stub := &clientStub{manifests: expectedManifests}
+		stub := &clientStub{partialObjectMetadata: expectedMetadata}
 		repo := manifest.NewRepository(stub, testNamespace)
 
 		result, err := repo.ListAllForModule(ctx, testModuleName)
 
 		require.NoError(t, err)
 		require.Len(t, result, 2)
-		require.Equal(t, expectedManifests, result)
+		require.Equal(t, expectedMetadata, result)
 		require.True(t, stub.listCalled)
 		require.Equal(t, testNamespace, stub.capturedNamespace)
 		require.Equal(t, testModuleName, stub.capturedLabels[shared.ModuleName])
 	})
 
 	t.Run("returns empty list when no manifests found", func(t *testing.T) {
-		stub := &clientStub{manifests: []v1beta2.Manifest{}}
+		stub := &clientStub{partialObjectMetadata: []apimetav1.PartialObjectMetadata{}}
 		repo := manifest.NewRepository(stub, testNamespace)
 
 		result, err := repo.ListAllForModule(ctx, testModuleName)
@@ -181,7 +181,7 @@ func TestRepository_ListAllForModule(t *testing.T) {
 
 	t.Run("uses correct module name in label selector", func(t *testing.T) {
 		differentModuleName := "another-module-name"
-		stub := &clientStub{manifests: []v1beta2.Manifest{}}
+		stub := &clientStub{partialObjectMetadata: []apimetav1.PartialObjectMetadata{}}
 		repo := manifest.NewRepository(stub, testNamespace)
 
 		_, err := repo.ListAllForModule(ctx, differentModuleName)
