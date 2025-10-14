@@ -33,7 +33,8 @@ func (r *Repository) DeleteAllForModule(ctx context.Context, moduleName string) 
 }
 
 func (r *Repository) ListAllForModule(ctx context.Context, moduleName string) (
-	[]apimetav1.PartialObjectMetadata, error) {
+	[]apimetav1.PartialObjectMetadata, error,
+) {
 	var manifestList apimetav1.PartialObjectMetadataList
 	manifestList.SetGroupVersionKind(v1beta2.GroupVersion.WithKind("ManifestList"))
 
