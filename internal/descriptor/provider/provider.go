@@ -77,7 +77,10 @@ func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, upd
 		return descriptor, nil
 	}
 
-	descriptor, err := c.descriptorService.GetComponentDescriptor(context.Background(), ocmi)
+	ctx, cancel := context.WithCancel(context.Background())
+	descriptor, err := c.descriptorService.GetComponentDescriptor(ctx, ocmi)
+	defer cancel()
+
 	if err != nil {
 		return nil, fmt.Errorf("error finding ComponentDescriptor: %w", err)
 	}
