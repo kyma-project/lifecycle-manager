@@ -55,6 +55,8 @@ func TestExtractFile(t *testing.T) {
 }
 
 type mockLayer struct {
+	containerregistryv1.Layer
+
 	errOnUncompressed error
 	errOnDigest       error
 }

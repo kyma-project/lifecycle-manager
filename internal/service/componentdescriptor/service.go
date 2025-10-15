@@ -116,13 +116,7 @@ func deserialize(compdescBytes []byte, ocmi ocmidentity.Component) (*compdesc.Co
 	return desc, nil
 }
 
-// SimplifiedLayer represents only necessary part of containerregistryv1.Layer to simplify testing.
-type SimplifiedLayer interface {
-	Digest() (containerregistryv1.Hash, error)
-	Uncompressed() (io.ReadCloser, error)
-}
-
-func extractFile(ioh extractFileIOHelper, layer SimplifiedLayer, fileName string) ([]byte, error) {
+func extractFile(ioh extractFileIOHelper, layer containerregistryv1.Layer, fileName string) ([]byte, error) {
 	wrap := func(err error) error {
 		digest, derr := layer.Digest()
 		if derr != nil {
