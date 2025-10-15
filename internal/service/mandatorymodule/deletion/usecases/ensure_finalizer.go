@@ -3,9 +3,10 @@ package usecases
 import (
 	"context"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 type MrmEnsureFinalizerRepo interface {

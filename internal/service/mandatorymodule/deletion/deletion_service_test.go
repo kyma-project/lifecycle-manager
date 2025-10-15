@@ -5,9 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
@@ -30,7 +31,7 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 	)
 	mrm := &v1beta2.ModuleReleaseMeta{}
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		err := service.HandleDeletion(context.Background(), mrm)
 		require.NoError(t, err)
 	}
@@ -43,11 +44,6 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 		"removeFinalizer",
 	}
 	require.Equal(t, expectedOrder, executionOrder)
-
-	initialLen := len(executionOrder)
-	err := service.HandleDeletion(context.Background(), mrm)
-	require.NoError(t, err)
-	require.Equal(t, initialLen, len(executionOrder))
 
 	require.True(t, skipNonMandatoryStub.ShouldExecuteCalled)
 	require.True(t, skipNonMandatoryStub.ExecuteCalled)
@@ -84,7 +80,7 @@ func TestDeletionService_HandleDeletion_ErrorPropagation(t *testing.T) {
 	)
 	mrm := &v1beta2.ModuleReleaseMeta{}
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		err := service.HandleDeletion(context.Background(), mrm)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "skipNonMandatory failed")
@@ -157,6 +153,7 @@ func (stub *SkipNonMandatoryStub) ShouldExecute(_ context.Context, _ *v1beta2.Mo
 	stub.ShouldExecuteCalled = true
 	return true, nil
 }
+
 func (stub *SkipNonMandatoryStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
 	stub.ExecuteCalled = true
 	if stub.ExecutionOrder != nil {

@@ -8,8 +8,7 @@ import (
 )
 
 // SkipNonMandatory is a use case that skips ModuleReleaseMetas that are not mandatory.
-type SkipNonMandatory struct {
-}
+type SkipNonMandatory struct{}
 
 func NewSkipNonMandatory() *SkipNonMandatory {
 	return &SkipNonMandatory{}

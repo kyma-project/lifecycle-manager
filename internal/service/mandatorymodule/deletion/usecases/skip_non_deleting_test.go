@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion/usecases"
-	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestSkipNonDeleting_NotDeleting(t *testing.T) {
@@ -17,7 +18,7 @@ func TestSkipNonDeleting_NotDeleting(t *testing.T) {
 
 	skipNonDeleting := usecases.NewSkipNonDeleting()
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: "test-module",
 		},
 	}
@@ -34,9 +35,9 @@ func TestSkipNonDeleting_IsDeleting(t *testing.T) {
 	t.Parallel()
 
 	skipNonDeleting := usecases.NewSkipNonDeleting()
-	now := metav1.NewTime(time.Now())
+	now := apimetav1.NewTime(time.Now())
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:              "test-module",
 			DeletionTimestamp: &now,
 		},

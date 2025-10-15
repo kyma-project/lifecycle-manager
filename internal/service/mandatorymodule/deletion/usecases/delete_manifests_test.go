@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/stretchr/testify/require"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type MockManifestRepo struct {
@@ -23,7 +23,8 @@ type MockManifestRepo struct {
 }
 
 func (m *MockManifestRepo) ListAllForModule(_ context.Context, moduleName string) (
-	[]apimetav1.PartialObjectMetadata, error) {
+	[]apimetav1.PartialObjectMetadata, error,
+) {
 	m.ListAllForModuleCalled = true
 	m.CalledWithModuleName = moduleName
 	return m.ManifestsToReturn, m.ListAllForModuleError
@@ -40,12 +41,12 @@ func TestDeleteManifests_WithManifests(t *testing.T) {
 
 	mockRepo := &MockManifestRepo{
 		ManifestsToReturn: []apimetav1.PartialObjectMetadata{
-			{ObjectMeta: metav1.ObjectMeta{Name: random.Name()}},
+			{ObjectMeta: apimetav1.ObjectMeta{Name: random.Name()}},
 		},
 	}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo)
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
 		},
 	}
@@ -69,7 +70,7 @@ func TestDeleteManifests_NoManifests(t *testing.T) {
 	}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo)
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
 		},
 	}
@@ -88,7 +89,7 @@ func TestDeleteManifests_ListError(t *testing.T) {
 	}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo)
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
 		},
 	}
@@ -108,7 +109,7 @@ func TestDeleteManifests_DeleteError(t *testing.T) {
 	}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo)
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
 		},
 	}

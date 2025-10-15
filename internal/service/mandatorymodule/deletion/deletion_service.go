@@ -7,8 +7,8 @@ import (
 )
 
 type UseCase interface {
-	ShouldExecute(context.Context, *v1beta2.ModuleReleaseMeta) (bool, error)
-	Execute(context.Context, *v1beta2.ModuleReleaseMeta) error
+	ShouldExecute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error)
+	Execute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error
 }
 
 type Service struct {

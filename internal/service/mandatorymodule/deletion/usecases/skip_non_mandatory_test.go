@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion/usecases"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSkipNonMandatory_WithNonMandatoryModule(t *testing.T) {

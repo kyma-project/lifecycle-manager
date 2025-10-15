@@ -5,12 +5,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion/usecases"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
-	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type MockMrmEnsureFinalizerRepo struct {
@@ -33,7 +34,7 @@ func TestEnsureFinalizer_WithoutFinalizer(t *testing.T) {
 	mockRepo := &MockMrmEnsureFinalizerRepo{}
 	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo)
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
 		},
 	}
@@ -55,7 +56,7 @@ func TestEnsureFinalizer_WithFinalizer(t *testing.T) {
 	mockRepo := &MockMrmEnsureFinalizerRepo{}
 	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo)
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:       random.Name(),
 			Finalizers: []string{shared.MandatoryModuleFinalizer},
 		},
@@ -75,7 +76,7 @@ func TestEnsureFinalizer_RepositoryError(t *testing.T) {
 	}
 	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo)
 	mrm := &v1beta2.ModuleReleaseMeta{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
 		},
 	}
