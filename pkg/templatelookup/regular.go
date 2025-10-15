@@ -69,9 +69,6 @@ func NewTemplateLookup(reader client.Reader,
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateInfo
 
-// when switching from logic based on ModuleTemplates to logic based on ModuleReleaseMetas.
-//
-//nolint:funlen //this function will be refactored soon,
 func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.Kyma) ModuleTemplatesByModuleName {
 	templates := make(ModuleTemplatesByModuleName)
 	for _, moduleInfo := range FetchModuleInfo(kyma) {
@@ -123,14 +120,6 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
 			if moduleMatch(moduleStatus, moduleInfo.Name) {
-				//descriptor, err := t.descriptorProvider.GetDescriptor(*ocmi)
-				/*
-				if err != nil {
-					msg := "could not handle channel skew as descriptor from template cannot be fetched"
-					templateInfo.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
-					continue
-				}
-				*/
 				markInvalidSkewUpdate(ctx, &templateInfo, moduleStatus, ocmi.Version())
 			}
 		}
