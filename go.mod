@@ -32,7 +32,7 @@ require (
 	golang.org/x/sync v0.17.0
 	golang.org/x/time v0.14.0
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
-	ocm.software/ocm v0.29.1
+	ocm.software/ocm v0.31.0
 	sigs.k8s.io/controller-runtime v0.22.2
 	sigs.k8s.io/yaml v1.6.0
 )
