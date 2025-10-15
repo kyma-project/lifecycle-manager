@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDeletionService_Execute(t *testing.T) {
+func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 	t.Parallel()
 
 	var executionOrder []string
@@ -61,7 +61,7 @@ func TestDeletionService_Execute(t *testing.T) {
 	require.True(t, removeFinalizerStub.ExecuteCalled)
 }
 
-func TestDeletionService_Execute_ErrorPropagation(t *testing.T) {
+func TestDeletionService_HandleDeletion_ErrorPropagation(t *testing.T) {
 	t.Parallel()
 
 	var executionOrder []string
@@ -98,6 +98,47 @@ func TestDeletionService_Execute_ErrorPropagation(t *testing.T) {
 		"skipNonMandatory",
 	}
 	require.Equal(t, expectedOrder, executionOrder)
+}
+
+func TestDeletionService_HandleDeletion_ShouldExecuteError(t *testing.T) {
+	t.Parallel()
+
+	var executionOrder []string
+
+	skipNonMandatoryShouldExecuteErrorStub := &SkipNonMandatoryShouldExecuteErrorStub{
+		StubName:       "skipNonMandatory",
+		ExecutionOrder: &executionOrder,
+	}
+	ensureFinalizerStub := &EnsureFinalizerStub{StubName: "ensureFinalizer", ExecutionOrder: &executionOrder}
+	skipNonDeletingStub := &SkipNonDeletingStub{StubName: "skipNonDeleting", ExecutionOrder: &executionOrder}
+	deleteManifestsStub := &DeleteManifestsStub{StubName: "deleteManifests", ExecutionOrder: &executionOrder}
+	removeFinalizerStub := &RemoveFinalizerStub{StubName: "removeFinalizer", ExecutionOrder: &executionOrder}
+
+	service := deletion.NewService(
+		skipNonMandatoryShouldExecuteErrorStub,
+		ensureFinalizerStub,
+		skipNonDeletingStub,
+		deleteManifestsStub,
+		removeFinalizerStub,
+	)
+	mrm := &v1beta2.ModuleReleaseMeta{}
+
+	err := service.HandleDeletion(context.Background(), mrm)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "shouldExecute failed")
+
+	require.Empty(t, executionOrder)
+
+	require.True(t, skipNonMandatoryShouldExecuteErrorStub.ShouldExecuteCalled)
+	require.False(t, skipNonMandatoryShouldExecuteErrorStub.ExecuteCalled)
+	require.False(t, ensureFinalizerStub.ShouldExecuteCalled)
+	require.False(t, ensureFinalizerStub.ExecuteCalled)
+	require.False(t, skipNonDeletingStub.ShouldExecuteCalled)
+	require.False(t, skipNonDeletingStub.ExecuteCalled)
+	require.False(t, deleteManifestsStub.ShouldExecuteCalled)
+	require.False(t, deleteManifestsStub.ExecuteCalled)
+	require.False(t, removeFinalizerStub.ShouldExecuteCalled)
+	require.False(t, removeFinalizerStub.ExecuteCalled)
 }
 
 // Stubs for the use cases to track execution order and calls
@@ -234,4 +275,26 @@ func (stub *SkipNonMandatoryErrorStub) Execute(_ context.Context, _ *v1beta2.Mod
 		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
 	}
 	return errors.New("skipNonMandatory failed")
+}
+
+type SkipNonMandatoryShouldExecuteErrorStub struct {
+	ShouldExecuteCalled bool
+	ExecuteCalled       bool
+	ExecutionOrder      *[]string
+	StubName            string
+}
+
+func (stub *SkipNonMandatoryShouldExecuteErrorStub) ShouldExecute(_ context.Context,
+	_ *v1beta2.ModuleReleaseMeta,
+) (bool, error) {
+	stub.ShouldExecuteCalled = true
+	return false, errors.New("shouldExecute failed")
+}
+
+func (stub *SkipNonMandatoryShouldExecuteErrorStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
+	stub.ExecuteCalled = true
+	if stub.ExecutionOrder != nil {
+		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
+	}
+	return nil
 }
