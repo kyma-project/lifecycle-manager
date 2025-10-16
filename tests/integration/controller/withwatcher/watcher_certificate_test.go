@@ -21,7 +21,7 @@ import (
 
 var ErrPrivateKeyNotMatching = errors.New("private Key for the TLS secret doesn't match")
 
-var _ = FDescribe("Watcher Certificate Configuration in remote sync mode", Ordered, func() {
+var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync-cert")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
