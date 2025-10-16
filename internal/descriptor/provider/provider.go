@@ -41,33 +41,29 @@ type OCMIProvider interface {
 }
 
 func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.Component) error {
-	_, err := c.getDescriptor(ocmi, true)
-	return err
+	if ocmi.Name() == "" || ocmi.Version() == "" {
+		return fmt.Errorf("cannot get descriptor for component: %w", ErrNameOrVersionEmpty)
+	}
+	key := cache.GenerateDescriptorKey(ocmi)
+	descriptor := c.descriptorCache.Get(key)
+	if descriptor != nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	descriptor, err := c.descriptorService.GetComponentDescriptor(ctx, ocmi)
+	defer cancel()
+
+	if err != nil {
+		return fmt.Errorf("error finding ComponentDescriptor: %w", err)
+	}
+
+	c.descriptorCache.Set(key, descriptor)
+
+	return nil
 }
 
 func (c *CachedDescriptorProvider) GetDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error) {
-	return c.getDescriptor(ocmi, false)
-}
-
-func (c *CachedDescriptorProvider) GetDescriptorWithIdentity(ocp OCMIProvider) (*types.Descriptor, error) {
-	if ocp == nil {
-		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNilProvider)
-	}
-
-	ocmi, err := ocp.GetOCMIdentity()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get component identity from provider: %w", err)
-	}
-	if ocmi == nil {
-		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNilIdentity)
-	}
-
-	return c.getDescriptor(*ocmi, false)
-}
-
-func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, updateCache bool) (
-	*types.Descriptor, error,
-) {
 	if ocmi.Name() == "" || ocmi.Version() == "" {
 		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrNameOrVersionEmpty)
 	}
@@ -85,9 +81,21 @@ func (c *CachedDescriptorProvider) getDescriptor(ocmi ocmidentity.Component, upd
 		return nil, fmt.Errorf("error finding ComponentDescriptor: %w", err)
 	}
 
-	if updateCache {
-		c.descriptorCache.Set(key, descriptor)
+	return descriptor, nil
+}
+
+func (c *CachedDescriptorProvider) GetDescriptorWithIdentity(ocp OCMIProvider) (*types.Descriptor, error) {
+	if ocp == nil {
+		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNilProvider)
 	}
 
-	return descriptor, nil
+	ocmi, err := ocp.GetOCMIdentity()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get component identity from provider: %w", err)
+	}
+	if ocmi == nil {
+		return nil, fmt.Errorf("failed to get component identity from provider: %w", ErrNilIdentity)
+	}
+
+	return c.GetDescriptor(*ocmi)
 }
