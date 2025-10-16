@@ -39,9 +39,9 @@ func TestEnsureFinalizer_WithoutFinalizer(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := ensureFinalizer.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := ensureFinalizer.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.True(t, shouldExecute)
+	require.True(t, isApplicable)
 
 	executeErr := ensureFinalizer.Execute(context.Background(), mrm)
 	require.NoError(t, executeErr)
@@ -62,9 +62,9 @@ func TestEnsureFinalizer_WithFinalizer(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := ensureFinalizer.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := ensureFinalizer.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.False(t, shouldExecute)
+	require.False(t, isApplicable)
 }
 
 func TestEnsureFinalizer_RepositoryError(t *testing.T) {

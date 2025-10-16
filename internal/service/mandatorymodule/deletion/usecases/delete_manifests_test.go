@@ -51,9 +51,9 @@ func TestDeleteManifests_WithManifests(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := deleteManifests.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := deleteManifests.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.True(t, shouldExecute)
+	require.True(t, isApplicable)
 	require.True(t, mockRepo.ListAllForModuleCalled)
 	require.Equal(t, mrm.Name, mockRepo.CalledWithModuleName)
 
@@ -75,9 +75,9 @@ func TestDeleteManifests_NoManifests(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := deleteManifests.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := deleteManifests.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.False(t, shouldExecute)
+	require.False(t, isApplicable)
 }
 
 func TestDeleteManifests_ListError(t *testing.T) {
@@ -94,9 +94,9 @@ func TestDeleteManifests_ListError(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := deleteManifests.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := deleteManifests.IsApplicable(context.Background(), mrm)
 	require.Error(t, err)
-	require.False(t, shouldExecute)
+	require.False(t, isApplicable)
 	require.Contains(t, err.Error(), "failed to list manifests for module")
 }
 

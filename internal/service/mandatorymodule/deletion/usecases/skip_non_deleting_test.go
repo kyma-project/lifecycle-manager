@@ -23,9 +23,9 @@ func TestSkipNonDeleting_NotDeleting(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := skipNonDeleting.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := skipNonDeleting.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.True(t, shouldExecute)
+	require.True(t, isApplicable)
 
 	executeErr := skipNonDeleting.Execute(context.Background(), mrm)
 	require.ErrorIs(t, executeErr, deletion.ErrMrmNotInDeletingState)
@@ -43,7 +43,7 @@ func TestSkipNonDeleting_IsDeleting(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := skipNonDeleting.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := skipNonDeleting.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.False(t, shouldExecute)
+	require.False(t, isApplicable)
 }

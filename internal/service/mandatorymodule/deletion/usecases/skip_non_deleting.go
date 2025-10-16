@@ -14,7 +14,7 @@ func NewSkipNonDeleting() *SkipNonDeleting {
 	return &SkipNonDeleting{}
 }
 
-func (s *SkipNonDeleting) ShouldExecute(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
+func (s *SkipNonDeleting) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	return mrm.DeletionTimestamp.IsZero(), nil
 }
 

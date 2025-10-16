@@ -23,7 +23,7 @@ func NewDeleteManifests(repo ManifestRepo) *DeleteManifests {
 	return &DeleteManifests{repo: repo}
 }
 
-func (d *DeleteManifests) ShouldExecute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
+func (d *DeleteManifests) IsApplicable(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	manifests, err := d.repo.ListAllForModule(ctx, mrm.Name)
 	if err != nil {
 		return false, fmt.Errorf("failed to list manifests for module %s: %w", mrm.Name, err)

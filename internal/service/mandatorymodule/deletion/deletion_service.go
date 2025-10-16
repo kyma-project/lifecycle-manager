@@ -7,12 +7,12 @@ import (
 )
 
 type UseCase interface {
-	ShouldExecute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error)
+	IsApplicable(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error)
 	Execute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error
 }
 
 type Service struct {
-	orderedUseCases []UseCase
+	orderedSteps []UseCase
 }
 
 func NewService(skipNonMandatory UseCase,
@@ -34,13 +34,13 @@ func NewService(skipNonMandatory UseCase,
 
 func (s *Service) HandleDeletion(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
 	// Find the first applicable step and execute it
-	for _, step := range s. orderedSteps {
-		shouldExecute, err := useCase.ShouldExecute(ctx, mrm)
+	for _, step := range s.orderedSteps {
+		shouldExecute, err := step.IsApplicable(ctx, mrm)
 		if err != nil {
 			return err
 		}
 		if shouldExecute {
-			return useCase.Execute(ctx, mrm)
+			return step.Execute(ctx, mrm)
 		}
 	}
 	return nil

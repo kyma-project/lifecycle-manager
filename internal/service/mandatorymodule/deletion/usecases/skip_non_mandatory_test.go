@@ -21,9 +21,9 @@ func TestSkipNonMandatory_WithNonMandatoryModule(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := skipNonMandatory.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := skipNonMandatory.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.True(t, shouldExecute)
+	require.True(t, isApplicable)
 
 	executeErr := skipNonMandatory.Execute(context.Background(), mrm)
 	require.Error(t, executeErr)
@@ -42,7 +42,7 @@ func TestSkipNonMandatory_WithMandatoryModule(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := skipNonMandatory.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := skipNonMandatory.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.False(t, shouldExecute)
+	require.False(t, isApplicable)
 }

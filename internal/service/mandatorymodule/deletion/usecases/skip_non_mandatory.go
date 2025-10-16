@@ -14,7 +14,7 @@ func NewSkipNonMandatory() *SkipNonMandatory {
 	return &SkipNonMandatory{}
 }
 
-func (s *SkipNonMandatory) ShouldExecute(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
+func (s *SkipNonMandatory) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	return mrm.Spec.Mandatory == nil || mrm.Spec.Mandatory.Version == "", nil
 }
 

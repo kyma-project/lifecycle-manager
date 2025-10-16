@@ -40,9 +40,9 @@ func TestRemoveFinalizer_WithFinalizer(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := removeFinalizer.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := removeFinalizer.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.True(t, shouldExecute)
+	require.True(t, isApplicable)
 
 	executeErr := removeFinalizer.Execute(context.Background(), mrm)
 	require.NoError(t, executeErr)
@@ -62,9 +62,9 @@ func TestRemoveFinalizer_WithoutFinalizer(t *testing.T) {
 		},
 	}
 
-	shouldExecute, err := removeFinalizer.ShouldExecute(context.Background(), mrm)
+	isApplicable, err := removeFinalizer.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
-	require.False(t, shouldExecute)
+	require.False(t, isApplicable)
 }
 
 func TestRemoveFinalizer_RepositoryError(t *testing.T) {

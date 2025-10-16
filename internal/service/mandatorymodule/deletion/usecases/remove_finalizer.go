@@ -22,7 +22,7 @@ func NewRemoveFinalizer(repo MrmRemoFinalizerRepo) *RemoveFinalizer {
 	return &RemoveFinalizer{repo: repo}
 }
 
-func (e *RemoveFinalizer) ShouldExecute(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
+func (e *RemoveFinalizer) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	return controllerutil.ContainsFinalizer(mrm, shared.MandatoryModuleFinalizer), nil
 }
 

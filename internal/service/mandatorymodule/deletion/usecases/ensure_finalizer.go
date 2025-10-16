@@ -22,7 +22,7 @@ func NewEnsureFinalizer(repo MrmEnsureFinalizerRepo) *EnsureFinalizer {
 	return &EnsureFinalizer{repo: repo}
 }
 
-func (e *EnsureFinalizer) ShouldExecute(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
+func (e *EnsureFinalizer) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	return !controllerutil.ContainsFinalizer(mrm, shared.MandatoryModuleFinalizer), nil
 }
 
