@@ -40,9 +40,9 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	moduleInSKR := NewTestModule("skrmodule", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("kcpmodule", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
-	moduleInSKROCMName := v1beta2.FullOCMName(moduleInSKR.Name)
+	moduleInSKROCMName := FullOCMName(moduleInSKR.Name)
 	moduleInSKROCM := ocmidentity.MustNew(moduleInSKROCMName, moduleVersion)
-	moduleInKCPOCMName := v1beta2.FullOCMName(moduleInKCP.Name)
+	moduleInKCPOCMName := FullOCMName(moduleInKCP.Name)
 
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().
 		WithName(v1beta2.CreateModuleTemplateName(moduleInSKR.Name, moduleVersion)).
@@ -258,7 +258,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	moduleInKCP := NewTestModule("kcpmodule", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, moduleInKCP)
 
-	moduleInKCPOCMName := v1beta2.FullOCMName(moduleInKCP.Name)
+	moduleInKCPOCMName := FullOCMName(moduleInKCP.Name)
 
 	templateForModuleInKCP := builder.NewModuleTemplateBuilder().
 		WithName(fmt.Sprintf("%s-%s", moduleInKCP.Name, moduleVersion)).

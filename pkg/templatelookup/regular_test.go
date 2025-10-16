@@ -202,9 +202,9 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 
 	fakeService := &componentdescriptor.FakeService{}
 	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService) // cache backed up by a fake service
-	err := registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(testModule.Name), version1)
+	err := registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(testModule.Name), version1)
 	require.NoError(t, err)
-	err = registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(testModule.Name), version2)
+	err = registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(testModule.Name), version2)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -475,7 +475,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 
 	fakeService := &componentdescriptor.FakeService{}
 	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService)
-	err := registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(moduleToInstall.Name), version2)
+	err := registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(moduleToInstall.Name), version2)
 	require.NoError(t, err)
 
 	tests := getRegularTemplatesTestCases{
@@ -634,7 +634,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 					moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
 						*builder.NewModuleReleaseMetaBuilder().
 							WithModuleName(module.Name).
-							WithOcmComponentName(v1beta2.FullOCMName(module.Name)).
+							WithOcmComponentName(testutils.FullOCMName(module.Name)).
 							WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 								{Channel: module.Channel, Version: testModule.Version},
 							}).Build())
@@ -751,7 +751,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 
 	fakeService := &componentdescriptor.FakeService{}
 	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService)
-	err := registerEmptyComponentDescriptor(fakeService, v1beta2.FullOCMName(testModule.Name), moduleVersion)
+	err := registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(testModule.Name), moduleVersion)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -869,7 +869,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 					moduleReleaseMetas.Items = append(moduleReleaseMetas.Items,
 						*builder.NewModuleReleaseMetaBuilder().
 							WithModuleName(module.Name).
-							WithOcmComponentName(v1beta2.FullOCMName(module.Name)).
+							WithOcmComponentName(testutils.FullOCMName(module.Name)).
 							WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 								{Channel: module.Channel, Version: moduleTemplateVersion},
 							}).Build())
@@ -1021,7 +1021,7 @@ func generateModuleReleaseMetaList(moduleName string,
 	mrmList := v1beta2.ModuleReleaseMetaList{}
 	mrmList.Items = append(mrmList.Items, *builder.NewModuleReleaseMetaBuilder().
 		WithModuleName(moduleName).
-		WithOcmComponentName(v1beta2.FullOCMName(moduleName)).
+		WithOcmComponentName(testutils.FullOCMName(moduleName)).
 		WithModuleChannelAndVersions(channelVersions).
 		Build())
 	return mrmList

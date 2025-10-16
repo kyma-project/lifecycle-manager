@@ -158,7 +158,7 @@ func ConfigureKCPModuleReleaseMeta(moduleName, moduleChannel, moduleVersion stri
 	return builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
-		WithOcmComponentName(v1beta2.FullOCMName(moduleName)).
+		WithOcmComponentName(FullOCMName(moduleName)).
 		WithSingleModuleChannelAndVersions(moduleChannel, moduleVersion).
 		Build()
 }
@@ -167,7 +167,7 @@ func ConfigureKCPMandatoryModuleReleaseMeta(moduleName, moduleVersion string) *v
 	return builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
-		WithOcmComponentName(v1beta2.FullOCMName(moduleName)).
+		WithOcmComponentName(FullOCMName(moduleName)).
 		WithMandatory(moduleVersion).
 		Build()
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func Test_GetOCMIdentity(t *testing.T) {
@@ -24,7 +25,7 @@ func Test_GetOCMIdentity(t *testing.T) {
 	})
 	t.Run("When ComponentIdentity is not nil, then it is returned", func(t *testing.T) {
 		mtInfo := templatelookup.ModuleTemplateInfo{
-			ComponentIdentity: ocmidentity.MustNew(v1beta2.FullOCMName("test-module"), "1.0.0"),
+			ComponentIdentity: ocmidentity.MustNew(testutils.FullOCMName("test-module"), "1.0.0"),
 		}
 		comp, err := mtInfo.GetOCMIdentity()
 		require.NoError(t, err)

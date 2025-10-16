@@ -13,6 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
@@ -42,7 +43,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithName("test-module").
-		WithOcmComponentName(v1beta2.FullOCMName("test-module")).
+		WithOcmComponentName(testutils.FullOCMName("test-module")).
 		WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 			{
 				Channel: "regular",
@@ -79,7 +80,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleRetu
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithName("test-module").
-		WithOcmComponentName(v1beta2.FullOCMName("test-module")).
+		WithOcmComponentName(testutils.FullOCMName("test-module")).
 		WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 			{
 				Channel: "regular",
@@ -141,7 +142,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_Retur
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithName("test-module").
-		WithOcmComponentName(v1beta2.FullOCMName("test-module")).
+		WithOcmComponentName(testutils.FullOCMName("test-module")).
 		WithMandatory("1.0.0").
 		Build()
 	moduleTemplate := builder.NewModuleTemplateBuilder().

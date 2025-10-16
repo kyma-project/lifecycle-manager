@@ -55,7 +55,7 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 		It("And Manifest CR for the Mandatory Module should be created with correct Owner Reference", func() {
 			Eventually(checkMandatoryManifestForKyma, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma, v1beta2.FullOCMName(mandatoryModuleName)).
+				WithArguments(kyma, FullOCMName(mandatoryModuleName)).
 				Should(Succeed())
 		})
 	})
@@ -145,7 +145,7 @@ func ConfigureKCPMandatoryModuleReleaseMeta(moduleName, moduleVersion string) *v
 	return builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
-		WithOcmComponentName(v1beta2.FullOCMName(moduleName)).
+		WithOcmComponentName(FullOCMName(moduleName)).
 		WithMandatory(moduleVersion).
 		Build()
 }

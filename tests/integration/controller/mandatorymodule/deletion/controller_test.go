@@ -37,7 +37,7 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					Should(Succeed())
 				Eventually(MandatoryManifestExistsWithLabelAndAnnotation, Timeout, Interval).
 					WithContext(ctx).
-					WithArguments(kcpClient, shared.FQDN, v1beta2.FullOCMName(mandatoryModuleName)).
+					WithArguments(kcpClient, shared.FQDN, FullOCMName(mandatoryModuleName)).
 					Should(Succeed())
 				By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
 					Eventually(mandatoryModuleTemplateFinalizerExists, Timeout, Interval).
@@ -178,7 +178,7 @@ func ConfigureKCPMandatoryModuleReleaseMeta(moduleName, moduleVersion string) *v
 	return builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
-		WithOcmComponentName(v1beta2.FullOCMName(moduleName)).
+		WithOcmComponentName(FullOCMName(moduleName)).
 		WithMandatory(moduleVersion).
 		Build()
 }

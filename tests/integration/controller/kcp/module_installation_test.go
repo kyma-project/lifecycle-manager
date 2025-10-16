@@ -36,7 +36,7 @@ var _ = Describe("Module installation", func() {
 				moduleInternal).Should(Succeed())
 			Eventually(configureKCPModuleReleaseMeta, Timeout, Interval).WithArguments(moduleName).Should(Succeed())
 
-			err := registerDescriptor(v1beta2.FullOCMName(moduleName), moduleVersion)
+			err := registerDescriptor(FullOCMName(moduleName), moduleVersion)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			var skrClient client.Client
@@ -236,7 +236,7 @@ func configureKCPModuleReleaseMeta(moduleName string) error {
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(moduleName).
-		WithOcmComponentName(v1beta2.FullOCMName(moduleName)).
+		WithOcmComponentName(FullOCMName(moduleName)).
 		WithSingleModuleChannelAndVersions(v1beta2.DefaultChannel, moduleVersion).
 		Build()
 
