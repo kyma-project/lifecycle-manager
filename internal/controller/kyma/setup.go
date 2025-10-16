@@ -41,7 +41,11 @@ var (
 	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
 )
 
-func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, settings SetupOptions) error {
+// SetupWithManager sets up the InstallationReconciler with the Manager
+func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager,
+	opts ctrlruntime.Options,
+	settings SetupOptions,
+) error {
 	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
@@ -57,11 +61,11 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 	)
 
 	if err := mgr.Add(runnableListener); err != nil {
-		return fmt.Errorf("KymaReconciler %w", err)
+		return fmt.Errorf("InstallationReconciler %w", err)
 	}
 
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
-		Named(controllerName).
+		Named(controllerName+"-installation").
 		WithOptions(opts).
 		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
 		Watches(&v1beta2.ModuleTemplate{},
@@ -73,13 +77,33 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options
 				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WatchesRawSource(source.Channel(controller.AdaptEvents(runnableListener.ReceivedEvents), r.skrEventHandler())).
 		Complete(r); err != nil {
-		return fmt.Errorf("failed to setup manager for kyma controller: %w", err)
+		return fmt.Errorf("failed to setup manager for kyma installation controller: %w", err)
 	}
 
 	return nil
 }
 
-func (r *Reconciler) skrEventHandler() *handler.Funcs {
+// SetupWithManager sets up the DeletionReconciler with the Manager
+func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, _ SetupOptions) error {
+	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+		Named(controllerName+"-deletion").
+		WithOptions(opts).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
+		Watches(&v1beta2.ModuleTemplate{},
+			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
+		Watches(&apicorev1.Secret{}, handler.Funcs{}).
+		Watches(&v1beta2.Manifest{},
+			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
+				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		Complete(r); err != nil {
+		return fmt.Errorf("failed to setup manager for kyma deletion controller: %w", err)
+	}
+
+	return nil
+}
+
+// skrEventHandler creates event handler for InstallationReconciler
+func (r *InstallationReconciler) skrEventHandler() *handler.Funcs {
 	return &handler.Funcs{
 		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
 			queue workqueue.TypedRateLimitingInterface[ctrl.Request],

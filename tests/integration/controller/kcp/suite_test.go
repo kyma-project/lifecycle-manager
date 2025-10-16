@@ -58,9 +58,10 @@ import (
 
 	_ "ocm.software/ocm/api/ocm"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -153,7 +154,9 @@ var _ = BeforeSuite(func() {
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-	err = (&kyma.Reconciler{
+
+	// Setup InstallationReconciler for KCP tests
+	err = (&kyma.InstallationReconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
 		Event:                testEventRec,
@@ -176,6 +179,32 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
+
+	// Setup DeletionReconciler for KCP tests
+	err = (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextFactory:    testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		IsManagedKyma:        true,
+		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+				})),
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
+		kyma.SetupOptions{ListenerAddr: ""}) // DeletionReconciler doesn't need SKR event listener
+	Expect(err).ToNot(HaveOccurred())
+
 	Eventually(CreateNamespace, Timeout, Interval).
 		WithContext(ctx).
 		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())

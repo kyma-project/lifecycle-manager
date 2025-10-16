@@ -44,7 +44,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
-	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -65,13 +64,16 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -234,7 +236,9 @@ var _ = BeforeSuite(func() {
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-	err = (&kyma.Reconciler{
+
+	// Setup InstallationReconciler for withwatcher tests
+	err = (&kyma.InstallationReconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
 		Event:                testEventRec,
@@ -247,30 +251,40 @@ var _ = BeforeSuite(func() {
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, provider.NewCachedDescriptorProvider(),
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+				})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&watcherctrl.Reconciler{
-		Client:                mgr.GetClient(),
-		RestConfig:            mgr.GetConfig(),
-		Event:                 event.NewRecorderWrapper(mgr.GetEventRecorderFor("watcher")),
-		Scheme:                k8sclientscheme.Scheme,
-		RequeueIntervals:      intervals,
-		IstioGatewayNamespace: ControlPlaneNamespace,
-	}).SetupWithManager(
-		mgr, ctrlruntime.Options{
-			MaxConcurrentReconciles: 1,
-		},
-	)
+	// Setup DeletionReconciler for withwatcher tests
+	err = (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextFactory:    testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		SKRWebhookManager:    skrWebhookChartManager,
+		DescriptorProvider:   provider.NewCachedDescriptorProvider(),
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, provider.NewCachedDescriptorProvider(),
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+				})),
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
+		kyma.SetupOptions{ListenerAddr: ""}) // DeletionReconciler doesn't need SKR event listener
 	Expect(err).ToNot(HaveOccurred())
-	Eventually(CreateNamespace, Timeout, Interval).
-		WithContext(ctx).
-		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
-	go func() {
-		defer GinkgoRecover()
-		err = mgr.Start(ctx)
-		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
-	}()
 })
 
 var _ = AfterSuite(func() {

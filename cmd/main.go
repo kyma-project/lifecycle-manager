@@ -399,7 +399,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
-	if err := (&kyma.Reconciler{
+	// Setup InstallationReconciler for handling Kyma installation and updates
+	if err := (&kyma.InstallationReconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    skrContextFactory,
 		Event:                event,
@@ -427,7 +428,40 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			IstioNamespace:               flagVar.IstioNamespace,
 		},
 	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
+		setupLog.Error(err, "unable to create controller", "controller", "KymaInstallation")
+		os.Exit(1)
+	}
+
+	// Setup DeletionReconciler for handling Kyma deletion
+	if err := (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextFactory:    skrContextFactory,
+		Event:                event,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+		ModulesStatusHandler: modulesStatusHandler,
+		SKRWebhookManager:    skrWebhookManager,
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.KymaRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+			Error:   flagVar.KymaRequeueErrInterval,
+			Warning: flagVar.KymaRequeueWarningInterval,
+		},
+		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
+		IsManagedKyma:       flagVar.IsKymaManaged,
+		Metrics:             kymaMetrics,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
+			flagVar.RemoteSyncNamespace),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduleTemplateInfoLookupStrategies),
+	}).SetupWithManager(
+		mgr, options, kyma.SetupOptions{
+			ListenerAddr:                 "", // DeletionReconciler doesn't need SKR event listener
+			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
+			IstioNamespace:               flagVar.IstioNamespace,
+		},
+	); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
 		os.Exit(1)
 	}
 }

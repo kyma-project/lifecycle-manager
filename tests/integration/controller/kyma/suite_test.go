@@ -58,9 +58,10 @@ import (
 
 	_ "ocm.software/ocm/api/ocm"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -148,7 +149,9 @@ var _ = BeforeSuite(func() {
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-	err = (&kyma.Reconciler{
+
+	// Setup InstallationReconciler for handling Kyma installation and updates
+	err = (&kyma.InstallationReconciler{
 		Client:               kcpClient,
 		Event:                testEventRec,
 		DescriptorProvider:   descriptorProvider,
@@ -171,6 +174,32 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
+
+	// Setup DeletionReconciler for handling Kyma deletion
+	err = (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		Event:                testEventRec,
+		DescriptorProvider:   descriptorProvider,
+		SkrContextFactory:    testSkrContextFactory,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		RequeueIntervals:     intervals,
+		IsManagedKyma:        true,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
+		Metrics:             metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+				})),
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
+		kyma.SetupOptions{ListenerAddr: randomPort})
+	Expect(err).ToNot(HaveOccurred())
+
 	Eventually(CreateNamespace, Timeout, Interval).
 		WithContext(ctx).
 		WithArguments(kcpClient, ControlPlaneNamespace).Should(Succeed())
