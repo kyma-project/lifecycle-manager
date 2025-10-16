@@ -31,7 +31,7 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 	)
 	mrm := &v1beta2.ModuleReleaseMeta{}
 
-	for range 5 {
+	for range 6 {
 		err := service.HandleDeletion(context.Background(), mrm)
 		require.NoError(t, err)
 	}
