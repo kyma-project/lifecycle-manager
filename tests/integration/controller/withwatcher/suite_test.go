@@ -253,6 +253,24 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
+	// Setup DeletionReconciler for withwatcher tests
+	err = (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextFactory:    testSkrContextFactory,
+		Event:                testEventRec,
+		RequeueIntervals:     intervals,
+		SKRWebhookManager:    skrWebhookChartManager,
+		DescriptorProvider:   provider.NewCachedDescriptorProvider(),
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+		Metrics:              kymaMetrics,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+			flags.DefaultRemoteSyncNamespace),
+	}).SetupWithManager(mgr, ctrlruntime.Options{},
+		kyma.SetupOptions{ListenerAddr: ""}) // DeletionReconciler doesn't need SKR event listener
+	Expect(err).ToNot(HaveOccurred())
+
 	err = (&watcherctrl.Reconciler{
 		Client:                mgr.GetClient(),
 		RestConfig:            mgr.GetConfig(),
