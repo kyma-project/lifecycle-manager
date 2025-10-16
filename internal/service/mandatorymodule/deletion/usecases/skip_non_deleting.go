@@ -14,6 +14,7 @@ func NewSkipNonDeleting() *SkipNonDeleting {
 	return &SkipNonDeleting{}
 }
 
+// IsApplicable returns true if the ModuleReleaseMeta is not in deleting state, it should be skipped.
 func (s *SkipNonDeleting) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	return mrm.DeletionTimestamp.IsZero(), nil
 }

@@ -22,6 +22,8 @@ func NewRemoveFinalizer(repo MrmRemoFinalizerRepo) *RemoveFinalizer {
 	return &RemoveFinalizer{repo: repo}
 }
 
+// IsApplicable returns true if the ModuleReleaseMeta contains the mandatory finalizer, so it should be removed.
+// This should be the last step in the deletion process.
 func (e *RemoveFinalizer) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	return controllerutil.ContainsFinalizer(mrm, shared.MandatoryModuleFinalizer), nil
 }

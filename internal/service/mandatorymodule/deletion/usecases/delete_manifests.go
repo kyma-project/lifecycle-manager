@@ -23,6 +23,7 @@ func NewDeleteManifests(repo ManifestRepo) *DeleteManifests {
 	return &DeleteManifests{repo: repo}
 }
 
+// IsApplicable returns true if the ModuleReleaseMeta has associated manifests, so they should be deleted.
 func (d *DeleteManifests) IsApplicable(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
 	manifests, err := d.repo.ListAllForModule(ctx, mrm.Name)
 	if err != nil {
