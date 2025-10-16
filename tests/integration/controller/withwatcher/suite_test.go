@@ -236,7 +236,7 @@ var _ = BeforeSuite(func() {
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-
+	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
 	// Setup InstallationReconciler for withwatcher tests
 	err = (&kyma.InstallationReconciler{
 		Client:               kcpClient,
@@ -248,7 +248,7 @@ var _ = BeforeSuite(func() {
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, provider.NewCachedDescriptorProvider(),
@@ -272,7 +272,7 @@ var _ = BeforeSuite(func() {
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, provider.NewCachedDescriptorProvider(),
