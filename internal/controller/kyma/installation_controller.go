@@ -62,25 +62,26 @@ type InstallationReconciler struct {
 }
 
 func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := logf.FromContext(ctx)
-	logger.V(log.DebugLevel).Info("Kyma installation reconciliation started")
-
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if util.IsNotFound(err) {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
-				req.NamespacedName))
-			return ctrl.Result{}, nil
-		}
-		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
-		return ctrl.Result{}, fmt.Errorf("KymaInstallationController: %w", err)
+		// all this can be handled done by deletion controller
+		//	logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
+		//		req.NamespacedName))
+		//	return ctrl.Result{}, nil
+		//}
+		//r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
+		return ctrl.Result{}, fmt.Errorf("kyma InstallationReconciler: %w", err)
 	}
+
+	logger := logf.FromContext(ctx)
 
 	// If Kyma is under deletion, let the deletion controller handle it
 	if !kyma.DeletionTimestamp.IsZero() {
 		logger.V(log.DebugLevel).Info("Kyma under deletion, leaving to deletion controller")
 		return ctrl.Result{}, nil
 	}
+
+	logger.V(log.DebugLevel).Info("Kyma installation reconciliation started")
 
 	if err := r.UpdateModuleTemplatesIfNeeded(ctx); err != nil {
 		return ctrl.Result{}, fmt.Errorf("KymaInstallationController: %w", err)
@@ -94,6 +95,9 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("KymaInstallationController: %w", err)
+	}
 	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
 	if err != nil {
 		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)

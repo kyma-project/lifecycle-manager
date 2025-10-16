@@ -61,7 +61,6 @@ type DeletionReconciler struct {
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
-	logger.V(log.DebugLevel).Info("Kyma deletion reconciliation started")
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
@@ -74,7 +73,7 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return ctrl.Result{}, nil
 		}
 		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
-		return ctrl.Result{}, fmt.Errorf("KymaDeletionController: %w", err)
+		return ctrl.Result{}, fmt.Errorf("kyma DeletionReconciler: %w", err)
 	}
 
 	// Only handle deletion cases - if no deletion timestamp, let the installation controller handle it
@@ -83,9 +82,12 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
+	logger.V(log.DebugLevel).Info("Kyma deletion reconciliation started")
+
 	status.InitConditions(kyma, r.WatcherEnabled()) // check what conditions are used in the deletion use-case
 
-	//if kyma.SkipReconciliation() { // check what conditions are used in the deletion use-case
+	// when kyma is already deleting reconciliation should not be skipped
+	//if kyma.SkipReconciliation() {
 	//	logger.V(log.DebugLevel).Info("skipping deletion reconciliation for Kyma: " + kyma.Name)
 	//	return ctrl.Result{RequeueAfter: r.Success}, nil
 	//}
