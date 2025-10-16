@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion/usecases"
 )
 

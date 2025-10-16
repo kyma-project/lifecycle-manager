@@ -35,11 +35,11 @@ func NewService(skipNonMandatory UseCase,
 func (s *Service) HandleDeletion(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
 	// Find the first applicable step and execute it
 	for _, step := range s.orderedSteps {
-		shouldExecute, err := step.IsApplicable(ctx, mrm)
+		isApplicable, err := step.IsApplicable(ctx, mrm)
 		if err != nil {
 			return err
 		}
-		if shouldExecute {
+		if isApplicable {
 			return step.Execute(ctx, mrm)
 		}
 	}

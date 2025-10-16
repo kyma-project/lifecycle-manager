@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion/usecases"
 )
 
