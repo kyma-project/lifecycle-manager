@@ -22,7 +22,7 @@ func NewService(skipNonMandatory UseCase,
 	removeFinalizer UseCase,
 ) *Service {
 	return &Service{
-		orderedUseCases: []UseCase{
+		orderedSteps: []UseCase{
 			skipNonMandatory, // if returns deletion.ErrMrmNotMandatory, controller should not requeue
 			ensureFinalizer,
 			skipNonDeleting, // if returns deletion.ErrMrmNotInDeletingState, controller should not requeue
@@ -33,7 +33,8 @@ func NewService(skipNonMandatory UseCase,
 }
 
 func (s *Service) HandleDeletion(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
-	for _, useCase := range s.orderedUseCases {
+	// Find the first applicable step and execute it
+	for _, step := range s. orderedSteps {
 		shouldExecute, err := useCase.ShouldExecute(ctx, mrm)
 		if err != nil {
 			return err
