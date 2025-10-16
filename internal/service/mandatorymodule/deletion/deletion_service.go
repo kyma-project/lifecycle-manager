@@ -15,23 +15,23 @@ type Service struct {
 	orderedSteps []UseCase
 }
 
-func NewService(skipNonMandatory UseCase,
-	ensureFinalizer UseCase,
+func NewService(ensureFinalizer UseCase,
 	skipNonDeleting UseCase,
 	deleteManifests UseCase,
 	removeFinalizer UseCase,
 ) *Service {
 	return &Service{
 		orderedSteps: []UseCase{
-			skipNonMandatory, // if returns deletion.ErrMrmNotMandatory, controller should not requeue
 			ensureFinalizer,
-			skipNonDeleting, // if returns deletion.ErrMrmNotInDeletingState, controller should not requeue
+			skipNonDeleting,
 			deleteManifests,
 			removeFinalizer,
 		},
 	}
 }
 
+// HandleDeletion processes the deletion of a ModuleReleaseMeta through a series of ordered use cases.
+// Returns deletion.ErrMrmNotInDeletingState error if the MRM is not in deleting state, which indicates that the controller should not requeue.
 func (s *Service) HandleDeletion(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
 	// Find the first applicable step and execute it
 	for _, step := range s.orderedSteps {

@@ -16,14 +16,12 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 
 	var executionOrder []string
 
-	skipNonMandatoryStub := &SkipNonMandatoryStub{StubName: "skipNonMandatory", ExecutionOrder: &executionOrder}
-	ensureFinalizerStub := &EnsureFinalizerStub{StubName: "ensureFinalizer", ExecutionOrder: &executionOrder}
-	skipNonDeletingStub := &SkipNonDeletingStub{StubName: "skipNonDeleting", ExecutionOrder: &executionOrder}
-	deleteManifestsStub := &DeleteManifestsStub{StubName: "deleteManifests", ExecutionOrder: &executionOrder}
-	removeFinalizerStub := &RemoveFinalizerStub{StubName: "removeFinalizer", ExecutionOrder: &executionOrder}
+	ensureFinalizerStub := &UseCaseStub{UseCaseName: "ensureFinalizer", ExecutionOrder: &executionOrder}
+	skipNonDeletingStub := &UseCaseStub{UseCaseName: "skipNonDeleting", ExecutionOrder: &executionOrder}
+	deleteManifestsStub := &UseCaseStub{UseCaseName: "deleteManifests", ExecutionOrder: &executionOrder}
+	removeFinalizerStub := &UseCaseStub{UseCaseName: "removeFinalizer", ExecutionOrder: &executionOrder}
 
 	service := deletion.NewService(
-		skipNonMandatoryStub,
 		ensureFinalizerStub,
 		skipNonDeletingStub,
 		deleteManifestsStub,
@@ -31,13 +29,12 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 	)
 	mrm := &v1beta2.ModuleReleaseMeta{}
 
-	for range 6 {
+	for range 5 {
 		err := service.HandleDeletion(context.Background(), mrm)
 		require.NoError(t, err)
 	}
 
 	expectedOrder := []string{
-		"skipNonMandatory",
 		"ensureFinalizer",
 		"skipNonDeleting",
 		"deleteManifests",
@@ -45,8 +42,6 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 	}
 	require.Equal(t, expectedOrder, executionOrder)
 
-	require.True(t, skipNonMandatoryStub.IsApplicableCalled)
-	require.True(t, skipNonMandatoryStub.ExecuteCalled)
 	require.True(t, ensureFinalizerStub.IsApplicableCalled)
 	require.True(t, ensureFinalizerStub.ExecuteCalled)
 	require.True(t, skipNonDeletingStub.IsApplicableCalled)
@@ -62,18 +57,17 @@ func TestDeletionService_HandleDeletion_ErrorPropagation(t *testing.T) {
 
 	var executionOrder []string
 
-	skipNonMandatoryErrorStub := &SkipNonMandatoryErrorStub{
-		StubName:       "skipNonMandatory",
+	ensureFinalizerErrorStub := &UseCaseErrorStub{
+		StubName:       "ensureFinalizer",
 		ExecutionOrder: &executionOrder,
+		ErrorMessage:   "ensureFinalizer failed",
 	}
-	ensureFinalizerStub := &EnsureFinalizerStub{StubName: "ensureFinalizer", ExecutionOrder: &executionOrder}
-	skipNonDeletingStub := &SkipNonDeletingStub{StubName: "skipNonDeleting", ExecutionOrder: &executionOrder}
-	deleteManifestsStub := &DeleteManifestsStub{StubName: "deleteManifests", ExecutionOrder: &executionOrder}
-	removeFinalizerStub := &RemoveFinalizerStub{StubName: "removeFinalizer", ExecutionOrder: &executionOrder}
+	skipNonDeletingStub := &UseCaseStub{UseCaseName: "skipNonDeleting", ExecutionOrder: &executionOrder}
+	deleteManifestsStub := &UseCaseStub{UseCaseName: "deleteManifests", ExecutionOrder: &executionOrder}
+	removeFinalizerStub := &UseCaseStub{UseCaseName: "removeFinalizer", ExecutionOrder: &executionOrder}
 
 	service := deletion.NewService(
-		skipNonMandatoryErrorStub,
-		ensureFinalizerStub,
+		ensureFinalizerErrorStub,
 		skipNonDeletingStub,
 		deleteManifestsStub,
 		removeFinalizerStub,
@@ -83,15 +77,15 @@ func TestDeletionService_HandleDeletion_ErrorPropagation(t *testing.T) {
 	for range 5 {
 		err := service.HandleDeletion(context.Background(), mrm)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "skipNonMandatory failed")
+		require.Contains(t, err.Error(), "ensureFinalizer failed")
 	}
 
 	expectedOrder := []string{
-		"skipNonMandatory",
-		"skipNonMandatory",
-		"skipNonMandatory",
-		"skipNonMandatory",
-		"skipNonMandatory",
+		"ensureFinalizer",
+		"ensureFinalizer",
+		"ensureFinalizer",
+		"ensureFinalizer",
+		"ensureFinalizer",
 	}
 	require.Equal(t, expectedOrder, executionOrder)
 }
@@ -101,18 +95,17 @@ func TestDeletionService_HandleDeletion_IsApplicableError(t *testing.T) {
 
 	var executionOrder []string
 
-	skipNonMandatoryIsApplicableErrorStub := &SkipNonMandatoryIsApplicableErrorStub{
-		StubName:       "skipNonMandatory",
+	ensureFinalizerIsApplicableErrorStub := &UseCaseIsApplicableErrorStub{
+		StubName:       "ensureFinalizer",
 		ExecutionOrder: &executionOrder,
+		ErrorMessage:   "IsApplicable failed",
 	}
-	ensureFinalizerStub := &EnsureFinalizerStub{StubName: "ensureFinalizer", ExecutionOrder: &executionOrder}
-	skipNonDeletingStub := &SkipNonDeletingStub{StubName: "skipNonDeleting", ExecutionOrder: &executionOrder}
-	deleteManifestsStub := &DeleteManifestsStub{StubName: "deleteManifests", ExecutionOrder: &executionOrder}
-	removeFinalizerStub := &RemoveFinalizerStub{StubName: "removeFinalizer", ExecutionOrder: &executionOrder}
+	skipNonDeletingStub := &UseCaseStub{UseCaseName: "skipNonDeleting", ExecutionOrder: &executionOrder}
+	deleteManifestsStub := &UseCaseStub{UseCaseName: "deleteManifests", ExecutionOrder: &executionOrder}
+	removeFinalizerStub := &UseCaseStub{UseCaseName: "removeFinalizer", ExecutionOrder: &executionOrder}
 
 	service := deletion.NewService(
-		skipNonMandatoryIsApplicableErrorStub,
-		ensureFinalizerStub,
+		ensureFinalizerIsApplicableErrorStub,
 		skipNonDeletingStub,
 		deleteManifestsStub,
 		removeFinalizerStub,
@@ -125,10 +118,8 @@ func TestDeletionService_HandleDeletion_IsApplicableError(t *testing.T) {
 
 	require.Empty(t, executionOrder)
 
-	require.True(t, skipNonMandatoryIsApplicableErrorStub.IsApplicableCalled)
-	require.False(t, skipNonMandatoryIsApplicableErrorStub.ExecuteCalled)
-	require.False(t, ensureFinalizerStub.IsApplicableCalled)
-	require.False(t, ensureFinalizerStub.ExecuteCalled)
+	require.True(t, ensureFinalizerIsApplicableErrorStub.IsApplicableCalled)
+	require.False(t, ensureFinalizerIsApplicableErrorStub.ExecuteCalled)
 	require.False(t, skipNonDeletingStub.IsApplicableCalled)
 	require.False(t, skipNonDeletingStub.ExecuteCalled)
 	require.False(t, deleteManifestsStub.IsApplicableCalled)
@@ -139,14 +130,14 @@ func TestDeletionService_HandleDeletion_IsApplicableError(t *testing.T) {
 
 // Stubs for the use cases to track execution order and calls
 
-type SkipNonMandatoryStub struct {
+type UseCaseStub struct {
 	IsApplicableCalled bool
 	ExecuteCalled      bool
 	ExecutionOrder     *[]string
-	StubName           string
+	UseCaseName        string
 }
 
-func (stub *SkipNonMandatoryStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
+func (stub *UseCaseStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
 	if stub.IsApplicableCalled {
 		return false, nil
 	}
@@ -154,141 +145,49 @@ func (stub *SkipNonMandatoryStub) IsApplicable(_ context.Context, _ *v1beta2.Mod
 	return true, nil
 }
 
-func (stub *SkipNonMandatoryStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
+func (stub *UseCaseStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
 	stub.ExecuteCalled = true
 	if stub.ExecutionOrder != nil {
-		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
+		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.UseCaseName)
 	}
 	return nil
 }
 
-type EnsureFinalizerStub struct {
+type UseCaseErrorStub struct {
 	IsApplicableCalled bool
 	ExecuteCalled      bool
 	ExecutionOrder     *[]string
 	StubName           string
+	ErrorMessage       string
 }
 
-func (stub *EnsureFinalizerStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
-	if stub.IsApplicableCalled {
-		return false, nil
-	}
+func (stub *UseCaseErrorStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
 	stub.IsApplicableCalled = true
 	return true, nil
 }
 
-func (stub *EnsureFinalizerStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
+func (stub *UseCaseErrorStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
 	stub.ExecuteCalled = true
 	if stub.ExecutionOrder != nil {
 		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
 	}
-	return nil
+	return errors.New(stub.ErrorMessage)
 }
 
-type SkipNonDeletingStub struct {
+type UseCaseIsApplicableErrorStub struct {
 	IsApplicableCalled bool
 	ExecuteCalled      bool
 	ExecutionOrder     *[]string
 	StubName           string
+	ErrorMessage       string
 }
 
-func (stub *SkipNonDeletingStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
-	if stub.IsApplicableCalled {
-		return false, nil
-	}
+func (stub *UseCaseIsApplicableErrorStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
 	stub.IsApplicableCalled = true
-	return true, nil
+	return false, errors.New(stub.ErrorMessage)
 }
 
-func (stub *SkipNonDeletingStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
-	stub.ExecuteCalled = true
-	if stub.ExecutionOrder != nil {
-		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
-	}
-	return nil
-}
-
-type DeleteManifestsStub struct {
-	IsApplicableCalled bool
-	ExecuteCalled      bool
-	ExecutionOrder     *[]string
-	StubName           string
-}
-
-func (stub *DeleteManifestsStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
-	if stub.IsApplicableCalled {
-		return false, nil
-	}
-	stub.IsApplicableCalled = true
-	return true, nil
-}
-
-func (stub *DeleteManifestsStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
-	stub.ExecuteCalled = true
-	if stub.ExecutionOrder != nil {
-		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
-	}
-	return nil
-}
-
-type RemoveFinalizerStub struct {
-	IsApplicableCalled bool
-	ExecuteCalled      bool
-	ExecutionOrder     *[]string
-	StubName           string
-}
-
-func (stub *RemoveFinalizerStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
-	if stub.IsApplicableCalled {
-		return false, nil
-	}
-	stub.IsApplicableCalled = true
-	return true, nil
-}
-
-func (stub *RemoveFinalizerStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
-	stub.ExecuteCalled = true
-	if stub.ExecutionOrder != nil {
-		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
-	}
-	return nil
-}
-
-type SkipNonMandatoryErrorStub struct {
-	IsApplicableCalled bool
-	ExecuteCalled      bool
-	ExecutionOrder     *[]string
-	StubName           string
-}
-
-func (stub *SkipNonMandatoryErrorStub) IsApplicable(_ context.Context, _ *v1beta2.ModuleReleaseMeta) (bool, error) {
-	stub.IsApplicableCalled = true
-	return true, nil
-}
-
-func (stub *SkipNonMandatoryErrorStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
-	stub.ExecuteCalled = true
-	if stub.ExecutionOrder != nil {
-		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
-	}
-	return errors.New("skipNonMandatory failed")
-}
-
-type SkipNonMandatoryIsApplicableErrorStub struct {
-	IsApplicableCalled bool
-	ExecuteCalled      bool
-	ExecutionOrder     *[]string
-	StubName           string
-}
-
-func (stub *SkipNonMandatoryIsApplicableErrorStub) IsApplicable(_ context.Context,
-	_ *v1beta2.ModuleReleaseMeta,
-) (bool, error) {
-	stub.IsApplicableCalled = true
-	return false, errors.New("IsApplicable failed")
-}
-
-func (stub *SkipNonMandatoryIsApplicableErrorStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
+func (stub *UseCaseIsApplicableErrorStub) Execute(_ context.Context, _ *v1beta2.ModuleReleaseMeta) error {
 	stub.ExecuteCalled = true
 	if stub.ExecutionOrder != nil {
 		*stub.ExecutionOrder = append(*stub.ExecutionOrder, stub.StubName)
