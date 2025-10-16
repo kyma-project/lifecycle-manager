@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/service/mandatorymodule/deletion"
+	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 )
 
 // SkipNonDeleting is a use case that skips ModuleReleaseMetas that are not in deleting state.
