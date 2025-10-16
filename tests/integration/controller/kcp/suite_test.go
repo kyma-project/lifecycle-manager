@@ -154,7 +154,7 @@ var _ = BeforeSuite(func() {
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
-
+	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
 	// Setup InstallationReconciler for KCP tests
 	err = (&kyma.InstallationReconciler{
 		Client:               kcpClient,
@@ -166,7 +166,7 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:        true,
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
@@ -191,7 +191,7 @@ var _ = BeforeSuite(func() {
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		IsManagedKyma:        true,
-		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
+		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
