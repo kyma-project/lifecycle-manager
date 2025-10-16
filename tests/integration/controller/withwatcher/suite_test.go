@@ -64,8 +64,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
@@ -251,40 +249,33 @@ var _ = BeforeSuite(func() {
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, provider.NewCachedDescriptorProvider(),
-			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-				})),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	// Setup DeletionReconciler for withwatcher tests
-	err = (&kyma.DeletionReconciler{
-		Client:               kcpClient,
-		SkrContextFactory:    testSkrContextFactory,
-		Event:                testEventRec,
-		RequeueIntervals:     intervals,
-		SKRWebhookManager:    skrWebhookChartManager,
-		DescriptorProvider:   provider.NewCachedDescriptorProvider(),
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
-		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
-		Metrics:              kymaMetrics,
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
-			flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, provider.NewCachedDescriptorProvider(),
-			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-				})),
-	}).SetupWithManager(mgr, ctrlruntime.Options{},
-		kyma.SetupOptions{ListenerAddr: ""}) // DeletionReconciler doesn't need SKR event listener
-	Expect(err).ToNot(HaveOccurred())
+	//// Setup DeletionReconciler for withwatcher tests
+	//err = (&kyma.DeletionReconciler{
+	//	Client:               kcpClient,
+	//	SkrContextFactory:    testSkrContextFactory,
+	//	Event:                testEventRec,
+	//	RequeueIntervals:     intervals,
+	//	SKRWebhookManager:    skrWebhookChartManager,
+	//	DescriptorProvider:   provider.NewCachedDescriptorProvider(),
+	//	SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+	//	ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
+	//	RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
+	//	Metrics:              kymaMetrics,
+	//	RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
+	//		flags.DefaultRemoteSyncNamespace),
+	//	TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, provider.NewCachedDescriptorProvider(),
+	//		moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
+	//			[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
+	//				moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
+	//				moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
+	//				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
+	//			})),
+	//}).SetupWithManager(mgr, ctrlruntime.Options{},
+	//	kyma.SetupOptions{ListenerAddr: ""}) // DeletionReconciler doesn't need SKR event listener
+	//Expect(err).ToNot(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {

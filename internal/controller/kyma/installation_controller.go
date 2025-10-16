@@ -62,18 +62,17 @@ type InstallationReconciler struct {
 }
 
 func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := logf.FromContext(ctx)
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		// all this can be handled done by deletion controller
-		//	logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
-		//		req.NamespacedName))
-		//	return ctrl.Result{}, nil
-		//}
-		//r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
-		return ctrl.Result{}, fmt.Errorf("kyma InstallationReconciler: %w", err)
+		if util.IsNotFound(err) {
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
+				req.NamespacedName))
+			return ctrl.Result{}, nil
+		}
+		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
+		return ctrl.Result{}, fmt.Errorf("kyma DeletionReconciler: %w", err)
 	}
-
-	logger := logf.FromContext(ctx)
 
 	// If Kyma is under deletion, let the deletion controller handle it
 	if !kyma.DeletionTimestamp.IsZero() {

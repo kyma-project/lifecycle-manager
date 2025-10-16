@@ -85,12 +85,11 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	logger.V(log.DebugLevel).Info("Kyma deletion reconciliation started")
 
 	status.InitConditions(kyma, r.WatcherEnabled()) // check what conditions are used in the deletion use-case
-
-	// when kyma is already deleting reconciliation should not be skipped
-	//if kyma.SkipReconciliation() {
-	//	logger.V(log.DebugLevel).Info("skipping deletion reconciliation for Kyma: " + kyma.Name)
-	//	return ctrl.Result{RequeueAfter: r.Success}, nil
-	//}
+	
+	if kyma.SkipReconciliation() {
+		logger.V(log.DebugLevel).Info("skipping deletion reconciliation for Kyma: " + kyma.Name)
+		return ctrl.Result{RequeueAfter: r.Success}, nil
+	}
 
 	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
 	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
