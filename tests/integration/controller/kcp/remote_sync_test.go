@@ -41,7 +41,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	moduleInKCP := NewTestModule("kcpmodule", v1beta2.DefaultChannel)
 	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 	moduleInSKROCMName := FullOCMName(moduleInSKR.Name)
-	moduleInSKROCM := ocmidentity.MustNew(moduleInSKROCMName, moduleVersion)
+	moduleInSKROCM := MustNewComponentId(moduleInSKROCMName, moduleVersion)
 	moduleInKCPOCMName := FullOCMName(moduleInKCP.Name)
 
 	TemplateForSKREnabledModule := builder.NewModuleTemplateBuilder().

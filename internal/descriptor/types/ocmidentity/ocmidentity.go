@@ -14,15 +14,6 @@ type ComponentId struct {
 	componentVersion string
 }
 
-// MustNew is a convenience constructor that panics if name or version are not provided.
-func MustNew(name, version string) *ComponentId {
-	ocmi, err := NewComponentId(name, version)
-	if err != nil {
-		panic(err)
-	}
-	return ocmi
-}
-
 // NewComponentId is a constructor that ensures that both name and version are provided.
 func NewComponentId(name, version string) (*ComponentId, error) {
 	if name == "" {

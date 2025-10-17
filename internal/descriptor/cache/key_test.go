@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func TestGenerateDescriptorCacheKey(t *testing.T) {
@@ -26,7 +26,7 @@ func TestGenerateDescriptorCacheKey(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ocmi := ocmidentity.MustNew(tc.moduleName, tc.moduleVersion)
+			ocmi := testutils.MustNewComponentId(tc.moduleName, tc.moduleVersion)
 			got := cache.GenerateDescriptorKey(*ocmi)
 			assert.Equal(t, tc.want, string(got))
 		})
