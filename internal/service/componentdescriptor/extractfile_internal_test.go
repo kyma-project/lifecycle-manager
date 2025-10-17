@@ -1,6 +1,7 @@
 package componentdescriptor
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"testing"
@@ -12,13 +13,8 @@ import (
 
 func TestExtractFile(t *testing.T) {
 	t.Run("should return valid error when layer content is empty", func(t *testing.T) {
-		mockLayer := &mockLayer{}
-
-		ioh := &defaultExtractFileIOHelper{readAllFunc: func(r io.Reader) ([]byte, error) {
-			return []byte{}, nil
-		}}
 		fileName := "someReallyEmptyfile"
-		res, err := extractFile(ioh, mockLayer, fileName)
+		res, err := defaultFileExtractor().extractFileFromLayer(&mockLayer{}, fileName)
 		require.Nil(t, res)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to extract data of file=\""+fileName+"\" from TAR archive")
@@ -30,24 +26,32 @@ func TestExtractFile(t *testing.T) {
 		mockLayer := &mockLayer{
 			errOnUncompressed: expectedErr,
 		}
-
-		ioh := &defaultExtractFileIOHelper{readAllFunc: io.ReadAll}
-
-		res, err := extractFile(ioh, mockLayer, "somefile")
+		res, err := defaultFileExtractor().extractFileFromLayer(mockLayer, "somefile")
 		require.Nil(t, res)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, expectedErr)
 	})
 
+	t.Run("should preserve original error when calling layer.Digest", func(t *testing.T) {
+		expectedErr := errors.New("error from Digest")
+		mockLayer := &mockLayer{
+			errOnDigest: expectedErr,
+		}
+		res, err := defaultFileExtractor().extractFileFromLayer(mockLayer, "somefile")
+		require.Nil(t, res)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "from TAR archive in a layer with digest")
+		assert.Contains(t, err.Error(), "somefile")
+		assert.ErrorIs(t, err, expectedErr)
+	})
+
 	t.Run("should preserve original error when calling ReadAll", func(t *testing.T) {
 		expectedErr := errors.New("error from ReadAll")
-		mockLayer := &mockLayer{}
-
-		ioh := &defaultExtractFileIOHelper{readAllFunc: func(r io.Reader) ([]byte, error) {
+		subject := defaultFileExtractor()
+		subject.readAll = func(r io.Reader) ([]byte, error) {
 			return nil, expectedErr
-		}}
-
-		res, err := extractFile(ioh, mockLayer, "somefile")
+		}
+		res, err := subject.extractFileFromLayer(&mockLayer{}, "somefile")
 		require.Nil(t, res)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, expectedErr)
@@ -65,7 +69,9 @@ func (m *mockLayer) Uncompressed() (io.ReadCloser, error) {
 	if m.errOnUncompressed != nil {
 		return nil, m.errOnUncompressed
 	}
-	return io.NopCloser(nil), nil
+	emptyReader := bytes.NewReader([]byte{})
+	// return a non-nil ReadCloser with empty content
+	return io.NopCloser(emptyReader), nil
 }
 
 func (m *mockLayer) Digest() (containerregistryv1.Hash, error) {

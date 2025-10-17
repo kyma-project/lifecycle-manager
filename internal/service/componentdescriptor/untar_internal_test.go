@@ -12,18 +12,19 @@ import (
 )
 
 func TestUnTar(t *testing.T) {
+	smallInput := generateData(5 * 1024)
+
 	t.Run("should return data from tar for small file", func(t *testing.T) {
-		input := generateData(5 * 1024)
-		tarred := asTar(input, "testfile1")
-		res, err := unTar(mockIOHelper(tarred), "testfile1")
+		tarred := asTar(smallInput, "testfile1")
+		res, err := defaultTarExtractor(tarred).unTar("testfile1")
 		require.NoError(t, err)
-		assert.Equal(t, input, res)
+		assert.Equal(t, smallInput, res)
 	})
 
 	t.Run("should return data from tar for large file", func(t *testing.T) {
 		input := generateData(50 * 1024)
 		tarred := asTar(input, "testfile2")
-		res, err := unTar(mockIOHelper(tarred), "testfile2")
+		res, err := defaultTarExtractor(tarred).unTar("testfile2")
 		require.NoError(t, err)
 		assert.Equal(t, input, res)
 	})
@@ -31,36 +32,47 @@ func TestUnTar(t *testing.T) {
 	t.Run("should return error when file not found", func(t *testing.T) {
 		input := generateData(9 * 1024)
 		tarred := asTar(input, "testfile3")
-		_, err := unTar(mockIOHelper(tarred), "nonexisting")
+		_, err := defaultTarExtractor(tarred).unTar("nonexisting")
 		require.ErrorIs(t, err, ErrNotFoundInTar)
 	})
 
 	t.Run("should return error when file too large", func(t *testing.T) {
 		input := generateData(150 * 1024)
 		tarred := asTar(input, "testfile4")
-		_, err := unTar(mockIOHelper(tarred), "testfile4")
+		_, err := defaultTarExtractor(tarred).unTar("testfile4")
 		require.ErrorIs(t, err, ErrTarTooLarge)
 	})
 
 	t.Run("should return error when input is empty", func(t *testing.T) {
-		_, err := unTar(mockIOHelper([]byte{}), "testfile")
+		_, err := defaultTarExtractor([]byte{}).unTar("testfile")
+		require.ErrorIs(t, err, ErrNotFoundInTar)
+	})
+
+	t.Run("should return error when input is nil", func(t *testing.T) {
+		_, err := defaultTarExtractor(nil).unTar("testfile")
 		require.ErrorIs(t, err, ErrNotFoundInTar)
 	})
 
 	t.Run("should preserve original error when calling Next", func(t *testing.T) {
 		expectedErr := errors.New("problem calling Next")
-		helper := mockIOHelper(asTar(generateData(5*1024), "testfile"))
-		helper.errOnNext = expectedErr
-		_, err := unTar(helper, "testfile")
+		subject := tarExtractor{
+			next: func() (*tar.Header, error) {
+				return nil, expectedErr
+			},
+		}
+		_, err := subject.unTar("testfile")
 		require.Error(t, err)
 		require.ErrorIs(t, err, expectedErr)
 	})
 
 	t.Run("should preserve original error when calling CopyN", func(t *testing.T) {
+		tarred := asTar(smallInput, "testfile4")
 		expectedErr := errors.New("problem calling CopyN")
-		helper := mockIOHelper(asTar(generateData(5*1024), "testfile"))
-		helper.errOnCopyN = expectedErr
-		_, err := unTar(helper, "testfile")
+		subject := defaultTarExtractor(tarred)
+		subject.copyN = func(dst io.Writer, n int64) (int64, error) {
+			return 0, expectedErr
+		}
+		_, err := subject.unTar("testfile4")
 		require.Error(t, err)
 		require.ErrorIs(t, err, expectedErr)
 	})
@@ -93,31 +105,4 @@ func asTar(data []byte, filename string) []byte {
 		panic(err)
 	}
 	return buf.Bytes()
-}
-
-func mockIOHelper(data []byte) *mockHelper {
-	res := mockHelper{
-		goodHelper: &defaultUntarIOHelper{tarReader: tar.NewReader(bytes.NewReader(data))},
-	}
-	return &res
-}
-
-type mockHelper struct {
-	goodHelper untarIoHelper
-	errOnNext  error
-	errOnCopyN error
-}
-
-func (b *mockHelper) Next() (*tar.Header, error) {
-	if b.errOnNext != nil {
-		return nil, b.errOnNext
-	}
-	return b.goodHelper.Next()
-}
-
-func (b *mockHelper) CopyN(dst io.Writer, n int64) (int64, error) {
-	if b.errOnCopyN != nil {
-		return 0, b.errOnCopyN
-	}
-	return b.goodHelper.CopyN(dst, n)
 }
