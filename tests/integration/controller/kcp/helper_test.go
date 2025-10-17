@@ -7,17 +7,15 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -41,7 +39,6 @@ const (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, kcpClient, kyma)
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
@@ -61,16 +58,23 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 }
 
+// Note: Uses simplified logic and deletes ALL versions of the ModuleTemplates
+// configured in the Kyma spec.
+// For precise deletion one has to find the correct ModuleTemplate instance based on
+// the version and channel mapping specified in a corresponding ModuleReleaseMeta.
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
-		template := builder.NewModuleTemplateBuilder().
-			WithNamespace(ControlPlaneNamespace).
-			WithModuleName(module.Name).
-			WithChannel(module.Channel).
-			WithOCM(compdescv2.SchemaVersion).Build()
-		Eventually(DeleteCR, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(kcpClient, template).Should(Succeed())
+		allVersionsOfAModule := &v1beta2.ModuleTemplateList{}
+		listOpts := []client.ListOption{
+			client.InNamespace(ControlPlaneNamespace),
+			client.MatchingLabels{shared.ModuleName: module.Name},
+		}
+		Expect(kcpClient.List(ctx, allVersionsOfAModule, listOpts...)).Should(Succeed())
+		for _, mtInstance := range allVersionsOfAModule.Items {
+			Eventually(DeleteCR, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kcpClient, &mtInstance).Should(Succeed())
+		}
 	}
 }
 
@@ -85,8 +89,8 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
-			WithOCM(compdescv2.SchemaVersion).
-			WithName(moduleTemplateName).Build()
+			WithName(moduleTemplateName).
+			Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
@@ -126,7 +130,7 @@ func expectModuleTemplateSpecGetReset(
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kyma)
+	moduleTemplate, _, err := GetModuleTemplateInfo(ctx, clnt, module, kyma)
 	if err != nil {
 		return err
 	}

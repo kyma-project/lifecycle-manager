@@ -41,7 +41,6 @@ yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"
 
 cat module-config-for-e2e.yaml
 modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
-sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
 
 cat template.yaml
 echo "ModuleTemplate created successfully"

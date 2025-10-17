@@ -1,9 +1,11 @@
 package cache
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 )
 
 type DescriptorCache struct {
@@ -16,7 +18,7 @@ func NewDescriptorCache() *DescriptorCache {
 	}
 }
 
-func (d *DescriptorCache) Get(key string) *types.Descriptor {
+func (d *DescriptorCache) Get(key DescriptorKey) *types.Descriptor {
 	value, ok := d.cache.Load(key)
 	if !ok {
 		return nil
@@ -29,6 +31,12 @@ func (d *DescriptorCache) Get(key string) *types.Descriptor {
 	return &types.Descriptor{ComponentDescriptor: desc.Copy()}
 }
 
-func (d *DescriptorCache) Set(key string, value *types.Descriptor) {
+func (d *DescriptorCache) Set(key DescriptorKey, value *types.Descriptor) {
 	d.cache.Store(key, value)
+}
+
+type DescriptorKey string
+
+func GenerateDescriptorKey(ocmi ocmidentity.ComponentId) DescriptorKey {
+	return DescriptorKey(fmt.Sprintf("%s:%s", ocmi.Name(), ocmi.Version()))
 }

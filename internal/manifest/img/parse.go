@@ -58,7 +58,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 	layers := Layers{}
 	for _, resource := range descriptor.Resources {
 		access := resource.Access
-		var layerRepresentation LayerRepresentation
+		var ociRef *OCI
 		spec, err := ocm.DefaultContext().AccessSpecForSpec(access)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create spec for acccess: %w", err)
@@ -75,11 +75,10 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 			if !ok {
 				return nil, common.ErrTypeAssert
 			}
-			layerRef, err := getOCIRef(repo, descriptor, accessSpec)
+			ociRef, err = getOCIRef(repo, descriptor, accessSpec)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
-			layerRepresentation = layerRef
 		// this resource type is not relevant for module rendering but for security scanning only
 		case ociartifact.Type:
 			fallthrough
@@ -99,7 +98,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 		layers = append(
 			layers, Layer{
 				LayerName:           v1beta2.LayerName(resource.Name),
-				LayerRepresentation: layerRepresentation,
+				LayerRepresentation: ociRef,
 			},
 		)
 	}
@@ -141,6 +140,7 @@ func getOCIRef(
 		if repo.SubPath != "" {
 			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
 		}
+
 		layerRef.Repo = baseURL + "/"
 		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
