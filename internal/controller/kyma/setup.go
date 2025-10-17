@@ -84,17 +84,10 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager,
 }
 
 // SetupWithManager sets up the DeletionReconciler with the Manager
-func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options, _ SetupOptions) error {
+func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
 	if err := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
-		Named(controllerName+"-deletion").
+		Named(controllerName + "-deletion").
 		WithOptions(opts).
-		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})).
-		Watches(&v1beta2.ModuleTemplate{},
-			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch())).
-		Watches(&apicorev1.Secret{}, handler.Funcs{}).
-		Watches(&v1beta2.Manifest{},
-			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1beta2.Kyma{},
-				handler.OnlyControllerOwner()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to setup manager for kyma deletion controller: %w", err)
 	}

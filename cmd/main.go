@@ -454,13 +454,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookupStrategies),
-	}).SetupWithManager(
-		mgr, options, kyma.SetupOptions{
-			ListenerAddr:                 "", // DeletionReconciler doesn't need SKR event listener
-			EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
-			IstioNamespace:               flagVar.IstioNamespace,
-		},
-	); err != nil {
+	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
 		os.Exit(1)
 	}

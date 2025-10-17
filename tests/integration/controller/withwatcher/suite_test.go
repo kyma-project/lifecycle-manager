@@ -267,8 +267,7 @@ var _ = BeforeSuite(func() {
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
-	}).SetupWithManager(mgr, ctrlruntime.Options{},
-		kyma.SetupOptions{ListenerAddr: ""}) // DeletionReconciler doesn't need SKR event listener
+	}).SetupWithManager(mgr, ctrlruntime.Options{}) // DeletionReconciler doesn't need SKR event listener
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&watcherctrl.Reconciler{

@@ -201,8 +201,7 @@ var _ = BeforeSuite(func() {
 					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
 				})),
-	}).SetupWithManager(mgr, ctrlruntime.Options{},
-		kyma.SetupOptions{ListenerAddr: ""}) // DeletionReconciler doesn't need SKR event listener
+	}).SetupWithManager(mgr, ctrlruntime.Options{}) // DeletionReconciler doesn't need SKR event listener
 	Expect(err).ToNot(HaveOccurred())
 
 	Eventually(CreateNamespace, Timeout, Interval).

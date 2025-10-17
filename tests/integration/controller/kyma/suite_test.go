@@ -196,8 +196,7 @@ var _ = BeforeSuite(func() {
 					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
 				})),
-	}).SetupWithManager(mgr, ctrlruntime.Options{},
-		kyma.SetupOptions{ListenerAddr: randomPort})
+	}).SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	Eventually(CreateNamespace, Timeout, Interval).
