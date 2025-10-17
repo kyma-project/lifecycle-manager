@@ -29,10 +29,10 @@ func NewComponentId(name, version string) (*ComponentId, error) {
 	}, nil
 }
 
-func (c *ComponentId) Name() string {
+func (c ComponentId) Name() string {
 	return c.componentName
 }
 
-func (c *ComponentId) Version() string {
+func (c ComponentId) Version() string {
 	return c.componentVersion
 }
