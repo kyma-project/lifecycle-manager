@@ -31,7 +31,8 @@ func NewService(ensureFinalizer UseCase,
 }
 
 // HandleDeletion processes the deletion of a ModuleReleaseMeta through a series of ordered use cases.
-// Returns deletion.ErrMrmNotInDeletingState error if the MRM is not in deleting state, which indicates that the controller should not requeue.
+// Returns deletion.ErrMrmNotInDeletingState error if the MRM is not in deleting state, 
+// which indicates that the controller should not requeue.
 func (s *Service) HandleDeletion(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
 	// Find the first applicable step and execute it
 	for _, step := range s.orderedSteps {
