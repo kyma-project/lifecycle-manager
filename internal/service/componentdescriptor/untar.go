@@ -13,13 +13,14 @@ const (
 	TarReadChunkSize       = 10 * 1024  // 10KiB, for our average size we'll read it in one go
 )
 
+// tarExtractor is responsible for extracting named files from a tar archive.
 type tarExtractor struct {
 	next  func() (*tar.Header, error)                 // tar.Reader.Next()
 	copyN func(dst io.Writer, n int64) (int64, error) // modified io.CopyN()
 }
 
-// unTar extracts the file with expectedName and returns its content.
-func (tarex *tarExtractor) unTar(expectedName string) ([]byte, error) {
+// unTar extracts the file with provided name and returns its content.
+func (tarex *tarExtractor) unTar(name string) ([]byte, error) {
 	for {
 		hdr, err := tarex.next()
 		if errors.Is(err, io.EOF) {
@@ -29,14 +30,14 @@ func (tarex *tarExtractor) unTar(expectedName string) ([]byte, error) {
 			return nil, err
 		}
 
-		if hdr.Name == expectedName {
+		if hdr.Name == name {
 			var buf bytes.Buffer
 			maxSize := hdr.Size
 			if maxSize <= 0 {
 				maxSize = MaxDescriptorSizeBytes // sanity
 			}
 			if maxSize > MaxDescriptorSizeBytes { // DoS protection
-				return nil, fmt.Errorf("%s %w", expectedName, ErrTarTooLarge)
+				return nil, fmt.Errorf("%s %w", name, ErrTarTooLarge)
 			}
 			for buf.Len() < int(maxSize) { // DoS protection: read in chunks
 				if _, err := tarex.copyN(&buf, TarReadChunkSize); err != nil {
@@ -51,7 +52,7 @@ func (tarex *tarExtractor) unTar(expectedName string) ([]byte, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("%s %w", expectedName, ErrNotFoundInTar)
+	return nil, fmt.Errorf("%s %w", name, ErrNotFoundInTar)
 }
 
 func defaultTarExtractor(data []byte) *tarExtractor {

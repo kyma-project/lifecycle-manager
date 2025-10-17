@@ -8,6 +8,7 @@ import (
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
+// fileExtractor is responsible for extracting a specific file from a container image layer.
 type fileExtractor struct {
 	// reads all data from the provided reader
 	readAll func(reader io.Reader) ([]byte, error)

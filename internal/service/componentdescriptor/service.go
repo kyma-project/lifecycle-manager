@@ -85,10 +85,6 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 			ocmi.Name(), ocmi.Version(), string(compDescLayerDigest), err)
 	}
 
-	/*
-		ioh := &defaultExtractFileIOHelper{readAllFunc: io.ReadAll}
-		compdescBytes, err := extractFile(ioh, layer, ComponentDescriptorFileName)
-	*/
 	compdescBytes, err := s.extractFileFromLayer(layer, ComponentDescriptorFileName)
 	if err != nil {
 		return nil,
