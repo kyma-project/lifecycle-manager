@@ -17,7 +17,7 @@ import (
 
 var (
 	ErrEmptyRestConfig  = errors.New("rest.Config is nil")
-	errSkrEnvNotStarted = errors.New("SKR envtest environment not started")
+	ErrSkrEnvNotStarted = errors.New("SKR envtest environment not started")
 )
 
 type DualClusterFactory struct {
@@ -87,13 +87,17 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext, error) {
 	value, ok := f.clients.Load(kyma.Name)
 	if !ok {
-		return nil, errSkrEnvNotStarted
+		return nil, ErrSkrEnvNotStarted
 	}
 	skrClient, ok := value.(*remote.ConfigAndClient)
 	if !ok {
-		return nil, errSkrEnvNotStarted
+		return nil, ErrSkrEnvNotStarted
 	}
 	return remote.NewSkrContext(skrClient, f.event), nil
+}
+
+func (f *DualClusterFactory) StoreEnv(name string, env interface{}) {
+	f.skrEnvs.Store(name, env)
 }
 
 func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
