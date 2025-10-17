@@ -55,41 +55,22 @@ func commonErrMsg(ocmi ocmidentity.ComponentId) string {
 }
 
 func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.ComponentId) (*types.Descriptor, error) {
-	// Fetch the image config to get the ComponentDescriptor layer info
-	configBytes, err := s.ociRepository.GetConfigFile(ctx, ocmi.Name(), ocmi.Version())
+	compDescLayerDigest, err := s.getDescriptorLayerDigest(ctx, ocmi)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get config file for %s: %w", commonErrMsg(ocmi), err)
+		return nil, err
 	}
 
-	ocmArtifactConfig := genericocireg.ComponentDescriptorConfig{}
-	err = json.Unmarshal(configBytes, &ocmArtifactConfig)
-	if err != nil {
-		return nil,
-			fmt.Errorf("failed to unmarshal config data into ComponentDescriptorConfig for %s: %w",
-				commonErrMsg(ocmi), err)
-	}
-
-	if ocmArtifactConfig.ComponentDescriptorLayer == nil {
-		return nil, fmt.Errorf("%w for %s", ErrLayerNil, commonErrMsg(ocmi))
-	}
-
-	compDescLayerDigest := ocmArtifactConfig.ComponentDescriptorLayer.Digest
-	if string(compDescLayerDigest) == "" {
-		return nil,
-			fmt.Errorf("%w for %s", ErrLayerDigestEmpty, commonErrMsg(ocmi))
-	}
-
-	layer, err := s.ociRepository.PullLayer(ctx, ocmi.Name(), ocmi.Version(), string(compDescLayerDigest))
+	layer, err := s.ociRepository.PullLayer(ctx, ocmi.Name(), ocmi.Version(), compDescLayerDigest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pull layer for ocm artifact with name=%q, version=%q and digest=%q: %w",
-			ocmi.Name(), ocmi.Version(), string(compDescLayerDigest), err)
+			ocmi.Name(), ocmi.Version(), compDescLayerDigest, err)
 	}
 
 	compdescBytes, err := s.extractFileFromLayer(layer, ComponentDescriptorFileName)
 	if err != nil {
 		return nil,
 			fmt.Errorf("failed to extract component descriptor from layer fetched from %s with digest=%q: %w",
-				commonErrMsg(ocmi), string(compDescLayerDigest), err)
+				commonErrMsg(ocmi), compDescLayerDigest, err)
 	}
 
 	descriptor, err := deserialize(compdescBytes, ocmi)
@@ -100,6 +81,35 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 	return &types.Descriptor{
 		ComponentDescriptor: descriptor,
 	}, nil
+}
+
+// getDescriptorLayerDigest retrieves the digest of the ComponentDescriptor layer.
+func (s *Service) getDescriptorLayerDigest(ctx context.Context, ocmi ocmidentity.ComponentId) (string, error) {
+	// Fetch the image config to get the ComponentDescriptor layer info
+	configBytes, err := s.ociRepository.GetConfigFile(ctx, ocmi.Name(), ocmi.Version())
+	if err != nil {
+		return "", fmt.Errorf("failed to get config file for %s: %w", commonErrMsg(ocmi), err)
+	}
+
+	ocmArtifactConfig := genericocireg.ComponentDescriptorConfig{}
+	err = json.Unmarshal(configBytes, &ocmArtifactConfig)
+	if err != nil {
+		return "",
+			fmt.Errorf("failed to unmarshal config data into ComponentDescriptorConfig for %s: %w",
+				commonErrMsg(ocmi), err)
+	}
+
+	if ocmArtifactConfig.ComponentDescriptorLayer == nil {
+		return "", fmt.Errorf("%w for %s", ErrLayerNil, commonErrMsg(ocmi))
+	}
+
+	compDescLayerDigest := ocmArtifactConfig.ComponentDescriptorLayer.Digest
+	if string(compDescLayerDigest) == "" {
+		return "",
+			fmt.Errorf("%w for %s", ErrLayerDigestEmpty, commonErrMsg(ocmi))
+	}
+
+	return string(compDescLayerDigest), nil
 }
 
 // deserialize decodes the component descriptor from its serialized form.
