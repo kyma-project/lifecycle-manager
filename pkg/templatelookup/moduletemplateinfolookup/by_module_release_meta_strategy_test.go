@@ -16,7 +16,7 @@ import (
 )
 
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithChannel("regular").Enabled().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().Build()
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil)
 
@@ -26,7 +26,7 @@ func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsTrue(t *testing.T) {
 }
 
 func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleReleaseMetaIsNotNil(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithVersion("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithVersion("regular").Enabled().Build()
 	var moduleReleaseMeta *v1beta2.ModuleReleaseMeta = nil
 	byMRMStrategy := moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil)
 
@@ -36,7 +36,7 @@ func Test_ByModuleReleaseMetaStrategy_IsResponsible_ReturnsFalse_WhenModuleRelea
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
@@ -71,7 +71,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleReturnsError(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
@@ -105,7 +105,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleRetu
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsError(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
@@ -132,7 +132,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetTemplateByVersionReturnsErr
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_ReturnsModuleTemplateInfo(t *testing.T) {
-	moduleInfo := newModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
+	moduleInfo := builder.NewModuleInfoBuilder().WithName("test-module").WithChannel("regular").Enabled().Build()
 	kyma := builder.NewKymaBuilder().Build()
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").

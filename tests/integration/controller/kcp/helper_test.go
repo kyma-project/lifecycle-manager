@@ -41,6 +41,7 @@ const (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
+		DeployModuleReleaseMeta(ctx, kcpClient, kyma)
 		DeployModuleTemplates(ctx, kcpClient, kyma)
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
@@ -74,19 +75,34 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 	}
 }
 
+func DeployModuleReleaseMeta(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
+	// Create map by module name to avoid duplicate ModuleReleaseMeta creation
+	moduleMap := make(map[string]v1beta2.Module)
+	for _, module := range kyma.Spec.Modules {
+		moduleMap[module.Name] = module
+	}
+
+	for _, module := range moduleMap {
+		releaseMeta := builder.NewModuleReleaseMetaBuilder().
+			WithName(module.Name).
+			WithModuleName(module.Name).
+			WithNamespace(ControlPlaneNamespace).
+			WithSingleModuleChannelAndVersions(module.Channel, module.Version).
+			Build()
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(releaseMeta).
+			Should(Succeed())
+	}
+}
+
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
-		moduleTemplateName := module.Name
-		if module.Version != "" {
-			moduleTemplateName = fmt.Sprintf("%s-%s", module.Name, module.Version)
-		}
-
 		template := builder.NewModuleTemplateBuilder().
 			WithNamespace(ControlPlaneNamespace).
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithOCM(compdescv2.SchemaVersion).
-			WithName(moduleTemplateName).Build()
+			WithName(v1beta2.CreateModuleTemplateName(module.Name, module.Version)).Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
