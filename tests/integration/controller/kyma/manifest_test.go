@@ -122,7 +122,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			ocmi, err := ocmidentity.New(FullOCMName(module.Name), "1.0.1")
+			ocmi, err := ocmidentity.NewComponentId(FullOCMName(module.Name), "1.0.1")
 			if err != nil {
 				return err
 			}
@@ -146,7 +146,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Version")
 		hasValidSpecVersion := func(manifest *v1beta2.Manifest) error {
-			ocmi, err := ocmidentity.New(FullOCMName(module.Name), "1.0.1")
+			ocmi, err := ocmidentity.NewComponentId(FullOCMName(module.Name), "1.0.1")
 			if err != nil {
 				return err
 			}
@@ -203,7 +203,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			ocmi, err := ocmidentity.New(FullOCMName(module.Name), "1.0.1")
+			ocmi, err := ocmidentity.NewComponentId(FullOCMName(module.Name), "1.0.1")
 			if err != nil {
 				return err
 			}

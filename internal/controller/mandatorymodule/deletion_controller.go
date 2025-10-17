@@ -83,7 +83,7 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, fmt.Errorf("failed to find ModuleReleaseMeta for Mandatory Module %s: %w",
 			template.Name, err)
 	}
-	ocmi, err := ocmidentity.New(mrm.Spec.OcmComponentName, template.Spec.Version)
+	ocmi, err := ocmidentity.NewComponentId(mrm.Spec.OcmComponentName, template.Spec.Version)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create OCM identity for Mandatory Module %s: %w",
 			template.Spec.ModuleName, err)
@@ -126,7 +126,7 @@ func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
 }
 
 func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
-	namespace string, ocmi ocmidentity.Component) ([]v1beta2.Manifest,
+	namespace string, ocmi ocmidentity.ComponentId) ([]v1beta2.Manifest,
 	error,
 ) {
 	manifests := &v1beta2.ManifestList{}
@@ -155,7 +155,7 @@ func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1
 // filterManifestsByComponentIdentity filters the manifests by OCM Component Name and module version.
 // OCM Component Name is a fully qualified name that looks like: 'kyma-project.io/module/<module-name>'.
 func filterManifestsByComponentIdentity(manifests []v1beta2.Manifest,
-	ocmi ocmidentity.Component,
+	ocmi ocmidentity.ComponentId,
 ) []v1beta2.Manifest {
 	filteredManifests := make([]v1beta2.Manifest, 0)
 	for _, manifest := range manifests {

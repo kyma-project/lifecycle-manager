@@ -7,24 +7,24 @@ import (
 
 var ErrValueNotProvided = errors.New("value not provided")
 
-// Component uniquely identifies an OCM Component.
+// ComponentId uniquely identifies an OCM ComponentId.
 // See: https://ocm.software/docs/overview/important-terms/#component-identity
-type Component struct {
+type ComponentId struct {
 	componentName    string
 	componentVersion string
 }
 
 // MustNew is a convenience constructor that panics if name or version are not provided.
-func MustNew(name, version string) *Component {
-	c, err := New(name, version)
+func MustNew(name, version string) *ComponentId {
+	ocmi, err := NewComponentId(name, version)
 	if err != nil {
 		panic(err)
 	}
-	return c
+	return ocmi
 }
 
-// New is a constructor that ensures that both name and version are provided.
-func New(name, version string) (*Component, error) {
+// NewComponentId is a constructor that ensures that both name and version are provided.
+func NewComponentId(name, version string) (*ComponentId, error) {
 	if name == "" {
 		return nil, fmt.Errorf("invalid component name: %w", ErrValueNotProvided)
 	}
@@ -32,16 +32,16 @@ func New(name, version string) (*Component, error) {
 		return nil, fmt.Errorf("invalid component version: %w", ErrValueNotProvided)
 	}
 
-	return &Component{
+	return &ComponentId{
 		componentName:    name,
 		componentVersion: version,
 	}, nil
 }
 
-func (c *Component) Name() string {
+func (c *ComponentId) Name() string {
 	return c.componentName
 }
 
-func (c *Component) Version() string {
+func (c *ComponentId) Version() string {
 	return c.componentVersion
 }

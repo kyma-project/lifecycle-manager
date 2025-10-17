@@ -37,6 +37,6 @@ func (d *DescriptorCache) Set(key DescriptorKey, value *types.Descriptor) {
 
 type DescriptorKey string
 
-func GenerateDescriptorKey(ocmi ocmidentity.Component) DescriptorKey {
+func GenerateDescriptorKey(ocmi ocmidentity.ComponentId) DescriptorKey {
 	return DescriptorKey(fmt.Sprintf("%s:%s", ocmi.Name(), ocmi.Version()))
 }

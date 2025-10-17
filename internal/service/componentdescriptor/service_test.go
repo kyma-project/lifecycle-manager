@@ -59,7 +59,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
 
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 
 		// when
@@ -84,7 +84,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 
 		// when
@@ -108,7 +108,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 
 		// when
@@ -132,7 +132,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 
 		// when
@@ -152,7 +152,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 		// when
 		result, err := svc.GetComponentDescriptor(t.Context(), *ocmi)
@@ -172,7 +172,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 
 		// when
@@ -204,7 +204,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
 
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 
 		// when
@@ -238,7 +238,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 		svc, err := componentdescriptor.NewService(&repo)
 		require.NoError(t, err)
 
-		ocmi, err := ocmidentity.New(testComponentName, testComponentVersion)
+		ocmi, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
 
 		// when

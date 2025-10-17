@@ -242,7 +242,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 // IsDescriptorCached checks if the descriptor is in the cache.
 // It temporarily stops the underlying DescriptorService to ensure the cache is used
 // instead of DescriptorService lookup.
-func IsDescriptorCached(ocmi ocmidentity.Component) bool {
+func IsDescriptorCached(ocmi ocmidentity.ComponentId) bool {
 	descProviderService.Stop()
 	defer descProviderService.Resume()
 	result, err := descriptorProvider.GetDescriptor(ocmi)

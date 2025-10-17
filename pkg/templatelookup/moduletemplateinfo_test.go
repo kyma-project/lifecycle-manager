@@ -15,8 +15,8 @@ import (
 func Test_GetOCMIdentity(t *testing.T) {
 	t.Run("When ComponentIdentity is nil, then an error is returned", func(t *testing.T) {
 		mtInfo := templatelookup.ModuleTemplateInfo{
-			ModuleTemplate:    &v1beta2.ModuleTemplate{},
-			ComponentIdentity: nil,
+			ModuleTemplate: &v1beta2.ModuleTemplate{},
+			ComponentId:    nil,
 		}
 		_, err := mtInfo.GetOCMIdentity()
 		require.Error(t, err)
@@ -25,7 +25,7 @@ func Test_GetOCMIdentity(t *testing.T) {
 	})
 	t.Run("When ComponentIdentity is not nil, then it is returned", func(t *testing.T) {
 		mtInfo := templatelookup.ModuleTemplateInfo{
-			ComponentIdentity: ocmidentity.MustNew(testutils.FullOCMName("test-module"), "1.0.0"),
+			ComponentId: ocmidentity.MustNew(testutils.FullOCMName("test-module"), "1.0.0"),
 		}
 		comp, err := mtInfo.GetOCMIdentity()
 		require.NoError(t, err)

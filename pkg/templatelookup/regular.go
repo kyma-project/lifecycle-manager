@@ -29,16 +29,16 @@ type ModuleTemplateInfo struct {
 	DesiredChannel string // This is the channel that was requested by the user
 	//                       using Kyma 'spec.channel' or configured module channel.
 
-	ComponentIdentity *ocmidentity.Component // Identifies the OCM Component that is
+	ComponentId *ocmidentity.ComponentId // Identifies the OCM Component that is
 	//                                          represented by this ModuleTemplateInfo.
 }
 
 // Implements provider.OCMIProvider interface.
-func (m ModuleTemplateInfo) GetOCMIdentity() (*ocmidentity.Component, error) {
-	if m.ComponentIdentity == nil {
+func (m ModuleTemplateInfo) GetOCMIdentity() (*ocmidentity.ComponentId, error) {
+	if m.ComponentId == nil {
 		return nil, fmt.Errorf("%w for module template %s", ErrNoIdentity, m.Name)
 	}
-	return m.ComponentIdentity, nil
+	return m.ComponentId, nil
 }
 
 type ModuleTemplateInfoLookupStrategy interface {
@@ -105,7 +105,7 @@ func (t *TemplateLookup) GetRegularTemplates(ctx context.Context, kyma *v1beta2.
 			continue
 		}
 
-		ocmi, err := ocmidentity.New(moduleReleaseMeta.Spec.OcmComponentName, templateInfo.Spec.Version)
+		ocmi, err := ocmidentity.NewComponentId(moduleReleaseMeta.Spec.OcmComponentName, templateInfo.Spec.Version)
 		if err != nil {
 			templateInfo.Err = fmt.Errorf("failed to create OCM Component Identity: %w", err)
 			templates[moduleInfo.Name] = &templateInfo

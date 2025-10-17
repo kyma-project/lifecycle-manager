@@ -49,12 +49,12 @@ func NewService(ociRepository OCIRepository) (*Service, error) {
 	}, nil
 }
 
-func commonErrMsg(ocmi ocmidentity.Component) string {
+func commonErrMsg(ocmi ocmidentity.ComponentId) string {
 	return fmt.Sprintf("ocm artifact with name=%q and version=%q",
 		ocmi.Name(), ocmi.Version())
 }
 
-func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error) {
+func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.ComponentId) (*types.Descriptor, error) {
 	// Fetch the image config to get the ComponentDescriptor layer info
 	configBytes, err := s.ociRepository.GetConfigFile(ctx, ocmi.Name(), ocmi.Version())
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *Service) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.C
 }
 
 // deserialize decodes the component descriptor from its serialized form.
-func deserialize(compdescBytes []byte, ocmi ocmidentity.Component) (*compdesc.ComponentDescriptor, error) {
+func deserialize(compdescBytes []byte, ocmi ocmidentity.ComponentId) (*compdesc.ComponentDescriptor, error) {
 	desc, err := compdesc.Decode(compdescBytes)
 	if err != nil {
 		return nil, fmt.Errorf("%w fetched from %s: %w",

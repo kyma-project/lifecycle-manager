@@ -18,7 +18,7 @@ var (
 )
 
 type DescriptorService interface {
-	GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (*types.Descriptor, error)
+	GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.ComponentId) (*types.Descriptor, error)
 }
 
 type CachedDescriptorProvider struct {
@@ -37,10 +37,10 @@ func NewCachedDescriptorProvider(service DescriptorService) *CachedDescriptorPro
 // that already have all required data.
 // Then we don't have to create intermediate variables of type ocmidentity.Component.
 type OCMIProvider interface {
-	GetOCMIdentity() (*ocmidentity.Component, error)
+	GetOCMIdentity() (*ocmidentity.ComponentId, error)
 }
 
-func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.Component) error {
+func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.ComponentId) error {
 	if ocmi.Name() == "" || ocmi.Version() == "" {
 		return fmt.Errorf("cannot get descriptor for component: %w", ErrNameOrVersionEmpty)
 	}
@@ -63,7 +63,7 @@ func (c *CachedDescriptorProvider) Add(ocmi ocmidentity.Component) error {
 	return nil
 }
 
-func (c *CachedDescriptorProvider) GetDescriptor(ocmi ocmidentity.Component) (*types.Descriptor, error) {
+func (c *CachedDescriptorProvider) GetDescriptor(ocmi ocmidentity.ComponentId) (*types.Descriptor, error) {
 	if ocmi.Name() == "" || ocmi.Version() == "" {
 		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrNameOrVersionEmpty)
 	}

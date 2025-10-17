@@ -48,11 +48,12 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 		return moduleTemplateInfo
 	}
 
-	if ocmi, err := ocmidentity.New(moduleReleaseMeta.Spec.OcmComponentName, resolvedModuleVersion); err != nil {
+	if ocmi, err := ocmidentity.NewComponentId(
+		moduleReleaseMeta.Spec.OcmComponentName, resolvedModuleVersion); err != nil {
 		moduleTemplateInfo.Err = err
 		return moduleTemplateInfo
 	} else {
-		moduleTemplateInfo.ComponentIdentity = ocmi
+		moduleTemplateInfo.ComponentId = ocmi
 	}
 
 	template, err := getTemplateByVersion(ctx,

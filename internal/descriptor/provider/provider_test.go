@@ -16,7 +16,7 @@ import (
 
 func TestGetDescriptor_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	_, err := descriptorProvider.GetDescriptor(ocmidentity.Component{})
+	_, err := descriptorProvider.GetDescriptor(ocmidentity.ComponentId{})
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.ErrNameOrVersionEmpty)
@@ -24,7 +24,7 @@ func TestGetDescriptor_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 
 func TestAdd_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider(nil)
-	err := descriptorProvider.Add(ocmidentity.Component{})
+	err := descriptorProvider.Add(ocmidentity.ComponentId{})
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.ErrNameOrVersionEmpty)
@@ -33,7 +33,7 @@ func TestAdd_OnEmptyIdentity_ReturnsErr(t *testing.T) {
 func TestGetDescriptor_OnInvalidRawDescriptor_ReturnsErr(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider(
 		(&componentdescriptor.FakeService{}).Register([]byte("invalid descriptor")))
-	ocmi, err := ocmidentity.New("test", "v1")
+	ocmi, err := ocmidentity.NewComponentId("test", "v1")
 	require.NoError(t, err)
 	_, err = descriptorProvider.GetDescriptor(*ocmi)
 
@@ -49,7 +49,7 @@ func TestGetDescriptor_OnEmptyCache_ReturnsDescriptorFromService(t *testing.T) {
 	descriptorProvider := provider.NewCachedDescriptorProvider(
 		(&componentdescriptor.FakeService{}).Register(moduleTemplateFromFile.Spec.Descriptor.Raw))
 
-	ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
+	ocmi, err := ocmidentity.NewComponentId("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
 	require.NoError(t, err)
 
 	// when
@@ -71,7 +71,7 @@ func TestGetDescriptor_DoesNotUpdateCache(t *testing.T) {
 
 	descriptorProvider := provider.NewCachedDescriptorProvider(mockService)
 
-	ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
+	ocmi, err := ocmidentity.NewComponentId("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
 	require.NoError(t, err)
 
 	// when
@@ -99,7 +99,7 @@ func TestGetDescriptor_ReturnsDescriptorFromCache(t *testing.T) {
 	mockService := &componentdescriptor.FakeService{}
 	mockService.Register(moduleTemplateFromFile.Spec.Descriptor.Raw)
 	descriptorProvider := provider.NewCachedDescriptorProvider(mockService)
-	ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
+	ocmi, err := ocmidentity.NewComponentId("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
 	require.NoError(t, err)
 
 	err = descriptorProvider.Add(*ocmi) // add to cache
@@ -146,7 +146,7 @@ func TestGetDescriptorWithIdentity_OnValidIdentity_ReturnsDescriptor(t *testing.
 	descriptorProvider := provider.NewCachedDescriptorProvider(
 		(&componentdescriptor.FakeService{}).Register(moduleTemplateFromFile.Spec.Descriptor.Raw))
 
-	ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
+	ocmi, err := ocmidentity.NewComponentId("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
 	require.NoError(t, err)
 	mockProvider := &mockIdentityProvider{ocmi: ocmi}
 
@@ -161,10 +161,10 @@ func TestGetDescriptorWithIdentity_OnValidIdentity_ReturnsDescriptor(t *testing.
 
 type mockIdentityProvider struct {
 	err  error
-	ocmi *ocmidentity.Component
+	ocmi *ocmidentity.ComponentId
 }
 
-func (b *mockIdentityProvider) GetOCMIdentity() (*ocmidentity.Component, error) {
+func (b *mockIdentityProvider) GetOCMIdentity() (*ocmidentity.ComponentId, error) {
 	if b.err != nil {
 		return nil, b.err
 	}

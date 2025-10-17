@@ -54,7 +54,8 @@ func TestParse(t *testing.T) {
 			var moduleTemplateFromFile v1beta2.ModuleTemplate
 			builder.ReadComponentDescriptorFromFile(testCase.descriptorSourceFile,
 				&moduleTemplateFromFile)
-			ocmi, err := ocmidentity.New("kyma-project.io/module/template-operator", testCase.descriptorVersion)
+			ocmi, err := ocmidentity.NewComponentId(
+				"kyma-project.io/module/template-operator", testCase.descriptorVersion)
 			require.NoError(t, err)
 			descriptor, err := provider.NewCachedDescriptorProvider(
 				componentdescriptor.NewFakeService(moduleTemplateFromFile.Spec.Descriptor.Raw)).

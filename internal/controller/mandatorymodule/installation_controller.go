@@ -137,14 +137,14 @@ func (r *InstallationReconciler) extendWithOCMIdentities(
 			continue
 		}
 
-		if template.ComponentIdentity == nil {
-			ocmi, err := ocmidentity.New(mrm.Spec.OcmComponentName, template.Spec.Version)
+		if template.ComponentId == nil {
+			ocmi, err := ocmidentity.NewComponentId(mrm.Spec.OcmComponentName, template.Spec.Version)
 			if err != nil {
 				template.Err = fmt.Errorf("failed creating OCM identity for module %s in namespace %s: %w",
 					template.Spec.ModuleName, template.Namespace, err)
 				continue
 			}
-			template.ComponentIdentity = ocmi
+			template.ComponentId = ocmi
 		}
 	}
 }

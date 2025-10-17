@@ -32,7 +32,7 @@ func GetModuleTemplateInfo(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
-) (*v1beta2.ModuleTemplate, *ocmidentity.Component, error) {
+) (*v1beta2.ModuleTemplate, *ocmidentity.ComponentId, error) {
 	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
 		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
 			moduletemplateinfolookup.NewByVersionStrategy(clnt),

@@ -22,7 +22,7 @@ func NewFakeService(descBytes []byte) *FakeService {
 	return (&FakeService{}).Register(descBytes)
 }
 
-func (s *FakeService) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.Component) (
+func (s *FakeService) GetComponentDescriptor(ctx context.Context, ocmi ocmidentity.ComponentId) (
 	*types.Descriptor, error,
 ) {
 	if s.stopped {
@@ -105,7 +105,7 @@ func (fs *FakeService) Resume() bool {
 	return false
 }
 
-func (s *FakeService) deserializeOverride(entry registeredDescriptor, ocmi ocmidentity.Component) (
+func (s *FakeService) deserializeOverride(entry registeredDescriptor, ocmi ocmidentity.ComponentId) (
 	*types.Descriptor, error,
 ) {
 	result, err := deserialize(entry.rawDesc, ocmi)
