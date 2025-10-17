@@ -57,6 +57,11 @@ var _ = BeforeSuite(func() {
 	cfg, err := controlPlaneEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
+	DeferCleanup(func() {
+		if controlPlaneEnv != nil {
+			Expect(controlPlaneEnv.Stop()).To(Succeed())
+		}
+	})
 
 	Expect(v1beta2.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
@@ -77,8 +82,4 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
-
-	err := controlPlaneEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(err).NotTo(HaveOccurred())
 })

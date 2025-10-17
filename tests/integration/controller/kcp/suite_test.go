@@ -116,6 +116,12 @@ var _ = BeforeSuite(func() {
 	cfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
+	// Ensure environment is always torn down even if specs abort early.
+	DeferCleanup(func() {
+		if kcpEnv != nil {
+			Expect(kcpEnv.Stop()).To(Succeed())
+		}
+	})
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
@@ -149,6 +155,10 @@ var _ = BeforeSuite(func() {
 
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	// Ensure shared SKR env is cleaned regardless of suite outcome.
+	DeferCleanup(func() {
+		Expect(testSkrContextFactory.Stop()).To(Succeed())
+	})
 	descriptorProvider = provider.NewCachedDescriptorProvider()
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
@@ -189,7 +199,4 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
-
-	Expect(kcpEnv.Stop()).To(Succeed())
-	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })

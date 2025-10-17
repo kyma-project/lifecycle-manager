@@ -115,6 +115,11 @@ var _ = BeforeSuite(func() {
 	cfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
+	DeferCleanup(func() {
+		if kcpEnv != nil {
+			Expect(kcpEnv.Stop()).To(Succeed())
+		}
+	})
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
@@ -146,6 +151,9 @@ var _ = BeforeSuite(func() {
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	DeferCleanup(func() {
+		Expect(testSkrContextFactory.Stop()).To(Succeed())
+	})
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	err = (&kyma.Reconciler{
@@ -184,7 +192,10 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
-
-	Expect(kcpEnv.Stop()).To(Succeed())
-	Expect(testSkrContextFactory.Stop()).To(Succeed())
+	if kcpEnv != nil {
+		_ = kcpEnv.Stop() // ignore error; DeferCleanup already asserted
+	}
+	if testSkrContextFactory != nil {
+		_ = testSkrContextFactory.Stop()
+	}
 })

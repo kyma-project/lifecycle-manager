@@ -361,7 +361,7 @@ func ensureSetup(kyma *v1beta2.Kyma, skrClient *client.Client) func() {
 			WithArguments(*skrClient, shared.DefaultRemoteNamespace).
 			Should(Succeed())
 
-		// Patching the SKR Cluster to have the necessary CRDs
+		// Patching the SKR Cluster to have the necessary CRDs (original non-idempotent behavior)
 		Eventually(func() error {
 			externalCRDs, err := AppendExternalCRDs(
 				filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds"),
@@ -371,8 +371,8 @@ func ensureSetup(kyma *v1beta2.Kyma, skrClient *client.Client) func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			for _, crd := range externalCRDs {
-				skrClient := *skrClient
-				err = skrClient.Create(ctx, crd)
+				skrClientLocal := *skrClient
+				err = skrClientLocal.Create(ctx, crd)
 				Expect(err).ShouldNot(HaveOccurred())
 			}
 			return err

@@ -49,6 +49,11 @@ var _ = BeforeSuite(func() {
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
+	DeferCleanup(func() {
+		if testEnv != nil {
+			Expect(testEnv.Stop()).To(Succeed())
+		}
+	})
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiappsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
@@ -61,6 +66,4 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	err := testEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
 })

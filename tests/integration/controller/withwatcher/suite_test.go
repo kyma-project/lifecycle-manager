@@ -137,6 +137,11 @@ var _ = BeforeSuite(func() {
 	restCfg, err = kcpEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restCfg).NotTo(BeNil())
+	DeferCleanup(func() {
+		if kcpEnv != nil {
+			Expect(kcpEnv.Stop()).To(Succeed())
+		}
+	})
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
@@ -218,6 +223,9 @@ var _ = BeforeSuite(func() {
 	resolvedKcpAddr, err := gatewayService.ResolveKcpAddr()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
+	DeferCleanup(func() {
+		Expect(testSkrContextFactory.Stop()).To(Succeed())
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	chartReaderService := chartreader.NewService(skrWatcherPath)
@@ -283,9 +291,6 @@ var _ = AfterSuite(func() {
 	}
 	// cancel environment context
 	cancel()
-
-	Expect(kcpEnv.Stop()).To(Succeed())
-	Expect(testSkrContextFactory.Stop()).To(Succeed())
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {

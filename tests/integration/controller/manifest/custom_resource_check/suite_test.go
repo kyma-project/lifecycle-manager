@@ -115,6 +115,11 @@ var _ = BeforeSuite(func() {
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
+	DeferCleanup(func() {
+		if testEnv != nil {
+			Eventually(func() error { return testEnv.Stop() }, standardTimeout, standardInterval).Should(Succeed())
+		}
+	})
 
 	// +kubebuilder:scaffold:scheme
 
