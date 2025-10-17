@@ -43,6 +43,8 @@ packages:
   internal/service/watcher/gateway: 94
   internal/service/watcher/resources: 82
   internal/service/skrclient: 35
+  internal/service/mandatorymodule/deletion: 100
+  internal/service/mandatorymodule/deletion/usecases: 100
 
   internal/util/collections: 87
   pkg/module/sync: 10
