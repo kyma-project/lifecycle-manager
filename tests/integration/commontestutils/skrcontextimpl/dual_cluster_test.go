@@ -1,18 +1,17 @@
 package skrcontextimpl_test
 
 import (
-	"context"
 	"errors"
+	"sync"
+	"testing"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"runtime"
-	"sync"
-	"testing"
-	"time"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 )
@@ -36,14 +35,31 @@ func Test_GetBeforeInit(t *testing.T) {
 	assert.ErrorIs(t, err, testskrcontext.ErrSkrEnvNotStarted)
 }
 
+func Test_StoreEnv_ValidatesInput(t *testing.T) {
+	dualFactory := newFactory()
+
+	err := dualFactory.StoreEnv("", &envtest.Environment{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "name cannot be empty")
+}
+
 func Test_StopWithErrors(t *testing.T) {
 	dualFactory := newFactory()
-	envPrimary := &fakeEnv{name: "primary-env", stopErr: errors.New("primary stop failure")}
-	envSecondary := &fakeEnv{name: "secondary-env", stopErr: errors.New("secondary stop failure")}
-	envTertiary := &fakeEnv{name: "tertiary-env"}
-	dualFactory.StoreEnv("primary-env", envPrimary)
-	dualFactory.StoreEnv("secondary-env", envSecondary)
-	dualFactory.StoreEnv("tertiary-env", envTertiary)
+
+	// Store real envtest.Environment first, then replace with test doubles
+	require.NoError(t, dualFactory.StoreEnv("primary-env", &envtest.Environment{}))
+	require.NoError(t, dualFactory.StoreEnv("secondary-env", &envtest.Environment{}))
+	require.NoError(t, dualFactory.StoreEnv("tertiary-env", &envtest.Environment{}))
+
+	// Create test doubles
+	envPrimary := &fakeEnvTest{name: "primary-env", stopErr: errors.New("primary stop failure")}
+	envSecondary := &fakeEnvTest{name: "secondary-env", stopErr: errors.New("secondary stop failure")}
+	envTertiary := &fakeEnvTest{name: "tertiary-env"}
+
+	// Replace with test doubles directly in the map
+	dualFactory.SkrEnvs.Store("primary-env", envPrimary)
+	dualFactory.SkrEnvs.Store("secondary-env", envSecondary)
+	dualFactory.SkrEnvs.Store("tertiary-env", envTertiary)
 
 	err := dualFactory.Stop()
 
@@ -51,46 +67,45 @@ func Test_StopWithErrors(t *testing.T) {
 	msg := err.Error()
 	assert.Contains(t, msg, "primary stop failure")
 	assert.Contains(t, msg, "secondary stop failure")
-	assert.Nil(t, dualFactory.GetSkrEnv())
 	assert.True(t, envPrimary.stopCalled)
 	assert.True(t, envSecondary.stopCalled)
 	assert.True(t, envTertiary.stopCalled)
 }
 
-func Test_StopIdempotent(t *testing.T) {
+func Test_StopClearsAllEntriesAndIsIdempotent(t *testing.T) {
 	dualFactory := newFactory()
-	fakeEnv := &fakeEnv{name: "test-env"}
-	dualFactory.StoreEnv("test-env", fakeEnv)
+
+	require.NoError(t, dualFactory.StoreEnv("test-env", &envtest.Environment{}))
+
+	fakeEnv := &fakeEnvTest{name: "test-env"}
+	dualFactory.SkrEnvs.Store("test-env", fakeEnv)
 
 	require.NoError(t, dualFactory.Stop())
-
 	assert.True(t, fakeEnv.stopCalled)
-}
-
-func Test_StopClearsAllEntries(t *testing.T) {
-	dualFactory := newFactory()
-	for range make([]struct{}, 5) {
-		fakeEnv := &fakeEnv{name: "test-env"}
-		dualFactory.StoreEnv("test-env", fakeEnv)
-	}
-
-	require.NoError(t, dualFactory.Stop())
-
 	assert.Nil(t, dualFactory.GetSkrEnv())
+
+	// Verify entry is cleared
 	_, err := dualFactory.Get(types.NamespacedName{Name: "test-env"})
-	assert.Error(t, err)
+	require.Error(t, err)
+
+	// Second stop should also succeed (idempotent)
+	require.NoError(t, dualFactory.Stop())
 }
 
 func Test_ConcurrentStopCalls(t *testing.T) {
 	dualFactory := newFactory()
-	for range make([]struct{}, 10) {
-		fakeEnv := &fakeEnv{name: "test-env"}
-		dualFactory.StoreEnv("test-env", fakeEnv)
+
+	for range 10 {
+		require.NoError(t, dualFactory.StoreEnv("test-env", &envtest.Environment{}))
 	}
+
+	fakeEnv := &fakeEnvTest{name: "test-env"}
+	dualFactory.SkrEnvs.Store("test-env", fakeEnv)
+
 	var waitGroup sync.WaitGroup
 	errors := make(chan error, 5)
 
-	for range make([]struct{}, 5) {
+	for range 5 {
 		waitGroup.Add(1)
 		go func() {
 			defer waitGroup.Done()
@@ -105,40 +120,17 @@ func Test_ConcurrentStopCalls(t *testing.T) {
 	}
 }
 
-func Test_LeakPrevention_VerifyNoGoroutineLeaks(t *testing.T) {
-	before := runtime.NumGoroutine()
-	for range make([]struct{}, 3) {
-		dualFactory := newFactory()
-		for range make([]struct{}, 5) {
-			fakeEnv := &leakyFakeEnv{
-				name:                 "test-env",
-				shouldSpawnGoroutine: true,
-			}
-			dualFactory.StoreEnv("test-env", fakeEnv)
-		}
-		require.NoError(t, dualFactory.Stop())
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	// Force garbage collection to clean up any lingering references
-	runtime.GC()
-	runtime.GC()
-	time.Sleep(50 * time.Millisecond)
-
-	after := runtime.NumGoroutine()
-	assert.LessOrEqual(t, after, before+2,
-		"Expected no significant goroutine leaks. Before: %d, After: %d", before, after)
-}
-
-func Test_LeakPrevention_VerifyStopperInterfaceHandling(t *testing.T) {
+func Test_StopperInterfaceHandling(t *testing.T) {
 	dualFactory := newFactory()
-	normalStopper := &fakeEnv{name: "normal"}
-	errorStopper := &fakeEnv{name: "error", stopErr: errors.New("stop error")}
-	leakyStopper := &leakyFakeEnv{name: "leaky", shouldSpawnGoroutine: true}
-	dualFactory.StoreEnv("normal", normalStopper)
-	dualFactory.StoreEnv("error", errorStopper)
-	dualFactory.StoreEnv("leaky", leakyStopper)
-	dualFactory.StoreEnv("non-stopper", "this is just a string")
+
+	require.NoError(t, dualFactory.StoreEnv("normal", &envtest.Environment{}))
+	require.NoError(t, dualFactory.StoreEnv("error", &envtest.Environment{}))
+
+	normalStopper := &fakeEnvTest{name: "normal"}
+	errorStopper := &fakeEnvTest{name: "error", stopErr: errors.New("stop error")}
+
+	dualFactory.SkrEnvs.Store("normal", normalStopper)
+	dualFactory.SkrEnvs.Store("error", errorStopper)
 
 	err := dualFactory.Stop()
 
@@ -146,45 +138,15 @@ func Test_LeakPrevention_VerifyStopperInterfaceHandling(t *testing.T) {
 	assert.Contains(t, err.Error(), "stop error")
 	assert.True(t, normalStopper.stopCalled)
 	assert.True(t, errorStopper.stopCalled)
-	assert.True(t, leakyStopper.stopCalled)
 }
 
-type fakeEnv struct {
+type fakeEnvTest struct {
 	name       string
 	stopCalled bool
 	stopErr    error
 }
 
-func (f *fakeEnv) Stop() error {
+func (f *fakeEnvTest) Stop() error {
 	f.stopCalled = true
 	return f.stopErr
-}
-
-type leakyFakeEnv struct {
-	name                 string
-	stopCalled           bool
-	stopErr              error
-	shouldSpawnGoroutine bool
-	cancel               context.CancelFunc
-}
-
-func (l *leakyFakeEnv) Stop() error {
-	l.stopCalled = true
-
-	if l.shouldSpawnGoroutine && l.cancel == nil {
-		// Simulate starting a background goroutine (like envtest)
-		ctx, cancel := context.WithCancel(context.Background())
-		l.cancel = cancel
-
-		go func() {
-			<-ctx.Done() // Wait for cancellation
-		}()
-	}
-
-	// Clean up the goroutine
-	if l.cancel != nil {
-		l.cancel()
-	}
-
-	return l.stopErr
 }

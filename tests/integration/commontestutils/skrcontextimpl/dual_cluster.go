@@ -28,8 +28,7 @@ type DualClusterFactory struct {
 	clients sync.Map
 	scheme  *machineryruntime.Scheme
 	event   event.Event
-	skrEnv  *envtest.Environment
-	skrEnvs sync.Map
+	SkrEnvs sync.Map
 }
 
 func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *DualClusterFactory {
@@ -37,7 +36,7 @@ func NewDualClusterFactory(scheme *machineryruntime.Scheme, event event.Event) *
 		clients: sync.Map{},
 		scheme:  scheme,
 		event:   event,
-		skrEnvs: sync.Map{},
+		SkrEnvs: sync.Map{},
 	}
 }
 
@@ -81,9 +80,8 @@ func (f *DualClusterFactory) Init(_ context.Context, kyma types.NamespacedName) 
 	newClient := remote.NewClientWithConfig(skrClient, authUser.Config())
 	f.clients.Store(kyma.Name, newClient)
 
-	f.skrEnv = skrEnv
 	// track this envtest so Stop() can stop all started envs
-	f.skrEnvs.Store(kyma.Name, skrEnv)
+	f.SkrEnvs.Store(kyma.Name, skrEnv)
 
 	return err
 }
@@ -100,8 +98,12 @@ func (f *DualClusterFactory) Get(kyma types.NamespacedName) (*remote.SkrContext,
 	return remote.NewSkrContext(skrClient, f.event), nil
 }
 
-func (f *DualClusterFactory) StoreEnv(name string, env interface{}) {
-	f.skrEnvs.Store(name, env)
+func (f *DualClusterFactory) StoreEnv(name string, env *envtest.Environment) error {
+	if name == "" {
+		return errors.New("environment name cannot be empty")
+	}
+	f.SkrEnvs.Store(name, env)
+	return nil
 }
 
 func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
@@ -109,37 +111,37 @@ func (f *DualClusterFactory) InvalidateCache(_ types.NamespacedName) {
 }
 
 func (f *DualClusterFactory) GetSkrEnv() *envtest.Environment {
-	return f.skrEnv
+	var env *envtest.Environment
+	f.SkrEnvs.Range(func(key, value any) bool {
+		if e, ok := value.(*envtest.Environment); ok {
+			env = e
+			return false
+		}
+		return true
+	})
+	return env
 }
 
 func (f *DualClusterFactory) Stop() error {
 	var errs []error
 
-	f.skrEnvs.Range(func(key, value any) bool {
-		name, _ := key.(string)
-		if stopper, ok := value.(Stopper); ok && stopper != nil {
+	f.SkrEnvs.Range(func(key, value any) bool {
+		name, ok := key.(string)
+		if !ok {
+			return true
+		}
+		if stopper, ok := value.(Stopper); ok {
 			if err := stopper.Stop(); err != nil {
-				if name != "" {
-					errs = append(errs, fmt.Errorf("stop %s: %w", name, err))
-				} else {
-					errs = append(errs, fmt.Errorf("stop <unknown>: %w", err))
-				}
+				errs = append(errs, fmt.Errorf("stop %s: %w", name, err))
 			}
 		}
-
-		// remove entries so we don't double-stop later
-		f.skrEnvs.Delete(key)
-		if name != "" {
-			f.clients.Delete(name)
-		}
+		f.SkrEnvs.Delete(key)
+		f.clients.Delete(name)
 		return true
 	})
 
-	// Clear skrEnv
-	f.skrEnv = nil
-
-	if len(errs) == 0 {
-		return nil
+	if len(errs) > 0 {
+		return fmt.Errorf("errors stopping envtests: %w", errors.Join(errs...))
 	}
-	return fmt.Errorf("errors stopping envtests: %w", errors.Join(errs...))
+	return nil
 }
