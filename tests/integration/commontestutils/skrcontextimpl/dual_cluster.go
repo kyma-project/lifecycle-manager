@@ -20,6 +20,10 @@ var (
 	ErrSkrEnvNotStarted = errors.New("SKR envtest environment not started")
 )
 
+type Stopper interface {
+	Stop() error
+}
+
 type DualClusterFactory struct {
 	clients sync.Map
 	scheme  *machineryruntime.Scheme
@@ -111,18 +115,14 @@ func (f *DualClusterFactory) GetSkrEnv() *envtest.Environment {
 func (f *DualClusterFactory) Stop() error {
 	var errs []error
 
-	f.skrEnvs.Range(func(key, value interface{}) bool {
-		name := ""
-		if ks, ok := key.(string); ok {
-			name = ks
-		}
-
-		if env, ok := value.(*envtest.Environment); ok && env != nil {
-			if err := env.Stop(); err != nil {
+	f.skrEnvs.Range(func(key, value any) bool {
+		name, _ := key.(string)
+		if stopper, ok := value.(Stopper); ok && stopper != nil {
+			if err := stopper.Stop(); err != nil {
 				if name != "" {
-					errs = append(errs, fmt.Errorf("stop envtest %q: %w", name, err))
+					errs = append(errs, fmt.Errorf("stop %s: %w", name, err))
 				} else {
-					errs = append(errs, fmt.Errorf("stop envtest (unknown key): %w", err))
+					errs = append(errs, fmt.Errorf("stop <unknown>: %w", err))
 				}
 			}
 		}
