@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.25.1
+go 1.25.3
 
 replace (
 	github.com/kyma-project/lifecycle-manager/api => ./api
