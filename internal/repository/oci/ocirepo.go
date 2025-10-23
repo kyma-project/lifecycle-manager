@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
+	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg/componentmapping"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
 )
@@ -22,7 +23,7 @@ var (
 // RepositoryReader provides basic support to read data from OCI repositories.
 type RepositoryReader struct {
 	keyChainLookup spec.KeyChainLookup
-	hostref        string
+	hostWithPort   string
 	insecure       bool
 	cWrapper       craneWrapper // in runtime delegates to crane package functions
 }
@@ -47,7 +48,7 @@ func NewRepository(kcl spec.KeyChainLookup, hostWithPort string, insecure bool,
 
 	return &RepositoryReader{
 		keyChainLookup: kcl,
-		hostref:        hostWithPort,
+		hostWithPort:   hostWithPort,
 		insecure:       insecure,
 		cWrapper:       cWrapper,
 	}, nil
@@ -85,7 +86,7 @@ func (s *RepositoryReader) PullLayer(ctx context.Context, name, tag, digest stri
 }
 
 func (s *RepositoryReader) toImageRef(name, tag string) string {
-	hostPath := path.Join(s.hostref, "component-descriptors", name)
+	hostPath := path.Join(s.hostWithPort, componentmapping.ComponentDescriptorNamespace, name)
 	return fmt.Sprintf("%s:%s", hostPath, tag)
 }
 

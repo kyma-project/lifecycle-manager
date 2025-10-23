@@ -13,14 +13,13 @@ import (
 	"ocm.software/ocm/api/ocm/extensions/accessmethods/localociblob"
 	"ocm.software/ocm/api/ocm/extensions/accessmethods/ociartifact"
 	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg"
+	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg/componentmapping"
 	"ocm.software/ocm/api/utils/mime"
 	"ocm.software/ocm/api/utils/runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 )
-
-const DefaultRepoSubdirectory = "component-descriptors"
 
 var (
 	ErrAccessTypeNotSupported           = errors.New("access type not supported")
@@ -127,7 +126,7 @@ func getOCIRef(
 
 	switch repo.ComponentNameMapping {
 	case genericocireg.OCIRegistryURLPathMapping:
-		repoSubpath := DefaultRepoSubdirectory
+		repoSubpath := componentmapping.ComponentDescriptorNamespace
 		baseURL := repo.Name()
 		if repo.SubPath != "" {
 			baseURL = fmt.Sprintf("%s/%s", repo.Name(), repo.SubPath)
