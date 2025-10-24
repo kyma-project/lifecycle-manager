@@ -13,24 +13,24 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-type MandatoryTemplateChangeHandler struct {
+type MandatoryMrmChangeHandler struct {
 	client.Reader
 }
 
-func NewMandatoryTemplateChangeHandler(handlerClient ChangeHandlerClient) *MandatoryTemplateChangeHandler {
-	return &MandatoryTemplateChangeHandler{Reader: handlerClient}
+func NewMandatoryMrmChangeHandler(handlerClient ChangeHandlerClient) *MandatoryMrmChangeHandler {
+	return &MandatoryMrmChangeHandler{Reader: handlerClient}
 }
 
-func (h *MandatoryTemplateChangeHandler) Watch() handler.MapFunc {
+func (h *MandatoryMrmChangeHandler) Watch() handler.MapFunc {
 	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		emptyRequest := make([]reconcile.Request, 0)
-		template := &v1beta2.ModuleTemplate{}
+		mrm := &v1beta2.ModuleReleaseMeta{}
 
-		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
+		if err := h.Get(ctx, client.ObjectKeyFromObject(o), mrm); err != nil {
 			return emptyRequest
 		}
 
-		if !template.Spec.Mandatory {
+		if mrm.Spec.Mandatory == nil {
 			return nil
 		}
 

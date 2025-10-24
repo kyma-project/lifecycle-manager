@@ -32,7 +32,8 @@ func TestEnsureFinalizer_WithoutFinalizer(t *testing.T) {
 	t.Parallel()
 
 	mockRepo := &MockMrmEnsureFinalizerRepo{}
-	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo)
+	mockEventHandler := &MockEventHandler{}
+	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
@@ -48,13 +49,15 @@ func TestEnsureFinalizer_WithoutFinalizer(t *testing.T) {
 	require.True(t, mockRepo.EnsureFinalizerCalled)
 	require.Equal(t, mrm.Name, mockRepo.CalledWithModule)
 	require.Equal(t, shared.MandatoryModuleFinalizer, mockRepo.CalledWithFinalizer)
+	require.False(t, mockEventHandler.Called)
 }
 
 func TestEnsureFinalizer_WithFinalizer(t *testing.T) {
 	t.Parallel()
 
 	mockRepo := &MockMrmEnsureFinalizerRepo{}
-	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo)
+	mockEventHandler := &MockEventHandler{}
+	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:       random.Name(),
@@ -65,6 +68,7 @@ func TestEnsureFinalizer_WithFinalizer(t *testing.T) {
 	isApplicable, err := ensureFinalizer.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
 	require.False(t, isApplicable)
+	require.False(t, mockEventHandler.Called)
 }
 
 func TestEnsureFinalizer_RepositoryError(t *testing.T) {
@@ -74,7 +78,8 @@ func TestEnsureFinalizer_RepositoryError(t *testing.T) {
 	mockRepo := &MockMrmEnsureFinalizerRepo{
 		EnsureFinalizerError: expectedErr,
 	}
-	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo)
+	mockEventHandler := &MockEventHandler{}
+	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
@@ -84,4 +89,6 @@ func TestEnsureFinalizer_RepositoryError(t *testing.T) {
 	executeErr := ensureFinalizer.Execute(context.Background(), mrm)
 	require.ErrorIs(t, executeErr, expectedErr)
 	require.True(t, mockRepo.EnsureFinalizerCalled)
+	require.True(t, mockEventHandler.Called)
+	require.Equal(t, usecases.SettingFinalizerErrorEvent, mockEventHandler.Reason)
 }

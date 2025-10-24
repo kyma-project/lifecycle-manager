@@ -8,19 +8,19 @@ import (
 )
 
 const (
-	MetricMandatoryTemplateCount = "lifecycle_mgr_mandatory_modules"
-	MetricMandatoryModuleState   = "lifecycle_mgr_mandatory_module_state"
+	MetricMandatoryModulesCount = "lifecycle_mgr_mandatory_modules"
+	MetricMandatoryModuleState  = "lifecycle_mgr_mandatory_module_state"
 )
 
 type MandatoryModulesMetrics struct {
-	mandatoryModuleTemplatesCounter prometheus.Gauge
-	moduleStateGauge                *prometheus.GaugeVec
+	mandatoryModulesCounter prometheus.Gauge
+	moduleStateGauge        *prometheus.GaugeVec
 }
 
 func NewMandatoryModulesMetrics() *MandatoryModulesMetrics {
 	metrics := &MandatoryModulesMetrics{
-		mandatoryModuleTemplatesCounter: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: MetricMandatoryTemplateCount,
+		mandatoryModulesCounter: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: MetricMandatoryModulesCount,
 			Help: "Indicates the count of mandatory ModuleTemplates",
 		}),
 		moduleStateGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -28,13 +28,13 @@ func NewMandatoryModulesMetrics() *MandatoryModulesMetrics {
 			Help: "Indicates the Status.state for mandatory modules of Kyma",
 		}, []string{moduleNameLabel, KymaNameLabel, stateLabel}),
 	}
-	ctrlmetrics.Registry.MustRegister(metrics.mandatoryModuleTemplatesCounter)
+	ctrlmetrics.Registry.MustRegister(metrics.mandatoryModulesCounter)
 	ctrlmetrics.Registry.MustRegister(metrics.moduleStateGauge)
 	return metrics
 }
 
-func (m *MandatoryModulesMetrics) RecordMandatoryTemplatesCount(count int) {
-	m.mandatoryModuleTemplatesCounter.Set(float64(count))
+func (m *MandatoryModulesMetrics) RecordMandatoryModulesCount(count int) {
+	m.mandatoryModulesCounter.Set(float64(count))
 }
 
 func (m *MandatoryModulesMetrics) RecordMandatoryModuleState(kymaName, moduleName string, newState shared.State) {

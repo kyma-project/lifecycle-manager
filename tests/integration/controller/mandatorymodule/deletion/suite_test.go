@@ -25,6 +25,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -39,7 +40,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -123,15 +123,12 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider()
-	reconciler = &mandatorymodule.DeletionReconciler{
-		Client:             mgr.GetClient(),
-		Event:              event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)),
-		DescriptorProvider: descriptorProvider,
-		RequeueIntervals:   intervals,
-	}
+	deletionService := deletion.ComposeDeletionService(mgr.GetClient(),
+		event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)))
+	deletionReconciler := mandatorymodule.NewDeletionReconciler(
+		deletionService, intervals)
 
-	err = reconciler.SetupWithManager(mgr, ctrlruntime.Options{})
+	err = deletionReconciler.SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()

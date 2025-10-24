@@ -44,7 +44,8 @@ func TestDeleteManifests_WithManifests(t *testing.T) {
 			{ObjectMeta: apimetav1.ObjectMeta{Name: random.Name()}},
 		},
 	}
-	deleteManifests := usecases.NewDeleteManifests(mockRepo)
+	mockEventHandler := &MockEventHandler{}
+	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
@@ -60,6 +61,7 @@ func TestDeleteManifests_WithManifests(t *testing.T) {
 	executeErr := deleteManifests.Execute(context.Background(), mrm)
 	require.NoError(t, executeErr)
 	require.True(t, mockRepo.DeleteAllForModuleCalled)
+	require.False(t, mockEventHandler.Called)
 }
 
 func TestDeleteManifests_NoManifests(t *testing.T) {
@@ -68,7 +70,8 @@ func TestDeleteManifests_NoManifests(t *testing.T) {
 	mockRepo := &MockManifestRepo{
 		ManifestsToReturn: []apimetav1.PartialObjectMetadata{},
 	}
-	deleteManifests := usecases.NewDeleteManifests(mockRepo)
+	mockEventHandler := &MockEventHandler{}
+	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
@@ -78,6 +81,7 @@ func TestDeleteManifests_NoManifests(t *testing.T) {
 	isApplicable, err := deleteManifests.IsApplicable(context.Background(), mrm)
 	require.NoError(t, err)
 	require.False(t, isApplicable)
+	require.False(t, mockEventHandler.Called)
 }
 
 func TestDeleteManifests_ListError(t *testing.T) {
@@ -87,7 +91,8 @@ func TestDeleteManifests_ListError(t *testing.T) {
 	mockRepo := &MockManifestRepo{
 		ListAllForModuleError: expectedErr,
 	}
-	deleteManifests := usecases.NewDeleteManifests(mockRepo)
+	mockEventHandler := &MockEventHandler{}
+	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
@@ -98,6 +103,7 @@ func TestDeleteManifests_ListError(t *testing.T) {
 	require.Error(t, err)
 	require.False(t, isApplicable)
 	require.Contains(t, err.Error(), "failed to list manifests for module")
+	require.False(t, mockEventHandler.Called)
 }
 
 func TestDeleteManifests_DeleteError(t *testing.T) {
@@ -107,7 +113,8 @@ func TestDeleteManifests_DeleteError(t *testing.T) {
 	mockRepo := &MockManifestRepo{
 		DeleteAllForModuleError: expectedErr,
 	}
-	deleteManifests := usecases.NewDeleteManifests(mockRepo)
+	mockEventHandler := &MockEventHandler{}
+	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name: random.Name(),
@@ -117,4 +124,6 @@ func TestDeleteManifests_DeleteError(t *testing.T) {
 	executeErr := deleteManifests.Execute(context.Background(), mrm)
 	require.Error(t, executeErr)
 	require.Contains(t, executeErr.Error(), "failed to delete manifests for module")
+	require.True(t, mockEventHandler.Called)
+	require.Equal(t, usecases.DeletingManifestErrorEvent, mockEventHandler.Reason)
 }

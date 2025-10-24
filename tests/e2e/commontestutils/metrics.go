@@ -85,7 +85,8 @@ func GetRequeueReasonCount(ctx context.Context,
 	return parseCount(re, bodyString)
 }
 
-func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, requeueType string) (bool,
+func IsManifestRequeueReasonCountIncreased(ctx context.Context, requeueReason, requeueType string) (
+	bool,
 	error,
 ) {
 	bodyString, err := getKCPMetricsBody(ctx)
@@ -165,7 +166,7 @@ func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
 		return 0, err
 	}
 
-	re := regexp.MustCompile(metrics.MetricMandatoryTemplateCount + ` (\d+)`)
+	re := regexp.MustCompile(metrics.MetricMandatoryModulesCount + ` (\d+)`)
 	return parseCount(re, bodyString)
 }
 

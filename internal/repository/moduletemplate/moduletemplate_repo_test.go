@@ -26,6 +26,7 @@ type clientStub struct {
 
 	capturedNamespace string
 	capturedLabels    map[string]string
+	capturedFields    map[string]string
 
 	moduleTemplate  *v1beta2.ModuleTemplate
 	moduleTemplates []v1beta2.ModuleTemplate
@@ -52,7 +53,10 @@ func (c *clientStub) List(_ context.Context, list client.ObjectList, opts ...cli
 			c.capturedNamespace = string(nsOpt)
 		}
 		if labelOpt, ok := opt.(client.MatchingLabels); ok {
-			c.capturedLabels = map[string]string(labelOpt)
+			c.capturedLabels = labelOpt
+		}
+		if fieldOpt, ok := opt.(client.MatchingFields); ok {
+			c.capturedFields = fieldOpt
 		}
 	}
 
@@ -339,5 +343,88 @@ func TestRepository_ListAllForModule(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, stub.listCalled)
 		require.Equal(t, differentModuleName, stub.capturedLabels[shared.ModuleName])
+	})
+}
+
+func TestRepository_GetSpecificVersionForModule(t *testing.T) {
+	ctx := context.Background()
+	testNamespace := "test-namespace"
+	testModuleName := "test-module"
+	testVersion := "1.0.0"
+
+	t.Run("successful call returns single ModuleTemplate", func(t *testing.T) {
+		expected := v1beta2.ModuleTemplate{
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      "template-single",
+				Namespace: testNamespace,
+				Labels:    map[string]string{shared.ModuleName: testModuleName},
+			},
+		}
+
+		stub := &clientStub{moduleTemplates: []v1beta2.ModuleTemplate{expected}}
+		repo := moduletemplate.NewRepository(stub, testNamespace)
+
+		result, err := repo.GetSpecificVersionForModule(ctx, testModuleName, testVersion)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.Equal(t, expected.Name, result.Name)
+		require.True(t, stub.listCalled)
+		require.Equal(t, testNamespace, stub.capturedNamespace)
+		require.Equal(t, testModuleName, stub.capturedLabels[shared.ModuleName])
+		require.Equal(t, testVersion, stub.capturedFields[shared.ModuleTemplateVersionFieldIndexName])
+	})
+
+	t.Run("list error", func(t *testing.T) {
+		expectedErr := errors.New("list error")
+		stub := &clientStub{listErr: expectedErr}
+		repo := moduletemplate.NewRepository(stub, testNamespace)
+
+		result, err := repo.GetSpecificVersionForModule(ctx, testModuleName, testVersion)
+
+		require.True(t, stub.listCalled)
+		require.Error(t, err)
+		require.Nil(t, result)
+		require.ErrorIs(t, err, expectedErr)
+	})
+
+	t.Run("no ModuleTemplates found (len == 0)", func(t *testing.T) {
+		stub := &clientStub{moduleTemplates: []v1beta2.ModuleTemplate{}}
+		repo := moduletemplate.NewRepository(stub, testNamespace)
+
+		result, err := repo.GetSpecificVersionForModule(ctx, testModuleName, testVersion)
+
+		require.True(t, stub.listCalled)
+		require.Error(t, err)
+		require.Nil(t, result)
+		require.Contains(t, err.Error(), "no ModuleTemplates found for module")
+	})
+
+	t.Run("multiple ModuleTemplates found (len > 1)", func(t *testing.T) {
+		multi := []v1beta2.ModuleTemplate{
+			{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:      "template-1",
+					Namespace: testNamespace,
+					Labels:    map[string]string{shared.ModuleName: testModuleName},
+				},
+			},
+			{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:      "template-2",
+					Namespace: testNamespace,
+					Labels:    map[string]string{shared.ModuleName: testModuleName},
+				},
+			},
+		}
+		stub := &clientStub{moduleTemplates: multi}
+		repo := moduletemplate.NewRepository(stub, testNamespace)
+
+		result, err := repo.GetSpecificVersionForModule(ctx, testModuleName, testVersion)
+
+		require.True(t, stub.listCalled)
+		require.Error(t, err)
+		require.Nil(t, result)
+		require.Contains(t, err.Error(), "multiple ModuleTemplates found for module")
 	})
 }
