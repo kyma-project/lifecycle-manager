@@ -3,6 +3,7 @@ package moduletemplateinfolookup_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -12,6 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
@@ -41,6 +43,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithName("test-module").
+		WithOcmComponentName(testutils.FullOCMName("test-module")).
 		WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 			{
 				Channel: "regular",
@@ -64,10 +67,11 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_ReturnsModuleTemplateInfo(t *testi
 	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	require.NotNil(t, moduleTemplateInfo)
-	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
-	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
-	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
-	require.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
+	require.NotNil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
+	assert.Equal(t, moduleTemplate.Spec.Channel, moduleTemplateInfo.Spec.Channel)
 }
 
 func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleReturnsError(t *testing.T) {
@@ -76,6 +80,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenGetChannelVersionForModuleRetu
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithName("test-module").
+		WithOcmComponentName(testutils.FullOCMName("test-module")).
 		WithModuleChannelAndVersions([]v1beta2.ChannelVersionAssignment{
 			{
 				Channel: "regular",
@@ -137,6 +142,7 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_Retur
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithName("test-module").
+		WithOcmComponentName(testutils.FullOCMName("test-module")).
 		WithMandatory("1.0.0").
 		Build()
 	moduleTemplate := builder.NewModuleTemplateBuilder().
@@ -156,9 +162,10 @@ func Test_ByModuleReleaseMeta_Strategy_Lookup_WhenMandatoryModuleActivated_Retur
 	moduleTemplateInfo := byMRMStrategy.Lookup(t.Context(), moduleInfo, kyma, moduleReleaseMeta)
 
 	require.NotNil(t, moduleTemplateInfo)
-	require.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
-	require.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
-	require.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
+	require.NotNil(t, moduleTemplateInfo.ModuleTemplate)
+	assert.Equal(t, moduleTemplate.Name, moduleTemplateInfo.Name)
+	assert.Equal(t, moduleTemplate.Spec.ModuleName, moduleTemplateInfo.Spec.ModuleName)
+	assert.Equal(t, moduleTemplate.Spec.Version, moduleTemplateInfo.Spec.Version)
 }
 
 func fakeClient(mts *v1beta2.ModuleTemplateList) client.Client {

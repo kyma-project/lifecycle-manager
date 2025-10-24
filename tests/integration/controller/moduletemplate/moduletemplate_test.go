@@ -3,8 +3,6 @@ package moduletemplate_test
 import (
 	"fmt"
 
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -33,7 +31,7 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 				WithVersion(givenVersion).
 				WithModuleName("").
 				WithChannel(module.Channel).
-				WithOCM(compdescv2.SchemaVersion).Build()
+				Build()
 
 			err := kcpClient.Create(ctx, template)
 			if shouldSucceed {
@@ -128,7 +126,7 @@ var _ = Describe("ModuleTemplate version is not empty", Ordered, func() {
 				WithModuleName(givenModuleName).
 				WithVersion("").
 				WithChannel(module.Channel).
-				WithOCM(compdescv2.SchemaVersion).Build()
+				Build()
 
 			err := kcpClient.Create(ctx, template)
 			if shouldSucceed {

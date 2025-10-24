@@ -6,6 +6,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
@@ -34,12 +35,12 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	moduleTemplateInfo := templatelookup.ModuleTemplateInfo{}
 	moduleTemplateInfo.DesiredChannel = getDesiredChannel(moduleInfo.Channel, kyma.Spec.Channel)
 
-	var desiredModuleVersion string
+	var resolvedModuleVersion string
 	var err error
 	if moduleReleaseMeta.Spec.Mandatory != nil {
-		desiredModuleVersion, err = templatelookup.GetMandatoryVersionForModule(moduleReleaseMeta)
+		resolvedModuleVersion, err = templatelookup.GetMandatoryVersionForModule(moduleReleaseMeta)
 	} else {
-		desiredModuleVersion, err = templatelookup.GetChannelVersionForModule(moduleReleaseMeta,
+		resolvedModuleVersion, err = templatelookup.GetChannelVersionForModule(moduleReleaseMeta,
 			moduleTemplateInfo.DesiredChannel)
 	}
 	if err != nil {
@@ -47,10 +48,18 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 		return moduleTemplateInfo
 	}
 
+	if ocmId, err := ocmidentity.NewComponentId(
+		moduleReleaseMeta.Spec.OcmComponentName, resolvedModuleVersion); err != nil {
+		moduleTemplateInfo.Err = err
+		return moduleTemplateInfo
+	} else {
+		moduleTemplateInfo.ComponentId = ocmId
+	}
+
 	template, err := getTemplateByVersion(ctx,
 		s.client,
 		moduleInfo.Name,
-		desiredModuleVersion,
+		resolvedModuleVersion,
 		kyma.Namespace)
 	if err != nil {
 		moduleTemplateInfo.Err = err
