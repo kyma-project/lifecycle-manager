@@ -32,16 +32,16 @@ type InstallationService interface {
 }
 
 type InstallationReconciler struct {
-	requeueIntervals    queue.RequeueIntervals
 	installationService InstallationService
+	requeueIntervals    queue.RequeueIntervals
 }
 
-func NewInstallationReconciler(requeueIntervals queue.RequeueIntervals,
-	installationService InstallationService,
+func NewInstallationReconciler(installationService InstallationService,
+	requeueIntervals queue.RequeueIntervals,
 ) *InstallationReconciler {
 	return &InstallationReconciler{
-		requeueIntervals:    requeueIntervals,
 		installationService: installationService,
+		requeueIntervals:    requeueIntervals,
 	}
 }
 
