@@ -20,135 +20,37 @@ import (
 	"context"
 	"fmt"
 
-	k8slabels "k8s.io/apimachinery/pkg/labels"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
-	"github.com/kyma-project/lifecycle-manager/internal/event"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-const (
-	settingFinalizerError event.Reason = "SettingMandatoryModuleTemplateFinalizerError"
-	deletingManifestError event.Reason = "DeletingMandatoryModuleManifestError"
-)
+type DeletionService interface {
+	HandleDeletion(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error
+}
 
 type DeletionReconciler struct {
-	client.Client
-	event.Event
-	queue.RequeueIntervals
-
-	DescriptorProvider *provider.CachedDescriptorProvider
+	deletionService  DeletionService
+	requeueIntervals queue.RequeueIntervals
 }
 
-func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := logf.FromContext(ctx)
-	logger.V(log.DebugLevel).Info("Mandatory Module Deletion Reconciliation started")
-
-	template := &v1beta2.ModuleTemplate{}
-	if err := r.Get(ctx, req.NamespacedName, template); err != nil {
-		if util.IsNotFound(err) {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("ModuleTemplate %s not found, probably already deleted",
-				req.NamespacedName))
-			return ctrl.Result{}, nil
-		}
-		return ctrl.Result{}, fmt.Errorf("MandatoryModuleDeletionController: %w", err)
+func NewDeletionReconciler(deletionService DeletionService,
+	requeueIntervals queue.RequeueIntervals,
+) *DeletionReconciler {
+	return &DeletionReconciler{
+		deletionService:  deletionService,
+		requeueIntervals: requeueIntervals,
 	}
+}
 
-	if !template.Spec.Mandatory {
-		logger.V(log.DebugLevel).Info("Skipping reconciliation, ModuleTemplate not marked as mandatory")
-		return ctrl.Result{}, nil
-	}
+func (r *DeletionReconciler) Reconcile(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (ctrl.Result, error) {
+	err := r.deletionService.HandleDeletion(ctx, mrm)
+	return r.determineRequeueBehaviour(err)
+}
 
-	updateRequired := controllerutil.AddFinalizer(template, shared.MandatoryModuleFinalizer)
-	if updateRequired {
-		return r.updateTemplateFinalizer(ctx, template)
-	}
-
-	if template.DeletionTimestamp.IsZero() {
-		return ctrl.Result{}, nil
-	}
-
-	manifests, err := r.getCorrespondingManifests(ctx, template)
+func (r *DeletionReconciler) determineRequeueBehaviour(err error) (ctrl.Result, error) {
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to get MandatoryModuleManifests: %w", err)
+		return ctrl.Result{}, fmt.Errorf("mandatory module deletion reconciliation failed: %w", err)
 	}
-
-	if len(manifests) == 0 {
-		if controllerutil.RemoveFinalizer(template, shared.MandatoryModuleFinalizer) {
-			return r.updateTemplateFinalizer(ctx, template)
-		}
-		return ctrl.Result{}, nil
-	}
-
-	if err := r.removeManifests(ctx, manifests); err != nil {
-		r.Event.Warning(template, deletingManifestError, err)
-		return ctrl.Result{}, fmt.Errorf("failed to remove MandatoryModule Manifest: %w", err)
-	}
-
-	return ctrl.Result{Requeue: true}, nil
-}
-
-func (r *DeletionReconciler) updateTemplateFinalizer(ctx context.Context,
-	template *v1beta2.ModuleTemplate,
-) (ctrl.Result, error) {
-	if err := r.Update(ctx, template); err != nil {
-		r.Event.Warning(template, settingFinalizerError, err)
-		return ctrl.Result{}, fmt.Errorf("failed to update MandatoryModuleTemplate finalizer: %w", err)
-	}
-	return ctrl.Result{Requeue: true}, nil
-}
-
-func (r *DeletionReconciler) getCorrespondingManifests(ctx context.Context,
-	template *v1beta2.ModuleTemplate) ([]v1beta2.Manifest,
-	error,
-) {
-	manifests := &v1beta2.ManifestList{}
-	descriptor, err := r.DescriptorProvider.GetDescriptor(template)
-	if err != nil {
-		return nil, fmt.Errorf("not able to get descriptor from template: %w", err)
-	}
-	if err := r.List(ctx, manifests, &client.ListOptions{
-		Namespace:     template.Namespace,
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.IsMandatoryModule: "true"}),
-	}); client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("not able to list mandatory module manifests: %w", err)
-	}
-
-	filtered := filterManifestsByFQDNAndVersion(manifests.Items, descriptor.GetName(), descriptor.GetVersion())
-
-	return filtered, nil
-}
-
-func (r *DeletionReconciler) removeManifests(ctx context.Context, manifests []v1beta2.Manifest) error {
-	for _, manifest := range manifests {
-		if err := r.Delete(ctx, &manifest); err != nil {
-			return fmt.Errorf("not able to delete manifest %s/%s: %w", manifest.Namespace, manifest.Name, err)
-		}
-	}
-	logf.FromContext(ctx).V(log.DebugLevel).Info("Marked all MandatoryModule Manifests for deletion")
-	return nil
-}
-
-func filterManifestsByFQDNAndVersion(manifests []v1beta2.Manifest,
-	fqdn, moduleVersion string,
-) []v1beta2.Manifest {
-	filteredManifests := make([]v1beta2.Manifest, 0)
-	for _, manifest := range manifests {
-		if manifest.Annotations == nil {
-			continue
-		}
-
-		if manifest.Annotations[shared.FQDN] == fqdn && manifest.Spec.Version == moduleVersion {
-			filteredManifests = append(filteredManifests, manifest)
-		}
-	}
-	return filteredManifests
+	return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil
 }

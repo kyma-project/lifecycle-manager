@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,11 +17,16 @@ import (
 type clientStub struct {
 	client.Client
 
-	getCalled    bool
+	getCalled bool
+	getErr    error
+
 	updateCalled bool
-	getErr       error
 	updateErr    error
-	mrm          *v1beta2.ModuleReleaseMeta
+
+	listCalled                   bool
+	listCalledWithMatchingFields map[string]string
+	listErr                      error
+	mrm                          *v1beta2.ModuleReleaseMeta
 }
 
 func (c *clientStub) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
@@ -34,6 +40,16 @@ func (c *clientStub) Get(_ context.Context, _ client.ObjectKey, obj client.Objec
 func (c *clientStub) Update(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
 	c.updateCalled = true
 	return c.updateErr
+}
+
+func (c *clientStub) List(_ context.Context, _ client.ObjectList, listOptions ...client.ListOption) error {
+	c.listCalled = true
+	for _, option := range listOptions {
+		if matchingFields, ok := option.(client.MatchingFields); ok {
+			c.listCalledWithMatchingFields = matchingFields
+		}
+	}
+	return c.listErr
 }
 
 func TestRepository_EnsureFinalizer(t *testing.T) {
@@ -230,5 +246,38 @@ func TestRepository_Get(t *testing.T) {
 		require.Contains(t, err.Error(), testMRMName)
 		require.Contains(t, err.Error(), testNamespace)
 		require.True(t, stub.getCalled)
+	})
+}
+
+func TestRepository_ListMandatory(t *testing.T) {
+	ctx := context.Background()
+	testNamespace := "test-namespace"
+
+	t.Run("lists mandatory MRMs successfully", func(t *testing.T) {
+		stub := &clientStub{}
+		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+
+		_, err := repo.ListMandatory(ctx)
+
+		require.NoError(t, err)
+		require.True(t, stub.listCalled)
+		require.Equal(t,
+			map[string]string{shared.MrmMandatoryModuleFieldIndexName: shared.MrmMandatoryModuleFieldIndexPositiveValue},
+			stub.listCalledWithMatchingFields)
+	})
+
+	t.Run("returns error when client list fails", func(t *testing.T) {
+		expectedErr := errors.New("client list error")
+		stub := &clientStub{listErr: expectedErr}
+		repo := modulereleasemeta.NewRepository(stub, testNamespace)
+
+		_, err := repo.ListMandatory(ctx)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to list mandatory ModuleReleaseMeta")
+		require.True(t, stub.listCalled)
+		require.Equal(t,
+			map[string]string{shared.MrmMandatoryModuleFieldIndexName: shared.MrmMandatoryModuleFieldIndexPositiveValue},
+			stub.listCalledWithMatchingFields)
 	})
 }

@@ -30,6 +30,8 @@ import (
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"go.uber.org/zap/zapcore"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -236,7 +238,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger)
-	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, logger)
+	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
 	}
@@ -553,25 +555,22 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	if err := (&mandatorymodule.InstallationReconciler{
-		Client: mgr.GetClient(),
-		RequeueIntervals: queue.RequeueIntervals{
-			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
-			Busy:    flagVar.KymaRequeueBusyInterval,
-			Error:   flagVar.KymaRequeueErrInterval,
-			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		DescriptorProvider:  descriptorProvider,
-		Metrics:             metrics,
-	}).SetupWithManager(mgr, options); err != nil {
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider,
+		flagVar.RemoteSyncNamespace, metrics)
+	installationReconciler := mandatorymodule.NewInstallationReconciler(queue.RequeueIntervals{
+		Success: flagVar.MandatoryModuleRequeueSuccessInterval,
+		Busy:    flagVar.KymaRequeueBusyInterval,
+		Error:   flagVar.KymaRequeueErrInterval,
+		Warning: flagVar.KymaRequeueWarningInterval,
+	}, installationService)
+
+	if err := installationReconciler.SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
 func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
-	descriptorProvider *provider.CachedDescriptorProvider,
 	event event.Event,
 	flagVar *flags.FlagVar,
 	options ctrlruntime.Options,
@@ -582,17 +581,15 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
-	if err := (&mandatorymodule.DeletionReconciler{
-		Client:             mgr.GetClient(),
-		Event:              event,
-		DescriptorProvider: descriptorProvider,
-		RequeueIntervals: queue.RequeueIntervals{
-			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
-			Busy:    flagVar.KymaRequeueBusyInterval,
-			Error:   flagVar.KymaRequeueErrInterval,
-			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-	}).SetupWithManager(mgr, options); err != nil {
+	deletionService := deletion.ComposeDeletionService(mgr.GetClient(), event)
+	deletionReconciler := mandatorymodule.NewDeletionReconciler(deletionService, queue.RequeueIntervals{
+		Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
+		Busy:    flagVar.KymaRequeueBusyInterval,
+		Error:   flagVar.KymaRequeueErrInterval,
+		Warning: flagVar.KymaRequeueWarningInterval,
+	})
+
+	if err := deletionReconciler.SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}

@@ -67,3 +67,24 @@ func (r *Repository) Get(ctx context.Context, moduleTemplateName string) (*v1bet
 	}
 	return moduleTemplate, nil
 }
+
+func (r *Repository) GetSpecificVersionForModule(ctx context.Context,
+	moduleName string,
+	version string,
+) (*v1beta2.ModuleTemplate, error) {
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	err := r.clnt.List(ctx, moduleTemplateList, client.InNamespace(r.namespace),
+		client.MatchingLabels{shared.ModuleName: moduleName},
+		client.MatchingFields{shared.ModuleTemplateVersionFieldIndexName: version})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list ModuleTemplates for module %s: %w", moduleName, err)
+	}
+	length := len(moduleTemplateList.Items)
+	if length == 0 {
+		return nil, fmt.Errorf("no ModuleTemplates found for module %s in version %s", moduleName, version)
+	}
+	if length > 1 {
+		return nil, fmt.Errorf("multiple ModuleTemplates found for module %s in version %s", moduleName, version)
+	}
+	return &moduleTemplateList.Items[0], nil
+}
