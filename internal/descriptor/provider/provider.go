@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 )
@@ -21,14 +21,19 @@ type DescriptorService interface {
 	GetComponentDescriptor(ctx context.Context, ocmId ocmidentity.ComponentId) (*types.Descriptor, error)
 }
 
+type DescriptorCache interface {
+	Get(key descriptorcache.DescriptorKey) *types.Descriptor
+	Set(key descriptorcache.DescriptorKey, value *types.Descriptor)
+}
+
 type CachedDescriptorProvider struct {
-	descriptorCache   *cache.DescriptorCache
+	descriptorCache   DescriptorCache
 	descriptorService DescriptorService
 }
 
-func NewCachedDescriptorProvider(service DescriptorService) *CachedDescriptorProvider {
+func NewCachedDescriptorProvider(service DescriptorService, descCache DescriptorCache) *CachedDescriptorProvider {
 	return &CachedDescriptorProvider{
-		descriptorCache:   cache.NewDescriptorCache(),
+		descriptorCache:   descCache,
 		descriptorService: service,
 	}
 }
@@ -44,7 +49,7 @@ func (c *CachedDescriptorProvider) Add(ocmId ocmidentity.ComponentId) error {
 	if ocmId.Name() == "" || ocmId.Version() == "" {
 		return fmt.Errorf("cannot get descriptor for component: %w", ErrNameOrVersionEmpty)
 	}
-	key := cache.GenerateDescriptorKey(ocmId)
+	key := descriptorcache.GenerateDescriptorKey(ocmId)
 	descriptor := c.descriptorCache.Get(key)
 	if descriptor != nil {
 		return nil
@@ -67,7 +72,7 @@ func (c *CachedDescriptorProvider) GetDescriptor(ocmId ocmidentity.ComponentId) 
 	if ocmId.Name() == "" || ocmId.Version() == "" {
 		return nil, fmt.Errorf("cannot get descriptor for component: %w", ErrNameOrVersionEmpty)
 	}
-	key := cache.GenerateDescriptorKey(ocmId)
+	key := descriptorcache.GenerateDescriptorKey(ocmId)
 	descriptor := c.descriptorCache.Get(key)
 	if descriptor != nil {
 		return descriptor, nil

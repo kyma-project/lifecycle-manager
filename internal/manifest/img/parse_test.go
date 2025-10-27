@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
@@ -58,8 +59,9 @@ func TestParse(t *testing.T) {
 				"kyma-project.io/module/template-operator", testCase.descriptorVersion)
 			require.NoError(t, err)
 			descriptor, err := provider.NewCachedDescriptorProvider(
-				componentdescriptor.NewFakeService(moduleTemplateFromFile.Spec.Descriptor.Raw)).
-				GetDescriptor(*ocmId)
+				componentdescriptor.NewFakeService(moduleTemplateFromFile.Spec.Descriptor.Raw),
+				descriptorcache.NewDescriptorCache(),
+			).GetDescriptor(*ocmId)
 			require.NoError(t, err)
 			layers, err := img.Parse(descriptor.ComponentDescriptor)
 			require.NoError(t, err)

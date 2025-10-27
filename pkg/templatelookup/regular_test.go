@@ -15,6 +15,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -201,7 +202,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 	testModule := testutils.NewTestModule("module1", "new_channel")
 
 	fakeService := &componentdescriptor.FakeService{}
-	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService) // cache backed up by a fake service
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		fakeService,
+		descriptorcache.NewDescriptorCache(),
+	)
 	err := registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(testModule.Name), version1)
 	require.NoError(t, err)
 	err = registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(testModule.Name), version2)
@@ -214,16 +218,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 		availableModuleReleaseMeta v1beta2.ModuleReleaseMetaList
 		want                       templatelookup.ModuleTemplatesByModuleName
 	}{
-		/*
-			// modules without ModuleReleaseMeta are not supported anymore!
-			{
-				name: "When upgrade version during channel switch, " +
-					"then result contains no error, without ModuleReleaseMeta",
-			},{
-				name: "When downgrade version during channel switch, " +
-					"then result contains error, without ModuleReleaseMeta",
-			},
-		*/
 		{
 			name: "When upgrade version during channel switch, " +
 				"then result contains no error, with ModuleReleaseMeta",
@@ -334,7 +328,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchBetweenModuleVersions(t *t
 		})
 
 	fakeService := &componentdescriptor.FakeService{}
-	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService) // cache backed up by a fake service
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		fakeService,
+		descriptorcache.NewDescriptorCache(),
+	)
 	err := registerEmptyComponentDescriptor(fakeService, "kyma-project.io/module"+
 		"/"+moduleToInstall.Name, version1)
 	require.NoError(t, err)
@@ -474,7 +471,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchFromVersionToChannel(t *te
 	)
 
 	fakeService := &componentdescriptor.FakeService{}
-	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService)
+	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService, descriptorcache.NewDescriptorCache())
 	err := registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(moduleToInstall.Name), version2)
 	require.NoError(t, err)
 
@@ -544,44 +541,6 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 		mrmExists bool
 		want      templatelookup.ModuleTemplatesByModuleName
 	}{
-		/*
-			// modules without ModuleReleaseMeta are not supported anymore!
-			{
-				name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error, " +
-					"without ModuleReleaseMeta",
-				kyma: builder.NewKymaBuilder().
-					WithEnabledModule(testModule).Build(),
-				mrmExists: false,
-				want: templatelookup.ModuleTemplatesByModuleName{
-					testModule.Name: &templatelookup.ModuleTemplateInfo{
-						DesiredChannel: testModule.Channel,
-						Err:            provider.ErrDecode,
-					},
-				},
-			},
-			// modules without ModuleReleaseMeta are not supported anymore!
-			{
-				name: "When module exits in ModuleStatus only, then return ModuleTemplatesByModuleName with error," +
-					"without ModuleReleaseMeta",
-				kyma: builder.NewKymaBuilder().
-					WithModuleStatus(v1beta2.ModuleStatus{
-						Name:    testModule.Name,
-						Channel: testModule.Channel,
-						Template: &v1beta2.TrackingObject{
-							PartialMeta: v1beta2.PartialMeta{
-								Generation: 1,
-							},
-						},
-					}).Build(),
-				mrmExists: false,
-				want: templatelookup.ModuleTemplatesByModuleName{
-					testModule.Name: &templatelookup.ModuleTemplateInfo{
-						DesiredChannel: testModule.Channel,
-						Err:            provider.ErrDecode,
-					},
-				},
-			},
-		*/
 		{
 			name: "When module enabled in Spec, then return ModuleTemplatesByModuleName with error," +
 				"with ModuleReleaseMeta",
@@ -672,7 +631,10 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 	testModule := testutils.NewTestModule("module1", v1beta2.DefaultChannel)
 
 	fakeService := &componentdescriptor.FakeService{}
-	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService) // cache backed up by a fake service
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		fakeService,
+		descriptorcache.NewDescriptorCache(),
+	)
 
 	tests := []struct {
 		name string
@@ -750,7 +712,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 	const moduleVersion = "1.0.0"
 
 	fakeService := &componentdescriptor.FakeService{}
-	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService)
+	descriptorProvider := provider.NewCachedDescriptorProvider(fakeService, descriptorcache.NewDescriptorCache())
 	err := registerEmptyComponentDescriptor(fakeService, testutils.FullOCMName(testModule.Name), moduleVersion)
 	require.NoError(t, err)
 
@@ -760,25 +722,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 		mrmExist bool
 		want     templatelookup.ModuleTemplatesByModuleName
 	}{
-		/*
-			//Removed: Modules without ModuleReleaseMeta are not supported anymore!
-			{
-				name: "When module enabled in Spec, then return expected moduleTemplateInfo, without ModuleReleaseMeta",
-				kyma: builder.NewKymaBuilder().
-					WithEnabledModule(testModule).Build(),
-				mrmExist: false,
-				want: templatelookup.ModuleTemplatesByModuleName{
-					testModule.Name: &templatelookup.ModuleTemplateInfo{
-						DesiredChannel: testModule.Channel,
-						Err:            nil,
-						ModuleTemplate: builder.NewModuleTemplateBuilder().
-							WithModuleName(testModule.Name).
-							WithChannel(testModule.Channel).
-							Build(),
-					},
-				},
-			},
-		*/
 		{
 			name: "When module enabled in Spec, then return expected moduleTemplateInfo, with ModuleReleaseMeta",
 			kyma: builder.NewKymaBuilder().
@@ -796,36 +739,6 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 				},
 			},
 		},
-		/*
-			// Modules without ModuleReleaseMeta are not supported anymore!
-			{
-				name: "When module exits in ModuleStatus only, " +
-					"then return expected moduleTemplateInfo, without ModuleReleaseMeta",
-				kyma: builder.NewKymaBuilder().
-					WithEnabledModule(testModule).
-					WithModuleStatus(v1beta2.ModuleStatus{
-						Name:    testModule.Name,
-						Channel: testModule.Channel,
-						Template: &v1beta2.TrackingObject{
-							PartialMeta: v1beta2.PartialMeta{
-								Generation: 1,
-							},
-						},
-						Version: "1.0.0",
-					}).Build(),
-				mrmExist: false,
-				want: templatelookup.ModuleTemplatesByModuleName{
-					testModule.Name: &templatelookup.ModuleTemplateInfo{
-						DesiredChannel: testModule.Channel,
-						Err:            nil,
-						ModuleTemplate: builder.NewModuleTemplateBuilder().
-							WithModuleName(testModule.Name).
-							WithChannel(testModule.Channel).
-							Build(),
-					},
-				},
-			},
-		*/
 		{
 			name: "When module exits in ModuleStatus only, " +
 				"then return expected moduleTemplateInfo, with ModuleReleaseMeta",

@@ -51,6 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/provider/componentdescriptorcache"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
@@ -63,6 +64,7 @@ import (
 	watcherctrl "github.com/kyma-project/lifecycle-manager/internal/controller/watcher"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	gatewaysecretclient "github.com/kyma-project/lifecycle-manager/internal/gatewaysecret/client"
@@ -248,7 +250,10 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		bootstrapFailedExitCode,
 	)
 
-	descriptorProvider := provider.NewCachedDescriptorProvider(ocmDescriptorService)
+	descriptorProvider := componentdescriptorcache.ComposeCachedDescriptorProvider(
+		ocmDescriptorService,
+		descriptorcache.NewDescriptorCache(),
+	)
 
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()

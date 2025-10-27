@@ -39,6 +39,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
@@ -120,7 +121,10 @@ var _ = BeforeSuite(func() {
 	}
 
 	fakeDescriptorService := &componentdescriptor.FakeService{}
-	descriptorProvider := provider.NewCachedDescriptorProvider(fakeDescriptorService)
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		fakeDescriptorService,
+		descriptorcache.NewDescriptorCache(),
+	)
 	compDescrawBytes := builder.ComponentDescriptorFactoryFromSchema(compdescv2.SchemaVersion)
 	registerDescriptor = func(name, version string) error {
 		fakeDescriptorService.RegisterWithNameVersionOverride(name, version, compDescrawBytes.Raw)

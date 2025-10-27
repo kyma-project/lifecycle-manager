@@ -41,6 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -162,7 +163,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	Expect(err).ToNot(HaveOccurred())
-	descriptorProvider = provider.NewCachedDescriptorProvider(descProviderService)
+	descriptorProvider = provider.NewCachedDescriptorProvider(descProviderService, descriptorcache.NewDescriptorCache())
 
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}

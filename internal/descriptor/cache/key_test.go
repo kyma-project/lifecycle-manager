@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -16,7 +16,7 @@ func TestGenerateDescriptorKey(t *testing.T) {
 		expected := "name:1.0.0"
 
 		ocmId := testutils.MustNewComponentId(moduleName, moduleVersion)
-		res := cache.GenerateDescriptorKey(*ocmId)
+		res := descriptorcache.GenerateDescriptorKey(*ocmId)
 		assert.Equal(t, expected, string(res))
 	})
 }
