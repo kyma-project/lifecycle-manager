@@ -77,7 +77,8 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Note: Here we're just adding OCM identity information.
 	// It doesn't change how the Mandatory Modules are selected for installation:
 	// we still take the latest version of every ModuleTemplate which is marked as mandatory.
-	// The switch to the logic based on ModuleReleaseMeta will be done in a follow-up PR.
+	// The switch to the logic based on ModuleReleaseMeta will be done in the issue:
+	// https://github.com/kyma-project/lifecycle-manager/issues/2615.
 	// However, the first step towards this switch is already done here:
 	// the OCM identity information is taken from the ModuleReleaseMeta instance,
 	// that should exist in the cluster.
