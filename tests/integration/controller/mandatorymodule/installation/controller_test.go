@@ -32,7 +32,7 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 		registerControlPlaneLifecycleForKyma(kyma, mandatoryModuleName)
 
 		It("Then Kyma CR should result in a ready state immediately as there are no modules", func() {
-			Eventually(KymaIsInState, Timeout, Interval).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), kcpClient, shared.StateReady).
 				Should(Succeed())
@@ -48,12 +48,11 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 					return ErrWrongModulesStatus
 				}
 				return nil
-			}, Timeout, Interval).
-				Should(Succeed())
+			}).Should(Succeed())
 		})
 
 		It("And Manifest CR for the Mandatory Module should be created with correct Owner Reference", func() {
-			Eventually(checkMandatoryManifestForKyma, Timeout, Interval).
+			Eventually(checkMandatoryManifestForKyma).
 				WithContext(ctx).
 				WithArguments(kyma, FullOCMName(mandatoryModuleName)).
 				Should(Succeed())
@@ -68,7 +67,7 @@ var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
 		registerControlPlaneLifecycleForKyma(kyma, mandatoryModuleName)
 
 		It("When Kyma has 'skip-reconciliation' label, then no Mandatory Module Manifest should be created", func() {
-			Eventually(checkMandatoryManifestForKyma, Timeout, Interval).
+			Eventually(checkMandatoryManifestForKyma).
 				WithContext(ctx).
 				WithArguments(kyma, DefaultFQDN).
 				Should(Equal(ErrNoMandatoryManifest))
@@ -90,38 +89,39 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 	BeforeAll(func() {
 		err := registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, template.Spec.Version)
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(CreateCR, Timeout, Interval).
+		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
-		Eventually(CreateCR, Timeout, Interval).
+		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, moduleReleaseMeta).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
-		Eventually(CreateCR, Timeout, Interval).
+		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
-		Eventually(SetKymaState, Timeout, Interval).
+		Eventually(SetKymaState).
 			WithContext(ctx).
 			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
 	})
 
 	AfterAll(func() {
-		Eventually(DeleteCR, Timeout, Interval).
+		Eventually(DeleteCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
-		Eventually(DeleteCR, Timeout, Interval).
+		Eventually(DeleteCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, moduleReleaseMeta).Should(Succeed())
-		Eventually(DeleteCR, Timeout, Interval).
+		Eventually(DeleteCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Eventually(SyncKyma, Timeout, Interval).
-			WithContext(ctx).WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(SyncKyma).
+			WithContext(ctx).
+			WithArguments(kcpClient, kyma).Should(Succeed())
 	})
 }
 

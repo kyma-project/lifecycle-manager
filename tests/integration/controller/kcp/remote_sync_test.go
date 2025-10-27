@@ -183,7 +183,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("component descriptor should be saved in cache")
-		Expect(IsDescriptorCached(*moduleInSKROCM)).Should(BeTrue())
+		Expect(isDescriptorCached(*moduleInSKROCM)).Should(BeTrue())
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
@@ -239,10 +239,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 })
 
-// IsDescriptorCached checks if the descriptor is in the cache.
+// isDescriptorCached checks if the descriptor is in the cache.
 // It temporarily stops the underlying DescriptorService to ensure the cache is used
 // instead of DescriptorService lookup.
-func IsDescriptorCached(ocmId ocmidentity.ComponentId) bool {
+func isDescriptorCached(ocmId ocmidentity.ComponentId) bool {
 	descProviderService.Stop()
 	defer descProviderService.Resume()
 	result, err := descriptorProvider.GetDescriptor(ocmId)
