@@ -1,4 +1,4 @@
-package componentdescriptor
+package componentdescriptor_test
 
 import (
 	"bytes"
@@ -14,6 +14,7 @@ import (
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
+	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 )
 
 const (
@@ -30,11 +31,11 @@ const (
 func TestNewService(t *testing.T) {
 	t.Run("should return error when ociRepository is nil", func(t *testing.T) {
 		// when
-		svc, err := NewService(nil, nil)
+		svc, err := componentdescriptor.NewService(nil, nil)
 
 		// then
 		require.Nil(t, svc)
-		require.ErrorIs(t, err, ErrInvalidArg)
+		require.ErrorIs(t, err, componentdescriptor.ErrInvalidArg)
 		require.Contains(t, err.Error(), "ociRepository must not be nil")
 	})
 
@@ -42,11 +43,11 @@ func TestNewService(t *testing.T) {
 		// given
 		mockRepo := &mockOCIRepository{}
 		// when
-		svc, err := NewService(mockRepo, nil)
+		svc, err := componentdescriptor.NewService(mockRepo, nil)
 
 		// then
 		require.Nil(t, svc)
-		require.ErrorIs(t, err, ErrInvalidArg)
+		require.ErrorIs(t, err, componentdescriptor.ErrInvalidArg)
 		require.Contains(t, err.Error(), "fileExtractor must not be nil")
 	})
 }
@@ -67,10 +68,11 @@ func TestGetComponentDescriptor(t *testing.T) {
 		require.NoError(t, err)
 		mockFileExtractor := &mockFileExtractor{mockData: cdBytes}
 
-		subject := &Service{
-			ociRepository: &repo,
-			fileExtractor: mockFileExtractor,
-		}
+		subject, err := componentdescriptor.NewService(
+			&repo,
+			mockFileExtractor,
+		)
+		require.NoError(t, err)
 
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
@@ -96,7 +98,10 @@ func TestGetComponentDescriptor(t *testing.T) {
 			getConfigError: errors.New("getConfigError"), // simulate error
 		}
 
-		svc, err := NewService(&repo, NewFileExtractor(NewTarExtractor()))
+		svc, err := componentdescriptor.NewService(
+			&repo,
+			componentdescriptor.NewFileExtractor(componentdescriptor.NewTarExtractor()),
+		)
 		require.NoError(t, err)
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
@@ -120,7 +125,9 @@ func TestGetComponentDescriptor(t *testing.T) {
 			getConfigResult: []byte("...invalid json..."), // simulate error
 		}
 
-		svc, err := NewService(&repo, NewFileExtractor(NewTarExtractor()))
+		svc, err := componentdescriptor.NewService(&repo,
+			componentdescriptor.NewFileExtractor(componentdescriptor.NewTarExtractor()),
+		)
 		require.NoError(t, err)
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
@@ -144,7 +151,9 @@ func TestGetComponentDescriptor(t *testing.T) {
 			pullLayerResult: nil,
 		}
 
-		svc, err := NewService(&repo, NewFileExtractor(NewTarExtractor()))
+		svc, err := componentdescriptor.NewService(&repo,
+			componentdescriptor.NewFileExtractor(componentdescriptor.NewTarExtractor()),
+		)
 		require.NoError(t, err)
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
@@ -154,7 +163,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 		// then
 		require.Error(t, err)
 		assert.Nil(t, result)
-		require.ErrorIs(t, err, ErrLayerNil)
+		require.ErrorIs(t, err, componentdescriptor.ErrLayerNil)
 		assert.Contains(t, err.Error(), "ComponentDescriptorLayer is nil in ComponentDescriptorConfig")
 	})
 
@@ -164,7 +173,9 @@ func TestGetComponentDescriptor(t *testing.T) {
 			pullLayerResult: nil,
 		}
 
-		svc, err := NewService(&repo, NewFileExtractor(NewTarExtractor()))
+		svc, err := componentdescriptor.NewService(&repo,
+			componentdescriptor.NewFileExtractor(componentdescriptor.NewTarExtractor()),
+		)
 		require.NoError(t, err)
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
@@ -173,7 +184,7 @@ func TestGetComponentDescriptor(t *testing.T) {
 		// then
 		assert.Nil(t, result)
 		require.Error(t, err)
-		require.ErrorIs(t, err, ErrLayerDigestEmpty)
+		require.ErrorIs(t, err, componentdescriptor.ErrLayerDigestEmpty)
 		assert.Contains(t, err.Error(), "ComponentDescriptorLayer.Digest is empty in ComponentDescriptorConfig")
 	})
 
@@ -184,7 +195,9 @@ func TestGetComponentDescriptor(t *testing.T) {
 			pullLayerError:  errors.New("pullLayerError"), // simulate error
 		}
 
-		svc, err := NewService(&repo, NewFileExtractor(NewTarExtractor()))
+		svc, err := componentdescriptor.NewService(&repo,
+			componentdescriptor.NewFileExtractor(componentdescriptor.NewTarExtractor()),
+		)
 		require.NoError(t, err)
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
@@ -213,10 +226,11 @@ func TestGetComponentDescriptor(t *testing.T) {
 		expectedErr := errors.New("not found in TAR archive")
 		mockFileExtractor := &mockFileExtractor{err: expectedErr}
 
-		subject := &Service{
-			ociRepository: &repo,
-			fileExtractor: mockFileExtractor,
-		}
+		subject, err := componentdescriptor.NewService(
+			&repo,
+			mockFileExtractor,
+		)
+		require.NoError(t, err)
 
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
@@ -246,10 +260,11 @@ func TestGetComponentDescriptor(t *testing.T) {
 		brokenBytes := bytes.ReplaceAll(cdBytes, []byte("[]"), []byte("!}"))
 
 		mockFileExtractor := &mockFileExtractor{mockData: brokenBytes}
-		subject := &Service{
-			ociRepository: &repo,
-			fileExtractor: mockFileExtractor,
-		}
+		subject, err := componentdescriptor.NewService(
+			&repo,
+			mockFileExtractor,
+		)
+		require.NoError(t, err)
 
 		ocmId, err := ocmidentity.NewComponentId(testComponentName, testComponentVersion)
 		require.NoError(t, err)
