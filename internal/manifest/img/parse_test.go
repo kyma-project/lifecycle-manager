@@ -10,9 +10,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
-	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 )
 
 func TestParse(t *testing.T) {

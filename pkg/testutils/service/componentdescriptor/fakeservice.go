@@ -50,7 +50,6 @@ func (s *FakeService) GetComponentDescriptor(ctx context.Context, ocmId ocmident
 		}
 	}
 
-	//nolint: err113 // it's only used in tests, there is no point in making it a public API error type
 	notFoundErr := fmt.Errorf("component descriptor with name: %q and version %q not found",
 		ocmId.Name(),
 		ocmId.Version(),

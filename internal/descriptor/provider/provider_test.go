@@ -12,8 +12,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
-	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 )
 
 func TestGetDescriptor_OnEmptyIdentity_ReturnsErr(t *testing.T) {
