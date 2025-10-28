@@ -291,7 +291,7 @@ type mockOCIRepository struct {
 	pullLayerError          error
 }
 
-func (m *mockOCIRepository) GetConfigFile(ctx context.Context, name, tag string) ([]byte, error) {
+func (m *mockOCIRepository) GetConfig(ctx context.Context, name, tag string) ([]byte, error) {
 	m.capturedConfigName = name
 	m.capturedConfigTag = tag
 	if m.getConfigError != nil {

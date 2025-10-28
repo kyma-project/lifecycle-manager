@@ -28,7 +28,7 @@ var (
 )
 
 type OCIRepository interface {
-	GetConfigFile(ctx context.Context, name, tag string) ([]byte, error)
+	GetConfig(ctx context.Context, name, tag string) ([]byte, error)
 	PullLayer(ctx context.Context, name, tag, digest string) (containerregistryv1.Layer, error)
 }
 
@@ -94,7 +94,7 @@ func (s *Service) GetComponentDescriptor(ctx context.Context,
 // getDescriptorLayerDigest retrieves the digest of the ComponentDescriptor layer.
 func (s *Service) getDescriptorLayerDigest(ctx context.Context, ocmId ocmidentity.ComponentId) (string, error) {
 	// Fetch the image config to get the ComponentDescriptor layer info
-	configBytes, err := s.ociRepository.GetConfigFile(ctx, ocmId.Name(), ocmId.Version())
+	configBytes, err := s.ociRepository.GetConfig(ctx, ocmId.Name(), ocmId.Version())
 	if err != nil {
 		return "", fmt.Errorf("failed to get config file for %s: %w", commonErrMsg(ocmId), err)
 	}

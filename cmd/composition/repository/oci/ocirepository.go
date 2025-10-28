@@ -6,7 +6,8 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/spec"
-	"github.com/kyma-project/lifecycle-manager/internal/repository/oci"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/ocm"
+	"github.com/kyma-project/lifecycle-manager/internal/repository/ocm/oci"
 )
 
 func ComposeOCIRepository(
@@ -15,11 +16,16 @@ func ComposeOCIRepository(
 	insecure bool,
 	logger logr.Logger,
 	bootstrapFailedExitCode int,
-) *oci.RepositoryReader {
-	repository, err := oci.NewRepository(kcl, hostWithPort, insecure, &oci.DefaultCraneWrapper{})
+) *ocm.RepositoryReader {
+	ociRepository, err := oci.NewRepository(kcl, insecure)
 	if err != nil {
 		logger.Error(err, "failed to create OCI repository")
 		os.Exit(bootstrapFailedExitCode)
 	}
-	return repository
+	ocmRepository, err := ocm.NewRepository(hostWithPort, ociRepository)
+	if err != nil {
+		logger.Error(err, "failed to create OCI repository")
+		os.Exit(bootstrapFailedExitCode)
+	}
+	return ocmRepository
 }
