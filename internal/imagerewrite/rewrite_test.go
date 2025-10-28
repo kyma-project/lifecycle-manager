@@ -3,9 +3,10 @@ package imagerewrite_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal/imagerewrite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/internal/imagerewrite"
 )
 
 func TestDockerImageReference(t *testing.T) {
