@@ -23,7 +23,8 @@ packages:
   internal/remote: 30
 
   internal/repository/kyma: 100
-  internal/repository/oci: 94
+  internal/repository/ocm: 100
+  internal/repository/ocm/oci: 100
   internal/repository/watcher/certificate: 100
   internal/repository/watcher/certificate/certmanager/certificate: 100
   internal/repository/watcher/certificate/gcm/certificate: 98
