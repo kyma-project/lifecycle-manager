@@ -51,6 +51,6 @@ packages:
 
   internal/util/collections: 87
   pkg/module/sync: 10
-  pkg/templatelookup: 83
+  pkg/templatelookup: 80
   pkg/templatelookup/moduletemplateinfolookup: 96
   pkg/watcher: 10
