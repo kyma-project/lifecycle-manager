@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
@@ -66,7 +67,8 @@ func GetModuleReleaseMeta(ctx context.Context, moduleName, namespace string,
 		Name:      moduleName,
 	}, mrm)
 	if err != nil {
-		return nil, fmt.Errorf("get kyma: %w", err)
+		return nil, fmt.Errorf("failed to get ModuleReleaseMeta"+
+			" with name %q in namespace %q: %w", moduleName, namespace, err)
 	}
 	return mrm, nil
 }
@@ -152,4 +154,10 @@ func MandatoryModuleReleaseMetaHasVersion(ctx context.Context, clnt client.Clien
 	}
 
 	return fmt.Errorf("mandatory module %s not found", moduleName)
+}
+
+// FullOCMName returns the fully qualified OCM component name for a given module name.
+// This is used by OCM-related functionality, end-users do not have to use this format.
+func FullOCMName(moduleName string) string {
+	return shared.KymaGroup + "/module/" + moduleName
 }

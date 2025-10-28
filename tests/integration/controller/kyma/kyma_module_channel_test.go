@@ -1,17 +1,18 @@
 package kyma_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"ocm.software/ocm/api/ocm/compdesc"
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -105,7 +106,7 @@ var _ = Describe("module channel different from the global channel", Ordered, fu
 		Expect(kyma.Spec.Channel).Should(Equal(ValidChannel))
 		Expect(skrKyma.Spec.Channel).Should(Equal(ValidChannel))
 	})
-	It("should enable standard modules in a valid channel in SKR Kyma", func() {
+	It("should enable standard modules in a fast channel in SKR Kyma", func() {
 		Eventually(EnableModule, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), moduleInFastChannel).
@@ -115,6 +116,7 @@ var _ = Describe("module channel different from the global channel", Ordered, fu
 		Eventually(deployModuleInChannel).WithArguments(FastChannel, moduleName).Should(Succeed())
 	})
 	It("Manifest should be deployed in fast channel", func() {
+
 		Eventually(expectModuleManifestToHaveChannel, Timeout, Interval).WithArguments(
 			kyma.GetName(), kyma.GetNamespace(), moduleName, FastChannel).Should(Succeed())
 	})
@@ -166,15 +168,13 @@ var _ = Describe("Given invalid channel which is rejected by CRD validation rule
 
 func givenModuleTemplateWithChannel(channel string, isValid bool) func() error {
 	return func() error {
-		modules := []v1beta2.Module{
-			{
-				ControllerName: "manifest",
-				Name:           "module-with-" + channel,
-				Channel:        channel,
-				Managed:        true,
-			},
+		module := v1beta2.Module{
+			ControllerName: "manifest",
+			Name:           "module-with-" + channel,
+			Channel:        channel,
+			Managed:        true,
 		}
-		err := createModuleTemplateSetsForKyma(modules, LowerVersion, channel)
+		err := createModuleTemplateSetsForKyma(module.Name, LowerVersion, channel)
 		if isValid {
 			return err
 		}
@@ -183,15 +183,13 @@ func givenModuleTemplateWithChannel(channel string, isValid bool) func() error {
 }
 
 func deployModuleInChannel(channel string, moduleName string) error {
-	modules := []v1beta2.Module{
-		{
-			ControllerName: "manifest",
-			Name:           moduleName,
-			Channel:        channel,
-			Managed:        true,
-		},
+	module := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           moduleName,
+		Channel:        channel,
+		Managed:        true,
 	}
-	err := createModuleTemplateSetsForKyma(modules, LowerVersion, channel)
+	err := createModuleTemplateSetsForKyma(module.Name, LowerVersion, channel)
 	return err
 }
 
@@ -232,20 +230,18 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 var _ = Describe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	skrKyma := NewSKRKyma()
-	modules := []v1beta2.Module{
-		{
-			ControllerName: "manifest",
-			Name:           "channel-switch",
-			Channel:        v1beta2.DefaultChannel,
-			Managed:        true,
-		},
+	module := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           "channel-switch",
+		Channel:        v1beta2.DefaultChannel,
+		Managed:        true,
 	}
 	var skrClient client.Client
 	var err error
 
 	BeforeAll(func() {
-		Expect(createModuleTemplateSetsForKyma(modules, LowerVersion, v1beta2.DefaultChannel)).To(Succeed())
-		Expect(createModuleTemplateSetsForKyma(modules, HigherVersion, FastChannel)).To(Succeed())
+		Expect(createModuleTemplateSetsForKyma(module.Name, LowerVersion, v1beta2.DefaultChannel)).To(Succeed())
+		Expect(createModuleTemplateSetsForKyma(module.Name, HigherVersion, FastChannel)).To(Succeed())
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
@@ -255,7 +251,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 		}, Timeout, Interval).Should(Succeed())
 	})
 	AfterAll(func() {
-		CleanupModuleTemplateSetsForKyma(kyma)
+		CleanupModuleTemplateSetsForKyma(ctx, kyma)
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
@@ -281,7 +277,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 	It("Standard Modules are enabled in default channel normally", func() {
 		Eventually(EnableModule, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), modules[0]).
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), module).
 			Should(Succeed())
 	})
 	It("should create kyma with standard modules in default channel normally", func() {
@@ -374,31 +370,38 @@ var _ = Describe("Channel switch", Ordered, func() {
 },
 )
 
-func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
+func CleanupModuleTemplateSetsForKyma(ctx context.Context, kyma *v1beta2.Kyma) func() {
 	return func() {
-		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
-			template := builder.NewModuleTemplateBuilder().
-				WithNamespace(ControlPlaneNamespace).
-				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
-				WithModuleName(module.Name).
-				WithChannel(module.Channel).
-				WithOCM(compdescv2.SchemaVersion).Build()
-			Eventually(DeleteCR, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kcpClient, template).Should(Succeed())
-		}
-		By("Cleaning up standard ModuleTemplate set in fast")
-		for _, module := range kyma.Spec.Modules {
-			template := builder.NewModuleTemplateBuilder().
-				WithNamespace(ControlPlaneNamespace).
-				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
-				WithModuleName(module.Name).
-				WithChannel(module.Channel).
-				WithOCM(compdescv2.SchemaVersion).Build()
-			Eventually(DeleteCR, Timeout, Interval).
-				WithContext(ctx).
-				WithArguments(kcpClient, template).Should(Succeed())
+			By("Cleaning up for module: " + module.Name)
+			var mrmToDelete *v1beta2.ModuleReleaseMeta
+			var err error
+			Eventually(func() error {
+				mrmToDelete, err = GetModuleReleaseMeta(ctx, module.Name, ControlPlaneNamespace, kcpClient)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, Timeout, Interval).Should(Succeed())
+
+			if mrmToDelete.Spec.Mandatory != nil && mrmToDelete.Spec.Mandatory.Version != "" {
+				Fail("mandatory modules are not expected")
+			}
+
+			By(" - Deleting ModuleTemplates")
+			for _, channelVersion := range mrmToDelete.Spec.Channels {
+				templateToDelete := &v1beta2.ModuleTemplate{}
+				templateToDelete.Namespace = ControlPlaneNamespace
+				templateToDelete.Name = fmt.Sprintf("%s-%s", module.Name, channelVersion.Version)
+				Eventually(func() error {
+					return kcpClient.Delete(ctx, templateToDelete)
+				}, Timeout, Interval).Should(Succeed())
+			}
+
+			By(" - Deleting ModuleReleaseMeta")
+			Eventually(func() error {
+				return kcpClient.Delete(ctx, mrmToDelete)
+			}, Timeout, Interval).Should(Succeed())
 		}
 	}
 }
@@ -484,29 +487,43 @@ func whenUpdatingEveryModuleChannel(clnt client.Client, kymaName, kymaNamespace,
 	}
 }
 
-func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
-	for _, module := range modules {
-		template := builder.NewModuleTemplateBuilder().
-			WithNamespace(ControlPlaneNamespace).
-			WithModuleName(module.Name).
-			WithChannel(module.Channel).
-			WithOCM(compdescv2.SchemaVersion).Build()
+func createModuleTemplateSetsForKyma(moduleName string, moduleVersion, channel string) error {
+	template := builder.NewModuleTemplateBuilder().
+		WithName(moduleName + "-" + moduleVersion).
+		WithNamespace(ControlPlaneNamespace).
+		WithModuleName(moduleName).
+		WithVersion(moduleVersion).
+		Build()
 
-		descriptor, err := descriptorProvider.GetDescriptor(template)
-		if err != nil {
+	if err := kcpClient.Create(ctx, template); err != nil {
+		return err
+	}
+
+	mrm, err := GetModuleReleaseMeta(ctx, moduleName, ControlPlaneNamespace, kcpClient)
+	if err != nil && client.IgnoreNotFound(err) != nil {
+		return err
+	}
+	if mrm != nil {
+		// Ensure we don't duplicate channel entries
+		for _, ch := range mrm.Spec.Channels {
+			if ch.Channel == channel {
+				return fmt.Errorf("channel %q already exists in ModuleReleaseMeta %q"+
+					" and is assigned version %q", channel, mrm.Name, ch.Version)
+			}
+		}
+		// Add new channel mapping
+		mrm.Spec.Channels = append(mrm.Spec.Channels, v1beta2.ChannelVersionAssignment{
+			Channel: channel,
+			Version: moduleVersion,
+		})
+		if err := kcpClient.Update(ctx, mrm); err != nil {
 			return err
 		}
-		descriptor.Version = modifiedVersion
-		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONCodec)
-		if err != nil {
-			return err
-		}
-		template.Spec.Descriptor.Raw = newDescriptor
-		template.Spec.Channel = channel
-		template.Name = fmt.Sprintf("%s-%s", template.Name, channel)
-		if err := kcpClient.Create(ctx, template); err != nil {
+	} else {
+		mrm = ConfigureKCPModuleReleaseMeta(moduleName, channel, moduleVersion)
+		if err := kcpClient.Create(ctx, mrm); err != nil {
 			return err
 		}
 	}
-	return nil
+	return registerDescriptor(mrm.Spec.OcmComponentName, moduleVersion)
 }

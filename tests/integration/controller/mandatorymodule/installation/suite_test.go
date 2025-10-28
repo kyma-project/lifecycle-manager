@@ -22,6 +22,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
@@ -36,12 +39,14 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -58,11 +63,12 @@ const (
 )
 
 var (
-	reconciler       *mandatorymodule.InstallationReconciler
-	kcpClient        client.Client
-	singleClusterEnv *envtest.Environment
-	ctx              context.Context
-	cancel           context.CancelFunc
+	reconciler         *mandatorymodule.InstallationReconciler
+	kcpClient          client.Client
+	singleClusterEnv   *envtest.Environment
+	ctx                context.Context
+	cancel             context.CancelFunc
+	registerDescriptor func(name, version string) error // register component descriptors for the testing purposes
 )
 
 func TestAPIs(t *testing.T) {
@@ -114,7 +120,17 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider := provider.NewCachedDescriptorProvider()
+	fakeDescriptorService := &componentdescriptor.FakeService{}
+	descriptorProvider := provider.NewCachedDescriptorProvider(
+		fakeDescriptorService,
+		descriptorcache.NewDescriptorCache(),
+	)
+	compDescrawBytes := builder.ComponentDescriptorFactoryFromSchema(compdescv2.SchemaVersion)
+	registerDescriptor = func(name, version string) error {
+		fakeDescriptorService.RegisterWithNameVersionOverride(name, version, compDescrawBytes.Raw)
+		return nil
+	}
+
 	reconciler = &mandatorymodule.InstallationReconciler{
 		Client:              mgr.GetClient(),
 		DescriptorProvider:  descriptorProvider,

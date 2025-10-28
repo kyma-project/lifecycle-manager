@@ -7,21 +7,21 @@ import (
 	"ocm.software/ocm/api/ocm/compdesc"
 	ocmmetav1 "ocm.software/ocm/api/ocm/compdesc/meta/v1"
 
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
 )
 
 func TestGet_ForCacheWithoutEntry_ReturnsNoEntry(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache()
+	descriptorCache := descriptorcache.NewDescriptorCache()
 	key := "key 1"
 
-	actual := descriptorCache.Get(key)
+	actual := descriptorCache.Get(descriptorcache.DescriptorKey(key))
 
 	assert.Nil(t, actual)
 }
 
 func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache()
+	descriptorCache := descriptorcache.NewDescriptorCache()
 	key1 := "key 1"
 	ocmDesc1 := &compdesc.ComponentDescriptor{
 		ComponentSpec: compdesc.ComponentSpec{
@@ -32,13 +32,13 @@ func TestGet_ForCacheWithAnEntry_ReturnsAnEntry(t *testing.T) {
 	}
 	desc1 := &types.Descriptor{ComponentDescriptor: ocmDesc1}
 
-	descriptorCache.Set(key1, desc1)
+	descriptorCache.Set(descriptorcache.DescriptorKey(key1), desc1)
 
-	assertDescriptorEqual(t, desc1, descriptorCache.Get(key1))
+	assertDescriptorEqual(t, desc1, descriptorCache.Get(descriptorcache.DescriptorKey(key1)))
 }
 
 func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
-	descriptorCache := cache.NewDescriptorCache()
+	descriptorCache := descriptorcache.NewDescriptorCache()
 	originalKey, originalValue := "key 1", &types.Descriptor{
 		ComponentDescriptor: &compdesc.ComponentDescriptor{
 			ComponentSpec: compdesc.ComponentSpec{
@@ -53,15 +53,15 @@ func TestGet_ForCacheWithOverwrittenEntry_ReturnsNewEntry(t *testing.T) {
 			},
 		},
 	}
-	descriptorCache.Set(originalKey, originalValue)
-	assertDescriptorNotEqual(t, newValue, descriptorCache.Get(originalKey))
-	assert.Nil(t, descriptorCache.Get(newKey))
+	descriptorCache.Set(descriptorcache.DescriptorKey(originalKey), originalValue)
+	assertDescriptorNotEqual(t, newValue, descriptorCache.Get(descriptorcache.DescriptorKey(originalKey)))
+	assert.Nil(t, descriptorCache.Get(descriptorcache.DescriptorKey(newKey)))
 
-	descriptorCache.Set(newKey, newValue)
-	descriptorCache.Set(originalKey, newValue)
+	descriptorCache.Set(descriptorcache.DescriptorKey(newKey), newValue)
+	descriptorCache.Set(descriptorcache.DescriptorKey(originalKey), newValue)
 
-	assertDescriptorEqual(t, newValue, descriptorCache.Get(newKey))
-	assertDescriptorEqual(t, newValue, descriptorCache.Get(originalKey))
+	assertDescriptorEqual(t, newValue, descriptorCache.Get(descriptorcache.DescriptorKey(newKey)))
+	assertDescriptorEqual(t, newValue, descriptorCache.Get(descriptorcache.DescriptorKey(originalKey)))
 }
 
 func assertDescriptorEqual(t *testing.T, expected, actual *types.Descriptor) {
