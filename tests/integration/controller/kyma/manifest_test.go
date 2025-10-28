@@ -15,8 +15,6 @@ import (
 	"ocm.software/ocm/api/ocm/cpi"
 	"ocm.software/ocm/api/ocm/extensions/accessmethods/localblob"
 	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg"
-	"ocm.software/ocm/api/ocm/extensions/repositories/genericocireg/componentmapping"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,6 +22,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -65,12 +64,6 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			Should(Succeed())
 
 		By("Update Module Template spec.data")
-		moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
-		err := kcpClient.Get(ctx, client.ObjectKey{
-			Name:      createModuleTemplateName(module),
-			Namespace: kyma.GetNamespace(),
-		}, moduleTemplateInCluster)
-		Expect(err).ToNot(HaveOccurred())
 
 		data := unstructured.Unstructured{}
 		data.SetGroupVersionKind(schema.GroupVersionKind{
@@ -81,11 +74,17 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		data.Object["spec"] = map[string]interface{}{
 			"initKey": "valueUpdated",
 		}
-		moduleTemplateInCluster.Spec.Data = &data
 
-		Eventually(kcpClient.Update, Timeout, Interval).
+		updateFn := func(moduleTemplateInCluster *v1beta2.ModuleTemplate) error {
+			moduleTemplateInCluster.Spec.Data = &data
+			return nil
+		}
+		mtName := v1beta2.CreateModuleTemplateName(module.Name, "1.0.1")
+		mtNamespace := kyma.GetNamespace()
+
+		Eventually(UpdateModuleTemplateWithFunc, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(moduleTemplateInCluster).
+			WithArguments(kcpClient, mtName, mtNamespace, updateFn).
 			Should(Succeed())
 
 		By("CR updated with new value in spec.resource.spec")
@@ -116,21 +115,27 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
+		moduleTemplate, _, err := GetModuleTemplateInfo(ctx, kcpClient, module, kyma)
 		Expect(err).NotTo(HaveOccurred())
 
-		expectManifest := expectManifestFor(kyma)
+		expectManifest := expectManifestForFirstModule(kyma)
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+			ocmId, err := ocmidentity.NewComponentId(FullOCMName(module.Name), "1.0.1")
+			if err != nil {
+				return err
+			}
+
+			moduleDescriptor, err := descriptorProvider.GetDescriptor(*ocmId)
 			if err != nil {
 				return err
 			}
 
 			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install),
-				moduleTemplateDescriptor)
+				moduleDescriptor)
 		}
+
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
 		By("checking Spec.Resource")
@@ -141,7 +146,11 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Version")
 		hasValidSpecVersion := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+			ocmId, err := ocmidentity.NewComponentId(FullOCMName(module.Name), "1.0.1")
+			if err != nil {
+				return err
+			}
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(*ocmId)
 			if err != nil {
 				return err
 			}
@@ -182,18 +191,23 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 		manifest.Spec.Install.Source.Raw = updatedBytes
 
 		err = kcpClient.Update(ctx, manifest)
+
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, kcpClient, module, kyma)
+		moduleTemplate, _, err := GetModuleTemplateInfo(ctx, kcpClient, module, kyma)
 		Expect(err).NotTo(HaveOccurred())
 
-		expectManifest := expectManifestFor(kyma)
+		expectManifest := expectManifestForFirstModule(kyma)
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(moduleTemplate)
+			ocmId, err := ocmidentity.NewComponentId(FullOCMName(module.Name), "1.0.1")
+			if err != nil {
+				return err
+			}
+			moduleTemplateDescriptor, err := descriptorProvider.GetDescriptor(*ocmId)
 			if err != nil {
 				return err
 			}
@@ -360,7 +374,7 @@ func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 	if concreteRepo.SubPath != "" {
 		repositoryBaseURL = concreteRepo.Name() + "/" + concreteRepo.SubPath
 	}
-	expectedSourceRepo := repositoryBaseURL + "/" + componentmapping.ComponentDescriptorNamespace
+	expectedSourceRepo := repositoryBaseURL
 
 	if actualSourceRepo != expectedSourceRepo {
 		return fmt.Errorf("Invalid SourceRepo: %s, expected: %s", actualSourceRepo, expectedSourceRepo)
@@ -403,8 +417,8 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 	return nil
 }
 
-// expectManifest is a generic Manifest assertion function.
-func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) func() error {
+// expectManifestForFirstModule is a generic Manifest assertion function.
+func expectManifestForFirstModule(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) func() error {
 	return func(validationFn func(*v1beta2.Manifest) error) func() error {
 		return func() error {
 			// ensure manifest is refreshed each time the function is invoked

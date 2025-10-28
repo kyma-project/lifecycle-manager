@@ -132,6 +132,8 @@ linters:
           alias: secretrepository
         - pkg: k8s.io/api/networking/v1
           alias: apinetworkv1
+        - pkg: github.com/kyma-project/lifecycle-manager/internal/descriptor/cache
+          alias: descriptorcache
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources
           alias: skrwebhookresources
         - pkg: github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager

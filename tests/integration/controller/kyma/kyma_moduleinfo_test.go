@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +15,10 @@ import (
 )
 
 var ErrModuleNumberMismatch = errors.New("Spec.Modules number not match with Status.Modules")
+
+const (
+	ver123 = "1.2.3"
+)
 
 var (
 	kymaName   = "kyma"
@@ -27,11 +32,24 @@ var _ = Describe("Kyma module control", Ordered, func() {
 	var skrClient client.Client
 	var err error
 
+	objTracker := &deletionTracker{}
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, kcpClient, &v1beta2.Kyma{Spec: v1beta2.KymaSpec{Modules: []v1beta2.Module{module}}})
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		DeployModuleTemplates(
+			ctx,
+			kcpClient,
+			&v1beta2.Kyma{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Namespace: shared.DefaultControlPlaneNamespace},
+				Spec: v1beta2.KymaSpec{
+					Modules: []v1beta2.Module{module},
+				},
+			},
+			ver123,
+			objTracker,
+		)
 		Eventually(func() error {
 			skrClient, err = testSkrContextFactory.Get(kyma.GetNamespacedName())
 			return err
@@ -55,6 +73,10 @@ var _ = Describe("Kyma module control", Ordered, func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, kyma).Should(Succeed())
+		Eventually(objTracker.tryDeleteAll, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient).
+			Should(Succeed())
 	})
 	BeforeEach(func() {
 		Eventually(SyncKyma, Timeout, Interval).
@@ -83,7 +105,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 			updateManifestStateWrapper(),
 			modulesHaveReadyStatus),
 		Entry("When remove module in spec, expect number of Manifests matches spec.modules",
-			removeModule(),
+			removeAllModules(),
 			expectCorrectNumberOfModuleStatus),
 	)
 })
@@ -135,11 +157,12 @@ func modulesHaveReadyStatus(skrClient client.Client, kymaName string, kymaNamesp
 	return nil
 }
 
-func removeModule() func(client.Client, string, string) error {
+func removeAllModules() func(client.Client, string, string) error {
 	return func(skrClient client.Client, kymaName, kymaNamespace string) error {
-		createdKyma, err := GetKyma(ctx, skrClient, kymaName, kymaNamespace)
-		Expect(err).ShouldNot(HaveOccurred())
-		createdKyma.Spec.Modules = []v1beta2.Module{}
-		return skrClient.Update(ctx, createdKyma)
+		updateFn := func(kyma *v1beta2.Kyma) error {
+			kyma.Spec.Modules = []v1beta2.Module{}
+			return nil
+		}
+		return UpdateKymaWithFunc(ctx, skrClient, kymaName, kymaNamespace, updateFn)
 	}
 }

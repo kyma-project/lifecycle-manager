@@ -2,8 +2,8 @@ packages:
   internal/controller: 100
   internal/controller/istiogatewaysecret: 28
   internal/crd: 92
-  internal/descriptor/cache: 88
-  internal/descriptor/provider: 66
+  internal/descriptor/cache: 90
+  internal/descriptor/provider: 100
   internal/event: 100
   internal/gatewaysecret/cabundle: 100
   internal/gatewaysecret/legacy: 100
@@ -23,6 +23,8 @@ packages:
   internal/remote: 30
 
   internal/repository/kyma: 100
+  internal/repository/ocm: 100
+  internal/repository/ocm/oci: 100
   internal/repository/watcher/certificate: 100
   internal/repository/watcher/certificate/certmanager/certificate: 100
   internal/repository/watcher/certificate/gcm/certificate: 98
@@ -32,6 +34,7 @@ packages:
   internal/repository/moduletemplate: 100
   internal/repository/modulereleasemeta: 100
 
+  internal/service/componentdescriptor: 100
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/manifest/orphan: 100
@@ -48,6 +51,6 @@ packages:
 
   internal/util/collections: 87
   pkg/module/sync: 10
-  pkg/templatelookup: 87
-  pkg/templatelookup/moduletemplateinfolookup: 98
+  pkg/templatelookup: 80
+  pkg/templatelookup/moduletemplateinfolookup: 96
   pkg/watcher: 10
