@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -22,14 +21,14 @@ import (
 )
 
 const (
-	mandatoryChannel = "dummychannel"
-	mandatoryModule  = "mandatory-module"
+	mandatoryModuleName    = "mandatory-module"
+	mandatoryModuleVersion = "1.0.1"
 )
 
 var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 	Context("Given Kyma with one mandatory Module Manifest CR on Control-Plane", func() {
 		kyma := NewTestKyma("no-module-kyma")
-		registerControlPlaneLifecycleForKyma(kyma)
+		registerControlPlaneLifecycleForKyma(kyma, mandatoryModuleName)
 		It("Then Kyma CR should result in a ready state and mandatory manifest is created with IsMandatory label",
 			func() {
 				Eventually(KymaIsInState).
@@ -38,14 +37,14 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					Should(Succeed())
 				Eventually(MandatoryManifestExistsWithLabelAndAnnotation).
 					WithContext(ctx).
-					WithArguments(kcpClient, shared.FQDN, DefaultFQDN).
+					WithArguments(kcpClient, shared.FQDN, FullOCMName(mandatoryModuleName)).
 					Should(Succeed())
 				By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
 					Eventually(mandatoryModuleTemplateFinalizerExists).
 						WithContext(ctx).
 						WithArguments(kcpClient, client.ObjectKey{
 							Namespace: ControlPlaneNamespace,
-							Name:      mandatoryModule,
+							Name:      v1beta2.CreateModuleTemplateName(mandatoryModuleName, mandatoryModuleVersion),
 						}).
 						Should(Succeed())
 				})
@@ -53,7 +52,7 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 			})
 
 		It("When mandatory ModuleTemplate marked for deletion", func() {
-			Eventually(deleteMandatoryModuleTemplates).
+			Eventually(deleteMandatoryModule).
 				WithContext(ctx).
 				WithArguments(kcpClient).
 				Should(Succeed())
@@ -68,7 +67,7 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					WithContext(ctx).
 					WithArguments(kcpClient, client.ObjectKey{
 						Namespace: ControlPlaneNamespace,
-						Name:      mandatoryModule,
+						Name:      mandatoryModuleName,
 					}).
 					Should(Not(Succeed()))
 			})
@@ -76,23 +75,31 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 	})
 })
 
-func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
+func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleName string) {
 	template := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithName(mandatoryModule).
-		WithModuleName(mandatoryModule).
-		WithChannel(mandatoryChannel).
+		WithName(v1beta2.CreateModuleTemplateName(mandatoryModuleName, mandatoryModuleVersion)).
+		WithModuleName(mandatoryModuleName).
+		WithLabel(shared.IsMandatoryModule, shared.EnableLabelValue).
+		WithVersion(mandatoryModuleVersion).
 		WithMandatory(true).
-		WithOCM(compdescv2.SchemaVersion).
-		WithLabel(shared.IsMandatoryModule, shared.EnableLabelValue).Build()
+		Build()
+	moduleReleaseMeta := ConfigureKCPMandatoryModuleReleaseMeta(template.Spec.ModuleName, template.Spec.Version)
+
 	mandatoryManifest := NewTestManifest("mandatory-module")
-	mandatoryManifest.Spec.Version = "1.1.1-e2e-test"
 	mandatoryManifest.Labels[shared.IsMandatoryModule] = "true"
+	mandatoryManifest.Annotations = map[string]string{shared.FQDN: moduleReleaseMeta.Spec.OcmComponentName}
+	mandatoryManifest.Spec.Version = mandatoryModuleVersion
 
 	BeforeAll(func() {
+		err := registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, template.Spec.Version)
+		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
+		Eventually(CreateCR).
+			WithContext(ctx).
+			WithArguments(kcpClient, moduleReleaseMeta).Should(Succeed())
 		// Set labels and state manual, since we do not start the Kyma Controller
 		kyma.Labels[shared.ManagedBy] = shared.OperatorName
 		Eventually(CreateCR).
@@ -103,7 +110,6 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
 
 		installName := filepath.Join("main-dir", "installs")
-		mandatoryManifest.Annotations = map[string]string{shared.FQDN: DefaultFQDN}
 		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),
 			manifestFilePath)
 		Expect(err).NotTo(HaveOccurred())
@@ -128,7 +134,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 }
 
-func deleteMandatoryModuleTemplates(ctx context.Context, clnt client.Client) error {
+func deleteMandatoryModule(ctx context.Context, clnt client.Client) error {
 	templates := v1beta2.ModuleTemplateList{}
 	if err := clnt.List(ctx, &templates); err != nil {
 		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
@@ -138,6 +144,17 @@ func deleteMandatoryModuleTemplates(ctx context.Context, clnt client.Client) err
 		if template.Spec.Mandatory {
 			if err := clnt.Delete(ctx, &template); err != nil {
 				return fmt.Errorf("failed to delete ModuleTemplate: %w", err)
+			}
+			moduleReleaseMeta := v1beta2.ModuleReleaseMeta{}
+			err := clnt.Get(ctx, client.ObjectKey{
+				Namespace: template.Namespace,
+				Name:      template.Spec.ModuleName,
+			}, &moduleReleaseMeta)
+			if err != nil && !errors.Is(err, client.IgnoreNotFound(err)) {
+				return fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
+			}
+			if err := clnt.Delete(ctx, &moduleReleaseMeta); err != nil {
+				return fmt.Errorf("failed to delete ModuleReleaseMeta: %w", err)
 			}
 		}
 	}
@@ -155,4 +172,13 @@ func mandatoryModuleTemplateFinalizerExists(ctx context.Context, clnt client.Cli
 		return nil
 	}
 	return errors.New("ModuleTemplate does not contain mandatory finalizer")
+}
+
+func ConfigureKCPMandatoryModuleReleaseMeta(moduleName, moduleVersion string) *v1beta2.ModuleReleaseMeta {
+	return builder.NewModuleReleaseMetaBuilder().
+		WithNamespace(ControlPlaneNamespace).
+		WithModuleName(moduleName).
+		WithOcmComponentName(FullOCMName(moduleName)).
+		WithMandatory(moduleVersion).
+		Build()
 }
