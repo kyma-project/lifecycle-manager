@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+//nolint:gosec // This is not sensitive information.
 const SkrImagePullSecretEnvName = "SKR_IMG_PULL_SECRET"
 
 var ErrSkrImagePullSecretEnvAlreadyExists = errors.New(SkrImagePullSecretEnvName + " environment variable already exists")
@@ -26,15 +27,61 @@ func CreateSkrImagePullSecretTransform(secretName string) ResourceTransform {
 
 func patchDeploymentsAndStatefulSets(resource *unstructured.Unstructured, secretName string) error {
 	if resource.GetKind() == "Deployment" || resource.GetKind() == "StatefulSet" {
-		err := parseAndPatchAllContainers(resource, secretName)
+		err := parseAndPatchImagePullSecrets(resource, secretName)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to parse and patch imagePullSecrets in pod spec: %w", err)
+		}
+		err = parseAndPatchAllContainerEnvs(resource, secretName)
+		if err != nil {
+			return fmt.Errorf("failed to parse and patch container envs: %w", err)
 		}
 	}
 	return nil
 }
 
-func parseAndPatchAllContainers(resource *unstructured.Unstructured, secretName string) error {
+func parseAndPatchImagePullSecrets(resource *unstructured.Unstructured, secretName string) error {
+	podSpec, found, err := unstructured.NestedMap(resource.Object, "spec", "template", "spec")
+	if err != nil {
+		return fmt.Errorf("failed to get pod spec: %w", err)
+	}
+	if found {
+		err = patchPodSpec(podSpec, secretName)
+		if err != nil {
+			return err
+		}
+		if err := unstructured.SetNestedMap(resource.Object, podSpec, "spec", "template", "spec"); err != nil {
+			return fmt.Errorf("failed to set pod spec: %w", err)
+		}
+	}
+	return nil
+}
+
+func patchPodSpec(podSpec map[string]interface{}, secretName string) error {
+	imagePullSecrets := getImagePullSecretsFromPodSpec(podSpec)
+	imagePullSecrets = appendSecretNameToImagePullSecrets(imagePullSecrets, secretName)
+	setImagePullSecretsToPodSpec(podSpec, imagePullSecrets)
+	return nil
+}
+
+func setImagePullSecretsToPodSpec(podSpec map[string]interface{}, imagePullSecrets []interface{}) {
+	podSpec["imagePullSecrets"] = imagePullSecrets
+}
+
+func getImagePullSecretsFromPodSpec(podSpec map[string]interface{}) []interface{} {
+	imagePullSecrets, ok := podSpec["imagePullSecrets"].([]interface{})
+	if !ok {
+		imagePullSecrets = []interface{}{}
+	}
+	return imagePullSecrets
+}
+
+func appendSecretNameToImagePullSecrets(imagePullSecrets []interface{}, secretName string) []interface{} {
+	return append(imagePullSecrets, map[string]interface{}{
+		"name": secretName,
+	})
+}
+
+func parseAndPatchAllContainerEnvs(resource *unstructured.Unstructured, secretName string) error {
 	containers, found, err := unstructured.NestedSlice(resource.Object, "spec", "template", "spec",
 		"containers")
 	if err != nil {
@@ -55,28 +102,32 @@ func parseAndPatchAllContainers(resource *unstructured.Unstructured, secretName 
 
 func patchContainers(containers []interface{}, secretName string) error {
 	for index, container := range containers {
-		containerMap := container.(map[string]interface{})
-		envSlice := getEnvSliceFromContainerMap(containerMap)
-		if isReservedEnvNameOccupied(envSlice) {
+		containerMap, ok := container.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		env := getEnvFromContainerMap(containerMap)
+		if isReservedEnvNameOccupied(env) {
 			return ErrSkrImagePullSecretEnvAlreadyExists
 		}
-		addImagePullSecretToEnvSlice(containerMap, envSlice, secretName)
+		env = appendSecretNameToEnvSlice(env, secretName)
+		setEnvToContainerMap(containerMap, env)
 		containers[index] = containerMap
 	}
 	return nil
 }
 
-func getEnvSliceFromContainerMap(containerMap map[string]interface{}) []interface{} {
-	envSlice, ok := containerMap["env"].([]interface{})
+func getEnvFromContainerMap(containerMap map[string]interface{}) []interface{} {
+	env, ok := containerMap["env"].([]interface{})
 	if !ok {
-		envSlice = []interface{}{}
+		env = []interface{}{}
 	}
-	return envSlice
+	return env
 }
 
-func isReservedEnvNameOccupied(envSlice []interface{}) bool {
-	for _, env := range envSlice {
-		envMap, ok := env.(map[string]interface{})
+func isReservedEnvNameOccupied(env []interface{}) bool {
+	for _, e := range env {
+		envMap, ok := e.(map[string]interface{})
 		if !ok {
 			continue
 		}
@@ -87,9 +138,13 @@ func isReservedEnvNameOccupied(envSlice []interface{}) bool {
 	return false
 }
 
-func addImagePullSecretToEnvSlice(containerMap map[string]interface{}, envSlice []interface{}, secretName string) {
-	containerMap["env"] = append(envSlice, map[string]interface{}{
+func appendSecretNameToEnvSlice(env []interface{}, secretName string) []interface{} {
+	return append(env, map[string]interface{}{
 		"name":  SkrImagePullSecretEnvName,
 		"value": secretName,
 	})
+}
+
+func setEnvToContainerMap(containerMap map[string]interface{}, env []interface{}) {
+	containerMap["env"] = env
 }
