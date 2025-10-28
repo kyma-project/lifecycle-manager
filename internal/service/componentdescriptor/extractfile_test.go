@@ -1,4 +1,4 @@
-package componentdescriptor
+package componentdescriptor_test
 
 import (
 	"bytes"
@@ -9,22 +9,25 @@ import (
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 )
 
 func TestExtractFileFromLayer(t *testing.T) {
 	t.Run("should receive bytes from layer and return data", func(t *testing.T) {
 		expectedContent := []byte("some content in the layer tar")
-		subject := testFileExtractor()
-		subject.tarExtractor = &mockTarExtractor{
+		tarExtractor := &mockTarExtractor{
 			contentToReturn: expectedContent,
 		}
+		subject := componentdescriptor.NewFileExtractor(tarExtractor)
+
 		fakeLayer := &mockLayer{
 			data: []byte("some data in the layer"),
 		}
 		res, err := subject.ExtractFileFromLayer(fakeLayer, "somefile")
 		require.NoError(t, err)
 		assert.Equal(t, expectedContent, res)
-		assert.Equal(t, fakeLayer.data, subject.tarExtractor.(*mockTarExtractor).capturedContent)
+		assert.Equal(t, fakeLayer.data, tarExtractor.capturedContent)
 	})
 
 	t.Run("should return valid error when layer content is empty", func(t *testing.T) {
@@ -62,10 +65,14 @@ func TestExtractFileFromLayer(t *testing.T) {
 
 	t.Run("should preserve original error when calling ReadAll", func(t *testing.T) {
 		expectedErr := errors.New("error from ReadAll")
-		subject := testFileExtractor()
-		subject.readAll = func(r io.Reader) ([]byte, error) {
-			return nil, expectedErr
-		}
+		subject := componentdescriptor.NewFileExtractor(
+			componentdescriptor.NewTarExtractor(),
+			componentdescriptor.WithReadAllFunction(
+				func(r io.Reader) ([]byte, error) {
+					return nil, expectedErr
+				},
+			),
+		)
 		res, err := subject.ExtractFileFromLayer(&mockLayer{}, "somefile")
 		require.Nil(t, res)
 		require.Error(t, err)
@@ -74,8 +81,7 @@ func TestExtractFileFromLayer(t *testing.T) {
 
 	t.Run("should preserve original error when calling UnTar", func(t *testing.T) {
 		expectedErr := errors.New("error from UnTar")
-		subject := testFileExtractor()
-		subject.tarExtractor = &mockTarExtractor{errorToReturn: expectedErr}
+		subject := componentdescriptor.NewFileExtractor(&mockTarExtractor{errorToReturn: expectedErr})
 		fakeLayer := &mockLayer{
 			data: []byte("some data in the layer"),
 		}
@@ -86,9 +92,9 @@ func TestExtractFileFromLayer(t *testing.T) {
 	})
 }
 
-func testFileExtractor() *FileExtractor {
-	return NewFileExtractor(
-		NewTarExtractor(),
+func testFileExtractor() *componentdescriptor.FileExtractor {
+	return componentdescriptor.NewFileExtractor(
+		componentdescriptor.NewTarExtractor(),
 	)
 }
 

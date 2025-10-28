@@ -8,18 +8,41 @@ import (
 	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
+type tarExtractor interface {
+	UnTar(tarInput []byte, name string) ([]byte, error)
+}
+
+type readAllFunc func(reader io.Reader) ([]byte, error)
+
 // FileExtractor is responsible for extracting a specific file from a container image layer.
 type FileExtractor struct {
 	// reads all data from the provided reader
-	readAll func(reader io.Reader) ([]byte, error)
+	readAll readAllFunc
 
 	tarExtractor tarExtractor
 }
 
-func NewFileExtractor(tExt tarExtractor) *FileExtractor {
-	return &FileExtractor{
+func NewFileExtractor(tExt tarExtractor,
+	opts ...func(*FileExtractor) *FileExtractor,
+) *FileExtractor {
+	fileExtractor := &FileExtractor{
 		readAll:      io.ReadAll,
 		tarExtractor: tExt,
+	}
+
+	for _, opt := range opts {
+		fileExtractor = opt(fileExtractor)
+	}
+
+	return fileExtractor
+}
+
+// NOTE: LOW LEVEL PRIMITIVE!
+// Use only if intended to exchange the default io.ReadAll function.
+func WithReadAllFunction(f readAllFunc) func(*FileExtractor) *FileExtractor {
+	return func(fExt *FileExtractor) *FileExtractor {
+		fExt.readAll = f
+		return fExt
 	}
 }
 
@@ -54,8 +77,4 @@ func (fExt *FileExtractor) ExtractFileFromLayer(layer containerregistryv1.Layer,
 	}
 
 	return compdescBytes, nil
-}
-
-type tarExtractor interface {
-	UnTar(tarInput []byte, name string) ([]byte, error)
 }
