@@ -13,12 +13,17 @@ import (
 
 var ErrKeyChainNotNil = errors.New("keychain lookup must not be nil")
 
+type (
+	configFunc    func(string, ...crane.Option) ([]byte, error)
+	pullLayerFunc func(string, ...crane.Option) (containerregistryv1.Layer, error)
+)
+
 // RepositoryReader provides basic support to read OCI data from OCI repositories.
 type RepositoryReader struct {
 	insecure       bool
 	keyChainLookup spec.KeyChainLookup
-	config         func(string, ...crane.Option) ([]byte, error)
-	pullLayer      func(string, ...crane.Option) (containerregistryv1.Layer, error)
+	config         configFunc
+	pullLayer      pullLayerFunc
 }
 
 func NewRepository(kcl spec.KeyChainLookup,
@@ -45,7 +50,7 @@ func NewRepository(kcl spec.KeyChainLookup,
 
 // NOTE: LOW LEVEL PRIMITIVE!
 // Use only if intended to exchange the default crane function.
-func WithConfigFunction(f func(string, ...crane.Option) ([]byte, error)) func(*RepositoryReader) *RepositoryReader {
+func WithConfigFunction(f configFunc) func(*RepositoryReader) *RepositoryReader {
 	return func(c *RepositoryReader) *RepositoryReader {
 		c.config = f
 		return c
@@ -54,8 +59,7 @@ func WithConfigFunction(f func(string, ...crane.Option) ([]byte, error)) func(*R
 
 // NOTE: LOW LEVEL PRIMITIVE!
 // Use only if intended to exchange the default crane function.
-func WithPullLayerFunction(f func(string, ...crane.Option) (containerregistryv1.Layer, error),
-) func(*RepositoryReader) *RepositoryReader {
+func WithPullLayerFunction(f pullLayerFunc) func(*RepositoryReader) *RepositoryReader {
 	return func(c *RepositoryReader) *RepositoryReader {
 		c.pullLayer = f
 		return c

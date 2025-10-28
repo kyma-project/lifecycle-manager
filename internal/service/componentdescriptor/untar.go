@@ -13,16 +13,45 @@ const (
 	tarReadChunkSize       = 10 * 1024  // 10KiB, for our average size we'll read it in one go
 )
 
+type (
+	nextFunc  func(tarReader *tar.Reader) (*tar.Header, error)
+	copyNFunc func(dst io.Writer, src io.Reader, n int64) (int64, error)
+)
+
 // TarExtractor is responsible for extracting named files from a tar archive.
 type TarExtractor struct {
-	next  func(tarReader *tar.Reader) (*tar.Header, error)           // wrapper over tar.Reader.Next()
-	copyN func(dst io.Writer, src io.Reader, n int64) (int64, error) // wrapper over io.CopyN()
+	next  nextFunc
+	copyN copyNFunc
 }
 
-func NewTarExtractor() *TarExtractor {
-	return &TarExtractor{
+func NewTarExtractor(opts ...func(*TarExtractor) *TarExtractor) *TarExtractor {
+	tarExtractor := &TarExtractor{
 		next:  (*tar.Reader).Next,
 		copyN: io.CopyN,
+	}
+
+	for _, opt := range opts {
+		tarExtractor = opt(tarExtractor)
+	}
+
+	return tarExtractor
+}
+
+// NOTE: LOW LEVEL PRIMITIVE!
+// Use only if intended to exchange the default tar.Reader.Next function.
+func WithNextFunction(f nextFunc) func(*TarExtractor) *TarExtractor {
+	return func(tarex *TarExtractor) *TarExtractor {
+		tarex.next = f
+		return tarex
+	}
+}
+
+// NOTE: LOW LEVEL PRIMITIVE!
+// Use only if intended to exchange the default io.CopyN function.
+func WithCopyNFunction(f copyNFunc) func(*TarExtractor) *TarExtractor {
+	return func(tarex *TarExtractor) *TarExtractor {
+		tarex.copyN = f
+		return tarex
 	}
 }
 

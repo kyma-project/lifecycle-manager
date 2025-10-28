@@ -1,4 +1,4 @@
-package componentdescriptor
+package componentdescriptor_test
 
 import (
 	"archive/tar"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/componentdescriptor"
 )
 
 func TestUnTar(t *testing.T) {
@@ -33,24 +35,32 @@ func TestUnTar(t *testing.T) {
 		input := generateData(9 * 1024)
 		tarred := asTar(input, "testfile3")
 		_, err := defaultTarExtractor().UnTar(tarred, "nonexisting")
-		require.ErrorIs(t, err, ErrNotFoundInTar)
+		require.ErrorIs(t, err, componentdescriptor.ErrNotFoundInTar)
 	})
 
 	t.Run("should return error when file too large", func(t *testing.T) {
 		input := generateData(150 * 1024)
 		tarred := asTar(input, "testfile4")
 		_, err := defaultTarExtractor().UnTar(tarred, "testfile4")
-		require.ErrorIs(t, err, ErrTarTooLarge)
+		require.ErrorIs(t, err, componentdescriptor.ErrTarTooLarge)
 	})
 
 	t.Run("should return error when input is empty", func(t *testing.T) {
 		_, err := defaultTarExtractor().UnTar([]byte{}, "testfile")
-		require.ErrorIs(t, err, ErrNotFoundInTar)
+		require.ErrorIs(t, err, componentdescriptor.ErrNotFoundInTar)
 	})
 
 	t.Run("should return error when input is nil", func(t *testing.T) {
 		_, err := defaultTarExtractor().UnTar(nil, "testfile")
-		require.ErrorIs(t, err, ErrNotFoundInTar)
+		require.ErrorIs(t, err, componentdescriptor.ErrNotFoundInTar)
+	})
+
+	t.Run("should process the data when Header size is zero", func(t *testing.T) {
+		tarred := asTar([]byte{}, "testfile")
+		subject := zeroSizeTarExtractor("testfile")
+		res, err := subject.UnTar(tarred, "testfile")
+		require.NoError(t, err)
+		assert.Equal(t, []byte{}, res)
 	})
 
 	t.Run("should preserve original error when calling Next", func(t *testing.T) {
@@ -108,33 +118,35 @@ func asTar(data []byte, filename string) []byte {
 	return buf.Bytes()
 }
 
-func defaultTarExtractor() *TarExtractor {
-	return NewTarExtractor()
+func defaultTarExtractor() *componentdescriptor.TarExtractor {
+	return componentdescriptor.NewTarExtractor()
 }
 
-func zeroSizeTarExtractor(name string) *TarExtractor {
-	res := defaultTarExtractor()
-	res.next = func(tarReader *tar.Reader) (*tar.Header, error) {
-		return &tar.Header{
-			Name: name,
-			Size: 0,
-		}, nil
-	}
-	return res
+func zeroSizeTarExtractor(name string) *componentdescriptor.TarExtractor {
+	return componentdescriptor.NewTarExtractor(
+		componentdescriptor.WithNextFunction(
+			func(tarReader *tar.Reader) (*tar.Header, error) {
+				return &tar.Header{
+					Name: name,
+					Size: 0,
+				}, nil
+			},
+		),
+	)
 }
 
-func errorOnNextTarExtractor(expectedErr error) *TarExtractor {
-	res := defaultTarExtractor()
-	res.next = func(tarReader *tar.Reader) (*tar.Header, error) {
-		return nil, expectedErr
-	}
-	return res
+func errorOnNextTarExtractor(expectedErr error) *componentdescriptor.TarExtractor {
+	return componentdescriptor.NewTarExtractor(
+		componentdescriptor.WithNextFunction(func(tarReader *tar.Reader) (*tar.Header, error) {
+			return nil, expectedErr
+		}),
+	)
 }
 
-func errorOnCopyNTarExtractor(expectedErr error) *TarExtractor {
-	res := defaultTarExtractor()
-	res.copyN = func(dst io.Writer, src io.Reader, n int64) (int64, error) {
-		return 0, expectedErr
-	}
-	return res
+func errorOnCopyNTarExtractor(expectedErr error) *componentdescriptor.TarExtractor {
+	return componentdescriptor.NewTarExtractor(
+		componentdescriptor.WithCopyNFunction(func(dst io.Writer, src io.Reader, n int64) (int64, error) {
+			return 0, expectedErr
+		}),
+	)
 }
