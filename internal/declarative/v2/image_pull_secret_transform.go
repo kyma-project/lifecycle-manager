@@ -11,8 +11,8 @@ import (
 //nolint:gosec // This is not sensitive information.
 const SkrImagePullSecretEnvName = "SKR_IMG_PULL_SECRET"
 
-var ErrSkrImagePullSecretEnvAlreadyExists = errors.New(
-	fmt.Sprintf("%s environment variable already exits in raw manifest", SkrImagePullSecretEnvName))
+var ErrSkrImagePullSecretEnvAlreadyExists = errors.New(SkrImagePullSecretEnvName +
+	" environment variable already exits in raw manifest")
 
 func CreateSkrImagePullSecretTransform(secretName string) ResourceTransform {
 	return func(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
