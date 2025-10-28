@@ -3,9 +3,9 @@ package imagerewrite
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
+	"github.com/distribution/reference"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -35,36 +35,50 @@ type DockerImageReference struct {
 	Digest      string
 }
 
-// Regex matches prefix@sha256:checksum, prefix:version, and prefix:version@sha256:checksum.
-var ociImagePattern = regexp.MustCompile(
-	`^(?:(?P<host>[\w.-]+(?::\d+)?(?:/[\w.-]+)*)/)?` +
-		`(?P<name>[a-z0-9]+(?:[_-][a-z0-9]+)*)` +
-		`(?:` +
-		`(?::(?P<tag>[\w.\-]+))(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))?|` +
-		`@(?P<digest>sha256:[a-fA-F0-9]{64})` +
-		`)` +
-		`$`,
-)
-
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
+	ref, err := reference.ParseNamed(val)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidImageReference, err)
+	}
+
 	res := &DockerImageReference{}
 
-	matches := ociImagePattern.FindStringSubmatch(val)
-	if matches == nil {
-		return nil, ErrInvalidImageReference
-	}
-	result := map[string]string{}
-	for i, name := range ociImagePattern.SubexpNames() {
-		if matches[i] == "" {
-			// Skip empty captures because there are two "digest" groups and only one will match.
-			continue
-		}
-		result[name] = matches[i]
+	// 2. Get the standard components
+	domain := reference.Domain(ref)
+	path := reference.Path(ref)
+
+	// 3. Re-create your non-standard HostAndPath/Name split
+	// This logic finds the last '/' to split the "repository path" from the "image name".
+	lastSlashIdx := strings.LastIndex(path, "/")
+	var repoPath string
+	var imageName string
+
+	if lastSlashIdx == -1 {
+		// No path, just the image name (e.g., "nginx")
+		repoPath = ""
+		imageName = path
+	} else {
+		repoPath = path[:lastSlashIdx]
+		imageName = path[lastSlashIdx+1:]
 	}
 
-	res.HostAndPath = result["host"]
-	imageName := result["name"]
-	tag := result["tag"]
+	if domain != "" {
+		if repoPath != "" {
+			res.HostAndPath = domain + "/" + repoPath
+		} else {
+			// e.g., "example.com/myimage:tag"
+			res.HostAndPath = domain
+		}
+	} else {
+		// e.g., "my-org/myimage:tag"
+		res.HostAndPath = repoPath
+	}
+
+	// Populate NameAndTag and Digest
+	var tag string
+	if tagged, ok := ref.(reference.Tagged); ok {
+		tag = tagged.Tag()
+	}
 
 	if tag != "" {
 		res.NameAndTag = NameAndTag(imageName + ":" + tag)
@@ -72,8 +86,9 @@ func NewDockerImageReference(val string) (*DockerImageReference, error) {
 		res.NameAndTag = NameAndTag(imageName)
 	}
 
-	if digest := result["digest"]; digest != "" {
-		res.Digest = digest
+	if digested, ok := ref.(reference.Digested); ok {
+		// We keep the full digest string (e.g., "sha256:...")
+		res.Digest = digested.Digest().String()
 	}
 
 	return res, nil
@@ -84,10 +99,22 @@ func (ir *DockerImageReference) Matches(otherNameAndTag NameAndTag) bool {
 }
 
 func (ir *DockerImageReference) String() string {
-	if len(ir.Digest) > 0 {
-		return fmt.Sprintf("%s/%s@%s", ir.HostAndPath, ir.NameAndTag, ir.Digest)
+	// Use strings.Builder for safe and efficient building
+	var b strings.Builder
+
+	if len(ir.HostAndPath) > 0 {
+		b.WriteString(ir.HostAndPath)
+		b.WriteString("/")
 	}
-	return fmt.Sprintf("%s/%s", ir.HostAndPath, ir.NameAndTag)
+
+	b.WriteString(string(ir.NameAndTag))
+
+	if len(ir.Digest) > 0 {
+		b.WriteString("@")
+		b.WriteString(ir.Digest)
+	}
+
+	return b.String()
 }
 
 type PodContainerImageRewriter struct{}

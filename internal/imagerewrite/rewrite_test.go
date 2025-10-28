@@ -43,7 +43,7 @@ func TestDockerImageReference(t *testing.T) {
 		}{
 			{
 				name:                "Image without host and no digest",
-				expectedHostAndPath: "",
+				expectedHostAndPath: "docker.library.io/",
 				expectedNameAndTag:  "myimage:1.2.3",
 				expectedDigest:      "",
 			},
