@@ -35,19 +35,22 @@ type DockerImageReference struct {
 	Digest      string
 }
 
+// NewDockerImageReference parses a Docker image reference string and returns a DockerImageReference struct.
+// It extracts the host, repository path, image name, tag, and digest from the input string.
+// Returns an error if the reference is invalid or cannot be parsed.
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
-	ref, err := reference.ParseNamed(val)
+	ref, err := reference.ParseNormalizedNamed(val)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidImageReference, err)
+		return nil, fmt.Errorf("%w: %s", ErrInvalidImageReference, err.Error())
 	}
 
 	res := &DockerImageReference{}
 
-	// 2. Get the standard components
+	// Get the standard components
 	domain := reference.Domain(ref)
 	path := reference.Path(ref)
 
-	// 3. Re-create your non-standard HostAndPath/Name split
+	// Re-create your non-standard HostAndPath/Name split
 	// This logic finds the last '/' to split the "repository path" from the "image name".
 	lastSlashIdx := strings.LastIndex(path, "/")
 	var repoPath string
@@ -99,22 +102,21 @@ func (ir *DockerImageReference) Matches(otherNameAndTag NameAndTag) bool {
 }
 
 func (ir *DockerImageReference) String() string {
-	// Use strings.Builder for safe and efficient building
-	var b strings.Builder
+	var stringBuilder strings.Builder
 
 	if len(ir.HostAndPath) > 0 {
-		b.WriteString(ir.HostAndPath)
-		b.WriteString("/")
+		stringBuilder.WriteString(ir.HostAndPath)
+		stringBuilder.WriteString("/")
 	}
 
-	b.WriteString(string(ir.NameAndTag))
+	stringBuilder.WriteString(string(ir.NameAndTag))
 
 	if len(ir.Digest) > 0 {
-		b.WriteString("@")
-		b.WriteString(ir.Digest)
+		stringBuilder.WriteString("@")
+		stringBuilder.WriteString(ir.Digest)
 	}
 
-	return b.String()
+	return stringBuilder.String()
 }
 
 type PodContainerImageRewriter struct{}
