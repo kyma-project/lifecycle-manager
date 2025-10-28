@@ -497,7 +497,8 @@ func setupManifestReconciler(mgr ctrl.Manager,
 		ListenerAddr:                 flagVar.ManifestListenerAddr,
 		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
-		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck); err != nil {
+		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck,
+		flagVar.SkrImagePullSecretName); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}

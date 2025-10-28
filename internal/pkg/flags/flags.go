@@ -362,6 +362,8 @@ type FlagVar struct {
 	MinMaintenanceWindowSize                   time.Duration
 	OciRegistryCredSecretName                  string
 	OciRegistryHost                            string
+	// Placeholder for flag from issue https://github.com/kyma-project/lifecycle-manager/issues/2814
+	SkrImagePullSecretName string
 }
 
 func (f FlagVar) Validate() error {
