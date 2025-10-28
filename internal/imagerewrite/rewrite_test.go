@@ -29,6 +29,7 @@ func TestDockerImageReference(t *testing.T) {
 			"localhost:5111/myimage:5.4.3",
 			"localhost:5111/myimage:5.4.3@sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
 			"localhost:5111/myimage@sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
+			"example.pkg.io/example-project/prod/external/gcr.io/kaniko-project/executor:v1.24.0",
 		})
 
 		// then
@@ -111,6 +112,12 @@ func TestDockerImageReference(t *testing.T) {
 				expectedHostAndPath: "localhost:5111",
 				expectedNameAndTag:  "myimage",
 				expectedDigest:      "sha256:f9f4a45fe9091a8e55b55b80241c522b45a66501703728d386dc4171f70af803",
+			},
+			{
+				name:                "Image with paths are allowed and dots in path",
+				expectedHostAndPath: "example.pkg.io/example-project/prod/external/gcr.io/kaniko-project",
+				expectedNameAndTag:  "executor:v1.24.0",
+				expectedDigest:      "",
 			},
 		}
 
