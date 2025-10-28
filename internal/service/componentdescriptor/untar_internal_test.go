@@ -61,6 +61,14 @@ func TestUnTar(t *testing.T) {
 		require.ErrorIs(t, err, expectedErr)
 	})
 
+	t.Run("should process the data when Header size is zero", func(t *testing.T) {
+		tarred := asTar([]byte{}, "testfile")
+		subject := zeroSizeTarExtractor("testfile")
+		res, err := subject.UnTar(tarred, "testfile")
+		require.NoError(t, err)
+		assert.Equal(t, []byte{}, res)
+	})
+
 	t.Run("should preserve original error when calling CopyN", func(t *testing.T) {
 		tarred := asTar(smallInput, "testfile4")
 		expectedErr := errors.New("problem calling CopyN")
@@ -102,6 +110,17 @@ func asTar(data []byte, filename string) []byte {
 
 func defaultTarExtractor() *TarExtractor {
 	return NewTarExtractor()
+}
+
+func zeroSizeTarExtractor(name string) *TarExtractor {
+	res := defaultTarExtractor()
+	res.next = func(tarReader *tar.Reader) (*tar.Header, error) {
+		return &tar.Header{
+			Name: name,
+			Size: 0,
+		}, nil
+	}
+	return res
 }
 
 func errorOnNextTarExtractor(expectedErr error) *TarExtractor {

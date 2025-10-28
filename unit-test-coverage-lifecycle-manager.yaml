@@ -34,7 +34,7 @@ packages:
   internal/repository/moduletemplate: 100
   internal/repository/modulereleasemeta: 100
 
-  internal/service/componentdescriptor: 63
+  internal/service/componentdescriptor: 100
   internal/service/kyma/status/modules/generator: 100
   internal/service/kyma/status/modules/generator/fromerror: 100
   internal/service/manifest/orphan: 100
