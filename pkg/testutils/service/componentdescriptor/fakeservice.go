@@ -14,6 +14,7 @@ import (
 // Defining this fake here has the advantage of using the same internal
 // deserialization logic as the real service, which makes this fake a bit more "real".
 type FakeService struct {
+	GetError              error
 	registeredDescriptors []registeredDescriptor
 	stopped               bool
 }
@@ -27,6 +28,10 @@ func (s *FakeService) GetComponentDescriptor(ctx context.Context, ocmId ocmident
 ) {
 	if s.stopped {
 		panic("cannot get from a stopped FakeService")
+	}
+
+	if s.GetError != nil {
+		return nil, s.GetError
 	}
 
 	for _, entry := range s.registeredDescriptors {

@@ -98,6 +98,46 @@ func TestGetDescriptor_DoesNotUpdateCache(t *testing.T) {
 	assert.ErrorIs(t, err, types.ErrDecode)
 }
 
+func TestAddDescriptor_DoesNotUpdateCacheIfKeyExists(t *testing.T) {
+	// given
+	mockCache := &mockCache{
+		result: &types.Descriptor{},
+	}
+
+	descriptorProvider := provider.NewCachedDescriptorProvider(nil, mockCache)
+
+	ocmId, err := ocmidentity.NewComponentId("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
+	require.NoError(t, err)
+
+	// when
+	err = descriptorProvider.Add(*ocmId)
+
+	// then
+	require.NoError(t, err)
+}
+
+func TestAddDescriptor_ReturnsErrorFromService(t *testing.T) {
+	// given
+	expectedErr := errors.New("mock error")
+	mockCache := &mockCache{}
+	mockService := &componentdescriptor.FakeService{
+		GetError: expectedErr,
+	}
+
+	descriptorProvider := provider.NewCachedDescriptorProvider(mockService, mockCache)
+
+	ocmId, err := ocmidentity.NewComponentId("kyma-project.io/module/template-operator", "1.0.0-new-ocm-format")
+	require.NoError(t, err)
+
+	// when
+	err = descriptorProvider.Add(*ocmId)
+
+	// then
+	require.Error(t, err)
+	require.ErrorIs(t, err, expectedErr)
+	assert.Contains(t, err.Error(), "error finding ComponentDescriptor: mock error")
+}
+
 func TestGetDescriptor_ReturnsDescriptorFromCache(t *testing.T) {
 	// given
 	var moduleTemplateFromFile v1beta2.ModuleTemplate
@@ -177,4 +217,19 @@ func (b *mockIdentityProvider) GetOCMIdentity() (*ocmidentity.ComponentId, error
 		return nil, b.err
 	}
 	return b.ocmId, nil
+}
+
+type mockCache struct {
+	result *types.Descriptor
+}
+
+func (m *mockCache) Get(key descriptorcache.DescriptorKey) *types.Descriptor {
+	if m.result != nil {
+		return m.result
+	}
+	return nil
+}
+
+func (m *mockCache) Set(key descriptorcache.DescriptorKey, value *types.Descriptor) {
+	m.result = value
 }
