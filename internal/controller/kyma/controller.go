@@ -285,26 +285,26 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 	}
 
 	logger := logf.FromContext(ctx)
-
-	logger.V(log.DebugLevel).Info("[DEBUGG] Before processKymaState for kyma: " + kyma.Name)
+	dummyErr := errors.New("dummy") //nolint:err113 //used only for debugging purposes
+	logger.Error(dummyErr, "[DEBUGG] Before processKymaState for kyma: "+kyma.Name)
 
 	res, err := r.processKymaState(ctx, kyma)
 	if err != nil {
-		logger.V(log.DebugLevel).Info("[DEBUGG] There was an error in processKymaState for kyma: " +
-			kyma.Name + ", error=" + err.Error())
+		logger.Error(dummyErr, "[DEBUGG] There was an error in processKymaState for kyma: "+
+			kyma.Name+", error="+err.Error())
 		r.Metrics.RecordRequeueReason(metrics.ProcessingKymaState, queue.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
 
-	logger.V(log.DebugLevel).Info("[DEBUGG] Before syncStatusToRemote for kyma: " + kyma.Name)
+	logger.Error(dummyErr, "[DEBUGG] Before syncStatusToRemote for kyma: "+kyma.Name)
 	if err := r.syncStatusToRemote(ctx, kyma); err != nil {
-		logger.V(log.DebugLevel).Info("[DEBUGG] There was an error in syncStatusToRemote for kyma: " +
-			kyma.Name + ", error=" + err.Error())
+		logger.Error(dummyErr, "[DEBUGG] There was an error in syncStatusToRemote for kyma: "+
+			kyma.Name+", error="+err.Error())
 		r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 	}
 
-	logger.V(log.DebugLevel).Info("[DEBUGG] After syncStatusToRemote for kyma: " + kyma.Name)
+	logger.Error(dummyErr, "[DEBUGG] After syncStatusToRemote for kyma: "+kyma.Name)
 	return res, err
 }
 
