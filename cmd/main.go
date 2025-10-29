@@ -263,12 +263,13 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	metrics.NewFipsMetrics().Update()
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
-		kymaMetrics, logger, maintenanceWindow)
+		kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
 		eventRecorder)
-	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
+		ociRegistryHost)
 	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
-  
+
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
 	}
@@ -587,14 +588,15 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider,
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, ociRegistryHost,
 		flagVar.RemoteSyncNamespace, metrics)
-	installationReconciler := mandatorymodule.NewInstallationReconciler(queue.RequeueIntervals{
-		Success: flagVar.MandatoryModuleRequeueSuccessInterval,
-		Busy:    flagVar.KymaRequeueBusyInterval,
-		Error:   flagVar.KymaRequeueErrInterval,
-		Warning: flagVar.KymaRequeueWarningInterval,
-	}, installationService)
+	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService,
+		queue.RequeueIntervals{
+			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+			Error:   flagVar.KymaRequeueErrInterval,
+			Warning: flagVar.KymaRequeueWarningInterval,
+		})
 
 	if err := installationReconciler.SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")

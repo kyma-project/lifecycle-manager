@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
 	modulecommon "github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
@@ -79,11 +80,15 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 		if err != nil {
 			return fmt.Errorf("get ModuleTemplate for mandatory module %s failed: %w", mrm.Name, err)
 		}
-		// TODO: Append ocm identity
-		mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = &templatelookup.ModuleTemplateInfo{
-			ModuleTemplate: moduleTemplate,
-			Err:            nil,
+		ocmId, err := ocmidentity.NewComponentId(mrm.Spec.OcmComponentName, moduleTemplate.Spec.Version)
+		if err != nil {
+			err = fmt.Errorf("failed creating OCM identity for module %s in namespace %s: %w",
+				moduleTemplate.Spec.ModuleName, moduleTemplate.Namespace, err)
+			mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = createModuleTemplateInfo(moduleTemplate, err,
+				nil)
+			continue
 		}
+		mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = createModuleTemplateInfo(moduleTemplate, nil, ocmId)
 	}
 	modules := s.moduleParser.GenerateMandatoryModulesFromTemplates(ctx, kyma, mandatoryTemplatesByName)
 	if err := s.manifestCreator.ReconcileManifests(ctx, kyma, modules); err != nil {
@@ -91,4 +96,15 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 	}
 
 	return nil
+}
+
+func createModuleTemplateInfo(template *v1beta2.ModuleTemplate,
+	err error,
+	componentId *ocmidentity.ComponentId,
+) *templatelookup.ModuleTemplateInfo {
+	return &templatelookup.ModuleTemplateInfo{
+		ModuleTemplate: template,
+		Err:            err,
+		ComponentId:    componentId,
+	}
 }

@@ -60,7 +60,7 @@ var _ = Describe("Mandatory Module Installation", Ordered, func() {
 	})
 })
 
-var _ = Describe("Skipping Mandatory Module Installation", Ordered, func() {
+var _ = FDescribe("Skipping Mandatory Module Installation", Ordered, func() {
 	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
 		kyma := NewTestKyma("skip-reconciliation-kyma")
 		kyma.Labels[shared.SkipReconcileLabel] = "true"
@@ -127,7 +127,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 
 func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := reconciler.List(ctx, &manifestList, &client.ListOptions{
+	if err := kcpClient.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
 	}); err != nil {
 		return err

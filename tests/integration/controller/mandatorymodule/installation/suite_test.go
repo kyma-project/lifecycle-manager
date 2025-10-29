@@ -120,8 +120,8 @@ var _ = BeforeSuite(func() {
 		Error:   100 * time.Millisecond,
 		Warning: 100 * time.Millisecond,
 	}
-  
-  fakeDescriptorService := &componentdescriptor.FakeService{}
+
+	fakeDescriptorService := &componentdescriptor.FakeService{}
 	descriptorProvider := provider.NewCachedDescriptorProvider(
 		fakeDescriptorService,
 		descriptorcache.NewDescriptorCache(),
@@ -131,8 +131,8 @@ var _ = BeforeSuite(func() {
 		fakeDescriptorService.RegisterWithNameVersionOverride(name, version, compDescrawBytes.Raw)
 		return nil
 	}
-  
-	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider,
+
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, "",
 		flags.DefaultRemoteSyncNamespace, metrics.NewMandatoryModulesMetrics())
 	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService, intervals)
 
