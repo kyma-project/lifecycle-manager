@@ -239,6 +239,7 @@ func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (
 	return ctrl.Result{Requeue: true}, nil
 }
 
+//nolint:funlen //temporary debugging code
 func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
@@ -283,17 +284,27 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 			" with remote kyma spec: %w", err))
 	}
 
+	logger := logf.FromContext(ctx)
+
+	logger.V(log.DebugLevel).Info("[DEBUGG] Before processKymaState for kyma: " + kyma.Name)
+
 	res, err := r.processKymaState(ctx, kyma)
 	if err != nil {
+		logger.V(log.DebugLevel).Info("[DEBUGG] There was an error in processKymaState for kyma: " +
+			kyma.Name + ", error=" + err.Error())
 		r.Metrics.RecordRequeueReason(metrics.ProcessingKymaState, queue.UnexpectedRequeue)
 		return ctrl.Result{}, err
 	}
 
+	logger.V(log.DebugLevel).Info("[DEBUGG] Before syncStatusToRemote for kyma: " + kyma.Name)
 	if err := r.syncStatusToRemote(ctx, kyma); err != nil {
+		logger.V(log.DebugLevel).Info("[DEBUGG] There was an error in syncStatusToRemote for kyma: " +
+			kyma.Name + ", error=" + err.Error())
 		r.Metrics.RecordRequeueReason(metrics.StatusSyncToRemote, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 	}
 
+	logger.V(log.DebugLevel).Info("[DEBUGG] After syncStatusToRemote for kyma: " + kyma.Name)
 	return res, err
 }
 
