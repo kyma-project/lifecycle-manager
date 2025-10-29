@@ -26,6 +26,13 @@ type SyncCrdsUseCase interface {
 	Execute(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
 }
 
+type Service struct {
+	skrContextFactory   remote.SkrContextProvider
+	secretRepository    SecretRepository
+	syncCrdsUseCase     SyncCrdsUseCase
+	imagePullSecretName string
+}
+
 func NewService(
 	skrContextFactory remote.SkrContextProvider,
 	secretRepository SecretRepository,
@@ -38,13 +45,6 @@ func NewService(
 		syncCrdsUseCase:     syncCrdsUseCase,
 		imagePullSecretName: imagePullSecretName,
 	}
-}
-
-type Service struct {
-	skrContextFactory   remote.SkrContextProvider
-	secretRepository    SecretRepository
-	syncCrdsUseCase     SyncCrdsUseCase
-	imagePullSecretName string
 }
 
 func (s *Service) SyncCrds(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {

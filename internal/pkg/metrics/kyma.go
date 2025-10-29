@@ -30,8 +30,8 @@ type KymaMetrics struct {
 
 type KymaRequeueReason string
 
+//nolint:gosec // requeue reason labels, no confidential content
 const (
-	//nolint:gosec // requeue reason label, no confidential content
 	KymaUnderDeletionAndAccessSecretNotFound KymaRequeueReason = "kyma_under_deletion_with_no_access_secret"
 	StatusUpdateToDeleting                   KymaRequeueReason = "kyma_status_update_to_deleting"
 	LabelsAndFinalizersUpdate                KymaRequeueReason = "labels_and_finalizers_update"

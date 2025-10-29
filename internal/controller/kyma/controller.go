@@ -77,7 +77,8 @@ type SkrSyncService interface {
 	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
 }
 
-// ReconcilerConfig holds configuration values for the Kyma Reconciler, usually read from flags or environment variables.
+// ReconcilerConfig holds configuration values for the Kyma Reconciler.
+// Usually read from flags or environment variables.
 type ReconcilerConfig struct {
 	RemoteSyncNamespace    string
 	IsManagedKyma          bool
@@ -90,10 +91,10 @@ type Reconciler struct {
 	event.Event
 	queue.RequeueIntervals
 
-	Config               ReconcilerConfig // TODO create constructor function to make all fields private
+	Config               ReconcilerConfig
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
-	SkrSyncService       SkrSyncService // TODO create constructor function to make all fields private
+	SkrSyncService       SkrSyncService
 	ModulesStatusHandler ModuleStatusHandler
 	SKRWebhookManager    SKRWebhookManager
 
