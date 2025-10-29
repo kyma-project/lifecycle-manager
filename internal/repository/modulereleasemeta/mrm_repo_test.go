@@ -26,6 +26,7 @@ type clientStub struct {
 	listCalled                   bool
 	listCalledWithMatchingFields map[string]string
 	listErr                      error
+
 	mrm                          *v1beta2.ModuleReleaseMeta
 }
 
