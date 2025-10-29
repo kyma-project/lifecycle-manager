@@ -25,6 +25,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -71,22 +72,34 @@ type ModuleStatusHandler interface {
 	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error
 }
 
+type SkrSyncService interface {
+	SyncCrds(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
+	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
+}
+
+// ReconcilerConfig holds configuration values for the Kyma Reconciler, usually read from flags or environment variables.
+type ReconcilerConfig struct {
+	RemoteSyncNamespace    string
+	IsManagedKyma          bool
+	OCIRegistryHost        string
+	SkrImagePullSecretName string
+}
+
 type Reconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
 
+	Config               ReconcilerConfig // TODO create constructor function to make all fields private
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
-	SyncRemoteCrds       remote.SyncCrdsUseCase
+	SkrSyncService       SkrSyncService // TODO create constructor function to make all fields private
 	ModulesStatusHandler ModuleStatusHandler
 	SKRWebhookManager    SKRWebhookManager
-	RemoteSyncNamespace  string
-	IsManagedKyma        bool
-	Metrics              *metrics.KymaMetrics
-	RemoteCatalog        *remote.RemoteCatalog
-	TemplateLookup       *templatelookup.TemplateLookup
-	OCIRegistryHost      string
+
+	Metrics        *metrics.KymaMetrics
+	RemoteCatalog  *remote.RemoteCatalog
+	TemplateLookup *templatelookup.TemplateLookup
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -189,7 +202,7 @@ func (r *Reconciler) WatcherEnabled() bool {
 }
 
 func (r *Reconciler) IsKymaManaged() bool {
-	return r.IsManagedKyma
+	return r.Config.IsManagedKyma
 }
 
 func (r *Reconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
@@ -263,7 +276,14 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	updateRequired, err := r.SyncRemoteCrds.Execute(ctx, kyma)
+	if r.Config.SkrImagePullSecretName != "" {
+		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
+			r.Metrics.RecordRequeueReason(metrics.ImagePullSecretSync, queue.UnexpectedRequeue)
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync image pull secret: %w", err))
+		}
+	}
+
+	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
 	if err != nil {
 		r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
@@ -585,7 +605,7 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
-	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, r.OCIRegistryHost)
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.Config.RemoteSyncNamespace, r.Config.OCIRegistryHost)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)

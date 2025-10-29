@@ -37,6 +37,7 @@ const (
 	LabelsAndFinalizersUpdate                KymaRequeueReason = "labels_and_finalizers_update"
 	CrdAnnotationsUpdate                     KymaRequeueReason = "crd_annotations_update"
 	CrdsSync                                 KymaRequeueReason = "crds_sync"
+	ImagePullSecretSync                      KymaRequeueReason = "image_pull_secret_sync"
 	ReconcileManifests                       KymaRequeueReason = "manifest_reconciliation"
 	ModuleCatalogSync                        KymaRequeueReason = "module_catalog_sync"
 	SkrWebhookResourcesInstallation          KymaRequeueReason = "skr_webhook_installation"
