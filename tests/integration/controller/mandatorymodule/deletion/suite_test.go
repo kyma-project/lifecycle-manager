@@ -37,6 +37,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
+
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
@@ -67,6 +71,8 @@ var (
 	cancel           context.CancelFunc
 	manifestFilePath string
 	server           *httptest.Server
+
+	registerDescriptor func(name, version string) error // register component descriptors for testing purposes.
 )
 
 func TestAPIs(t *testing.T) {

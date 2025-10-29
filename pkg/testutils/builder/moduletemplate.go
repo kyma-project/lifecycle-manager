@@ -117,11 +117,6 @@ func (m ModuleTemplateBuilder) WithRawDescriptor(rawDescriptor []byte) ModuleTem
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithOCM(schemaVersion compdesc.SchemaVersion) ModuleTemplateBuilder {
-	m.moduleTemplate.Spec.Descriptor = ComponentDescriptorFactoryFromSchema(schemaVersion)
-	return m
-}
-
 func (m ModuleTemplateBuilder) WithRequiresDowntime(value bool) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.RequiresDowntime = value
 	return m

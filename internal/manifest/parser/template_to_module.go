@@ -19,23 +19,29 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
-var ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.AccessSpec to *ociartifact.AccessSpec")
+var (
+	ErrConvertingToOCIAccessSpec = errors.New("failed converting resource.AccessSpec to *ociartifact.AccessSpec")
+	ErrConvertingToImgOCI        = errors.New("failed converting layerRepresentation to *img.OCI")
+)
 
 type Parser struct {
 	client.Client
 
 	descriptorProvider  *provider.CachedDescriptorProvider
 	remoteSyncNamespace string
+	ociRepo             string
 }
 
 func NewParser(clnt client.Client,
 	descriptorProvider *provider.CachedDescriptorProvider,
 	remoteSyncNamespace string,
+	ociRepo string,
 ) *Parser {
 	return &Parser{
 		Client:              clnt,
 		descriptorProvider:  descriptorProvider,
 		remoteSyncNamespace: remoteSyncNamespace,
+		ociRepo:             ociRepo,
 	}
 }
 
@@ -83,7 +89,7 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 		})
 		return modules
 	}
-	descriptor, err := p.descriptorProvider.GetDescriptor(template.ModuleTemplate)
+	descriptor, err := p.descriptorProvider.GetDescriptorWithIdentity(template)
 	if err != nil {
 		template.Err = err
 		modules = append(modules, &modulecommon.Module{
@@ -98,8 +104,8 @@ func (p *Parser) appendModuleWithInformation(module templatelookup.ModuleInfo, k
 	name := modulecommon.CreateModuleName(fqdn, kyma.Name, module.Name)
 	setNameAndNamespaceIfEmpty(template, name, p.remoteSyncNamespace)
 	var manifest *v1beta2.Manifest
-	if manifest, err = p.newManifestFromTemplate(module.Module,
-		template.ModuleTemplate); err != nil {
+	if manifest, err = newManifestFromTemplate(module.Module,
+		template.ModuleTemplate, descriptor, p.ociRepo); err != nil {
 		template.Err = err
 		modules = append(modules, &modulecommon.Module{
 			ModuleName:   module.Name,
@@ -138,9 +144,11 @@ func setNameAndNamespaceIfEmpty(template *templatelookup.ModuleTemplateInfo, nam
 	}
 }
 
-func (p *Parser) newManifestFromTemplate(
+func newManifestFromTemplate(
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
+	descriptor *types.Descriptor,
+	repo string,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	if manifest.Annotations == nil {
@@ -154,16 +162,12 @@ func (p *Parser) newManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-	descriptor, err := p.descriptorProvider.GetDescriptor(template)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
-	}
 
 	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoManifest(manifest, layers); err != nil {
+	if err := translateLayersAndMergeIntoManifest(manifest, layers, repo); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
@@ -203,27 +207,44 @@ func getLocalizedImagesFromDescriptor(descriptor *types.Descriptor) []string {
 	return localizedImages
 }
 
-func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers) error {
+func translateLayersAndMergeIntoManifest(manifest *v1beta2.Manifest, layers img.Layers, repo string) error {
 	for _, layer := range layers {
-		if err := insertLayerIntoManifest(manifest, layer); err != nil {
+		if err := insertLayerIntoManifest(manifest, layer, repo); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
 	return nil
 }
 
-func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer) error {
+func insertLayerIntoManifest(manifest *v1beta2.Manifest, layer img.Layer, ociRepoFromConfig string) error {
 	switch layer.LayerName {
 	case v1beta2.DefaultCRLayer:
 		// default CR layer is not relevant for the manifest
 	case v1beta2.ConfigLayer:
-		imageSpec, err := layer.ConvertToImageSpec()
+		imageSpec, err := layer.ConvertToImageSpec(ociRepoFromConfig)
 		if err != nil {
 			return fmt.Errorf("error while parsing config layer: %w", err)
 		}
 		manifest.Spec.Config = imageSpec
 	case v1beta2.RawManifestLayer:
-		installRaw, err := layer.ToInstallRaw()
+		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
+		if !ok {
+			return fmt.Errorf("%w: actual type: %T", ErrConvertingToImgOCI, layer.LayerRepresentation)
+		}
+
+		// For fetching data from the OCI registry use the repo from the global config
+		// instead of the one from the layer (it is the same as in the ComponentDescriptor).
+		// These two values may be different and the explicitly configured one is safer to use,
+		// as it is known to be reachable.
+		// After all, we've been able to read the ComponentDescriptor using it.
+		ociImageCopy := img.OCI{
+			Repo: ociRepoFromConfig,
+			Name: ociImage.Name,
+			Ref:  ociImage.Ref,
+			Type: ociImage.Type,
+		}
+
+		installRaw, err := ociImageCopy.ToInstallRaw()
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
