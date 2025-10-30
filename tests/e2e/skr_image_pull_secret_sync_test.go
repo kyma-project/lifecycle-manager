@@ -27,9 +27,24 @@ var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 
 	Context("Given SKR Cluster", func() {
 		It("When SKR image pull Secret exists in the KCP Cluster", func() {
-			Eventually(CheckIfExists).
+			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(skrImagePullSecretName, ControlPlaneNamespace, "", "v1", "Secret", kcpClient).
+				Should(Succeed())
+		})
+
+		It("And skr-image-pull-secret flag is set in Deployment", func() {
+			Consistently(DeploymentContainerHasFlag).
+				WithContext(ctx).
+				WithArguments("klm-controller-manager", "kcp-system", "skr-image-pull-secret",
+					skrImagePullSecretName, kcpClient).
+				Should(Succeed())
+		})
+
+		It("Then SKR cluster should have that Secret synced", func() {
+			Eventually(CheckIfExists).
+				WithContext(ctx).
+				WithArguments(skrImagePullSecretName, RemoteNamespace, "", "v1", "Secret", skrClient).
 				Should(Succeed())
 		})
 	})

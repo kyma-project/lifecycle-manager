@@ -237,3 +237,21 @@ func CheckSampleCRHasExpectedLabel(ctx context.Context, name, namespace string, 
 
 	return nil
 }
+
+func DeploymentContainerHasFlag(ctx context.Context,
+	deploymentName, namespace, flagName, flagValue string, clnt client.Client,
+) error {
+	klmDeployment, err := GetDeployment(ctx, clnt, deploymentName, namespace)
+	if err != nil {
+		return fmt.Errorf("could not get deployment: %w", err)
+	}
+
+	for _, container := range klmDeployment.Spec.Template.Spec.Containers {
+		for _, arg := range container.Args {
+			if strings.Contains(arg, flagName) && strings.Contains(arg, flagValue) {
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("flag %s with value %s not found in deployment %s", flagName, flagValue, deploymentName)
+}
