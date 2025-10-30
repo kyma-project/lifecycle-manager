@@ -11,20 +11,28 @@ import (
 )
 
 type testCase struct {
-	name           string
-	watcherEnabled bool
+	name                   string
+	watcherEnabled         bool
+	skrImagePullSecretSync bool
 }
 
 func TestInitConditions(t *testing.T) {
 	t.Parallel()
 	testcases := []testCase{
 		{
-			name:           "Should Init Conditions properly with Watcher Enabled & missing sync label",
-			watcherEnabled: true,
+			name:                   "Should Init Conditions properly with Watcher Enabled & missing sync label",
+			watcherEnabled:         true,
+			skrImagePullSecretSync: false,
 		},
 		{
-			name:           "Should Init Conditions properly with Watcher Disabled & missing sync label",
-			watcherEnabled: false,
+			name:                   "Should Init Conditions properly with Watcher Disabled & missing sync label",
+			watcherEnabled:         false,
+			skrImagePullSecretSync: false,
+		},
+		{
+			name:                   "InitConditions when skrImagePullSecretEnabled is true",
+			watcherEnabled:         false,
+			skrImagePullSecretSync: true,
 		},
 	}
 
@@ -47,9 +55,10 @@ func TestInitConditions(t *testing.T) {
 
 			kyma := kymaBuilder.Build()
 
-			status.InitConditions(kyma, testcase.watcherEnabled)
+			status.InitConditions(kyma, testcase.watcherEnabled, testcase.skrImagePullSecretSync)
 
-			requiredConditions := v1beta2.GetRequiredConditionTypes(testcase.watcherEnabled)
+			requiredConditions := v1beta2.GetRequiredConditionTypes(testcase.watcherEnabled,
+				testcase.skrImagePullSecretSync)
 			if !onlyRequiredKymaConditionsPresent(kyma, requiredConditions) {
 				t.Error("Incorrect Condition Initialization")
 				return

@@ -125,7 +125,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 	}
 
-	status.InitConditions(kyma, r.WatcherEnabled())
+	status.InitConditions(kyma, r.WatcherEnabled(), r.SkrImagePullSecretSyncEnabled())
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("skipping reconciliation for Kyma: " + kyma.Name)
@@ -206,6 +206,10 @@ func (r *Reconciler) IsKymaManaged() bool {
 	return r.Config.IsManagedKyma
 }
 
+func (r *Reconciler) SkrImagePullSecretSyncEnabled() bool {
+	return r.Config.SkrImagePullSecretName != ""
+}
+
 func (r *Reconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
 	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
@@ -277,11 +281,13 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if r.Config.SkrImagePullSecretName != "" {
+	if r.SkrImagePullSecretSyncEnabled() {
 		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.ImagePullSecretSync, queue.UnexpectedRequeue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionFalse)
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync image pull secret: %w", err))
 		}
+		kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionTrue)
 	}
 
 	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
