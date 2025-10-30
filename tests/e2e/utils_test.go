@@ -18,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -127,6 +128,17 @@ func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string
 		Data: map[string][]byte{"config": []byte(invalidRuntimeConfig)},
 	}
 	return k8sClient.Create(ctx, secret)
+}
+
+func CreateAnySecret(ctx context.Context, clnt client.Client, name string) error {
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      name,
+			Namespace: shared.DefaultControlPlaneNamespace,
+		},
+		Data: map[string][]byte{"data": []byte(random.Name())},
+	}
+	return clnt.Create(ctx, secret)
 }
 
 func CheckRemoteKymaCR(ctx context.Context,

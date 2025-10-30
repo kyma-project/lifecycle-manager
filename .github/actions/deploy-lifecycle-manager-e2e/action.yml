@@ -199,6 +199,19 @@ runs:
       with:
         klm_version_tag: ${{ inputs.klm_version_tag }}
         klm_image_repo: ${{ inputs.klm_image_repo }}
+    - name: Patch SKR Image Pull Secret
+      if: ${{ matrix.e2e-test == 'skr-image-pull-secret-sync' }}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --skr-image-pull-secret=some-special-image-pull-secret" >> skr_image_pull_secret_patch.yaml
+        cat skr_image_pull_secret_patch.yaml
+        kustomize edit add patch --path skr_image_pull_secret_patch.yaml --kind Deployment
+        popd
     - name: Expose Metrics Endpoint
       working-directory: lifecycle-manager
       shell: bash
