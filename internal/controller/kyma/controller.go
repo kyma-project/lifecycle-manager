@@ -282,15 +282,6 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if r.SkrImagePullSecretSyncEnabled() {
-		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
-			r.Metrics.RecordRequeueReason(metrics.ImagePullSecretSync, queue.UnexpectedRequeue)
-			kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionFalse)
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync image pull secret: %w", err))
-		}
-		kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionTrue)
-	}
-
 	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
 	if err != nil {
 		r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
@@ -304,6 +295,16 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	}
+
+	if r.SkrImagePullSecretSyncEnabled() {
+		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
+			r.Metrics.RecordRequeueReason(metrics.ImagePullSecretSync, queue.UnexpectedRequeue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionFalse)
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync image pull secret: %w", err))
+		}
+		kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionTrue)
+	}
+
 	// update the control-plane kyma with the changes to the spec of the remote Kyma
 	if err = r.replaceSpecFromRemote(ctx, kyma); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, queue.UnexpectedRequeue)
