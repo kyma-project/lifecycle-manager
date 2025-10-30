@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	apicorev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -68,6 +69,7 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 
 	remoteSecret := secret.DeepCopy()
 	remoteSecret.Namespace = shared.DefaultRemoteNamespace
+	clearClusterSpecificMetadata(remoteSecret)
 	err = skrContext.Patch(ctx, remoteSecret,
 		client.Apply,
 		client.ForceOwnership,
@@ -77,4 +79,12 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 	}
 
 	return nil
+}
+
+func clearClusterSpecificMetadata(remoteSecret *apicorev1.Secret) {
+	remoteSecret.ManagedFields = nil
+	remoteSecret.ResourceVersion = ""
+	remoteSecret.UID = ""
+	remoteSecret.CreationTimestamp = v1.Time{}
+	remoteSecret.Generation = 0
 }
