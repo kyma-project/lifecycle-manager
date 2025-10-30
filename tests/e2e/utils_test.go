@@ -130,7 +130,7 @@ func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string
 	return k8sClient.Create(ctx, secret)
 }
 
-func CreateAnySecret(ctx context.Context, clnt client.Client, name string) error {
+func CreateAnySecret(ctx context.Context, name string, clnt client.Client) error {
 	secret := &apicorev1.Secret{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      name,
