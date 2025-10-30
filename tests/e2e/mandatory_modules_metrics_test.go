@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
@@ -54,15 +52,9 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 		})
 
 		It("When the mandatory ModuleReleaseMeta is removed", func() {
-			Eventually(DeleteCR).
+			Eventually(DeleteModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleReleaseMeta{
-						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator",
-							Namespace: "kcp-system",
-						},
-					}).
+				WithArguments("template-operator", ControlPlaneNamespace, kcpClient).
 				Should(Succeed())
 		})
 

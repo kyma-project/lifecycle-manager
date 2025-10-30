@@ -16,12 +16,14 @@ type Service struct {
 }
 
 func NewService(ensureFinalizer UseCase,
+	skipNonDeleting UseCase,
 	deleteManifests UseCase,
 	removeFinalizer UseCase,
 ) *Service {
 	return &Service{
 		orderedSteps: []UseCase{
 			ensureFinalizer,
+			skipNonDeleting,
 			deleteManifests,
 			removeFinalizer,
 		},

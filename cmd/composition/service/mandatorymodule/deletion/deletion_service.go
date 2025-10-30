@@ -14,9 +14,10 @@ func ComposeDeletionService(clnt client.Client, eventHandler event.Event) *delet
 	mrmRepo := modulereleasemetarepository.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
 	manifestRepo := manifestrepository.NewRepository(clnt, shared.DefaultControlPlaneNamespace)
 	ensureFinalizerUseCase := usecases.NewEnsureFinalizer(mrmRepo, eventHandler)
+	skipNonDeletingUseCase := usecases.NewSkipNonDeleting()
 	deleteManifestsUseCase := usecases.NewDeleteManifests(manifestRepo, eventHandler)
 	removeFinalizerUseCase := usecases.NewRemoveFinalizer(mrmRepo)
 
-	return deletion.NewService(ensureFinalizerUseCase, deleteManifestsUseCase,
+	return deletion.NewService(ensureFinalizerUseCase, skipNonDeletingUseCase, deleteManifestsUseCase,
 		removeFinalizerUseCase)
 }

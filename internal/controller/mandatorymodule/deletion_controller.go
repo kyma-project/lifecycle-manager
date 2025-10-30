@@ -18,9 +18,11 @@ package mandatorymodule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -50,6 +52,9 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, mrm *v1beta2.ModuleR
 
 func (r *DeletionReconciler) determineRequeueBehaviour(err error) (ctrl.Result, error) {
 	if err != nil {
+		if errors.Is(err, deletion.ErrMrmNotInDeletingState) {
+			return ctrl.Result{}, nil
+		}
 		return ctrl.Result{}, fmt.Errorf("mandatory module deletion reconciliation failed: %w", err)
 	}
 	return ctrl.Result{RequeueAfter: r.requeueIntervals.Success}, nil

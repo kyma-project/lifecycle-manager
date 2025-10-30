@@ -92,13 +92,13 @@ func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime
 		For(&v1beta2.ModuleReleaseMeta{}).
 		Named(deletionControllerName).
 		WithOptions(opts).
-		WithEventFilter(predicate.And(predicate.NewPredicateFuncs(func(obj client.Object) bool {
+		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
 			mrm := obj.(*v1beta2.ModuleReleaseMeta)
-			if mrm.Spec.Mandatory == nil || mrm.DeletionTimestamp.IsZero() {
+			if mrm.Spec.Mandatory == nil {
 				return false
 			}
 			return true
-		}), predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}))).
+		})).
 		Complete(reconcile.AsReconciler[*v1beta2.ModuleReleaseMeta](mgr.GetClient(), r)); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module deletion controller: %w", err)
 	}

@@ -121,6 +121,12 @@ rules:
   - apiGroups:
       - operator.kyma-project.io
     resources:
+      - modulereleasemetas/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - operator.kyma-project.io
+    resources:
       - moduletemplates
     verbs:
       - get

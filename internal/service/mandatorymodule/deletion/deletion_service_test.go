@@ -17,11 +17,13 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 	var executionOrder []string
 
 	ensureFinalizerStub := &UseCaseStub{UseCaseName: "ensureFinalizer", ExecutionOrder: &executionOrder}
+	skipNonDeletingStub := &UseCaseStub{UseCaseName: "skipNonDeleting", ExecutionOrder: &executionOrder}
 	deleteManifestsStub := &UseCaseStub{UseCaseName: "deleteManifests", ExecutionOrder: &executionOrder}
 	removeFinalizerStub := &UseCaseStub{UseCaseName: "removeFinalizer", ExecutionOrder: &executionOrder}
 
 	service := deletion.NewService(
 		ensureFinalizerStub,
+		skipNonDeletingStub,
 		deleteManifestsStub,
 		removeFinalizerStub,
 	)
@@ -34,6 +36,7 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 
 	expectedOrder := []string{
 		"ensureFinalizer",
+		"skipNonDeleting",
 		"deleteManifests",
 		"removeFinalizer",
 	}
@@ -41,6 +44,8 @@ func TestDeletionService_HandleDeletion_ExecutionOrder(t *testing.T) {
 
 	require.True(t, ensureFinalizerStub.IsApplicableCalled)
 	require.True(t, ensureFinalizerStub.ExecuteCalled)
+	require.True(t, skipNonDeletingStub.IsApplicableCalled)
+	require.True(t, skipNonDeletingStub.ExecuteCalled)
 	require.True(t, deleteManifestsStub.IsApplicableCalled)
 	require.True(t, deleteManifestsStub.ExecuteCalled)
 	require.True(t, removeFinalizerStub.IsApplicableCalled)
@@ -57,11 +62,13 @@ func TestDeletionService_HandleDeletion_ErrorPropagation(t *testing.T) {
 		ExecutionOrder: &executionOrder,
 		ErrorMessage:   "ensureFinalizer failed",
 	}
+	skipNonDeletingStub := &UseCaseStub{UseCaseName: "skipNonDeleting", ExecutionOrder: &executionOrder}
 	deleteManifestsStub := &UseCaseStub{UseCaseName: "deleteManifests", ExecutionOrder: &executionOrder}
 	removeFinalizerStub := &UseCaseStub{UseCaseName: "removeFinalizer", ExecutionOrder: &executionOrder}
 
 	service := deletion.NewService(
 		ensureFinalizerErrorStub,
+		skipNonDeletingStub,
 		deleteManifestsStub,
 		removeFinalizerStub,
 	)
@@ -93,11 +100,13 @@ func TestDeletionService_HandleDeletion_IsApplicableError(t *testing.T) {
 		ExecutionOrder: &executionOrder,
 		ErrorMessage:   "IsApplicable failed",
 	}
+	skipNonDeletingStub := &UseCaseStub{UseCaseName: "skipNonDeleting", ExecutionOrder: &executionOrder}
 	deleteManifestsStub := &UseCaseStub{UseCaseName: "deleteManifests", ExecutionOrder: &executionOrder}
 	removeFinalizerStub := &UseCaseStub{UseCaseName: "removeFinalizer", ExecutionOrder: &executionOrder}
 
 	service := deletion.NewService(
 		ensureFinalizerIsApplicableErrorStub,
+		skipNonDeletingStub,
 		deleteManifestsStub,
 		removeFinalizerStub,
 	)
@@ -111,6 +120,8 @@ func TestDeletionService_HandleDeletion_IsApplicableError(t *testing.T) {
 
 	require.True(t, ensureFinalizerIsApplicableErrorStub.IsApplicableCalled)
 	require.False(t, ensureFinalizerIsApplicableErrorStub.ExecuteCalled)
+	require.False(t, skipNonDeletingStub.IsApplicableCalled)
+	require.False(t, skipNonDeletingStub.ExecuteCalled)
 	require.False(t, deleteManifestsStub.IsApplicableCalled)
 	require.False(t, deleteManifestsStub.ExecuteCalled)
 	require.False(t, removeFinalizerStub.IsApplicableCalled)
