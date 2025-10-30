@@ -60,15 +60,12 @@ const (
 )
 
 var (
-	reconciler       *mandatorymodule.DeletionReconciler
 	kcpClient        client.Client
 	singleClusterEnv *envtest.Environment
 	ctx              context.Context
 	cancel           context.CancelFunc
 	manifestFilePath string
 	server           *httptest.Server
-
-	registerDescriptor func(name, version string) error // register component descriptors for testing purposes.
 )
 
 func TestAPIs(t *testing.T) {

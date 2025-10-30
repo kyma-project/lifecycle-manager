@@ -64,7 +64,6 @@ const (
 )
 
 var (
-	reconciler         *mandatorymodule.InstallationReconciler
 	kcpClient          client.Client
 	singleClusterEnv   *envtest.Environment
 	ctx                context.Context
