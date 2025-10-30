@@ -11,7 +11,7 @@
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/cmd/main.go" />
     <method v="2">
-      <option name="RunConfigurationTask" enabled="false" run_configuration_name="Create New Test Clusters" run_configuration_type="ShConfigurationType" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="Create New Test Clusters" run_configuration_type="ShConfigurationType" />
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="Install CRDs" run_configuration_type="ShConfigurationType" />
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="Install Watcher Resources For Local KLM" run_configuration_type="ShConfigurationType" />
     </method>
