@@ -193,22 +193,23 @@ func TestInitConditions_MessageGeneration(t *testing.T) {
 			watcherEnabled:         true,
 			skrImagePullSecretSync: true,
 			expectedMessages: map[v1beta2.KymaConditionType]string{
-				v1beta2.ConditionTypeModules:                "modules state is unknown",
-				v1beta2.ConditionTypeModuleCatalog:          "module templates synchronization state is unknown",
-				v1beta2.ConditionTypeSKRWebhook:             "skrwebhook is out of sync and needs to be resynchronized",
-				v1beta2.ConditionTypeSKRImagePullSecretSync: "skr image pull secret is out of sync and needs to be resynchronized",
+				v1beta2.ConditionTypeModules:       "modules state is unknown",
+				v1beta2.ConditionTypeModuleCatalog: "module templates synchronization state is unknown",
+				v1beta2.ConditionTypeSKRWebhook:    "skrwebhook is out of sync and needs to be resynchronized",
+				v1beta2.ConditionTypeSKRImagePullSecretSync: "skr image pull secret is out of sync " +
+					"and needs to be resynchronized",
 			},
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			kyma := builder.NewKymaBuilder().Build()
-			status.InitConditions(kyma, tc.watcherEnabled, tc.skrImagePullSecretSync)
+			status.InitConditions(kyma, testCase.watcherEnabled, testCase.skrImagePullSecretSync)
 
-			for conditionType, expectedMessage := range tc.expectedMessages {
+			for conditionType, expectedMessage := range testCase.expectedMessages {
 				found := false
 				for _, condition := range kyma.Status.Conditions {
 					if condition.Type == string(conditionType) {
@@ -346,7 +347,7 @@ func TestInitConditions_Metadata(t *testing.T) {
 }
 
 // getExpectedConditions returns the specific conditions that should be present
-// for the given configuration, avoiding circular dependency on GetRequiredConditionTypes
+// for the given configuration, avoiding circular dependency on GetRequiredConditionTypes.
 func getExpectedConditions(watcherEnabled, skrImagePullSecretSync bool) []v1beta2.KymaConditionType {
 	// Based on the logic in condition_messages.go, these are the expected conditions:
 	expectedConditions := []v1beta2.KymaConditionType{

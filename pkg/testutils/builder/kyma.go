@@ -137,7 +137,7 @@ func (kb KymaBuilder) WithDeletionTimestamp() KymaBuilder {
 
 // WithGeneration sets v1beta2.Kyma.ObjectMeta.Generation.
 func (kb KymaBuilder) WithGeneration(generation int) KymaBuilder {
-	kb.kyma.ObjectMeta.Generation = int64(generation)
+	kb.kyma.Generation = int64(generation)
 	return kb
 }
 

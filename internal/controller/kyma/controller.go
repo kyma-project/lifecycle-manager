@@ -257,6 +257,7 @@ func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (
 	return ctrl.Result{Requeue: true}, nil
 }
 
+//nolint:funlen // disable for kyma controller until split is done into provisioning and deprovisioning controllers
 func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
