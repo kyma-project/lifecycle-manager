@@ -39,58 +39,50 @@ type DockerImageReference struct {
 // It extracts the host, repository path, image name, tag, and digest from the input string.
 // Returns an error if the reference is invalid or cannot be parsed.
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
-	ref, err := reference.ParseNormalizedNamed(val)
+	namedRef, err := reference.ParseNormalizedNamed(val)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidImageReference, err.Error())
 	}
 
 	res := &DockerImageReference{}
 
-	// Get the standard components
-	domain := reference.Domain(ref)
-	path := reference.Path(ref)
+	domain := reference.Domain(namedRef)
+	path := reference.Path(namedRef)
 
-	// Re-create your non-standard HostAndPath/Name split
-	// This logic finds the last '/' to split the "repository path" from the "image name".
-	lastSlashIdx := strings.LastIndex(path, "/")
-	var repoPath string
-	var imageName string
+	familiarName := reference.FamiliarName(namedRef)
+	imageName := familiarName
+	if idx := strings.LastIndex(familiarName, "/"); idx != -1 {
+		imageName = familiarName[idx+1:]
+	}
 
-	if lastSlashIdx == -1 {
-		// No path, just the image name (e.g., "nginx")
-		repoPath = ""
-		imageName = path
-	} else {
-		repoPath = path[:lastSlashIdx]
-		imageName = path[lastSlashIdx+1:]
+	// Derive repository path (everything before last segment).
+	repoPath := ""
+	if lastSlash := strings.LastIndex(path, "/"); lastSlash != -1 {
+		repoPath = path[:lastSlash]
 	}
 
 	if domain != "" {
 		if repoPath != "" {
 			res.HostAndPath = domain + "/" + repoPath
 		} else {
-			// e.g., "example.com/myimage:tag"
 			res.HostAndPath = domain
 		}
 	} else {
-		// e.g., "my-org/myimage:tag"
 		res.HostAndPath = repoPath
 	}
 
 	// Populate NameAndTag and Digest
 	var tag string
-	if tagged, ok := ref.(reference.Tagged); ok {
+	if tagged, ok := namedRef.(reference.Tagged); ok {
 		tag = tagged.Tag()
 	}
-
 	if tag != "" {
 		res.NameAndTag = NameAndTag(imageName + ":" + tag)
 	} else {
 		res.NameAndTag = NameAndTag(imageName)
 	}
 
-	if digested, ok := ref.(reference.Digested); ok {
-		// We keep the full digest string (e.g., "sha256:...")
+	if digested, ok := namedRef.(reference.Digested); ok {
 		res.Digest = digested.Digest().String()
 	}
 
