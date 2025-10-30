@@ -141,6 +141,16 @@ func CreateAnySecret(ctx context.Context, name string, clnt client.Client) error
 	return clnt.Create(ctx, secret)
 }
 
+func DeleteAnySecret(ctx context.Context, name string, clnt client.Client) error {
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      name,
+			Namespace: shared.DefaultControlPlaneNamespace,
+		},
+	}
+	return clnt.Delete(ctx, secret)
+}
+
 func CheckRemoteKymaCR(ctx context.Context,
 	kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client, expectedState shared.State,
 ) error {

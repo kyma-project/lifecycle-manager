@@ -22,19 +22,27 @@ var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 			Should(Succeed())
 	})
 
+	AfterAll(func() {
+		By("Cleanup SKR Image Pull Secret from KCP Cluster")
+		Eventually(DeleteAnySecret).
+			WithContext(ctx).
+			WithArguments(skrImagePullSecretName, kcpClient).
+			Should(Succeed())
+	})
+
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
 		It("When SKR image pull Secret exists in the KCP Cluster", func() {
-			Consistently(CheckIfExists).
+			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments(skrImagePullSecretName, ControlPlaneNamespace, "", "v1", "Secret", kcpClient).
 				Should(Succeed())
 		})
 
 		It("And skr-image-pull-secret flag is set in Deployment", func() {
-			Consistently(DeploymentContainerHasFlag).
+			Eventually(DeploymentContainerHasFlag).
 				WithContext(ctx).
 				WithArguments("klm-controller-manager", "kcp-system", "skr-image-pull-secret",
 					skrImagePullSecretName, kcpClient).

@@ -15,6 +15,7 @@ import (
 
 var (
 	ErrImagePullSecretNotConfigured = errors.New("image pull secret not configured in service")
+	ErrImagePullSecretNotFound      = errors.New("image pull secret not found")
 	ErrFailedToSyncImagePullSecret  = errors.New("failed to sync image pull secret to SKR")
 )
 
@@ -58,21 +59,21 @@ func (s *Service) SyncImagePullSecret(ctx context.Context, kyma types.Namespaced
 
 	secret, err := s.secretRepository.Get(ctx, s.imagePullSecretName)
 	if err != nil {
-		return err
+		return errors.Join(ErrImagePullSecretNotFound, err)
 	}
-
 	skrContext, err := s.skrContextFactory.Get(kyma)
 	if err != nil {
 		return err
 	}
 
 	remoteSecret := secret.DeepCopy()
+	remoteSecret.Namespace = shared.DefaultRemoteNamespace
 	err = skrContext.Patch(ctx, remoteSecret,
 		client.Apply,
 		client.ForceOwnership,
 		client.FieldOwner(shared.OperatorName))
 	if err != nil {
-		return ErrFailedToSyncImagePullSecret
+		return errors.Join(ErrFailedToSyncImagePullSecret, err)
 	}
 
 	return nil
