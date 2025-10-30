@@ -44,46 +44,13 @@ func NewDockerImageReference(val string) (*DockerImageReference, error) {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidImageReference, err.Error())
 	}
 
-	res := &DockerImageReference{}
+	imageName := extractImageName(namedRef)
+	repoPath := extractRepositoryPath(namedRef)
 
-	domain := reference.Domain(namedRef)
-	path := reference.Path(namedRef)
-
-	familiarName := reference.FamiliarName(namedRef)
-	imageName := familiarName
-	if idx := strings.LastIndex(familiarName, "/"); idx != -1 {
-		imageName = familiarName[idx+1:]
-	}
-
-	// Derive repository path (everything before last segment).
-	repoPath := ""
-	if lastSlash := strings.LastIndex(path, "/"); lastSlash != -1 {
-		repoPath = path[:lastSlash]
-	}
-
-	if domain != "" {
-		if repoPath != "" {
-			res.HostAndPath = domain + "/" + repoPath
-		} else {
-			res.HostAndPath = domain
-		}
-	} else {
-		res.HostAndPath = repoPath
-	}
-
-	// Populate NameAndTag and Digest
-	var tag string
-	if tagged, ok := namedRef.(reference.Tagged); ok {
-		tag = tagged.Tag()
-	}
-	if tag != "" {
-		res.NameAndTag = NameAndTag(imageName + ":" + tag)
-	} else {
-		res.NameAndTag = NameAndTag(imageName)
-	}
-
-	if digested, ok := namedRef.(reference.Digested); ok {
-		res.Digest = digested.Digest().String()
+	res := &DockerImageReference{
+		HostAndPath: buildHostAndPath(namedRef, repoPath),
+		NameAndTag:  buildNameAndTag(namedRef, imageName),
+		Digest:      extractDigest(namedRef),
 	}
 
 	return res, nil
@@ -109,6 +76,47 @@ func (ir *DockerImageReference) String() string {
 	}
 
 	return stringBuilder.String()
+}
+
+func extractImageName(namedRef reference.Named) string {
+	familiarName := reference.FamiliarName(namedRef)
+	if idx := strings.LastIndex(familiarName, "/"); idx != -1 {
+		return familiarName[idx+1:]
+	}
+	return familiarName
+}
+
+func extractRepositoryPath(namedRef reference.Named) string {
+	path := reference.Path(namedRef)
+	if lastSlash := strings.LastIndex(path, "/"); lastSlash != -1 {
+		return path[:lastSlash]
+	}
+	return ""
+}
+
+func buildHostAndPath(namedRef reference.Named, repoPath string) string {
+	domain := reference.Domain(namedRef)
+	if domain == "" {
+		return repoPath
+	}
+	if repoPath == "" {
+		return domain
+	}
+	return domain + "/" + repoPath
+}
+
+func buildNameAndTag(namedRef reference.Named, imageName string) NameAndTag {
+	if tagged, ok := namedRef.(reference.Tagged); ok {
+		return NameAndTag(imageName + ":" + tagged.Tag())
+	}
+	return NameAndTag(imageName)
+}
+
+func extractDigest(namedRef reference.Named) string {
+	if digested, ok := namedRef.(reference.Digested); ok {
+		return digested.Digest().String()
+	}
+	return ""
 }
 
 type PodContainerImageRewriter struct{}
@@ -159,12 +167,8 @@ func (r *PodContainerEnvsRewriter) Rewrite(
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFindingEnvVarsInPodContainer, err.Error())
 	}
-	if !found {
+	if !found || len(envEntries) == 0 {
 		return nil
-	}
-
-	if len(envEntries) == 0 {
-		return nil // No environment variables to rewrite
 	}
 
 	for _, envEntry := range envEntries {
