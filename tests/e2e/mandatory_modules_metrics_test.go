@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("Mandatory Module Metrics", Ordered, func() {
-	kyma := NewKymaWithNamespaceName("kyma-sample", "kcp-system", v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -47,19 +47,19 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			})
 
 			By("And count of Mandatory ModuleTemplates Metric is 1", func() {
-				Eventually(GetMandatoryModuleTemplateCountMetric).
+				Eventually(GetMandatoryModuleCountMetric).
 					WithContext(ctx).
 					Should(Equal(1))
 			})
 		})
 
-		It("When the mandatory ModuleTemplate is removed", func() {
+		It("When the mandatory ModuleReleaseMeta is removed", func() {
 			Eventually(DeleteCR).
 				WithContext(ctx).
 				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
+					&v1beta2.ModuleReleaseMeta{
 						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.1.0-smoke-test",
+							Name:      "template-operator",
 							Namespace: "kcp-system",
 						},
 					}).
@@ -95,7 +95,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			})
 
 			By("And count of Mandatory ModuleTemplates Metric is 0", func() {
-				Eventually(GetMandatoryModuleTemplateCountMetric).
+				Eventually(GetMandatoryModuleCountMetric).
 					WithContext(ctx).
 					Should(Equal(0))
 			})

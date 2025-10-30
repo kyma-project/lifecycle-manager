@@ -160,7 +160,7 @@ func GetSelfSignedCertNotRenewMetricsGauge(ctx context.Context, kymaName string)
 	return parseCount(re, bodyString)
 }
 
-func GetMandatoryModuleTemplateCountMetric(ctx context.Context) (int, error) {
+func GetMandatoryModuleCountMetric(ctx context.Context) (int, error) {
 	bodyString, err := getKCPMetricsBody(ctx)
 	if err != nil {
 		return 0, err

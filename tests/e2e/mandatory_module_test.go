@@ -158,6 +158,9 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				"mandatory_template_v2.yaml")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
+			err = SetMandatoryModuleReleaseMetaVersion(ctx, kcpClient, "template-operator", ControlPlaneNamespace,
+				"2.4.1-smoke-test")
+			Expect(err).NotTo(HaveOccurred())
 		})
 		It("Then Kyma mandatory Module is updated on SKR Cluster", func() {
 			Eventually(DeploymentIsReady).
@@ -209,17 +212,6 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 		})
 
 		It("When the mandatory ModuleTemplate with new version is deleted", func() {
-			Eventually(DeleteCR).
-				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
-						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.1.0-smoke-test",
-							Namespace: ControlPlaneNamespace,
-						},
-					}).
-				Should(Succeed())
-
 			Eventually(DeleteCR).
 				WithContext(ctx).
 				WithArguments(kcpClient,
