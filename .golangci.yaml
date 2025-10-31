@@ -215,6 +215,7 @@ linters:
           - forcetypeassert
           - funlen
           - gochecknoglobals
+          - gocognit
           - goconst
           - maintidx
           - nilnil

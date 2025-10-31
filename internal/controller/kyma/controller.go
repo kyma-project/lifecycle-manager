@@ -25,6 +25,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -71,22 +72,35 @@ type ModuleStatusHandler interface {
 	UpdateModuleStatuses(ctx context.Context, kyma *v1beta2.Kyma, modules modulecommon.Modules) error
 }
 
+type SkrSyncService interface {
+	SyncCrds(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
+	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
+}
+
+// ReconcilerConfig holds configuration values for the Kyma Reconciler.
+// Usually read from flags or environment variables.
+type ReconcilerConfig struct {
+	RemoteSyncNamespace    string
+	IsManagedKyma          bool
+	OCIRegistryHost        string
+	SkrImagePullSecretName string
+}
+
 type Reconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
 
+	Config               ReconcilerConfig
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
-	SyncRemoteCrds       remote.SyncCrdsUseCase
+	SkrSyncService       SkrSyncService
 	ModulesStatusHandler ModuleStatusHandler
 	SKRWebhookManager    SKRWebhookManager
-	RemoteSyncNamespace  string
-	IsManagedKyma        bool
-	Metrics              *metrics.KymaMetrics
-	RemoteCatalog        *remote.RemoteCatalog
-	TemplateLookup       *templatelookup.TemplateLookup
-	OCIRegistryHost      string
+
+	Metrics        *metrics.KymaMetrics
+	RemoteCatalog  *remote.RemoteCatalog
+	TemplateLookup *templatelookup.TemplateLookup
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -111,7 +125,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 	}
 
-	status.InitConditions(kyma, r.WatcherEnabled())
+	status.InitConditions(kyma, r.WatcherEnabled(), r.SkrImagePullSecretSyncEnabled())
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("skipping reconciliation for Kyma: " + kyma.Name)
@@ -189,7 +203,11 @@ func (r *Reconciler) WatcherEnabled() bool {
 }
 
 func (r *Reconciler) IsKymaManaged() bool {
-	return r.IsManagedKyma
+	return r.Config.IsManagedKyma
+}
+
+func (r *Reconciler) SkrImagePullSecretSyncEnabled() bool {
+	return r.Config.SkrImagePullSecretName != ""
 }
 
 func (r *Reconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
@@ -239,6 +257,7 @@ func (r *Reconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2.Kyma) (
 	return ctrl.Result{Requeue: true}, nil
 }
 
+//nolint:funlen // disable for kyma controller until split is done into provisioning and deprovisioning controllers
 func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
@@ -263,7 +282,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	updateRequired, err := r.SyncRemoteCrds.Execute(ctx, kyma)
+	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
 	if err != nil {
 		r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
@@ -276,6 +295,16 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
 		return ctrl.Result{Requeue: true}, nil
 	}
+
+	if r.SkrImagePullSecretSyncEnabled() {
+		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
+			r.Metrics.RecordRequeueReason(metrics.ImagePullSecretSync, queue.UnexpectedRequeue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionFalse)
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync image pull secret: %w", err))
+		}
+		kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionTrue)
+	}
+
 	// update the control-plane kyma with the changes to the spec of the remote Kyma
 	if err = r.replaceSpecFromRemote(ctx, kyma); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, queue.UnexpectedRequeue)
@@ -586,7 +615,7 @@ func (r *Reconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
-	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, r.OCIRegistryHost)
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.Config.RemoteSyncNamespace, r.Config.OCIRegistryHost)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)
