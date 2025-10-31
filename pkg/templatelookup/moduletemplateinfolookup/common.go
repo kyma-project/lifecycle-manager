@@ -7,21 +7,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/common"
 )
 
 func TemplateNameMatch(template *v1beta2.ModuleTemplate, name string) bool {
 	return template.Spec.ModuleName == name
-}
-
-func newMoreThanOneTemplateCandidateErr(moduleName string, templates []v1beta2.ModuleTemplate) error {
-	candidates := make([]string, len(templates))
-	for i, candidate := range templates {
-		candidates[i] = candidate.GetName()
-	}
-
-	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
-		common.ErrTemplateNotIdentified, moduleName, candidates)
 }
 
 func getTemplateByVersion(ctx context.Context,
@@ -41,4 +30,19 @@ func getTemplateByVersion(ctx context.Context,
 	}
 
 	return moduleTemplate, nil
+}
+
+func getDesiredChannel(moduleChannel, globalChannel string) string {
+	var desiredChannel string
+
+	switch {
+	case moduleChannel != "":
+		desiredChannel = moduleChannel
+	case globalChannel != "":
+		desiredChannel = globalChannel
+	default:
+		desiredChannel = v1beta2.DefaultChannel
+	}
+
+	return desiredChannel
 }

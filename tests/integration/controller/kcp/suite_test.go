@@ -23,7 +23,6 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -36,6 +35,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -58,13 +61,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	_ "ocm.software/ocm/api/ocm"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -182,12 +185,7 @@ var _ = BeforeSuite(func() {
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-				})),
+			moduletemplateinfolookup.NewLookup(kcpClient)),
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
