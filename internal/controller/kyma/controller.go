@@ -299,7 +299,7 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return ctrl.Result{}, ErrKymaInErrorState
 	}
 
-	return res, err
+	return res, nil
 }
 
 func (r *Reconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
