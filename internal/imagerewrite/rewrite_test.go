@@ -43,19 +43,19 @@ func TestDockerImageReference(t *testing.T) {
 		}{
 			{
 				name:                "Image without host and no digest",
-				expectedHostAndPath: "",
+				expectedHostAndPath: "docker.io/library",
 				expectedNameAndTag:  "myimage:1.2.3",
 				expectedDigest:      "",
 			},
 			{
 				name:                "Image without host with digest",
-				expectedHostAndPath: "",
+				expectedHostAndPath: "docker.io/library",
 				expectedNameAndTag:  "myimage:1.2.3",
 				expectedDigest:      "sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			},
 			{
 				name:                "Image without host and tag and with digest",
-				expectedHostAndPath: "",
+				expectedHostAndPath: "docker.io/library",
 				expectedNameAndTag:  "myimage",
 				expectedDigest:      "sha256:837eb50a66bc0915d1986d376920c400d5db18075204339c0b047f5ba2091aa5",
 			},
@@ -139,13 +139,18 @@ func TestDockerImageReference(t *testing.T) {
 			expectedErr error
 		}{
 			{
-				name:        "Missing colon in image reference",
-				strValue:    "example.com/myapp/myimage",
+				name:        "Uppercase letter in name",
+				strValue:    "example.com/myapp/MyImage:1.2.3",
 				expectedErr: imagerewrite.ErrInvalidImageReference,
 			},
 			{
-				name:        "Missing slash in image reference",
-				strValue:    "example.commyappmyimage:1.2.3",
+				name:        "Invalid tag start character",
+				strValue:    "myimage:-invalid-tag",
+				expectedErr: imagerewrite.ErrInvalidImageReference,
+			},
+			{
+				name:        "Invalid digest format, digest is too short",
+				strValue:    "myimage@sha256:12345",
 				expectedErr: imagerewrite.ErrInvalidImageReference,
 			},
 		}
