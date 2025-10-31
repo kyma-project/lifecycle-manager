@@ -323,7 +323,12 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 	}
 
-	return res, err
+	if kyma.Status.State == shared.StateError {
+		// Requeue with a new Error in case of Kyma error state, to enable rate limiting for that error.
+		return ctrl.Result{}, ErrKymaInErrorState
+	}
+
+	return res, nil
 }
 
 func (r *Reconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -488,10 +493,6 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 	err := r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
 	if err != nil {
 		return ctrl.Result{}, err
-	}
-	if state == shared.StateError {
-		// Requeue with a new Error in case of Kyma error state, to enable rate limiting for that error.
-		return ctrl.Result{}, ErrKymaInErrorState
 	}
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
