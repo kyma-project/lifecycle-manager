@@ -59,6 +59,7 @@ type InstallationReconciler struct {
 	Metrics              *metrics.KymaMetrics
 	RemoteCatalog        *remote.RemoteCatalog
 	TemplateLookup       *templatelookup.TemplateLookup
+	OCIRegistryHost      string
 }
 
 func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -321,7 +322,7 @@ func (r *InstallationReconciler) handleProcessingState(ctx context.Context, kyma
 
 func (r *InstallationReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
-	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace)
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, r.OCIRegistryHost)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)

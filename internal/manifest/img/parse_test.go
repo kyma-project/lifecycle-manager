@@ -6,21 +6,26 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
+	"github.com/kyma-project/lifecycle-manager/internal/descriptor/types/ocmidentity"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 )
 
 func TestParse(t *testing.T) {
 	tests := []struct {
 		name                 string
-		DescriptorSourceFile string
+		descriptorSourceFile string
+		descriptorVersion    string
 		want                 img.Layer
 	}{
 		{
 			"should parse raw-manifest layer from mediaType: application/x-tar",
 			"v1beta2_template_operator_new_ocm.yaml",
+			"1.0.0-new-ocm-format",
 			img.Layer{
 				LayerName: "raw-manifest",
 				LayerRepresentation: &img.OCI{
@@ -33,6 +38,7 @@ func TestParse(t *testing.T) {
 		}, {
 			"should parse raw-manifest layer from mediaType: application/octet-stream",
 			"v1beta2_template_operator_current_ocm.yaml",
+			"1.1.1-e2e-test",
 			img.Layer{
 				LayerName: "raw-manifest",
 				LayerRepresentation: &img.OCI{
@@ -47,9 +53,15 @@ func TestParse(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			var moduleTemplateFromFile v1beta2.ModuleTemplate
-			builder.ReadComponentDescriptorFromFile(testCase.DescriptorSourceFile,
+			builder.ReadComponentDescriptorFromFile(testCase.descriptorSourceFile,
 				&moduleTemplateFromFile)
-			descriptor, err := provider.NewCachedDescriptorProvider().GetDescriptor(&moduleTemplateFromFile)
+			ocmId, err := ocmidentity.NewComponentId(
+				"kyma-project.io/module/template-operator", testCase.descriptorVersion)
+			require.NoError(t, err)
+			descriptor, err := provider.NewCachedDescriptorProvider(
+				componentdescriptor.NewFakeService(moduleTemplateFromFile.Spec.Descriptor.Raw),
+				descriptorcache.NewDescriptorCache(),
+			).GetDescriptor(*ocmId)
 			require.NoError(t, err)
 			layers, err := img.Parse(descriptor.ComponentDescriptor)
 			require.NoError(t, err)

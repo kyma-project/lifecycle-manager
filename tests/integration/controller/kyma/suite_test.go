@@ -23,11 +23,13 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
@@ -40,6 +42,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -53,6 +56,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
@@ -67,7 +71,12 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const randomPort = "0"
+const (
+	randomPort = "0"
+
+	// conforms to the url defined in `v1beta2_template_operator_current_ocm.yaml`.
+	staticOCIRegistryHost = "europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator"
+)
 
 var (
 	kcpClient             client.Client
@@ -78,6 +87,7 @@ var (
 	cfg                   *rest.Config
 	descriptorProvider    *provider.CachedDescriptorProvider
 	testSkrContextFactory *testskrcontext.DualClusterFactory
+	registerDescriptor    func(name, version string) error // register component descriptors for testing purposes.
 )
 
 func TestAPIs(t *testing.T) {
@@ -143,7 +153,17 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	descriptorProvider = provider.NewCachedDescriptorProvider()
+	fakeDescriptorService := &componentdescriptor.FakeService{}
+	descriptorProvider = provider.NewCachedDescriptorProvider(
+		fakeDescriptorService,
+		descriptorcache.NewDescriptorCache(),
+	)
+	compDescrawBytes := builder.ComponentDescriptorFactoryFromSchema(compdescv2.SchemaVersion)
+	registerDescriptor = func(name, version string) error {
+		fakeDescriptorService.RegisterWithNameVersionOverride(name, version, compDescrawBytes.Raw)
+		return nil
+	}
+
 	kcpClient = mgr.GetClient()
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
@@ -171,6 +191,7 @@ var _ = BeforeSuite(func() {
 					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
 					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
 				})),
+		OCIRegistryHost: staticOCIRegistryHost,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())

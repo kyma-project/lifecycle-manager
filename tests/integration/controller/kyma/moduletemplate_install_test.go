@@ -3,7 +3,6 @@ package kyma_test
 import (
 	"fmt"
 
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -120,21 +119,11 @@ func givenKymaAndModuleTemplateCondition(
 	isModuleTemplateBeta bool,
 ) func(client.Client, *v1beta2.Kyma) error {
 	return func(skrClient client.Client, skrKyma *v1beta2.Kyma) error {
-		if skrKyma.Labels == nil {
-			skrKyma.Labels = map[string]string{}
-		}
-		if isKymaInternal {
-			skrKyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
-		}
-		if isKymaBeta {
-			skrKyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
-		}
 		for _, module := range skrKyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
 				WithNamespace(ControlPlaneNamespace).
 				WithModuleName(module.Name).
-				WithChannel(module.Channel).
-				WithOCM(compdescv2.SchemaVersion)
+				WithChannel(module.Channel)
 			if isModuleTemplateInternal {
 				mtBuilder.WithLabel(shared.InternalLabel, shared.EnableLabelValue)
 			}
@@ -146,9 +135,26 @@ func givenKymaAndModuleTemplateCondition(
 				WithArguments(template).
 				Should(Succeed())
 		}
-		Eventually(skrClient.Update, Timeout, Interval).
+
+		// wrap all the modifications to the skrKyma for later use
+		kymaUpdateFunc := func(kyma *v1beta2.Kyma) error {
+			if skrKyma.Labels == nil {
+				skrKyma.Labels = map[string]string{}
+			}
+			if isKymaInternal {
+				skrKyma.Labels[shared.InternalLabel] = shared.EnableLabelValue
+			}
+			if isKymaBeta {
+				skrKyma.Labels[shared.BetaLabel] = shared.EnableLabelValue
+			}
+			return nil
+		}
+
+		Eventually(UpdateKymaWithFunc, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(skrKyma).Should(Succeed())
+			WithArguments(skrClient, skrKyma.GetName(), skrKyma.GetNamespace(), kymaUpdateFunc).
+			Should(Succeed())
+
 		return nil
 	}
 }

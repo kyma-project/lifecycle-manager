@@ -23,6 +23,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -40,6 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma"
 	"github.com/kyma-project/lifecycle-manager/internal/crd"
+	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
 	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/flags"
@@ -53,8 +55,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
+	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	_ "ocm.software/ocm/api/ocm"
 
@@ -78,7 +82,9 @@ var (
 	cancel                context.CancelFunc
 	cfg                   *rest.Config
 	descriptorProvider    *provider.CachedDescriptorProvider
+	descProviderService   *componentdescriptor.FakeService
 	crdCache              *crd.Cache
+	registerDescriptor    func(name, version string) error // register component descriptors during tests.
 )
 
 func TestAPIs(t *testing.T) {
@@ -150,7 +156,16 @@ var _ = BeforeSuite(func() {
 
 	testEventRec := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 	testSkrContextFactory = testskrcontext.NewDualClusterFactory(kcpClient.Scheme(), testEventRec)
-	descriptorProvider = provider.NewCachedDescriptorProvider()
+	compDescrawBytes := builder.ComponentDescriptorFactoryFromSchema(compdescv2.SchemaVersion)
+	descProviderService = &componentdescriptor.FakeService{}
+	registerDescriptor = func(name, version string) error {
+		descProviderService.RegisterWithNameVersionOverride(name, version, compDescrawBytes.Raw)
+		return nil
+	}
+
+	Expect(err).ToNot(HaveOccurred())
+	descriptorProvider = provider.NewCachedDescriptorProvider(descProviderService, descriptorcache.NewDescriptorCache())
+
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
