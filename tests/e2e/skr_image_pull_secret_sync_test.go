@@ -22,14 +22,6 @@ var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 			Should(Succeed())
 	})
 
-	AfterAll(func() {
-		By("Cleanup SKR Image Pull Secret from KCP Cluster")
-		Eventually(DeleteAnySecret).
-			WithContext(ctx).
-			WithArguments(skrImagePullSecretName, kcpClient).
-			Should(Succeed())
-	})
-
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
