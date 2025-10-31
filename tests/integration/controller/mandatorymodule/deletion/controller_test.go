@@ -92,8 +92,6 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 	mandatoryManifest.Spec.Version = mandatoryModuleVersion
 
 	BeforeAll(func() {
-		err := registerDescriptor(moduleReleaseMeta.Spec.OcmComponentName, template.Spec.Version)
-		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(CreateCR).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
@@ -107,7 +105,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(SetKymaState).
 			WithContext(ctx).
-			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
+			WithArguments(kyma, kcpClient, shared.StateReady).Should(Succeed())
 
 		installName := filepath.Join("main-dir", "installs")
 		validImageSpec, err := CreateOCIImageSpecFromFile(installName, server.Listener.Addr().String(),

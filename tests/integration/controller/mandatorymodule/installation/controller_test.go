@@ -102,7 +102,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(SetKymaState).
 			WithContext(ctx).
-			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
+			WithArguments(kyma, kcpClient, shared.StateReady).Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -127,7 +127,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 
 func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := reconciler.List(ctx, &manifestList, &client.ListOptions{
+	if err := kcpClient.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
 	}); err != nil {
 		return err

@@ -5,11 +5,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
+	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -158,6 +156,9 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 				"mandatory_template_v2.yaml")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
+			err = SetMandatoryModuleReleaseMetaVersion(ctx, kcpClient, "template-operator", ControlPlaneNamespace,
+				"2.4.1-smoke-test")
+			Expect(err).NotTo(HaveOccurred())
 		})
 		It("Then Kyma mandatory Module is updated on SKR Cluster", func() {
 			Eventually(DeploymentIsReady).
@@ -188,47 +189,10 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			})
 		})
 
-		It("When the mandatory ModuleTemplate with old version is deleted", func() {
-			Eventually(DeleteCR).
+		It("When the mandatory ModuleReleaseMeta is deleted", func() {
+			Eventually(DeleteModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
-						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.1.0-smoke-test",
-							Namespace: ControlPlaneNamespace,
-						},
-					}).
-				Should(Succeed())
-		})
-
-		It("Then the mandatory module Manifest remains with the new version in the KCP cluster", func() {
-			Consistently(MandatoryModuleManifestExistWithCorrectVersion).
-				WithContext(ctx).
-				WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
-				Should(Succeed())
-		})
-
-		It("When the mandatory ModuleTemplate with new version is deleted", func() {
-			Eventually(DeleteCR).
-				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
-						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.1.0-smoke-test",
-							Namespace: ControlPlaneNamespace,
-						},
-					}).
-				Should(Succeed())
-
-			Eventually(DeleteCR).
-				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
-						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-2.4.1-smoke-test",
-							Namespace: ControlPlaneNamespace,
-						},
-					}).
+				WithArguments("template-operator", ControlPlaneNamespace, kcpClient).
 				Should(Succeed())
 		})
 		It("Then mandatory SKR module is removed", func() {
@@ -253,6 +217,10 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					Should(Succeed())
 			})
 			By("And the mandatory module manifest is not present in the KCP cluster", func() {
+				Eventually(MandatoryModuleManifestExistWithCorrectVersion).
+					WithContext(ctx).
+					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
+					Should(Equal(ErrManifestNotFound))
 				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
 					WithContext(ctx).
 					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").

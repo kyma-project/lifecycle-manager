@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
@@ -14,7 +12,7 @@ import (
 )
 
 var _ = Describe("Mandatory Module Metrics", Ordered, func() {
-	kyma := NewKymaWithNamespaceName("kyma-sample", "kcp-system", v1beta2.DefaultChannel)
+	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -47,22 +45,16 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			})
 
 			By("And count of Mandatory ModuleTemplates Metric is 1", func() {
-				Eventually(GetMandatoryModuleTemplateCountMetric).
+				Eventually(GetMandatoryModuleCountMetric).
 					WithContext(ctx).
 					Should(Equal(1))
 			})
 		})
 
-		It("When the mandatory ModuleTemplate is removed", func() {
-			Eventually(DeleteCR).
+		It("When the mandatory ModuleReleaseMeta is removed", func() {
+			Eventually(DeleteModuleReleaseMeta).
 				WithContext(ctx).
-				WithArguments(kcpClient,
-					&v1beta2.ModuleTemplate{
-						ObjectMeta: apimetav1.ObjectMeta{
-							Name:      "template-operator-1.1.0-smoke-test",
-							Namespace: "kcp-system",
-						},
-					}).
+				WithArguments("template-operator", ControlPlaneNamespace, kcpClient).
 				Should(Succeed())
 		})
 
@@ -95,7 +87,7 @@ var _ = Describe("Mandatory Module Metrics", Ordered, func() {
 			})
 
 			By("And count of Mandatory ModuleTemplates Metric is 0", func() {
-				Eventually(GetMandatoryModuleTemplateCountMetric).
+				Eventually(GetMandatoryModuleCountMetric).
 					WithContext(ctx).
 					Should(Equal(0))
 			})
