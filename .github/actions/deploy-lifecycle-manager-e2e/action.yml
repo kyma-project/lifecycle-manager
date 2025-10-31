@@ -187,18 +187,6 @@ runs:
         cat legacy-secret-rotation.yaml
         kustomize edit add patch --path legacy-secret-rotation.yaml --kind Deployment
         popd
-    - name: Create and use maintenance window policy
-      if: ${{matrix.e2e-test == 'maintenance-windows' ||
-        matrix.e2e-test == 'maintenance-windows-initial-installation' ||
-        matrix.e2e-test == 'maintenance-windows-skip'}}
-      uses: ./lifecycle-manager/.github/actions/generate-maintenance-window-config-e2e
-      with:
-        output_file_path: ./lifecycle-manager/config/maintenance_windows/policy.json
-    - name: Deploy LM local testing kustomize
-      uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
-      with:
-        klm_version_tag: ${{ inputs.klm_version_tag }}
-        klm_image_repo: ${{ inputs.klm_image_repo }}
     - name: Patch SKR Image Pull Secret
       if: ${{ matrix.e2e-test == 'skr-image-pull-secret-sync' }}
       working-directory: lifecycle-manager
@@ -212,6 +200,18 @@ runs:
         cat skr_image_pull_secret_patch.yaml
         kustomize edit add patch --path skr_image_pull_secret_patch.yaml --kind Deployment
         popd
+    - name: Create and use maintenance window policy
+      if: ${{matrix.e2e-test == 'maintenance-windows' ||
+        matrix.e2e-test == 'maintenance-windows-initial-installation' ||
+        matrix.e2e-test == 'maintenance-windows-skip'}}
+      uses: ./lifecycle-manager/.github/actions/generate-maintenance-window-config-e2e
+      with:
+        output_file_path: ./lifecycle-manager/config/maintenance_windows/policy.json
+    - name: Deploy LM local testing kustomize
+      uses: ./lifecycle-manager/.github/actions/deploy-lifecycle-manager
+      with:
+        klm_version_tag: ${{ inputs.klm_version_tag }}
+        klm_image_repo: ${{ inputs.klm_image_repo }}
     - name: Expose Metrics Endpoint
       working-directory: lifecycle-manager
       shell: bash
