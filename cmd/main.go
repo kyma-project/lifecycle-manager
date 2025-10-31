@@ -416,14 +416,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
-			moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
-			moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
-				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
-		},
-	)
+	moduleTemplateInfoLookup := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		moduletemplateinfolookup.NewLookup(mgr.GetClient()))
 
 	kcpClient := mgr.GetClient()
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
@@ -449,7 +443,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduleTemplateInfoLookupStrategies),
+			moduleTemplateInfoLookup),
 		OCIRegistryHost: ociRegistryHost,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{

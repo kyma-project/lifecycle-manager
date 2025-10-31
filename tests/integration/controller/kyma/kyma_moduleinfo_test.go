@@ -42,7 +42,8 @@ var _ = Describe("Kyma module control", Ordered, func() {
 			kcpClient,
 			&v1beta2.Kyma{
 				ObjectMeta: apimetav1.ObjectMeta{
-					Namespace: shared.DefaultControlPlaneNamespace},
+					Namespace: shared.DefaultControlPlaneNamespace,
+				},
 				Spec: v1beta2.KymaSpec{
 					Modules: []v1beta2.Module{module},
 				},

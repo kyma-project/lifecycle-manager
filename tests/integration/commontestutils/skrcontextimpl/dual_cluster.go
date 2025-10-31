@@ -3,6 +3,7 @@ package skrcontextimpl
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -10,7 +11,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"fmt"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/remote"
 )

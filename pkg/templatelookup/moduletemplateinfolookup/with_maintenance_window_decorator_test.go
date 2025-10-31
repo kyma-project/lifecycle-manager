@@ -13,18 +13,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 )
 
-func Test_WithMWDecorator_IsResponsible_CallsDecoratedIsResponsible(t *testing.T) {
-	decorated := &lookupStrategyStub{
-		responsible: true,
-	}
-	withMaintenanceWindowDecorator := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(nil, decorated)
-
-	responsible := withMaintenanceWindowDecorator.IsResponsible(nil, nil)
-
-	assert.True(t, decorated.called)
-	assert.True(t, responsible)
-}
-
 func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenDecoratedLookupReturnsModuleTemplateInfoWithError(
 	t *testing.T,
 ) {
@@ -184,14 +172,7 @@ func Test_WithMWDecorator_Lookup_ReturnsModuleTemplateInfo_WhenMWIsRequiredAndAc
 }
 
 type lookupStrategyStub struct {
-	responsible        bool
-	called             bool
 	moduleTemplateInfo templatelookup.ModuleTemplateInfo
-}
-
-func (s *lookupStrategyStub) IsResponsible(_ *templatelookup.ModuleInfo, _ *v1beta2.ModuleReleaseMeta) bool {
-	s.called = true
-	return s.responsible
 }
 
 func (s *lookupStrategyStub) Lookup(_ context.Context,

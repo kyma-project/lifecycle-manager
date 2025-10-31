@@ -116,7 +116,6 @@ var _ = Describe("module channel different from the global channel", Ordered, fu
 		Eventually(deployModuleInChannel).WithArguments(FastChannel, moduleName).Should(Succeed())
 	})
 	It("Manifest should be deployed in fast channel", func() {
-
 		Eventually(expectModuleManifestToHaveChannel, Timeout, Interval).WithArguments(
 			kyma.GetName(), kyma.GetNamespace(), moduleName, FastChannel).Should(Succeed())
 	})

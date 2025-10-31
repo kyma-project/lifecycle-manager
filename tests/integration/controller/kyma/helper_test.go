@@ -69,7 +69,8 @@ func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 // It also registers the corresponding OCM descriptors (default empty ones).
 // The created resources are tracked by the provided deletionTracker for later cleanup.
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma,
-	version string, tracker *deletionTracker) {
+	version string, tracker *deletionTracker,
+) {
 	for _, module := range kyma.Spec.Modules {
 		template := builder.NewModuleTemplateBuilder().
 			WithName(v1beta2.CreateModuleTemplateName(module.Name, version)).
@@ -100,7 +101,8 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 // It also registers the corresponding OCM descriptor (default empty one).
 // The created resources are tracked by the provided deletionTracker for later cleanup.
 func DeployMandatoryModuleTemplate(ctx context.Context, kcpClient client.Client, moduleName,
-	version string, tracker *deletionTracker) {
+	version string, tracker *deletionTracker,
+) {
 	mandatoryTemplate := newMandatoryModuleTemplate(moduleName, version)
 	Eventually(CreateCR, Timeout, Interval).
 		WithContext(ctx).
