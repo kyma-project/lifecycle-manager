@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -21,8 +21,8 @@ func TestLookup_ReturnsError_WhenModuleReleaseMetaIsNil(t *testing.T) {
 
 	result := lookup.Lookup(context.Background(), &templatelookup.ModuleInfo{}, &v1beta2.Kyma{}, nil)
 
-	assert.Error(t, result.Err)
-	assert.Equal(t, moduletemplateinfolookup.ErrModuleReleaseMetaRequired, result.Err)
+	require.Error(t, result.Err)
+	require.ErrorIs(t, moduletemplateinfolookup.ErrModuleReleaseMetaRequired, result.Err)
 	assert.Nil(t, result.ModuleTemplate)
 }
 
@@ -41,7 +41,7 @@ func TestLookup_ReturnsError_WhenGetMandatoryVersionFails(t *testing.T) {
 		&v1beta2.Kyma{},
 		moduleReleaseMeta)
 
-	assert.Error(t, result.Err)
+	require.Error(t, result.Err)
 	assert.Nil(t, result.ModuleTemplate)
 }
 
@@ -64,7 +64,7 @@ func TestLookup_ReturnsError_WhenGetChannelVersionFails(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.Error(t, result.Err)
+	require.Error(t, result.Err)
 	assert.Nil(t, result.ModuleTemplate)
 }
 
@@ -88,12 +88,12 @@ func TestLookup_ReturnsError_WhenOcmComponentNameIsInvalid(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.Error(t, result.Err)
+	require.Error(t, result.Err)
 	assert.Nil(t, result.ModuleTemplate)
 }
 
 func TestLookup_ReturnsError_WhenModuleTemplateNotFound(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
 	fakeClient := fake.NewClientBuilder().
@@ -122,13 +122,13 @@ func TestLookup_ReturnsError_WhenModuleTemplateNotFound(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.Error(t, result.Err)
-	assert.Contains(t, result.Err.Error(), "failed to get module template")
+	require.Error(t, result.Err)
+	require.ErrorContains(t, result.Err, "failed to get module template")
 	assert.Nil(t, result.ModuleTemplate)
 }
 
 func TestLookup_Success_WithMandatoryModule(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
 	moduleTemplate := builder.NewModuleTemplateBuilder().
@@ -165,16 +165,16 @@ func TestLookup_Success_WithMandatoryModule(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.NoError(t, result.Err)
+	require.NoError(t, result.Err)
 	assert.NotNil(t, result.ModuleTemplate)
-	assert.Equal(t, "test-module", result.ModuleTemplate.Spec.ModuleName)
-	assert.Equal(t, "1.0.0", result.ModuleTemplate.Spec.Version)
+	assert.Equal(t, "test-module", result.Spec.ModuleName)
+	assert.Equal(t, "1.0.0", result.Spec.Version)
 	assert.Equal(t, "regular", result.DesiredChannel)
 	assert.NotNil(t, result.ComponentId)
 }
 
 func TestLookup_Success_WithChannelBasedModule(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
 	moduleTemplate := builder.NewModuleTemplateBuilder().
@@ -211,16 +211,16 @@ func TestLookup_Success_WithChannelBasedModule(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.NoError(t, result.Err)
+	require.NoError(t, result.Err)
 	assert.NotNil(t, result.ModuleTemplate)
-	assert.Equal(t, "test-module", result.ModuleTemplate.Spec.ModuleName)
-	assert.Equal(t, "2.0.0", result.ModuleTemplate.Spec.Version)
+	assert.Equal(t, "test-module", result.Spec.ModuleName)
+	assert.Equal(t, "2.0.0", result.Spec.Version)
 	assert.Equal(t, "regular", result.DesiredChannel)
 	assert.NotNil(t, result.ComponentId)
 }
 
 func TestLookup_UsesModuleChannelOverKymaChannel(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
 	moduleTemplate := builder.NewModuleTemplateBuilder().
@@ -263,16 +263,16 @@ func TestLookup_UsesModuleChannelOverKymaChannel(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.NoError(t, result.Err)
+	require.NoError(t, result.Err)
 	assert.NotNil(t, result.ModuleTemplate)
-	assert.Equal(t, "test-module", result.ModuleTemplate.Spec.ModuleName)
-	assert.Equal(t, "3.0.0", result.ModuleTemplate.Spec.Version)
+	assert.Equal(t, "test-module", result.Spec.ModuleName)
+	assert.Equal(t, "3.0.0", result.Spec.Version)
 	assert.Equal(t, "fast", result.DesiredChannel) // Should use module channel, not kyma channel
 	assert.NotNil(t, result.ComponentId)
 }
 
 func TestLookup_FallsBackToKymaChannelWhenModuleChannelEmpty(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
 	moduleTemplate := builder.NewModuleTemplateBuilder().
@@ -315,16 +315,16 @@ func TestLookup_FallsBackToKymaChannelWhenModuleChannelEmpty(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.NoError(t, result.Err)
+	require.NoError(t, result.Err)
 	assert.NotNil(t, result.ModuleTemplate)
-	assert.Equal(t, "test-module", result.ModuleTemplate.Spec.ModuleName)
-	assert.Equal(t, "2.0.0", result.ModuleTemplate.Spec.Version)
+	assert.Equal(t, "test-module", result.Spec.ModuleName)
+	assert.Equal(t, "2.0.0", result.Spec.Version)
 	assert.Equal(t, "regular", result.DesiredChannel) // Should fall back to kyma channel
 	assert.NotNil(t, result.ComponentId)
 }
 
 func TestLookup_UsesDefaultChannelWhenNeitherChannelSpecified(t *testing.T) {
-	scheme := runtime.NewScheme()
+	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
 	moduleTemplate := builder.NewModuleTemplateBuilder().
@@ -364,10 +364,10 @@ func TestLookup_UsesDefaultChannelWhenNeitherChannelSpecified(t *testing.T) {
 		},
 		moduleReleaseMeta)
 
-	assert.NoError(t, result.Err)
+	require.NoError(t, result.Err)
 	assert.NotNil(t, result.ModuleTemplate)
-	assert.Equal(t, "test-module", result.ModuleTemplate.Spec.ModuleName)
-	assert.Equal(t, "1.0.0", result.ModuleTemplate.Spec.Version)
+	assert.Equal(t, "test-module", result.Spec.ModuleName)
+	assert.Equal(t, "1.0.0", result.Spec.Version)
 	assert.Equal(t, v1beta2.DefaultChannel, result.DesiredChannel)
 	assert.NotNil(t, result.ComponentId)
 }
