@@ -3,9 +3,9 @@ package imagerewrite
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
+	"github.com/distribution/reference"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -35,45 +35,22 @@ type DockerImageReference struct {
 	Digest      string
 }
 
-// Regex matches prefix@sha256:checksum, prefix:version, and prefix:version@sha256:checksum.
-var ociImagePattern = regexp.MustCompile(
-	`^(?:(?P<host>[\w.-]+(?::\d+)?(?:/[\w.-]+)*)/)?` +
-		`(?P<name>[a-z0-9]+(?:[_-][a-z0-9]+)*)` +
-		`(?:` +
-		`(?::(?P<tag>[\w.\-]+))(?:@(?P<digest>sha256:[a-fA-F0-9]{64}))?|` +
-		`@(?P<digest>sha256:[a-fA-F0-9]{64})` +
-		`)` +
-		`$`,
-)
-
+// NewDockerImageReference parses a Docker image reference string and returns a DockerImageReference struct.
+// It extracts the host, repository path, image name, tag, and digest from the input string.
+// Returns an error if the reference is invalid or cannot be parsed.
 func NewDockerImageReference(val string) (*DockerImageReference, error) {
-	res := &DockerImageReference{}
-
-	matches := ociImagePattern.FindStringSubmatch(val)
-	if matches == nil {
-		return nil, ErrInvalidImageReference
-	}
-	result := map[string]string{}
-	for i, name := range ociImagePattern.SubexpNames() {
-		if matches[i] == "" {
-			// Skip empty captures because there are two "digest" groups and only one will match.
-			continue
-		}
-		result[name] = matches[i]
+	namedRef, err := reference.ParseNormalizedNamed(val)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrInvalidImageReference, err.Error())
 	}
 
-	res.HostAndPath = result["host"]
-	imageName := result["name"]
-	tag := result["tag"]
+	imageName := extractImageName(namedRef)
+	repoPath := extractRepositoryPath(namedRef)
 
-	if tag != "" {
-		res.NameAndTag = NameAndTag(imageName + ":" + tag)
-	} else {
-		res.NameAndTag = NameAndTag(imageName)
-	}
-
-	if digest := result["digest"]; digest != "" {
-		res.Digest = digest
+	res := &DockerImageReference{
+		HostAndPath: buildHostAndPath(namedRef, repoPath),
+		NameAndTag:  buildNameAndTag(namedRef, imageName),
+		Digest:      extractDigest(namedRef),
 	}
 
 	return res, nil
@@ -84,10 +61,62 @@ func (ir *DockerImageReference) Matches(otherNameAndTag NameAndTag) bool {
 }
 
 func (ir *DockerImageReference) String() string {
-	if len(ir.Digest) > 0 {
-		return fmt.Sprintf("%s/%s@%s", ir.HostAndPath, ir.NameAndTag, ir.Digest)
+	var stringBuilder strings.Builder
+
+	if len(ir.HostAndPath) > 0 {
+		stringBuilder.WriteString(ir.HostAndPath)
+		stringBuilder.WriteString("/")
 	}
-	return fmt.Sprintf("%s/%s", ir.HostAndPath, ir.NameAndTag)
+
+	stringBuilder.WriteString(string(ir.NameAndTag))
+
+	if len(ir.Digest) > 0 {
+		stringBuilder.WriteString("@")
+		stringBuilder.WriteString(ir.Digest)
+	}
+
+	return stringBuilder.String()
+}
+
+func extractImageName(namedRef reference.Named) string {
+	familiarName := reference.FamiliarName(namedRef)
+	if idx := strings.LastIndex(familiarName, "/"); idx != -1 {
+		return familiarName[idx+1:]
+	}
+	return familiarName
+}
+
+func extractRepositoryPath(namedRef reference.Named) string {
+	path := reference.Path(namedRef)
+	if lastSlash := strings.LastIndex(path, "/"); lastSlash != -1 {
+		return path[:lastSlash]
+	}
+	return ""
+}
+
+func buildHostAndPath(namedRef reference.Named, repoPath string) string {
+	domain := reference.Domain(namedRef)
+	if domain == "" {
+		return repoPath
+	}
+	if repoPath == "" {
+		return domain
+	}
+	return domain + "/" + repoPath
+}
+
+func buildNameAndTag(namedRef reference.Named, imageName string) NameAndTag {
+	if tagged, ok := namedRef.(reference.Tagged); ok {
+		return NameAndTag(imageName + ":" + tagged.Tag())
+	}
+	return NameAndTag(imageName)
+}
+
+func extractDigest(namedRef reference.Named) string {
+	if digested, ok := namedRef.(reference.Digested); ok {
+		return digested.Digest().String()
+	}
+	return ""
 }
 
 type PodContainerImageRewriter struct{}
@@ -138,12 +167,8 @@ func (r *PodContainerEnvsRewriter) Rewrite(
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFindingEnvVarsInPodContainer, err.Error())
 	}
-	if !found {
+	if !found || len(envEntries) == 0 {
 		return nil
-	}
-
-	if len(envEntries) == 0 {
-		return nil // No environment variables to rewrite
 	}
 
 	for _, envEntry := range envEntries {
