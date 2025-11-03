@@ -87,7 +87,6 @@ func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
 }
 
 func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
-	// TODO: Indexed Fields setup for integration tests, where Installation Reconciler is not setup
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.ModuleReleaseMeta{}).
 		Named(deletionControllerName).

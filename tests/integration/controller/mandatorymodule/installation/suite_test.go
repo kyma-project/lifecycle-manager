@@ -74,7 +74,7 @@ var (
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Purge Controller Suite")
+	RunSpecs(t, "Mandatory Module Installation Controller Suite")
 }
 
 var _ = BeforeSuite(func() {

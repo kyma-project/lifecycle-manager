@@ -39,20 +39,19 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 					WithContext(ctx).
 					WithArguments(kcpClient, shared.FQDN, FullOCMName(mandatoryModuleName)).
 					Should(Succeed())
-				By("And mandatory finalizer is added to the mandatory ModuleTemplate", func() {
-					Eventually(mandatoryModuleTemplateFinalizerExists).
+				By("And mandatory finalizer is added to the mandatory ModuleReleaseMeta", func() {
+					Eventually(mandatoryMrmFinalizerExists).
 						WithContext(ctx).
 						WithArguments(kcpClient, client.ObjectKey{
 							Namespace: ControlPlaneNamespace,
-							Name:      v1beta2.CreateModuleTemplateName(mandatoryModuleName, mandatoryModuleVersion),
+							Name:      mandatoryModuleName,
 						}).
 						Should(Succeed())
 				})
-				By("And mandatory Module label is add ")
 			})
 
 		It("When mandatory ModuleTemplate marked for deletion", func() {
-			Eventually(deleteMandatoryModule).
+			Eventually(deleteAllMandatoryMrms).
 				WithContext(ctx).
 				WithArguments(kcpClient).
 				Should(Succeed())
@@ -62,8 +61,8 @@ var _ = Describe("Mandatory Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kcpClient, shared.FQDN, DefaultFQDN).
 				Should(Not(Succeed()))
-			By("And finalizer is removed from mandatory ModuleTemplate", func() {
-				Eventually(mandatoryModuleTemplateFinalizerExists).
+			By("And finalizer is removed from mandatory ModuleReleaseMeta", func() {
+				Eventually(mandatoryMrmFinalizerExists).
 					WithContext(ctx).
 					WithArguments(kcpClient, client.ObjectKey{
 						Namespace: ControlPlaneNamespace,
@@ -132,44 +131,37 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 	})
 }
 
-func deleteMandatoryModule(ctx context.Context, clnt client.Client) error {
-	templates := v1beta2.ModuleTemplateList{}
-	if err := clnt.List(ctx, &templates); err != nil {
-		return fmt.Errorf("failed to list ModuleTemplates: %w", err)
+func deleteAllMandatoryMrms(ctx context.Context, clnt client.Client) error {
+	mrms := v1beta2.ModuleReleaseMetaList{}
+	if err := clnt.List(ctx, &mrms); err != nil {
+		return fmt.Errorf("failed to list ModuleReleaseMetas: %w", err)
+	}
+	var filteredItems []v1beta2.ModuleReleaseMeta
+	for _, mrm := range mrms.Items {
+		if mrm.Spec.Mandatory != nil {
+			filteredItems = append(filteredItems, mrm)
+		}
 	}
 
-	for _, template := range templates.Items {
-		if template.Spec.Mandatory {
-			if err := clnt.Delete(ctx, &template); err != nil {
-				return fmt.Errorf("failed to delete ModuleTemplate: %w", err)
-			}
-			moduleReleaseMeta := v1beta2.ModuleReleaseMeta{}
-			err := clnt.Get(ctx, client.ObjectKey{
-				Namespace: template.Namespace,
-				Name:      template.Spec.ModuleName,
-			}, &moduleReleaseMeta)
-			if err != nil && !errors.Is(err, client.IgnoreNotFound(err)) {
-				return fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
-			}
-			if err := clnt.Delete(ctx, &moduleReleaseMeta); err != nil {
-				return fmt.Errorf("failed to delete ModuleReleaseMeta: %w", err)
-			}
+	for _, mrm := range filteredItems {
+		if err := clnt.Delete(ctx, &mrm); err != nil {
+			return fmt.Errorf("failed to delete ModuleReleaseMeta: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func mandatoryModuleTemplateFinalizerExists(ctx context.Context, clnt client.Client, obj client.ObjectKey) error {
-	template := v1beta2.ModuleTemplate{}
+func mandatoryMrmFinalizerExists(ctx context.Context, clnt client.Client, obj client.ObjectKey) error {
+	template := v1beta2.ModuleReleaseMeta{}
 	if err := clnt.Get(ctx, obj, &template); err != nil {
-		return fmt.Errorf("failed to get ModuleTemplate: %w", err)
+		return fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
 	}
 
-	if controllerutil.ContainsFinalizer(&template, "operator.kyma-project.io/mandatory-module") {
+	if controllerutil.ContainsFinalizer(&template, shared.MandatoryModuleFinalizer) {
 		return nil
 	}
-	return errors.New("ModuleTemplate does not contain mandatory finalizer")
+	return errors.New("ModuleReleaseMeta does not contain mandatory finalizer")
 }
 
 func ConfigureKCPMandatoryModuleReleaseMeta(moduleName, moduleVersion string) *v1beta2.ModuleReleaseMeta {

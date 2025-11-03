@@ -27,7 +27,7 @@ const (
 )
 
 var _ = Describe("Mandatory Module Installation", Ordered, func() {
-	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
+	Context("Given Kyma with no module and one mandatory ModuleReleaseMeta on the control plane″", func() {
 		kyma := NewTestKyma("no-module-kyma")
 		registerControlPlaneLifecycleForKyma(kyma, mandatoryModuleName)
 
@@ -81,6 +81,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 		WithNamespace(ControlPlaneNamespace).
 		WithModuleName(mandatoryModuleName).
 		WithLabel(shared.IsMandatoryModule, shared.EnableLabelValue).
+		WithLabel(shared.ModuleName, mandatoryModuleName).
 		WithVersion(version).
 		WithMandatory(true).
 		Build()
