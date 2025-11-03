@@ -66,7 +66,7 @@ func TestInitConditions(t *testing.T) {
 
 			// ASSERT
 
-			// Check that all pre-existing conditions are cleared
+			// Check that required conditions are initialized
 			if len(kyma.Status.Conditions) == 0 {
 				t.Error("Expected conditions to be initialized, but found none")
 				return

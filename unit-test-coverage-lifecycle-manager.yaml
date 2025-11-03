@@ -48,6 +48,7 @@ packages:
   internal/service/skrclient: 35
   internal/service/mandatorymodule/deletion: 100
   internal/service/mandatorymodule/deletion/usecases: 100
+  internal/service/skrsync: 80
 
   internal/util/collections: 87
   pkg/module/sync: 10
