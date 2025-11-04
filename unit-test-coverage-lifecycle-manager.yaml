@@ -52,7 +52,7 @@ packages:
 
   internal/util/collections: 87
   pkg/module/sync: 10
-  pkg/status/conditions: 100
+  pkg/status/: 80
   pkg/templatelookup: 80
   pkg/templatelookup/moduletemplateinfolookup: 96
   pkg/watcher: 10
