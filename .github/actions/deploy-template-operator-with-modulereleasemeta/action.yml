@@ -112,7 +112,8 @@ runs:
         matrix.e2e-test == 'maintenance-windows' ||
         matrix.e2e-test == 'maintenance-windows-initial-installation' ||
         matrix.e2e-test == 'maintenance-windows-skip' ||
-        matrix.e2e-test == 'simulate-skr-secret-rotation-evict-client-cache'
+        matrix.e2e-test == 'simulate-skr-secret-rotation-evict-client-cache'||
+        matrix.e2e-test == 'skr-image-pull-secret-sync'
         }}
       shell: bash
       run: |

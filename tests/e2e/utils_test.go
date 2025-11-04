@@ -265,3 +265,45 @@ func DeploymentContainerHasFlag(ctx context.Context,
 	}
 	return fmt.Errorf("flag %s with value %s not found in deployment %s", flagName, flagValue, deploymentName)
 }
+
+func DeploymentPodSpecHasImagePullSecret(ctx context.Context,
+	deploymentName, namespace, secretName string, clnt client.Client,
+) error {
+	klmDeployment, err := GetDeployment(ctx, clnt, deploymentName, namespace)
+	if err != nil {
+		return fmt.Errorf("could not get deployment: %w", err)
+	}
+
+	pullSecrets := klmDeployment.Spec.Template.Spec.ImagePullSecrets
+	for _, pullSecret := range pullSecrets {
+		if pullSecret.Name == secretName {
+			return nil
+		}
+	}
+	return fmt.Errorf("imagePullSecret %s not found in deployment %s", secretName, deploymentName)
+}
+
+func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
+	deploymentName, namespace, secretName string, clnt client.Client,
+) error {
+	klmDeployment, err := GetDeployment(ctx, clnt, deploymentName, namespace)
+	if err != nil {
+		return fmt.Errorf("could not get deployment: %w", err)
+	}
+
+	containers := klmDeployment.Spec.Template.Spec.Containers
+	for _, container := range containers {
+		found := false
+		for _, envVar := range container.Env {
+			if envVar.Name == "SKR_IMG_PULL_SECRET" && envVar.Value == secretName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("env var SKR_IMG_PULL_SECRET with value %s not found in container %s of deployment %s",
+				secretName, container.Name, deploymentName)
+		}
+	}
+	return nil
+}
