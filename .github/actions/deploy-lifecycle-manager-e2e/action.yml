@@ -187,6 +187,19 @@ runs:
         cat legacy-secret-rotation.yaml
         kustomize edit add patch --path legacy-secret-rotation.yaml --kind Deployment
         popd
+    - name: Patch SKR Image Pull Secret
+      if: ${{ matrix.e2e-test == 'skr-image-pull-secret-sync' }}
+      working-directory: lifecycle-manager
+      shell: bash
+      run: |
+        pushd ${E2E_KUSTOMIZE_DIR}
+        echo \
+        "- op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --skr-image-pull-secret=some-special-image-pull-secret" >> skr_image_pull_secret_patch.yaml
+        cat skr_image_pull_secret_patch.yaml
+        kustomize edit add patch --path skr_image_pull_secret_patch.yaml --kind Deployment
+        popd
     - name: Create and use maintenance window policy
       if: ${{matrix.e2e-test == 'maintenance-windows' ||
         matrix.e2e-test == 'maintenance-windows-initial-installation' ||
