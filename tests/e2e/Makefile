@@ -150,13 +150,13 @@ modulereleasemeta-with-obsolete-moduletemplate:
 
 modulereleasemeta-watch-trigger:
 	$(GO_TEST) "ModuleReleaseMeta Watch Trigger"
-  
+
 modulereleasemeta-sync:
 	$(GO_TEST) "ModuleReleaseMeta Sync"
 
 module-status-on-skr-connection-lost:
 	$(GO_TEST) "KCP Kyma Module status on SKR connection lost"
-  
+
 modulereleasemeta-not-allowed-installation:
 	$(GO_TEST) "ModuleReleaseMeta Not Allowed Installation"
 
@@ -189,5 +189,6 @@ fips-mode-metric:
 
 simulate-skr-secret-rotation-evict-client-cache:
 	$(GO_TEST) "SKR client cache get evicted due to connection error caused by secret rotation"
-  
 
+skr-image-pull-secret-sync:
+	$(GO_TEST) "SKR Image Pull Secret Sync"

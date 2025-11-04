@@ -78,7 +78,6 @@ func TestResourceConfigurator_ConfigureDeployment_SetsGODEBUG(t *testing.T) {
 	}
 }
 
-//nolint:gocognit // test case is complex
 func TestResourceConfigurator_ConfigureDeployment(t *testing.T) {
 	kcpAddr := skrwebhookresources.KCPAddr{Hostname: "test-host", Port: 8080}
 	cpuLimit := "100m"

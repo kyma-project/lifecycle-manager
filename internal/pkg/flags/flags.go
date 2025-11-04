@@ -286,6 +286,9 @@ func DefineFlagVar() *FlagVar {
 		"Allows to configure name of the Secret containing the OCI registry credential")
 	flag.StringVar(&flagVar.OciRegistryHost, "oci-registry-host", "",
 		"Allows to configure hostname of the OCI registry.")
+	flag.StringVar(&flagVar.SkrImagePullSecret, "skr-image-pull-secret", "",
+		"Allows to reference a secret for the SKR clusters to pull images from private registries.")
+
 	return flagVar
 }
 
@@ -362,6 +365,7 @@ type FlagVar struct {
 	MinMaintenanceWindowSize                   time.Duration
 	OciRegistryCredSecretName                  string
 	OciRegistryHost                            string
+	SkrImagePullSecret                         string
 }
 
 func (f FlagVar) Validate() error {

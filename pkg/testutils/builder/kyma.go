@@ -94,7 +94,7 @@ func (kb KymaBuilder) WithCondition(condition apimetav1.Condition) KymaBuilder {
 	return kb
 }
 
-// WithCondition adds a ModuleStatus to v1beta2.Kyma.Status.Modules.
+// WithModuleStatus adds a ModuleStatus to v1beta2.Kyma.Status.Modules.
 func (kb KymaBuilder) WithModuleStatus(moduleStatus v1beta2.ModuleStatus) KymaBuilder {
 	if kb.kyma.Status.Modules == nil {
 		kb.kyma.Status.Modules = []v1beta2.ModuleStatus{}
@@ -132,6 +132,12 @@ func (kb KymaBuilder) WithSkipMaintenanceWindows(skip bool) KymaBuilder {
 // WithDeletionTimestamp sets v1beta2.Kyma.ObjectMeta.DeletionTimestamp.
 func (kb KymaBuilder) WithDeletionTimestamp() KymaBuilder {
 	kb.kyma.DeletionTimestamp = &apimetav1.Time{Time: time.Now()}
+	return kb
+}
+
+// WithGeneration sets v1beta2.Kyma.ObjectMeta.Generation.
+func (kb KymaBuilder) WithGeneration(generation int) KymaBuilder {
+	kb.kyma.Generation = int64(generation)
 	return kb
 }
 

@@ -56,6 +56,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
@@ -68,9 +69,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	testskrcontext "github.com/kyma-project/lifecycle-manager/tests/integration/commontestutils/skrcontextimpl"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -233,6 +235,14 @@ var _ = BeforeSuite(func() {
 
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
+
+	kymaReconcilerConfig := kyma.ReconcilerConfig{
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
+	}
+
+	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil)
+	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -240,12 +250,12 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:     intervals,
 		SKRWebhookManager:    skrWebhookChartManager,
 		DescriptorProvider:   nil, // no descriptor provider needed for these tests
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
+		Config: kymaReconcilerConfig,
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -18,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	skrwebhookresources "github.com/kyma-project/lifecycle-manager/internal/service/watcher/resources"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	. "github.com/kyma-project/lifecycle-manager/tests/e2e/commontestutils"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -129,6 +130,27 @@ func CreateInvalidKymaSecret(ctx context.Context, kymaName, kymaNamespace string
 	return k8sClient.Create(ctx, secret)
 }
 
+func CreateAnySecret(ctx context.Context, name string, clnt client.Client) error {
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      name,
+			Namespace: shared.DefaultControlPlaneNamespace,
+		},
+		Data: map[string][]byte{"data": []byte(random.Name())},
+	}
+	return clnt.Create(ctx, secret)
+}
+
+func DeleteAnySecret(ctx context.Context, name string, clnt client.Client) error {
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      name,
+			Namespace: shared.DefaultControlPlaneNamespace,
+		},
+	}
+	return clnt.Delete(ctx, secret)
+}
+
 func CheckRemoteKymaCR(ctx context.Context,
 	kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client, expectedState shared.State,
 ) error {
@@ -224,4 +246,22 @@ func CheckSampleCRHasExpectedLabel(ctx context.Context, name, namespace string, 
 	}
 
 	return nil
+}
+
+func DeploymentContainerHasFlag(ctx context.Context,
+	deploymentName, namespace, flagName, flagValue string, clnt client.Client,
+) error {
+	klmDeployment, err := GetDeployment(ctx, clnt, deploymentName, namespace)
+	if err != nil {
+		return fmt.Errorf("could not get deployment: %w", err)
+	}
+
+	for _, container := range klmDeployment.Spec.Template.Spec.Containers {
+		for _, arg := range container.Args {
+			if strings.Contains(arg, flagName) && strings.Contains(arg, flagValue) {
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("flag %s with value %s not found in deployment %s", flagName, flagValue, deploymentName)
 }
