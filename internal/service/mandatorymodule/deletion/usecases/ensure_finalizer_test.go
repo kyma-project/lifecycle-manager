@@ -32,7 +32,7 @@ func TestEnsureFinalizer_WithoutFinalizer(t *testing.T) {
 	t.Parallel()
 
 	mockRepo := &MockMrmEnsureFinalizerRepo{}
-	mockEventHandler := &MockEventHandler{}
+	mockEventHandler := &mockEventHandler{}
 	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -56,7 +56,7 @@ func TestEnsureFinalizer_WithFinalizer(t *testing.T) {
 	t.Parallel()
 
 	mockRepo := &MockMrmEnsureFinalizerRepo{}
-	mockEventHandler := &MockEventHandler{}
+	mockEventHandler := &mockEventHandler{}
 	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -78,7 +78,7 @@ func TestEnsureFinalizer_RepositoryError(t *testing.T) {
 	mockRepo := &MockMrmEnsureFinalizerRepo{
 		EnsureFinalizerError: expectedErr,
 	}
-	mockEventHandler := &MockEventHandler{}
+	mockEventHandler := &mockEventHandler{}
 	ensureFinalizer := usecases.NewEnsureFinalizer(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{

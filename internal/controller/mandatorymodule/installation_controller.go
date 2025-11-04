@@ -47,10 +47,7 @@ func NewInstallationReconciler(installationService InstallationService,
 
 func (r *InstallationReconciler) Reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	err := r.installationService.HandleInstallation(ctx, kyma)
-	return r.determineRequeueBehaviour(err)
-}
 
-func (r *InstallationReconciler) determineRequeueBehaviour(err error) (ctrl.Result, error) {
 	if err != nil {
 		if errors.Is(err, installation.ErrSkippingReconciliationKyma) {
 			return ctrl.Result{}, nil

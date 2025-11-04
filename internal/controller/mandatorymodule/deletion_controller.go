@@ -47,10 +47,7 @@ func NewDeletionReconciler(deletionService DeletionService,
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (ctrl.Result, error) {
 	err := r.deletionService.HandleDeletion(ctx, mrm)
-	return r.determineRequeueBehaviour(err)
-}
 
-func (r *DeletionReconciler) determineRequeueBehaviour(err error) (ctrl.Result, error) {
 	if err != nil {
 		if errors.Is(err, deletion.ErrMrmNotInDeletingState) {
 			return ctrl.Result{}, nil

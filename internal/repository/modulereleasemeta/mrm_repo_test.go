@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,7 +27,7 @@ type clientStub struct {
 	listCalledWithMatchingFields map[string]string
 	listErr                      error
 
-	mrm                          *v1beta2.ModuleReleaseMeta
+	mrm *v1beta2.ModuleReleaseMeta
 }
 
 func (c *clientStub) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
@@ -263,7 +263,7 @@ func TestRepository_ListMandatory(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, stub.listCalled)
 		require.Equal(t,
-			map[string]string{shared.MrmMandatoryModuleFieldIndexName: shared.MrmMandatoryModuleFieldIndexPositiveValue},
+			map[string]string{fieldindex.MrmMandatoryModuleName: fieldindex.MrmMandatoryModulePositiveValue},
 			stub.listCalledWithMatchingFields)
 	})
 
@@ -278,7 +278,7 @@ func TestRepository_ListMandatory(t *testing.T) {
 		require.Contains(t, err.Error(), "failed to list mandatory ModuleReleaseMeta")
 		require.True(t, stub.listCalled)
 		require.Equal(t,
-			map[string]string{shared.MrmMandatoryModuleFieldIndexName: shared.MrmMandatoryModuleFieldIndexPositiveValue},
+			map[string]string{fieldindex.MrmMandatoryModuleName: fieldindex.MrmMandatoryModulePositiveValue},
 			stub.listCalledWithMatchingFields)
 	})
 }

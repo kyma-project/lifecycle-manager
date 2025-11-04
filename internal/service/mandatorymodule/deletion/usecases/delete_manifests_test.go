@@ -44,7 +44,7 @@ func TestDeleteManifests_WithManifests(t *testing.T) {
 			{ObjectMeta: apimetav1.ObjectMeta{Name: random.Name()}},
 		},
 	}
-	mockEventHandler := &MockEventHandler{}
+	mockEventHandler := &mockEventHandler{}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -70,7 +70,7 @@ func TestDeleteManifests_NoManifests(t *testing.T) {
 	mockRepo := &MockManifestRepo{
 		ManifestsToReturn: []apimetav1.PartialObjectMetadata{},
 	}
-	mockEventHandler := &MockEventHandler{}
+	mockEventHandler := &mockEventHandler{}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -91,7 +91,7 @@ func TestDeleteManifests_ListError(t *testing.T) {
 	mockRepo := &MockManifestRepo{
 		ListAllForModuleError: expectedErr,
 	}
-	mockEventHandler := &MockEventHandler{}
+	mockEventHandler := &mockEventHandler{}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{
@@ -113,7 +113,7 @@ func TestDeleteManifests_DeleteError(t *testing.T) {
 	mockRepo := &MockManifestRepo{
 		DeleteAllForModuleError: expectedErr,
 	}
-	mockEventHandler := &MockEventHandler{}
+	mockEventHandler := &mockEventHandler{}
 	deleteManifests := usecases.NewDeleteManifests(mockRepo, mockEventHandler)
 	mrm := &v1beta2.ModuleReleaseMeta{
 		ObjectMeta: apimetav1.ObjectMeta{

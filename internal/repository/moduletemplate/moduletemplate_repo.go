@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -72,19 +73,13 @@ func (r *Repository) GetSpecificVersionForModule(ctx context.Context,
 	moduleName string,
 	version string,
 ) (*v1beta2.ModuleTemplate, error) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	err := r.clnt.List(ctx, moduleTemplateList, client.InNamespace(r.namespace),
-		client.MatchingLabels{shared.ModuleName: moduleName},
-		client.MatchingFields{shared.ModuleTemplateVersionFieldIndexName: version})
+	moduleTemplate := &v1beta2.ModuleTemplate{}
+	err := r.clnt.Get(ctx, types.NamespacedName{
+		Namespace: r.namespace,
+		Name:      v1beta2.CreateModuleTemplateName(moduleName, version),
+	}, moduleTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list ModuleTemplates for module %s: %w", moduleName, err)
+		return nil, fmt.Errorf("failed to get ModuleTemplate for module %s: %w", moduleName, err)
 	}
-	length := len(moduleTemplateList.Items)
-	if length == 0 {
-		return nil, fmt.Errorf("no ModuleTemplates found for module %s in version %s", moduleName, version)
-	}
-	if length > 1 {
-		return nil, fmt.Errorf("multiple ModuleTemplates found for module %s in version %s", moduleName, version)
-	}
-	return &moduleTemplateList.Items[0], nil
+	return moduleTemplate, nil
 }

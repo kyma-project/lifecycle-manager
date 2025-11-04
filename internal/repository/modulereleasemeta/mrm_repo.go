@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -62,7 +62,7 @@ func (r *Repository) ListMandatory(ctx context.Context) ([]v1beta2.ModuleRelease
 	mandatoryMrmList := &v1beta2.ModuleReleaseMetaList{}
 	err := r.clnt.List(ctx, mandatoryMrmList, client.InNamespace(r.namespace),
 		client.MatchingFields{
-			shared.MrmMandatoryModuleFieldIndexName: shared.MrmMandatoryModuleFieldIndexPositiveValue,
+			fieldindex.MrmMandatoryModuleName: fieldindex.MrmMandatoryModulePositiveValue,
 		})
 	if err != nil {
 		return nil,

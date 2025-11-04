@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 	apicorev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,16 +55,16 @@ func setupFieldIndexForMandatoryMrm(mgr ctrl.Manager) error {
 	return mgr.GetFieldIndexer().IndexField(
 		context.Background(),
 		&v1beta2.ModuleReleaseMeta{},
-		shared.MrmMandatoryModuleFieldIndexName,
+		fieldindex.MrmMandatoryModuleName,
 		func(obj client.Object) []string {
 			mrm, ok := obj.(*v1beta2.ModuleReleaseMeta)
 			if !ok {
 				return nil
 			}
 			if mrm.Spec.Mandatory != nil {
-				return []string{shared.MrmMandatoryModuleFieldIndexPositiveValue}
+				return []string{fieldindex.MrmMandatoryModulePositiveValue}
 			}
-			return []string{shared.MrmMandatoryModuleFieldIndexNegativeValue}
+			return []string{fieldindex.MrmMandatoryModuleNegativeValue}
 		},
 	)
 }
@@ -75,7 +75,7 @@ func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
 	return mgr.GetFieldIndexer().IndexField(
 		context.Background(),
 		&v1beta2.ModuleTemplate{},
-		shared.ModuleTemplateVersionFieldIndexName,
+		fieldindex.ModuleTemplateVersionName,
 		func(obj client.Object) []string {
 			mt, ok := obj.(*v1beta2.ModuleTemplate)
 			if !ok {
