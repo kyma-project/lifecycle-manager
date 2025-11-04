@@ -198,7 +198,6 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	})
 
 	It("Mark Kyma as skip Reconciliation", func() {
-
 		By("CR created", func() {
 			for _, activeModule := range kyma.Spec.Modules {
 				Eventually(ManifestExists, Timeout, Interval).
