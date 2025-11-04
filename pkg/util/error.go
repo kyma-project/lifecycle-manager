@@ -1,6 +1,7 @@
 package util
 
 import (
+	"crypto/tls"
 	"errors"
 	"net"
 	"strings"
@@ -10,6 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
+)
+
+const (
+	msgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
 )
 
 var ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
@@ -55,7 +60,16 @@ func IsConnectionRelatedError(err error) bool {
 		apierrors.IsUnauthorized(err) ||
 		apierrors.IsForbidden(err) ||
 		isNoSuchHostError(err) ||
+		IsTLSCertExpiredError(err) ||
 		errors.Is(err, ErrClientUnauthorized)
+}
+
+func IsTLSCertExpiredError(err error) bool {
+	var opErr tls.AlertError
+	if errors.As(err, &opErr) {
+		return strings.Contains(opErr.Error(), msgTLSCertificateExpired)
+	}
+	return false
 }
 
 func isNoSuchHostError(err error) bool {

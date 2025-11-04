@@ -464,6 +464,9 @@ func (r *Reconciler) renderTargetResources(ctx context.Context,
 
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
+		if util.IsTLSCertExpiredError(err) {
+			logf.FromContext(ctx).Error(err, "[DEBUGG]: TLS certificate is expired")
+		}
 		return nil, err
 	}
 
