@@ -12,7 +12,14 @@ import (
 	"k8s.io/client-go/discovery"
 )
 
-var ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
+const (
+	MsgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
+)
+
+var (
+	ErrClientUnauthorized   = errors.New("ServerSideApply is unauthorized")
+	ErrClientTLSCertExpired = errors.New("SKR TLS certificate is expired")
+)
 
 func IsNotFound(err error) bool {
 	if err == nil {
@@ -55,6 +62,7 @@ func IsConnectionRelatedError(err error) bool {
 		apierrors.IsUnauthorized(err) ||
 		apierrors.IsForbidden(err) ||
 		isNoSuchHostError(err) ||
+		errors.Is(err, ErrClientTLSCertExpired) ||
 		errors.Is(err, ErrClientUnauthorized)
 }
 
