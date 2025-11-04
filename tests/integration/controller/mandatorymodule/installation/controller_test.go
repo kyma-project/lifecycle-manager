@@ -79,9 +79,8 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 	const version = "1.0.0"
 	template := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
-		WithModuleName(mandatoryModuleName).
+		WithModuleName(v1beta2.CreateModuleTemplateName(mandatoryModuleName, version)).
 		WithLabel(shared.IsMandatoryModule, shared.EnableLabelValue).
-		WithLabel(shared.ModuleName, mandatoryModuleName).
 		WithVersion(version).
 		WithMandatory(true).
 		Build()
