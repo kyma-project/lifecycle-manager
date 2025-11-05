@@ -1,7 +1,6 @@
 package util
 
 import (
-	"crypto/tls"
 	"errors"
 	"net"
 	"strings"
@@ -19,7 +18,7 @@ const (
 
 var (
 	ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
-	ErrTLSCertExpired     = errors.New("remote kubeconfig TLS certificate is expired")
+	ErrTLSCertExpired     = errors.New("SKR TLS certificate is expired")
 )
 
 func IsNotFound(err error) bool {
@@ -63,16 +62,8 @@ func IsConnectionRelatedError(err error) bool {
 		apierrors.IsUnauthorized(err) ||
 		apierrors.IsForbidden(err) ||
 		isNoSuchHostError(err) ||
-		IsTLSCertExpiredError(err) ||
+		errors.Is(err, ErrTLSCertExpired) ||
 		errors.Is(err, ErrClientUnauthorized)
-}
-
-func IsTLSCertExpiredError(err error) bool {
-	var opErr tls.AlertError
-	if errors.As(err, &opErr) {
-		return strings.Contains(opErr.Error(), MsgTLSCertificateExpired)
-	}
-	return false
 }
 
 func isNoSuchHostError(err error) bool {

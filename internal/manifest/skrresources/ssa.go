@@ -134,7 +134,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(
-			"patch for %s failed: %w", info.ObjectName(), c.suppressUnauthorized(err),
+			"patch for %s failed: %w", info.ObjectName(), c.supressLongClientErrors(err),
 		)
 	}
 
@@ -142,10 +142,28 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 	return nil
 }
 
-// suppressUnauthorized replaces client-go error with our own in order to suppress it's very long Error() payload.
-func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) error {
-	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), ": Unauthorized") {
-		return util.ErrClientUnauthorized
+func (c *ConcurrentDefaultSSA) supressLongClientErrors(clientErr error) error {
+	if err, suppressed := c.suppressUnauthorized(clientErr); suppressed {
+		return err
 	}
-	return src
+	if err, suppressed := c.suppressTLSExpired(clientErr); suppressed {
+		return err
+	}
+	return clientErr
+}
+
+// suppressUnauthorized replaces client-go error with our own in order to suppress it's very long Error() payload.
+func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) (error, bool) {
+	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), ": Unauthorized") {
+		return util.ErrClientUnauthorized, true
+	}
+	return src, false
+}
+
+// suppressTLSExpired replaces client-go error with our own in order to suppress it's very long Error() payload.
+func (c *ConcurrentDefaultSSA) suppressTLSExpired(src error) (error, bool) {
+	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), util.MsgTLSCertificateExpired) {
+		return util.ErrTLSCertExpired, true
+	}
+	return src, false
 }
