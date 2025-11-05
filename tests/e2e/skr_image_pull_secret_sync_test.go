@@ -9,7 +9,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = FDescribe("SKR Image Pull Secret Sync", Ordered, func() {
+var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
