@@ -127,7 +127,7 @@ func registerSchemas(scheme *machineryruntime.Scheme) {
 }
 
 func main() {
-	setupLog := ctrl.Log.WithName("setup")
+	setupLogger := ctrl.Log.WithName("setup")
 	scheme := machineryruntime.NewScheme()
 	registerSchemas(scheme)
 
@@ -137,22 +137,22 @@ func main() {
 		log.ConfigLogger(int8(flagVar.LogLevel), //nolint:gosec // loglevel should always be between -128 to 127
 			zapcore.Lock(os.Stdout)),
 	)
-	setupLog.Info("starting Lifecycle-Manager version: " + buildVersion)
+	setupLogger.Info("starting Lifecycle-Manager version: " + buildVersion)
 	if err := flagVar.Validate(); err != nil {
-		setupLog.Error(err, "unable to start manager")
+		setupLogger.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
 	}
 	if flagVar.Pprof {
-		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout, setupLog)
+		go pprofStartServer(flagVar.PprofAddr, flagVar.PprofServerTimeout, setupLogger)
 	}
 
 	cacheOptions := setup.SetupCacheOptions(flagVar.IsKymaManaged,
 		flagVar.IstioNamespace,
 		flagVar.IstioGatewayNamespace,
 		flagVar.CertificateManagement,
-		setupLog,
+		setupLogger,
 	)
-	setupManager(flagVar, cacheOptions, scheme, setupLog)
+	setupManager(flagVar, cacheOptions, scheme, setupLogger)
 }
 
 func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) {
@@ -178,11 +178,11 @@ func pprofStartServer(addr string, timeout time.Duration, setupLog logr.Logger) 
 
 //nolint:funlen // disable length check since the function is the composition root
 func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *machineryruntime.Scheme,
-	logger logr.Logger,
+	setupLogger logr.Logger,
 ) {
 	mgr, err := configManager(flagVar, cacheOptions, scheme)
 	if err != nil {
-		logger.Error(err, "unable to start manager")
+		setupLogger.Error(err, "unable to start manager")
 		os.Exit(bootstrapFailedExitCode)
 	}
 	kcpRestConfig := mgr.GetConfig()
@@ -192,7 +192,7 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	kcpClientWithoutCache, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
 	if err != nil {
-		logger.Error(err, "can't create kcpClient")
+		setupLogger.Error(err, "can't create kcpClient")
 		os.Exit(bootstrapFailedExitCode)
 	}
 	gatewayRepository := istiogateway.NewRepository(kcpClientWithoutCache)
@@ -207,28 +207,28 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 			gatewayRepository,
 			flagVar)
 		if err != nil {
-			logger.Error(err, "failed to setup SKR webhook manager")
+			setupLogger.Error(err, "failed to setup SKR webhook manager")
 			os.Exit(bootstrapFailedExitCode)
 		}
-		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, logger)
+		setupKcpWatcherReconciler(mgr, options, eventRecorder, flagVar, setupLogger)
 		var gatewaysecretclnt gatewaysecretclient.CertificateInterface
 		gatewaysecretclnt, err = setup.SetupCertInterface(kcpClient, flagVar)
 		if err != nil {
-			logger.Error(err, "failed to setup certificate client")
+			setupLogger.Error(err, "failed to setup certificate client")
 			os.Exit(bootstrapFailedExitCode)
 		}
 		err = istiogatewaysecret.SetupReconciler(mgr, gatewaysecretclnt,
 			flagVar,
 			options)
 		if err != nil {
-			logger.Error(err, "unable to create controller", "controller", "Istio")
+			setupLogger.Error(err, "unable to create controller", "controller", "Istio")
 			os.Exit(bootstrapFailedExitCode)
 		}
 	}
 
 	sharedMetrics := metrics.NewSharedMetrics()
 
-	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, logger)
+	ociRegistryHost := getOciRegistryHost(mgr.GetConfig(), flagVar, setupLogger)
 	var insecure bool
 
 	if noSchemeRef, found := strings.CutPrefix(ociRegistryHost, "http://"); found {
@@ -242,12 +242,12 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		keychainLookupFromFlag(mgr.GetClient(), flagVar),
 		ociRegistryHost,
 		insecure,
-		logger,
+		setupLogger,
 		bootstrapFailedExitCode,
 	)
 	ocmDescriptorService := componentdescriptor.ComposeComponentDescriptorService(
 		ocmDescriptorRepository,
-		logger,
+		setupLogger,
 		bootstrapFailedExitCode,
 	)
 
@@ -258,33 +258,33 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 
 	kymaMetrics := metrics.NewKymaMetrics(sharedMetrics)
 	mandatoryModulesMetrics := metrics.NewMandatoryModulesMetrics()
-	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
+	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, setupLogger)
 	metrics.NewFipsMetrics().Update()
 
 	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder,
-		flagVar, options, skrWebhookManager, kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
+		flagVar, options, skrWebhookManager, kymaMetrics, setupLogger, maintenanceWindow, ociRegistryHost)
 	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics,
-		accessManagerService, logger, eventRecorder)
+		accessManagerService, setupLogger, eventRecorder)
 	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options,
-		mandatoryModulesMetrics, logger, ociRegistryHost)
-	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, logger)
+		mandatoryModulesMetrics, setupLogger, ociRegistryHost)
+	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, setupLogger)
 	if flagVar.EnablePurgeFinalizer {
-		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
+		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, setupLogger)
 	}
 
 	if flagVar.EnableWebhooks {
 		// enable conversion webhook for CRDs here
 
-		logger.Info("currently no configured webhooks")
+		setupLogger.Info("currently no configured webhooks")
 	}
 
-	addHealthChecks(mgr, logger)
+	addHealthChecks(mgr, setupLogger)
 
-	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, logger)
-	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, logger)
+	go cleanupStoredVersions(flagVar.DropCrdStoredVersionMap, mgr, setupLogger)
+	go scheduleMetricsCleanup(kymaMetrics, flagVar.MetricsCleanupIntervalInMinutes, mgr, setupLogger)
 
 	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		logger.Error(err, "problem running manager")
+		setupLogger.Error(err, "problem running manager")
 		os.Exit(runtimeProblemExitCode)
 	}
 }
@@ -508,7 +508,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	sharedMetrics *metrics.SharedMetrics,
 	mandatoryModulesMetrics *metrics.MandatoryModulesMetrics,
 	accessManagerService *accessmanager.Service,
-	setupLog logr.Logger,
+	setupLogger logr.Logger,
 	event event.Event,
 ) {
 	options.RateLimiter = internal.RateLimiter(flagVar.FailureBaseDelay,
@@ -520,7 +520,9 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	orphanDetectionClient := kymarepository.NewClient(mgr.GetClient())
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
-	clientCache := skrclientcache.NewService()
+	clientCache := skrclientcache.NewService(
+		skrclientcache.WithEvictionLogging(func(msg string) { setupLogger.Info(msg) }),
+	)
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 
 	kcpClient := mgr.GetClient()
@@ -541,7 +543,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 		EnableDomainNameVerification: flagVar.EnableDomainNameVerification,
 	}, metrics.NewManifestMetrics(sharedMetrics), mandatoryModulesMetrics, manifestClient, orphanDetectionService,
 		specResolver, clientCache, skrClient, kcpClient, cachedManifestParser, customStateCheck); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
+		setupLogger.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }

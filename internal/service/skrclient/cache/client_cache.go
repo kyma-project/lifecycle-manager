@@ -1,7 +1,9 @@
 package cache
 
 import (
+	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -19,10 +21,15 @@ type Service struct {
 	internal *ttlcache.Cache[string, *skrclient.SKRClient]
 }
 
-func NewService() *Service {
+func NewService(opts ...func(*Service) *Service) *Service {
 	cache := &Service{
 		internal: ttlcache.New[string, *skrclient.SKRClient](),
 	}
+
+	for _, opt := range opts {
+		cache = opt(cache)
+	}
+
 	go cache.internal.Start()
 	return cache
 }
@@ -45,6 +52,21 @@ func (m *Service) DeleteClient(key string) {
 
 func (m *Service) Size() int {
 	return m.internal.Len()
+}
+
+func WithEvictionLogging(evictionLogFn func(string)) func(*Service) *Service {
+	return func(srv *Service) *Service {
+		if evictionLogFn != nil {
+			cacheEvictionHandler := func(ctx context.Context,
+				reason ttlcache.EvictionReason,
+				item *ttlcache.Item[string, *skrclient.SKRClient],
+			) {
+				evictionLogFn(fmt.Sprintf("evicted SKRClient from cache: key=%s, reason=%d", item.Key(), reason))
+			}
+			srv.internal.OnEviction(cacheEvictionHandler)
+		}
+		return srv
+	}
 }
 
 func getRandomTTL() time.Duration {
