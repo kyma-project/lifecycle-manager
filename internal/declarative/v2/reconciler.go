@@ -572,7 +572,6 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
-
 	logf.FromContext(ctx).V(internal.DebugLogLevel).Info("Finishing reconciliation")
 	if strings.Contains(originalErr.Error(), util.MsgTLSCertificateExpired) {
 		logf.FromContext(ctx).Error(originalErr, "[DEBUGG1]: untyped error")

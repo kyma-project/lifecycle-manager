@@ -19,7 +19,7 @@ const (
 
 var (
 	ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
-	ErrTLSCertExpired    = errors.New("Remote kubeconfig TLS certificate is expired")
+	ErrTLSCertExpired     = errors.New("remote kubeconfig TLS certificate is expired")
 )
 
 func IsNotFound(err error) bool {
