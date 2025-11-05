@@ -3,11 +3,12 @@ package v2_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
+	"github.com/stretchr/testify/require"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *testing.T) {
@@ -15,6 +16,9 @@ func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *tes
 	secretName := random.Name()
 
 	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	manifest := &v1beta2.Manifest{
+		Spec: v1beta2.ManifestSpec{},
+	}
 	resources := []*unstructured.Unstructured{
 		{
 			Object: map[string]interface{}{
@@ -34,7 +38,7 @@ func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *tes
 		},
 	}
 
-	err := transform(t.Context(), nil, resources)
+	err := transform(t.Context(), manifest, resources)
 	require.NoError(t, err)
 
 	for _, resource := range resources {
@@ -59,6 +63,9 @@ func TestImagePullSecretTransform_WhenImagePullSecretsExists_Appends(t *testing.
 	secretName := random.Name()
 
 	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	manifest := &v1beta2.Manifest{
+		Spec: v1beta2.ManifestSpec{},
+	}
 	resources := []*unstructured.Unstructured{
 		{
 			Object: map[string]interface{}{
@@ -84,7 +91,7 @@ func TestImagePullSecretTransform_WhenImagePullSecretsExists_Appends(t *testing.
 		},
 	}
 
-	err := transform(t.Context(), nil, resources)
+	err := transform(t.Context(), manifest, resources)
 	require.NoError(t, err)
 
 	for _, resource := range resources {
@@ -111,6 +118,19 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 	secretName := random.Name()
 
 	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	manifest := &v1beta2.Manifest{
+		Spec: v1beta2.ManifestSpec{
+			Manager: &v1beta2.Manager{
+				Name:      "manager-deployment",
+				Namespace: "default",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Kind:    "Deployment",
+					Version: "v1",
+					Group:   "apps",
+				},
+			},
+		},
+	}
 	resources := []*unstructured.Unstructured{
 		{
 			Object: map[string]interface{}{
@@ -120,7 +140,12 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 		},
 		{
 			Object: map[string]interface{}{
-				"kind": "Deployment",
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"metadata": map[string]interface{}{
+					"name":      "manager-deployment",
+					"namespace": "default",
+				},
 				"spec": map[string]interface{}{
 					"template": map[string]interface{}{
 						"spec": map[string]interface{}{
@@ -147,7 +172,7 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 		},
 	}
 
-	err := transform(t.Context(), nil, resources)
+	err := transform(t.Context(), manifest, resources)
 	require.NoError(t, err)
 
 	for _, resource := range resources {
@@ -183,10 +208,28 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 	secretName := random.Name()
 
 	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	manifest := &v1beta2.Manifest{
+		Spec: v1beta2.ManifestSpec{
+			Manager: &v1beta2.Manager{
+				Name:      "manager-deployment",
+				Namespace: "default",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Kind:    "Deployment",
+					Version: "v1",
+					Group:   "apps",
+				},
+			},
+		},
+	}
 	resources := []*unstructured.Unstructured{
 		{
 			Object: map[string]interface{}{
-				"kind": "Deployment",
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"metadata": map[string]interface{}{
+					"name":      "manager-deployment",
+					"namespace": "default",
+				},
 				"spec": map[string]interface{}{
 					"template": map[string]interface{}{
 						"spec": map[string]interface{}{
@@ -209,6 +252,64 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing
 		},
 	}
 
-	err := transform(t.Context(), nil, resources)
+	err := transform(t.Context(), manifest, resources)
 	require.ErrorIs(t, err, declarativev2.ErrSkrImagePullSecretEnvAlreadyExists)
+}
+
+func TestCreateSkrImagePullSecretTransform_DoesntAddEnvVarToNonManagerDeployment(t *testing.T) {
+	t.Parallel()
+	secretName := random.Name()
+
+	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	manifest := &v1beta2.Manifest{
+		Spec: v1beta2.ManifestSpec{
+			Manager: &v1beta2.Manager{
+				Name:      "manager-deployment",
+				Namespace: "default",
+				GroupVersionKind: apimetav1.GroupVersionKind{
+					Kind:    "Deployment",
+					Version: "v1",
+					Group:   "apps",
+				},
+			},
+		},
+	}
+	resources := []*unstructured.Unstructured{
+		{
+			Object: map[string]interface{}{
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"metadata": map[string]interface{}{
+					"name":      "some-other-deployment",
+					"namespace": "default",
+				},
+				"spec": map[string]interface{}{
+					"template": map[string]interface{}{
+						"spec": map[string]interface{}{
+							"containers": []interface{}{
+								map[string]interface{}{
+									"name":  "manager",
+									"image": "controller:latest",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := transform(t.Context(), manifest, resources)
+	require.NoError(t, err)
+
+	containers, found, err := unstructured.NestedSlice(resources[0].Object, "spec", "template", "spec",
+		"containers")
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Len(t, containers, 1)
+
+	containerMap := containers[0].(map[string]interface{})
+	_, found, err = unstructured.NestedSlice(containerMap, "env")
+	require.NoError(t, err)
+	require.False(t, found)
 }

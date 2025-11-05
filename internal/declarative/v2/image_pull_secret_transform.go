@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -15,29 +16,50 @@ var ErrSkrImagePullSecretEnvAlreadyExists = errors.New(SkrImagePullSecretEnvName
 	" environment variable already exits in raw manifest")
 
 func CreateSkrImagePullSecretTransform(secretName string) ResourceTransform {
-	return func(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
+	return func(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
+		manifest, ok := obj.(*v1beta2.Manifest)
+		if !ok {
+			return fmt.Errorf("expected Manifest object but got %T", obj)
+		}
 		for _, resource := range resources {
-			err := patchDeploymentsAndStatefulSets(resource, secretName)
-			if err != nil {
-				return fmt.Errorf("failed to patch SKR image pull secret in resource %s: %w", resource.GetName(), err)
+			if resource.GetKind() == "Deployment" || resource.GetKind() == "StatefulSet" {
+				err := patchResource(manifest, resource, secretName)
+				if err != nil {
+					return fmt.Errorf("failed to patch SKR image pull secret in resource %s: %w", resource.GetName(),
+						err)
+				}
 			}
 		}
 		return nil
 	}
 }
 
-func patchDeploymentsAndStatefulSets(resource *unstructured.Unstructured, secretName string) error {
-	if resource.GetKind() == "Deployment" || resource.GetKind() == "StatefulSet" {
-		err := parseAndPatchImagePullSecrets(resource, secretName)
-		if err != nil {
-			return fmt.Errorf("failed to parse and patch imagePullSecrets in pod spec: %w", err)
-		}
+func patchResource(manifest *v1beta2.Manifest,
+	resource *unstructured.Unstructured,
+	secretName string,
+) error {
+	err := parseAndPatchImagePullSecrets(resource, secretName)
+	if err != nil {
+		return fmt.Errorf("failed to parse and patch imagePullSecrets in pod spec: %w", err)
+	}
+	if resourceIsManager(manifest, resource) {
 		err = parseAndPatchAllContainerEnvs(resource, secretName)
 		if err != nil {
 			return fmt.Errorf("failed to parse and patch container envs: %w", err)
 		}
 	}
 	return nil
+}
+
+func resourceIsManager(manifest *v1beta2.Manifest, resource *unstructured.Unstructured) bool {
+	manager := manifest.Spec.Manager
+
+	return manager != nil &&
+		manager.Name == resource.GetName() &&
+		manager.Namespace == resource.GetNamespace() &&
+		manager.GroupVersionKind.Group == resource.GroupVersionKind().Group &&
+		manager.GroupVersionKind.Version == resource.GroupVersionKind().Version &&
+		manager.GroupVersionKind.Kind == resource.GroupVersionKind().Kind
 }
 
 func parseAndPatchImagePullSecrets(resource *unstructured.Unstructured, secretName string) error {
