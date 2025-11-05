@@ -16,7 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-func TestLookup_ReturnsError_WhenModuleReleaseMetaIsNil(t *testing.T) {
+func TestLookup_WhenModuleReleaseMetaIsNil_ReturnsError(t *testing.T) {
 	lookup := moduletemplateinfolookup.NewLookup(nil)
 
 	result := lookup.Lookup(context.Background(), &templatelookup.ModuleInfo{}, &v1beta2.Kyma{}, nil)
@@ -26,7 +26,7 @@ func TestLookup_ReturnsError_WhenModuleReleaseMetaIsNil(t *testing.T) {
 	assert.Nil(t, result.ModuleTemplate)
 }
 
-func TestLookup_ReturnsError_WhenGetMandatoryVersionFails(t *testing.T) {
+func TestLookup_WhenGetMandatoryVersionFails_ReturnsError(t *testing.T) {
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithMandatory("invalid-version").
@@ -45,7 +45,7 @@ func TestLookup_ReturnsError_WhenGetMandatoryVersionFails(t *testing.T) {
 	assert.Nil(t, result.ModuleTemplate)
 }
 
-func TestLookup_ReturnsError_WhenGetChannelVersionFails(t *testing.T) {
+func TestLookup_WhenGetChannelVersionFails_ReturnsError(t *testing.T) {
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithOcmComponentName("kyma-project.io/test-module").
@@ -68,7 +68,7 @@ func TestLookup_ReturnsError_WhenGetChannelVersionFails(t *testing.T) {
 	assert.Nil(t, result.ModuleTemplate)
 }
 
-func TestLookup_ReturnsError_WhenOcmComponentNameIsInvalid(t *testing.T) {
+func TestLookup_WhenOcmComponentNameIsInvalid_ReturnsError(t *testing.T) {
 	moduleReleaseMeta := builder.NewModuleReleaseMetaBuilder().
 		WithModuleName("test-module").
 		WithOcmComponentName("").
@@ -92,7 +92,7 @@ func TestLookup_ReturnsError_WhenOcmComponentNameIsInvalid(t *testing.T) {
 	assert.Nil(t, result.ModuleTemplate)
 }
 
-func TestLookup_ReturnsError_WhenModuleTemplateNotFound(t *testing.T) {
+func TestLookup_WhenModuleTemplateNotFound_ReturnsError(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
@@ -127,7 +127,7 @@ func TestLookup_ReturnsError_WhenModuleTemplateNotFound(t *testing.T) {
 	assert.Nil(t, result.ModuleTemplate)
 }
 
-func TestLookup_Success_WithMandatoryModule(t *testing.T) {
+func TestLookup_WithMandatoryModule_Success(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 
@@ -173,7 +173,7 @@ func TestLookup_Success_WithMandatoryModule(t *testing.T) {
 	assert.NotNil(t, result.ComponentId)
 }
 
-func TestLookup_Success_WithChannelBasedModule(t *testing.T) {
+func TestLookup_WithChannelBasedModule_Success(t *testing.T) {
 	scheme := machineryruntime.NewScheme()
 	require.NoError(t, v1beta2.AddToScheme(scheme))
 

@@ -33,16 +33,11 @@ func getTemplateByVersion(ctx context.Context,
 }
 
 func getDesiredChannel(moduleChannel, globalChannel string) string {
-	var desiredChannel string
-
-	switch {
-	case moduleChannel != "":
-		desiredChannel = moduleChannel
-	case globalChannel != "":
-		desiredChannel = globalChannel
-	default:
-		desiredChannel = v1beta2.DefaultChannel
+	if moduleChannel != "" {
+		return moduleChannel
 	}
-
-	return desiredChannel
+	if globalChannel != "" {
+		return globalChannel
+	}
+	return v1beta2.DefaultChannel
 }
