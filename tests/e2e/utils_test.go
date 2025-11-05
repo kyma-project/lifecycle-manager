@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	templatev1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -295,14 +296,14 @@ func DeploymentContainersHaveImagePullSecretEnv(ctx context.Context,
 	for _, container := range containers {
 		found := false
 		for _, envVar := range container.Env {
-			if envVar.Name == "SKR_IMG_PULL_SECRET" && envVar.Value == secretName {
+			if envVar.Name == declarativev2.SkrImagePullSecretEnvName && envVar.Value == secretName {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return fmt.Errorf("env var SKR_IMG_PULL_SECRET with value %s not found in container %s of deployment %s",
-				secretName, container.Name, deploymentName)
+			return fmt.Errorf("env var %s with value %s not found in container %s of deployment %s",
+				declarativev2.SkrImagePullSecretEnvName, secretName, container.Name, deploymentName)
 		}
 	}
 	return nil

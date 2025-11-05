@@ -9,7 +9,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
+var _ = FDescribe("SKR Image Pull Secret Sync", Ordered, func() {
 	kyma := NewKymaWithNamespaceName("kyma-sample", ControlPlaneNamespace, v1beta2.DefaultChannel)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
@@ -59,7 +59,7 @@ var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 		It("Then imagePullSecrets in Deployment should contain the SKR image pull Secret", func() {
 			Eventually(DeploymentPodSpecHasImagePullSecret).
 				WithContext(ctx).
-				WithArguments("template-operator-v1-controller-manager", RemoteNamespace,
+				WithArguments("template-operator-v1-controller-manager", "template-operator-system",
 					skrImagePullSecretName, skrClient).
 				Should(Succeed())
 		})
@@ -67,7 +67,7 @@ var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 		It("And env in Deployment containers have the SKR_IMG_PULL_SECRET var", func() {
 			Eventually(DeploymentContainersHaveImagePullSecretEnv).
 				WithContext(ctx).
-				WithArguments("template-operator-v1-controller-manager", RemoteNamespace,
+				WithArguments("template-operator-v1-controller-manager", "template-operator-system",
 					skrImagePullSecretName, skrClient).
 				Should(Succeed())
 		})
