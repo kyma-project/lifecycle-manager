@@ -28,7 +28,8 @@ func NewEnsureFinalizer(repo MrmEnsureFinalizerRepo, eventHandler EventHandler) 
 
 // IsApplicable returns true if the ModuleReleaseMeta does not contain the mandatory finalizer, so it should be added.
 func (e *EnsureFinalizer) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
-	return !controllerutil.ContainsFinalizer(mrm, shared.MandatoryModuleFinalizer), nil
+	return !controllerutil.ContainsFinalizer(mrm,
+		shared.MandatoryModuleFinalizer) && mrm.DeletionTimestamp.IsZero(), nil
 }
 
 func (e *EnsureFinalizer) Execute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
