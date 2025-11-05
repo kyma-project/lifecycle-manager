@@ -74,7 +74,7 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 	}
 	s.mandatoryModuleMetrics.RecordMandatoryModulesCount(len(mandatoryMrms))
 
-	var mandatoryTemplatesByName = make(templatelookup.ModuleTemplatesByModuleName)
+	mandatoryTemplatesByName := make(templatelookup.ModuleTemplatesByModuleName)
 	for _, mrm := range mandatoryMrms {
 		moduleTemplate, err := s.mtRepo.GetSpecificVersionForModule(ctx, mrm.Name, mrm.Spec.Mandatory.Version)
 		if err != nil {

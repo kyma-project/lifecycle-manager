@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 )
 
 type Repository struct {

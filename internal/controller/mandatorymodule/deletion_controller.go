@@ -21,10 +21,11 @@ import (
 	"errors"
 	"fmt"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type DeletionService interface {
@@ -47,7 +48,6 @@ func NewDeletionReconciler(deletionService DeletionService,
 
 func (r *DeletionReconciler) Reconcile(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) (ctrl.Result, error) {
 	err := r.deletionService.HandleDeletion(ctx, mrm)
-
 	if err != nil {
 		if errors.Is(err, deletion.ErrMrmNotInDeletingState) {
 			return ctrl.Result{}, nil

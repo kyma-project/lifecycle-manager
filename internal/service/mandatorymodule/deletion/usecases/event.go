@@ -1,8 +1,9 @@
 package usecases
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
 
 type EventHandler interface {

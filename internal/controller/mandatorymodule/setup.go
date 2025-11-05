@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 	apicorev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 	"github.com/kyma-project/lifecycle-manager/internal/watch"
 )
 
@@ -25,12 +25,12 @@ const (
 func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
 	err := setupFieldIndexForMandatoryMrm(mgr)
 	if err != nil {
-		return fmt.Errorf("failed to setup field indexer for mandatory ModuleReleaseMetas: %w", err)
+		return err
 	}
 
 	err = setupFieldIndexForModuleTemplateByModuleVersion(mgr)
 	if err != nil {
-		return fmt.Errorf("failed to setup field indexer for ModuleTemplates by version: %w", err)
+		return err
 	}
 
 	if err := ctrl.NewControllerManagedBy(mgr).
@@ -50,9 +50,9 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 }
 
 // setupFieldIndexForMandatoryMrm sets up a field indexer on MRMs to optimize lookup for mandatory MRMs.
-// MatchingFields: "is-mandatory" -> "true"/"false"
+// MatchingFields: "is-mandatory" -> "true"/"false"-
 func setupFieldIndexForMandatoryMrm(mgr ctrl.Manager) error {
-	return mgr.GetFieldIndexer().IndexField(
+	err := mgr.GetFieldIndexer().IndexField(
 		context.Background(),
 		&v1beta2.ModuleReleaseMeta{},
 		fieldindex.MrmMandatoryModuleName,
@@ -67,12 +67,13 @@ func setupFieldIndexForMandatoryMrm(mgr ctrl.Manager) error {
 			return []string{fieldindex.MrmMandatoryModuleNegativeValue}
 		},
 	)
+	return fmt.Errorf("failed to index field for mandatory MRMs: %w", err)
 }
 
 // setupFieldIndexForModuleTemplateByModuleVersion sets up a field indexer on ModuleTemplates to optimize lookup by version.
-// MatchingFields: "spec.version" -> "<version>"
+// MatchingFields: "spec.version" -> "<version>"-
 func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
-	return mgr.GetFieldIndexer().IndexField(
+	err := mgr.GetFieldIndexer().IndexField(
 		context.Background(),
 		&v1beta2.ModuleTemplate{},
 		fieldindex.ModuleTemplateVersionName,
@@ -84,6 +85,7 @@ func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
 			return []string{mt.Spec.Version}
 		},
 	)
+	return fmt.Errorf("failed to index field for ModuleTemplate by version: %w", err)
 }
 
 func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
@@ -92,11 +94,11 @@ func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime
 		Named(deletionControllerName).
 		WithOptions(opts).
 		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
-			mrm := obj.(*v1beta2.ModuleReleaseMeta)
-			if mrm.Spec.Mandatory == nil {
+			mrm, ok := obj.(*v1beta2.ModuleReleaseMeta)
+			if !ok {
 				return false
 			}
-			return true
+			return mrm.Spec.Mandatory != nil
 		})).
 		Complete(reconcile.AsReconciler[*v1beta2.ModuleReleaseMeta](mgr.GetClient(), r)); err != nil {
 		return fmt.Errorf("failed to setup manager for mandatory module deletion controller: %w", err)

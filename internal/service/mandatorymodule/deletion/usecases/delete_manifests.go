@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const DeletingManifestErrorEvent event.Reason = "DeletingMandatoryModuleManifestError"

@@ -31,8 +31,6 @@ import (
 	gcertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/go-co-op/gocron"
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
-	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"go.uber.org/zap/zapcore"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -41,7 +39,9 @@ import (
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
+	_ "ocm.software/ocm/api/ocm"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,6 +56,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/provider/componentdescriptorcache"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
@@ -97,9 +99,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup/moduletemplateinfolookup"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	_ "ocm.software/ocm/api/ocm"
 )
 
 const (

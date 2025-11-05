@@ -3,11 +3,11 @@ package usecases
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
 
 const SettingFinalizerErrorEvent event.Reason = "SettingMandatoryModuleTemplateFinalizerError"

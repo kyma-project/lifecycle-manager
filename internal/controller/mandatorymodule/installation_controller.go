@@ -21,10 +21,11 @@ import (
 	"errors"
 	"fmt"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type InstallationService interface {
@@ -47,7 +48,6 @@ func NewInstallationReconciler(installationService InstallationService,
 
 func (r *InstallationReconciler) Reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	err := r.installationService.HandleInstallation(ctx, kyma)
-
 	if err != nil {
 		if errors.Is(err, installation.ErrSkippingReconciliationKyma) {
 			return ctrl.Result{}, nil
