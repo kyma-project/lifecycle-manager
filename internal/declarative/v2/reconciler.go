@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -73,6 +74,25 @@ type SKRClientCache interface {
 	DeleteClient(key string)
 }
 
+// loggingSKRClientCache is a wrapper around SKRClientCache that adds logging functionality.
+type loggingSKRClientCache struct {
+	SKRClientCache
+}
+
+func (l *loggingSKRClientCache) GetClient(key string) *skrclient.SKRClient {
+	return l.SKRClientCache.GetClient(key)
+}
+
+func (l *loggingSKRClientCache) AddClient(key string, client *skrclient.SKRClient, logger logr.Logger) {
+	logger.V(internal.DebugLogLevel).Info("Adding SKR client to cache", "key", key)
+	l.SKRClientCache.AddClient(key, client)
+}
+
+func (l *loggingSKRClientCache) DeleteClient(key string, logger logr.Logger) {
+	logger.V(internal.DebugLogLevel).Info("Deleting SKR client from cache", "key", key)
+	l.SKRClientCache.DeleteClient(key)
+}
+
 type SKRClient interface {
 	ResolveClient(ctx context.Context, manifest *v1beta2.Manifest) (*skrclient.SKRClient, error)
 }
@@ -91,7 +111,7 @@ type Reconciler struct {
 	manifestClient             ManifestAPIClient
 	managedLabelRemovalService ManagedByLabelRemoval
 	orphanDetectionService     OrphanDetectionService
-	skrClientCache             SKRClientCache
+	skrClientCache             loggingSKRClientCache
 	skrClient                  SKRClient
 }
 
@@ -115,7 +135,7 @@ func NewReconciler(requeueIntervals queue.RequeueIntervals,
 	reconciler.manifestClient = manifestAPIClient
 	reconciler.managedLabelRemovalService = labelsremoval.NewManagedByLabelRemovalService(manifestAPIClient)
 	reconciler.orphanDetectionService = orphanDetectionService
-	reconciler.skrClientCache = clientCache
+	reconciler.skrClientCache = loggingSKRClientCache{clientCache}
 	reconciler.skrClient = skrClient
 
 	reconciler.kcpClient = kcpClient
@@ -337,9 +357,7 @@ func (r *Reconciler) cleanupMetrics(manifest *v1beta2.Manifest) error {
 func (r *Reconciler) evictSKRClientCache(ctx context.Context, manifest *v1beta2.Manifest) {
 	clientsCacheKey, found := manifest.GenerateCacheKey()
 	if found {
-		logf.FromContext(ctx).Info("Invalidating manifest-controller client cache entry for key: " + fmt.Sprintf("%#v",
-			clientsCacheKey))
-		r.skrClientCache.DeleteClient(clientsCacheKey)
+		r.skrClientCache.DeleteClient(clientsCacheKey, logf.FromContext(ctx))
 	}
 }
 
@@ -563,7 +581,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 		if err != nil {
 			return nil, err
 		}
-		r.skrClientCache.AddClient(clientsCacheKey, clnt)
+		r.skrClientCache.AddClient(clientsCacheKey, clnt, logf.FromContext(ctx))
 	}
 
 	return clnt, nil

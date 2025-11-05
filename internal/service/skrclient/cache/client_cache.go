@@ -20,7 +20,9 @@ type Service struct {
 }
 
 func NewService() *Service {
-	cache := &Service{internal: ttlcache.New[string, *skrclient.SKRClient]()}
+	cache := &Service{
+		internal: ttlcache.New[string, *skrclient.SKRClient](),
+	}
 	go cache.internal.Start()
 	return cache
 }
