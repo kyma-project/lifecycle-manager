@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -464,9 +465,6 @@ func (r *Reconciler) renderTargetResources(ctx context.Context,
 
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
-		if util.IsTLSCertExpiredError(err) {
-			logf.FromContext(ctx).Error(err, "[DEBUGG]: TLS certificate is expired")
-		}
 		return nil, err
 	}
 
@@ -574,6 +572,14 @@ func (r *Reconciler) getTargetClient(ctx context.Context, manifest *v1beta2.Mani
 func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Manifest,
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
+
+	logf.FromContext(ctx).V(internal.DebugLogLevel).Info("Finishing reconciliation")
+	if strings.Contains(originalErr.Error(), util.MsgTLSCertificateExpired) {
+		logf.FromContext(ctx).Error(originalErr, "[DEBUGG1]: untyped error")
+	}
+	if util.IsTLSCertExpiredError(originalErr) {
+		logf.FromContext(ctx).Error(originalErr, "[DEBUGG2]: typed error")
+	}
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
 	}

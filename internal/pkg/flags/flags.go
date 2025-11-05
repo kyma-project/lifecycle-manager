@@ -37,7 +37,7 @@ const (
 	FailureBaseDelayDefault                                             = 5 * time.Second
 	FailureMaxDelayDefault                                              = 30 * time.Second
 	DefaultCacheSyncTimeout                                             = 60 * time.Minute
-	DefaultLogLevel                                                     = log.WarnLevel
+	DefaultLogLevel                                                     = log.DebugLevel
 	DefaultPurgeFinalizerTimeout                                        = 5 * time.Minute
 	DefaultMaxConcurrentManifestReconciles                              = 1
 	DefaultMaxConcurrentKymaReconciles                                  = 1

@@ -14,10 +14,13 @@ import (
 )
 
 const (
-	msgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
+	MsgTLSCertificateExpired = "expired certificate" // stdlib: crypto/tls/alert.go
 )
 
-var ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
+var (
+	ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
+	ErrTLSCertExpired    = errors.New("Remote kubeconfig TLS certificate is expired")
+)
 
 func IsNotFound(err error) bool {
 	if err == nil {
@@ -67,7 +70,7 @@ func IsConnectionRelatedError(err error) bool {
 func IsTLSCertExpiredError(err error) bool {
 	var opErr tls.AlertError
 	if errors.As(err, &opErr) {
-		return strings.Contains(opErr.Error(), msgTLSCertificateExpired)
+		return strings.Contains(opErr.Error(), MsgTLSCertificateExpired)
 	}
 	return false
 }
