@@ -17,8 +17,8 @@ const (
 )
 
 var (
-	ErrClientUnauthorized = errors.New("ServerSideApply is unauthorized")
-	ErrTLSCertExpired     = errors.New("SKR TLS certificate is expired")
+	ErrClientUnauthorized   = errors.New("ServerSideApply is unauthorized")
+	ErrClientTLSCertExpired = errors.New("SKR TLS certificate is expired")
 )
 
 func IsNotFound(err error) bool {
@@ -62,7 +62,7 @@ func IsConnectionRelatedError(err error) bool {
 		apierrors.IsUnauthorized(err) ||
 		apierrors.IsForbidden(err) ||
 		isNoSuchHostError(err) ||
-		errors.Is(err, ErrTLSCertExpired) ||
+		errors.Is(err, ErrClientTLSCertExpired) ||
 		errors.Is(err, ErrClientUnauthorized)
 }
 

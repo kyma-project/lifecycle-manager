@@ -79,6 +79,9 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 		if c.allUnauthorized(errs) {
 			return errors.Join(util.ErrClientUnauthorized, summaryErr)
 		}
+		if c.allTLSExpired(errs) {
+			return errors.Join(util.ErrClientTLSCertExpired, summaryErr)
+		}
 		errs = append(errs, summaryErr)
 		return errors.Join(errs...)
 	}
@@ -89,20 +92,27 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	return nil
 }
 
-func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
+func (c *ConcurrentDefaultSSA) allErrorsAre(errs []error, target error) bool {
 	errorCount := len(errs)
 	if errorCount == 0 {
 		return false
 	}
-
-	unauthorizedFound := 0
+	matchingCount := 0
 	for i := range errs {
-		if errors.Is(errs[i], util.ErrClientUnauthorized) {
-			unauthorizedFound++
+		if errors.Is(errs[i], target) {
+			matchingCount++
 		}
 	}
 
-	return unauthorizedFound == errorCount
+	return matchingCount == errorCount
+}
+
+func (c *ConcurrentDefaultSSA) allUnauthorized(errs []error) bool {
+	return c.allErrorsAre(errs, util.ErrClientUnauthorized)
+}
+
+func (c *ConcurrentDefaultSSA) allTLSExpired(errs []error) bool {
+	return c.allErrorsAre(errs, util.ErrClientTLSCertExpired)
 }
 
 func (c *ConcurrentDefaultSSA) serverSideApply(
@@ -163,7 +173,7 @@ func (c *ConcurrentDefaultSSA) suppressUnauthorized(src error) (error, bool) {
 // suppressTLSExpired replaces client-go error with our own in order to suppress it's very long Error() payload.
 func (c *ConcurrentDefaultSSA) suppressTLSExpired(src error) (error, bool) {
 	if strings.HasSuffix(strings.TrimRight(src.Error(), " \n"), util.MsgTLSCertificateExpired) {
-		return util.ErrTLSCertExpired, true
+		return util.ErrClientTLSCertExpired, true
 	}
 	return src, false
 }
