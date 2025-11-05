@@ -573,11 +573,13 @@ func (r *Reconciler) finishReconcile(ctx context.Context, manifest *v1beta2.Mani
 	requeueReason metrics.ManifestRequeueReason, previousStatus shared.Status, originalErr error,
 ) (ctrl.Result, error) {
 	logf.FromContext(ctx).V(internal.DebugLogLevel).Info("Finishing reconciliation")
-	if strings.Contains(originalErr.Error(), util.MsgTLSCertificateExpired) {
-		logf.FromContext(ctx).Error(originalErr, "[DEBUGG1]: untyped error")
-	}
-	if util.IsTLSCertExpiredError(originalErr) {
-		logf.FromContext(ctx).Error(originalErr, "[DEBUGG2]: typed error")
+	if originalErr != nil {
+		if strings.Contains(originalErr.Error(), util.MsgTLSCertificateExpired) {
+			logf.FromContext(ctx).Error(originalErr, "[DEBUGG1]: untyped error")
+		}
+		if util.IsTLSCertExpiredError(originalErr) {
+			logf.FromContext(ctx).Error(originalErr, "[DEBUGG2]: typed error")
+		}
 	}
 	if err := r.manifestClient.PatchStatusIfDiffExist(ctx, manifest, previousStatus); err != nil {
 		return ctrl.Result{}, err
