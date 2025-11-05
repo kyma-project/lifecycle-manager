@@ -50,7 +50,7 @@ func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlrun
 }
 
 // setupFieldIndexForMandatoryMrm sets up a field indexer on MRMs to optimize lookup for mandatory MRMs.
-// MatchingFields: "is-mandatory" -> "true"/"false"-
+// MatchingFields: "is-mandatory" -> "true"/"false".
 func setupFieldIndexForMandatoryMrm(mgr ctrl.Manager) error {
 	err := mgr.GetFieldIndexer().IndexField(
 		context.Background(),
@@ -67,11 +67,14 @@ func setupFieldIndexForMandatoryMrm(mgr ctrl.Manager) error {
 			return []string{fieldindex.MrmMandatoryModuleNegativeValue}
 		},
 	)
-	return fmt.Errorf("failed to index field for mandatory MRMs: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to index field for mandatory MRMs: %w", err)
+	}
+	return nil
 }
 
 // setupFieldIndexForModuleTemplateByModuleVersion sets up a field indexer on ModuleTemplates to optimize lookup by version.
-// MatchingFields: "spec.version" -> "<version>"-
+// MatchingFields: "spec.version" -> "<version>".
 func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
 	err := mgr.GetFieldIndexer().IndexField(
 		context.Background(),
@@ -85,7 +88,10 @@ func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
 			return []string{mt.Spec.Version}
 		},
 	)
-	return fmt.Errorf("failed to index field for ModuleTemplate by version: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to index field for ModuleTemplate by version: %w", err)
+	}
+	return nil
 }
 
 func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime.Options) error {
