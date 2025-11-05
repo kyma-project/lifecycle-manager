@@ -175,7 +175,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 			})
 
 			By("And the mandatory module manifest is installed with the correct version", func() {
-				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+				Eventually(MandatoryModuleManifestExistWithCorrectVersion).
 					WithContext(ctx).
 					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
 					Should(Succeed())
@@ -210,7 +210,7 @@ var _ = Describe("Mandatory Module Installation and Deletion", Ordered, func() {
 					Should(Succeed())
 			})
 			By("And the mandatory module manifest is not present in the KCP cluster", func() {
-				Consistently(MandatoryModuleManifestExistWithCorrectVersion).
+				Eventually(MandatoryModuleManifestExistWithCorrectVersion).
 					WithContext(ctx).
 					WithArguments(kcpClient, "template-operator", "2.4.1-smoke-test").
 					Should(Equal(ErrManifestNotFound))

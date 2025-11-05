@@ -73,7 +73,7 @@ func setupFieldIndexForMandatoryMrm(mgr ctrl.Manager) error {
 	return nil
 }
 
-// setupFieldIndexForModuleTemplateByModuleVersion sets up a field indexer on ModuleTemplates to optimize lookup by version.
+// setupFieldIndexForModuleTemplateByModuleVersion sets up a field indexer on MTs to optimize lookup by version.
 // MatchingFields: "spec.version" -> "<version>".
 func setupFieldIndexForModuleTemplateByModuleVersion(mgr ctrl.Manager) error {
 	err := mgr.GetFieldIndexer().IndexField(
