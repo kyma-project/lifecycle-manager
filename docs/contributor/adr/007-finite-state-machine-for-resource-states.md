@@ -9,8 +9,6 @@
 
 ### 1. Context and Background
 
-The **Kyma Lifecycle Manager (KLM)** is a **meta operator** responsible for coordinating and tracking the lifecycle of Kyma Modules. Operating within the Kyma Control Plane (KCP), KLM must reconcile not only locally but also across remote clusters (SAP BTP, Kyma runtime, or SKR).
-
 The **Kyma Controller** deals with the introspection, interpretation, and status update of the **Kyma Custom Resource (CR)**. It aggregates the status of installed modules (`Manifest` CRs) into a single `State` field on the Kyma CR, which reflects the integrity of the Kyma installation.
 
 The current system manages the lifecycle using discrete status values: `Error`, `Ready`, `Processing`, `Warning`, `Deleting`, and `Unmanaged`. The reconciliation logic utilizes a primary `switch` statement on `kyma.Status.State` within the `processKymaState` function to route control flow.
