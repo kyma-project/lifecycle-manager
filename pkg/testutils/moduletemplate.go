@@ -197,31 +197,6 @@ func SetModuleTemplateInternalLabel(ctx context.Context, clnt client.Client, mod
 	return nil
 }
 
-func MandatoryModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Client, moduleName, key, value string,
-) error {
-	mandatoryModuleTemplates, err := templatelookup.GetMandatory(ctx, clnt)
-	if err != nil {
-		return err
-	}
-
-	var moduleTemplate *v1beta2.ModuleTemplate
-	for _, moduleTemplateInfo := range mandatoryModuleTemplates {
-		if moduleTemplateInfo.Spec.ModuleName == moduleName {
-			moduleTemplate = moduleTemplateInfo.ModuleTemplate
-			break
-		}
-	}
-
-	if moduleTemplate == nil {
-		return fmt.Errorf("module template not found, %s", moduleName)
-	}
-
-	if moduleTemplate.Labels[key] != value {
-		return fmt.Errorf("label %s:%s not found", key, value)
-	}
-	return nil
-}
-
 func DeleteModuleTemplate(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
