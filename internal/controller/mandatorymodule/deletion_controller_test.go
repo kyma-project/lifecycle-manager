@@ -16,7 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 )
 
-// nolint:gosec // This is only test code
+//nolint:gosec // This is only test code
 var successRequeueInterval = time.Duration(rand.Intn(10)) * time.Second
 
 func TestDeletionReconciler_Reconcile_WhenMrmNotInDeletingState_DoesntRequeue(t *testing.T) {
