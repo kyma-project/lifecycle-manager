@@ -3,12 +3,13 @@ package v2_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 	"github.com/stretchr/testify/require"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/random"
 )
 
 func TestImagePullSecretTransform_WhenNoImagePullSecretsExists_CreatesNew(t *testing.T) {

@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 //nolint:gosec // This is not sensitive information.
 const SkrImagePullSecretEnvName = "SKR_IMG_PULL_SECRET"
+
+var ErrResourceTransformExpectedManifestType = errors.New("resource transform expected Manifest type")
 
 var ErrSkrImagePullSecretEnvAlreadyExists = errors.New(SkrImagePullSecretEnvName +
 	" environment variable already exits in raw manifest")
@@ -19,7 +22,7 @@ func CreateSkrImagePullSecretTransform(secretName string) ResourceTransform {
 	return func(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 		manifest, ok := obj.(*v1beta2.Manifest)
 		if !ok {
-			return fmt.Errorf("expected Manifest object but got %T", obj)
+			return fmt.Errorf("%w, got %T", ErrResourceTransformExpectedManifestType, obj)
 		}
 		for _, resource := range resources {
 			if resource.GetKind() == "Deployment" || resource.GetKind() == "StatefulSet" {
@@ -57,9 +60,9 @@ func resourceIsManager(manifest *v1beta2.Manifest, resource *unstructured.Unstru
 	return manager != nil &&
 		manager.Name == resource.GetName() &&
 		manager.Namespace == resource.GetNamespace() &&
-		manager.GroupVersionKind.Group == resource.GroupVersionKind().Group &&
-		manager.GroupVersionKind.Version == resource.GroupVersionKind().Version &&
-		manager.GroupVersionKind.Kind == resource.GroupVersionKind().Kind
+		manager.Group == resource.GroupVersionKind().Group &&
+		manager.Version == resource.GroupVersionKind().Version &&
+		manager.Kind == resource.GroupVersionKind().Kind
 }
 
 func parseAndPatchImagePullSecrets(resource *unstructured.Unstructured, secretName string) error {
