@@ -204,6 +204,68 @@ func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AddsEnv(t *testing
 	}
 }
 
+func TestCreateSkrImagePullSecretTransform_WhenEnvDoesntExist_AndManagerNotSpecified_AddsEnv(t *testing.T) {
+	t.Parallel()
+	secretName := random.Name()
+
+	transform := declarativev2.CreateSkrImagePullSecretTransform(secretName)
+	manifest := &v1beta2.Manifest{
+		Spec: v1beta2.ManifestSpec{},
+	}
+	resources := []*unstructured.Unstructured{
+		{
+			Object: map[string]interface{}{
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"metadata": map[string]interface{}{
+					"name":      "some-deployment",
+					"namespace": "default",
+				},
+				"spec": map[string]interface{}{
+					"template": map[string]interface{}{
+						"spec": map[string]interface{}{
+							"containers": []interface{}{
+								map[string]interface{}{
+									"name":  "some-container",
+									"image": "controller:latest",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := transform(t.Context(), manifest, resources)
+	require.NoError(t, err)
+
+	for _, resource := range resources {
+		if resource.GetKind() == "Deployment" {
+			containers, found, err := unstructured.NestedSlice(resource.Object, "spec", "template", "spec",
+				"containers")
+			require.NoError(t, err)
+			require.True(t, found)
+			require.Len(t, containers, 1)
+
+			containerMap := containers[0].(map[string]interface{})
+			envSlice, found, err := unstructured.NestedSlice(containerMap, "env")
+			require.NoError(t, err)
+			require.True(t, found)
+
+			var skrEnvFound bool
+			for _, envVar := range envSlice {
+				envVarMap := envVar.(map[string]interface{})
+				if envVarMap["name"] == declarativev2.SkrImagePullSecretEnvName {
+					skrEnvFound = true
+					require.Equal(t, secretName, envVarMap["value"])
+				}
+			}
+			require.True(t, skrEnvFound)
+		}
+	}
+}
+
 func TestCreateSkrImagePullSecretTransform_WhenEnvExists_ReturnsError(t *testing.T) {
 	t.Parallel()
 	secretName := random.Name()

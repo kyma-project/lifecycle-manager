@@ -57,8 +57,12 @@ func patchResource(manifest *v1beta2.Manifest,
 func resourceIsManager(manifest *v1beta2.Manifest, resource *unstructured.Unstructured) bool {
 	manager := manifest.Spec.Manager
 
-	return manager != nil &&
-		manager.Name == resource.GetName() &&
+	if manager == nil {
+		// if no manager is specified, patch all deployment resources.
+		return true
+	}
+
+	return manager.Name == resource.GetName() &&
 		manager.Namespace == resource.GetNamespace() &&
 		manager.Group == resource.GroupVersionKind().Group &&
 		manager.Version == resource.GroupVersionKind().Version &&
