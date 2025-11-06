@@ -87,6 +87,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -423,12 +424,25 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
+	kymaReconcilerConfig := kyma.ReconcilerConfig{
+		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
+		IsManagedKyma:          flagVar.IsKymaManaged,
+		OCIRegistryHost:        ociRegistryHost,
+		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
+	}
+	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
+	skrSyncService := skrsync.NewService(
+		skrContextFactory,
+		secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		&syncCrdsUseCase,
+		flagVar.SkrImagePullSecret)
+
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    skrContextFactory,
 		Event:                event,
 		DescriptorProvider:   descriptorProvider,
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modulesStatusHandler,
 		SKRWebhookManager:    skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
@@ -437,14 +451,12 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
 		},
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		IsManagedKyma:       flagVar.IsKymaManaged,
-		Metrics:             kymaMetrics,
+		Metrics: kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
 			moduleTemplateInfoLookup),
-		OCIRegistryHost: ociRegistryHost,
+		Config: kymaReconcilerConfig,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,

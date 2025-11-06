@@ -36,9 +36,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
+
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -171,21 +172,30 @@ var _ = BeforeSuite(func() {
 	crdCache = crd.NewCache(nil)
 	noOpMetricsFunc := func(kymaName, moduleName string) {}
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
+
+	kymaReconcilerConfig := kyma.ReconcilerConfig{
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
+		IsManagedKyma:       true,
+	}
+
+	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache)
+	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
 		Event:                testEventRec,
 		RequeueIntervals:     intervals,
 		DescriptorProvider:   descriptorProvider,
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
+		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:        true,
 		Metrics:              metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
+		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient,
+			descriptorProvider,
 			moduletemplateinfolookup.NewLookup(kcpClient)),
+		Config: kymaReconcilerConfig,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
