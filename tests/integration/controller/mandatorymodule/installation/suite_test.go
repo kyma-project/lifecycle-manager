@@ -26,6 +26,7 @@ import (
 	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -63,7 +64,6 @@ const (
 )
 
 var (
-	reconciler         *mandatorymodule.InstallationReconciler
 	kcpClient          client.Client
 	singleClusterEnv   *envtest.Environment
 	ctx                context.Context
@@ -74,7 +74,7 @@ var (
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Purge Controller Suite")
+	RunSpecs(t, "Mandatory Module Installation Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -131,15 +131,11 @@ var _ = BeforeSuite(func() {
 		return nil
 	}
 
-	reconciler = &mandatorymodule.InstallationReconciler{
-		Client:              mgr.GetClient(),
-		DescriptorProvider:  descriptorProvider,
-		RequeueIntervals:    intervals,
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		Metrics:             metrics.NewMandatoryModulesMetrics(),
-	}
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, "",
+		flags.DefaultRemoteSyncNamespace, metrics.NewMandatoryModulesMetrics())
+	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService, intervals)
 
-	err = reconciler.SetupWithManager(mgr, ctrlruntime.Options{})
+	err = installationReconciler.SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()

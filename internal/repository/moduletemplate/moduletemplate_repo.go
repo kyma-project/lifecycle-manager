@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -64,6 +65,21 @@ func (r *Repository) Get(ctx context.Context, moduleTemplateName string) (*v1bet
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ModuleTemplate %s in namespace %s: %w", moduleTemplateName, r.namespace,
 			err)
+	}
+	return moduleTemplate, nil
+}
+
+func (r *Repository) GetSpecificVersionForModule(ctx context.Context,
+	moduleName string,
+	version string,
+) (*v1beta2.ModuleTemplate, error) {
+	moduleTemplate := &v1beta2.ModuleTemplate{}
+	err := r.clnt.Get(ctx, types.NamespacedName{
+		Namespace: r.namespace,
+		Name:      v1beta2.CreateModuleTemplateName(moduleName, version),
+	}, moduleTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ModuleTemplate for module %s: %w", moduleName, err)
 	}
 	return moduleTemplate, nil
 }
