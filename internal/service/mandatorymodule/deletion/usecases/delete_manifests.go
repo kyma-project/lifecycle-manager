@@ -7,7 +7,10 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
+
+const DeletingManifestErrorEvent event.Reason = "DeletingMandatoryModuleManifestError"
 
 type ManifestRepo interface {
 	ListAllForModule(ctx context.Context, moduleName string) ([]apimetav1.PartialObjectMetadata, error)
@@ -16,11 +19,15 @@ type ManifestRepo interface {
 
 // DeleteManifests is responsible for deleting all manifests associated with a ModuleReleaseMeta.
 type DeleteManifests struct {
-	repo ManifestRepo
+	repo         ManifestRepo
+	eventHandler EventHandler
 }
 
-func NewDeleteManifests(repo ManifestRepo) *DeleteManifests {
-	return &DeleteManifests{repo: repo}
+func NewDeleteManifests(repo ManifestRepo, eventHandler EventHandler) *DeleteManifests {
+	return &DeleteManifests{
+		repo:         repo,
+		eventHandler: eventHandler,
+	}
 }
 
 // IsApplicable returns true if the ModuleReleaseMeta has associated manifests, so they should be deleted.
@@ -34,6 +41,7 @@ func (d *DeleteManifests) IsApplicable(ctx context.Context, mrm *v1beta2.ModuleR
 
 func (d *DeleteManifests) Execute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
 	if err := d.repo.DeleteAllForModule(ctx, mrm.Name); err != nil {
+		d.eventHandler.Warning(mrm, DeletingManifestErrorEvent, err)
 		return fmt.Errorf("failed to delete manifests for module %s: %w", mrm.Name, err)
 	}
 	return nil

@@ -2,6 +2,7 @@ package moduletemplateinfolookup
 
 import (
 	"context"
+	"errors"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -10,28 +11,30 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/templatelookup"
 )
 
-// ByModuleReleaseMetaStrategy looks up the module template via the module release meta.
-// It only supports channel-based installation.
-type ByModuleReleaseMetaStrategy struct {
+var ErrModuleReleaseMetaRequired = errors.New("module release meta is required")
+
+// Lookup handles module template lookup using the ByModuleReleaseMetaStrategy logic.
+// It implements the ModuleTemplateInfoLookupStrategy interface from templatelookup.
+type Lookup struct {
 	client client.Reader
 }
 
-func NewByModuleReleaseMetaStrategy(client client.Reader) ByModuleReleaseMetaStrategy {
-	return ByModuleReleaseMetaStrategy{client: client}
+func NewLookup(client client.Reader) Lookup {
+	return Lookup{client: client}
 }
 
-func (ByModuleReleaseMetaStrategy) IsResponsible(
-	_ *templatelookup.ModuleInfo,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
-) bool {
-	return moduleReleaseMeta != nil
-}
-
-func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
+func (l Lookup) Lookup(ctx context.Context,
 	moduleInfo *templatelookup.ModuleInfo,
 	kyma *v1beta2.Kyma,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) templatelookup.ModuleTemplateInfo {
+	// Only handle cases where moduleReleaseMeta is provided
+	if moduleReleaseMeta == nil {
+		return templatelookup.ModuleTemplateInfo{
+			Err: ErrModuleReleaseMetaRequired,
+		}
+	}
+
 	moduleTemplateInfo := templatelookup.ModuleTemplateInfo{}
 	moduleTemplateInfo.DesiredChannel = getDesiredChannel(moduleInfo.Channel, kyma.Spec.Channel)
 
@@ -57,7 +60,7 @@ func (s ByModuleReleaseMetaStrategy) Lookup(ctx context.Context,
 	}
 
 	template, err := getTemplateByVersion(ctx,
-		s.client,
+		l.client,
 		moduleInfo.Name,
 		resolvedModuleVersion,
 		kyma.Namespace)

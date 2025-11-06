@@ -525,7 +525,8 @@ func PushToRemoteOCIRegistry(server *httptest.Server, manifestFilePath, layerNam
 	return nil
 }
 
-func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string) (v1beta2.ImageSpec,
+func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string) (
+	v1beta2.ImageSpec,
 	error,
 ) {
 	imageSpec := v1beta2.ImageSpec{
@@ -545,7 +546,8 @@ func CreateOCIImageSpecFromFile(name, repo, manifestFilePath string) (v1beta2.Im
 	return imageSpec, nil
 }
 
-func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string) (v1beta2.ImageSpec,
+func CreateOCIImageSpecFromTar(name, repo, manifestTarPath string) (
+	v1beta2.ImageSpec,
 	error,
 ) {
 	imageSpec := v1beta2.ImageSpec{
