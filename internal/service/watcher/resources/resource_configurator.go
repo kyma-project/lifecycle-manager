@@ -27,6 +27,7 @@ type ResourceConfigurator struct {
 	kcpAddress               KCPAddr
 	cpuResLimit, memResLimit string
 	objectHandlers           map[string]ObjectHandler
+	skrImagePullSecret       string
 }
 
 type KCPAddr struct {
@@ -54,14 +55,15 @@ const (
 )
 
 func NewResourceConfigurator(remoteNs, skrWatcherImage,
-	cpuResLimit, memResLimit string, kcpAddress KCPAddr,
+	cpuResLimit, memResLimit string, kcpAddress KCPAddr, skrImagePullSecret string,
 ) *ResourceConfigurator {
 	configurator := &ResourceConfigurator{
-		remoteNs:        remoteNs,
-		skrWatcherImage: skrWatcherImage,
-		kcpAddress:      kcpAddress,
-		cpuResLimit:     cpuResLimit,
-		memResLimit:     memResLimit,
+		remoteNs:           remoteNs,
+		skrWatcherImage:    skrWatcherImage,
+		kcpAddress:         kcpAddress,
+		cpuResLimit:        cpuResLimit,
+		memResLimit:        memResLimit,
+		skrImagePullSecret: skrImagePullSecret,
 	}
 
 	configurator.objectHandlers = map[string]ObjectHandler{
@@ -110,7 +112,15 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 	}
 	deployment.Spec.Template.Labels[PodRestartLabelKey] = rc.secretResVer
 
-	serverContainer := deployment.Spec.Template.Spec.Containers[0]
+	podSpec := &deployment.Spec.Template.Spec
+	if rc.skrImagePullSecret != "" {
+		pullSecret := apicorev1.LocalObjectReference{
+			Name: rc.skrImagePullSecret,
+		}
+		podSpec.ImagePullSecrets = append(podSpec.ImagePullSecrets, pullSecret)
+	}
+
+	serverContainer := podSpec.Containers[0]
 	serverContainer.Image = rc.skrWatcherImage
 
 	for i := range len(serverContainer.Env) {
