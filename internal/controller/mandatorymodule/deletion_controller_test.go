@@ -15,7 +15,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-var SuccessRequeueInterval = time.Duration(rand.Intn(10)) * time.Second
+var successRequeueInterval = time.Duration(rand.Intn(10)) * time.Second
 
 func TestDeletionReconciler_Reconcile_WhenMrmNotInDeletingState_DoesntRequeue(t *testing.T) {
 	t.Parallel()
@@ -44,7 +44,7 @@ func TestDeletionReconciler_Reconcile_WhenHandleDeletionSucceeds_RequeuesAfterSu
 	result, err := reconciler.Reconcile(context.Background(), mrm)
 	require.True(t, mockDeletionService.HandleDeletionCalled)
 	require.NoError(t, err)
-	require.Equal(t, SuccessRequeueInterval, result.RequeueAfter)
+	require.Equal(t, successRequeueInterval, result.RequeueAfter)
 }
 
 func TestDeletionReconciler_Reconcile_WhenHandleDeletionFails_RequeuesWithBackoff(t *testing.T) {
@@ -66,7 +66,7 @@ func TestDeletionReconciler_Reconcile_WhenHandleDeletionFails_RequeuesWithBackof
 
 func getRequeueIntervals() queue.RequeueIntervals {
 	return queue.RequeueIntervals{
-		Success: SuccessRequeueInterval,
+		Success: successRequeueInterval,
 	}
 }
 

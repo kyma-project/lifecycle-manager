@@ -39,7 +39,7 @@ func TestInstallationReconciler_Reconcile_WhenHandleInstallationSucceeds_Requeue
 	result, err := reconciler.Reconcile(context.Background(), kyma)
 	require.True(t, mockInstallationService.HandleInstallationCalled)
 	require.NoError(t, err)
-	require.Equal(t, SuccessRequeueInterval, result.RequeueAfter)
+	require.Equal(t, successRequeueInterval, result.RequeueAfter)
 }
 
 func TestInstallationReconciler_Reconcile_WhenHandleInstallationFails_RequeuesWithBackoff(t *testing.T) {
