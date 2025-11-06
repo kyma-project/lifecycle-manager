@@ -51,3 +51,6 @@ spec:
       version: 1.1.0
 ```
 
+## `operator.kyma-project.io` Finalizer
+
+* `operator.kyma-project.io/mandatory-module`: A finalizer set by Lifecycle Manager to handle the mandatory module's cleanup.
