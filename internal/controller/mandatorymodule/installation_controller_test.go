@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/installation"
-	"github.com/stretchr/testify/require"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func TestInstallationReconciler_Reconcile_WhenKymaSkipReconciliation_DoesntRequeue(t *testing.T) {

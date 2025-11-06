@@ -7,14 +7,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
 	"github.com/kyma-project/lifecycle-manager/internal/errors/mandatorymodule/deletion"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"github.com/stretchr/testify/require"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+// nolint:gosec // This is only test code
 var successRequeueInterval = time.Duration(rand.Intn(10)) * time.Second
 
 func TestDeletionReconciler_Reconcile_WhenMrmNotInDeletingState_DoesntRequeue(t *testing.T) {
