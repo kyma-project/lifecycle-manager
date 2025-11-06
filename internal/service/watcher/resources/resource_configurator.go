@@ -112,15 +112,9 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 	}
 	deployment.Spec.Template.Labels[PodRestartLabelKey] = rc.secretResVer
 
-	podSpec := &deployment.Spec.Template.Spec
-	if rc.skrImagePullSecret != "" {
-		pullSecret := apicorev1.LocalObjectReference{
-			Name: rc.skrImagePullSecret,
-		}
-		podSpec.ImagePullSecrets = append(podSpec.ImagePullSecrets, pullSecret)
-	}
+	patchSkrImagePullSecret(deployment, rc.skrImagePullSecret)
 
-	serverContainer := podSpec.Containers[0]
+	serverContainer := deployment.Spec.Template.Spec.Containers[0]
 	serverContainer.Image = rc.skrWatcherImage
 
 	for i := range len(serverContainer.Env) {
@@ -155,6 +149,16 @@ func (rc *ResourceConfigurator) ConfigureDeployment(obj *unstructured.Unstructur
 			apicorev1.EnvVar{Name: goDebugEnvName, Value: goDebug})
 	}
 	return deployment, nil
+}
+
+func patchSkrImagePullSecret(deployment *apiappsv1.Deployment, skrImagePullSecret string) {
+	podSpec := &deployment.Spec.Template.Spec
+	if skrImagePullSecret != "" {
+		pullSecret := apicorev1.LocalObjectReference{
+			Name: skrImagePullSecret,
+		}
+		podSpec.ImagePullSecrets = append(podSpec.ImagePullSecrets, pullSecret)
+	}
 }
 
 func (rc *ResourceConfigurator) ConfigureNetworkPolicies(obj *unstructured.Unstructured) (
