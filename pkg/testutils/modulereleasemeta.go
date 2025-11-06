@@ -156,6 +156,27 @@ func MandatoryModuleReleaseMetaHasVersion(ctx context.Context, clnt client.Clien
 	return fmt.Errorf("mandatory module %s not found", moduleName)
 }
 
+func SetMandatoryModuleReleaseMetaVersion(ctx context.Context, clnt client.Client,
+	moduleName, namespace, version string,
+) error {
+	mrm, err := GetModuleReleaseMeta(ctx, moduleName, namespace, clnt)
+	if err != nil {
+		return fmt.Errorf("get module release meta: %w", err)
+	}
+
+	if mrm.Spec.Mandatory == nil {
+		return fmt.Errorf("module %s is not configured as mandatory", moduleName)
+	}
+
+	mrm.Spec.Mandatory.Version = version
+
+	if err = clnt.Update(ctx, mrm); err != nil {
+		return fmt.Errorf("update module release meta: %w", err)
+	}
+
+	return nil
+}
+
 // FullOCMName returns the fully qualified OCM component name for a given module name.
 // This is used by OCM-related functionality, end-users do not have to use this format.
 func FullOCMName(moduleName string) string {
