@@ -25,43 +25,45 @@ func CreateSkrImagePullSecretTransform(secretName string) ResourceTransform {
 			return fmt.Errorf("%w, got %T", ErrResourceTransformExpectedManifestType, obj)
 		}
 		for _, resource := range resources {
-			if resource.GetKind() == "Deployment" || resource.GetKind() == "StatefulSet" {
-				err := patchResource(manifest, resource, secretName)
-				if err != nil {
-					return fmt.Errorf("failed to patch SKR image pull secret in resource %s: %w", resource.GetName(),
-						err)
+			if !isWorkloadResource(resource.GetKind()) {
+				continue
+			}
+			podSpec, err := getWorkloadPodSpec(resource)
+			if err != nil {
+				return fmt.Errorf("failed to get pod spec for resource %s: %w", resource.GetName(), err)
+			}
+			patchImagePullSecrets(podSpec, secretName)
+			if resourceIsManager(manifest, resource) {
+				if err := patchEnvInContainers(podSpec, secretName); err != nil {
+					return fmt.Errorf("failed to patch container envs in resource %s: %w", resource.GetName(), err)
 				}
+			}
+			if err := setWorkloadPodSpec(resource, podSpec); err != nil {
+				return fmt.Errorf("failed to set pod spec for resource %s: %w", resource.GetName(), err)
 			}
 		}
 		return nil
 	}
 }
 
-func patchResource(manifest *v1beta2.Manifest,
-	resource *unstructured.Unstructured,
-	secretName string,
-) error {
-	err := parseAndPatchImagePullSecrets(resource, secretName)
-	if err != nil {
-		return fmt.Errorf("failed to parse and patch imagePullSecrets in pod spec: %w", err)
-	}
-	if resourceIsManager(manifest, resource) {
-		err = parseAndPatchAllContainerEnvs(resource, secretName)
-		if err != nil {
-			return fmt.Errorf("failed to parse and patch container envs: %w", err)
-		}
-	}
-	return nil
+func isWorkloadResource(kind string) bool {
+	return kind == "Deployment" || kind == "StatefulSet"
+}
+
+func getWorkloadPodSpec(resource *unstructured.Unstructured) (map[string]interface{}, error) {
+	podSpec, _, err := unstructured.NestedMap(resource.Object, "spec", "template", "spec")
+	return podSpec, err
+}
+
+func setWorkloadPodSpec(resource *unstructured.Unstructured, podSpec map[string]interface{}) error {
+	return unstructured.SetNestedMap(resource.Object, podSpec, "spec", "template", "spec")
 }
 
 func resourceIsManager(manifest *v1beta2.Manifest, resource *unstructured.Unstructured) bool {
 	manager := manifest.Spec.Manager
-
 	if manager == nil {
-		// if no manager is specified, patch all deployment resources.
 		return true
 	}
-
 	return manager.Name == resource.GetName() &&
 		manager.Namespace == resource.GetNamespace() &&
 		manager.Group == resource.GroupVersionKind().Group &&
@@ -69,112 +71,43 @@ func resourceIsManager(manifest *v1beta2.Manifest, resource *unstructured.Unstru
 		manager.Kind == resource.GroupVersionKind().Kind
 }
 
-func parseAndPatchImagePullSecrets(resource *unstructured.Unstructured, secretName string) error {
-	podSpec, found, err := unstructured.NestedMap(resource.Object, "spec", "template", "spec")
-	if err != nil {
-		return fmt.Errorf("failed to get pod spec: %w", err)
-	}
-	if found {
-		err = patchPodSpec(podSpec, secretName)
-		if err != nil {
-			return err
-		}
-		if err := unstructured.SetNestedMap(resource.Object, podSpec, "spec", "template", "spec"); err != nil {
-			return fmt.Errorf("failed to set pod spec: %w", err)
-		}
-	}
-	return nil
-}
-
-func patchPodSpec(podSpec map[string]interface{}, secretName string) error {
-	imagePullSecrets := getImagePullSecretsFromPodSpec(podSpec)
-	imagePullSecrets = appendSecretNameToImagePullSecrets(imagePullSecrets, secretName)
-	setImagePullSecretsToPodSpec(podSpec, imagePullSecrets)
-	return nil
-}
-
-func setImagePullSecretsToPodSpec(podSpec map[string]interface{}, imagePullSecrets []interface{}) {
+func patchImagePullSecrets(podSpec map[string]interface{}, secretName string) {
+	imagePullSecrets, _ := podSpec["imagePullSecrets"].([]interface{})
+	imagePullSecrets = append(imagePullSecrets, map[string]interface{}{"name": secretName})
 	podSpec["imagePullSecrets"] = imagePullSecrets
 }
 
-func getImagePullSecretsFromPodSpec(podSpec map[string]interface{}) []interface{} {
-	imagePullSecrets, ok := podSpec["imagePullSecrets"].([]interface{})
-	if !ok {
-		imagePullSecrets = []interface{}{}
+func patchEnvInContainers(podSpec map[string]interface{}, secretName string) error {
+	containers, _ := podSpec["containers"].([]interface{})
+	if len(containers) == 0 {
+		return nil
 	}
-	return imagePullSecrets
-}
-
-func appendSecretNameToImagePullSecrets(imagePullSecrets []interface{}, secretName string) []interface{} {
-	return append(imagePullSecrets, map[string]interface{}{
-		"name": secretName,
-	})
-}
-
-func parseAndPatchAllContainerEnvs(resource *unstructured.Unstructured, secretName string) error {
-	containers, found, err := unstructured.NestedSlice(resource.Object, "spec", "template", "spec",
-		"containers")
-	if err != nil {
-		return fmt.Errorf("failed to get containers: %w", err)
-	}
-	if found {
-		err = patchContainers(containers, secretName)
-		if err != nil {
-			return err
-		}
-		if err := unstructured.SetNestedSlice(resource.Object, containers, "spec", "template", "spec",
-			"containers"); err != nil {
-			return fmt.Errorf("failed to set containers: %w", err)
-		}
-	}
-	return nil
-}
-
-func patchContainers(containers []interface{}, secretName string) error {
 	for index, container := range containers {
 		containerMap, ok := container.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		env := getEnvFromContainerMap(containerMap)
-		if isReservedEnvNameOccupied(env) {
+		envSlice, _ := containerMap["env"].([]interface{})
+		if envNameExists(envSlice, SkrImagePullSecretEnvName) {
 			return ErrSkrImagePullSecretEnvAlreadyExists
 		}
-		env = appendSecretNameToEnvSlice(env, secretName)
-		setEnvToContainerMap(containerMap, env)
+		envSlice = append(envSlice, map[string]interface{}{"name": SkrImagePullSecretEnvName, "value": secretName})
+		containerMap["env"] = envSlice
 		containers[index] = containerMap
 	}
+	podSpec["containers"] = containers
 	return nil
 }
 
-func getEnvFromContainerMap(containerMap map[string]interface{}) []interface{} {
-	env, ok := containerMap["env"].([]interface{})
-	if !ok {
-		env = []interface{}{}
-	}
-	return env
-}
-
-func isReservedEnvNameOccupied(env []interface{}) bool {
-	for _, e := range env {
-		envMap, ok := e.(map[string]interface{})
+func envNameExists(envSlice []interface{}, name string) bool {
+	for _, env := range envSlice {
+		envMap, ok := env.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		if envMap["name"] == SkrImagePullSecretEnvName {
+		if envMap["name"] == name {
 			return true
 		}
 	}
 	return false
-}
-
-func appendSecretNameToEnvSlice(env []interface{}, secretName string) []interface{} {
-	return append(env, map[string]interface{}{
-		"name":  SkrImagePullSecretEnvName,
-		"value": secretName,
-	})
-}
-
-func setEnvToContainerMap(containerMap map[string]interface{}, env []interface{}) {
-	containerMap["env"] = env
 }
