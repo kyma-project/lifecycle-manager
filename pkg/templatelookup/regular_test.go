@@ -176,13 +176,7 @@ func Test_GetRegularTemplates_WhenInvalidModuleProvided(t *testing.T) {
 			lookup := templatelookup.NewTemplateLookup(
 				nil,
 				nil, // not used in tests
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-					[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-						moduletemplateinfolookup.NewByVersionStrategy(nil),
-						moduletemplateinfolookup.NewByChannelStrategy(nil),
-						moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(nil),
-					},
-				),
+				moduletemplateinfolookup.NewLookup(nil),
 			)
 			kyma := &v1beta2.Kyma{
 				Spec:   test.KymaSpec,
@@ -285,13 +279,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenSwitchModuleChannel(t *testing.T
 			lookup := templatelookup.NewTemplateLookup(
 				reader,
 				descriptorProvider,
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-					[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-						moduletemplateinfolookup.NewByVersionStrategy(reader),
-						moduletemplateinfolookup.NewByChannelStrategy(reader),
-						moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-					},
-				),
+				moduletemplateinfolookup.NewLookup(reader),
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
@@ -603,13 +591,7 @@ func TestNewTemplateLookup_GetRegularTemplates_WhenModuleTemplateContainsInvalid
 				moduleReleaseMetas)
 			lookup := templatelookup.NewTemplateLookup(reader,
 				nil, // not used in tests
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-					[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-						moduletemplateinfolookup.NewByVersionStrategy(reader),
-						moduletemplateinfolookup.NewByChannelStrategy(reader),
-						moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-					},
-				),
+				moduletemplateinfolookup.NewLookup(reader),
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
@@ -685,13 +667,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateNotFound(t *testin
 			lookup := templatelookup.NewTemplateLookup(
 				reader,
 				descriptorProvider,
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-					[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-						moduletemplateinfolookup.NewByVersionStrategy(reader),
-						moduletemplateinfolookup.NewByChannelStrategy(reader),
-						moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-					},
-				),
+				moduletemplateinfolookup.NewLookup(reader),
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			expected := len(testCase.want)
@@ -800,13 +776,7 @@ func TestTemplateLookup_GetRegularTemplates_WhenModuleTemplateExists(t *testing.
 			lookup := templatelookup.NewTemplateLookup(
 				reader,
 				descriptorProvider,
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-					[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-						moduletemplateinfolookup.NewByVersionStrategy(reader),
-						moduletemplateinfolookup.NewByChannelStrategy(reader),
-						moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-					},
-				),
+				moduletemplateinfolookup.NewLookup(reader),
 			)
 			expected := len(testCase.want)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
@@ -892,13 +862,7 @@ func executeGetRegularTemplatesTestCases(t *testing.T,
 			lookup := templatelookup.NewTemplateLookup(
 				reader,
 				descriptorProvider,
-				moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-					[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-						moduletemplateinfolookup.NewByVersionStrategy(reader),
-						moduletemplateinfolookup.NewByChannelStrategy(reader),
-						moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(reader),
-					},
-				),
+				moduletemplateinfolookup.NewLookup(reader),
 			)
 			got := lookup.GetRegularTemplates(t.Context(), testCase.kyma)
 			assert.Len(t, got, 1)
