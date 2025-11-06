@@ -11,6 +11,8 @@ spec:
     kind: ModuleTemplate
     listKind: ModuleTemplateList
     plural: moduletemplates
+    shortNames:
+    - mt
     singular: moduletemplate
   scope: Namespaced
   versions:
