@@ -128,6 +128,7 @@ func registerSchemas(scheme *machineryruntime.Scheme) {
 
 func main() {
 	setupLogger := ctrl.Log.WithName("setup")
+
 	scheme := machineryruntime.NewScheme()
 	registerSchemas(scheme)
 
@@ -186,7 +187,9 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 		os.Exit(bootstrapFailedExitCode)
 	}
 	kcpRestConfig := mgr.GetConfig()
-	remoteClientCache := remote.NewClientCache()
+	remoteClientCache := remote.NewClientCache(
+		remote.WithEvictionLogger(func(msg string) { ctrl.Log.WithName("static").Info(msg) }),
+	)
 	kcpClient := remote.NewClientWithConfig(mgr.GetClient(), kcpRestConfig)
 	eventRecorder := event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName))
 
@@ -521,7 +524,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	orphanDetectionService := orphan.NewDetectionService(orphanDetectionClient)
 	specResolver := spec.NewResolver(keychainLookupFromFlag(mgr.GetClient(), flagVar), img.NewPathExtractor())
 	clientCache := skrclientcache.NewService(
-		skrclientcache.WithEvictionLogging(func(msg string) { setupLogger.Info(msg) }),
+		skrclientcache.WithEvictionLogger(func(msg string) { ctrl.Log.WithName("static").Info(msg) }),
 	)
 	skrClient := skrclient.NewService(mgr.GetConfig().QPS, mgr.GetConfig().Burst, accessManagerService)
 

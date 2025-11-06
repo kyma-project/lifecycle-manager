@@ -23,7 +23,7 @@ type Service struct {
 
 func NewService(opts ...func(*Service) *Service) *Service {
 	cache := &Service{
-		internal: ttlcache.New[string, *skrclient.SKRClient](),
+		internal: ttlcache.New(ttlcache.WithDisableTouchOnHit[string, *skrclient.SKRClient]()),
 	}
 
 	for _, opt := range opts {
@@ -54,14 +54,14 @@ func (m *Service) Size() int {
 	return m.internal.Len()
 }
 
-func WithEvictionLogging(evictionLogFn func(string)) func(*Service) *Service {
+func WithEvictionLogger(evictionLogger func(string)) func(*Service) *Service {
 	return func(srv *Service) *Service {
-		if evictionLogFn != nil {
+		if evictionLogger != nil {
 			cacheEvictionHandler := func(ctx context.Context,
 				reason ttlcache.EvictionReason,
 				item *ttlcache.Item[string, *skrclient.SKRClient],
 			) {
-				evictionLogFn(fmt.Sprintf("evicted SKRClient from cache: key=%s, reason=%d", item.Key(), reason))
+				evictionLogger(fmt.Sprintf("evicted SKRClient from cache: key=%s, reason=%d", item.Key(), reason))
 			}
 			srv.internal.OnEviction(cacheEvictionHandler)
 		}

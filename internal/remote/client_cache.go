@@ -1,7 +1,9 @@
 package remote
 
 import (
+	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -18,8 +20,15 @@ type ClientCache struct {
 	internal *ttlcache.Cache[client.ObjectKey, Client]
 }
 
-func NewClientCache() *ClientCache {
-	cache := &ClientCache{internal: ttlcache.New[client.ObjectKey, Client]()}
+func NewClientCache(opts ...func(*ClientCache) *ClientCache) *ClientCache {
+	cache := &ClientCache{
+		internal: ttlcache.New(ttlcache.WithDisableTouchOnHit[client.ObjectKey, Client]()),
+	}
+
+	for _, opt := range opts {
+		cache = opt(cache)
+	}
+
 	go cache.internal.Start()
 	return cache
 }
@@ -46,6 +55,26 @@ func (c *ClientCache) Delete(key client.ObjectKey) {
 
 func (c *ClientCache) Size() int {
 	return c.internal.Len()
+}
+
+func WithEvictionLogger(evictionLogger func(string)) func(*ClientCache) *ClientCache {
+	return func(cCache *ClientCache) *ClientCache {
+		if evictionLogger != nil {
+			cacheEvictionHandler := func(ctx context.Context,
+				reason ttlcache.EvictionReason,
+				item *ttlcache.Item[client.ObjectKey, Client],
+			) {
+				evictionLogger(
+					fmt.Sprintf("evicted SKRClient from cache: key=%s, reason=%d",
+						item.Key().String(),
+						reason,
+					),
+				)
+			}
+			cCache.internal.OnEviction(cacheEvictionHandler)
+		}
+		return cCache
+	}
 }
 
 func getRandomTTL() time.Duration {
