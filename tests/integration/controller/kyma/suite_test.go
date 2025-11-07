@@ -193,12 +193,7 @@ var _ = BeforeSuite(func() {
 			flags.DefaultRemoteSyncNamespace),
 		Metrics: metrics.NewKymaMetrics(metrics.NewSharedMetrics()),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-				[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-					moduletemplateinfolookup.NewByVersionStrategy(kcpClient),
-					moduletemplateinfolookup.NewByChannelStrategy(kcpClient),
-					moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(kcpClient),
-				})),
+			moduletemplateinfolookup.NewLookup(kcpClient)),
 		Config: kymaReconcilerConfig,
 	}).SetupWithManager(mgr, ctrlruntime.Options{},
 		kyma.SetupOptions{ListenerAddr: randomPort})

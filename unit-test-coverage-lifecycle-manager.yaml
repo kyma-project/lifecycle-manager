@@ -48,11 +48,11 @@ packages:
   internal/service/skrclient: 35
   internal/service/mandatorymodule/deletion: 100
   internal/service/mandatorymodule/deletion/usecases: 100
-  internal/service/skrsync: 18
+  internal/service/skrsync: 100
 
   internal/util/collections: 87
   pkg/module/sync: 10
   pkg/status: 16
   pkg/templatelookup: 80
-  pkg/templatelookup/moduletemplateinfolookup: 96
+  pkg/templatelookup/moduletemplateinfolookup: 100
   pkg/watcher: 10

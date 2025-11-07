@@ -33,13 +33,7 @@ func GetModuleTemplateInfo(ctx context.Context,
 	module v1beta2.Module,
 	kyma *v1beta2.Kyma,
 ) (*v1beta2.ModuleTemplate, *ocmidentity.ComponentId, error) {
-	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(clnt),
-			moduletemplateinfolookup.NewByChannelStrategy(clnt),
-			moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(clnt),
-		},
-	)
+	moduleTemplateInfoLookup := moduletemplateinfolookup.NewLookup(clnt)
 	availableModule := templatelookup.ModuleInfo{
 		Module: module,
 	}
@@ -49,14 +43,14 @@ func GetModuleTemplateInfo(ctx context.Context,
 		return nil, nil, fmt.Errorf("failed to get ModuleReleaseMeta: %w", err)
 	}
 
-	templateInfo := moduleTemplateInfoLookupStrategies.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
+	moduleTemplateInfo := moduleTemplateInfoLookup.Lookup(ctx, &availableModule, kyma, moduleReleaseMeta)
 
-	if templateInfo.Err != nil {
-		return nil, nil, fmt.Errorf("failed to get module template: %w", templateInfo.Err)
+	if moduleTemplateInfo.Err != nil {
+		return nil, nil, fmt.Errorf("failed to get module template: %w", moduleTemplateInfo.Err)
 	}
 
-	ocmIdentity, err := templateInfo.GetOCMIdentity()
-	return templateInfo.ModuleTemplate, ocmIdentity, err
+	ocmIdentity, err := moduleTemplateInfo.GetOCMIdentity()
+	return moduleTemplateInfo.ModuleTemplate, ocmIdentity, err
 }
 
 func ModuleTemplateExists(ctx context.Context,
@@ -200,31 +194,6 @@ func SetModuleTemplateInternalLabel(ctx context.Context, clnt client.Client, mod
 		return fmt.Errorf("failed to update module template: %w", err)
 	}
 
-	return nil
-}
-
-func MandatoryModuleTemplateHasExpectedLabel(ctx context.Context, clnt client.Client, moduleName, key, value string,
-) error {
-	mandatoryModuleTemplates, err := templatelookup.GetMandatory(ctx, clnt)
-	if err != nil {
-		return err
-	}
-
-	var moduleTemplate *v1beta2.ModuleTemplate
-	for _, moduleTemplateInfo := range mandatoryModuleTemplates {
-		if moduleTemplateInfo.Spec.ModuleName == moduleName {
-			moduleTemplate = moduleTemplateInfo.ModuleTemplate
-			break
-		}
-	}
-
-	if moduleTemplate == nil {
-		return fmt.Errorf("module template not found, %s", moduleName)
-	}
-
-	if moduleTemplate.Labels[key] != value {
-		return fmt.Errorf("label %s:%s not found", key, value)
-	}
 	return nil
 }
 
