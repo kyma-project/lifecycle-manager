@@ -30,7 +30,7 @@ runs:
     - uses: ./lifecycle-manager/.github/actions/install-istioctl
       with:
         istio_version: ${{ inputs.istio_version }}
-    - uses: kyma-project/lifecycle-manager/.github/actions/install-ocm-cli
+    - uses: ./lifecycle-manager/.github/actions/install-ocm-cli
       with:
         ocm_cli_version: ${{ inputs.ocm_cli_version }}
     - uses: ./lifecycle-manager/.github/actions/install-modulectl
