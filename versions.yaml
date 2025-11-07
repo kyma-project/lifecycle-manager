@@ -12,5 +12,6 @@ envtest_k8s: "1.32.0" # kubernetes version used in integration tests
 kubectl: "1.31.3"
 kustomize: "5.4.3"
 modulectl: "1.2.2"
+ocm-cli: "0.32.0"
 yq: "4.45.1"
 envtest: "0.21"

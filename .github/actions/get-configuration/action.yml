@@ -42,6 +42,7 @@ runs:
       run: |
         echo "istio_version=$(yq e '.istio' versions.yaml)" >> $GITHUB_OUTPUT
         echo "k3d_version=$(yq e '.k3d' versions.yaml)" >> $GITHUB_OUTPUT
+        echo "ocm_cli_version=$(yq e '.ocm-cli' versions.yaml)" >> $GITHUB_OUTPUT
         echo "modulectl_version=$(yq e '.modulectl' versions.yaml)" >> $GITHUB_OUTPUT
         echo "cert_manager_version=$(yq e '.certManager' versions.yaml)" >> $GITHUB_OUTPUT
         echo "gardener_cert_manager_version=$(yq e '.gardenerCertManager' versions.yaml)" >> $GITHUB_OUTPUT
