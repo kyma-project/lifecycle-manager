@@ -66,6 +66,7 @@ jobs:
           k8s_version: ${{ steps.configuration.outputs.k8s_version }}
           istio_version: ${{ steps.configuration.outputs.istio_version }}
           k3d_version: ${{ steps.configuration.outputs.k3d_version }}
+          ocm_cli_version: ${{ steps.configuration.outputs.ocm_cli_version }}
           modulectl_version: ${{ steps.configuration.outputs.modulectl_version }}
           go-version-file: lifecycle-manager/go.mod
           cache-dependency-path: lifecycle-manager/go.sum
