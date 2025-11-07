@@ -9,7 +9,7 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -207,14 +207,14 @@ func (s *skrContextProviderStub) Get(kyma types.NamespacedName) (*remote.SkrCont
 	return remote.NewSkrContext(s.mockClient, nil), nil
 }
 
-func (s *skrContextProviderStub) Init(ctx context.Context, kyma types.NamespacedName) error {
+func (s *skrContextProviderStub) Init(_ context.Context, _ types.NamespacedName) error {
 	return nil
 }
 
-func (s *skrContextProviderStub) InvalidateCache(kyma types.NamespacedName) {
+func (s *skrContextProviderStub) InvalidateCache(_ types.NamespacedName) {
 }
 
-// mockSkrClient implements remote.Client interface for testing
+// mockSkrClient implements remote.Client interface for testing.
 type mockSkrClient struct {
 	client.Client
 
@@ -239,36 +239,36 @@ func (m *mockSkrClient) Config() *rest.Config {
 	return nil
 }
 
-// Implement minimal methods for client.Client interface that might be called
-func (m *mockSkrClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+// Implement minimal methods for client.Client interface that might be called.
+func (m *mockSkrClient) Create(_ context.Context, _ client.Object, _ ...client.CreateOption) error {
 	return nil
 }
 
-func (m *mockSkrClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+func (m *mockSkrClient) Update(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
 	return nil
 }
 
-func (m *mockSkrClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+func (m *mockSkrClient) Delete(_ context.Context, _ client.Object, _ ...client.DeleteOption) error {
 	return nil
 }
 
-func (m *mockSkrClient) Get(ctx context.Context,
-	key types.NamespacedName,
-	obj client.Object,
-	opts ...client.GetOption,
+func (m *mockSkrClient) Get(_ context.Context,
+	_ types.NamespacedName,
+	_ client.Object,
+	_ ...client.GetOption,
 ) error {
 	return nil
 }
 
-func (m *mockSkrClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (m *mockSkrClient) List(_ context.Context, _ client.ObjectList, _ ...client.ListOption) error {
 	return nil
 }
 
-func (m *mockSkrClient) DeleteAllOf(ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption) error {
+func (m *mockSkrClient) DeleteAllOf(_ context.Context, _ client.Object, _ ...client.DeleteAllOfOption) error {
 	return nil
 }
 
-func (m *mockSkrClient) Scheme() *runtime.Scheme {
+func (m *mockSkrClient) Scheme() *machineryruntime.Scheme {
 	return nil
 }
 
@@ -276,11 +276,11 @@ func (m *mockSkrClient) RESTMapper() meta.RESTMapper {
 	return nil
 }
 
-func (m *mockSkrClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+func (m *mockSkrClient) GroupVersionKindFor(_ machineryruntime.Object) (schema.GroupVersionKind, error) {
 	return schema.GroupVersionKind{}, nil
 }
 
-func (m *mockSkrClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+func (m *mockSkrClient) IsObjectNamespaced(_ machineryruntime.Object) (bool, error) {
 	return false, nil
 }
 
@@ -288,6 +288,6 @@ func (m *mockSkrClient) Status() client.SubResourceWriter {
 	return nil
 }
 
-func (m *mockSkrClient) SubResource(subResource string) client.SubResourceClient {
+func (m *mockSkrClient) SubResource(_ string) client.SubResourceClient {
 	return nil
 }
