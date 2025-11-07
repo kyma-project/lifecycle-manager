@@ -264,15 +264,15 @@ var _ = BeforeSuite(func() {
 	// Setup DeletionReconciler for withwatcher tests
 	err = (&kyma.DeletionReconciler{
 		Client:               kcpClient,
-		SkrContextFactory:    testSkrContextFactory,
+		SkrContextProvider:   testSkrContextFactory,
 		Event:                testEventRec,
 		RequeueIntervals:     intervals,
 		SKRWebhookManager:    skrWebhookChartManager,
-		DescriptorProvider:   nil, // TODO check if needed!!
+		DescriptorProvider:   nil,
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		Metrics:              kymaMetrics,
+		Config:               kymaReconcilerConfig,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
 	}).SetupWithManager(mgr, ctrlruntime.Options{}) // DeletionReconciler doesn't need SKR event listener

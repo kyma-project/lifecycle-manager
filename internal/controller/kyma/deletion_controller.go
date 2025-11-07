@@ -48,7 +48,7 @@ type DeletionReconciler struct {
 	queue.RequeueIntervals
 
 	Config               ReconcilerConfig
-	SkrContextFactory    remote.SkrContextProvider
+	SkrContextProvider   remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SyncRemoteCrds       remote.SyncCrdsUseCase
 	ModulesStatusHandler ModuleStatusHandler
@@ -91,29 +91,19 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{RequeueAfter: r.Success}, nil
 	}
 
-	err := r.SkrContextFactory.Init(ctx, kyma.GetNamespacedName())
+	err := r.SkrContextProvider.Init(ctx, kyma.GetNamespacedName())
 	if errors.Is(err, accessmanager.ErrAccessSecretNotFound) {
 		return r.handleDeletedSkr(ctx, kyma)
 	}
 
-	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
-	if err != nil {
-		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
-		setModuleStatusesToError(kyma, err.Error())
-		return r.requeueWithError(ctx, kyma, err)
-	}
-
-	return r.reconcileDeletion(ctx, kyma, skrContext)
+	return r.reconcileDeletion(ctx, kyma)
 }
 
 func (r *DeletionReconciler) SkrImagePullSecretSyncEnabled() bool {
 	return r.Config.SkrImagePullSecretName != ""
 }
 
-func (r *DeletionReconciler) reconcileDeletion(ctx context.Context,
-	kyma *v1beta2.Kyma,
-	_ *remote.SkrContext,
-) (ctrl.Result, error) {
+func (r *DeletionReconciler) reconcileDeletion(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.RemoteKymaDeletion, queue.UnexpectedRequeue)
@@ -149,9 +139,11 @@ func (r *DeletionReconciler) handleDeletedSkr(ctx context.Context, kyma *v1beta2
 }
 
 func (r *DeletionReconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
-	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := r.SkrContextProvider.Get(kyma.GetNamespacedName())
 	if err != nil {
-		return fmt.Errorf("failed to get skrContext: %w", err)
+		r.Metrics.RecordRequeueReason(metrics.SyncContextRetrieval, queue.UnexpectedRequeue)
+		setModuleStatusesToError(kyma, err.Error())
+		return err
 	}
 	if err := skrContext.DeleteKyma(ctx); client.IgnoreNotFound(err) != nil {
 		logf.FromContext(ctx).V(log.InfoLevel).Error(err, "Failed to be deleted remotely!")
@@ -176,12 +168,12 @@ func (r *DeletionReconciler) handleDeletingState(ctx context.Context, kyma *v1be
 		r.Metrics.RecordRequeueReason(metrics.RemoteModuleCatalogDeletion, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, err)
 	}
-	skrContext, err := r.SkrContextFactory.Get(kyma.GetNamespacedName())
+	skrContext, err := r.SkrContextProvider.Get(kyma.GetNamespacedName())
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get skrContext: %w", err)
 	}
 
-	r.SkrContextFactory.InvalidateCache(kyma.GetNamespacedName())
+	r.SkrContextProvider.InvalidateCache(kyma.GetNamespacedName())
 	if err = skrContext.RemoveFinalizersFromKyma(ctx); client.IgnoreNotFound(err) != nil {
 		r.Metrics.RecordRequeueReason(metrics.FinalizersRemovalFromRemoteKyma, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, err)

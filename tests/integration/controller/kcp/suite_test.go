@@ -204,14 +204,13 @@ var _ = BeforeSuite(func() {
 	// Setup DeletionReconciler for KCP tests
 	err = (&kyma.DeletionReconciler{
 		Client:               kcpClient,
-		SkrContextFactory:    testSkrContextFactory,
+		SkrContextProvider:   testSkrContextFactory,
 		Event:                testEventRec,
 		RequeueIntervals:     intervals,
 		DescriptorProvider:   descriptorProvider,
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crdCache),
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
-		IsManagedKyma:        true,
+		Config:               kymaReconcilerConfig,
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),

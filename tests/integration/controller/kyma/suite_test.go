@@ -207,16 +207,15 @@ var _ = BeforeSuite(func() {
 		Client:               kcpClient,
 		Event:                testEventRec,
 		DescriptorProvider:   descriptorProvider,
-		SkrContextFactory:    testSkrContextFactory,
+		SkrContextProvider:   testSkrContextFactory,
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, crd.NewCache(nil)),
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RequeueIntervals:     intervals,
-		IsManagedKyma:        true,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
-		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
-		Metrics:             kymaMetrics,
-		TemplateLookup:      templateLookup,
+		Config:         kymaReconcilerConfig,
+		Metrics:        kymaMetrics,
+		TemplateLookup: templateLookup,
 	}).SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
