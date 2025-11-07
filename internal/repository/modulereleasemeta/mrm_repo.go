@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/common/fieldindex"
 )
 
 type Repository struct {
@@ -55,4 +56,17 @@ func (r *Repository) Get(ctx context.Context, mrmName string) (*v1beta2.ModuleRe
 		return nil, fmt.Errorf("failed to get ModuleReleaseMeta %s in namespace %s: %w", mrmName, r.namespace, err)
 	}
 	return mrm, nil
+}
+
+func (r *Repository) ListMandatory(ctx context.Context) ([]v1beta2.ModuleReleaseMeta, error) {
+	mandatoryMrmList := &v1beta2.ModuleReleaseMetaList{}
+	err := r.clnt.List(ctx, mandatoryMrmList, client.InNamespace(r.namespace),
+		client.MatchingFields{
+			fieldindex.MrmMandatoryModuleName: fieldindex.MrmMandatoryModulePositiveValue,
+		})
+	if err != nil {
+		return nil,
+			fmt.Errorf("failed to list mandatory ModuleReleaseMeta in namespace %s: %w", r.namespace, err)
+	}
+	return mandatoryMrmList.Items, nil
 }

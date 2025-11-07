@@ -33,6 +33,7 @@ import (
 //
 // +genclient
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:singular=moduletemplate,path=moduletemplates,shortName=mt
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:storageversion
 

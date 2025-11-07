@@ -21,24 +21,26 @@ type MaintenanceWindow interface {
 	IsActive(kyma *v1beta2.Kyma) (bool, error)
 }
 
+type ModuleLookup interface {
+	Lookup(ctx context.Context,
+		moduleInfo *templatelookup.ModuleInfo,
+		kyma *v1beta2.Kyma,
+		moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
+	) templatelookup.ModuleTemplateInfo
+}
+
 type WithMaintenanceWindowDecorator struct {
 	maintenanceWindow MaintenanceWindow
-	decorated         ModuleTemplateInfoLookupStrategy
+	lookup            ModuleLookup
 }
 
 func NewWithMaintenanceWindowDecorator(maintenanceWindow MaintenanceWindow,
-	decorated ModuleTemplateInfoLookupStrategy,
+	lookup ModuleLookup,
 ) WithMaintenanceWindowDecorator {
 	return WithMaintenanceWindowDecorator{
 		maintenanceWindow: maintenanceWindow,
-		decorated:         decorated,
+		lookup:            lookup,
 	}
-}
-
-func (p WithMaintenanceWindowDecorator) IsResponsible(moduleInfo *templatelookup.ModuleInfo,
-	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
-) bool {
-	return p.decorated.IsResponsible(moduleInfo, moduleReleaseMeta)
 }
 
 func (p WithMaintenanceWindowDecorator) Lookup(ctx context.Context,
@@ -46,12 +48,12 @@ func (p WithMaintenanceWindowDecorator) Lookup(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	moduleReleaseMeta *v1beta2.ModuleReleaseMeta,
 ) templatelookup.ModuleTemplateInfo {
-	moduleTemplateInfo := p.decorated.Lookup(ctx,
+	moduleTemplateInfo := p.lookup.Lookup(ctx,
 		moduleInfo,
 		kyma,
 		moduleReleaseMeta)
 
-	// decorated returns an error case => return immediately
+	// lookup returns an error case => return immediately
 	if moduleTemplateInfo.ModuleTemplate == nil || moduleTemplateInfo.Err != nil {
 		return moduleTemplateInfo
 	}

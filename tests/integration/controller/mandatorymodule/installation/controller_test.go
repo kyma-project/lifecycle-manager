@@ -27,7 +27,7 @@ const (
 )
 
 var _ = Describe("Mandatory Module Installation", Ordered, func() {
-	Context("Given Kyma with no Module and one mandatory ModuleTemplate on Control-Plane", func() {
+	Context("Given Kyma with no module and one mandatory ModuleReleaseMeta on the control plane″", func() {
 		kyma := NewTestKyma("no-module-kyma")
 		registerControlPlaneLifecycleForKyma(kyma, mandatoryModuleName)
 
@@ -79,6 +79,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 	const version = "1.0.0"
 	template := builder.NewModuleTemplateBuilder().
 		WithNamespace(ControlPlaneNamespace).
+		WithName(v1beta2.CreateModuleTemplateName(mandatoryModuleName, version)).
 		WithModuleName(mandatoryModuleName).
 		WithLabel(shared.IsMandatoryModule, shared.EnableLabelValue).
 		WithVersion(version).
@@ -102,7 +103,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 			WithArguments(kcpClient, kyma).Should(Succeed())
 		Eventually(SetKymaState).
 			WithContext(ctx).
-			WithArguments(kyma, reconciler, shared.StateReady).Should(Succeed())
+			WithArguments(kyma, kcpClient, shared.StateReady).Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -127,7 +128,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma, mandatoryModuleNam
 
 func checkMandatoryManifestForKyma(ctx context.Context, kyma *v1beta2.Kyma, fqdn string) error {
 	manifestList := v1beta2.ManifestList{}
-	if err := reconciler.List(ctx, &manifestList, &client.ListOptions{
+	if err := kcpClient.List(ctx, &manifestList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.KymaName: kyma.Name}),
 	}); err != nil {
 		return err

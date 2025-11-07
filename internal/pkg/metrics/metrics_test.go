@@ -50,8 +50,8 @@ func Test_ConstantMetricNames(t *testing.T) {
 			expectedValue: "reconcile_duration_seconds",
 		},
 		{
-			constName:     "MetricMandatoryTemplateCount",
-			constValue:    MetricMandatoryTemplateCount,
+			constName:     "MetricMandatoryModulesCount",
+			constValue:    MetricMandatoryModulesCount,
 			expectedValue: "lifecycle_mgr_mandatory_modules",
 		},
 		{
