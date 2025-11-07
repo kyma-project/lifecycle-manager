@@ -236,7 +236,7 @@ var _ = BeforeSuite(func() {
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
 	// Setup InstallationReconciler for withwatcher tests
-	err = (&kyma.InstallationReconciler{
+	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
 		Event:                testEventRec,

@@ -42,7 +42,7 @@ var (
 )
 
 // SetupWithManager sets up the InstallationReconciler with the Manager
-func (r *InstallationReconciler) SetupWithManager(mgr ctrl.Manager,
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager,
 	opts ctrlruntime.Options,
 	settings SetupOptions,
 ) error {
@@ -96,7 +96,7 @@ func (r *DeletionReconciler) SetupWithManager(mgr ctrl.Manager, opts ctrlruntime
 }
 
 // skrEventHandler creates event handler for InstallationReconciler
-func (r *InstallationReconciler) skrEventHandler() *handler.Funcs {
+func (r *Reconciler) skrEventHandler() *handler.Funcs {
 	return &handler.Funcs{
 		GenericFunc: func(ctx context.Context, evnt event.GenericEvent,
 			queue workqueue.TypedRateLimitingInterface[ctrl.Request],

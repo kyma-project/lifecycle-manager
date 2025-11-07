@@ -171,7 +171,7 @@ var _ = BeforeSuite(func() {
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
 	// Setup InstallationReconciler for handling Kyma installation and updates
-	err = (&kyma.InstallationReconciler{
+	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		Event:                testEventRec,
 		DescriptorProvider:   descriptorProvider,

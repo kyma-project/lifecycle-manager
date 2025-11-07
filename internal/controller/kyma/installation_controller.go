@@ -44,7 +44,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-type InstallationReconciler struct {
+type Reconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
@@ -62,7 +62,7 @@ type InstallationReconciler struct {
 	OCIRegistryHost      string
 }
 
-func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
@@ -119,10 +119,10 @@ func (r *InstallationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
-	return r.reconcileInstallation(ctx, kyma)
+	return r.reconcile(ctx, kyma)
 }
 
-func (r *InstallationReconciler) reconcileInstallation(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
 			r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, queue.UnexpectedRequeue)
@@ -166,7 +166,7 @@ func (r *InstallationReconciler) reconcileInstallation(ctx context.Context, kyma
 	return res, err
 }
 
-func (r *InstallationReconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
+func (r *Reconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
 	syncContext, err := r.SkrContextFactory.Get(kcpKyma.GetNamespacedName())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get syncContext: %w", err)
@@ -182,7 +182,7 @@ func (r *InstallationReconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v
 }
 
 // syncStatusToRemote updates the status of a remote copy of given Kyma instance.
-func (r *InstallationReconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Kyma) error {
+func (r *Reconciler) syncStatusToRemote(ctx context.Context, kcpKyma *v1beta2.Kyma) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, kcpKyma)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
@@ -209,7 +209,7 @@ func (r *InstallationReconciler) syncStatusToRemote(ctx context.Context, kcpKyma
 }
 
 // replaceSpecFromRemote replaces the spec from control-lane Kyma with the remote Kyma spec as single source of truth.
-func (r *InstallationReconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
+func (r *Reconciler) replaceSpecFromRemote(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
@@ -228,7 +228,7 @@ func (r *InstallationReconciler) replaceSpecFromRemote(ctx context.Context, cont
 	return nil
 }
 
-func (r *InstallationReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+func (r *Reconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
 		return r.handleInitialState(ctx, kyma)
@@ -245,7 +245,7 @@ func (r *InstallationReconciler) processKymaState(ctx context.Context, kyma *v1b
 	return ctrl.Result{}, nil
 }
 
-func (r *InstallationReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+func (r *Reconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if err := r.updateStatus(ctx, kyma, shared.StateProcessing, "started processing"); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, queue.UnexpectedRequeue)
 		return ctrl.Result{}, err
@@ -254,7 +254,7 @@ func (r *InstallationReconciler) handleInitialState(ctx context.Context, kyma *v
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 }
 
-func (r *InstallationReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
 	var errGroup errgroup.Group
 	errGroup.Go(func() error {
@@ -320,7 +320,7 @@ func (r *InstallationReconciler) handleProcessingState(ctx context.Context, kyma
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
-func (r *InstallationReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
 	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, r.OCIRegistryHost)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
@@ -343,14 +343,14 @@ func (r *InstallationReconciler) reconcileManifests(ctx context.Context, kyma *v
 }
 
 // Helper methods for installation controller
-func (r *InstallationReconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
+func (r *Reconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
 	if shared.NoneChannel.Equals(kyma.Spec.Channel) {
 		return fmt.Errorf("%w: value \"none\" is not allowed in spec.channel", ErrInvalidKymaSpec)
 	}
 	return nil
 }
 
-func (r *InstallationReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (r *Reconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	var err error
 	if len(moduleStatus) == 0 {
@@ -370,7 +370,7 @@ func (r *InstallationReconciler) DeleteNoLongerExistingModules(ctx context.Conte
 	return nil
 }
 
-func (r *InstallationReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
+func (r *Reconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 	if err := r.Metrics.UpdateAll(kyma); err != nil {
 		if metrics.IsMissingMetricsAnnotationOrLabel(err) {
 			r.Event.Warning(kyma, metricsError, err)
@@ -379,15 +379,15 @@ func (r *InstallationReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta
 	}
 }
 
-func (r *InstallationReconciler) WatcherEnabled() bool {
+func (r *Reconciler) WatcherEnabled() bool {
 	return r.SKRWebhookManager != nil
 }
 
-func (r *InstallationReconciler) IsKymaManaged() bool {
+func (r *Reconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
 }
 
-func (r *InstallationReconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
+func (r *Reconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
 	moduleTemplateList := &v1beta2.ModuleTemplateList{}
 	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
 		return nil, fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
@@ -396,7 +396,7 @@ func (r *InstallationReconciler) GetModuleTemplateList(ctx context.Context) (*v1
 	return moduleTemplateList, nil
 }
 
-func (r *InstallationReconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
+func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
 	moduleTemplateList, err := r.GetModuleTemplateList(ctx)
 	if err != nil {
 		return err
@@ -413,14 +413,14 @@ func (r *InstallationReconciler) UpdateModuleTemplatesIfNeeded(ctx context.Conte
 	return nil
 }
 
-func (r *InstallationReconciler) requeueWithError(ctx context.Context,
+func (r *Reconciler) requeueWithError(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	err error,
 ) (ctrl.Result, error) {
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.updateStatusWithError(ctx, kyma, err)
 }
 
-func (r *InstallationReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
+func (r *Reconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
 	state shared.State, message string,
 ) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
@@ -430,7 +430,7 @@ func (r *InstallationReconciler) updateStatus(ctx context.Context, kyma *v1beta2
 	return nil
 }
 
-func (r *InstallationReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) error {
+func (r *Reconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, shared.StateError, err.Error()); err != nil {
 		r.Event.Warning(kyma, updateStatusError, err)
 		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, err)
@@ -438,7 +438,7 @@ func (r *InstallationReconciler) updateStatusWithError(ctx context.Context, kyma
 	return nil
 }
 
-func (r *InstallationReconciler) deleteManifest(ctx context.Context, trackedManifest *v1beta2.TrackingObject) error {
+func (r *Reconciler) deleteManifest(ctx context.Context, trackedManifest *v1beta2.TrackingObject) error {
 	manifest := apimetav1.PartialObjectMetadata{}
 	manifest.SetGroupVersionKind(trackedManifest.GroupVersionKind())
 	manifest.SetNamespace(trackedManifest.GetNamespace())

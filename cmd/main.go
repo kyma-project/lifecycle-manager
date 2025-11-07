@@ -430,7 +430,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
 	// Setup InstallationReconciler for handling Kyma installation and updates
-	if err := (&kyma.InstallationReconciler{
+	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    skrContextFactory,
 		Event:                event,
