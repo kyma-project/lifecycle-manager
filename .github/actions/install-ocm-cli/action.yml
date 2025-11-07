@@ -9,7 +9,7 @@ inputs:
     required: false
     default: ./ocm/bin
   verify_checksum:
-    description: 'true' to verify checksum (sha256)'
+    description:  "'true' to verify checksum (sha256)"
     required: false
     default: 'true'
 runs:
