@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -44,22 +45,26 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
+type SkrSyncService interface {
+	SyncCrds(ctx context.Context, kyma *v1beta2.Kyma) (bool, error)
+	SyncImagePullSecret(ctx context.Context, kyma types.NamespacedName) error
+}
+
 type Reconciler struct {
 	client.Client
 	event.Event
 	queue.RequeueIntervals
 
+	Config               ReconcilerConfig
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
-	SyncRemoteCrds       remote.SyncCrdsUseCase
+	SkrSyncService       SkrSyncService
 	ModulesStatusHandler ModuleStatusHandler
 	SKRWebhookManager    SKRWebhookManager
-	RemoteSyncNamespace  string
-	IsManagedKyma        bool
-	Metrics              *metrics.KymaMetrics
-	RemoteCatalog        *remote.RemoteCatalog
-	TemplateLookup       *templatelookup.TemplateLookup
-	OCIRegistryHost      string
+
+	Metrics        *metrics.KymaMetrics
+	RemoteCatalog  *remote.RemoteCatalog
+	TemplateLookup *templatelookup.TemplateLookup
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -72,7 +77,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, nil
 		}
 		r.Metrics.RecordRequeueReason(metrics.KymaRetrieval, queue.UnexpectedRequeue)
-		return ctrl.Result{}, fmt.Errorf("kyma DeletionReconciler: %w", err)
+		return ctrl.Result{}, fmt.Errorf("kyma InstallationReconciler: %w", err)
 	}
 
 	// If Kyma is under deletion, let the deletion controller handle it
@@ -87,7 +92,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("KymaInstallationController: %w", err)
 	}
 
-	status.InitConditions(kyma, r.WatcherEnabled())
+	status.InitConditions(kyma, r.WatcherEnabled(), r.SkrImagePullSecretSyncEnabled())
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("skipping reconciliation for Kyma: " + kyma.Name)
@@ -122,6 +127,69 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.reconcile(ctx, kyma)
 }
 
+// ValidateDefaultChannel validates the Kyma spec.
+func (r *Reconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
+	if shared.NoneChannel.Equals(kyma.Spec.Channel) {
+		return fmt.Errorf("%w: value \"none\" is not allowed in spec.channel", ErrInvalidKymaSpec)
+	}
+	return nil
+}
+
+func (r *Reconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {
+	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
+	var err error
+	if len(moduleStatus) == 0 {
+		return nil
+	}
+	for i := range moduleStatus {
+		moduleStatus := moduleStatus[i]
+		if moduleStatus.Manifest == nil {
+			continue
+		}
+		err = r.deleteManifest(ctx, moduleStatus.Manifest)
+	}
+
+	if client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("error deleting module %w", err)
+	}
+	return nil
+}
+
+func (r *Reconciler) SkrImagePullSecretSyncEnabled() bool {
+	return r.Config.SkrImagePullSecretName != ""
+}
+
+func (r *Reconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
+		return nil, fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
+	}
+
+	return moduleTemplateList, nil
+}
+
+func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
+	moduleTemplateList, err := r.GetModuleTemplateList(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, mt := range moduleTemplateList.Items {
+		if needUpdateForMandatoryModuleLabel(mt) {
+			if err = r.Update(ctx, &mt); err != nil {
+				return fmt.Errorf("failed to update ModuleTemplate, %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *Reconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
+	return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
+}
+
+//nolint:funlen // disable for kyma controller until split is done into provisioning and deprovisioning controllers
 func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
@@ -129,10 +197,10 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.LabelsAndFinalizersUpdate, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
-	updateRequired, err := r.SyncRemoteCrds.Execute(ctx, kyma)
+	updateRequired, err := r.SkrSyncService.SyncCrds(ctx, kyma)
 	if err != nil {
 		r.Metrics.RecordRequeueReason(metrics.CrdsSync, queue.UnexpectedRequeue)
 		return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
@@ -143,8 +211,18 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 		}
 		r.Metrics.RecordRequeueReason(metrics.CrdAnnotationsUpdate, queue.IntendedRequeue)
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
+
+	if r.SkrImagePullSecretSyncEnabled() {
+		if err := r.SkrSyncService.SyncImagePullSecret(ctx, kyma.GetNamespacedName()); err != nil {
+			r.Metrics.RecordRequeueReason(metrics.ImagePullSecretSync, queue.UnexpectedRequeue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionFalse)
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync image pull secret: %w", err))
+		}
+		kyma.UpdateCondition(v1beta2.ConditionTypeSKRImagePullSecretSync, apimetav1.ConditionTrue)
+	}
+
 	// update the control-plane kyma with the changes to the spec of the remote Kyma
 	if err = r.replaceSpecFromRemote(ctx, kyma); err != nil {
 		r.Metrics.RecordRequeueReason(metrics.SpecReplacementFromRemote, queue.UnexpectedRequeue)
@@ -163,7 +241,12 @@ func (r *Reconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Re
 		return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 	}
 
-	return res, err
+	if kyma.Status.State == shared.StateError {
+		// Requeue with a new Error in case of Kyma error state, to enable rate limiting for that error.
+		return ctrl.Result{}, ErrKymaInErrorState
+	}
+
+	return res, nil
 }
 
 func (r *Reconciler) fetchRemoteKyma(ctx context.Context, kcpKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
@@ -251,7 +334,7 @@ func (r *Reconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma)
 		return ctrl.Result{}, err
 	}
 	r.Metrics.RecordRequeueReason(metrics.InitialStateHandling, queue.IntendedRequeue)
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
+	return ctrl.Result{Requeue: true}, nil
 }
 
 func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -313,16 +396,12 @@ func (r *Reconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Ky
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	if state == shared.StateError {
-		// Requeue with a new Error in case of Kyma error state, to enable rate limiting for that error.
-		return ctrl.Result{}, ErrKymaInErrorState
-	}
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
 func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
 	templates := r.TemplateLookup.GetRegularTemplates(ctx, kyma)
-	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.RemoteSyncNamespace, r.OCIRegistryHost)
+	prsr := parser.NewParser(r.Client, r.DescriptorProvider, r.Config.RemoteSyncNamespace, r.Config.OCIRegistryHost)
 	modules := prsr.GenerateModulesFromTemplates(kyma, templates)
 
 	runner := sync.New(r)
@@ -342,34 +421,6 @@ func (r *Reconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma)
 	return nil
 }
 
-// Helper methods for installation controller
-func (r *Reconciler) ValidateDefaultChannel(kyma *v1beta2.Kyma) error {
-	if shared.NoneChannel.Equals(kyma.Spec.Channel) {
-		return fmt.Errorf("%w: value \"none\" is not allowed in spec.channel", ErrInvalidKymaSpec)
-	}
-	return nil
-}
-
-func (r *Reconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {
-	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
-	var err error
-	if len(moduleStatus) == 0 {
-		return nil
-	}
-	for i := range moduleStatus {
-		moduleStatus := moduleStatus[i]
-		if moduleStatus.Manifest == nil {
-			continue
-		}
-		err = r.deleteManifest(ctx, moduleStatus.Manifest)
-	}
-
-	if client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("error deleting module %w", err)
-	}
-	return nil
-}
-
 func (r *Reconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 	if err := r.Metrics.UpdateAll(kyma); err != nil {
 		if metrics.IsMissingMetricsAnnotationOrLabel(err) {
@@ -384,40 +435,7 @@ func (r *Reconciler) WatcherEnabled() bool {
 }
 
 func (r *Reconciler) IsKymaManaged() bool {
-	return r.IsManagedKyma
-}
-
-func (r *Reconciler) GetModuleTemplateList(ctx context.Context) (*v1beta2.ModuleTemplateList, error) {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
-		return nil, fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
-	}
-
-	return moduleTemplateList, nil
-}
-
-func (r *Reconciler) UpdateModuleTemplatesIfNeeded(ctx context.Context) error {
-	moduleTemplateList, err := r.GetModuleTemplateList(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, mt := range moduleTemplateList.Items {
-		if needUpdateForMandatoryModuleLabel(mt) {
-			if err = r.Update(ctx, &mt); err != nil {
-				return fmt.Errorf("failed to update ModuleTemplate, %w", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (r *Reconciler) requeueWithError(ctx context.Context,
-	kyma *v1beta2.Kyma,
-	err error,
-) (ctrl.Result, error) {
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.updateStatusWithError(ctx, kyma, err)
+	return r.Config.IsManagedKyma
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,

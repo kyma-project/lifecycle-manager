@@ -1,6 +1,10 @@
 package random
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"k8s.io/apimachinery/pkg/types"
+)
 
 const (
 	randomNameLength        = 8
@@ -16,6 +20,13 @@ func Name() string {
 		b[i] = randomNameCharSet[rand.Intn(len(randomNameCharSet))]
 	}
 	return string(b)
+}
+
+func NamespacedName() types.NamespacedName {
+	return types.NamespacedName{
+		Name:      Name(),
+		Namespace: Name(),
+	}
 }
 
 // Port creates a random int64 in range [1, 65535].

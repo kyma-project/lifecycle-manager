@@ -43,6 +43,15 @@ const (
 	patchStatusError  event.Reason = "PatchStatus"
 )
 
+// ReconcilerConfig holds configuration values for the Kyma Reconciler.
+// Usually read from flags or environment variables.
+type ReconcilerConfig struct {
+	RemoteSyncNamespace    string
+	IsManagedKyma          bool
+	OCIRegistryHost        string
+	SkrImagePullSecretName string
+}
+
 type SKRWebhookManager interface {
 	Reconcile(ctx context.Context, kyma *v1beta2.Kyma) error
 	Remove(ctx context.Context, kyma *v1beta2.Kyma) error

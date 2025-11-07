@@ -56,6 +56,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator"
 	"github.com/kyma-project/lifecycle-manager/internal/service/kyma/status/modules/generator/fromerror"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate"
 	certmanagerrenewal "github.com/kyma-project/lifecycle-manager/internal/service/watcher/certificate/renewal/certmanager" //nolint:revive // not for import
 	"github.com/kyma-project/lifecycle-manager/internal/service/watcher/chartreader"
@@ -236,6 +237,14 @@ var _ = BeforeSuite(func() {
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	kymaMetrics := metrics.NewKymaMetrics(metrics.NewSharedMetrics())
 	// Setup InstallationReconciler for withwatcher tests
+
+	kymaReconcilerConfig := kyma.ReconcilerConfig{
+		RemoteSyncNamespace: flags.DefaultRemoteSyncNamespace,
+	}
+
+	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil)
+	skrSyncService := skrsync.NewService(nil, nil, &syncCrdsUseCase, "")
+
 	err = (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    testSkrContextFactory,
@@ -243,12 +252,12 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals:     intervals,
 		SKRWebhookManager:    skrWebhookChartManager,
 		DescriptorProvider:   nil, // no descriptor provider needed for these tests
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
+		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
-		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,
 		Metrics:              kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, testSkrContextFactory,
 			flags.DefaultRemoteSyncNamespace),
+		Config: kymaReconcilerConfig,
 	}).SetupWithManager(mgr, ctrlruntime.Options{}, kyma.SetupOptions{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -259,7 +268,7 @@ var _ = BeforeSuite(func() {
 		Event:                testEventRec,
 		RequeueIntervals:     intervals,
 		SKRWebhookManager:    skrWebhookChartManager,
-		DescriptorProvider:   provider.NewCachedDescriptorProvider(),
+		DescriptorProvider:   nil, // TODO check if needed!!
 		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, testSkrContextFactory, nil),
 		ModulesStatusHandler: modules.NewStatusHandler(moduleStatusGen, kcpClient, noOpMetricsFunc),
 		RemoteSyncNamespace:  flags.DefaultRemoteSyncNamespace,

@@ -47,13 +47,12 @@ type DeletionReconciler struct {
 	event.Event
 	queue.RequeueIntervals
 
+	Config               ReconcilerConfig
 	SkrContextFactory    remote.SkrContextProvider
 	DescriptorProvider   *provider.CachedDescriptorProvider
 	SyncRemoteCrds       remote.SyncCrdsUseCase
 	ModulesStatusHandler ModuleStatusHandler
 	SKRWebhookManager    SKRWebhookManager
-	RemoteSyncNamespace  string
-	IsManagedKyma        bool
 	Metrics              *metrics.KymaMetrics
 	RemoteCatalog        *remote.RemoteCatalog
 	TemplateLookup       *templatelookup.TemplateLookup
@@ -84,7 +83,8 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	logger.V(log.DebugLevel).Info("Kyma deletion reconciliation started")
 
-	status.InitConditions(kyma, r.WatcherEnabled()) // check what conditions are used in the deletion use-case
+	status.InitConditions(kyma, r.WatcherEnabled(),
+		r.SkrImagePullSecretSyncEnabled()) // TODO check what conditions are used in the deletion use-case
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("skipping deletion reconciliation for Kyma: " + kyma.Name)
@@ -104,6 +104,10 @@ func (r *DeletionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	return r.reconcileDeletion(ctx, kyma, skrContext)
+}
+
+func (r *DeletionReconciler) SkrImagePullSecretSyncEnabled() bool {
+	return r.Config.SkrImagePullSecretName != ""
 }
 
 func (r *DeletionReconciler) reconcileDeletion(ctx context.Context,
@@ -201,13 +205,14 @@ func (r *DeletionReconciler) handleDeletingState(ctx context.Context, kyma *v1be
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 }
 
-// Methods required by HelperClient interface
+// methods required by HelperClient interface
+
 func (r *DeletionReconciler) WatcherEnabled() bool {
 	return r.SKRWebhookManager != nil
 }
 
 func (r *DeletionReconciler) IsKymaManaged() bool {
-	return r.IsManagedKyma
+	return r.Config.IsManagedKyma
 }
 
 func (r *DeletionReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {

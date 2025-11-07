@@ -54,6 +54,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/provider/componentdescriptorcache"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/repository/oci"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/componentdescriptor"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/installation"
 	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/skrwebhook"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/istiogatewaysecret"
@@ -87,6 +89,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/service/manifest/orphan"
 	"github.com/kyma-project/lifecycle-manager/internal/service/skrclient"
 	skrclientcache "github.com/kyma-project/lifecycle-manager/internal/service/skrclient/cache"
+	"github.com/kyma-project/lifecycle-manager/internal/service/skrsync"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -260,13 +263,14 @@ func setupManager(flagVar *flags.FlagVar, cacheOptions cache.Options, scheme *ma
 	maintenanceWindow := initMaintenanceWindow(flagVar.MinMaintenanceWindowSize, logger)
 	metrics.NewFipsMetrics().Update()
 
-	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder,
-		flagVar, options, skrWebhookManager, kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
-	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics,
-		accessManagerService, logger, eventRecorder)
-	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options,
-		mandatoryModulesMetrics, logger, ociRegistryHost)
-	setupMandatoryModuleDeletionReconciler(mgr, descriptorProvider, eventRecorder, flagVar, options, logger)
+	setupKymaReconciler(mgr, descriptorProvider, skrContextProvider, eventRecorder, flagVar, options, skrWebhookManager,
+		kymaMetrics, logger, maintenanceWindow, ociRegistryHost)
+	setupManifestReconciler(mgr, flagVar, options, sharedMetrics, mandatoryModulesMetrics, accessManagerService, logger,
+		eventRecorder)
+	setupMandatoryModuleReconciler(mgr, descriptorProvider, flagVar, options, mandatoryModulesMetrics, logger,
+		ociRegistryHost)
+	setupMandatoryModuleDeletionReconciler(mgr, eventRecorder, flagVar, options, logger)
+
 	if flagVar.EnablePurgeFinalizer {
 		setupPurgeReconciler(mgr, skrContextProvider, eventRecorder, flagVar, options, logger)
 	}
@@ -416,26 +420,33 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentKymaReconciles
 
-	moduleTemplateInfoLookupStrategies := moduletemplateinfolookup.NewModuleTemplateInfoLookupStrategies(
-		[]moduletemplateinfolookup.ModuleTemplateInfoLookupStrategy{
-			moduletemplateinfolookup.NewByVersionStrategy(mgr.GetClient()),
-			moduletemplateinfolookup.NewByChannelStrategy(mgr.GetClient()),
-			moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
-				moduletemplateinfolookup.NewByModuleReleaseMetaStrategy(mgr.GetClient())),
-		},
-	)
+	moduleTemplateInfoLookup := moduletemplateinfolookup.NewWithMaintenanceWindowDecorator(maintenanceWindow,
+		moduletemplateinfolookup.NewLookup(mgr.GetClient()))
 
 	kcpClient := mgr.GetClient()
 	moduleStatusGen := generator.NewModuleStatusGenerator(fromerror.GenerateModuleStatusFromError)
 	modulesStatusHandler := modules.NewStatusHandler(moduleStatusGen, kcpClient, kymaMetrics.RemoveModuleStateMetrics)
 
 	// Setup InstallationReconciler for handling Kyma installation and updates
+	kymaReconcilerConfig := kyma.ReconcilerConfig{
+		RemoteSyncNamespace:    flagVar.RemoteSyncNamespace,
+		IsManagedKyma:          flagVar.IsKymaManaged,
+		OCIRegistryHost:        ociRegistryHost,
+		SkrImagePullSecretName: flagVar.SkrImagePullSecret,
+	}
+	syncCrdsUseCase := remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil)
+	skrSyncService := skrsync.NewService(
+		skrContextFactory,
+		secretrepository.NewRepository(kcpClient, shared.DefaultControlPlaneNamespace),
+		&syncCrdsUseCase,
+		flagVar.SkrImagePullSecret)
+
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    skrContextFactory,
 		Event:                event,
 		DescriptorProvider:   descriptorProvider,
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+		SkrSyncService:       skrSyncService,
 		ModulesStatusHandler: modulesStatusHandler,
 		SKRWebhookManager:    skrWebhookManager,
 		RequeueIntervals: queue.RequeueIntervals{
@@ -444,14 +455,12 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
 		},
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		IsManagedKyma:       flagVar.IsKymaManaged,
-		Metrics:             kymaMetrics,
+		Metrics: kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
 		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduleTemplateInfoLookupStrategies),
-		OCIRegistryHost: ociRegistryHost,
+			moduleTemplateInfoLookup),
+		Config: kymaReconcilerConfig,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
@@ -459,34 +468,7 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 			IstioNamespace:               flagVar.IstioNamespace,
 		},
 	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "KymaInstallation")
-		os.Exit(1)
-	}
-
-	// Setup DeletionReconciler for handling Kyma deletion
-	if err := (&kyma.DeletionReconciler{
-		Client:               kcpClient,
-		SkrContextFactory:    skrContextFactory,
-		Event:                event,
-		DescriptorProvider:   descriptorProvider,
-		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
-		ModulesStatusHandler: modulesStatusHandler,
-		SKRWebhookManager:    skrWebhookManager,
-		RequeueIntervals: queue.RequeueIntervals{
-			Success: flagVar.KymaRequeueSuccessInterval,
-			Busy:    flagVar.KymaRequeueBusyInterval,
-			Error:   flagVar.KymaRequeueErrInterval,
-			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		IsManagedKyma:       flagVar.IsKymaManaged,
-		Metrics:             kymaMetrics,
-		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
-			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduleTemplateInfoLookupStrategies),
-	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
+		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
 }
@@ -613,26 +595,23 @@ func setupMandatoryModuleReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleReconciles
 
-	if err := (&mandatorymodule.InstallationReconciler{
-		Client: mgr.GetClient(),
-		RequeueIntervals: queue.RequeueIntervals{
+	installationService := installation.ComposeInstallationService(mgr.GetClient(), descriptorProvider, ociRegistryHost,
+		flagVar.RemoteSyncNamespace, metrics)
+	installationReconciler := mandatorymodule.NewInstallationReconciler(installationService,
+		queue.RequeueIntervals{
 			Success: flagVar.MandatoryModuleRequeueSuccessInterval,
 			Busy:    flagVar.KymaRequeueBusyInterval,
 			Error:   flagVar.KymaRequeueErrInterval,
 			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-		RemoteSyncNamespace: flagVar.RemoteSyncNamespace,
-		DescriptorProvider:  descriptorProvider,
-		Metrics:             metrics,
-		OCIRegistryHost:     ociRegistryHost,
-	}).SetupWithManager(mgr, options); err != nil {
+		})
+
+	if err := installationReconciler.SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}
 }
 
 func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
-	descriptorProvider *provider.CachedDescriptorProvider,
 	event event.Event,
 	flagVar *flags.FlagVar,
 	options ctrlruntime.Options,
@@ -643,17 +622,15 @@ func setupMandatoryModuleDeletionReconciler(mgr ctrl.Manager,
 	options.CacheSyncTimeout = flagVar.CacheSyncTimeout
 	options.MaxConcurrentReconciles = flagVar.MaxConcurrentMandatoryModuleDeletionReconciles
 
-	if err := (&mandatorymodule.DeletionReconciler{
-		Client:             mgr.GetClient(),
-		Event:              event,
-		DescriptorProvider: descriptorProvider,
-		RequeueIntervals: queue.RequeueIntervals{
-			Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
-			Busy:    flagVar.KymaRequeueBusyInterval,
-			Error:   flagVar.KymaRequeueErrInterval,
-			Warning: flagVar.KymaRequeueWarningInterval,
-		},
-	}).SetupWithManager(mgr, options); err != nil {
+	deletionService := deletion.ComposeDeletionService(mgr.GetClient(), event)
+	deletionReconciler := mandatorymodule.NewDeletionReconciler(deletionService, queue.RequeueIntervals{
+		Success: flagVar.MandatoryModuleDeletionRequeueSuccessInterval,
+		Busy:    flagVar.KymaRequeueBusyInterval,
+		Error:   flagVar.KymaRequeueErrInterval,
+		Warning: flagVar.KymaRequeueWarningInterval,
+	})
+
+	if err := deletionReconciler.SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MandatoryModule")
 		os.Exit(bootstrapFailedExitCode)
 	}

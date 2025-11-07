@@ -7,7 +7,10 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/event"
 )
+
+const SettingFinalizerErrorEvent event.Reason = "SettingMandatoryModuleTemplateFinalizerError"
 
 type MrmEnsureFinalizerRepo interface {
 	EnsureFinalizer(ctx context.Context, moduleName string, finalizer string) error
@@ -15,18 +18,24 @@ type MrmEnsureFinalizerRepo interface {
 
 // EnsureFinalizer is responsible for ensuring that the mandatory finalizer is present on the ModuleReleaseMeta.
 type EnsureFinalizer struct {
-	repo MrmEnsureFinalizerRepo
+	repo         MrmEnsureFinalizerRepo
+	eventHandler EventHandler
 }
 
-func NewEnsureFinalizer(repo MrmEnsureFinalizerRepo) *EnsureFinalizer {
-	return &EnsureFinalizer{repo: repo}
+func NewEnsureFinalizer(repo MrmEnsureFinalizerRepo, eventHandler EventHandler) *EnsureFinalizer {
+	return &EnsureFinalizer{repo: repo, eventHandler: eventHandler}
 }
 
 // IsApplicable returns true if the ModuleReleaseMeta does not contain the mandatory finalizer, so it should be added.
 func (e *EnsureFinalizer) IsApplicable(_ context.Context, mrm *v1beta2.ModuleReleaseMeta) (bool, error) {
-	return !controllerutil.ContainsFinalizer(mrm, shared.MandatoryModuleFinalizer), nil
+	return !controllerutil.ContainsFinalizer(mrm,
+		shared.MandatoryModuleFinalizer) && mrm.DeletionTimestamp.IsZero(), nil
 }
 
 func (e *EnsureFinalizer) Execute(ctx context.Context, mrm *v1beta2.ModuleReleaseMeta) error {
-	return e.repo.EnsureFinalizer(ctx, mrm.Name, shared.MandatoryModuleFinalizer)
+	if err := e.repo.EnsureFinalizer(ctx, mrm.Name, shared.MandatoryModuleFinalizer); err != nil {
+		e.eventHandler.Warning(mrm, SettingFinalizerErrorEvent, err)
+		return err
+	}
+	return nil
 }

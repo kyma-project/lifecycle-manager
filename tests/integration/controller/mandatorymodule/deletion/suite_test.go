@@ -25,6 +25,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/kyma-project/lifecycle-manager/cmd/composition/service/mandatorymodule/deletion"
 	"go.uber.org/zap/zapcore"
 	apicorev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -36,15 +37,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/service/componentdescriptor"
-	compdescv2 "ocm.software/ocm/api/ocm/compdesc/versions/v2"
-
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/mandatorymodule"
-	descriptorcache "github.com/kyma-project/lifecycle-manager/internal/descriptor/cache"
-	"github.com/kyma-project/lifecycle-manager/internal/descriptor/provider"
 	"github.com/kyma-project/lifecycle-manager/internal/event"
 	"github.com/kyma-project/lifecycle-manager/internal/setup"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -65,21 +60,18 @@ const (
 )
 
 var (
-	reconciler       *mandatorymodule.DeletionReconciler
 	kcpClient        client.Client
 	singleClusterEnv *envtest.Environment
 	ctx              context.Context
 	cancel           context.CancelFunc
 	manifestFilePath string
 	server           *httptest.Server
-
-	registerDescriptor func(name, version string) error // register component descriptors for testing purposes.
 )
 
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Purge Controller Suite")
+	RunSpecs(t, "Mandatory Module Deletion Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -130,25 +122,12 @@ var _ = BeforeSuite(func() {
 		Warning: 100 * time.Millisecond,
 	}
 
-	fakeDescriptorService := &componentdescriptor.FakeService{}
-	descriptorProvider := provider.NewCachedDescriptorProvider(
-		fakeDescriptorService,
-		descriptorcache.NewDescriptorCache(),
-	)
-	compDescrawBytes := builder.ComponentDescriptorFactoryFromSchema(compdescv2.SchemaVersion)
-	registerDescriptor = func(name, version string) error {
-		fakeDescriptorService.RegisterWithNameVersionOverride(name, version, compDescrawBytes.Raw)
-		return nil
-	}
+	deletionService := deletion.ComposeDeletionService(mgr.GetClient(),
+		event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)))
+	deletionReconciler := mandatorymodule.NewDeletionReconciler(
+		deletionService, intervals)
 
-	reconciler = &mandatorymodule.DeletionReconciler{
-		Client:             mgr.GetClient(),
-		Event:              event.NewRecorderWrapper(mgr.GetEventRecorderFor(shared.OperatorName)),
-		DescriptorProvider: descriptorProvider,
-		RequeueIntervals:   intervals,
-	}
-
-	err = reconciler.SetupWithManager(mgr, ctrlruntime.Options{})
+	err = deletionReconciler.SetupWithManager(mgr, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpClient = mgr.GetClient()
