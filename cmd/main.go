@@ -441,6 +441,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		&syncCrdsUseCase,
 		flagVar.SkrImagePullSecret)
 
+	templatelookup := templatelookup.NewTemplateLookup(kcpClient, descriptorProvider, moduleTemplateInfoLookup)
+
 	if err := (&kyma.Reconciler{
 		Client:               kcpClient,
 		SkrContextFactory:    skrContextFactory,
@@ -458,9 +460,8 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 		Metrics: kymaMetrics,
 		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
 			flagVar.RemoteSyncNamespace),
-		TemplateLookup: templatelookup.NewTemplateLookup(kcpClient, descriptorProvider,
-			moduleTemplateInfoLookup),
-		Config: kymaReconcilerConfig,
+		TemplateLookup: templatelookup,
+		Config:         kymaReconcilerConfig,
 	}).SetupWithManager(
 		mgr, options, kyma.SetupOptions{
 			ListenerAddr:                 flagVar.KymaListenerAddr,
@@ -470,6 +471,31 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
+
+		// Setup DeletionReconciler for handling Kyma deletion
+		if err := (&kyma.DeletionReconciler{
+			Client:               kcpClient,
+			SkrContextProvider:   skrContextFactory,
+			Event:                event,
+			DescriptorProvider:   descriptorProvider,
+			SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+			ModulesStatusHandler: modulesStatusHandler,
+			SKRWebhookManager:    skrWebhookManager,
+			RequeueIntervals: queue.RequeueIntervals{
+				Success: flagVar.KymaRequeueSuccessInterval,
+				Busy:    flagVar.KymaRequeueBusyInterval,
+				Error:   flagVar.KymaRequeueErrInterval,
+				Warning: flagVar.KymaRequeueWarningInterval,
+			},
+			Metrics: kymaMetrics,
+			Config:  kymaReconcilerConfig,
+			RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
+				flagVar.RemoteSyncNamespace),
+			TemplateLookup: templatelookup,
+		}).SetupWithManager(mgr, options); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
+			os.Exit(1)
+		}
 	}
 }
 
