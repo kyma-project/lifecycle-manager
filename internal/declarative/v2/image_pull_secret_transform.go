@@ -52,11 +52,15 @@ func isWorkloadResource(kind string) bool {
 
 func getWorkloadPodSpec(resource *unstructured.Unstructured) (map[string]interface{}, error) {
 	podSpec, _, err := unstructured.NestedMap(resource.Object, "spec", "template", "spec")
-	return podSpec, err
+	return podSpec, fmt.Errorf("failed to get pod spec: %w", err)
 }
 
 func setWorkloadPodSpec(resource *unstructured.Unstructured, podSpec map[string]interface{}) error {
-	return unstructured.SetNestedMap(resource.Object, podSpec, "spec", "template", "spec")
+	err := unstructured.SetNestedMap(resource.Object, podSpec, "spec", "template", "spec")
+	if err != nil {
+		return fmt.Errorf("failed to set pod spec: %w", err)
+	}
+	return nil
 }
 
 func resourceIsManager(manifest *v1beta2.Manifest, resource *unstructured.Unstructured) bool {
