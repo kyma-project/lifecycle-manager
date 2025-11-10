@@ -29,8 +29,8 @@ runs:
           echo "Dynamic versions ('latest'/'main') are not allowed; provide an explicit tag like v0.32.0." >&2
           exit 1
         fi
-        if ! echo "${VERSION}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-          echo "Version '${VERSION}' does not match required pattern vMAJOR.MINOR.PATCH." >&2
+        if ! echo "${VERSION}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+          echo "Version '${VERSION}' does not match required pattern MAJOR.MINOR.PATCH." >&2
           exit 1
         fi
         echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
@@ -44,7 +44,7 @@ runs:
         mkdir -p "${INSTALL_PATH}"
 
         ARCHIVE="ocm-${VERSION_NO_V}-linux-amd64.tar.gz"
-        BINARY_URL="https://github.com/open-component-model/ocm/releases/download/${VERSION}/${ARCHIVE}"
+        BINARY_URL="https://github.com/open-component-model/ocm/releases/download/v${VERSION}/${ARCHIVE}"
         SHA_URL="${BINARY_URL}.sha256"
 
         echo "Downloading ${ARCHIVE}"
