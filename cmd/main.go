@@ -471,32 +471,32 @@ func setupKymaReconciler(mgr ctrl.Manager, descriptorProvider *provider.CachedDe
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
-
-		// Setup DeletionReconciler for handling Kyma deletion
-		if err := (&kyma.DeletionReconciler{
-			Client:               kcpClient,
-			SkrContextProvider:   skrContextFactory,
-			Event:                event,
-			DescriptorProvider:   descriptorProvider,
-			SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
-			ModulesStatusHandler: modulesStatusHandler,
-			SKRWebhookManager:    skrWebhookManager,
-			RequeueIntervals: queue.RequeueIntervals{
-				Success: flagVar.KymaRequeueSuccessInterval,
-				Busy:    flagVar.KymaRequeueBusyInterval,
-				Error:   flagVar.KymaRequeueErrInterval,
-				Warning: flagVar.KymaRequeueWarningInterval,
-			},
-			Metrics: kymaMetrics,
-			Config:  kymaReconcilerConfig,
-			RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
-				flagVar.RemoteSyncNamespace),
-			TemplateLookup: templatelookup,
-		}).SetupWithManager(mgr, options); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
-			os.Exit(1)
-		}
 	}
+	// Setup DeletionReconciler for handling Kyma deletion
+	if err := (&kyma.DeletionReconciler{
+		Client:               kcpClient,
+		SkrContextProvider:   skrContextFactory,
+		Event:                event,
+		DescriptorProvider:   descriptorProvider,
+		SyncRemoteCrds:       remote.NewSyncCrdsUseCase(kcpClient, skrContextFactory, nil),
+		ModulesStatusHandler: modulesStatusHandler,
+		SKRWebhookManager:    skrWebhookManager,
+		RequeueIntervals: queue.RequeueIntervals{
+			Success: flagVar.KymaRequeueSuccessInterval,
+			Busy:    flagVar.KymaRequeueBusyInterval,
+			Error:   flagVar.KymaRequeueErrInterval,
+			Warning: flagVar.KymaRequeueWarningInterval,
+		},
+		Metrics: kymaMetrics,
+		Config:  kymaReconcilerConfig,
+		RemoteCatalog: remote.NewRemoteCatalogFromKyma(kcpClient, skrContextFactory,
+			flagVar.RemoteSyncNamespace),
+		TemplateLookup: templatelookup,
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KymaDeletion")
+		os.Exit(1)
+	}
+
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
