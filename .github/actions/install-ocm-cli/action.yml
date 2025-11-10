@@ -69,6 +69,6 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        INSTALLED_VERSION="$(ocm version -o json | yq -p json -oy '.GitVersion')"
+        INSTALLED_VERSION="$(ocm version | yq -p json -oy '.GitVersion')"
         echo "OCM CLI version: ${INSTALLED_VERSION}"
         ocm help >/dev/null

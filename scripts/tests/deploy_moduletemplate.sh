@@ -43,14 +43,13 @@ cat module-config-for-e2e.yaml
 
 REGISTRY_URL="http://localhost:5111"
 CTF_FILE="component-constructor.yaml"
-INSECURE_FLAG="--insecure"
 
 # Generate ModuleTemplate using modulectl
 echo "Generating CTF with modulectl..."
 modulectl create \
   --config-file ./module-config-for-e2e.yaml \
   --registry "${REGISTRY_URL}" \
-  ${INSECURE_FLAG} \
+  --insecure \
   --disable-ocm-registry-push \
   --output-constructor-file "${CTF_FILE}"
 

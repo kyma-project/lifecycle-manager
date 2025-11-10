@@ -31,10 +31,10 @@ runs:
         }}
       shell: bash
       run: |
-        # common registry configuration for public registry
+        # Common registry configuration
         REGISTRY_URL="http://localhost:5111"
         CTF_FILE="component-constructor.yaml"
-        
+
         echo "creating ModuleTemplate"
         modulectl create \
           --config-file ./module-config.yaml \
@@ -42,10 +42,10 @@ runs:
           --insecure \
           --disable-ocm-registry-push \
           --output-constructor-file "${CTF_FILE}"
-        
+
         echo "pushing OCM components..."
         ocm transfer ctf --enforce "${CTF_FILE}" "${REGISTRY_URL}"
-        
+
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
@@ -89,11 +89,11 @@ runs:
       if: ${{ matrix.e2e-test == 'oci-reg-cred-secret' }}
       shell: bash
       run: |
-        # cpmmon registry configuration for private registry
+        # Common registry configuration for private registry
         REGISTRY_URL="http://k3d-private-oci-reg.localhost:5001"
         REGISTRY_CREDS="myuser:mypass"
         CTF_FILE="component-constructor.yaml"
-        
+
         echo "creating ModuleTemplate"
         modulectl create \
           --config-file ./module-config.yaml \
@@ -102,14 +102,14 @@ runs:
           --insecure \
           --disable-ocm-registry-push \
           --output-constructor-file "${CTF_FILE}"
-        
+
         echo "pushing OCM components..."
         ocm transfer ctf \
           --enforce "${CTF_FILE}" \
           "${REGISTRY_URL}" \
           --uploader ocm/ociRegistry \
           --creds "${REGISTRY_CREDS}"
-        
+
         sed -i 's/k3d-private-oci-reg.localhost:5001/private-oci-reg.localhost:5000/g' ./template.yaml
         kubectl get crds
         kubectl apply -f template.yaml
