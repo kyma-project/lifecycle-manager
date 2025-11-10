@@ -40,7 +40,23 @@ fi
 yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"${RELEASE_VERSION}"'"]' -i sec-scanners-config.yaml
 
 cat module-config-for-e2e.yaml
-modulectl create --config-file ./module-config-for-e2e.yaml --registry http://localhost:5111 --insecure
+
+REGISTRY_URL="http://localhost:5111"
+CTF_FILE="component-constructor.yaml"
+INSECURE_FLAG="--insecure"
+
+# Generate ModuleTemplate using modulectl
+echo "Generating CTF with modulectl..."
+modulectl create \
+  --config-file ./module-config-for-e2e.yaml \
+  --registry "${REGISTRY_URL}" \
+  ${INSECURE_FLAG} \
+  --disable-ocm-registry-push \
+  --output-constructor-file "${CTF_FILE}"
+
+# Transfer CTF to registry using ocm cli
+echo "Transferring component version to registry using ocm cli..."
+ocm transfer ctf --enforce "${CTF_FILE}" "${REGISTRY_URL}"
 
 cat template.yaml
 echo "ModuleTemplate created successfully"
@@ -53,4 +69,5 @@ fi
 rm -f module-config-for-e2e.yaml
 rm -f template-operator.yaml
 rm -f default-sample-cr.yaml
+rm -f "${CTF_FILE}"
 echo "Temporary files removed successfully"
