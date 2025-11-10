@@ -33,7 +33,7 @@ runs:
       run: |
         # Common registry configuration
         REGISTRY_URL="http://localhost:5111"
-        CTF_FILE="component-constructor.yaml"
+        CTF_PATH="./ctf-archive"
 
         echo "creating ModuleTemplate"
         modulectl create \
@@ -41,10 +41,10 @@ runs:
           --registry "${REGISTRY_URL}" \
           --insecure \
           --disable-ocm-registry-push \
-          --output-constructor-file "${CTF_FILE}"
+          --output-constructor-file "${CTF_PATH}"
 
         echo "pushing OCM components..."
-        ocm transfer ctf --enforce "${CTF_FILE}" "${REGISTRY_URL}"
+        ocm transfer ctf "${CTF_PATH}" "${REGISTRY_URL}" --enforce --overwrite
 
         sed -i 's/localhost:5111/k3d-kcp-registry.localhost:5000/g' ./template.yaml
         kubectl get crds
@@ -92,7 +92,7 @@ runs:
         # Common registry configuration for private registry
         REGISTRY_URL="http://k3d-private-oci-reg.localhost:5001"
         REGISTRY_CREDS="myuser:mypass"
-        CTF_FILE="component-constructor.yaml"
+        CTF_PATH="./ctf-archive"
 
         echo "creating ModuleTemplate"
         modulectl create \
@@ -101,12 +101,14 @@ runs:
           --registry-credentials "${REGISTRY_CREDS}" \
           --insecure \
           --disable-ocm-registry-push \
-          --output-constructor-file "${CTF_FILE}"
+          --output-constructor-file "${CTF_PATH}"
 
         echo "pushing OCM components..."
         ocm transfer ctf \
-          --enforce "${CTF_FILE}" \
+          "${CTF_PATH}" \
           "${REGISTRY_URL}" \
+          --enforce \
+          --overwrite \
           --uploader ocm/ociRegistry \
           --creds "${REGISTRY_CREDS}"
 

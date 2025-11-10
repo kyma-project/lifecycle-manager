@@ -42,7 +42,7 @@ yq eval '.bdba += ["europe-docker.pkg.dev/kyma-project/prod/template-operator:'"
 cat module-config-for-e2e.yaml
 
 REGISTRY_URL="http://localhost:5111"
-CTF_FILE="component-constructor.yaml"
+CTF_PATH="./ctf-archive"
 
 # Generate ModuleTemplate using modulectl
 echo "Generating CTF with modulectl..."
@@ -51,11 +51,11 @@ modulectl create \
   --registry "${REGISTRY_URL}" \
   --insecure \
   --disable-ocm-registry-push \
-  --output-constructor-file "${CTF_FILE}"
+  --output-constructor-file "${CTF_PATH}"
 
 # Transfer CTF to registry using ocm cli
 echo "Transferring component version to registry using ocm cli..."
-ocm transfer ctf --enforce "${CTF_FILE}" "${REGISTRY_URL}"
+ocm transfer ctf "${CTF_PATH}" "${REGISTRY_URL}" --enforce --overwrite
 
 cat template.yaml
 echo "ModuleTemplate created successfully"
@@ -68,5 +68,5 @@ fi
 rm -f module-config-for-e2e.yaml
 rm -f template-operator.yaml
 rm -f default-sample-cr.yaml
-rm -f "${CTF_FILE}"
+rm -rf "${CTF_PATH}"
 echo "Temporary files removed successfully"
