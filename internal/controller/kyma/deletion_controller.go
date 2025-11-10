@@ -159,7 +159,7 @@ func (r *DeletionReconciler) handleDeletingState(ctx context.Context, kyma *v1be
 
 	if r.WatcherEnabled() {
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
-			return ctrl.Result{}, err
+			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
 
