@@ -7,7 +7,7 @@ inputs:
   install_path:
     description: Directory to place the binary
     required: false
-    default: ./ocm/bin
+    default: $(pwd)/ocm/bin
   verify_checksum:
     description: "'true' to verify checksum (sha256)"
     required: false
