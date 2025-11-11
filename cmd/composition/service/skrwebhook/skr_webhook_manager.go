@@ -63,7 +63,7 @@ func ComposeSkrWebhookManager(kcpClient client.Client,
 	resourceConfigurator := skrwebhookresources.NewResourceConfigurator(
 		flagVar.RemoteSyncNamespace, flagVar.GetWatcherImage(),
 		flagVar.WatcherResourceLimitsCPU,
-		flagVar.WatcherResourceLimitsMemory, *resolvedKcpAddr)
+		flagVar.WatcherResourceLimitsMemory, *resolvedKcpAddr, flagVar.SkrImagePullSecret)
 
 	chartReaderService := chartreader.NewService(flagVar.WatcherResourcesPath)
 
