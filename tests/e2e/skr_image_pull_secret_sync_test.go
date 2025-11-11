@@ -47,5 +47,12 @@ var _ = Describe("SKR Image Pull Secret Sync", Ordered, func() {
 				WithArguments(skrImagePullSecretName, RemoteNamespace, "", "v1", "Secret", skrClient).
 				Should(Succeed())
 		})
+
+		It("And SKR image pull Secret is added to runtime-watcher deployment as imagePullSecrets", func() {
+			Eventually(DeploymentPodSpecHasImagePullSecret).
+				WithContext(ctx).
+				WithArguments("skr-webhook", RemoteNamespace, skrImagePullSecretName, skrClient).
+				Should(Succeed())
+		})
 	})
 })

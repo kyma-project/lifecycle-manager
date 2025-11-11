@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
-	golang.org/x/sync v0.17.0
+	golang.org/x/sync v0.18.0
 	golang.org/x/time v0.14.0
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	ocm.software/ocm v0.32.0
@@ -38,8 +38,8 @@ require (
 )
 
 require (
-	istio.io/api v1.27.3
-	istio.io/client-go v1.27.3
+	istio.io/api v1.28.0
+	istio.io/client-go v1.28.0
 )
 
 require (
