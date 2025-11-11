@@ -84,11 +84,13 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 		if err != nil {
 			err = fmt.Errorf("failed creating OCM identity for module %s in namespace %s: %w",
 				moduleTemplate.Spec.ModuleName, moduleTemplate.Namespace, err)
-			mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = createModuleTemplateInfo(moduleTemplate, err,
+			mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = createMandatoryModuleTemplateInfo(moduleTemplate,
+				err,
 				nil)
 			continue
 		}
-		mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = createModuleTemplateInfo(moduleTemplate, nil, ocmId)
+		mandatoryTemplatesByName[moduleTemplate.Spec.ModuleName] = createMandatoryModuleTemplateInfo(moduleTemplate,
+			nil, ocmId)
 	}
 	modules := s.moduleParser.GenerateMandatoryModulesFromTemplates(ctx, kyma, mandatoryTemplatesByName)
 	if err := s.manifestCreator.ReconcileManifests(ctx, kyma, modules); err != nil {
@@ -98,10 +100,11 @@ func (s *Service) HandleInstallation(ctx context.Context, kyma *v1beta2.Kyma) er
 	return nil
 }
 
-func createModuleTemplateInfo(template *v1beta2.ModuleTemplate,
+func createMandatoryModuleTemplateInfo(template *v1beta2.ModuleTemplate,
 	err error,
 	componentId *ocmidentity.ComponentId,
 ) *templatelookup.ModuleTemplateInfo {
+	template.Spec.Mandatory = true // hotfix to ensure Mandatory field is set
 	return &templatelookup.ModuleTemplateInfo{
 		ModuleTemplate: template,
 		Err:            err,
