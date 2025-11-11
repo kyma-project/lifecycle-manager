@@ -129,9 +129,6 @@ runs:
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInOlderVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.OlderVersionForMandatoryModule }} true true false
         yq eval 'del(.spec.mandatory)' -i template.yaml
-        echo "===== modified MT ======"
-        cat template.yaml
-
         kubectl apply -f template.yaml
         rm -f template.yaml
 
@@ -146,8 +143,6 @@ runs:
         yq eval '(. | select(.kind == "Deployment") | .metadata.name) = "${{ env.ModuleDeploymentNameInNewerVersion }}"' -i template-operator.yaml
         ./deploy_moduletemplate.sh ${{ env.ModuleName }} ${{ env.NewerVersionForMandatoryModule }} true true false
         yq eval 'del(.spec.mandatory)' -i template.yaml
-        echo "===== modified MT ======"
-        cat template.yaml
         cp template.yaml ../lifecycle-manager/tests/e2e/mandatory_template_v2.yaml
     - name: Create and apply ModuleReleaseMeta Template Operator with newer version in fast channel and older version in regular channel
       working-directory: template-operator
